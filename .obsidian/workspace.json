@@ -6,7 +6,6 @@
       {
         "id": "2d1a129e4c24f30f",
         "type": "tabs",
-        "dimension": 74.87244897959184,
         "children": [
           {
             "id": "0a287edd1a72e7b2",
@@ -51,34 +50,35 @@
             }
           },
           {
-            "id": "bb554286453c53bb",
+            "id": "a407f2fd67d406e4",
             "type": "leaf",
             "state": {
-              "type": "graph",
-              "state": {},
-              "icon": "lucide-git-fork",
-              "title": "关系图谱"
+              "type": "markdown",
+              "state": {
+                "file": "RISC-V & CPU/GPRs.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "GPRs"
+            }
+          },
+          {
+            "id": "1f828be8715f8d25",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "RISC-V & CPU/RVV.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "RVV"
             }
           }
         ],
-        "currentTab": 3
-      },
-      {
-        "id": "898b60d28c4f0c91",
-        "type": "tabs",
-        "dimension": 25.127551020408163,
-        "children": [
-          {
-            "id": "ddd8e13e4c0a48b5",
-            "type": "leaf",
-            "state": {
-              "type": "graph",
-              "state": {},
-              "icon": "lucide-git-fork",
-              "title": "关系图谱"
-            }
-          }
-        ]
+        "currentTab": 4
       }
     ],
     "direction": "vertical"
@@ -151,6 +151,7 @@
             "state": {
               "type": "backlink",
               "state": {
+                "file": "RISC-V & CPU/CSRs.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -160,7 +161,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "反向链接"
+              "title": "CSRs 的反向链接列表"
             }
           },
           {
@@ -169,11 +170,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
+                "file": "RISC-V & CPU/RVV.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "出链"
+              "title": "RVV 的出链列表"
             }
           },
           {
@@ -184,7 +186,7 @@
               "state": {
                 "sortOrder": "frequency",
                 "useHierarchy": true,
-                "showSearch": false,
+                "showSearch": true,
                 "searchQuery": ""
               },
               "icon": "lucide-tags",
@@ -192,38 +194,30 @@
             }
           },
           {
-            "id": "baa1e7d24ce8e865",
+            "id": "4b522c9d7dbe1599",
             "type": "leaf",
             "state": {
               "type": "outline",
               "state": {
+                "file": "RISC-V & CPU/RVV.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "大纲"
-            }
-          },
-          {
-            "id": "849f68184dfd76a8",
-            "type": "leaf",
-            "state": {
-              "type": "git-view",
-              "state": {},
-              "icon": "git-pull-request",
-              "title": "Source Control"
+              "title": "RVV 的大纲"
             }
           }
         ],
-        "currentTab": 4
+        "currentTab": 3
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 332.5
   },
   "left-ribbon": {
     "hiddenItems": {
+      "bases:创建新数据库": false,
       "switcher:打开快速切换": false,
       "graph:查看关系图谱": false,
       "canvas:新建白板": false,
@@ -233,12 +227,33 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "65b3fac1a2430ebc",
+  "active": "4b522c9d7dbe1599",
   "lastOpenFiles": [
-    "AMBA/AXI-4.md",
-    "AMBA/APB.md",
     "RISC-V & CPU/GPRs.md",
-    "RISC-V & CPU/CSRs.md",
+    "RISC-V & CPU/RVV.md",
+    "未命名",
+    "RISC-V & CPU/ALL CSRs.md",
+    "RISC-V & CPU/CSR定义/dcsr.md",
+    "端侧AI/基于RISC-V RVV加速裸机平台运行大型语言模型开源方案研究.md",
+    "端侧AI/TVM.md",
+    "端侧AI",
+    "FPU/DIV & Sqrt.md",
+    "未命名.md",
+    "FPU",
+    "RISC-V & CPU/Float.md",
+    "TFML/NMSIS的集成方法.md",
+    "AMBA/APB.md",
+    "RISC-V & CPU/CSR定义/mcause.md",
+    "竞业达杯/PLIC.md",
+    "RISC-V & CPU/CSR定义/tselect.md",
+    "RISC-V & CPU/CSR定义/mie.md",
+    "RISC-V & CPU/CSR定义/mstatus.md",
+    "TFML",
+    "RISC-V & CPU/CSR定义/未命名.md",
+    "竞业达杯",
+    "RISC-V & CPU/CSR定义",
+    "GCC.md",
+    "AMBA/AXI-4.md",
     "欢迎.md",
     "RISC-V & CPU",
     "AMBA"
