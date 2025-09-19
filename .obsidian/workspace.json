@@ -41,12 +41,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "RISC-V & CPU/CSR定义/dcsr.md",
+                "file": "TFML/TensorFlow Lite Micro 自定义内核.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "dcsr"
+              "title": "TensorFlow Lite Micro 自定义内核"
             }
           },
           {
@@ -199,13 +199,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "RISC-V & CPU/CSR定义/dcsr.md",
+                "file": "TFML/TensorFlow Lite Micro 自定义内核.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "dcsr 的大纲"
+              "title": "TensorFlow Lite Micro 自定义内核 的大纲"
             }
           }
         ],
@@ -222,11 +222,14 @@
       "canvas:新建白板": false,
       "daily-notes:打开/创建今天的日记": false,
       "templates:插入模板": false,
-      "command-palette:打开命令面板": false
+      "command-palette:打开命令面板": false,
+      "obsidian-git:Open Git source control": false
     }
   },
   "active": "a407f2fd67d406e4",
   "lastOpenFiles": [
+    "RISC-V & CPU/CSR定义/dcsr.md",
+    "TFML/TensorFlow Lite Micro 自定义内核.md",
     "RISC-V & CPU/GPRs.md",
     "未命名.md",
     "TFML/自定义神经网络加速指令集.md",
@@ -234,7 +237,6 @@
     "RISC-V & CPU/RVV.md",
     "未命名",
     "RISC-V & CPU/ALL CSRs.md",
-    "RISC-V & CPU/CSR定义/dcsr.md",
     "端侧AI/基于RISC-V RVV加速裸机平台运行大型语言模型开源方案研究.md",
     "端侧AI/TVM.md",
     "端侧AI",
