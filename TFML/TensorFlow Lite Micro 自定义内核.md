@@ -623,57 +623,185 @@ kernels/my_op.cc
 
 ### 8.11 CMSIS-NN 支持情况
 
-CMSIS-NN 当前支持的主要操作：
+  
+
+基于当前 TFLM 项目中实际使用的 CMSIS-NN 函数，支持的主要操作包括：
+
+#### 8.11.1 卷积操作
 
 ```cpp
 
-// 卷积操作
+// 标准卷积
 
-arm_convolve_s8()
+arm_convolve_wrapper_s8() // 8位卷积通用包装器
 
-arm_depthwise_conv_s8()
+arm_convolve_1x1_s8_fast() // 1x1卷积优化版本
 
-arm_convolve_1x1_s8_fast()
+arm_convolve_s8() // 基础8位卷积
 
-  
-
-// 全连接
-
-arm_fully_connected_s8()
+arm_convolve_s16() // 16位卷积
 
   
 
-// 池化
+// 深度可分离卷积
 
-arm_avgpool_s8()
+arm_depthwise_conv_wrapper_s8() // 8位深度卷积包装器
 
-arm_max_pool_s8()
+arm_depthwise_conv_wrapper_s4() // 4位深度卷积包装器
 
-  
-
-// 激活函数
-
-arm_relu_q7()
-
-arm_relu_q15()
+arm_depthwise_conv_s16() // 16位深度卷积
 
   
 
-// 算术运算
+// 转置卷积
 
-arm_elementwise_add_s8()
+arm_transpose_conv_wrapper_s8() // 8位转置卷积包装器
 
-arm_elementwise_mul_s8()
+arm_transpose_conv_s8_get_buffer_size() // 获取缓冲区大小
 
-  
-
-// LSTM
-
-arm_lstm_unidirectional_s8()
+arm_transpose_conv_s8_get_reverse_conv_buffer_size() // 获取反向卷积缓冲区大小
 
 ```
 
-  
+#### 8.11.2 全连接层
+
+```cpp
+
+arm_fully_connected_wrapper_s8() // 8位全连接包装器
+
+arm_fully_connected_s8() // 8位全连接基础版本
+
+arm_fully_connected_s4() // 4位全连接
+
+arm_fully_connected_s16() // 16位全连接
+
+arm_fully_connected_s8_get_buffer_size() // 获取8位全连接缓冲区大小
+
+arm_fully_connected_s16_get_buffer_size() // 获取16位全连接缓冲区大小
+
+```
+
+#### 8.11.3 池化操作
+
+```cpp
+
+arm_avgpool_s8() // 8位平均池化
+
+arm_avgpool_s16() // 16位平均池化
+
+arm_maxpool_s8() // 8位最大池化
+
+arm_maxpool_s16() // 16位最大池化
+
+```
+
+#### 8.11.4 激活函数
+
+```cpp
+
+arm_relu_q7() // 7位ReLU
+
+arm_relu_q15() // 15位ReLU
+
+arm_softmax_s8() // 8位Softmax
+
+arm_softmax_s8_s16() // 8位输入16位输出Softmax
+
+arm_softmax_s16() // 16位Softmax
+
+```
+
+#### 8.11.5 算术运算
+
+```cpp
+
+arm_elementwise_add_s8() // 8位元素级加法
+
+arm_elementwise_add_s16() // 16位元素级加法
+
+arm_elementwise_mul_s8() // 8位元素级乘法
+
+arm_elementwise_mul_s16() // 16位元素级乘法
+
+arm_maximum_s8() // 8位最大值
+
+arm_minimum_s8() // 8位最小值
+
+```
+
+#### 8.11.6 形状操作
+
+```cpp
+
+arm_transpose_s8() // 8位转置
+
+arm_pad_s8() // 8位填充
+
+```
+
+#### 8.11.7 循环神经网络
+
+```cpp
+
+arm_lstm_unidirectional_s8() // 8位单向LSTM
+
+arm_lstm_unidirectional_s16() // 16位单向LSTM
+
+arm_svdf_s8() // 8位SVDF
+
+arm_svdf_state_s16_s8() // 16位状态8位SVDF
+
+arm_svdf_s8_get_buffer_size() // 获取SVDF缓冲区大小
+
+```
+
+#### 8.11.8 矩阵操作
+
+```cpp
+
+arm_batch_matmul_s8() // 8位批量矩阵乘法
+
+arm_batch_matmul_s16() // 16位批量矩阵乘法
+
+```
+
+#### 8.11.9 辅助函数
+
+```cpp
+
+arm_vector_sum_s8() // 8位向量求和
+
+arm_vector_sum_s8_s64() // 8位向量求和64位累加
+
+arm_nn_mat_mult_kernel_q7_q15() // q7-q15矩阵乘法内核
+
+arm_nn_mat_mult_kernel_q7_q15_reordered() // 重排序矩阵乘法内核
+
+```
+
+#### 8.11.10 传统CMSIS-NN函数（v1.0兼容）
+
+```cpp
+
+arm_convolve_HWC_q7_basic() // HWC格式基础q7卷积
+
+arm_convolve_HWC_q7_fast() // HWC格式快速q7卷积
+
+arm_convolve_HWC_q15_basic() // HWC格式基础q15卷积
+
+arm_convolve_HWC_q15_fast() // HWC格式快速q15卷积
+
+arm_depthwise_separable_conv_HWC_q7() // HWC格式深度可分离卷积
+
+arm_maxpool_q7_HWC() // HWC格式q7最大池化
+
+arm_avepool_q7_HWC() // HWC格式q7平均池化
+
+arm_softmax_q7() // q7 Softmax
+
+arm_softmax_q15() // q15 Softmax
+
+```
 
 ## 9. 示例：完整的操作实现框架
 
