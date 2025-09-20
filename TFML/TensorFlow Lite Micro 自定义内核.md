@@ -641,7 +641,6 @@ arm_convolve_s8() // 基础8位卷积
 
 arm_convolve_s16() // 16位卷积
 
-  
 
 // 深度可分离卷积
 
@@ -652,7 +651,6 @@ arm_depthwise_conv_wrapper_s4() // 4位深度卷积包装器
 arm_depthwise_conv_s16() // 16位深度卷积
 
   
-
 // 转置卷积
 
 arm_transpose_conv_wrapper_s8() // 8位转置卷积包装器
