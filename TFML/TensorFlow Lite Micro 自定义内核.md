@@ -801,6 +801,243 @@ arm_softmax_q15() // q15 Softmax
 
 ```
 
+### 8.12 CMSIS-NN 函数参数与调用约定（输入/输出）
+
+  
+
+为便于在 TFLM 中正确调用 CMSIS-NN，加速函数的输入/输出参数模式概括如下（以 arm_nnfunctions.h 的通用接口为依据，不同版本可能有轻微差异）：
+
+  
+- 公共数据结构
+
+- cmsis_nn_context: 临时缓冲区上下文（ctx->buf, ctx->size），由调用者提供
+
+- cmsis_nn_dims: 张量维度（常用字段 n/h/w/c）
+
+- 超参结构：cmsis_nn_conv_params / cmsis_nn_dw_conv_params / cmsis_nn_fc_params / cmsis_nn_pool_params
+
+- 量化结构：
+
+- cmsis_nn_per_channel_quant_params（per-channel：multiplier[]/shift[]）
+
+- cmsis_nn_per_tensor_quant_params（per-tensor：multiplier/shift）
+
+#### 8.12.1 卷积/深度卷积/转置卷积
+
+- 典型函数：arm_convolve_wrapper_s8, arm_convolve_s8, arm_convolve_1x1_s8_fast, arm_convolve_s16
+
+- 输入
+
+- ctx: cmsis_nn_context（可选临时缓冲）
+
+- conv_params: 步幅/填充/膨胀，input_offset/output_offset，activation_min/max
+
+- quant_params: 每通道量化 multiplier[]/shift[]
+
+- input_dims, input_data: (N,H,W,Cin)
+
+- filter_dims, filter_data: (Kh,Kw,Cin,Cout)
+
+- bias_dims, bias_data: (Cout)，int32（s8）/int64（部分 s16 实现）
+
+- output_dims: (N,Hout,Wout,Cout)
+
+- 输出
+
+- output_data: s8（或 s16）
+
+- 深度卷积（arm_depthwise_conv_wrapper_s8/s16）
+
+- dw_conv_params: 含 channel_multiplier 等
+
+- filter_dims: (Kh,Kw,Cin,channel_multiplier)
+
+- 转置卷积（arm_transpose_conv_wrapper_s8）
+
+- 与标准卷积类似；提供 arm_transpose_conv_s8_get_buffer_size(...) 等函数查询缓冲需求
+
+
+（参考型原型，示意）
+
+```c
+
+arm_status arm_convolve_s8(const cmsis_nn_context* ctx,
+
+const cmsis_nn_conv_params* conv_params,
+
+const cmsis_nn_per_channel_quant_params* quant_params,
+
+const cmsis_nn_dims* input_dims, const int8_t* input_data,
+
+const cmsis_nn_dims* filter_dims, const int8_t* filter_data,
+
+const cmsis_nn_dims* bias_dims, const int32_t* bias_data,
+
+const cmsis_nn_dims* output_dims, int8_t* output_data);
+
+```
+
+#### 8.12.2 全连接（Fully Connected）
+
+- 典型函数：arm_fully_connected_wrapper_s8, arm_fully_connected_s8, arm_fully_connected_s16
+
+- 输入
+
+- ctx
+
+- fc_params: input_offset/output_offset，activation_min/max
+
+- quant_params: 通常为 per-tensor multiplier/shift
+
+- input_dims/input_data: (N,1,1,In)
+
+- filter_dims/filter_data: (Out,In)
+
+- bias_dims/bias_data: (Out)，int32（s8）/int64（部分 s16 实现）
+
+- output_dims: (N,1,1,Out)
+
+- 输出: output_data（s8 或 s16）
+
+- 缓冲查询：arm_fully_connected_s8_get_buffer_size(...), arm_fully_connected_s16_get_buffer_size(...)
+
+
+（参考型原型，示意）
+
+```c
+
+arm_status arm_fully_connected_s8(const cmsis_nn_context* ctx,
+
+const cmsis_nn_fc_params* fc_params,
+
+const cmsis_nn_per_tensor_quant_params* quant_params,
+
+const cmsis_nn_dims* input_dims, const int8_t* input_data,
+
+const cmsis_nn_dims* filter_dims, const int8_t* filter_data,
+
+const cmsis_nn_dims* bias_dims, const int32_t* bias_data,
+
+const cmsis_nn_dims* output_dims, int8_t* output_data);
+
+```
+
+#### 8.12.3 池化（Average/Max Pool）
+
+- 典型函数：arm_avgpool_s8/s16, arm_maxpool_s8/s16
+
+- 输入
+
+- ctx（如需）
+
+- pool_params: stride/pad，activation_min/max
+
+- input_dims/input_data
+
+- filter_dims: (Kh,Kw,1,1)
+
+- output_dims
+
+- 输出: output_data（s8 或 s16）
+
+#### 8.12.4 激活/Softmax
+
+- ReLU（原地）：arm_relu_q7, arm_relu_q15
+
+- 输入：data 指针（q7_t*/q15_t*），size
+
+- 输出：原地覆盖，负数截断为 0
+
+- Softmax：arm_softmax_s8, arm_softmax_s8_s16, arm_softmax_s16
+
+- 输入：input，num_rows，row_size，mult，shift，diff_min（防溢出阈值）
+
+- 输出：output（s8 或 s16）
+
+（参考型原型，示意）
+
+```c
+
+arm_status arm_softmax_s8(const int8_t* input, int32_t num_rows, int32_t row_size,
+
+int32_t mult, int32_t shift, int32_t diff_min,
+
+int8_t* output);
+
+```
+
+#### 8.12.5 元素级算术（Add/Mul/Max/Min）
+
+- Add：arm_elementwise_add_s8/s16
+
+- 输入：input_1, input_2, size；量化参数（input_offset/mult/shift，left_shift，output_offset，output_mult/shift，activation_min/max）
+
+- 输出：output
+
+- Mul：arm_elementwise_mul_s8/s16
+
+- 输入：input_1, input_2, size；量化/输出偏移与裁剪范围
+
+- 输出：output
+
+- Maximum/Minimum：arm_maximum_s8, arm_minimum_s8
+
+- 输入：input_1, input_2, size
+
+- 输出：output
+
+#### 8.12.6 形状操作
+
+- Transpose：arm_transpose_s8
+
+- 输入：input_dims/input_data，perm（int32_t*，长度=rank），output_dims
+
+- 输出：output_data
+
+- Pad：arm_pad_s8
+
+- 输入：input_dims/input_data，paddings（每维左右填充），pad_value，output_dims
+
+- 输出：output_data
+
+
+#### 8.12.7 循环网络/时序（LSTM/SVDF）
+
+- LSTM：arm_lstm_unidirectional_s8/s16
+
+- 输入：当前步输入、上一时刻 hidden/cell，多路权重/偏置，量化/裁剪超参，必要临时缓冲 ctx
+
+- 输出：本步输出及更新的 hidden_state/cell_state
+
+- SVDF：arm_svdf_s8, arm_svdf_state_s16_s8
+
+- 输入：序列切片、权重/偏置、状态缓冲、量化/超参
+
+- 输出：输出帧与内部状态更新
+
+- 缓冲查询：arm_svdf_s8_get_buffer_size(...)
+
+#### 8.12.8 矩阵/辅助内核
+
+- 批量矩阵乘：arm_batch_matmul_s8/s16
+
+- 输入：A/B（可能带 offset/mult/shift 的量化参数）、尺寸描述、ctx（如需）
+
+- 输出：C
+
+- 向量求和：arm_vector_sum_s8 / arm_vector_sum_s8_s64（输出分别为 int32/int64 累加）
+
+- 低层内核：arm_nn_mat_mult_kernel_q7_q15(_reordered)
+
+- 输入：pA, pInBuffer, bias, out_mult/out_shift, activation_min/max 等
+
+- 输出：pOut（供高层 FC/Conv 复用）
+
+#### 8.12.9 临时缓冲与内存
+
+- 许多 wrapper/优化路径需要 ctx->buf；可通过对应的 _get_buffer_size(...) 先查询所需字节数
+
+- 在 TFLM 中通常由 Arena 分配临时缓冲并传入 cmsis_nn_context
 ## 9. 示例：完整的操作实现框架
 
 ```cpp
