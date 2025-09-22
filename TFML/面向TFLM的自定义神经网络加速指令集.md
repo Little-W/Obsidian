@@ -22,7 +22,7 @@
     
 - `rs1`：**out_ptr**（输出张量首地址）
     
-- `rs2`：**ctx_id**（0 表示当前隐式上下文）
+- `rs2`：**ctx**（0 表示当前隐式上下文）
     
 - `rd` ：**ticket / err**（≥0 为提交号；<0 为立即错误）
     
@@ -57,7 +57,7 @@
 
 - `rs1 = out_ptr`：输出张量首地址（布局由配置类 `SET_*` 指令决定；建议 ≥16B 对齐）。
     
-- `rs2 = ctx_id/x0`：上下文/流标识。`x0` = 当前隐式上下文。上下文中应已通过配置类 `SET_*` 写入：
+- `rs2 = ctx/x0`：上下文/流标识。`x0` = 当前隐式上下文。上下文中应已通过配置类 `SET_*` 写入：
     
     - **CONV / DWCONV**：输入/权重/偏置地址，`N,H,W,C,K,R,S`，`stride/pad/dilation/groups/multiplier`，布局/量化等；
         
@@ -80,11 +80,11 @@
 
 ```
 opcode=custom1, funct7=0x01, funct3 ∈ {000(s4),001(s8),010(s16)}
-rs1 = out_ptr, rs2 = ctx_id/x0, rd = ticket/err
+rs1 = out_ptr, rs2 = ctx/x0, rd = ticket/err
 ```
 
 **语义：**  
-对 `ctx_id` 指定的卷积上下文执行 2D 卷积（含 padding/stride/dilation、groups）。将结果写入 `out_ptr`。  
+对 `ctx` 指定的卷积上下文执行 2D 卷积（含 padding/stride/dilation、groups）。将结果写入 `out_ptr`。  
 **注意：** 若上下文配置了深度可分离（groups=C, multiplier≥1），建议使用 `RUN_DWCONV`，但实现也可在 `RUN_CONV` 内自动支持。
 
 **伪代码：**
@@ -104,7 +104,7 @@ rd = ticket
 
 ```
 opcode=custom1, funct7=0x02, funct3 ∈ {000,001,010}
-rs1 = out_ptr, rs2 = ctx_id/x0, rd = ticket/err
+rs1 = out_ptr, rs2 = ctx/x0, rd = ticket/err
 ```
 
 **语义：**  
@@ -118,11 +118,16 @@ rs1 = out_ptr, rs2 = ctx_id/x0, rd = ticket/err
 
 ```
 opcode=custom1, funct7=0x03, funct3 ∈ {000,001,010}
-rs1 = out_ptr, rs2 = ctx_id/x0, rd = ticket/err
+rs1 = out_ptr, rs2 = ctx/x0（低位可指示 per-channel 量化）, rd = ticket/err
 ```
 
 **语义：**  
 执行全连接（矩阵-向量乘加 + 偏置 + 量化出栈），结果写入 `out_ptr`。
+
+- `rs2` 用最低 bit 位（如 `rs2[0]`）指示量化类型：
+    - `rs2[0]=0`：per-tensor 量化
+    - `rs2[0]=1`：per-channel 量化
+  其余高位为 ctx。
 
 ---
 
@@ -132,7 +137,7 @@ rs1 = out_ptr, rs2 = ctx_id/x0, rd = ticket/err
 
 ```
 opcode=custom1, funct7=0x04, funct3 ∈ {000,001,010}
-rs1 = out_ptr, rs2 = ctx_id/x0, rd = ticket/err
+rs1 = out_ptr, rs2 = ctx/x0, rd = ticket/err
 ```
 
 **语义：**  
@@ -147,11 +152,11 @@ rs1 = out_ptr, rs2 = ctx_id/x0, rd = ticket/err
 
 ```
 opcode=custom1, funct7=0x05, funct3 ∈ {000,001,010}
-rs1 = out_ptr, rs2 = ctx_id/x0, rd = ticket/err
+rs1 = out_ptr, rs2 = ctx/x0, rd = ticket/err
 ```
 
 **语义：**  
-对 `ctx_id` 指定的输入张量应用 **ReLU**。
+对 `ctx` 指定的输入张量应用 **ReLU**。
 
 - 若上下文声明**就地**：`in_ptr == out_ptr`，在原缓冲区内就地更新；
     
@@ -168,7 +173,7 @@ rs1 = out_ptr, rs2 = ctx_id/x0, rd = ticket/err
     
 - **对齐与访问**：建议 `out_ptr`、上下文中的各张量地址按 16B 对齐；未对齐可直接报错或降速路径（实现自定，但需一致）。
     
-- **重入/幂等**：对同一 `ctx_id` 的并发 `RUN_*` 行为由实现定义；建议以 ticket 串行化，或返回 `-BUSY`。
+- **重入/幂等**：对同一 `ctx` 的并发 `RUN_*` 行为由实现定义；建议以 ticket 串行化，或返回 `-BUSY`。
     
 
 ---
@@ -205,7 +210,7 @@ run.relu.s8    rd, rs1, rs2              # funct7=0x05, funct3=001
 ```asm
 # 已用 SET_* 配好 ctx=3
 # 1) 卷积（s8 宽度），输出到 out_buf
-addi  a1, x0, 3              # ctx_id=3
+addi  a1, x0, 3              # ctx=3
 la    a0, out_buf
 run.conv.s8 a2, a0, a1       # rd=a2 <- ticket or err
 
@@ -219,7 +224,7 @@ run.relu.s8 a3, a0, a1       # 对 out_buf 执行 ReLU，rd=a3
 
 - **位宽选择**：实现可将 `s4/s8/s16` 映射为不同的 MAC 并行度/向量化粒度/片上 SRAM 访问宽度。若不支持某种位宽，应返回 `ERR_BAD_SW`。
     
-- **融合优化（非规范要求）**：实现可在内部识别“同一 `ctx_id` 的 `RUN_CONV` 紧随 `RUN_RELU` 且 `out_ptr` 相同”，在后端执行路径上融合为“卷积出栈 + ReLU”，以减少访存次数；但对软件而言这两条指令仍是可见的独立提交。
+- **融合优化（非规范要求）**：实现可在内部识别“同一 `ctx` 的 `RUN_CONV` 紧随 `RUN_RELU` 且 `out_ptr` 相同”，在后端执行路径上融合为“卷积出栈 + ReLU”，以减少访存次数；但对软件而言这两条指令仍是可见的独立提交。
     
 - **地址检查**：强烈建议在发起时检查 `NULL/对齐/越界` 并即时在 `rd` 返回错误，避免隐式故障。
     
