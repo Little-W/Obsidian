@@ -1,235 +1,205 @@
-# 面向TFLM的AI-DSA 指令规范（Draft v0.1）
-## RUN 指令集规范（AI-DSA 扩展，运行类）
+# 面向 TFLM 的 AI-DSA 指令规范（Draft v0.2）
 
-本节定义 **RUN** 系列算子执行指令，采用 R-type 自定义编码，**激活函数独立为 `RUN_RELU`**。  
-统一约定：**所有地址类操作数放在 `rs1`**；**`rs2` 为上下文/流 ID**；**`rd` 返回 ticket/错误码**。
+本文档定义 AI-DSA 扩展指令集，采用 RISC-V 自定义编码并遵循 **NICE** 的 `funct3`用法约束。
 
----
+NICE 的用法约束：
+芯来为了简化自定义指令译码，把 funct3 的每一位直接作为“寄存器需求标志”：
 
-### 1. 指令编码（统一格式）
-
-**格式：R-type（32b）**
-
-```
-|  funct7  |   rs2   |   rs1   | funct3 |   rd   |  opcode  |
-|  31..25  | 24..20  | 19..15  | 14..12 | 11..7  |  6..0    |
-```
-
-- `opcode`：`custom1`（运行类统一使用）
-    
-- `funct7`：**算子类编码**（见 §2）
-    
-- `funct3`：**指令位宽选择**（见 §1.1）
-    
-- `rs1`：**out_ptr**（输出张量首地址）
-    
-- `rs2`：**ctx**（0 表示当前隐式上下文）
-    
-- `rd` ：**ticket / err**（≥0 为提交号；<0 为立即错误）
-    
-
-#### 1.1 `funct3` —— 指令位宽（slice width）
-
-|`funct3`|名称|语义（实现可选）|
-|---|---|---|
-|`000`|`s4`|4-wide 计算切片/并行度|
-|`001`|`s8`|8-wide 计算切片/并行度|
-|`010`|`s16`|16-wide 计算切片/并行度|
-
-> 说明：位宽仅指**微架构执行切片/并行度/packing**选择，不改变算子数学语义与 ABI。实现可将不支持的位宽返回错误码。
+| 位段          | 作用             | Verilog 映射                             |
+| ----------- | -------------- | -------------------------------------- |
+| `funct3[2]` | 指令是否需要写回 `rd`  | `wire nice_need_rd  = rv32_instr[14];` |
+| `funct3[1]` | 指令是否需要使用 `rs1` | `wire nice_need_rs1 = rv32_instr[13];` |
+| `funct3[0]` | 指令是否需要使用 `rs2` | `wire nice_need_rs2 = rv32_instr[12];` |
 
 ---
 
-### 2. 指令集合与 `funct7` 映射
+## 二、RUN 指令集规范（AI-DSA 扩展，运行类）
 
-|指令名|用途|`funct7`|
-|---|---|---|
-|`RUN_CONV`|标准 2D 卷积|`0x01`|
-|`RUN_DWCONV`|深度可分离卷积|`0x02`|
-|`RUN_FC`|全连接（矩阵-向量）|`0x03`|
-|`RUN_POOL`|池化（平均/最大/全局）|`0x04`|
-|`RUN_RELU`|激活：ReLU（单独指令）|`0x05`|
+### 1. 约定与术语
 
-> 其他激活（ReLU6/Leaky/Clamp）预留为后续扩展，不在本版定义。
+* **地址经由 `rs1` 传入**：`rs1` 为输出张量首地址（`out_ptr`），建议 ≥16B 对齐。
+* **子配置经由 `imm12` 传入**：`imm12` 为 12 位**子配置（sub-config）比特域**（见 §4）。
+* **返回值经由 `rd` 写回**：`rd ≥ 0` 为提交号（`ticket`），`rd < 0` 为立即错误码。
+* **上下文/算子参数**（输入/权重/偏置/尺寸/布局/量化等）须在 RUN 之前由 `SET_*` 指令写入“当前隐式上下文”。
+* **内存序**：所有 RUN 指令为 **release**；`POLL/SYNC` 为 **acquire**。
 
 ---
 
-### 3. 操作数与内存对象
+### 2. 指令编码
 
-- `rs1 = out_ptr`：输出张量首地址（布局由配置类 `SET_*` 指令决定；建议 ≥16B 对齐）。
-    
-- `rs2 = ctx/x0`：上下文/流标识。`x0` = 当前隐式上下文。上下文中应已通过配置类 `SET_*` 写入：
-    
-    - **CONV / DWCONV**：输入/权重/偏置地址，`N,H,W,C,K,R,S`，`stride/pad/dilation/groups/multiplier`，布局/量化等；
-        
-    - **FC**：输入/权重/偏置地址，`in_dim/out_dim`，布局/量化等；
-        
-    - **POOL**：输入地址，kernel/stride/pad，`mode`（AVG/ MAX/ GLOBAL），量化等；
-        
-    - **RELU**：输入地址（若与输出相同则原地，就地覆写；否则 `out_ptr` 可指向不同缓冲）。
-        
-- `rd = ticket/err`：成功返回非负 ticket 以供 `POLL/SYNC`；若立即检查失败（如未配置、地址未对齐、不支持的位宽），`rd` 返回负错误码（见 §6）。
-    
+#### 2.1 通用编码格式（**I-TYPE，自定义 opcode**）
+
+```
+| 31..20   | 19..15 | 14..12 | 11..7 |  6..0  |
+| imm[11:0]|  rs1   | funct3 |  rd   | opcode |
+```
+
+* `opcode` ：`custom1`（RUN 类统一使用）
+* `funct7` ：—（I-TYPE 无 `funct7`，**算子种类由 opcode 扩展号 + 伪 funct7 域替代：见 §3**）
+* `funct3` ：**NICE: 寄存器需求位**
+
+  * `funct3[2]`（bit14）=1 → 需要写回 `rd`
+  * `funct3[1]`（bit13）=1 → 使用 `rs1`
+  * `funct3[0]`（bit12）=1 → 使用 `rs2`
+    **本规范规定所有 RUN 指令：`funct3 = 3'b110`（需要 `rd` 与 `rs1`，**不**使用 `rs2`）。**
+* `rs1` ：输出缓冲首地址 `out_ptr`
+* `imm12`：子配置 `subcfg`（12-bit，比特域见 §4；按**无符号位域**解释，不做算术符号扩展）
+* `rd`  ：提交号/错误码
+
+> 注：硬件译码可将 `imm12` 视为**控制位域**而非地址位移；编译器侧以 `.insn i`/自定义伪指令传入。
 
 ---
 
-### 4. 指令语义
+### 3. 指令列表与“类码”(Class) 选择
 
-#### 4.1 `RUN_CONV.s{4,8,16}`
+| 指令名          | 语义               | `opcode` | `funct3`(NICE) | 类码(Class)* |
+| ------------ | ---------------- | -------- | -------------- | ----------- |
+| `RUN_CONV`   | 执行标准 2D 卷积       | custom1  | `0b110`        | `0x01`      |
+| `RUN_DWCONV` | 执行深度可分离卷积        | custom1  | `0b110`        | `0x02`      |
+| `RUN_FC`     | 执行全连接（矩阵-向量）     | custom1  | `0b110`        | `0x03`      |
+| `RUN_POOL`   | 执行池化（AVG/MAX/全局） | custom1  | `0b110`        | `0x04`      |
+| `RUN_RELU`   | 执行 ReLU 激活（独立算子） | custom1  | `0b110`        | `0x05`      |
 
-**编码：**
-
-```
-opcode=custom1, funct7=0x01, funct3 ∈ {000(s4),001(s8),010(s16)}
-rs1 = out_ptr, rs2 = ctx/x0, rd = ticket/err
-```
-
-**语义：**  
-对 `ctx` 指定的卷积上下文执行 2D 卷积（含 padding/stride/dilation、groups）。将结果写入 `out_ptr`。  
-**注意：** 若上下文配置了深度可分离（groups=C, multiplier≥1），建议使用 `RUN_DWCONV`，但实现也可在 `RUN_CONV` 内自动支持。
-
-**伪代码：**
-
-```
-assert(ctx.valid && out_ptr.aligned)
-plan = mk_conv_plan(ctx, slice_width=SW_from_funct3)
-ticket = enqueue(plan, out_ptr)
-rd = ticket
-```
+\* **类码(Class)**：硬件实现可用 `custom1` 的扩展编码位或使用内部“子操作码寄存器”承载该类码（例如放在实现专用 CSR/译码旁路中）。若需在指令内显式携带类码，可占用 `imm12` 的高位或通过 `custom1` 的变体区分；本规范默认**类码由实现侧固定映射**。
 
 ---
 
-#### 4.2 `RUN_DWCONV.s{4,8,16}`
+### 4. `imm12` 子配置（sub-config）按指令独立定义
 
-**编码：**
+总则：
+- `imm12` 为 12 位控制位域，且“按指令独立定义”。某一比特的含义不在不同指令间复用。
+- 每条指令对未定义的位必须写 0，硬件必须忽略这些位。
+- 若实现未支持某配置，应返回 `ERR_BAD_SW`。
+- 统一 WIDTH 编码：`[1:0]` 位宽编码 `00`=s8，`01`=s16，`10`=s4，`11`=保留；未实现的编码返回 `ERR_BAD_SW`。
 
-```
-opcode=custom1, funct7=0x02, funct3 ∈ {000,001,010}
-rs1 = out_ptr, rs2 = ctx/x0, rd = ticket/err
-```
+#### 4.1 RUN_CONV
+- [1:0] WIDTH：`00`=s8，`01`=s16，`10`=s4，`11`=保留
+- [11:2] 保留（写 0）
 
-**语义：**  
-执行深度可分离卷积（channel-wise，可带 `multiplier`）。其余同 `RUN_CONV`。
+#### 4.2 RUN_DWCONV
+- 同 RUN_CONV（Depthwise 语义，含 multiplier）；其余位保留
 
----
+#### 4.3 RUN_FC
+- [1:0] WIDTH：`00`=s8，`01`=s16，`10`=s4，`11`=保留
+- [2] FC_PC：是否 per-channel 量化（`1`=per-channel，`0`=per-tensor）
+- [11:3] 保留（写 0）
 
-#### 4.3 `RUN_FC.s{4,8,16}`
+#### 4.4 RUN_POOL
+- [1:0] WIDTH：`00`=s8，`01`=s16，`10`=s4，`11`=保留
+- [3:2] POOL_MD：池化模式（`00`=AVG，`01`=MAX，`10`=GAP，`11`=GMP）
+- [11:4] 保留（写 0）
 
-**编码：**
+#### 4.5 RUN_RELU
+- [1:0] WIDTH：`00`=s8，`01`=s16，`10`=s4，`11`=保留
+- [11:2] 保留（写 0）
 
-```
-opcode=custom1, funct7=0x03, funct3 ∈ {000,001,010}
-rs1 = out_ptr, rs2 = ctx/x0（低位可指示 per-channel 量化）, rd = ticket/err
-```
-
-**语义：**  
-执行全连接（矩阵-向量乘加 + 偏置 + 量化出栈），结果写入 `out_ptr`。
-
-- `rs2` 用最低 bit 位（如 `rs2[0]`）指示量化类型：
-    - `rs2[0]=0`：per-tensor 量化
-    - `rs2[0]=1`：per-channel 量化
-  其余高位为 ctx。
-
----
-
-#### 4.4 `RUN_POOL.s{4,8,16}`
-
-**编码：**
-
-```
-opcode=custom1, funct7=0x04, funct3 ∈ {000,001,010}
-rs1 = out_ptr, rs2 = ctx/x0, rd = ticket/err
-```
-
-**语义：**  
-按上下文中的 `mode`（AVG/ MAX）与 `global` 标志执行池化；结果写 `out_ptr`。  
-平均池化的定点除法/舍入策略由上下文量化配置决定。
+> 说明：上述位域仅在对应指令下有效；各指令对未定义位必须忽略且要求软件写 0。
 
 ---
 
-#### 4.5 `RUN_RELU.s{4,8,16}`
+### 5. 指令语义
 
-**编码：**
+#### 5.1 `RUN_CONV`
 
-```
-opcode=custom1, funct7=0x05, funct3 ∈ {000,001,010}
-rs1 = out_ptr, rs2 = ctx/x0, rd = ticket/err
-```
+* **编码**：`custom1` / **I-TYPE** / `funct3=0b110` / `imm12=subcfg`
+* **操作数**：`rs1=out_ptr`；`rd=ticket/err`
+* **行为**：对当前上下文执行 2D 卷积（stride/pad/dilation/groups）。`WIDTH` 选择内部切片/并行度。
+* **错误**：不支持的 `WIDTH` → `ERR_BAD_SW`；地址/上下文问题见 §6。
 
-**语义：**  
-对 `ctx` 指定的输入张量应用 **ReLU**。
+#### 5.2 `RUN_DWCONV`
 
-- 若上下文声明**就地**：`in_ptr == out_ptr`，在原缓冲区内就地更新；
-    
-- 若声明**非就地**：硬件从上下文的输入地址读取，写入本指令 `out_ptr`。
-    
+* 同 `RUN_CONV`；语义限定为 Depthwise（groups=C，支持 `multiplier`）。
 
-> 其他激活（ReLU6/Leaky/Clamp）留作后续扩展；其参数应通过配置类 `SET_ACT_PARAM` 提前设置。
+#### 5.3 `RUN_FC`
 
----
+* **使用位**：`WIDTH`、`FC_PC`、`FC_WTT`、`FC_SAT`。
+* **行为**：矩阵-向量乘加 + 偏置 + 量化出栈；可选择 per-channel、权重转置、饱和策略。
 
-### 5. 内存序与可观察行为
+#### 5.4 `RUN_POOL`
 
-- **顺序保证**：所有 `SET_*` 在程序次序上先于对应 `RUN_*`；实现应将 `RUN_*` 视为 **release**，`POLL/SYNC` 视为 **acquire**。
-    
-- **对齐与访问**：建议 `out_ptr`、上下文中的各张量地址按 16B 对齐；未对齐可直接报错或降速路径（实现自定，但需一致）。
-    
-- **重入/幂等**：对同一 `ctx` 的并发 `RUN_*` 行为由实现定义；建议以 ticket 串行化，或返回 `-BUSY`。
-    
+* **使用位**：`WIDTH`、`POOL_MD`、`POOL_EX`。
+* **行为**：按模式执行 AVG/MAX/GAP/GMP；`POOL_EX` 控制平均是否排除 padding 区。
+
+#### 5.5 `RUN_RELU`
+
+* **使用位**：`WIDTH`。
+* **行为**：对上下文输入应用 ReLU；是否就地由上下文/缓冲区配置决定，与 `imm12` 无关。
 
 ---
 
-### 6. 错误码（`rd<0`）
+### 6. 异常与错误码（`rd < 0`）
 
-|名称|值|说明|
-|---|---|---|
-|`ERR_BAD_CTX`|`-1`|上下文不存在/未初始化|
-|`ERR_BAD_ADDR`|`-2`|`out_ptr` 或上下文地址为 NULL / 未对齐|
-|`ERR_BAD_FMT`|`-3`|不支持的数据/权重布局或池化模式|
-|`ERR_BAD_PARAM`|`-4`|尺寸/步长/边界非法|
-|`ERR_BAD_SW`|`-5`|`funct3` 所选位宽不受支持|
-|`ERR_DMA`|`-6`|访存失败/权限错误|
-|`ERR_BUSY`|`-7`|资源不足或上下文繁忙|
-|`ERR_INTERNAL`|`-8`|其他内部错误|
+| 名称              | 值    | 说明                         |
+| --------------- | ---- | -------------------------- |
+| `ERR_BAD_CTX`   | `-1` | 上下文不存在/未初始化                |
+| `ERR_BAD_ADDR`  | `-2` | `out_ptr` 或上下文地址为 NULL/未对齐 |
+| `ERR_BAD_FMT`   | `-3` | 不支持的数据/权重布局/池化模式           |
+| `ERR_BAD_PARAM` | `-4` | 尺寸/步长/边界非法                 |
+| `ERR_BAD_SW`    | `-5` | `WIDTH` 选择不受支持             |
+| `ERR_DMA`       | `-6` | 访存失败/权限错误                  |
+| `ERR_BUSY`      | `-7` | 资源不足或队列繁忙                  |
+| `ERR_INTERNAL`  | `-8` | 其他内部错误                     |
 
 ---
 
-### 7. 反汇编助记与示例（建议）
+### 7. 程序员可观察行为与顺序
 
-**助记形式：**
+* **顺序约束**：`SET_*` → `RUN_*` → `POLL/SYNC`；实现需保证 `RUN_*` 对先前 `SET_*` 的可见性。
+* **对齐建议**：所有张量/权重/偏置/输出地址 ≥16B；未对齐建议直接报错。
+* **幂等/重入**：同一上下文并发 RUN 的行为由实现定义；推荐以 ticket 串行或返回 `ERR_BUSY`。
+
+---
+
+### 8. 反汇编与示例（推荐，非规范约束）
+
+**助记（I-TYPE）**：
 
 ```
-run.conv.s4    rd, rs1=out, rs2=ctx      # funct7=0x01, funct3=000
-run.conv.s8    rd, rs1, rs2              # funct7=0x01, funct3=001
-run.conv.s16   rd, rs1, rs2              # funct7=0x01, funct3=010
-...
-run.relu.s8    rd, rs1, rs2              # funct7=0x05, funct3=001
+run.conv   rd, rs1, imm12    # imm12=subcfg
+run.dw     rd, rs1, imm12
+run.fc     rd, rs1, imm12
+run.pool   rd, rs1, imm12
+run.relu   rd, rs1, imm12
 ```
 
 **示例：**
 
 ```asm
-# 已用 SET_* 配好 ctx=3
-# 1) 卷积（s8 宽度），输出到 out_buf
-addi  a1, x0, 3              # ctx=3
-la    a0, out_buf
-run.conv.s8 a2, a0, a1       # rd=a2 <- ticket or err
+# s8 卷积：WIDTH=00
+li    a0, out_buf
+addi  a1, x0, 0b000000000000   # imm12 = 0x000 (WIDTH=00=s8)
+run.conv a2, a0, a1            # a2 <- ticket/err  （伪语法：I型立即数装入由汇编器完成）
 
-# 2) ReLU（就地，s8 宽度）
-run.relu.s8 a3, a0, a1       # 对 out_buf 执行 ReLU，rd=a3
+# FC：s8 + per-channel + 权重转置
+# imm12 bits: [FC_PC]=1([5]), [FC_WTT]=1([6]), WIDTH=s8([1:0]=00)
+#            000 0 1 1 000 00  => 0b000001100000 = 0x60
+li    a0, fc_out
+addi  a1, x0, 0x060
+run.fc   a3, a0, a1
+
+# POOL：GAP + s16 + EXCL_PAD
+# MODE=10([3:2]), EXCL_PAD=1([4]), WIDTH=s16([1:0]=01)
+# bits: 000 0 0 0 1 010 01  => 0b0000000101001 = 0x029
+li    a0, pool_out
+addi  a1, x0, 0x029
+run.pool a4, a0, a1
+
+# ReLU：s8（是否就地由上下文决定）
+# WIDTH=s8([1:0]=00) => imm12 = 0x000
+li    a0, out_buf
+addi  a1, x0, 0x000
+run.relu a5, a0, a1
 ```
 
----
-
-### 8. 兼容性与实现备注
-
-- **位宽选择**：实现可将 `s4/s8/s16` 映射为不同的 MAC 并行度/向量化粒度/片上 SRAM 访问宽度。若不支持某种位宽，应返回 `ERR_BAD_SW`。
-    
-- **融合优化（非规范要求）**：实现可在内部识别“同一 `ctx` 的 `RUN_CONV` 紧随 `RUN_RELU` 且 `out_ptr` 相同”，在后端执行路径上融合为“卷积出栈 + ReLU”，以减少访存次数；但对软件而言这两条指令仍是可见的独立提交。
-    
-- **地址检查**：强烈建议在发起时检查 `NULL/对齐/越界` 并即时在 `rd` 返回错误，避免隐式故障。
-    
+> 说明：上例把 `imm12` 写成常量便于展示；实际使用时由编译器/宏封装到 I-type 立即数位置（`imm[11:0]`）。
 
 ---
 
-**本节完。**
+### 9. 实现提示
+
+* **NICE 校验**：译码检查 `funct3==3'b110`；否则非法。
+* **WIDTH 子集**：若仅实现 `s8`，则 `WIDTH≠00` 即刻返回 `ERR_BAD_SW`。
+* **融合优化**：可在微架构上识别“同 `out_ptr` 的 `RUN_CONV` 后紧随 `RUN_RELU`”并内部融合（对 ISA 语义透明）。
+* **保留位**：各指令未定义位必须写 0；硬件忽略。
+
+—— **本节完** ——
