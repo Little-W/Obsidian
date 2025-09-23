@@ -66,11 +66,10 @@ RISC-V 32 位基本 R-type / I-type 编码（低位在右）：
 
 通用：`rd`=状态码；`rs1`=输出起始地址（byte 指针）；`rs2`=cfg。
 
-|指令|语法|opcode|funct7|funct3（NICE）|rs2 含义|
-|---|---|---|---|---|---|
-|`mat_mult_t`|`mat_mult_t rd, rs1, rs2`|CUSTOM_1|0x01|`111`|cfg 配置字|
-|`vec_mat_t`|`vec_mat_t rd, rs1, rs2`|CUSTOM_1|0x02|`111`|cfg 配置字|
-|`dwconv_mult_4`|`dwconv_mult_4 rd, rs1, x0`|CUSTOM_1|0x04|`110`|忽略（必须 x0）|
+| 指令              | 语法                          | opcode   | funct7 | funct3（NICE） | rs2 含义    |
+| --------------- | --------------------------- | -------- | ------ | ------------ | --------- |
+| `mat_mult_t`    | `mat_mult_t rd, rs1, rs2`   | CUSTOM_1 | 0x01   | `111`        | cfg 配置字   |
+| `dwconv_mult_4` | `dwconv_mult_4 rd, rs1, x0` | CUSTOM_1 | 0x04   | `110`        | 忽略（必须 x0） |
 
 NICE 合规性：
 
@@ -168,16 +167,7 @@ NICE 合规性：
     - `ROW_ADDR_OFFSET_EN=1` 必须已设定 `MULT_ROW_ADDR_OFFSET`，否则 `0x03`。
         
 
-### 4.3 `vec_mat_t`（1×K × B[K×N]，vec×T）
-
-- 与 `mat_mult_t` 同源实现，固定 `M=1`：仅计算一行（或一个 batch=1 向量）。
-    
-- CSR 仍需提供 K、N 与量化参数；写回从 `rs1` 指向的 C[0] 起始地址开始连续放置 N 元素。
-    
-- 其它行为（行偏移、量化、位宽、激活）与 `mat_mult_t` 一致。
-    
-
-### 4.4 `dwconv_mult_4`（Depthwise-Conv 4× 通道展开变体）
+### 4.3 `dwconv_mult_4`（Depthwise-Conv 4× 通道展开变体）
 
 - **加速前置条件（全部满足才执行硬件加速）**：
     
@@ -312,3 +302,209 @@ if (status != 0) { /* 处理错误 */ }
 ```
 
 ---
+
+# 3 地址映射（Register Map）
+
+## 3.0 总述（规范性）
+
+**处理器假设**：RV32（XLEN=32）。  
+**指针语义**：所有 `*_PTR` CSR 均为**字节地址**（byte address），指向对齐内存。  
+**访问粒度**：除特别说明外，均为 **32-bit** 访问。  
+**复位值**：未特别说明均为 **0x0000_0000**。  
+**保留位（RES0/RES1）**：未定义位 **必须写 0、读出为 0**（RES0）。  
+**非法值**：实现对非法值的处置见 §5（错误码）。  
+**访问方式**：推荐使用本规范自定义的 `csrrd/csrwr`（CUSTOM_3）指令访问；若实现允许，也可通过标准 CSR 读写类指令（实现自定）。  
+**对齐要求**：
+
+- 指针：按其数据类型自然对齐（例如 s8 数据至少 1B 对齐；s16 → 2B；s32 → 4B）。
+    
+- 尺寸：`K`/`N` 等维度为非负整数；若硬件要求对齐（如 `aligned_num_col_a`），见对应 CSR 描述。  
+    **生命周期**：运算类指令在取值时**快照**本组 CSR；指令执行中修改无效，直至下一条运算指令生效。
+    
+
+---
+
+## 3.1 MULT 组（矩阵/向量×矩阵）参数 CSR
+
+> 适用 `mat_mult_t` / `vec_mat_t`。如未特别指出，两指令共用同一组 CSR。
+
+### 3.1.1 索引表（概览）
+
+|编号|名称|访问|复位|类型/单位|简述（规范性）|
+|--:|---|:-:|:-:|---|---|
+|0x7C0|`MULT_LHS_PTR`|RW|0|u32 / byte addr|左乘数 A 指针（可为向量）|
+|0x7C1|`MULT_RHS_PTR`|RW|0|u32 / byte addr|右乘数 B 指针（按 K×N 排列；见 §4）|
+|0x7C2|`MULT_DST_PTR`|RW|0|u32 / byte addr|结果 C 写回起始地址|
+|0x7C3|`MULT_BIAS_PTR`|RW|0|u32 / byte addr|Bias 数组指针；允许为 0（无 bias）|
+|0x7C4|`MULT_KSUM_PTR`|RW|0|u32 / byte addr|Kernel sum（可选）指针；允许为 0|
+|0x7C5|`MULT_LHS_OFFSET`|RW|0|s32|A 零点偏移/基准（lhs_offset）|
+|0x7C6|`MULT_RHS_OFFSET`|RW|0|s32|B 零点偏移/基准（rhs_offset）|
+|0x7C7|`MULT_DST_OFFSET`|RW|0|s32|输出零点（dst_offset）|
+|0x7C8|`MULT_DST_MULT`|RW|0|s32|per-tensor 量化乘子|
+|0x7C9|`MULT_DST_SHIFT`|RW|0|s32|per-tensor 量化右移（右移写正）|
+|0x7CA|`MULT_DST_MULT_PTR`|RW|0|u32 / byte addr|per-channel 量化乘子数组指针|
+|0x7CB|`MULT_DST_SHIFT_PTR`|RW|0|u32 / byte addr|per-channel 量化右移数组指针|
+|0x7CC|`MULT_RHS_COLS`|RW|0|u32|`K`（B 的列数/内积长度）|
+|0x7CD|`MULT_RHS_ROWS`|RW|0|u32|`N`（B 的行数/输出通道数）|
+|0x7CE|`MULT_LHS_ROWS`|RW|0|u32|`M`（A 的行数；`vec_mat_t` 可为 1）|
+|0x7CF|`MULT_OUT_CH`|RW|0|u32|输出通道数（s8×s16 行偏移核用）|
+|0x7D0|`MULT_NUM_COL_A`|RW|0|u32|A 展平后列数（等价 K）|
+|0x7D1|`MULT_ALIGNED_COL_A`|RW|0|u32|对齐后的 K（实现相关对齐）|
+|0x7D2|`MULT_MULT_PTR`|RW|0|u32 / byte addr|s8×s16 内核专用 out_mult 数组指针|
+|0x7D3|`MULT_SHIFT_PTR`|RW|0|u32 / byte addr|s8×s16 内核专用 out_shift 数组指针|
+|0x7D4|`MULT_ROW_ADDR_OFFSET`|RW|0|u32 / byte step|行写回步距（row address offset）|
+|0x7D5|`MULT_LHS_COLS_OFFSET`|RW|0|u32 / byte step|A 的列步距（nt_t 左矩阵列步距）|
+|0x7D6|`MULT_ACT_MIN`|RW|0|s32|激活下限（最终裁剪至目标位宽）|
+|0x7D7|`MULT_ACT_MAX`|RW|0|s32|激活上限（最终裁剪至目标位宽）|
+
+> 说明：`*_PTR` 若为 0 但在当前 cfg/路径下**必需**，则 `mat_mult_t`/`vec_mat_t` 必须返回 `0x0000_0002`（§5）。
+
+### 3.1.2 字段语义与约束（规范性）
+
+- **数据指针类**（`MULT_LHS_PTR`/`_RHS_PTR`/`_DST_PTR`/`_BIAS_PTR`/`_KSUM_PTR`/`_MULT_PTR`/`_SHIFT_PTR`/`_DST_MULT_PTR`/`_DST_SHIFT_PTR`）
+    
+    - 必须为**有效可访问地址**，并满足其数据类型的自然对齐。
+        
+    - `*_PTR=0` 表示 **未提供**。当路径/模式要求该指针时，返回码 `0x02`。
+        
+    - `MULT_KSUM_PTR` 为可选优化（如内核列和预加速）；实现可忽略（读作未提供）。
+        
+- **零点/量化类**（`MULT_LHS_OFFSET`/`_RHS_OFFSET`/`_DST_OFFSET`/`_DST_MULT`/`_DST_SHIFT`/`_DST_MULT_PTR`/`_DST_SHIFT_PTR`）
+    
+    - per-tensor：使用 `_DST_MULT` 与 `_DST_SHIFT`；  
+        per-channel：使用 `_DST_MULT_PTR` 与 `_DST_SHIFT_PTR` 指向长度为 `N` 的数组。
+        
+    - `dst_shift` 右移写正（算术右移），与 NMSIS-NN/TFLM 约定一致。
+        
+    - 未提供所需量化参数 → `0x02`。
+        
+- **尺寸/几何类**（`MULT_RHS_COLS=K`，`MULT_RHS_ROWS=N`，`MULT_LHS_ROWS=M`，`MULT_NUM_COL_A`，`MULT_ALIGNED_COL_A`）
+    
+    - `K,N,M` 为非负整数；`vec_mat_t` 允许 `M=1`。
+        
+    - `MULT_NUM_COL_A` 通常等于 `K`；若实现内部对齐，`MULT_ALIGNED_COL_A` 指示对齐后的 K。
+        
+    - 若实现要求 `K` 为特定对齐（如 4 或 8），当不满足时返回 `0x03`（尺寸/对齐非法）。
+        
+- **行偏移/步距类**（`MULT_ROW_ADDR_OFFSET`，`MULT_LHS_COLS_OFFSET`）
+    
+    - 当 cfg 的 `ROW_ADDR_OFFSET_EN=1` 时，**必须**正确设置 `MULT_ROW_ADDR_OFFSET`，否则 `0x03`。
+        
+    - `MULT_LHS_COLS_OFFSET` 为 A 的列步距（字节数），在部分 NT×T 变体或 s8×s16 行偏移核中使用；未用可置 0。
+        
+- **激活裁剪**（`MULT_ACT_MIN`，`MULT_ACT_MAX`）
+    
+    - 以 s32 提供阈值；最终裁剪到 `OUT_W` 目标位宽范围。
+        
+    - 若 `ACT_MIN > ACT_MAX`，实现**可**归一化（交换）或返回 `0x03`；建议返回 `0x03` 便于软件纠正。
+        
+- **s8×s16 专用**（`MULT_OUT_CH`，`MULT_MULT_PTR`，`MULT_SHIFT_PTR`）
+    
+    - 仅在选择 s8×s16 行偏移核路径时生效；其它路径**可忽略**（读作未使用）。
+        
+    - `MULT_OUT_CH` 应与 `N` 一致或由实现定义映射；不一致 → `0x03`。
+        
+
+---
+
+## 3.2 兼容性/保留区（规范性）
+
+- **0x7C0–0x7D7**：保留给 MULT 组（本规范定义）。
+    
+- **0x7D8–0x7EF**：预留（RES0）。实现不得使用；软件必须写 0。
+    
+- **0x7F0–0x806**：分配给 DWConv 组（见 §3.3）。
+    
+- 未来扩展应优先占用 **0x7D8–0x7EF** 区间。
+    
+
+---
+
+## 3.3 Depthwise Conv（DWConv）参数 CSR
+
+> 适用 `dwconv_mult_4`。若不满足该指令的**前置条件**（§4.4），硬件须返回 `0x0000_0001`（不支持）。
+
+### 3.3.1 索引表（概览）
+
+|    编号 | 名称            | 访问  | 复位  | 类型/单位           | 简述（规范性）           |
+| ----: | ------------- | :-: | :-: | --------------- | ----------------- |
+| 0x7F0 | `DW_IN_PTR`   | RW  |  0  | u32 / byte addr | 输入特征图指针（s8，NHWC）  |
+| 0x7F1 | `DW_KER_PTR`  | RW  |  0  | u32 / byte addr | Kernel 指针（s8）     |
+| 0x7F2 | `DW_BIAS_PTR` | RW  |  0  | u32 / byte addr | Bias 指针（s32；允许 0） |
+| 0x7F3 | `DW_OUT_PTR`  | RW  |  0  | u32 / byte addr | 输出特征图指针（s8）       |
+| 0x7F4 | `DW_IN_X`     | RW  |  0  | u32             | 输入宽               |
+| 0x7F5 | `DW_IN_Y`     | RW  |  0  | u32             | 输入高               |
+| 0x7F6 | `DW_IN_CH`    | RW  |  0  | u32             | 输入通道              |
+| 0x7F7 | `DW_OUT_CH`   | RW  |  0  | u32             | 输出通道              |
+| 0x7F8 | `DW_CH_MULT`  | RW  |  0  | u32             | 通道倍增（ch_mult）     |
+| 0x7F9 | `DW_KER_X`    | RW  |  0  | u32             | Kernel 宽          |
+| 0x7FA | `DW_KER_Y`    | RW  |  0  | u32             | Kernel 高          |
+| 0x7FB | `DW_PAD_X`    | RW  |  0  | u32             | Padding X         |
+| 0x7FC | `DW_PAD_Y`    | RW  |  0  | u32             | Padding Y         |
+| 0x7FD | `DW_STRIDE_X` | RW  |  0  | u32             | 步幅 X              |
+| 0x7FE | `DW_STRIDE_Y` | RW  |  0  | u32             | 步幅 Y              |
+| 0x7FF | `DW_SHFT_PTR` | RW  |  0  | u32 / byte addr | output_shift 数组指针 |
+| 0x800 | `DW_MULT_PTR` | RW  |  0  | u32 / byte addr | output_mult 数组指针  |
+| 0x801 | `DW_OUT_X`    | RW  |  0  | u32             | 输出宽               |
+| 0x802 | `DW_OUT_Y`    | RW  |  0  | u32             | 输出高               |
+| 0x803 | `DW_OUT_OFFS` | RW  |  0  | s32             | 输出零点（offset）      |
+| 0x804 | `DW_IN_OFFS`  | RW  |  0  | s32             | 输入零点（offset）      |
+| 0x805 | `DW_ACT_MIN`  | RW  |  0  | s32             | 激活下限              |
+| 0x806 | `DW_ACT_MAX`  | RW  |  0  | s32             | 激活上限              |
+
+### 3.3.2 字段语义与前置条件（规范性）
+
+- **`dwconv_mult_4` 加速前置条件**（全部满足）：
+    
+    1. `DW_CH_MULT % 4 == 0`；
+        
+    2. `N == 1`（本算子无 batch 展开；实现以单图像为单位）；
+        
+    3. 膨胀 `dilation.{x,y} == 1`（本规范不经由 CSR 暴露膨胀，固定为 1）。  
+        不满足时返回 `0x0000_0001`。
+        
+- **量化参数**：`DW_MULT_PTR`/`DW_SHFT_PTR` 指向长度为 **`DW_OUT_CH`** 的数组；缺失 → `0x02`。
+    
+- **几何一致性**：`DW_OUT_X/Y` 应与由输入/步幅/填充/Kernel 推导的尺寸一致；不一致 → `0x03`。
+    
+- **通道一致性**：若 `DW_OUT_CH != DW_IN_CH * DW_CH_MULT` → `0x03`。
+    
+- **零点与激活**：按 s32 提供；最终裁剪至 s8 写回。
+    
+- **布局**：默认 NHWC；若实现支持其他布局，应由实现文档说明额外 CSR 或模式位（本规范不展开）。
+    
+
+---
+
+## 3.4 编程模型（信息性，推荐）
+
+### 3.4.1 MULT 最小配置序（per-tensor）
+
+1. 设置 A/B/C 指针与偏移：`MULT_LHS_PTR/_RHS_PTR/_DST_PTR`，`MULT_LHS_OFFSET/_RHS_OFFSET/_DST_OFFSET`。
+    
+2. 设置尺寸：`MULT_LHS_ROWS=M`，`MULT_RHS_COLS=K`，`MULT_RHS_ROWS=N`。
+    
+3. 设置量化（per-tensor）：`MULT_DST_MULT`，`MULT_DST_SHIFT`。
+    
+4. 可选：激活裁剪 `MULT_ACT_MIN/MAX`；行偏移核则设置 `MULT_ROW_ADDR_OFFSET` 与相关专用 CSR。
+    
+5. 发起：`mat_mult_t` 或 `vec_mat_t`（cfg 由 §3 参数与 §2 cfg 位宽匹配）。
+    
+
+### 3.4.2 MULT per-channel 差异
+
+- 第 3 步改为：`MULT_DST_MULT_PTR`、`MULT_DST_SHIFT_PTR` 指向 **N** 元素数组，并在 cfg 中置 `PER_CH=1`。
+    
+- 其余同上。
+    
+
+### 3.4.3 DWConv 最小配置序
+
+1. 设置 `DW_IN_PTR/_KER_PTR/_BIAS_PTR/_OUT_PTR` 与零点/激活。
+    
+2. 设置输入/卷积几何：`DW_IN_X/Y/CH`、`DW_KER_X/Y`、`DW_PAD_X/Y`、`DW_STRIDE_X/Y`、`DW_CH_MULT`，以及派生一致的 `DW_OUT_X/Y/CH`。
+    
+3. 量化：`DW_MULT_PTR`、`DW_SHFT_PTR`（长度 = `DW_OUT_CH`）。
+    
+4. 发起：`dwconv_mult_4`。若前置条件不满足，返回 `0x01`。
+    
