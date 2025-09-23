@@ -11,8 +11,6 @@
     
 - **访问宽度**：32-bit 对齐，读写均为 **原子 32 位**。
     
-- **特权级**：默认 **M 模式可读写**，S/U 访问行为为 “UNPREDICTABLE”（建议实现为非法指令异常）。
-    
 - **重置值**：除注明外均为 `0x0000_0000`。
     
 - **时序语义**：写入在 **同一指令退休后**对随后的计算可见；读无副作用。
@@ -83,6 +81,46 @@
 | 0x7E1 | `VMAX_VEC1_PTR` | RW  |  0  | 输入 1 指针     |
 | 0x7E2 | `VMAX_DST_PTR`  | RW  |  0  | 输出指针        |
 | 0x7E3 | `VMAX_LEN`      | RW  |  0  | 元素个数（单位：s8） |
+
+### 3.3 Depthwise Conv（深度可分卷积）参数 CSR
+
+|    编号 | 名称              | 访问  | 描述                        |
+| ------: | ----------------- | :---: | --------------------------- |
+|  0x7F0  | `DW_IN_PTR`       | RW    | 输入指针 (s8)               |
+|  0x7F1  | `DW_KER_PTR`      | RW    | Kernel 指针 (s8)            |
+|  0x7F2  | `DW_BIAS_PTR`     | RW    | Bias 指针 (s32，可为 0)     |
+|  0x7F3  | `DW_OUT_PTR`      | RW    | 输出指针 (s8)               |
+|  0x7F4  | `DW_IN_X`         | RW    | 输入宽                      |
+|  0x7F5  | `DW_IN_Y`         | RW    | 输入高                      |
+|  0x7F6  | `DW_IN_CH`        | RW    | 输入通道数                  |
+|  0x7F7  | `DW_OUT_CH`       | RW    | 输出通道数                  |
+|  0x7F8  | `DW_CH_MULT`      | RW    | 通道倍数 (ch_mult)          |
+|  0x7F9  | `DW_KER_X`        | RW    | Kernel 宽                   |
+|  0x7FA  | `DW_KER_Y`        | RW    | Kernel 高                   |
+|  0x7FB  | `DW_PAD_X`        | RW    | Padding X                   |
+|  0x7FC  | `DW_PAD_Y`        | RW    | Padding Y                   |
+|  0x7FD  | `DW_STRIDE_X`     | RW    | 步幅 X                      |
+|  0x7FE  | `DW_STRIDE_Y`     | RW    | 步幅 Y                      |
+|  0x7FF  | `DW_SHFT_PTR`     | RW    | output_shift 数组指针        |
+|  0x800  | `DW_MULT_PTR`     | RW    | output_mult 数组指针         |
+|  0x801  | `DW_OUT_X`        | RW    | 输出宽                      |
+|  0x802  | `DW_OUT_Y`        | RW    | 输出高                      |
+|  0x803  | `DW_OUT_OFFS`     | RW    | 输出 offset                  |
+|  0x804  | `DW_IN_OFFS`      | RW    | 输入 offset                  |
+|  0x805  | `DW_ACT_MIN`      | RW    | 激活下限                     |
+|  0x806  | `DW_ACT_MAX`      | RW    | 激活上限                     |
+
+### 3.4 VSUM（向量累加）参数 CSR
+
+|    编号 | 名称              | 访问  | 描述                        |
+| ------: | ----------------- | :---: | --------------------------- |
+|  0x808  | `VSUM_BUF_PTR`    | RW    | 输出缓冲指针 (s32)          |
+|  0x809  | `VSUM_COLS`       | RW    | 列数                        |
+|  0x80A  | `VSUM_ROWS`       | RW    | 行数                        |
+|  0x80B  | `VSUM_DATA_PTR`   | RW    | 输入向量指针 (s8)           |
+|  0x80C  | `VSUM_LHS_OFFS`   | RW    | lhs_offset                  |
+|  0x80D  | `VSUM_RHS_OFFS`   | RW    | rhs_offset                  |
+|  0x80E  | `VSUM_BIAS_PTR`   | RW    | bias_data 指针              |
 
 > **备注**：以上编号为建议分配；实现可在同一窗口内重映射，但应保持**连续且稳定**，并在实现文档中声明。
 
@@ -208,4 +246,4 @@ CSR_WR(0x7CB, (uint32_t)dst_shift);      // per-ch
 - **s8×s16 内核**：增加 `OUT_CH`、`MULT_PTR`、`SHIFT_PTR`。
     
 - **VMAX**：`VMAX_VEC0_PTR/VMAX_VEC1_PTR/VMAX_DST_PTR/VMAX_LEN`。
-    
+
