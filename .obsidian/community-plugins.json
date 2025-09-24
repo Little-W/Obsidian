@@ -1,4 +1,7 @@
 [
   "obsidian-git",
-  "obsidian-plugin-toc"
+  "obsidian-plugin-toc",
+  "obsidian-markmind",
+  "obsidian-pandoc",
+  "pdf-plus"
 ]
