@@ -97,12 +97,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "TFML/面向TFLM的自定义神经网络加速指令集.md",
+                "file": "TFML/DSA 设计目标.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "面向TFLM的自定义神经网络加速指令集"
+              "title": "DSA 设计目标"
             }
           },
           {
@@ -255,13 +255,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "TFML/面向TFLM的自定义神经网络加速指令集.md",
+                "file": "TFML/DSA 设计目标.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "面向TFLM的自定义神经网络加速指令集 的大纲"
+              "title": "DSA 设计目标 的大纲"
             }
           }
         ],
@@ -288,8 +288,9 @@
   },
   "active": "1398d192bcc1fde2",
   "lastOpenFiles": [
+    "TFML/面向TFLM的自定义神经网络加速指令集.md",
     "TFML/自定义神经网络加速指令集.md",
-    "TFML/未命名 1.md",
+    "TFML/DSA 设计目标.md",
     "TFML/未命名.md",
     "TFML/TensorFlow Lite Micro 自定义内核.md",
     "未命名 2.canvas",
@@ -301,7 +302,6 @@
     "未命名 5.base",
     "未命名 4.base",
     "未命名 3.base",
-    "TFML/面向TFLM的自定义神经网络加速指令集.md",
     "TFML/废案：面向TFLM的自定义神经网络加速指令集.md",
     "未命名 1.base",
     "未命名.base",
