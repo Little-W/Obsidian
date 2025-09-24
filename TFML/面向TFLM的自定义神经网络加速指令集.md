@@ -328,35 +328,31 @@ if (status != 0) { /* 处理错误 */ }
 
 > 适用 `mat_mult_t` / `vec_mat_t`。如未特别指出，两指令共用同一组 CSR。
 
-### 3.1.1 索引表（概览）
+### 3.1.1 索引表（精简/重命名版，MMA 前缀）
 
-|    编号 | 名称                     |  访问 |  复位 | 类型/单位           | 规范性简述                                   |
-| ----: | ---------------------- | :-: | :-: | --------------- | --------------------------------------- |
-| 0x7C0 | `MULT_LHS_PTR`         |  RW |  0  | u32 / byte addr | A（LHS）基址；元素位宽由**指令**决定（s8/s16）          |
-| 0x7C1 | `MULT_RHS_PTR`         |  RW |  0  | u32 / byte addr | B（RHS）基址；**按 N×K 行主序，元素 s8**            |
-| 0x7C2 | `MULT_DST_PTR`         |  RW |  0  | u32 / byte addr | C（DST，s8）写回基址                           |
-| 0x7C3 | `MULT_BIAS_PTR`        |  RW |  0  | u32 / byte addr | Bias（s32）数组；允许为 0（无 bias）               |
-| 0x7C4 | `MULT_KSUM_PTR`        |  RW |  0  | u32 / byte addr | Kernel-sum 指针；允许为 0（实现可忽略）              |
-| 0x7C5 | `MULT_LHS_OFFSET`      |  RW |  0  | s32             | **A 的零点偏移（lhs\_offset）**；**s8/s16 均生效** |
-| 0x7C6 | `MULT_DST_OFFSET`      |  RW |  0  | s32             | 输出零点（dst\_offset）                       |
-| 0x7C7 | `MULT_DST_MULT`        |  RW |  0  | s32             | **per-tensor** 量化乘子                     |
-| 0x7C8 | `MULT_DST_SHIFT`       |  RW |  0  | s32             | **per-tensor** 量化右移（写正数=右移）             |
-| 0x7C9 | `MULT_DST_MULT_PTR`    |  RW |  0  | u32 / byte addr | **per-channel** 量化乘子数组（s32）             |
-| 0x7CA | `MULT_DST_SHIFT_PTR`   |  RW |  0  | u32 / byte addr | **per-channel** 量化右移数组（s32）             |
-| 0x7CB | `MULT_RHS_COLS`        |  RW |  0  | u32             | `K`（B 的列数/内积长度）                         |
-| 0x7CC | `MULT_RHS_ROWS`        |  RW |  0  | u32             | `N`（B 的行数/输出通道数）                        |
-| 0x7CD | `MULT_LHS_ROWS`        |  RW |  0  | u32             | `M`（A 的行数；`vec_mat_t` 可为 1）             |
-| 0x7CE | `MULT_OUT_CH`          |  RW |  0  | u32             | 输出通道数（兼容域；通常与 `N` 相等）                   |
-| 0x7CF | `MULT_NUM_COL_A`       |  RW |  0  | u32             | A 展平后列数（等价 `K`）                         |
-| 0x7D0 | `MULT_ALIGNED_COL_A`   |  RW |  0  | u32             | 对齐后的 K（实现相关上取整，如 8/16/32）               |
-| 0x7D1 | `MULT_ROW_ADDR_OFFSET` |  RW |  0  | u32 / byte step | 输出行写回步距（row stride；字节）                  |
-| 0x7D2 | `MULT_LHS_COLS_OFFSET` |  RW |  0  | u32 / byte step | A 行步距（相邻行首地址差；字节）                       |
-| 0x7D3 | `MULT_ACT_MIN`         |  RW |  0  | s32             | 激活下限（先裁剪后再饱和到 s8）                       |
-| 0x7D4 | `MULT_ACT_MAX`         |  RW |  0  | s32             | 激活上限（先裁剪后再饱和到 s8）                       |
-| 0x7D5 | `MULT_RHS_ROW_STRIDE`  |  RW |  0  | u32 / byte step | B 行步距（通常 = `K_aligned * 1` 字节）          |
+|    编号 | 名称                      |  访问 |  复位 | 类型/单位           | 规范性简述                                   |
+| ----: | ----------------------- | :-: | :-: | --------------- | --------------------------------------- |
+| 0x7C0 | MMA_LHS_BASE             |  RW |  0  | u32 / byte addr | A（LHS）基址；元素位宽由指令决定（s8/s16）          |
+| 0x7C1 | MMA_RHS_BASE             |  RW |  0  | u32 / byte addr | B（RHS）基址；按 N×K 行主序，元素 s8            |
+| 0x7C2 | MMA_DST_BASE             |  RW |  0  | u32 / byte addr | C（DST，s8）写回基址                           |
+| 0x7C3 | MMA_BIAS_BASE            |  RW |  0  | u32 / byte addr | Bias（s32）数组；允许为 0（无 bias）               |
+| 0x7C4 | MMA_KSUM_BASE            |  RW |  0  | u32 / byte addr | Kernel-sum 指针；允许为 0（实现可忽略）              |
+| 0x7C5 | MMA_LHS_OFFSET           |  RW |  0  | s32             | A 的零点偏移（lhs_offset）；s8/s16 均生效         |
+| 0x7C6 | MMA_DST_OFFSET           |  RW |  0  | s32             | 输出零点（dst_offset）                       |
+| 0x7C7 | MMA_Q_MULT_PT            |  RW |  0  | s32             | per-tensor 量化乘子                     |
+| 0x7C8 | MMA_Q_SHIFT_PT           |  RW |  0  | s32             | per-tensor 量化右移（写正数=右移）             |
+| 0x7C9 | MMA_Q_MULT_PC_BASE       |  RW |  0  | u32 / byte addr | per-channel 量化乘子数组（s32）             |
+| 0x7CA | MMA_Q_SHIFT_PC_BASE      |  RW |  0  | u32 / byte addr | per-channel 量化右移数组（s32）             |
+| 0x7CB | MMA_RHS_COLS             |  RW |  0  | u32             | K（B 的列数/内积长度）                         |
+| 0x7CC | MMA_RHS_ROWS             |  RW |  0  | u32             | N（B 的行数/输出通道数）                        |
+| 0x7CD | MMA_LHS_ROWS             |  RW |  0  | u32             | M（A 的行数；vec_mat_t 可为 1）             |
+| 0x7D0 | MMA_LHS_ROW_STRIDE_B     |  RW |  0  | u32 / byte step | A 行步距（相邻行首地址差；字节）                       |
+| 0x7D1 | MMA_DST_ROW_STRIDE_B     |  RW |  0  | u32 / byte step | 输出行写回步距（row stride；字节）                  |
+| 0x7D2 | MMA_RHS_ROW_STRIDE_B     |  RW |  0  | u32 / byte step | B 行步距（通常 = K 对齐 * 1 字节）          |
+| 0x7D3 | MMA_ACT_MIN              |  RW |  0  | s32             | 激活下限（先裁剪后再饱和到 s8）                       |
+| 0x7D4 | MMA_ACT_MAX              |  RW |  0  | s32             | 激活上限（先裁剪后再饱和到 s8）                       |
 
-
-> 说明：`*_PTR` 若为 0 但在当前 cfg/路径下**必需**，则 `mat_mult_t`/`vec_mat_t` 必须返回 `0x0000_0002`（§5）。
+> 说明：*_BASE 若为 0 但在当前 cfg/路径下必需，则 mat_mult_t/vec_mat_t 必须返回 0x0000_0002（§5）。
 
 ### 3.1.2 字段语义与约束（规范性）
 
@@ -506,4 +502,4 @@ if (status != 0) { /* 处理错误 */ }
 3. 量化：`DW_MULT_PTR`、`DW_SHFT_PTR`（长度 = `DW_OUT_CH`）。
     
 4. 发起：`dwconv_mult_4`。若前置条件不满足，返回 `0x01`。
-    
+
