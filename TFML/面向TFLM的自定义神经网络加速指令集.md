@@ -330,32 +330,32 @@ if (status != 0) { /* 处理错误 */ }
 
 ### 3.1.1 索引表（概览）
 
-|编号|名称|访问|复位|类型/单位|简述（规范性）|
-|--:|---|:-:|:-:|---|---|
-|0x7C0|`MULT_LHS_PTR`|RW|0|u32 / byte addr|左乘数 A 指针（可为向量）|
-|0x7C1|`MULT_RHS_PTR`|RW|0|u32 / byte addr|右乘数 B 指针（按 K×N 排列；见 §4）|
-|0x7C2|`MULT_DST_PTR`|RW|0|u32 / byte addr|结果 C 写回起始地址|
-|0x7C3|`MULT_BIAS_PTR`|RW|0|u32 / byte addr|Bias 数组指针；允许为 0（无 bias）|
-|0x7C4|`MULT_KSUM_PTR`|RW|0|u32 / byte addr|Kernel sum（可选）指针；允许为 0|
-|0x7C5|`MULT_LHS_OFFSET`|RW|0|s32|A 零点偏移/基准（lhs_offset）|
-|0x7C6|`MULT_RHS_OFFSET`|RW|0|s32|B 零点偏移/基准（rhs_offset）|
-|0x7C7|`MULT_DST_OFFSET`|RW|0|s32|输出零点（dst_offset）|
-|0x7C8|`MULT_DST_MULT`|RW|0|s32|per-tensor 量化乘子|
-|0x7C9|`MULT_DST_SHIFT`|RW|0|s32|per-tensor 量化右移（右移写正）|
-|0x7CA|`MULT_DST_MULT_PTR`|RW|0|u32 / byte addr|per-channel 量化乘子数组指针|
-|0x7CB|`MULT_DST_SHIFT_PTR`|RW|0|u32 / byte addr|per-channel 量化右移数组指针|
-|0x7CC|`MULT_RHS_COLS`|RW|0|u32|`K`（B 的列数/内积长度）|
-|0x7CD|`MULT_RHS_ROWS`|RW|0|u32|`N`（B 的行数/输出通道数）|
-|0x7CE|`MULT_LHS_ROWS`|RW|0|u32|`M`（A 的行数；`vec_mat_t` 可为 1）|
-|0x7CF|`MULT_OUT_CH`|RW|0|u32|输出通道数（s8×s16 行偏移核用）|
-|0x7D0|`MULT_NUM_COL_A`|RW|0|u32|A 展平后列数（等价 K）|
-|0x7D1|`MULT_ALIGNED_COL_A`|RW|0|u32|对齐后的 K（实现相关对齐）|
-|0x7D2|`MULT_MULT_PTR`|RW|0|u32 / byte addr|s8×s16 内核专用 out_mult 数组指针|
-|0x7D3|`MULT_SHIFT_PTR`|RW|0|u32 / byte addr|s8×s16 内核专用 out_shift 数组指针|
-|0x7D4|`MULT_ROW_ADDR_OFFSET`|RW|0|u32 / byte step|行写回步距（row address offset）|
-|0x7D5|`MULT_LHS_COLS_OFFSET`|RW|0|u32 / byte step|A 的列步距（nt_t 左矩阵列步距）|
-|0x7D6|`MULT_ACT_MIN`|RW|0|s32|激活下限（最终裁剪至目标位宽）|
-|0x7D7|`MULT_ACT_MAX`|RW|0|s32|激活上限（最终裁剪至目标位宽）|
+|    编号 | 名称                     | 访问  | 复位  | 类型/单位           | 简述（规范性）                     |
+| ----: | ---------------------- | :-: | :-: | --------------- | --------------------------- |
+| 0x7C0 | `MULT_LHS_PTR`         | RW  |  0  | u32 / byte addr | 左乘数 A 指针（可为向量）              |
+| 0x7C1 | `MULT_RHS_PTR`         | RW  |  0  | u32 / byte addr | 右乘数 B 指针（按 K×N 排列；见 §4）     |
+| 0x7C2 | `MULT_DST_PTR`         | RW  |  0  | u32 / byte addr | 结果 C 写回起始地址                 |
+| 0x7C3 | `MULT_BIAS_PTR`        | RW  |  0  | u32 / byte addr | Bias 数组指针；允许为 0（无 bias）     |
+| 0x7C4 | `MULT_KSUM_PTR`        | RW  |  0  | u32 / byte addr | Kernel sum（可选）指针；允许为 0      |
+| 0x7C5 | `MULT_LHS_OFFSET`      | RW  |  0  | s32             | A 零点偏移/基准（lhs_offset）       |
+| 0x7C6 | `MULT_RHS_OFFSET`      | RW  |  0  | s32             | B 零点偏移/基准（rhs_offset）       |
+| 0x7C7 | `MULT_DST_OFFSET`      | RW  |  0  | s32             | 输出零点（dst_offset）            |
+| 0x7C8 | `MULT_DST_MULT`        | RW  |  0  | s32             | per-tensor 量化乘子             |
+| 0x7C9 | `MULT_DST_SHIFT`       | RW  |  0  | s32             | per-tensor 量化右移（右移写正）       |
+| 0x7CA | `MULT_DST_MULT_PTR`    | RW  |  0  | u32 / byte addr | per-channel 量化乘子数组指针        |
+| 0x7CB | `MULT_DST_SHIFT_PTR`   | RW  |  0  | u32 / byte addr | per-channel 量化右移数组指针        |
+| 0x7CC | `MULT_RHS_COLS`        | RW  |  0  | u32             | `K`（B 的列数/内积长度）             |
+| 0x7CD | `MULT_RHS_ROWS`        | RW  |  0  | u32             | `N`（B 的行数/输出通道数）            |
+| 0x7CE | `MULT_LHS_ROWS`        | RW  |  0  | u32             | `M`（A 的行数；`vec_mat_t` 可为 1） |
+| 0x7CF | `MULT_OUT_CH`          | RW  |  0  | u32             | 输出通道数（s8×s16 行偏移核用）         |
+| 0x7D0 | `MULT_NUM_COL_A`       | RW  |  0  | u32             | A 展平后列数（等价 K）               |
+| 0x7D1 | `MULT_ALIGNED_COL_A`   | RW  |  0  | u32             | 对齐后的 K（实现相关对齐）              |
+| 0x7D2 | `MULT_MULT_PTR`        | RW  |  0  | u32 / byte addr | s8×s16 内核专用 out_mult 数组指针   |
+| 0x7D3 | `MULT_SHIFT_PTR`       | RW  |  0  | u32 / byte addr | s8×s16 内核专用 out_shift 数组指针  |
+| 0x7D4 | `MULT_ROW_ADDR_OFFSET` | RW  |  0  | u32 / byte step | 行写回步距（row address offset）   |
+| 0x7D5 | `MULT_LHS_COLS_OFFSET` | RW  |  0  | u32 / byte step | A 的列步距（nt_t 左矩阵列步距）         |
+| 0x7D6 | `MULT_ACT_MIN`         | RW  |  0  | s32             | 激活下限（最终裁剪至目标位宽）             |
+| 0x7D7 | `MULT_ACT_MAX`         | RW  |  0  | s32             | 激活上限（最终裁剪至目标位宽）             |
 
 > 说明：`*_PTR` 若为 0 但在当前 cfg/路径下**必需**，则 `mat_mult_t`/`vec_mat_t` 必须返回 `0x0000_0002`（§5）。
 
