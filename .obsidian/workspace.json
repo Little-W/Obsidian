@@ -123,14 +123,17 @@
             "id": "017d5dd1a9072350",
             "type": "leaf",
             "state": {
-              "type": "markdown",
+              "type": "canvas",
               "state": {
-                "file": "TFML/DSA模块设计文档.md",
-                "mode": "source",
-                "source": false
+                "file": "未命名 3.canvas",
+                "viewState": {
+                  "x": 0,
+                  "y": 0,
+                  "zoom": 0
+                }
               },
-              "icon": "lucide-file",
-              "title": "DSA模块设计文档"
+              "icon": "lucide-layout-dashboard",
+              "title": "未命名 3"
             }
           },
           {
@@ -283,13 +286,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "TFML/DSA模块设计文档.md",
+                "file": "未命名 3.canvas",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "DSA模块设计文档 的大纲"
+              "title": "未命名 3 的大纲"
             }
           }
         ],
@@ -316,8 +319,10 @@
   },
   "active": "017d5dd1a9072350",
   "lastOpenFiles": [
-    "TFML/DSA 设计目标.md",
+    "2025-09-25.md",
+    "未命名 3.canvas",
     "TFML/DSA模块设计文档.md",
+    "TFML/DSA 设计目标.md",
     "未命名 2",
     "TFML/面向TFLM的自定义神经网络加速指令集.md",
     "TFML/ICB非对齐访存模块.md",
@@ -352,8 +357,6 @@
     "AMBA/APB.md",
     "RISC-V & CPU/CSR定义/mcause.md",
     "竞业达杯/PLIC.md",
-    "RISC-V & CPU/CSR定义/tselect.md",
-    "RISC-V & CPU/CSR定义/mie.md",
-    "RISC-V & CPU/CSR定义/mstatus.md"
+    "RISC-V & CPU/CSR定义/tselect.md"
   ]
 }

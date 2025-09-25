@@ -314,19 +314,19 @@ weight_out[3] = {0,   0,   0, 0}    // 第3行：全零（超出valid_row_num）
 
 **端口**
 
-| 端口                                         | 方向  |             位宽 | 描述                         |
-| ------------------------------------------ | --- | -------------: | -------------------------- |
-| `init_bias_cfg`                            | In  |              1 | 初始化/装载 bias 的阶段标志。         |
-| `need_bias`                                | In  |              1 | 1：加 bias；0：透传。             |
-| `bias_data_in`                             | In  |    `BUS_WIDTH` | 从内存读回的 s32 bias 数据（或按列分发）。 |
-| `bias_wr_addr/bias_wr_en`                  | In  | ⌈log2(SIZE)⌉/1 | 写入内部 bias 缓冲。              |
-| `valid_row_num`                            | In  |   ⌈log2(SIZE)⌉ | 有效输出行数（用于屏蔽）。              |
-| `data_in[SIZE]`                            | In  |            s32 | 来自累加阵列。                    |
-| `calc_done_i/valid_depth_i/is_init_data_i` | In  |              - | 同步边界信号。                    |
+| 端口                                         | 方向  |             位宽 | 描述                              |
+| ------------------------------------------ | --- | -------------: | ------------------------------- |
+| `init_bias_cfg`                            | In  |              1 | 初始化/装载 bias 的阶段标志。              |
+| `need_bias`                                | In  |              1 | 1：加 bias；0：透传。                  |
+| `bias_data_in`                             | In  |    `BUS_WIDTH` | 从内存读回的 s32 bias 数据（或按列分发）。      |
+| `bias_wr_addr/bias_wr_en`                  | In  | ⌈log2(SIZE)⌉/1 | 写入内部 bias 缓冲。                   |
+| `valid_row_num`                            | In  |   ⌈log2(SIZE)⌉ | 有效输出行数（用于屏蔽）。                   |
+| `data_in[SIZE]`                            | In  |            s32 | 来自累加阵列。                         |
+| `calc_done_i/valid_depth_i/is_init_data_i` | In  |              - | 同步边界信号。                         |
 | `bias_loading_done`                        | Out |              1 | 行偏置数据有效指示（向控制器或下游模块指示当前偏置行已就绪）。 |
-| `data_out[SIZE]`                           | Out |            s32 | 加偏置后的结果。                   |
-| `output_valid_o`                           | Out |              1 | 有效输出到 Requant。             |
-| `valid_depth_o/is_init_data_o`             | Out |              - | 透传边界信息。                    |
+| `data_out[SIZE]`                           | Out |            s32 | 加偏置后的结果。                        |
+| `output_valid_o`                           | Out |              1 | 有效输出到 Requant。                  |
+| `valid_depth_o/is_init_data_o`             | Out |              - | 透传边界信息。                         |
 
 **操作约定**
 
