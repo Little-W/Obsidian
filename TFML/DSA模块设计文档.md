@@ -323,6 +323,7 @@ weight_out[3] = {0,   0,   0, 0}    // 第3行：全零（超出valid_row_num）
 | `valid_row_num`                            | In  |   ⌈log2(SIZE)⌉ | 有效输出行数（用于屏蔽）。              |
 | `data_in[SIZE]`                            | In  |            s32 | 来自累加阵列。                    |
 | `calc_done_i/valid_depth_i/is_init_data_i` | In  |              - | 同步边界信号。                    |
+| `bias_loading_done`                        | Out |              1 | 行偏置数据有效指示（向控制器或下游模块指示当前偏置行已就绪）。 |
 | `data_out[SIZE]`                           | Out |            s32 | 加偏置后的结果。                   |
 | `output_valid_o`                           | Out |              1 | 有效输出到 Requant。             |
 | `valid_depth_o/is_init_data_o`             | Out |              - | 透传边界信息。                    |
@@ -330,6 +331,36 @@ weight_out[3] = {0,   0,   0, 0}    // 第3行：全零（超出valid_row_num）
 **操作约定**
 
 * 按输出通道（列）对齐 bias；`need_bias=0` 时直通。边界行屏蔽无效写。
+
+* 设计说明（偏置加法控制器）
+
+  1. 双缓冲区交替运行：
+     - 内部采用双缓冲（buffer0 / buffer1），每个缓冲区可存储 `SIZE×SIZE` 个 s32 偏置数据。
+     - 在任一时刻，仅允许一个缓冲区用于输出到加法器；另一个缓冲区用于接收外部写入（由 `bias_wr_addr/bias_wr_en` 驱动）。
+     - 当前输出缓冲区输出完成后切换角色，从而实现读写分离、提高吞吐。
+
+  2. init_bias_cfg 触发与配置锁存：
+     - `init_bias_cfg` 为单拍触发信号，触发时模块应锁存当前的 `valid_row_num` 和 `need_bias`。
+     - 锁存参数用于控制后续偏置输出行数及是否执行偏置加法。
+     - 触发后启动当前接收缓冲区的数据写入流程，外部可通过 `bias_wr_addr/bias_wr_en` 向接收缓冲写入偏置数据。
+
+  3. 偏置数据输出与有效指示：
+     - 当输出缓冲区每行偏置数据准备好并输出到加法器时，模块应单拍拉高 `bias_loading_done`，表示该行偏置有效并可用于加法。
+     - `bias_loading_done` 与对应行的偏置输出同拍，为控制器或下游模块提供行级就绪信息。
+
+  4. 偏置加法处理与时序：
+     - 若 `need_bias=1`：当 `data_in` 与偏置行同时到达时执行逐元素加法；结果在下一拍输出到 `data_out`（对 `data_in` 有 1 拍延迟）。
+     - 若 `need_bias=0`：直接透传 `data_in` 到 `data_out`，不产生额外延迟。
+     - 若偏置或输入数据位宽不同（`use_16bits` 等全局约定），在加法前做必要的位宽扩展/截断，以防溢出并保证在 s32 域内计算。
+
+  5. 边界与异常处理：
+     - 仅前 `valid_row_num` 行含有效偏置；超出行使用零值偏置（等价于直通）。
+     - 在缓冲区输出期间，正在输出的缓冲区对外写入操作应被禁止（写入保护），防止数据竞争。
+     - 输出完成并切换缓冲区后，模块可向控制器通知（例如 `buffer_switch_req` 或直接由 `bias_loading_done` 承载的时序信息）。
+
+  6. 状态与完成指示：
+     - 当所有锁存的有效偏置行预取并准备好输出时，可拉高 `ia_loading_done` 或通过 `bias_loading_done` 的最后一拍配合 `output_valid_o` 指示偏置加载完成（视控制器约定）。
+     - 模块应在 `init_bias_cfg` 触发后的整个生命周期内维护清晰的就绪/忙态指示，便于 `mma_controller` 协同调度。
 
 ---
 
