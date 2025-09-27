@@ -119,11 +119,13 @@ $$
 |    编号 | 名称                |  访问 |  复位 | 类型/单位 | 说明                                              |
 | ----: | ----------------- | :-: | :-: | ----- | ----------------------------------------------- |
 | 0x7C5 | `MULT_LHS_OFFSET` |  RW |  0  | s32   | **A 的零点偏移（lhs\_offset）**；**s8/s16 两种位宽下均参与计算**。 |
-| 0x7C6 | `MULT_DST_OFFSET` |  RW |  0  | s32   | 输出零点（dst\_offset）。                              |
-| 0x7C7 | `MULT_DST_MULT`   |  RW |  0  | s32   | per-tensor 量化乘子（当 `*_PTR` 为 0 时广播使用）。           |
-| 0x7C8 | `MULT_DST_SHIFT`  |  RW |  0  | s32   | per-tensor 量化右移（写正数=右移；当 `*_PTR` 为 0 时广播使用）。    |
+| 0x7C6 | `MULT_RHS_OFFSET` |  RW |  0  | s32   | **B 的零点偏移（rhs\_offset）**；通常为 0（对称量化），预留扩展。 |
+| 0x7C7 | `MULT_DST_OFFSET` |  RW |  0  | s32   | 输出零点（dst\_offset）。                              |
+| 0x7C8 | `MULT_DST_MULT`   |  RW |  0  | s32   | per-tensor 量化乘子（当 `*_PTR` 为 0 时广播使用）。           |
+| 0x7C9 | `MULT_DST_SHIFT`  |  RW |  0  | s32   | per-tensor 量化右移（写正数=右移；当 `*_PTR` 为 0 时广播使用）。    |
 | 0x7D3 | `MULT_ACT_MIN`    |  RW |  0  | s32   | 激活下限。                                           |
 | 0x7D4 | `MULT_ACT_MAX`    |  RW |  0  | s32   | 激活上限（需满足 `ACT_MIN ≤ ACT_MAX`）。                  |
+
 
 **自动选择规则（无额外 CFG 位）：**
 
