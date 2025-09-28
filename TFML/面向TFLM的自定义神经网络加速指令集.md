@@ -186,30 +186,29 @@ NICE 合规性：
 ---
 
 ## 5. 异常与错误码
-12
+
 ### 5.1 非法指令异常（架构异常）
 
 - 访问未实现/保留 CSR 编号（`csrrd/csrwr`）。
-    
 - 使用保留的 `funct3` 或保留 `funct7` 编码。
-    
 - 自定义空间以外的 opcode 误用。
-    
+
+> 说明：上述项属于架构级异常，由处理器直接触发非法指令或环境异常处理流程。
 
 ### 5.2 运行时返回码（写回到 `rd`）
+
+为简化实现与软件处理，运行时返回码仅保留最必要的几类：
 
 | 代码           | 含义                                                           |
 | ------------ | ------------------------------------------------------------ |
 | `0x00000000` | 成功                                                           |
-| `0x00000001` | 不支持/未实现的模式或位宽组合                                              |
-| `0x00000002` | 必需 CSR 缺失或指针为 0（包括 per-channel 量化指针无效）                       |
-| `0x00000003` | 尺寸/对齐非法，或启用 `ROW_ADDR_OFFSET_EN` 但未设置 `MULT_ROW_ADDR_OFFSET` |
-| `0x00000004` | 资源忙/内部阻塞（可重试）                                                |
-| `0x00000005` | 实现自定义其他错误                                                    |
+| `0x00000001` | 无效/不支持的配置或位宽/模式（包括非法位宽组合、算子模式不支持、几何不一致等） |
+| `0x00000002` | 必需资源缺失或指针为 0（例如必需的 CSR/量化指针未配置或为 0）               |
+| `0x00000003` | 资源暂时不可用 / 内部忙（可重试）                                      |
 
-> 建议实现：对不可恢复错误可在 `0x05` 同时置内部错误寄存器以便调试。
-
----
+> 说明：
+> - 设计原则为用尽量少的返回码覆盖可区分的错误类别，便于软件端采取纠正、补救或重试策略。
+> - 文档中此前引用的 `0x01`/`0x02`/`0x03` 语义已与此处对齐；实现若需更细粒度错误信息，应在实现内记录详细状态供调试使用，但对外仍返回上述简化码。
 
 ## 6. 反汇编与示例（推荐，非规范约束）
 
@@ -328,90 +327,51 @@ if (status != 0) { /* 处理错误 */ }
 
 > 适用 `mat_mult_t` / `vec_mat_t`。如未特别指出，两指令共用同一组 CSR。
 
-### 3.1.1 索引表（精简/重命名版，MMA 前缀）
+### 3.1.1 指针类
 
-|    编号 | 名称                      |  访问 |  复位 | 类型/单位           | 规范性简述                                   |
-| ----: | ----------------------- | :-: | :-: | --------------- | --------------------------------------- |
-| 0x7C0 | MMA_LHS_BASE             |  RW |  0  | u32 / byte addr | A（LHS）基址；元素位宽由指令决定（s8/s16）          |
-| 0x7C1 | MMA_RHS_BASE             |  RW |  0  | u32 / byte addr | B（RHS）基址；按 N×K 行主序，元素 s8            |
-| 0x7C2 | MMA_DST_BASE             |  RW |  0  | u32 / byte addr | C（DST，s8）写回基址                           |
-| 0x7C3 | MMA_BIAS_BASE            |  RW |  0  | u32 / byte addr | Bias（s32）数组；允许为 0（无 bias）               |
-| 0x7C4 | MMA_KSUM_BASE            |  RW |  0  | u32 / byte addr | Kernel-sum 指针；允许为 0（实现可忽略）              |
-| 0x7C5 | MMA_LHS_OFFSET           |  RW |  0  | s32             | A 的零点偏移（lhs_offset）；s8/s16 均生效         |
-| 0x7C6 | MMA_DST_OFFSET           |  RW |  0  | s32             | 输出零点（dst_offset）                       |
-| 0x7C7 | MMA_Q_MULT_PT            |  RW |  0  | s32             | per-tensor 量化乘子                     |
-| 0x7C8 | MMA_Q_SHIFT_PT           |  RW |  0  | s32             | per-tensor 量化右移（写正数=右移）             |
-| 0x7C9 | MMA_Q_MULT_PC_BASE       |  RW |  0  | u32 / byte addr | per-channel 量化乘子数组（s32）             |
-| 0x7CA | MMA_Q_SHIFT_PC_BASE      |  RW |  0  | u32 / byte addr | per-channel 量化右移数组（s32）             |
-| 0x7CB | MMA_RHS_COLS             |  RW |  0  | u32             | K（B 的列数/内积长度）                         |
-| 0x7CC | MMA_RHS_ROWS             |  RW |  0  | u32             | N（B 的行数/输出通道数）                        |
-| 0x7CD | MMA_LHS_ROWS             |  RW |  0  | u32             | M（A 的行数；vec_mat_t 可为 1）             |
-| 0x7D0 | MMA_LHS_ROW_STRIDE_B     |  RW |  0  | u32 / byte step | A 行步距（相邻行首地址差；字节）                       |
-| 0x7D1 | MMA_DST_ROW_STRIDE_B     |  RW |  0  | u32 / byte step | 输出行写回步距（row stride；字节）                  |
-| 0x7D2 | MMA_RHS_ROW_STRIDE_B     |  RW |  0  | u32 / byte step | B 行步距（通常 = K 对齐 * 1 字节）          |
-| 0x7D3 | MMA_ACT_MIN              |  RW |  0  | s32             | 激活下限（先裁剪后再饱和到 s8）                       |
-| 0x7D4 | MMA_ACT_MAX              |  RW |  0  | s32             | 激活上限（先裁剪后再饱和到 s8）                       |
+|    编号 | 名称                   |  访问 |  复位 | 类型/单位           | 说明                              |
+| ----: | -------------------- | :-: | :-: | --------------- | ------------------------------- |
+| 0x7C0 | `MULT_LHS_PTR`       |  RW |  0  | u32 / byte addr | A（LHS）基址；元素位宽由**指令**决定（s8/s16）。 |
+| 0x7C1 | `MULT_RHS_PTR`       |  RW |  0  | u32 / byte addr | B（RHS）基址；按 **N×K 行主序**，元素 s8。   |
+| 0x7C2 | `MULT_DST_PTR`       |  RW |  0  | u32 / byte addr | C（DST）写回基址；元素 s8。               |
+| 0x7C3 | `MULT_BIAS_PTR`      |  RW |  0  | u32 / byte addr | Bias（s32）数组；可为 0（无 bias）。       |
+| 0x7C4 | `MULT_DST_MULT_PTR`  |  RW |  0  | u32 / byte addr | per-channel 量化乘子数组（s32）；非 0 生效。 |
+| 0x7C5 | `MULT_DST_SHIFT_PTR` |  RW |  0  | u32 / byte addr | per-channel 量化右移数组（s32）；非 0 生效。 |
 
-> 说明：*_BASE 若为 0 但在当前 cfg/路径下必需，则 mat_mult_t/vec_mat_t 必须返回 0x0000_0002（§5）。
+> 说明：指针类 `*_PTR` 若为 0 表示未提供。若当前 cfg/路径要求该指针，则运算应返回 `0x0000_0002`（参见 §5）。
 
-### 3.1.2 字段语义与约束（规范性）
+### 3.1.2 尺寸/步进
 
-- **数据指针类**（`MULT_LHS_PTR`/`_RHS_PTR`/`_DST_PTR`/`_BIAS_PTR`/`_KSUM_PTR`/`_MULT_PTR`/`_SHIFT_PTR`/`_DST_MULT_PTR`/`_DST_SHIFT_PTR`）
-    
-    - 必须为**有效可访问地址**，并满足其数据类型的自然对齐。
-        
-    - `*_PTR=0` 表示 **未提供**。当路径/模式要求该指针时，返回码 `0x02`。
-        
-    - `MULT_KSUM_PTR` 为可选优化（如内核列和预加速）；实现可忽略（读作未提供）。
-        
-- **零点/量化类**（`MULT_LHS_OFFSET`/`_RHS_OFFSET`/`_DST_OFFSET`/`_DST_MULT`/`_DST_SHIFT`/`_DST_MULT_PTR`/`_DST_SHIFT_PTR`）
-    
-    - per-tensor：使用 `_DST_MULT` 与 `_DST_SHIFT`；  
-        per-channel：使用 `_DST_MULT_PTR` 与 `_DST_SHIFT_PTR` 指向长度为 `N` 的数组。
-        
-    - `dst_shift` 右移写正（算术右移），与 NMSIS-NN/TFLM 约定一致。
-        
-    - 未提供所需量化参数 → `0x02`。
-        
-- **尺寸/几何类**（`MULT_RHS_COLS=K`，`MULT_RHS_ROWS=N`，`MULT_LHS_ROWS=M`，`MULT_NUM_COL_A`，`MULT_ALIGNED_COL_A`）
-    
-    - `K,N,M` 为非负整数；`vec_mat_t` 允许 `M=1`。
-        
-    - `MULT_NUM_COL_A` 通常等于 `K`；若实现内部对齐，`MULT_ALIGNED_COL_A` 指示对齐后的 K。
-        
-    - 若实现要求 `K` 为特定对齐（如 4 或 8），当不满足时返回 `0x03`（尺寸/对齐非法）。
-        
-- **行偏移/步距类**（`MULT_ROW_ADDR_OFFSET`，`MULT_LHS_COLS_OFFSET`）
-    
-    - 当 cfg 的 `ROW_ADDR_OFFSET_EN=1` 时，**必须**正确设置 `MULT_ROW_ADDR_OFFSET`，否则 `0x03`。
-        
-    - `MULT_LHS_COLS_OFFSET` 为 A 的列步距（字节数），在部分 NT×T 变体或 s8×s16 行偏移核中使用；未用可置 0。
-        
-- **激活裁剪**（`MULT_ACT_MIN`，`MULT_ACT_MAX`）
-    
-    - 以 s32 提供阈值；最终裁剪到 `OUT_W` 目标位宽范围。
-        
-    - 若 `ACT_MIN > ACT_MAX`，实现**可**归一化（交换）或返回 `0x03`；建议返回 `0x03` 便于软件纠正。
-        
-- **s8×s16 专用**（`MULT_OUT_CH`，`MULT_MULT_PTR`，`MULT_SHIFT_PTR`）
-    
-    - 仅在选择 s8×s16 行偏移核路径时生效；其它路径**可忽略**（读作未使用）。
-        
-    - `MULT_OUT_CH` 应与 `N` 一致或由实现定义映射；不一致 → `0x03`。
-        
+|    编号 | 名称                     |  访问 |  复位 | 类型/单位           | 说明                                           |
+| ----: | ---------------------- | :-: | :-: | --------------- | -------------------------------------------- |
+| 0x7C6 | `MULT_RHS_COLS`        |  RW |  0  | u32             | `K`（B 的列数/内积长度）。                             |
+| 0x7C7 | `MULT_RHS_ROWS`        |  RW |  0  | u32             | `N`（B 的行数/输出通道数）。                            |
+| 0x7C8 | `MULT_LHS_ROWS`        |  RW |  0  | u32             | `M`（A 的行数；`vec_mat_t` 可为 1）。                 |
+| 0x7C9 | `MULT_OUT_CH`          |  RW |  0  | u32             | 输出通道数（兼容域；通常与 `N` 相等）。                       |
+| 0x7CA | `MULT_NUM_COL_A`       |  RW |  0  | u32             | A 展平后列数（等价 `K`）。                             |
+| 0x7CB | `MULT_ALIGNED_COL_A`   |  RW |  0  | u32             | 对齐后的 K（如 8/16/32；**必须 ≥ K**）。                |
+| 0x7CC | `MULT_ROW_ADDR_OFFSET` |  RW |  0  | u32 / byte step | 输出行写回步距（row stride；字节）。0 表示使用致密行步距 `N*1` 字节。 |
+| 0x7CD | `MULT_LHS_COLS_OFFSET` |  RW |  0  | u32 / byte step | A 行步距（相邻行首地址差；字节）。0 表示自动：s8→`K*1`，s16→`K*2`。 |
+| 0x7CE | `MULT_RHS_ROW_STRIDE`  |  RW |  0  | u32 / byte step | B 行步距（通常设为 `K_aligned * 1` 字节）。0 表示按该默认值推导。  |
 
----
+> 说明：尺寸类字段必须满足实现对齐/范围要求。若 K/N/M 等尺寸不满足实现对齐或一致性约束，应返回 `0x0000_0003`（详见 §5）。
 
-## 3.2 兼容性/保留区（规范性）
+### 3.1.3 量化/激活/类型
 
-- **0x7C0–0x7D7**：保留给 MULT 组（本规范定义）。
-    
-- **0x7D8–0x7EF**：预留（RES0）。实现不得使用；软件必须写 0。
-    
-- **0x7F0–0x806**：分配给 DWConv 组（见 §3.3）。
-    
-- 未来扩展应优先占用 **0x7D8–0x7EF** 区间。
-    
+|    编号 | 名称                |  访问 |  复位 | 类型/单位 | 说明                                              |
+| ----: | ----------------- | :-: | :-: | ----- | ----------------------------------------------- |
+| 0x7CF | `MULT_LHS_OFFSET` |  RW |  0  | s32   | **A 的零点偏移（lhs_offset）**；**s8/s16 两种位宽下均参与计算**。 |
+| 0x7D0 | `MULT_RHS_OFFSET` |  RW |  0  | s32   | **B 的零点偏移（rhs_offset）**；通常为 0（对称量化），预留扩展。 |
+| 0x7D1 | `MULT_DST_OFFSET` |  RW |  0  | s32   | 输出零点（dst_offset）。                              |
+| 0x7D2 | `MULT_DST_MULT`   |  RW |  0  | s32   | per-tensor 量化乘子（当 `*_PTR` 为 0 时广播使用）。           |
+| 0x7D3 | `MULT_DST_SHIFT`  |  RW |  0  | s32   | per-tensor 量化右移（写正数=右移；当 `*_PTR` 为 0 时广播使用）。    |
+| 0x7D4 | `MULT_ACT_MIN`    |  RW |  0  | s32   | 激活下限。                                           |
+| 0x7D5 | `MULT_ACT_MAX`    |  RW |  0  | s32   | 激活上限（需满足 `ACT_MIN ≤ ACT_MAX`）。  |
+
+> 说明：
+> - per-tensor：使用 `MULT_DST_MULT` 与 `MULT_DST_SHIFT`；per-channel：使用 `MULT_DST_MULT_PTR` 与 `MULT_DST_SHIFT_PTR` 指向长度为 `N` 的数组。
+> - `dst_shift` 写正表示右移（算术右移），与 TFLM/NMSIS-NN 约定一致。
+> - 未提供所需的量化/指针数据应导致返回码 `0x0000_0002`。 
 
 ---
 

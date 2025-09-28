@@ -78,7 +78,7 @@ $$
   * s8：`K * 1`；s16：`K * 2`；也可更大以适配外部 stride/padding。
 * **RHS（B）**：行主序，**布局 `N × K`，元素 s8**，每行对应一个输出通道的 K 权重。
 
-  * `RHS_ROW_STRIDE_B = K_aligned * 1`（可 ≥ `K`；尾部零填或内部屏蔽）。
+  * `RHS_ROW_STRIDE = K_aligned * 1`（可 ≥ `K`；尾部零填或内部屏蔽）。
 * **DST（C）**：行主序，`DST_ROW_STRIDE_B`（字节）为相邻两行输出跨度。
 
   * 常用 `N * 1`；row-offset 版本用于自定义 stride/拼接。
@@ -96,36 +96,34 @@ $$
 | 0x7C1 | `MULT_RHS_PTR`       |  RW |  0  | u32 / byte addr | B（RHS）基址；按 **N×K 行主序**，元素 s8。   |
 | 0x7C2 | `MULT_DST_PTR`       |  RW |  0  | u32 / byte addr | C（DST）写回基址；元素 s8。               |
 | 0x7C3 | `MULT_BIAS_PTR`      |  RW |  0  | u32 / byte addr | Bias（s32）数组；可为 0（无 bias）。       |
-| 0x7C4 | `MULT_KSUM_PTR`      |  RW |  0  | u32 / byte addr | Kernel-sum（可选）指针；可为 0（未使用可忽略）。  |
-| 0x7C9 | `MULT_DST_MULT_PTR`  |  RW |  0  | u32 / byte addr | per-channel 量化乘子数组（s32）；非 0 生效。 |
-| 0x7CA | `MULT_DST_SHIFT_PTR` |  RW |  0  | u32 / byte addr | per-channel 量化右移数组（s32）；非 0 生效。 |
+| 0x7C4 | `MULT_DST_MULT_PTR`  |  RW |  0  | u32 / byte addr | per-channel 量化乘子数组（s32）；非 0 生效。 |
+| 0x7C5 | `MULT_DST_SHIFT_PTR` |  RW |  0  | u32 / byte addr | per-channel 量化右移数组（s32）；非 0 生效。 |
 
 ## 6.2 尺寸/步进
 
 |    编号 | 名称                     |  访问 |  复位 | 类型/单位           | 说明                                           |
 | ----: | ---------------------- | :-: | :-: | --------------- | -------------------------------------------- |
-| 0x7CB | `MULT_RHS_COLS`        |  RW |  0  | u32             | `K`（B 的列数/内积长度）。                             |
-| 0x7CC | `MULT_RHS_ROWS`        |  RW |  0  | u32             | `N`（B 的行数/输出通道数）。                            |
-| 0x7CD | `MULT_LHS_ROWS`        |  RW |  0  | u32             | `M`（A 的行数；`vec_mat_t` 可为 1）。                 |
-| 0x7CE | `MULT_OUT_CH`          |  RW |  0  | u32             | 输出通道数（兼容域；通常与 `N` 相等）。                       |
-| 0x7CF | `MULT_NUM_COL_A`       |  RW |  0  | u32             | A 展平后列数（等价 `K`）。                             |
-| 0x7D0 | `MULT_ALIGNED_COL_A`   |  RW |  0  | u32             | 对齐后的 K（如 8/16/32；**必须 ≥ K**）。                |
-| 0x7D1 | `MULT_ROW_ADDR_OFFSET` |  RW |  0  | u32 / byte step | 输出行写回步距（row stride；字节）。0 表示使用致密行步距 `N*1` 字节。 |
-| 0x7D2 | `MULT_LHS_COLS_OFFSET` |  RW |  0  | u32 / byte step | A 行步距（相邻行首地址差；字节）。0 表示自动：s8→`K*1`，s16→`K*2`。 |
-| 0x7D5 | `MULT_RHS_ROW_STRIDE`  |  RW |  0  | u32 / byte step | B 行步距（通常设为 `K_aligned * 1` 字节）。0 表示按该默认值推导。  |
+| 0x7C6 | `MULT_RHS_COLS`        |  RW |  0  | u32             | `K`（B 的列数/内积长度）。                             |
+| 0x7C7 | `MULT_RHS_ROWS`        |  RW |  0  | u32             | `N`（B 的行数/输出通道数）。                            |
+| 0x7C8 | `MULT_LHS_ROWS`        |  RW |  0  | u32             | `M`（A 的行数；`vec_mat_t` 可为 1）。                 |
+| 0x7C9 | `MULT_OUT_CH`          |  RW |  0  | u32             | 输出通道数（兼容域；通常与 `N` 相等）。                       |
+| 0x7CA | `MULT_NUM_COL_A`       |  RW |  0  | u32             | A 展平后列数（等价 `K`）。                             |
+| 0x7CB | `MULT_ALIGNED_COL_A`   |  RW |  0  | u32             | 对齐后的 K（如 8/16/32；**必须 ≥ K**）。                |
+| 0x7CC | `MULT_ROW_ADDR_OFFSET` |  RW |  0  | u32 / byte step | 输出行写回步距（row stride；字节）。0 表示使用致密行步距 `N*1` 字节。 |
+| 0x7CD | `MULT_LHS_COLS_OFFSET` |  RW |  0  | u32 / byte step | A 行步距（相邻行首地址差；字节）。0 表示自动：s8→`K*1`，s16→`K*2`。 |
+| 0x7CE | `MULT_RHS_ROW_STRIDE`  |  RW |  0  | u32 / byte step | B 行步距（通常设为 `K_aligned * 1` 字节）。0 表示按该默认值推导。  |
 
 ## 6.3 量化/激活/类型
 
 |    编号 | 名称                |  访问 |  复位 | 类型/单位 | 说明                                              |
 | ----: | ----------------- | :-: | :-: | ----- | ----------------------------------------------- |
-| 0x7C5 | `MULT_LHS_OFFSET` |  RW |  0  | s32   | **A 的零点偏移（lhs\_offset）**；**s8/s16 两种位宽下均参与计算**。 |
-| 0x7C6 | `MULT_RHS_OFFSET` |  RW |  0  | s32   | **B 的零点偏移（rhs\_offset）**；通常为 0（对称量化），预留扩展。 |
-| 0x7C7 | `MULT_DST_OFFSET` |  RW |  0  | s32   | 输出零点（dst\_offset）。                              |
-| 0x7C8 | `MULT_DST_MULT`   |  RW |  0  | s32   | per-tensor 量化乘子（当 `*_PTR` 为 0 时广播使用）。           |
-| 0x7C9 | `MULT_DST_SHIFT`  |  RW |  0  | s32   | per-tensor 量化右移（写正数=右移；当 `*_PTR` 为 0 时广播使用）。    |
-| 0x7D3 | `MULT_ACT_MIN`    |  RW |  0  | s32   | 激活下限。                                           |
-| 0x7D4 | `MULT_ACT_MAX`    |  RW |  0  | s32   | 激活上限（需满足 `ACT_MIN ≤ ACT_MAX`）。                  |
-
+| 0x7CF | `MULT_LHS_OFFSET` |  RW |  0  | s32   | **A 的零点偏移（lhs\_offset）**；**s8/s16 两种位宽下均参与计算**。 |
+| 0x7D0 | `MULT_RHS_OFFSET` |  RW |  0  | s32   | **B 的零点偏移（rhs\_offset）**；通常为 0（对称量化），预留扩展。 |
+| 0x7D1 | `MULT_DST_OFFSET` |  RW |  0  | s32   | 输出零点（dst\_offset）。                              |
+| 0x7D2 | `MULT_DST_MULT`   |  RW |  0  | s32   | per-tensor 量化乘子（当 `*_PTR` 为 0 时广播使用）。           |
+| 0x7D3 | `MULT_DST_SHIFT`  |  RW |  0  | s32   | per-tensor 量化右移（写正数=右移；当 `*_PTR` 为 0 时广播使用）。    |
+| 0x7D4 | `MULT_ACT_MIN`    |  RW |  0  | s32   | 激活下限。                                           |
+| 0x7D5 | `MULT_ACT_MAX`    |  RW |  0  | s32   | 激活上限（需满足 `ACT_MIN ≤ ACT_MAX`）。                  |
 
 **自动选择规则（无额外 CFG 位）：**
 
