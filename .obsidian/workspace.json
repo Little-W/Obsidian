@@ -134,18 +134,6 @@
             }
           },
           {
-            "id": "e2daa1014223d47d",
-            "type": "leaf",
-            "state": {
-              "type": "release-notes",
-              "state": {
-                "currentVersion": "1.9.14"
-              },
-              "icon": "lucide-book-up",
-              "title": "版本说明 1.9.14"
-            }
-          },
-          {
             "id": "f54a8814e8e1f695",
             "type": "leaf",
             "state": {
@@ -174,7 +162,7 @@
             }
           }
         ],
-        "currentTab": 9
+        "currentTab": 8
       }
     ],
     "direction": "vertical"
@@ -295,12 +283,13 @@
             "state": {
               "type": "outline",
               "state": {
+                "file": "TFML/面向TFLM的自定义神经网络加速指令集.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "大纲"
+              "title": "面向TFLM的自定义神经网络加速指令集 的大纲"
             }
           }
         ],
@@ -325,7 +314,7 @@
       "pdf-plus:PDF++: Toggle auto-paste": false
     }
   },
-  "active": "e2daa1014223d47d",
+  "active": "017d5dd1a9072350",
   "lastOpenFiles": [
     "TFML/废案：面向TFLM的自定义神经网络加速指令集.md",
     "TFML/面向TFLM的自定义神经网络加速指令集.md",
