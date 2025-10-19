@@ -291,9 +291,19 @@
               "icon": "lucide-list",
               "title": "面向TFLM的自定义神经网络加速指令集 的大纲"
             }
+          },
+          {
+            "id": "25d16a08a7cb661d",
+            "type": "leaf",
+            "state": {
+              "type": "git-view",
+              "state": {},
+              "icon": "git-pull-request",
+              "title": "Source Control"
+            }
           }
         ],
-        "currentTab": 3
+        "currentTab": 4
       }
     ],
     "direction": "horizontal",
