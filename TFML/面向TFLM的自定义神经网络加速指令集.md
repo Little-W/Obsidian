@@ -80,18 +80,17 @@ NICE 合规性：
 
 ---
 
-## 3. 配置字（cfg）定义（适用 `mat_mult_t` / `vec_mat_t`）
+## 3. 配置字（cfg）定义（适用 `mat_mult_t`）
 
-| 位段       | 名称/编码                      | 描述                                                |
-| -------- | -------------------------- | ------------------------------------------------- |
-| \[2:0]   | `OUT_W` 输出位宽               | 000=s4, 001=s8, 010=s16, 011=s32, 100=s64（饱和截断写回） |
-| \[4:3]   | `BIAS_W` bias 位宽           | 00=s8, 01=s16, 10=s32, 11=s64                     |
-| \[6:5]   | `B_W` 右乘数位宽                | 00=s4, 01=s8, 10=s16                              |
-| \[8:7]   | `A_W` 左乘数位宽                | 00=s4, 01=s8, 10=s16                              |
-| \[9]     | `PER_CH` 量化模式              | 0=per-tensor，1=per-channel                        |
-| \[10]    | `ROW_ADDR_OFFSET_EN` 行偏移使能 | 1=启用 row\_address\_offset 路径                      |
-| \[31:11] | 保留                         | 写 0                                               |
-
+| 位段       | 名称/编码            | 描述                                                |
+| -------- | ---------------- | ------------------------------------------------- |
+| \[2:0]   | `OUT_W` 输出位宽     | 000=s4, 001=s8, 010=s16, 011=s32, 100=s64（饱和截断写回） |
+| \[4:3]   | `BIAS_W` bias 位宽 | 00=s8, 01=s16, 10=s32, 11=s64                     |
+| \[6:5]   | `B_W` 右乘数位宽      | 00=s4, 01=s8, 10=s16                              |
+| \[8:7]   | `A_W` 左乘数位宽      | 00=s4, 01=s8, 10=s16                              |
+| \[9]     | `PER_CH` 量化模式    | 0=per-tensor，1=per-channel                        |
+| \[31:10] | 保留               | 写 0                                               |
+ss
 
 **实现约束**
 
@@ -112,7 +111,7 @@ NICE 合规性：
     
     - per-tensor：`MULT_DST_MULT`、`MULT_DST_SHIFT`
         
-    - per-channel：`MULT_DST_MULT_PTR`、`MULT_DST_SHIFT_PTR`
+    - per-channel：`MULT_DST_MULT`、`MULT_DST_SHIFT` 可作为指针指向长度为 N 的数组（见 §3 寄存器映射）
         
 - **尺寸/几何**：`MULT_LHS_ROWS(M)`、`MULT_RHS_COLS(K)`、`MULT_RHS_ROWS(N)`、`MULT_ROW_ADDR_OFFSET`
     
@@ -149,6 +148,8 @@ NICE 合规性：
           acc += (int32)a * (int32)b;
     
         // 量化 & 写回
+        // 若 cfg 指定 per_channel，则从 MULT_DST_MULT/ MULT_DST_SHIFT（当作指针）加载对应通道的 mult/shift，
+        // 否则直接使用作为标量的 MULT_DST_MULT / MULT_DST_SHIFT（per-tensor）。
         {mult,shift} = per_channel ? load_q(n) : {MULT_DST_MULT, MULT_DST_SHIFT};
         x = requantize(acc, mult, shift, OUT_W);
         x = clamp(x, ACT_MIN, ACT_MAX);
@@ -199,12 +200,12 @@ NICE 合规性：
 
 为简化实现与软件处理，运行时返回码仅保留最必要的几类：
 
-| 代码           | 含义                                                           |
-| ------------ | ------------------------------------------------------------ |
-| `0x00000000` | 成功                                                           |
+| 代码           | 含义                                       |
+| ------------ | ---------------------------------------- |
+| `0x00000000` | 成功                                       |
 | `0x00000001` | 无效/不支持的配置或位宽/模式（包括非法位宽组合、算子模式不支持、几何不一致等） |
-| `0x00000002` | 必需资源缺失或指针为 0（例如必需的 CSR/量化指针未配置或为 0）               |
-| `0x00000003` | 资源暂时不可用 / 内部忙（可重试）                                      |
+| `0x00000002` | 必需资源缺失或指针为 0（例如必需的 CSR/量化指针未配置或为 0）      |
+| `0x00000003` | 资源暂时不可用 / 内部忙（可重试）                       |
 
 > 说明：
 > - 设计原则为用尽量少的返回码覆盖可区分的错误类别，便于软件端采取纠正、补救或重试策略。
@@ -272,7 +273,7 @@ enum { OUT_S4=0, OUT_S8=1, OUT_S16=2, OUT_S32=3, OUT_S64=4 };
     ```
     
 
-### 6.4 最小调用序列（示意）
+### 6.4 最小调用序（示意）
 
 ```c
 // 1) 配 CSR（指针/尺寸/量化/激活/偏移等）
@@ -282,17 +283,17 @@ csrwr(MULT_DST_PTR,   (uintptr_t)C);
 csrwr(MULT_LHS_ROWS,  M);
 csrwr(MULT_RHS_COLS,  K);
 csrwr(MULT_RHS_ROWS,  N);
-csrwr(MULT_DST_MULT,  dst_mult);              // per-tensor
-csrwr(MULT_DST_SHIFT, dst_shift);
+csrwr(MULT_DST_MULT,  dst_mult);              // per-tensor 或 指向数组的指针（per-channel）
+csrwr(MULT_DST_SHIFT, dst_shift);             // per-tensor 或 指向数组的指针（per-channel）
 csrwr(MULT_ACT_MIN,   act_min);
 csrwr(MULT_ACT_MAX,   act_max);
 // 可选：per-channel / row offset
-// csrwr(MULT_DST_MULT_PTR, ...); csrwr(MULT_DST_SHIFT_PTR, ...);
+// 若 per-channel：csrwr(MULT_DST_MULT, (uintptr_t)mult_ptr); csrwr(MULT_DST_SHIFT, (uintptr_t)shift_ptr);
 // csrwr(MULT_ROW_ADDR_OFFSET, ...);
 
 // 2) 触发
 uint32_t status;
-uint32_t cfg = MATVEC_CFG(W_S8, W_S8, BIAS_S32, OUT_S8, 0, 0);
+uint32_t cfg = MATVEC_CFG(W_S8, W_S8, BIAS_S32, OUT_S8, 1 /*per_ch*/, 0 /*row_addr=*/);
 MAT_MULT_T(status, /*dst_ptr=*/C, cfg);
 // or: VEC_MAT_T(status, C, cfg);
 
@@ -329,14 +330,12 @@ if (status != 0) { /* 处理错误 */ }
 
 ### 3.1.1 指针类
 
-|    编号 | 名称                   |  访问 |  复位 | 类型/单位           | 说明                              |
-| ----: | -------------------- | :-: | :-: | --------------- | ------------------------------- |
-| 0x7C0 | `MULT_LHS_PTR`       |  RW |  0  | u32 / byte addr | A（LHS）基址；元素位宽由**指令**决定（s8/s16）。 |
-| 0x7C1 | `MULT_RHS_PTR`       |  RW |  0  | u32 / byte addr | B（RHS）基址；按 **N×K 行主序**，元素 s8。   |
-| 0x7C2 | `MULT_DST_PTR`       |  RW |  0  | u32 / byte addr | C（DST）写回基址；元素 s8。               |
-| 0x7C3 | `MULT_BIAS_PTR`      |  RW |  0  | u32 / byte addr | Bias（s32）数组；可为 0（无 bias）。       |
-| 0x7C4 | `MULT_DST_MULT_PTR`  |  RW |  0  | u32 / byte addr | per-channel 量化乘子数组（s32）；非 0 生效。 |
-| 0x7C5 | `MULT_DST_SHIFT_PTR` |  RW |  0  | u32 / byte addr | per-channel 量化右移数组（s32）；非 0 生效。 |
+|    编号 | 名称              | 访问  | 复位  | 类型/单位           | 说明                              |
+| ----: | --------------- | :-: | :-: | --------------- | ------------------------------- |
+| 0x7C0 | `MULT_LHS_PTR`  | RW  |  0  | u32 / byte addr | A（LHS）基址；元素位宽由**指令**决定（s8/s16）。 |
+| 0x7C1 | `MULT_RHS_PTR`  | RW  |  0  | u32 / byte addr | B（RHS）基址；按 **N×K 行主序**，元素 s8。   |
+| 0x7C2 | `MULT_DST_PTR`  | RW  |  0  | u32 / byte addr | C（DST）写回基址；元素 s8。               |
+| 0x7C3 | `MULT_BIAS_PTR` | RW  |  0  | u32 / byte addr | Bias（s32）数组；可为 0（无 bias）。       |
 
 > 说明：指针类 `*_PTR` 若为 0 表示未提供。若当前 cfg/路径要求该指针，则运算应返回 `0x0000_0002`（参见 §5）。
 
@@ -358,20 +357,19 @@ if (status != 0) { /* 处理错误 */ }
 
 ### 3.1.3 量化/激活/类型
 
-|    编号 | 名称                |  访问 |  复位 | 类型/单位 | 说明                                              |
-| ----: | ----------------- | :-: | :-: | ----- | ----------------------------------------------- |
-| 0x7CF | `MULT_LHS_OFFSET` |  RW |  0  | s32   | **A 的零点偏移（lhs_offset）**；**s8/s16 两种位宽下均参与计算**。 |
-| 0x7D0 | `MULT_RHS_OFFSET` |  RW |  0  | s32   | **B 的零点偏移（rhs_offset）**；通常为 0（对称量化），预留扩展。 |
-| 0x7D1 | `MULT_DST_OFFSET` |  RW |  0  | s32   | 输出零点（dst_offset）。                              |
-| 0x7D2 | `MULT_DST_MULT`   |  RW |  0  | s32   | per-tensor 量化乘子（当 `*_PTR` 为 0 时广播使用）。           |
-| 0x7D3 | `MULT_DST_SHIFT`  |  RW |  0  | s32   | per-tensor 量化右移（写正数=右移；当 `*_PTR` 为 0 时广播使用）。    |
-| 0x7D4 | `MULT_ACT_MIN`    |  RW |  0  | s32   | 激活下限。                                           |
-| 0x7D5 | `MULT_ACT_MAX`    |  RW |  0  | s32   | 激活上限（需满足 `ACT_MIN ≤ ACT_MAX`）。  |
-
+|    编号 | 名称                | 访问  | 复位  | 类型/单位         | 说明                                                                     |
+| ----: | ----------------- | :-: | :-: | ------------- | ---------------------------------------------------------------------- |
+| 0x7CF | `MULT_LHS_OFFSET` | RW  |  0  | s32           | **A 的零点偏移（lhs_offset）**；**s8/s16 两种位宽下均参与计算**。                         |
+| 0x7D0 | `MULT_RHS_OFFSET` | RW  |  0  | s32           | **B 的零点偏移（rhs_offset）**；通常为 0（对称量化），预留扩展。                              |
+| 0x7D1 | `MULT_DST_OFFSET` | RW  |  0  | s32           | 输出零点（dst_offset）。                                                      |
+| 0x7D2 | `MULT_DST_MULT`   | RW  |  0  | s32 / u32 ptr | per-tensor 时为标量 mult；per-channel 时可存放指针（非 0 表示为地址，指向 N 元素的 mult 数组）。   |
+| 0x7D3 | `MULT_DST_SHIFT`  | RW  |  0  | s32 / u32 ptr | per-tensor 时为标量 shift；per-channel 时可存放指针（非 0 表示为地址，指向 N 元素的 shift 数组）。 |
+| 0x7D4 | `MULT_ACT_MIN`    | RW  |  0  | s32           | 激活下限。                                                                  |
+| 0x7D5 | `MULT_ACT_MAX`    | RW  |  0  | s32           | 激活上限（需满足 `ACT_MIN ≤ ACT_MAX`）。                                         |
+    
 > 说明：
-> - per-tensor：使用 `MULT_DST_MULT` 与 `MULT_DST_SHIFT`；per-channel：使用 `MULT_DST_MULT_PTR` 与 `MULT_DST_SHIFT_PTR` 指向长度为 `N` 的数组。
-> - `dst_shift` 写正表示右移（算术右移），与 TFLM/NMSIS-NN 约定一致。
-> - 未提供所需的量化/指针数据应导致返回码 `0x0000_0002`。 
+> - per-tensor：使用 `MULT_DST_MULT` 与 `MULT_DST_SHIFT`（标量）。
+> - per-channel：`MULT_DST_MULT` 与 `MULT_DST_SHIFT` 字段应保存指针（非 0），指向各通道长度为 N 的数组；指针缺失或地址为 0 应导致返回码 `0x0000_0002`。 
 
 ---
 
@@ -448,8 +446,7 @@ if (status != 0) { /* 处理错误 */ }
 
 ### 3.4.2 MULT per-channel 差异
 
-- 第 3 步改为：`MULT_DST_MULT_PTR`、`MULT_DST_SHIFT_PTR` 指向 **N** 元素数组，并在 cfg 中置 `PER_CH=1`。
-    
+- 第 3 步改为：将 `MULT_DST_MULT`、`MULT_DST_SHIFT` 写为指针，指向 **N** 元素数组，并在 cfg 中置 `PER_CH=1`（当作 pointer 使用）。
 - 其余同上。
     
 
@@ -462,4 +459,5 @@ if (status != 0) { /* 处理错误 */ }
 3. 量化：`DW_MULT_PTR`、`DW_SHFT_PTR`（长度 = `DW_OUT_CH`）。
     
 4. 发起：`dwconv_mult_4`。若前置条件不满足，返回 `0x01`。
+```
 
