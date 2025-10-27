@@ -153,12 +153,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "TFML/自定义神经网络加速指令集.md",
+                "file": "TFML/面向TFLM的自定义神经网络加速指令集.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "自定义神经网络加速指令集"
+              "title": "面向TFLM的自定义神经网络加速指令集"
             }
           },
           {
@@ -311,13 +311,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "TFML/自定义神经网络加速指令集.md",
+                "file": "TFML/面向TFLM的自定义神经网络加速指令集.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "自定义神经网络加速指令集 的大纲"
+              "title": "面向TFLM的自定义神经网络加速指令集 的大纲"
             }
           }
         ],
@@ -342,7 +342,7 @@
       "pdf-plus:PDF++: Toggle auto-paste": false
     }
   },
-  "active": "65b3fac1a2430ebc",
+  "active": "ea36be3bbc72225f",
   "lastOpenFiles": [
     "TFML/自定义神经网络加速指令集.md",
     "TFML/面向TFLM的自定义神经网络加速指令集.md",
