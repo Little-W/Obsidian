@@ -1,5 +1,10 @@
 # DSA 规格（Spec v1.0 | GEMM-INT8/INT16×INT8）
 
+# 设计目标
+
+* **兼容 NMSIS-NN 内核**：本 DSA 设计旨在完全兼容 NMSIS-NN 的相关矩阵乘法内核，确保软件接口的一致性。
+* **用于 TFLM**：通过集成到 TensorFlow Lite for Microcontrollers (TFLM)，使 TFLM 能够调用我们的加速器进行高效加速，提升嵌入式设备上的推理性能。
+
 * **LHS=ia**（输入/patch）可为 **s8 或 s16**（由指令编码决定）。
 * **RHS=weight** 始终为 **s8**（对称量化，零点 0）。
 * 之前库里的 “s8×s16” 仅是**转置/交换矩阵位置**造成的语义差异；硬件中**不交换**：始终按 **(M×K)·(K×N)**；仅改变 LHS 元素位宽。
@@ -86,55 +91,7 @@ $$
 
 ---
 
-# 6. CSR/寄存器映射
-
-## 6.1 指针类
-
-|    编号 | 名称                   |  访问 |  复位 | 类型/单位           | 说明                              |
-| ----: | -------------------- | :-: | :-: | --------------- | ------------------------------- |
-| 0x7C0 | `MULT_LHS_PTR`       |  RW |  0  | u32 / byte addr | A（LHS）基址；元素位宽由**指令**决定（s8/s16）。 |
-| 0x7C1 | `MULT_RHS_PTR`       |  RW |  0  | u32 / byte addr | B（RHS）基址；按 **N×K 行主序**，元素 s8。   |
-| 0x7C2 | `MULT_DST_PTR`       |  RW |  0  | u32 / byte addr | C（DST）写回基址；元素 s8。               |
-| 0x7C3 | `MULT_BIAS_PTR`      |  RW |  0  | u32 / byte addr | Bias（s32）数组；可为 0（无 bias）。       |
-| 0x7C4 | `MULT_DST_MULT_PTR`  |  RW |  0  | u32 / byte addr | per-channel 量化乘子数组（s32）；非 0 生效。 |
-| 0x7C5 | `MULT_DST_SHIFT_PTR` |  RW |  0  | u32 / byte addr | per-channel 量化右移数组（s32）；非 0 生效。 |
-
-## 6.2 尺寸/步进
-
-|    编号 | 名称                     |  访问 |  复位 | 类型/单位           | 说明                                           |
-| ----: | ---------------------- | :-: | :-: | --------------- | -------------------------------------------- |
-| 0x7C6 | `MULT_RHS_COLS`        |  RW |  0  | u32             | `K`（B 的列数/内积长度）。                             |
-| 0x7C7 | `MULT_RHS_ROWS`        |  RW |  0  | u32             | `N`（B 的行数/输出通道数）。                            |
-| 0x7C8 | `MULT_LHS_ROWS`        |  RW |  0  | u32             | `M`（A 的行数；`vec_mat_t` 可为 1）。                 |
-| 0x7C9 | `MULT_OUT_CH`          |  RW |  0  | u32             | 输出通道数（兼容域；通常与 `N` 相等）。                       |
-| 0x7CA | `MULT_NUM_COL_A`       |  RW |  0  | u32             | A 展平后列数（等价 `K`）。                             |
-| 0x7CB | `MULT_ALIGNED_COL_A`   |  RW |  0  | u32             | 对齐后的 K（如 8/16/32；**必须 ≥ K**）。                |
-| 0x7CC | `MULT_ROW_ADDR_OFFSET` |  RW |  0  | u32 / byte step | 输出行写回步距（row stride；字节）。0 表示使用致密行步距 `N*1` 字节。 |
-| 0x7CD | `MULT_LHS_COLS_OFFSET` |  RW |  0  | u32 / byte step | A 行步距（相邻行首地址差；字节）。0 表示自动：s8→`K*1`，s16→`K*2`。 |
-| 0x7CE | `MULT_RHS_ROW_STRIDE`  |  RW |  0  | u32 / byte step | B 行步距（通常设为 `K_aligned * 1` 字节）。0 表示按该默认值推导。  |
-
-## 6.3 量化/激活/类型
-
-|    编号 | 名称                |  访问 |  复位 | 类型/单位 | 说明                                              |
-| ----: | ----------------- | :-: | :-: | ----- | ----------------------------------------------- |
-| 0x7CF | `MULT_LHS_OFFSET` |  RW |  0  | s32   | **A 的零点偏移（lhs\_offset）**；**s8/s16 两种位宽下均参与计算**。 |
-| 0x7D0 | `MULT_RHS_OFFSET` |  RW |  0  | s32   | **B 的零点偏移（rhs\_offset）**；通常为 0（对称量化），预留扩展。 |
-| 0x7D1 | `MULT_DST_OFFSET` |  RW |  0  | s32   | 输出零点（dst\_offset）。                              |
-| 0x7D2 | `MULT_DST_MULT`   |  RW |  0  | s32   | per-tensor 量化乘子（当 `*_PTR` 为 0 时广播使用）。           |
-| 0x7D3 | `MULT_DST_SHIFT`  |  RW |  0  | s32   | per-tensor 量化右移（写正数=右移；当 `*_PTR` 为 0 时广播使用）。    |
-| 0x7D4 | `MULT_ACT_MIN`    |  RW |  0  | s32   | 激活下限。                                           |
-| 0x7D5 | `MULT_ACT_MAX`    |  RW |  0  | s32   | 激活上限（需满足 `ACT_MIN ≤ ACT_MAX`）。                  |
-
-**自动选择规则（无额外 CFG 位）：**
-
-* **per-channel / per-tensor**：当 `MULT_DST_MULT_PTR` 与 `MULT_DST_SHIFT_PTR` **均非 0** 时，使用 per-channel；否则使用 `MULT_DST_MULT/SHIFT`（per-tensor 广播）。
-* **输出行步距**：`MULT_ROW_ADDR_OFFSET==0` → 使用致密 `N*1` 字节；非 0 → 使用该值。
-* **LHS 行步距**：`MULT_LHS_COLS_OFFSET==0` → 自动推导（s8→`K*1`；s16→`K*2`）；非 0 → 使用该值。
-* **RHS 行步距**：`MULT_RHS_ROW_STRIDE==0` → 使用 `K_aligned * 1`；非 0 → 使用该值。
-
----
-
-# 7. 统一执行流程（硬件视角）
+# 6. 统一执行流程（硬件视角）
 
 对 `m=0..M-1`：
 
@@ -147,9 +104,9 @@ $$
 
 ---
 
-# 8. 与三种 API 的参数映射
+# 7. 与三种 API 的参数映射
 
-## 8.1 `riscv_nn_mat_mult_nt_t_s8`
+## 7.1 `riscv_nn_mat_mult_nt_t_s8`
 
 * **指令**选择 LHS=s8。
 * **CSR 赋值**：
@@ -161,12 +118,12 @@ $$
     `ROW_ADDR_OFFSET` 留 0（致密）或显式设置。
   * 量化：`LHS_OFFSET=lhs_offset`，`DST_OFFSET=dst_offset`，`ACT_MIN/MAX`，以及 per-channel/per-tensor 二选一。
 
-## 8.2 `riscv_nn_mat_mult_kernel_s8_s16`
+## 7.2 `riscv_nn_mat_mult_kernel_s8_s16`
 
 * **指令**选择 LHS=s16。
 * **LHS\_OFFSET 仍然参与计算**（与 s8 情况一致）。
-* **CSR 赋值**：`LHS_PTR=input_a(s16)`，`RHS_PTR=weight(s8, N×K)`，其余同 8.1。
+* **CSR 赋值**：`LHS_PTR=input_a(s16)`，`RHS_PTR=weight(s8, N×K)`，其余同 7.1。
 
-## 8.3 `riscv_nn_mat_mult_kernel_row_offset_s8_s16`
+## 7.3 `riscv_nn_mat_mult_kernel_row_offset_s8_s16`
 
-* 同 8.2，**另行设置** `MULT_ROW_ADDR_OFFSET = row_address_offset`（非 0，启用自定义输出行步距）。
+* 同 7.2，**另行设置** `MULT_ROW_ADDR_OFFSET = row_address_offset`（非 0，启用自定义输出行步距）。
