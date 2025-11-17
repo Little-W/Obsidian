@@ -162,6 +162,18 @@
             }
           },
           {
+            "id": "86a87d8cce506158",
+            "type": "leaf",
+            "state": {
+              "type": "release-notes",
+              "state": {
+                "currentVersion": "1.10.3"
+              },
+              "icon": "lucide-book-up",
+              "title": "版本说明 1.10.3"
+            }
+          },
+          {
             "id": "f54a8814e8e1f695",
             "type": "leaf",
             "state": {
@@ -190,7 +202,7 @@
             }
           }
         ],
-        "currentTab": 10
+        "currentTab": 11
       }
     ],
     "direction": "vertical"
@@ -342,7 +354,7 @@
       "pdf-plus:PDF++: Toggle auto-paste": false
     }
   },
-  "active": "ea36be3bbc72225f",
+  "active": "86a87d8cce506158",
   "lastOpenFiles": [
     "TFML/DSA模块设计文档.md",
     "TFML/DSA 设计目标.md",
