@@ -323,13 +323,12 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "TFML/DSA 设计目标.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "DSA 设计目标 的大纲"
+              "title": "大纲"
             }
           }
         ],
