@@ -165,12 +165,14 @@
             "id": "86a87d8cce506158",
             "type": "leaf",
             "state": {
-              "type": "release-notes",
+              "type": "markdown",
               "state": {
-                "currentVersion": "1.10.3"
+                "file": "TFML/DSA 设计目标.md",
+                "mode": "source",
+                "source": false
               },
-              "icon": "lucide-book-up",
-              "title": "版本说明 1.10.3"
+              "icon": "lucide-file",
+              "title": "DSA 设计目标"
             }
           },
           {
@@ -323,12 +325,13 @@
             "state": {
               "type": "outline",
               "state": {
+                "file": "TFML/DSA 设计目标.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "大纲"
+              "title": "DSA 设计目标 的大纲"
             }
           }
         ],
@@ -355,14 +358,14 @@
   },
   "active": "86a87d8cce506158",
   "lastOpenFiles": [
+    "TFML/面向TFLM的自定义神经网络加速指令集.md",
+    "TFML/废案：面向TFLM的自定义神经网络加速指令集.md",
+    "TFML/自定义神经网络加速指令集.md",
     "TFML/DSA模块设计文档.md",
     "TFML/DSA 设计目标.md",
     "TFML/img2col 算法实现手册.md",
     "TFML/ICB非对齐访存模块.md",
-    "TFML/面向TFLM的自定义神经网络加速指令集.md",
-    "TFML/自定义神经网络加速指令集.md",
     "conflict-files-obsidian-git.md",
-    "TFML/废案：面向TFLM的自定义神经网络加速指令集.md",
     "未命名 3.canvas",
     "2025-09-25.md",
     "未命名 2",
