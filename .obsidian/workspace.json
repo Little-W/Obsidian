@@ -176,6 +176,18 @@
             }
           },
           {
+            "id": "b7dfb0355932c440",
+            "type": "leaf",
+            "state": {
+              "type": "release-notes",
+              "state": {
+                "currentVersion": "1.10.6"
+              },
+              "icon": "lucide-book-up",
+              "title": "版本说明 1.10.6"
+            }
+          },
+          {
             "id": "f54a8814e8e1f695",
             "type": "leaf",
             "state": {
@@ -204,7 +216,7 @@
             }
           }
         ],
-        "currentTab": 11
+        "currentTab": 12
       }
     ],
     "direction": "vertical"
@@ -356,7 +368,7 @@
       "pdf-plus:PDF++: Toggle auto-paste": false
     }
   },
-  "active": "86a87d8cce506158",
+  "active": "b7dfb0355932c440",
   "lastOpenFiles": [
     "TFML/自定义神经网络加速指令集.md",
     "TFML/DSA 设计目标.md",
