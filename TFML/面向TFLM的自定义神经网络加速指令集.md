@@ -66,10 +66,10 @@ RISC-V 32 位基本 R-type / I-type 编码（低位在右）：
 
 通用：`rd`=状态码；`rs1`=输出起始地址（byte 指针）；s`rs2`=cfg。
 
-| 指令              | 语法                          | opcode   | funct7 | funct3（NICE） | rs2 含义    |
-| --------------- | --------------------------- | -------- | ------ | ------------ | --------- |
-| `mat_mult_t`    | `mat_mult_t rd, rs1, rs2`   | CUSTOM_1 | 0x01   | `111`        | cfg 配置字   |
-| `dwconv_mult_4` | `dwconv_mult_4 rd, rs1, x0` | CUSTOM_1 | 0x04   | `110`        | cfg 配置字|
+| 指令              | 语法                          | opcode   | funct7 | funct3（NICE） | rs2 含义  |
+| --------------- | --------------------------- | -------- | ------ | ------------ | ------- |
+| `mat_mult_t`    | `mat_mult_t rd, rs1, rs2`   | CUSTOM_1 | 0x01   | `111`        | cfg 配置字 |
+| `dwconv_mult_4` | `dwconv_mult_4 rd, rs1, x0` | CUSTOM_1 | 0x04   | `110`        | cfg 配置字 |
 
 NICE 合规性：
 
@@ -341,14 +341,14 @@ if (status != 0) { /* 处理错误 */ }
 
 ### 3.1.2 尺寸/步进
 
-|    编号 | 名称                     | 访问  | 复位  | 类型/单位           | 说明                                           |     |
-| ----: | ---------------------- | :-: | :-: | --------------- | -------------------------------------------- | --- |
-| 0x7C4 | `MULT_LHS_ROWS`        | RW  |  0  | u32             | `K`（A 的行数）。                                  |     |
-| 0x7C5 | `MULT_RHS_COLS`        | RW  |  0  | u32             | `N`（B 的行数/内积长度）。                             |     |
-| 0x7C6 | `MULT_RHS_ROWS`        | RW  |  0  | u32             | `M`（B 的列数/输出通道数）。                            |     |
-| 0x7C7 | `MULT_ROW_ADDR_OFFSET` | RW  |  0  | u32 / byte step | 输出行写回步距（row stride；字节）。0 表示使用致密行步距 `N*1` 字节。 |     |
-| 0x7C8 | `MULT_LHS_COLS_OFFSET` | RW  |  0  | u32 / byte step | A 行步距（相邻行首地址差；字节）。0 表示自动：s8→`K*1`，s16→`K*2`。 |     |
-| 0x7C9 | `MULT_RHS_ROW_STRIDE`  | RW  |  0  | u32 / byte step | B 行步距（通常设为 `K_aligned * 1` 字节）。0 表示按该默认值推导。  |     |
+|    编号 | 名称                     |  访问 |  复位 | 类型/单位           | 说明                                           |
+| ----: | ---------------------- | :-: | :-: | --------------- | -------------------------------------------- |
+| 0x7C4 | `MULT_LHS_ROWS`        |  RW |  0  | u32             | `K`（A 的行数）。                             |
+| 0x7C5 | `MULT_RHS_COLS`        |  RW |  0  | u32             | `N`（B 的行数/内积长度）。                             |
+| 0x7C6 | `MULT_RHS_ROWS`        |  RW |  0  | u32             | `M`（B 的列数/输出通道数）。                            |         |
+| 0x7C7 | `MULT_ROW_ADDR_OFFSET` |  RW |  0  | u32 / byte step | 输出行写回步距（row stride；字节）。0 表示使用致密行步距 `N*1` 字节。 |
+| 0x7C8 | `MULT_LHS_COLS_OFFSET` |  RW |  0  | u32 / byte step | A 行步距（相邻行首地址差；字节）。0 表示自动：s8→`K*1`，s16→`K*2`。 |
+| 0x7C9 | `MULT_RHS_ROW_STRIDE`  |  RW |  0  | u32 / byte step | B 行步距（通常设为 `K_aligned * 1` 字节）。0 表示按该默认值推导。  |
 
 > 说明：尺寸类字段必须满足实现对齐/范围要求。若 K/N/M 等尺寸不满足实现对齐或一致性约束，应返回 `0x0000_0003`（详见 §5）。
 
