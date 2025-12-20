@@ -207,12 +207,14 @@
             "id": "128e576c61714c62",
             "type": "leaf",
             "state": {
-              "type": "release-notes",
+              "type": "markdown",
               "state": {
-                "currentVersion": "1.10.6"
+                "file": "UVM/SV基础.md",
+                "mode": "source",
+                "source": false
               },
-              "icon": "lucide-book-up",
-              "title": "Release Notes 1.10.6"
+              "icon": "lucide-file",
+              "title": "SV基础"
             }
           }
         ],
@@ -337,12 +339,13 @@
             "state": {
               "type": "outline",
               "state": {
+                "file": "UVM/SV基础.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline"
+              "title": "Outline of SV基础"
             }
           }
         ],
@@ -360,13 +363,19 @@
       "daily-notes:Open today's daily note": false,
       "templates:Insert template": false,
       "command-palette:Open command palette": false,
-      "bases:Create new base": false
+      "bases:Create new base": false,
+      "obsidian-git:Open Git source control": false,
+      "pdf-plus:PDF++: Toggle auto-copy": false,
+      "pdf-plus:PDF++: Toggle auto-focus": false,
+      "pdf-plus:PDF++: Toggle auto-paste": false
     }
   },
   "active": "128e576c61714c62",
   "lastOpenFiles": [
     "UVM/UVM基础.md",
     "UVM/SV基础.md",
+    "2025-09-25.md",
+    "GCC.md",
     "TFML/DSA 设计目标.md",
     "未命名 3",
     "未命名 6.base",
@@ -379,7 +388,6 @@
     "TFML/ICB非对齐访存模块.md",
     "conflict-files-obsidian-git.md",
     "未命名 3.canvas",
-    "2025-09-25.md",
     "未命名 2",
     "TFML/未命名.md",
     "TFML/TensorFlow Lite Micro 自定义内核.md",
@@ -403,7 +411,6 @@
     "端侧AI/TVM.md",
     "FPU/DIV & Sqrt.md",
     "RISC-V & CPU/Float.md",
-    "AMBA/APB.md",
-    "RISC-V & CPU/CSR定义/mcause.md"
+    "AMBA/APB.md"
   ]
 }
