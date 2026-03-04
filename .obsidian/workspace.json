@@ -216,9 +216,21 @@
               "icon": "lucide-file",
               "title": "未命名"
             }
+          },
+          {
+            "id": "ffbbe6044b948e1c",
+            "type": "leaf",
+            "state": {
+              "type": "release-notes",
+              "state": {
+                "currentVersion": "1.11.7"
+              },
+              "icon": "lucide-book-up",
+              "title": "版本说明 1.11.7"
+            }
           }
         ],
-        "currentTab": 14
+        "currentTab": 15
       }
     ],
     "direction": "vertical"
@@ -339,13 +351,12 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "未命名.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "未命名 的大纲"
+              "title": "大纲"
             }
           }
         ],
@@ -357,7 +368,7 @@
   },
   "left-ribbon": {
     "hiddenItems": {
-      "bases:创建新数据库": false,
+      "bases:新建数据库": false,
       "switcher:打开快速切换": false,
       "graph:查看关系图谱": false,
       "canvas:新建白板": false,
@@ -370,7 +381,7 @@
       "pdf-plus:PDF++: Toggle auto-paste": false
     }
   },
-  "active": "9ee54b6d41291792",
+  "active": "ffbbe6044b948e1c",
   "lastOpenFiles": [
     "UVM/SV基础.md",
     "未命名.md",
