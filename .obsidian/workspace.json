@@ -134,6 +134,18 @@
             }
           },
           {
+            "id": "ff4573fd7be0cfac",
+            "type": "leaf",
+            "state": {
+              "type": "release-notes",
+              "state": {
+                "currentVersion": "1.12.7"
+              },
+              "icon": "lucide-book-up",
+              "title": "版本说明 1.12.7"
+            }
+          },
+          {
             "id": "f54a8814e8e1f695",
             "type": "leaf",
             "state": {
@@ -162,7 +174,7 @@
             }
           }
         ],
-        "currentTab": 8
+        "currentTab": 9
       }
     ],
     "direction": "vertical"
@@ -311,7 +323,7 @@
   },
   "left-ribbon": {
     "hiddenItems": {
-      "bases:创建新数据库": false,
+      "bases:新建数据库": false,
       "switcher:打开快速切换": false,
       "graph:查看关系图谱": false,
       "canvas:新建白板": false,
@@ -324,7 +336,7 @@
       "pdf-plus:PDF++: Toggle auto-paste": false
     }
   },
-  "active": "017d5dd1a9072350",
+  "active": "ff4573fd7be0cfac",
   "lastOpenFiles": [
     "TFML/面向TFLM的自定义神经网络加速指令集.md",
     "TFML/废案：面向TFLM的自定义神经网络加速指令集.md",
