@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "欢迎.md",
+                "file": "端侧AI/TVM.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "欢迎"
+              "title": "TVM"
             }
           }
         ]
@@ -194,14 +194,15 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "87da939c84f5a4fd",
+  "active": "92d37c4bda09db75",
   "lastOpenFiles": [
+    "NPU设计",
+    "端侧AI/基于RISC-V RVV加速裸机平台运行大型语言模型开源方案研究.md",
+    "竞业达杯/PLIC.md",
+    "欢迎.md",
     "未命名.md",
     "GCC.md",
-    "欢迎.md",
-    "竞业达杯/PLIC.md",
     "竞业达杯",
-    "端侧AI/基于RISC-V RVV加速裸机平台运行大型语言模型开源方案研究.md",
     "端侧AI/TVM.md",
     "端侧AI",
     "UVM/UVM基础.md",
@@ -225,7 +226,6 @@
     "RISC-V & CPU/CSR定义/dcsr.md",
     "RISC-V & CPU/RVV.md",
     "RISC-V & CPU/ALL CSRs.md",
-    "RISC-V & CPU/GPRs.md",
     "RISC-V & CPU/CSR定义",
     "RISC-V & CPU",
     "FPU",
