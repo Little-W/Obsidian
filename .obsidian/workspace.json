@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "端侧AI/TVM.md",
+                "file": "NPU 验证：从 BT 到算子.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "TVM"
+              "title": "NPU 验证：从 BT 到算子"
             }
           }
         ]
@@ -156,13 +156,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "未命名.base",
+                "file": "NPU 验证：从 BT 到算子.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "未命名 的大纲"
+              "title": "NPU 验证：从 BT 到算子 的大纲"
             }
           },
           {
@@ -176,11 +176,11 @@
             }
           }
         ],
-        "currentTab": 5
+        "currentTab": 4
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 435.5
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -194,8 +194,12 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "92d37c4bda09db75",
+  "active": "68321ffa88c7a3e5",
   "lastOpenFiles": [
+    "未命名.canvas",
+    "NPU 验证：从 BT 到算子.md",
+    "端侧AI/TVM.md",
+    "NPU 验证  从 bt 到 算子.md",
     "NPU设计",
     "端侧AI/基于RISC-V RVV加速裸机平台运行大型语言模型开源方案研究.md",
     "竞业达杯/PLIC.md",
@@ -203,7 +207,6 @@
     "未命名.md",
     "GCC.md",
     "竞业达杯",
-    "端侧AI/TVM.md",
     "端侧AI",
     "UVM/UVM基础.md",
     "UVM/SV基础.md",
@@ -224,8 +227,6 @@
     "RISC-V & CPU/CSR定义/mstatus.md",
     "RISC-V & CPU/CSR定义/mcause.md",
     "RISC-V & CPU/CSR定义/dcsr.md",
-    "RISC-V & CPU/RVV.md",
-    "RISC-V & CPU/ALL CSRs.md",
     "RISC-V & CPU/CSR定义",
     "RISC-V & CPU",
     "FPU",
