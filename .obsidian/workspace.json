@@ -27,12 +27,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "验证/形式验证.md",
+                "file": "神经网络/基础layer.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "形式验证"
+              "title": "基础layer"
             }
           }
         ],
@@ -171,13 +171,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "验证/形式验证.md",
+                "file": "神经网络/基础layer.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "形式验证 的大纲"
+              "title": "基础layer 的大纲"
             }
           },
           {
@@ -212,18 +212,22 @@
   },
   "active": "044ce068849d425b",
   "lastOpenFiles": [
+    "未命名.md",
+    "VC_Formal_Quick_Reference_Guide.pdf",
+    "神经网络/基础layer.md",
+    "验证/形式验证_整理版.md",
+    "神经网络",
+    "GCC.md",
+    "欢迎.md",
+    "验证/形式验证.md",
     "验证/vc-formal-manual-en.md",
     "验证/URG.md",
     "Pasted image 20260411153545.png",
     "验证/image-1.png",
     "UVM/SV基础.md",
     "UVM/UVM基础.md",
-    "验证/形式验证.md",
     "验证/image.png",
-    "GCC.md",
     "验证",
-    "未命名.md",
-    "欢迎.md",
     "TFML/DSA模块设计文档.md",
     "TFML/自定义神经网络加速指令集.md",
     "TFML/重量化函数设计说明.md",
@@ -245,12 +249,7 @@
     "端侧AI",
     "UVM",
     "TFML/废案：面向TFLM的自定义神经网络加速指令集.md",
-    "TFML/面向TFLM的自定义神经网络加速指令集.md",
-    "TFML/TensorFlow Lite Micro 自定义内核.md",
     "TFML",
-    "RISC-V & CPU/CSR定义/tselect.md",
-    "RISC-V & CPU/CSR定义",
-    "RISC-V & CPU",
-    "FPU"
+    "RISC-V & CPU/CSR定义"
   ]
 }
