@@ -93,7 +93,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 247.5
+    "width": 200
   },
   "right": {
     "id": "b43b3c68f52b9f07",
@@ -212,8 +212,14 @@
   },
   "active": "044ce068849d425b",
   "lastOpenFiles": [
-    "GCC.md",
+    "验证/URG.md",
+    "Pasted image 20260411153545.png",
+    "验证/image-1.png",
+    "UVM/SV基础.md",
+    "UVM/UVM基础.md",
     "验证/形式验证.md",
+    "验证/image.png",
+    "GCC.md",
     "验证",
     "未命名.md",
     "欢迎.md",
@@ -236,8 +242,6 @@
     "竞业达杯/PLIC.md",
     "竞业达杯",
     "端侧AI",
-    "UVM/UVM基础.md",
-    "UVM/SV基础.md",
     "UVM",
     "TFML/废案：面向TFLM的自定义神经网络加速指令集.md",
     "TFML/面向TFLM的自定义神经网络加速指令集.md",
@@ -245,7 +249,6 @@
     "TFML",
     "RISC-V & CPU/CSR定义/tselect.md",
     "RISC-V & CPU/CSR定义/mie.md",
-    "RISC-V & CPU/CSR定义/mstatus.md",
     "RISC-V & CPU/CSR定义",
     "RISC-V & CPU",
     "FPU"
