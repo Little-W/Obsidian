@@ -172,23 +172,9 @@
               "icon": "lucide-file",
               "title": "ALL CSRs"
             }
-          },
-          {
-            "id": "7373919c392def60",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "conflict-files-obsidian-git.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "conflict-files-obsidian-git"
-            }
           }
         ],
-        "currentTab": 12
+        "currentTab": 11
       }
     ],
     "direction": "vertical"
@@ -350,11 +336,10 @@
       "pdf-plus:PDF++: Toggle auto-paste": false
     }
   },
-  "active": "7373919c392def60",
+  "active": "6edcc387690c1f43",
   "lastOpenFiles": [
-    "RISC-V & CPU/ALL CSRs.md",
     "conflict-files-obsidian-git.md",
-    "NPU 验证：从 BT 到算子.md",
+    "RISC-V & CPU/ALL CSRs.md",
     "RISC-V & CPU/CSR定义/mcause.md",
     "RISC-V & CPU/CSR定义/dcsr.md",
     "TFML/自定义神经网络加速指令集.md",
@@ -391,6 +376,7 @@
     "RISC-V & CPU/RVV.md",
     "端侧AI/基于RISC-V RVV加速裸机平台运行大型语言模型开源方案研究.md",
     "端侧AI/TVM.md",
-    "FPU/DIV & Sqrt.md"
+    "FPU/DIV & Sqrt.md",
+    "RISC-V & CPU/Float.md"
   ]
 }
