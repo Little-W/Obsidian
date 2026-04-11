@@ -212,6 +212,7 @@
   },
   "active": "044ce068849d425b",
   "lastOpenFiles": [
+    "验证/vc-formal-manual-en.md",
     "验证/URG.md",
     "Pasted image 20260411153545.png",
     "验证/image-1.png",
@@ -248,7 +249,6 @@
     "TFML/TensorFlow Lite Micro 自定义内核.md",
     "TFML",
     "RISC-V & CPU/CSR定义/tselect.md",
-    "RISC-V & CPU/CSR定义/mie.md",
     "RISC-V & CPU/CSR定义",
     "RISC-V & CPU",
     "FPU"
