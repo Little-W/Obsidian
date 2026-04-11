@@ -11,17 +11,32 @@
             "id": "1bf350ab803bdbd2",
             "type": "leaf",
             "state": {
-              "type": "split-diff-view",
+              "type": "markdown",
               "state": {
-                "aFile": "TFML/img2col 算法实现手册.md",
-                "bFile": "TFML/img2col 算法实现手册.md",
-                "aRef": ""
+                "file": "GCC.md",
+                "mode": "source",
+                "source": false
               },
-              "icon": "diff",
-              "title": "Diff: img2col 算法实现手册  (Working Tree)"
+              "icon": "lucide-file",
+              "title": "GCC"
+            }
+          },
+          {
+            "id": "044ce068849d425b",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "验证/形式验证.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "形式验证"
             }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -78,7 +93,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 247.5
   },
   "right": {
     "id": "b43b3c68f52b9f07",
@@ -156,12 +171,13 @@
             "state": {
               "type": "outline",
               "state": {
+                "file": "验证/形式验证.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "大纲"
+              "title": "形式验证 的大纲"
             }
           },
           {
@@ -179,7 +195,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 435.5
+    "width": 283.5,
+    "collapsed": true
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -193,19 +210,23 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "1bf350ab803bdbd2",
+  "active": "044ce068849d425b",
   "lastOpenFiles": [
-    "TFML/重量化函数设计说明.md",
-    "TFML/自定义神经网络加速指令集.md",
-    "TFML/DSA 设计目标.md",
+    "GCC.md",
+    "验证/形式验证.md",
+    "验证",
+    "未命名.md",
+    "欢迎.md",
     "TFML/DSA模块设计文档.md",
+    "TFML/自定义神经网络加速指令集.md",
+    "TFML/重量化函数设计说明.md",
+    "TFML/DSA 设计目标.md",
     "TFML/NMSIS的集成方法.md",
     "TFML/NMSIS NN模块函数实现.md",
     "TFML/img2col 算法实现手册.md",
     "NPU/NPU 验证：从 BT 到算子.md",
     "NPU",
     "NPU 验证：从 BT 到算子.md",
-    "GCC.md",
     "TFML/ICB非对齐访存模块.md",
     "未命名.canvas",
     "端侧AI/TVM.md",
@@ -213,8 +234,6 @@
     "NPU设计",
     "端侧AI/基于RISC-V RVV加速裸机平台运行大型语言模型开源方案研究.md",
     "竞业达杯/PLIC.md",
-    "欢迎.md",
-    "未命名.md",
     "竞业达杯",
     "端侧AI",
     "UVM/UVM基础.md",
@@ -227,10 +246,8 @@
     "RISC-V & CPU/CSR定义/tselect.md",
     "RISC-V & CPU/CSR定义/mie.md",
     "RISC-V & CPU/CSR定义/mstatus.md",
-    "RISC-V & CPU/CSR定义/mcause.md",
     "RISC-V & CPU/CSR定义",
     "RISC-V & CPU",
-    "FPU",
-    "AMBA"
+    "FPU"
   ]
 }
