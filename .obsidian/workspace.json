@@ -1,208 +1,41 @@
 {
   "main": {
-    "id": "1d4fcab5531b8125",
+    "id": "08930320eb442291",
     "type": "split",
     "children": [
       {
-        "id": "2d1a129e4c24f30f",
+        "id": "c292ba7a93d6ae13",
         "type": "tabs",
         "children": [
           {
-            "id": "0a287edd1a72e7b2",
+            "id": "1bf350ab803bdbd2",
             "type": "leaf",
             "state": {
-              "type": "markdown",
+              "type": "split-diff-view",
               "state": {
-                "file": "AMBA/AXI-4.md",
-                "mode": "preview",
-                "source": true
+                "aFile": "TFML/img2col 算法实现手册.md",
+                "bFile": "TFML/img2col 算法实现手册.md",
+                "aRef": ""
               },
-              "icon": "lucide-file",
-              "title": "AXI-4"
-            }
-          },
-          {
-            "id": "b560adef3afb7eb2",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "RISC-V & CPU/GPRs.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "GPRs"
-            }
-          },
-          {
-            "id": "a407f2fd67d406e4",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "TFML/TensorFlow Lite Micro 自定义内核.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "TensorFlow Lite Micro 自定义内核"
-            }
-          },
-          {
-            "id": "fa1c3fa57d6fa463",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "TFML/废案：面向TFLM的自定义神经网络加速指令集.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "废案：面向TFLM的自定义神经网络加速指令集"
-            }
-          },
-          {
-            "id": "56c79690f04e008c",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "TFML/面向TFLM的自定义神经网络加速指令集.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "面向TFLM的自定义神经网络加速指令集"
-            }
-          },
-          {
-            "id": "406287e479921ef7",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "TFML/未命名.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "未命名"
-            }
-          },
-          {
-            "id": "1398d192bcc1fde2",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "TFML/DSA 设计目标.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "DSA 设计目标"
-            }
-          },
-          {
-            "id": "10ddeb6e8f0a4ce0",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "TFML/DSA 设计目标.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "DSA 设计目标"
-            }
-          },
-          {
-            "id": "017d5dd1a9072350",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "RISC-V & CPU/GPRs.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "GPRs"
-            }
-          },
-          {
-            "id": "ff4573fd7be0cfac",
-            "type": "leaf",
-            "state": {
-              "type": "release-notes",
-              "state": {
-                "currentVersion": "1.12.7"
-              },
-              "icon": "lucide-book-up",
-              "title": "版本说明 1.12.7"
-            }
-          },
-          {
-            "id": "f54a8814e8e1f695",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "TFML/NMSIS NN模块函数实现.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "NMSIS NN模块函数实现"
-            }
-          },
-          {
-            "id": "6edcc387690c1f43",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "TFML/img2col 算法实现手册.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "img2col 算法实现手册"
-            }
-          },
-          {
-            "id": "63ca2eba4f54a043",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "TFML/重量化函数设计说明.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "重量化函数设计说明"
+              "icon": "diff",
+              "title": "Diff: img2col 算法实现手册  (Working Tree)"
             }
           }
-        ],
-        "currentTab": 12
+        ]
       }
     ],
     "direction": "vertical"
   },
   "left": {
-    "id": "f780a89297d3873a",
+    "id": "8c473ecaf7d35368",
     "type": "split",
     "children": [
       {
-        "id": "d5c5ca5e3e709d91",
+        "id": "cb071318e71a73c7",
         "type": "tabs",
         "children": [
           {
-            "id": "65b3fac1a2430ebc",
+            "id": "92d37c4bda09db75",
             "type": "leaf",
             "state": {
               "type": "file-explorer",
@@ -215,12 +48,12 @@
             }
           },
           {
-            "id": "e3c61d1ba7a3167e",
+            "id": "55153bdada1d7632",
             "type": "leaf",
             "state": {
               "type": "search",
               "state": {
-                "query": "tag:#AI-DSA",
+                "query": "",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -232,7 +65,7 @@
             }
           },
           {
-            "id": "2c04edbea9ca1b36",
+            "id": "8bd69a1e08adfabf",
             "type": "leaf",
             "state": {
               "type": "bookmarks",
@@ -248,20 +81,20 @@
     "width": 300
   },
   "right": {
-    "id": "858f53382b96c618",
+    "id": "b43b3c68f52b9f07",
     "type": "split",
     "children": [
       {
-        "id": "ef20b56cd80fbb74",
+        "id": "9f5b62141f1bed5d",
         "type": "tabs",
         "children": [
           {
-            "id": "865750c918af0e4d",
+            "id": "13e434464ebc655d",
             "type": "leaf",
             "state": {
               "type": "backlink",
               "state": {
-                "file": "RISC-V & CPU/CSRs.md",
+                "file": "未命名.base",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -271,32 +104,32 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "CSRs 的反向链接列表"
+              "title": "未命名 的反向链接列表"
             }
           },
           {
-            "id": "9c3f7b5638db26dc",
+            "id": "c050cd168bfe8233",
             "type": "leaf",
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "RISC-V & CPU/RVV.md",
+                "file": "未命名.base",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "RVV 的出链列表"
+              "title": "未命名 的出链列表"
             }
           },
           {
-            "id": "3476b054be19f98a",
+            "id": "df02032d240ebcb6",
             "type": "leaf",
             "state": {
               "type": "tag",
               "state": {
                 "sortOrder": "frequency",
                 "useHierarchy": true,
-                "showSearch": true,
+                "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-tags",
@@ -304,22 +137,35 @@
             }
           },
           {
-            "id": "4b522c9d7dbe1599",
+            "id": "59ca4cb24460c83b",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "添加笔记属性"
+            }
+          },
+          {
+            "id": "68321ffa88c7a3e5",
             "type": "leaf",
             "state": {
               "type": "outline",
               "state": {
-                "file": "TFML/面向TFLM的自定义神经网络加速指令集.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "面向TFLM的自定义神经网络加速指令集 的大纲"
+              "title": "大纲"
             }
           },
           {
-            "id": "25d16a08a7cb661d",
+            "id": "a6f2f7b07a10008e",
             "type": "leaf",
             "state": {
               "type": "git-view",
@@ -329,68 +175,62 @@
             }
           }
         ],
-        "currentTab": 4
+        "currentTab": 5
       }
     ],
     "direction": "horizontal",
-    "width": 332.5
+    "width": 435.5
   },
   "left-ribbon": {
     "hiddenItems": {
-      "bases:新建数据库": false,
       "switcher:打开快速切换": false,
       "graph:查看关系图谱": false,
       "canvas:新建白板": false,
       "daily-notes:打开/创建今天的日记": false,
       "templates:插入模板": false,
       "command-palette:打开命令面板": false,
-      "obsidian-git:Open Git source control": false,
-      "pdf-plus:PDF++: Toggle auto-copy": false,
-      "pdf-plus:PDF++: Toggle auto-focus": false,
-      "pdf-plus:PDF++: Toggle auto-paste": false
+      "bases:新建数据库": false,
+      "obsidian-git:Open Git source control": false
     }
   },
-  "active": "63ca2eba4f54a043",
+  "active": "1bf350ab803bdbd2",
   "lastOpenFiles": [
-    "TFML/DSA 设计目标.md",
-    "未命名.md",
-    "UVM/SV基础.md",
     "TFML/重量化函数设计说明.md",
-    "TFML/DSA模块设计文档.md",
-    "TFML/img2col 算法实现手册.md",
-    "TFML/NMSIS NN模块函数实现.md",
-    "TFML/NMSIS的集成方法.md",
-    "TFML/TensorFlow Lite Micro 自定义内核.md",
-    "欢迎.md",
-    "TFML/ICB非对齐访存模块.md",
     "TFML/自定义神经网络加速指令集.md",
+    "TFML/DSA 设计目标.md",
+    "TFML/DSA模块设计文档.md",
+    "TFML/NMSIS的集成方法.md",
+    "TFML/NMSIS NN模块函数实现.md",
+    "TFML/img2col 算法实现手册.md",
     "NPU/NPU 验证：从 BT 到算子.md",
-    "RISC-V & CPU/ALL CSRs.md",
-    "NPU 验证：从 BT 到算子.md",
     "NPU",
-    "conflict-files-obsidian-git.md",
-    "RISC-V & CPU/CSR定义/mcause.md",
-    "RISC-V & CPU/CSR定义/dcsr.md",
-    "UVM/UVM基础.md",
-    "UVM",
-    "TFML/面向TFLM的自定义神经网络加速指令集.md",
-    "TFML/废案：面向TFLM的自定义神经网络加速指令集.md",
-    "未命名 3.canvas",
-    "2025-09-25.md",
-    "未命名 2",
-    "TFML/未命名.md",
-    "未命名 2.canvas",
-    "未命名 1.canvas",
+    "NPU 验证：从 BT 到算子.md",
+    "GCC.md",
+    "TFML/ICB非对齐访存模块.md",
     "未命名.canvas",
-    "未命名 6.base",
-    "未命名 5.base",
-    "未命名 4.base",
-    "未命名 3.base",
-    "未命名 1.base",
-    "未命名.base",
-    "未命名 1",
-    "RISC-V & CPU/GPRs.md",
-    "RISC-V & CPU/RVV.md",
-    "端侧AI/基于RISC-V RVV加速裸机平台运行大型语言模型开源方案研究.md"
+    "端侧AI/TVM.md",
+    "NPU 验证  从 bt 到 算子.md",
+    "NPU设计",
+    "端侧AI/基于RISC-V RVV加速裸机平台运行大型语言模型开源方案研究.md",
+    "竞业达杯/PLIC.md",
+    "欢迎.md",
+    "未命名.md",
+    "竞业达杯",
+    "端侧AI",
+    "UVM/UVM基础.md",
+    "UVM/SV基础.md",
+    "UVM",
+    "TFML/废案：面向TFLM的自定义神经网络加速指令集.md",
+    "TFML/面向TFLM的自定义神经网络加速指令集.md",
+    "TFML/TensorFlow Lite Micro 自定义内核.md",
+    "TFML",
+    "RISC-V & CPU/CSR定义/tselect.md",
+    "RISC-V & CPU/CSR定义/mie.md",
+    "RISC-V & CPU/CSR定义/mstatus.md",
+    "RISC-V & CPU/CSR定义/mcause.md",
+    "RISC-V & CPU/CSR定义",
+    "RISC-V & CPU",
+    "FPU",
+    "AMBA"
   ]
 }
