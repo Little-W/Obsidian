@@ -41,12 +41,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "神经网络/Transfomer.md",
+                "file": "验证/VC_Formal_Quick_Reference_Guide_中文整理版.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Transfomer"
+              "title": "VC_Formal_Quick_Reference_Guide_中文整理版"
             }
           }
         ],
@@ -175,8 +175,8 @@
                 "showSearch": false,
                 "searchQuery": ""
               },
-              "icon": "lucide-archive",
-              "title": "添加笔记属性"
+              "icon": "lucide-ghost",
+              "title": "all-properties"
             }
           },
           {
@@ -214,6 +214,9 @@
   },
   "left-ribbon": {
     "hiddenItems": {
+      "pdf-plus:PDF++: Toggle auto-copy": false,
+      "pdf-plus:PDF++: Toggle auto-focus": false,
+      "pdf-plus:PDF++: Toggle auto-paste": false,
       "switcher:打开快速切换": false,
       "graph:查看关系图谱": false,
       "canvas:新建白板": false,
@@ -224,10 +227,10 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "92d37c4bda09db75",
+  "active": "bceaf0e91f75eedc",
   "lastOpenFiles": [
-    "神经网络/基础layer.md",
     "神经网络/Transfomer.md",
+    "神经网络/基础layer.md",
     "未命名",
     "验证/VC_Formal_Quick_Reference_Guide_中文整理版.md",
     "未命名.md",
