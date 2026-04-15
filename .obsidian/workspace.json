@@ -241,15 +241,16 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "3af640acb352213c",
+  "active": "92d37c4bda09db75",
   "lastOpenFiles": [
+    "信号处理/编码与校验.md",
+    "信号处理",
     "VC_Formal_UG.pdf",
     "验证/形式验证.md",
     "验证/AEP.md",
     "验证/VC_Formal_Quick_Reference_Guide_中文整理版.md",
     "神经网络/Transfomer.md",
     "神经网络/基础layer.md",
-    "未命名",
     "未命名.md",
     "VC_Formal_Quick_Reference_Guide.pdf",
     "验证/形式验证_整理版.md",
@@ -281,7 +282,6 @@
     "NPU设计",
     "竞业达杯",
     "端侧AI",
-    "UVM",
-    "TFML"
+    "UVM"
   ]
 }
