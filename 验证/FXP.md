@@ -118,6 +118,10 @@ fxp_report_rootcause
 
 当某个 FXP 属性失败时，根因分析可以帮助你找出最小的可疑路径和最关键的传播点。
 
+如果属性状态是 `pass` / `proven`，而 `rootcause_type` 显示 `not_computed`，这通常是正常现象。根因分析主要是给 `falsified` 的 FXP 属性用的；对于已经证明没有 X 传播的属性，工具不会再计算根因。
+
+如果你想看失败路径的根因，可以先确认该属性确实是 `falsified`，再对该 property 执行 `fxp_compute_rootcause` 和 `fxp_report_rootcause`。如果现在是 `pass`，一般不需要处理 `not_computed`，只要把它当成“无需根因”的结果即可。
+
 ### 5.8 自动检测所有顶层模块中的信号
 
 如果你的目标是先对整个设计或多个顶层模块做一轮 X 风险扫描，通常不需要把每个信号都手写出来。更常见的做法是让 `fxp_generate` 按默认类型直接覆盖整个设计，或者把多个顶层实例一次性传给它，让工具自动生成对应的 X 注入和观测点。
