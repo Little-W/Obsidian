@@ -198,6 +198,55 @@ fxp_report_rootcause -list
 - `-type {auto}` 会使用默认的 FXP 类型集合，适合先做全局扫描。
 - 如果你有多个顶层实例，可以把它们一次写进 scope 列表里。
 
+### 公司常用完整脚本模板
+
+下面是一版更完整的 FXP 测试脚本，适合做成项目里的标准入口。它把设计读入、顶层扫描、关键点检查、自动根因收集和结果报告串成一条完整链路。
+
+```tcl
+set_fml_appmode FXP
+set_fml_var fxp_compute_rootcause_auto true
+
+set top_scope top
+set top_scopes [list $top_scope]
+set critical_signals [list \
+	$top_scope.u_core.req \
+	$top_scope.u_core.ack \
+	$top_scope.u_periph.valid \
+	$top_scope.u_periph.ready]
+
+analyze -format sverilog -vcs {-f filelist}
+elaborate $top_scope -sva
+
+create_clock clk -period 100
+create_reset rst -sense high
+
+sim_run -stable
+sim_save_reset
+
+fxp_generate $top_scopes -name company_fxp -type {auto}
+
+foreach sig $critical_signals {
+	fxp_assert $sig
+}
+
+check_fv
+report_fv -list
+fxp_report_rootcause -list
+```
+
+这份模板的特点是：
+
+- `top_scope` 集中管理顶层实例名，换工程时只改一处。
+- `fxp_generate $top_scopes -name company_fxp -type {auto}` 会一次覆盖当前顶层实例。
+- `critical_signals` 只放少量真正关心的控制点，便于后续做精确检查。
+- `set_fml_var fxp_compute_rootcause_auto true` 会在失败时自动准备根因信息，适合回归脚本。
+
+如果你要扫多个顶层实例，把 `top_scopes` 改成多个实例名即可，例如：
+
+```tcl
+set top_scopes [list top0 top1 top2]
+```
+
 ## 6. 从终端启动
 
 如果你想直接从终端启动 FXP，最常见的方式是先准备一个 Tcl 脚本，然后用 `vcf` 读取脚本运行。
