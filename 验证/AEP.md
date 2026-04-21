@@ -239,7 +239,6 @@ report_fv -list
 ```tcl
 set_fml_appmode AEP
 
-read_file -top top -format vhdl -vcs {-f filelist}
 analyze -format vhdl -vcs {-f filelist}
 elaborate top
 

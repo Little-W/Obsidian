@@ -98,7 +98,7 @@ set_constant testmode -value 1'b0
 
 ```tcl
 sim_run -stable
-sim_force signal -apply 3'b000
+sim_force SCAN_EN -apply 1'b1
 sim_run 3 -clk clk
 sim_set_state -uninitialized -user_only -apply 0
 sim_save_reset

@@ -296,7 +296,7 @@ endproperty
 ### 5.4 非连续重复 `[=]`
 
 ```systemverilog
-event[=2]
+hit_evt[=2]
 ```
 
 表示事件出现 2 次，但中间可以夹杂其它周期。
@@ -305,7 +305,7 @@ event[=2]
 
 ```systemverilog
 sequence s_two_hits;
-	event[=2];
+	hit_evt[=2];
 endsequence
 ```
 
@@ -314,7 +314,7 @@ endsequence
 ### 5.5 goto 重复 `[->]`
 
 ```systemverilog
-event[->1]
+hit_evt[->1]
 ```
 
 表示找到第 1 次目标事件的位置。

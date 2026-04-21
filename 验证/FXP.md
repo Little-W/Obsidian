@@ -2,7 +2,7 @@
 
 本文整理 VC Formal 中 FXP 的常用用法。重点放在 X 传播验证的基本流程、常用命令、根因分析，以及可以直接参考的 Tcl 脚本用例。
 
-说明：下文里的 `<name>`、`<type>`、`<options*>` 是模板占位符，具体参数名请以你当前版本的 VC Formal 文档和项目脚本约定为准。
+说明：下文里的 `<name>`、`<type>`、`<signal_name>`、`<scope_name>`、`<options*>` 是模板占位符，具体参数名请以你当前版本的 VC Formal 文档和项目脚本约定为准。`-nox` 里的 `condition` 是关键字写法，不要写成 `-condition`。
 
 ## 1. FXP 是什么
 
@@ -94,12 +94,12 @@ fxp_generate [<list-of-scopes>] -name <my_name> -type {<list-of-types>}
 
 ```tcl
 fxp_assume -injectx [-name <name>] [-reset] [-oba] [-xassign] [-undef] [-condition <expr>] [-scope <scope_name>] <signal_name>
-fxp_assume -nox [-name <name>] [-reset] [-condition <expr>] <signal_name>
+fxp_assume -nox [-name <name>] [-reset] [condition <condition> [<signal_name>]]
 ```
 
 - `-injectx`：告诉工具在指定信号上注入 X。
 - `-nox`：告诉工具在指定信号上抑制 X。
-- `signal_name`：这里是最后一个位置参数，不要写成 `-signal`。
+- `signal_name`：这里是最后一个位置参数，不要写成 `-signal`，也不要用通配符代替真实信号名。
 
 ### 5.6 X 传播检查
 
@@ -159,7 +159,7 @@ sim_run -stable
 sim_save_reset
 
 fxp_generate -name xprop_root -type {uninit out}
-fxp_assert -name xprop_root_check {top.out*}
+fxp_assert -name xprop_root_check <signal_name>
 
 check_fv
 report_fv -list
@@ -210,8 +210,8 @@ sim_run -stable
 sim_save_reset
 
 fxp_generate -name reset_x_check -type {uninit}
-fxp_assume -injectx -name reset_x_check {rst_domain_reg*}
-fxp_assert -name reset_x_check {rst_domain_reg*}
+fxp_assume -injectx -name reset_x_check <signal_name>
+fxp_assert -name reset_x_check <signal_name>
 
 check_fv
 fxp_compute_rootcause reset_x_check
@@ -235,8 +235,8 @@ sim_run -stable
 sim_save_reset
 
 fxp_generate -name nox_control_out -type {out}
-fxp_assume -nox -name nox_control_out {control_out*}
-fxp_assert -name nox_control_out {control_out*}
+fxp_assume -nox -name nox_control_out <signal_name>
+fxp_assert -name nox_control_out <signal_name>
 
 check_fv
 report_fv -verbose
@@ -259,7 +259,7 @@ sim_run -stable
 sim_save_reset
 
 fxp_generate -name rootcause_probe -type {out}
-fxp_assert -name rootcause_probe {top.out*}
+fxp_assert -name rootcause_probe <signal_name>
 
 check_fv
 fxp_compute_rootcause rootcause_probe
@@ -301,7 +301,7 @@ sim_run -stable
 sim_save_reset
 fxp_generate [<list-of-scopes>] -name <my_name> -type {<list-of-types>}
 fxp_assume -injectx [-name <name>] [-reset] [-oba] [-xassign] [-undef] [-condition <expr>] [-scope <scope_name>] <signal_name>
-fxp_assume -nox [-name <name>] [-reset] [-condition <expr>] <signal_name>
+fxp_assume -nox [-name <name>] [-reset] [condition <condition> [<signal_name>]]
 fxp_assert [-name <name>] [-condition <expr>] <signal_name>
 check_fv
 report_fv -list
