@@ -83,30 +83,31 @@ FXP 也需要稳定、可重复的起始状态。复位、时钟和初始状态�
 ### 5.4 X 传播对象生成
 
 ```tcl
-fxp_generate <name>
+fxp_generate [<list-of-scopes>] -name <my_name> -type {<list-of-types>}
 ```
 
-这个命令用于生成 FXP 相关的检查对象。`<name>` 一般是你自己命名的检查目标。当前脚本模板里不要再额外传入第二个位置参数，否则会触发 `extra positional option` 之类的错误。
+这个命令用于生成 FXP 相关的检查对象。`<list-of-scopes>` 写实例层次名，不写模块名；`-name` 是生成属性的前缀；`-type` 用来选择要生成的注入/观测类型。当前脚本模板里不要把属性名直接写成第一个位置参数，否则它会被当成 scope 去匹配。
 
 另外，`create_reset` 使用的复位信号名必须是设计中真实存在、并且已经被正确展开到当前 top 的对象。如果报 `TCL_OBJECT_NOT_FOUND`，通常要先检查 top、filelist 和复位信号名是否一致。
 
 ### 5.5 X 注入和 X 屏蔽
 
 ```tcl
-fxp_assume -injectx <options*>
-fxp_assume -nox <options*>
+fxp_assume -injectx [-name <name>] [-reset] [-oba] [-xassign] [-undef] [-condition <expr>] [-scope <scope_name>] <signal_name>
+fxp_assume -nox [-name <name>] [-reset] [-condition <expr>] <signal_name>
 ```
 
-- `-injectx`：告诉工具从指定位置注入 X。
-- `-nox`：告诉工具某些对象不允许出现 X，或者把它们当作受控区域。
+- `-injectx`：告诉工具在指定信号上注入 X。
+- `-nox`：告诉工具在指定信号上抑制 X。
+- `signal_name`：这里是最后一个位置参数，不要写成 `-signal`。
 
 ### 5.6 X 传播检查
 
 ```tcl
-fxp_assert <options*>
+fxp_assert [-name <name>] [-condition <expr>] <signal_name>
 ```
 
-这个命令用于把 X 传播检查真正挂到验证流程里。你可以把它理解为 FXP 场景下的断言构造入口。
+这个命令用于把 X 传播检查真正挂到验证流程里。`signal_name` 是最后一个位置参数，表示要观察 X 不能传播到的点。
 
 ### 5.7 根因分析
 
@@ -157,8 +158,8 @@ create_reset rst -sense high
 sim_run -stable
 sim_save_reset
 
-fxp_generate xprop_root
-fxp_assert -name xprop_root_check
+fxp_generate -name xprop_root -type {uninit out}
+fxp_assert -name xprop_root_check {top.out*}
 
 check_fv
 report_fv -list
@@ -184,8 +185,8 @@ create_reset rst -sense high
 sim_run -stable
 sim_save_reset
 
-fxp_generate xprop_root
-fxp_assert -name xprop_root_check
+fxp_generate -name xprop_root -type {uninit out}
+fxp_assert -name xprop_root_check {top.out*}
 
 check_fv
 report_fv -list
@@ -208,9 +209,9 @@ create_reset rst -sense high
 sim_run -stable
 sim_save_reset
 
-fxp_generate reset_x_check
-fxp_assume -injectx -signal {rst_domain_reg*}
-fxp_assert -name reset_x_check
+fxp_generate -name reset_x_check -type {uninit}
+fxp_assume -injectx -name reset_x_check {rst_domain_reg*}
+fxp_assert -name reset_x_check {rst_domain_reg*}
 
 check_fv
 fxp_compute_rootcause reset_x_check
@@ -233,9 +234,9 @@ create_reset rst -sense high
 sim_run -stable
 sim_save_reset
 
-fxp_assume -nox -signal {control_out*}
-fxp_generate nox_control_out
-fxp_assert -name nox_control_out
+fxp_generate -name nox_control_out -type {out}
+fxp_assume -nox -name nox_control_out {control_out*}
+fxp_assert -name nox_control_out {control_out*}
 
 check_fv
 report_fv -verbose
@@ -257,8 +258,8 @@ create_reset rst -sense high
 sim_run -stable
 sim_save_reset
 
-fxp_generate rootcause_probe
-fxp_assert -name rootcause_probe
+fxp_generate -name rootcause_probe -type {out}
+fxp_assert -name rootcause_probe {top.out*}
 
 check_fv
 fxp_compute_rootcause rootcause_probe
@@ -298,10 +299,10 @@ create_clock clk -period 100
 create_reset rst -sense high
 sim_run -stable
 sim_save_reset
-fxp_generate <name>
-fxp_assume -injectx <options*>
-fxp_assume -nox <options*>
-fxp_assert <options*>
+fxp_generate [<list-of-scopes>] -name <my_name> -type {<list-of-types>}
+fxp_assume -injectx [-name <name>] [-reset] [-oba] [-xassign] [-undef] [-condition <expr>] [-scope <scope_name>] <signal_name>
+fxp_assume -nox [-name <name>] [-reset] [-condition <expr>] <signal_name>
+fxp_assert [-name <name>] [-condition <expr>] <signal_name>
 check_fv
 report_fv -list
 fxp_compute_rootcause property
