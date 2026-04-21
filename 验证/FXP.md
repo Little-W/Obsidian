@@ -146,7 +146,8 @@ vcf -f .\fxp_run.tcl -batch
 ```tcl
 set_fml_appmode FXP
 
-read_file -top top -sva -format sverilog -vcs {-f filelist}
+analyze -format sverilog -vcs {-f filelist}
+elaborate top -sva
 create_clock clk -period 100
 create_reset rst -sense high
 sim_run -stable
@@ -170,7 +171,8 @@ report_fv -list
 ```tcl
 set_fml_appmode FXP
 
-read_file -top top -sva -format sverilog -vcs {-f filelist}
+analyze -format sverilog -vcs {-f filelist}
+elaborate top -sva
 
 create_clock clk -period 100
 create_reset rst -sense high
@@ -194,7 +196,8 @@ report_fv -list
 ```tcl
 set_fml_appmode FXP
 
-read_file -top top -sva -format sverilog -vcs {-f filelist}
+analyze -format sverilog -vcs {-f filelist}
+elaborate top -sva
 create_clock clk -period 100
 create_reset rst -sense high
 
@@ -219,7 +222,8 @@ fxp_report_rootcause
 ```tcl
 set_fml_appmode FXP
 
-read_file -top top -sva -format sverilog -vcs {-f filelist}
+analyze -format sverilog -vcs {-f filelist}
+elaborate top -sva
 create_clock clk -period 100
 create_reset rst -sense high
 sim_run -stable
@@ -242,7 +246,8 @@ report_fv -verbose
 ```tcl
 set_fml_appmode FXP
 
-read_file -top top -sva -format sverilog -vcs {-f filelist}
+analyze -format sverilog -vcs {-f filelist}
+elaborate top -sva
 create_clock clk -period 100
 create_reset rst -sense high
 sim_run -stable
@@ -263,7 +268,7 @@ view_trace -property rootcause_probe
 
 如果目标是快速做一次 X 风险扫描，可以按下面的顺序做：
 
-1. 读入设计并完成 `read_file`、`analyze` 或 `elaborate`。
+1. 读入设计并完成 `analyze` 和 `elaborate`。
 2. 定义时钟、复位和稳定的 reset state。
 3. 用 `fxp_generate` 定义检查目标。
 4. 用 `fxp_assume -injectx` 选择 X 注入口。
@@ -283,7 +288,6 @@ view_trace -property rootcause_probe
 
 ```tcl
 set_fml_appmode FXP
-read_file -top top -sva -format sverilog -vcs {-f filelist}
 analyze -format sverilog -vcs {-f filelist}
 elaborate top -sva
 create_clock clk -period 100
