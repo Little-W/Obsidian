@@ -69,12 +69,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "验证/FPV.md",
+                "file": "验证/AEP.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "FPV"
+              "title": "AEP"
             }
           }
         ],
@@ -257,8 +257,8 @@
   "active": "3684b0d422b0dd69",
   "lastOpenFiles": [
     "验证/FXP.md",
-    "验证/形式验证.md",
     "验证/FPV.md",
+    "验证/形式验证.md",
     "验证/VC_Formal_Quick_Reference_Guide_中文整理版.md",
     "验证/SVA语法合集.md",
     "验证/image-1.png",
