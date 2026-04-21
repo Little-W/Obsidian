@@ -118,6 +118,82 @@ fxp_report_rootcause
 
 当某个 FXP 属性失败时，根因分析可以帮助你找出最小的可疑路径和最关键的传播点。
 
+### 5.8 自动检测所有顶层模块中的信号
+
+如果你的目标是先对整个设计或多个顶层模块做一轮 X 风险扫描，通常不需要把每个信号都手写出来。更常见的做法是让 `fxp_generate` 按默认类型直接覆盖整个设计，或者把多个顶层实例一次性传给它，让工具自动生成对应的 X 注入和观测点。
+
+最简写法通常是：
+
+```tcl
+fxp_generate -name all_x_scan -type {auto}
+```
+
+如果你只想扫某几个顶层实例，就把 scope 一次性传进去：
+
+```tcl
+fxp_generate {top0 top1 top2} -name top_scan -type {auto}
+```
+
+这里的要点是：
+
+- `fxp_generate` 负责批量生成检查点。
+- `-type {auto}` 会使用默认的 X 注入和观测类型。
+- 如果你不传 scope，工具会按默认类型扫当前设计上下文；如果你传多个 scope，就可以一次覆盖多个顶层实例。
+- `fxp_assume` 和 `fxp_assert` 仍然更适合显式信号名；如果你确实要批量加规则，建议再用 Tcl 的 `foreach` 去循环信号列表。
+
+一个更实用的批量脚本范例如下：
+
+```tcl
+set_fml_appmode FXP
+
+analyze -format sverilog -vcs {-f filelist}
+elaborate top -sva
+create_clock clk -period 100
+create_reset rst -sense high
+sim_run -stable
+sim_save_reset
+
+fxp_generate -name all_x_scan -type {auto}
+
+set critical_signals {top.u_core.req top.u_core.ack top.u_periph.valid top.u_periph.ready}
+foreach sig $critical_signals {
+	fxp_assert $sig
+}
+
+check_fv
+fxp_compute_rootcause
+fxp_report_rootcause -list
+```
+
+这个写法适合“先一口气扫全局，再对少量关键点补精确检查”的场景。
+
+### 顶层全信号扫描脚本示例
+
+如果你只想先把顶层实例中的所有信号扫一遍，可以直接把顶层实例名作为 scope 传给 `fxp_generate`，然后让工具自动生成默认的 X 注入和观测点。
+
+```tcl
+set_fml_appmode FXP
+
+analyze -format sverilog -vcs {-f filelist}
+elaborate top -sva
+create_clock clk -period 100
+create_reset rst -sense high
+sim_run -stable
+sim_save_reset
+
+fxp_generate {top} -name top_all_scan -type {auto}
+
+check_fv
+fxp_compute_rootcause
+fxp_report_rootcause -list
+```
+
+这个脚本的特点是：
+
+- `top` 必须是你实际展开后的顶层实例名，不是模块名。
+- `-type {auto}` 会使用默认的 FXP 类型集合，适合先做全局扫描。
+- 如果你有多个顶层实例，可以把它们一次写进 scope 列表里。
+
 ## 6. 从终端启动
 
 如果你想直接从终端启动 FXP，最常见的方式是先准备一个 Tcl 脚本，然后用 `vcf` 读取脚本运行。
@@ -207,8 +283,6 @@ create_clock clk -period 100
 create_reset rst -sense high
 
 sim_run -stable
-sim_save_reset
-
 fxp_generate -name reset_x_check -type {uninit}
 fxp_assume -injectx -name reset_x_check <signal_name>
 fxp_assert -name reset_x_check <signal_name>
