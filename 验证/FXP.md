@@ -78,13 +78,17 @@ sim_save_reset
 
 FXP 也需要稳定、可重复的起始状态。复位、时钟和初始状态定义得越清晰，X 传播分析越可靠。
 
+如果你的设计复位信号叫 `presetn` 这类名字，要把命令里的复位对象名写成设计里真实存在的那个信号，并且 `-sense` 要和它的极性一致。例如，低有效复位通常写成 `create_reset presetn -sense low`。如果报 `TCL_OBJECT_NOT_FOUND`，优先检查 `analyze` / `elaborate` 的 top 和 filelist 是否把这个复位网包含进来了。
+
 ### 5.4 X 传播对象生成
 
 ```tcl
-fxp_generate <name> <type>
+fxp_generate <name>
 ```
 
-这个命令用于生成 FXP 相关的检查对象。`<name>` 一般是你自己命名的检查目标，`<type>` 则描述检查类型。
+这个命令用于生成 FXP 相关的检查对象。`<name>` 一般是你自己命名的检查目标。当前脚本模板里不要再额外传入第二个位置参数，否则会触发 `extra positional option` 之类的错误。
+
+另外，`create_reset` 使用的复位信号名必须是设计中真实存在、并且已经被正确展开到当前 top 的对象。如果报 `TCL_OBJECT_NOT_FOUND`，通常要先检查 top、filelist 和复位信号名是否一致。
 
 ### 5.5 X 注入和 X 屏蔽
 
@@ -153,7 +157,7 @@ create_reset rst -sense high
 sim_run -stable
 sim_save_reset
 
-fxp_generate xprop_root logic
+fxp_generate xprop_root
 fxp_assert -name xprop_root_check
 
 check_fv
@@ -180,7 +184,7 @@ create_reset rst -sense high
 sim_run -stable
 sim_save_reset
 
-fxp_generate xprop_root logic
+fxp_generate xprop_root
 fxp_assert -name xprop_root_check
 
 check_fv
@@ -204,7 +208,7 @@ create_reset rst -sense high
 sim_run -stable
 sim_save_reset
 
-fxp_generate reset_x_check logic
+fxp_generate reset_x_check
 fxp_assume -injectx -signal {rst_domain_reg*}
 fxp_assert -name reset_x_check
 
@@ -230,7 +234,7 @@ sim_run -stable
 sim_save_reset
 
 fxp_assume -nox -signal {control_out*}
-fxp_generate nox_control_out logic
+fxp_generate nox_control_out
 fxp_assert -name nox_control_out
 
 check_fv
@@ -253,7 +257,7 @@ create_reset rst -sense high
 sim_run -stable
 sim_save_reset
 
-fxp_generate rootcause_probe logic
+fxp_generate rootcause_probe
 fxp_assert -name rootcause_probe
 
 check_fv
@@ -294,7 +298,7 @@ create_clock clk -period 100
 create_reset rst -sense high
 sim_run -stable
 sim_save_reset
-fxp_generate <name> <type>
+fxp_generate <name>
 fxp_assume -injectx <options*>
 fxp_assume -nox <options*>
 fxp_assert <options*>
