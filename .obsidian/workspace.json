@@ -256,6 +256,7 @@
   },
   "active": "3684b0d422b0dd69",
   "lastOpenFiles": [
+    "验证/p2p_die_access_task.sv",
     "验证/FXP.md",
     "验证/FPV.md",
     "验证/形式验证.md",
@@ -290,7 +291,6 @@
     "TFML/img2col 算法实现手册.md",
     "NPU/NPU 验证：从 BT 到算子.md",
     "NPU",
-    "NPU 验证：从 BT 到算子.md",
     "未命名.canvas",
     "NPU设计",
     "竞业达杯",
