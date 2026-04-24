@@ -166,6 +166,26 @@ fxp_report_rootcause
 
 如果你想看失败路径的根因，可以先确认该属性确实是 `falsified`，再对该 property 执行 `fxp_compute_rootcause` 和 `fxp_report_rootcause`。如果现在是 `pass`，一般不需要处理 `not_computed`，只要把它当成“无需根因”的结果即可。
 
+在脚本里要特别注意执行顺序：`fxp_compute_rootcause` 只能在 `check_fv` 已经结束之后调用，不能放在一个仍在运行的 `check_fv` 过程中，也不要嵌套在会再次触发 `check_fv` 的流程里。否则就会看到类似 `check_fv[0] is already running, you can not nest the command` 的报错。
+
+推荐写法是先跑完检查，再单独算根因：
+
+```tcl
+check_fv
+fxp_compute_rootcause rootcause_probe
+fxp_report_rootcause
+```
+
+如果你用的是自动根因模式，也仍然要把它放在 `check_fv` 完成之后：
+
+```tcl
+set_fml_var fxp_compute_rootcause_auto true
+check_fv
+report_fv -list
+```
+
+简单说就是：`check_fv` 先结束，`fxp_compute_rootcause` 再执行；不要反过来，也不要并行嵌套。
+
 ### 5.8 自动检测所有顶层模块中的信号
 
 如果你的目标是先对整个设计或多个顶层模块做一轮 X 风险扫描，通常不需要把每个信号都手写出来。更常见的做法是让 `fxp_generate` 按默认类型直接覆盖整个设计，或者把多个顶层实例一次性传给它，让工具自动生成对应的 X 注入和观测点。
