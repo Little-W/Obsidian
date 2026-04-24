@@ -296,6 +296,49 @@ report_fv -list
 
 你可以把这个内容保存为 `fxp_run.tcl`，再用上面的 `vcf -f .\fxp_run.tcl` 直接启动。
 
+### 6.5 网格调度配置：`set_grid_usage`
+
+如果你的 VC Formal 运行环境接了 LSF 这类作业调度系统，可以用 `set_grid_usage` 指定工具如何提交网格作业。它通常放在脚本开头、正式跑 `check_fv` 之前，用来告诉工具“把哪些阶段交给集群执行，以及用什么提交命令”。
+
+你的写法：
+
+```tcl
+set_grid_usage -type lsf=5 -control {bsub -Is -q merm -R "rusage[mem=8000]"}
+```
+
+可以拆开理解成：
+
+- `-type lsf=5`：使用 LSF 网格类型，并按当前环境约定启用对应的并行/作业级别配置。
+- `-control { ... }`：指定实际提交命令模板。
+- `bsub`：LSF 的提交命令。
+- `-Is`：以交互方式启动作业。
+- `-q merm`：提交到 `merm` 队列。
+- `-R "rusage[mem=8000]"`：向调度器申请 8000 MB 内存资源。
+
+一个常见用法是把它和主脚本放在一起：
+
+```tcl
+set_fml_appmode FXP
+set_grid_usage -type lsf=5 -control {bsub -Is -q merm -R "rusage[mem=8000]"}
+
+analyze -format sverilog -vcs {-f filelist}
+elaborate top -sva
+create_clock clk -period 100
+create_reset rst -sense high
+sim_run -stable
+sim_save_reset
+
+fxp_generate -name grid_x_scan -type {auto}
+check_fv
+report_fv -list
+```
+
+几点经验：
+
+- 如果你的环境已经由平台统一封装了提交模板，`-control` 里一般只需要保留调度器必需参数。
+- 如果作业提交失败，优先检查队列名、内存申请和是否允许交互作业。
+- 如果你们内部对 `lsf=5` 的含义有固定约定，就以你们的项目模板为准；不同版本或封装层可能会把这个值解释成不同的运行级别。
+
 ## 7. FXP 常见脚本用例
 
 ### 用例 1：最小 FXP 初始化脚本
