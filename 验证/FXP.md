@@ -66,6 +66,36 @@ elaborate top -sva
 
 读取设计和断言的方式和 FPV 类似。你也可以按项目需要先编译，再展开，再进入 FXP。
 
+如果你想先从当前 `filelist` 里找某个模块的顶层名称，可以用下面这类命令：
+
+```powershell
+Get-Content .\filelist | ForEach-Object { rg -n "^\s*module\s+TOP_NAME\b" $_ }
+```
+
+如果你还不知道顶层模块名，可以先把 `filelist` 里的源文件展开，再批量看每个文件里的 `module` 声明：
+
+```powershell
+Get-Content .\filelist | ForEach-Object { rg -n "^\s*module\s+" $_ }
+```
+
+把 `TOP_NAME` 换成你要找的模块名即可。这个做法适合先确认 `elaborate` 里应该用哪个 top 名字，再回填到 `read_file -top` 或 `elaborate` 里。
+
+如果你已经在 Verdi 里把设计加载好了，那就直接在 Verdi 的 Tcl Console 里查数据库，不用再回到 filelist 里搜。常见写法是先列出顶层实例，再按名字过滤：
+
+```tcl
+get_db insts -if {.is_top == true}
+get_db insts -if {.name =~ *TOP_NAME*}
+get_db nets  -if {.name =~ *SIG_NAME*}
+```
+
+如果你想先看当前已经加载了哪些设计，也可以先查设计列表：
+
+```tcl
+get_db designs
+```
+
+这里的 `TOP_NAME` 和 `SIG_NAME` 换成你要找的模块名或信号名即可。不同 Verdi 版本的对象字段可能略有差异，如果 `-if` 报错，先在 Tcl Console 里执行 `help get_db` 看当前版本支持的参数。
+
 ### 5.3 时钟、复位和初始化
 
 ```tcl
@@ -77,6 +107,20 @@ sim_save_reset
 ```
 
 FXP 也需要稳定、可重复的起始状态。复位、时钟和初始状态定义得越清晰，X 传播分析越可靠。
+
+如果你想把仿真波形拉长一点，可以在稳定之后继续跑固定拍数，例如：
+
+```tcl
+sim_run 3 -clk clk
+```
+
+这里的 `3` 表示再按 `clk` 跑 3 个时钟周期，适合用来观察更长时间窗内的 X 传播。
+
+这种写法通常不需要再额外配一个 reset 命令；如果你的目的只是延长波形，直接继续 `sim_run` 就可以。真正常见的配套动作是 `sim_save_reset`，它负责把当前稳定的 reset 状态保存下来，供后续验证反复复用。
+
+这里的 `clk` 是时钟对象名，必须和前面 `create_clock clk -period 100` 里定义的名字一致；`sim_run` 不是自己去猜时钟，而是按你指定的 clock 对象推进周期。若设计里有多个时钟，就用你想观察的那个 clock 名称。
+
+如果你在执行 `sim_run` 时看到 `SIM_MODEL_OUTDATED`，说明当前 reset 仿真模型已经过期，通常是因为前面改过 reset 相关设置、重新展开过设计，或者当前模型还没有同步到最新状态。这时不要直接重复 `sim_run`，而是先执行 `sim_reset` 清掉当前模型，再重新 `sim_run`。
 
 如果你的设计复位信号叫 `presetn` 这类名字，要把命令里的复位对象名写成设计里真实存在的那个信号，并且 `-sense` 要和它的极性一致。例如，低有效复位通常写成 `create_reset presetn -sense low`。如果报 `TCL_OBJECT_NOT_FOUND`，优先检查 `analyze` / `elaborate` 的 top 和 filelist 是否把这个复位网包含进来了。
 
