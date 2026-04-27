@@ -209,7 +209,66 @@ fvtrace_config -check aepnode -autorun viewtrace -severity high
 
 这条链路的顺序是有意义的：先收窄属性，再做结构检查，最后用 trace 定位。
 
-## 9. 命令速查
+## 9. AEP 示例脚本
+
+下面给出 3 个常用的 AEP 脚本模板，分别对应属性筛选、VHDL 场景和 trace 定位。
+
+### 脚本 1：最小 AEP 属性筛选脚本
+
+适用场景：你想先确认当前设计里是否已经正确加载 AEP class 属性，并且只看 AEP 相关目标。
+
+```tcl
+set_fml_appmode AEP
+
+read_file -top top -format sverilog -sva -vcs {-f filelist}
+
+fvdisable -usage {assert cover}
+fvassert -class aep *
+get_props -class aep
+
+check_fv_setup
+report_fv -list
+```
+
+这个脚本的重点是先把普通 assert / cover 收窄掉，只保留 AEP class，然后用 `get_props` 和 `check_fv_setup` 看结果。
+
+### 脚本 2：VHDL AEP 初始化脚本
+
+适用场景：你的 DUT 是 VHDL，希望快速把 AEP 的运行链路跑通。
+
+```tcl
+set_fml_appmode AEP
+
+analyze -format vhdl -vcs {-f filelist}
+elaborate top
+
+fvdisable -usage {assert cover}
+fvassert -class aep *
+
+check_fv_setup
+report_fv -verbose
+```
+
+这个脚本适合先验证 VHDL 读入、展开和 AEP class 是否能正常工作。实际工程里，AEP 的额外开关通常由项目脚本统一配置。
+
+### 脚本 3：AEP trace 定位脚本
+
+适用场景：`check_fv_setup` 或 AEP 相关检查报出了 `aepnode` 一类问题，你希望进一步定位到具体 trace。
+
+```tcl
+set_fml_appmode AEP
+
+read_file -top top -format sverilog -sva -vcs {-f filelist}
+
+fvtrace_config -check aepnode -autorun viewtrace -severity high
+check_fv_setup
+fvtrace_check <property_name>
+view_trace -property <property_name>
+```
+
+这个脚本把 `aepnode` 的 trace 检查、property trace 和波形查看串在一起，适合做问题定位。
+
+## 10. 命令速查
 
 ```tcl
 get_props -class aep
@@ -220,7 +279,7 @@ fvtrace_config -check aepnode -autorun viewtrace -severity high
 fvtrace_check <property_name>
 ```
 
-## 10. 结论
+## 11. 结论
 
 AEP 在 VC Formal 里不是单一命令，而是一组围绕属性、编译配置、设计检查和 trace 定位展开的能力集合。真正落地时，最常用的切入点是：
 

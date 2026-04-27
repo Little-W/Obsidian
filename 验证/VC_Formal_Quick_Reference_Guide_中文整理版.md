@@ -658,10 +658,10 @@ report_fv_setup -list
 ### 6.3 FXP 专属配置
 
 ```tcl
-fxp_generate <name> <type>
-fxp_assume -injectx <options*>
-fxp_assume -nox <options*>
-fxp_assert <options*>
+fxp_generate [<list-of-scopes>] -name <my_name> -type {<list-of-types>}
+fxp_assume -injectx [-name <name>] [-reset] [-oba] [-xassign] [-undef] [-condition <expr>] [-scope <scope_name>] <signal_name>
+fxp_assume -nox [-name <name>] [-reset] [condition <condition> [<signal_name>]]
+fxp_assert [-name <name>] [-condition <expr>] <signal_name>
 ```
 
 ### 6.4 验证与调试
