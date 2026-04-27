@@ -1,70 +1,28 @@
 {
   "main": {
-    "id": "08930320eb442291",
+    "id": "1d4fcab5531b8125",
     "type": "split",
     "children": [
       {
-        "id": "c292ba7a93d6ae13",
+        "id": "2d1a129e4c24f30f",
         "type": "tabs",
         "children": [
           {
-            "id": "1bf350ab803bdbd2",
+            "id": "0a287edd1a72e7b2",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "GCC.md",
-                "mode": "source",
-                "source": false
+                "file": "AMBA/AXI-4.md",
+                "mode": "preview",
+                "source": true
               },
               "icon": "lucide-file",
-              "title": "GCC"
+              "title": "AXI-4"
             }
           },
           {
-            "id": "044ce068849d425b",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "神经网络/基础layer.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "基础layer"
-            }
-          },
-          {
-            "id": "bceaf0e91f75eedc",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "验证/形式验证.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "形式验证"
-            }
-          },
-          {
-            "id": "3af640acb352213c",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "验证/AEP.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "AEP"
-            }
-          },
-          {
-            "id": "3684b0d422b0dd69",
+            "id": "a407f2fd67d406e4",
             "type": "leaf",
             "state": {
               "type": "markdown",
@@ -76,23 +34,187 @@
               "icon": "lucide-file",
               "title": "SVA语法合集"
             }
+          },
+          {
+            "id": "fa1c3fa57d6fa463",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "TFML/废案：面向TFLM的自定义神经网络加速指令集.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "废案：面向TFLM的自定义神经网络加速指令集"
+            }
+          },
+          {
+            "id": "56c79690f04e008c",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "TFML/面向TFLM的自定义神经网络加速指令集.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "面向TFLM的自定义神经网络加速指令集"
+            }
+          },
+          {
+            "id": "406287e479921ef7",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "TFML/未命名.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "未命名"
+            }
+          },
+          {
+            "id": "1398d192bcc1fde2",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "TFML/DSA 设计目标.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "DSA 设计目标"
+            }
+          },
+          {
+            "id": "10ddeb6e8f0a4ce0",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "TFML/DSA 设计目标.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "DSA 设计目标"
+            }
+          },
+          {
+            "id": "017d5dd1a9072350",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "TFML/面向TFLM的自定义神经网络加速指令集.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "面向TFLM的自定义神经网络加速指令集"
+            }
+          },
+          {
+            "id": "b15e7c06633d33d6",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "TFML/img2col 算法实现手册.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "img2col 算法实现手册"
+            }
+          },
+          {
+            "id": "ea36be3bbc72225f",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "TFML/DSA 设计目标.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "DSA 设计目标"
+            }
+          },
+          {
+            "id": "86a87d8cce506158",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "TFML/面向TFLM的自定义神经网络加速指令集.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "面向TFLM的自定义神经网络加速指令集"
+            }
+          },
+          {
+            "id": "f54a8814e8e1f695",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "UVM/UVM基础.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "UVM基础"
+            }
+          },
+          {
+            "id": "2e6e43f2a8ac4f3b",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "UVM/SV基础.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "SV基础"
+            }
+          },
+          {
+            "id": "9ee54b6d41291792",
+            "type": "leaf",
+            "state": {
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "关系图谱"
+            }
           }
         ],
-        "currentTab": 4
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
   },
   "left": {
-    "id": "8c473ecaf7d35368",
+    "id": "f780a89297d3873a",
     "type": "split",
     "children": [
       {
-        "id": "cb071318e71a73c7",
+        "id": "d5c5ca5e3e709d91",
         "type": "tabs",
         "children": [
           {
-            "id": "92d37c4bda09db75",
+            "id": "65b3fac1a2430ebc",
             "type": "leaf",
             "state": {
               "type": "file-explorer",
@@ -105,7 +227,7 @@
             }
           },
           {
-            "id": "55153bdada1d7632",
+            "id": "e3c61d1ba7a3167e",
             "type": "leaf",
             "state": {
               "type": "search",
@@ -122,7 +244,7 @@
             }
           },
           {
-            "id": "8bd69a1e08adfabf",
+            "id": "2c04edbea9ca1b36",
             "type": "leaf",
             "state": {
               "type": "bookmarks",
@@ -135,23 +257,23 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200
+    "width": 300
   },
   "right": {
-    "id": "b43b3c68f52b9f07",
+    "id": "858f53382b96c618",
     "type": "split",
     "children": [
       {
-        "id": "9f5b62141f1bed5d",
+        "id": "ef20b56cd80fbb74",
         "type": "tabs",
         "children": [
           {
-            "id": "13e434464ebc655d",
+            "id": "865750c918af0e4d",
             "type": "leaf",
             "state": {
               "type": "backlink",
               "state": {
-                "file": "未命名.base",
+                "file": "验证/SVA语法合集.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -161,32 +283,32 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "未命名 的反向链接列表"
+              "title": "SVA语法合集 的反向链接列表"
             }
           },
           {
-            "id": "c050cd168bfe8233",
+            "id": "9c3f7b5638db26dc",
             "type": "leaf",
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "未命名.base",
+                "file": "验证/SVA语法合集.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "未命名 的出链列表"
+              "title": "SVA语法合集 的出链列表"
             }
           },
           {
-            "id": "df02032d240ebcb6",
+            "id": "3476b054be19f98a",
             "type": "leaf",
             "state": {
               "type": "tag",
               "state": {
                 "sortOrder": "frequency",
                 "useHierarchy": true,
-                "showSearch": false,
+                "showSearch": true,
                 "searchQuery": ""
               },
               "icon": "lucide-tags",
@@ -194,36 +316,22 @@
             }
           },
           {
-            "id": "59ca4cb24460c83b",
-            "type": "leaf",
-            "state": {
-              "type": "all-properties",
-              "state": {
-                "sortOrder": "frequency",
-                "showSearch": false,
-                "searchQuery": ""
-              },
-              "icon": "lucide-ghost",
-              "title": "all-properties"
-            }
-          },
-          {
-            "id": "68321ffa88c7a3e5",
+            "id": "4b522c9d7dbe1599",
             "type": "leaf",
             "state": {
               "type": "outline",
               "state": {
-                "file": "神经网络/Transfomer.md",
+                "file": "验证/SVA语法合集.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Transfomer 的大纲"
+              "title": "SVA语法合集 的大纲"
             }
           },
           {
-            "id": "a6f2f7b07a10008e",
+            "id": "019a400065e9b57a",
             "type": "leaf",
             "state": {
               "type": "git-view",
@@ -233,68 +341,69 @@
             }
           }
         ],
-        "currentTab": 5
+        "currentTab": 4
       }
     ],
     "direction": "horizontal",
-    "width": 283.5
+    "width": 332.5
   },
   "left-ribbon": {
     "hiddenItems": {
-      "pdf-plus:PDF++: Toggle auto-copy": false,
-      "pdf-plus:PDF++: Toggle auto-focus": false,
-      "pdf-plus:PDF++: Toggle auto-paste": false,
+      "bases:新建数据库": false,
       "switcher:打开快速切换": false,
       "graph:查看关系图谱": false,
       "canvas:新建白板": false,
       "daily-notes:打开/创建今天的日记": false,
       "templates:插入模板": false,
       "command-palette:打开命令面板": false,
-      "bases:新建数据库": false,
-      "obsidian-git:Open Git source control": false
+      "obsidian-git:Open Git source control": false,
+      "pdf-plus:PDF++: Toggle auto-copy": false,
+      "pdf-plus:PDF++: Toggle auto-focus": false,
+      "pdf-plus:PDF++: Toggle auto-paste": false
     }
   },
-  "active": "3684b0d422b0dd69",
+  "active": "a407f2fd67d406e4",
   "lastOpenFiles": [
+    "UVM/UVM基础.md",
+    "UVM/SV基础.md",
+    "未命名 3.base",
+    "未命名 2.base",
+    "未命名 1.base",
+    "RISC-V & CPU/GPRs.md",
+    "未命名.base",
+    "验证/形式验证.md",
+    "验证/image.png",
+    "验证/image-1.png",
+    "验证/VC_Formal_Quick_Reference_Guide_中文整理版.md",
+    "验证/SVA语法合集.md",
     "验证/FPV.md",
     "验证/AEP.md",
-    "验证/SVA语法合集.md",
+    "验证",
+    "神经网络/基础layer.md",
+    "神经网络/Transfomer.md",
+    "神经网络",
     "信号处理/编码与校验.md",
     "信号处理",
     "VC_Formal_UG.pdf",
-    "验证/形式验证.md",
-    "验证/VC_Formal_Quick_Reference_Guide_中文整理版.md",
-    "神经网络/Transfomer.md",
-    "神经网络/基础layer.md",
-    "未命名.md",
     "VC_Formal_Quick_Reference_Guide.pdf",
-    "验证/形式验证_整理版.md",
-    "神经网络",
-    "GCC.md",
-    "欢迎.md",
-    "验证/vc-formal-manual-en.md",
-    "验证/URG.md",
-    "Pasted image 20260411153545.png",
-    "验证/image-1.png",
-    "UVM/SV基础.md",
-    "UVM/UVM基础.md",
-    "验证/image.png",
-    "验证",
-    "TFML/DSA模块设计文档.md",
-    "TFML/自定义神经网络加速指令集.md",
     "TFML/重量化函数设计说明.md",
-    "TFML/DSA 设计目标.md",
-    "TFML/NMSIS的集成方法.md",
-    "TFML/NMSIS NN模块函数实现.md",
-    "TFML/img2col 算法实现手册.md",
     "NPU/NPU 验证：从 BT 到算子.md",
     "NPU",
-    "NPU 验证：从 BT 到算子.md",
+    "未命名.md",
+    "TFML/DSA 设计目标.md",
+    "TFML/NMSIS NN模块函数实现.md",
+    "TFML/自定义神经网络加速指令集.md",
+    "TFML/DSA模块设计文档.md",
+    "TFML/面向TFLM的自定义神经网络加速指令集.md",
+    "TFML/废案：面向TFLM的自定义神经网络加速指令集.md",
+    "TFML/img2col 算法实现手册.md",
     "TFML/ICB非对齐访存模块.md",
-    "未命名.canvas",
-    "NPU设计",
-    "竞业达杯",
-    "端侧AI",
-    "UVM"
+    "conflict-files-obsidian-git.md",
+    "未命名 3.canvas",
+    "2025-09-25.md",
+    "TFML/未命名.md",
+    "未命名 2.canvas",
+    "未命名 1.canvas",
+    "未命名.canvas"
   ]
 }
