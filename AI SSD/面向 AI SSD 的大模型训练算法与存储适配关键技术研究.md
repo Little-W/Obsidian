@@ -116,6 +116,8 @@ PyTorch Distributed Checkpoint 面向分布式训练提供并行保存和加载�
 
 ## 2.1 项目背景与核心问题
 
+![[2.1.png]]
+
 大模型训练已经形成 GPU HBM、CPU DRAM、NVMe SSD 和远端存储共同组成的多级存储体系。GPU HBM 带宽高、延迟低但容量有限；CPU DRAM 容量较大但与 GPU 间传输受 PCIe/NVLink 等通路限制；NVMe SSD 容量大、成本低并具备持久化能力，但延迟高于内存且存在写入寿命约束；远端存储适合归档和共享，但不适合训练关键路径上的高频访问。训练算法必须根据数据对象的访问特征决定其所在层级，不能只依据容量大小进行放置。
 
 本方案要解决的核心问题可以概括为：训练框架如何把内部可见的训练语义转化为 SSD 可利用的数据流。具体包括：哪些数据适合进入 SSD，哪些数据应留在 GPU 或 CPU，哪些数据应通过重算替代保存，哪些数据必须持久化保存；进入 SSD 的数据应以什么粒度、顺序、优先级和生命周期标签写入；训练侧如何输出可验证、可统计、可联调的语义元数据。
@@ -131,6 +133,7 @@ PyTorch Distributed Checkpoint 面向分布式训练提供并行保存和加载�
 
 ## 2.2 研究需求
 
+![[2.2.png|697]]
 ### 2.2.1 训练数据分类需求
 
 训练数据分类是后续调度的前提。没有分类，就无法判断哪些数据适合 SSD，哪些数据应留在 GPU 或 CPU，哪些数据应重算，哪些数据可延迟写入。分类不仅要基于数据名称，还要基于生命周期、大小、访问频率、可重算性、可靠性要求和关键路径关系。
@@ -284,6 +287,8 @@ Tensor 生命周期采集分为模型层、autograd 层、优化器层、DeepSpe
 
 ## 3.3 SSD 友好的训练数据 Offload 策略
 
+![[3.3.png]]
+
 ### 3.3.1 参数数据 Offload 策略
 
 参数数据 Offload 需要与模型执行顺序紧密结合。Transformer 模型通常按 layer 顺序执行 forward 和 backward，ZeRO-3 在使用参数前 gather，在使用完成后释放或重新分片。方案利用这一规律设计 layer-wise 参数预取，使后续 layer 所需参数在计算到达前进入 GPU 或 CPU 缓存，降低 GPU 等待时间。
@@ -325,6 +330,8 @@ Checkpoint 可靠性不能因写入优化而削弱。每个 checkpoint 版本应
 Checkpoint 与 Offload 流需要解耦。若 checkpoint 写入与 optimizer state 写回或 activation offload 同时发生，会形成 I/O 峰值。调度器应在 checkpoint 写入期间降低日志写入优先级，限制可延迟 offload，必要时调整 checkpoint 带宽上限。训练侧应标注 checkpoint 为 persistent、append_only、reliable 和 low_frequency_large_write，帮助 AI SSD 区分其与临时数据。
 
 ## 3.4 面向 SSD 特性的训练 I/O 优化方法
+
+![[3.4.png]]
 
 ### 3.4.1 大块化写入方法
 
@@ -469,6 +476,8 @@ Profiler 需要支持多粒度报告。step 级报告用于分析训练波动；
 
 ## 4.2 SSD 友好的训练数据 Offload 与调度方法
 
+![[4.2.png]]
+
 第二项创新是将 Offload 从容量扩展机制提升为 SSD 友好调度机制。方案在显存、计算和 I/O 之间进行选择，形成参数预取、优化器状态 fixed shard、activation ring buffer、checkpoint 异步顺序写和日志缓冲采样等组合策略。
 
 现有 Offload 技术通常首先解决显存不足问题，关注训练能否运行和显存峰值能否降低。本方案进一步关注 Offload 后的数据是否适合 SSD：写入是否过碎、生命周期是否可区分、是否与 checkpoint 抢占带宽、是否造成关键路径等待。该思路把 Offload 从单一容量手段扩展为显存、计算、I/O 和设备写入压力之间的综合调度问题。
@@ -476,6 +485,8 @@ Profiler 需要支持多粒度报告。step 级报告用于分析训练波动；
 调度方法具备动态降级能力。当 SSD 负载高或 checkpoint 正在写入时，低优先级数据延迟写入；当 GPU 显存压力接近阈值时，选择性 offload 提高优先级；当某类 activation 可重算时，优先使用计算替代保存。该策略能够避免简单 offload 带来的无效写入和训练抖动。
 
 ## 4.3 面向训练过程的 I/O 大块化、顺序化与削减机制
+
+![[4.3.png]]
 
 第三项创新是针对训练过程不同数据流设计具体 I/O 形态。通过大块化写入减少小请求，通过顺序化写入降低随机性，通过写入削减减少无效写入，通过优先级控制降低关键路径阻塞。这些机制把训练 I/O 从碎片化模式转化为更适合 SSD 的规整化模式。
 
@@ -512,6 +523,8 @@ Profiler 需要支持多粒度报告。step 级报告用于分析训练波动；
 阶段内形成初版分类规则和数据画像模板。分类规则用于把训练对象映射为 parameter、gradient、optimizer_state、activation、checkpoint、dataset_cache 和 log_profile 等类别；数据画像模板用于展示不同模型和训练配置下各类数据的规模占比、生命周期分布和 I/O 行为。第一阶段重点不在性能提升，而在观测准确性、分类覆盖率和报告可复现性。
 
 ## 5.2 第二阶段：SSD 友好训练调度方法研发
+
+![[5.2.png]]
 
 第二阶段完成训练侧调度策略设计与实现。重点研发参数预取策略、优化器状态 fixed shard 策略、activation ring buffer 策略、checkpoint 异步顺序写策略和日志缓冲策略。阶段输出包括调度模块、策略配置文件、DeepSpeed 适配扩展和初步性能对比结果。
 
