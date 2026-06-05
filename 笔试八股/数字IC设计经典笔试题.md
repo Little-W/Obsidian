@@ -151,17 +151,14 @@ carryout=carryin*current-stage；与门
 
 next-stage=carryin’*current-stage+carryin*current-stage’; 与门，非门，或门（或者异或门）
 
+```verilog
 module(clk,current-stage,carryin,next-stage,carryout);
-
-input clk, current-stage,carryin;
-
-output next-stage,carryout;
-
-always@(posedge clk)
-
-carryout<=carryin&current-stage;
-
-nextstage<=
+  input clk, current-stage,carryin;
+  output next-stage,carryout;
+  always@(posedge clk)
+  carryout<=carryin&current-stage;
+  nextstage<=
+```
 
 ## 25. 设计一个自动饮料售卖机，饮料10分钱，硬币有5分和10分两种，并考虑找零，
 
@@ -179,79 +176,46 @@ nextstage<=
 
 3. 画出状态转移图。
 
+```verilog
 module sell(clk,rst,a,b,y,z);
-
-input clk,rst,a,b;
-
-output y,z;
-
-parameter s0=0,s1=1;
-
-reg state,next_state;
-
-always@(posedge clk)
-
-begin
-
-if(!rst)
-
-state<=s0;
-
-else
-
-state<=next_state;
-
-end
-
-always@(a or b or cstate)
-
-begin
-
-y=0;z=0;
-
-case(state)
-
-s0: if(a==1&&b==0) next_state=s1;
-
-else if(a==0&&b==1)
-
-begin
-
-next_state=s0; y=1;
-
-end
-
-else
-
-next_state=s0;
-
-s1: if(a==1&&b==0)
-
-begin
-
-next_state=s0;y=1;
-
-end
-
-else if(a==0&&b==1)
-
-begin
-
-next_state=s0; y=1;z=1;
-
-end
-
-else
-
-next_state=s0;
-
-default: next_state=s0;
-
-endcase
-
-end
-
+  input clk,rst,a,b;
+  output y,z;
+  parameter s0=0,s1=1;
+  reg state,next_state;
+  always@(posedge clk)
+  begin
+    if(!rst)
+      state<=s0;
+    else
+      state<=next_state;
+  end
+  always@(a or b or cstate)
+  begin
+    y=0;z=0;
+    case(state)
+      s0: if(a==1&&b==0) next_state=s1;
+    else if(a==0&&b==1)
+      begin
+        next_state=s0; y=1;
+      end
+    else
+      next_state=s0;
+      s1: if(a==1&&b==0)
+      begin
+        next_state=s0;y=1;
+      end
+    else if(a==0&&b==1)
+      begin
+        next_state=s0; y=1;z=1;
+      end
+    else
+      next_state=s0;
+      default: next_state=s0;
+    endcase
+  end
 endmodule
+```
+
 
 扩展：设计一个自动售饮料机的逻辑电路。它的投币口每次只能投入一枚五角或一元的硬币。投入一元五角硬币后给出饮料；投入两元硬币时给出饮料并找回五角。
 
@@ -417,27 +381,20 @@ latch是电平触发，register是边沿触发，register在同一时钟边沿�
 
 ## 46. 用D触发器做个二分频的电路？画出逻辑电路？
 
+```verilog
 module div2(clk,rst,clk_out);
-
-input clk,rst;
-
-output reg clk_out;
-
-always@(posedge clk)
-
-begin
-
-if(!rst)
-
-clk_out <=0;
-
-else
-
-clk_out <=~ clk_out;
-
-end
-
+  input clk,rst;
+  output reg clk_out;
+  always@(posedge clk)
+  begin
+    if(!rst)
+      clk_out <=0;
+    else
+      clk_out <=~ clk_out;
+  end
 endmodule
+```
+
 
 现实工程设计中一般不采用这样的方式来设计，二分频一般通过DCM来实现。通过DCM得到的分频信号没有相位差。
 
@@ -449,37 +406,24 @@ endmodule
 
 ## 48. 用你熟悉的设计方式设计一个可预置初值的7进制循环计数器,15进制的呢？
 
+```verilog
 module counter7(clk,rst,load,data,cout);
-
-input clk,rst,load;
-
-input [2:0] data;
-
-output reg [2:0] cout;
-
-always@(posedge clk)
-
-begin
-
-if(!rst)
-
-cout<=3’d0;
-
-else if(load)
-
-cout<=data;
-
-else if(cout>=3’d6)
-
-cout<=3’d0;
-
-else
-
-cout<=cout+3’d1;
-
-end
-
+  input clk,rst,load;
+  input [2:0] data;
+  output reg [2:0] cout;
+  always@(posedge clk)
+  begin
+    if(!rst)
+      cout<=3’d0;
+    else if(load)
+      cout<=data;
+    else if(cout>=3’d6)
+      cout<=3’d0;
+    else
+      cout<=cout+3’d1;
+  end
 endmodule
+```
 
 ## 49. 你所知道的可编程逻辑器件有哪些？
 
@@ -489,25 +433,18 @@ PAL，PLA，GAL，CPLD，FPGA
 
 将传输过来的信号经过两级触发器就可以消除毛刺。（这是我自己采用的方式：这种方式消除毛刺是需要满足一定条件的，并不能保证一定可以消除）
 
+```verilog
 module(clk,data,q_out)
-
-input clk,data;
-
-output reg q_out;
-
-reg q1;
-
-always@(posedge clk)
-
-begin
-
-q1<=data;
-
-q_out<=q1;
-
-end
-
+  input clk,data;
+  output reg q_out;
+  reg q1;
+  always@(posedge clk)
+  begin
+    q1<=data;
+    q_out<=q1;
+  end
 endmodule
+```
 
 ## 51. SRAM,FALSH MEMORY,DRAM，SSRAM及SDRAM的区别?
 
@@ -653,29 +590,20 @@ BIOS是英文"Basic Input Output System"的缩略语，直译过来后中文名�
 
 ## 72. 画出DFF的结构图,用verilog实现之。（威盛）
 
+```verilog
 module dff(clk,d,qout);
-
-input clk,d;
-
-output qout;
-
-reg qout;
-
-always@(posedge clk)
-
-begin
-
-if(!reset)
-
-qout<=0;
-
-else
-
-qout<=d;
-
-end
-
+  input clk,d;
+  output qout;
+  reg qout;
+  always@(posedge clk)
+  begin
+    if(!reset)
+      qout<=0;
+    else
+      qout<=d;
+  end
 endmodule
+```
 
 ## 73. 画出一种CMOS的D锁存器的电路图和版图。（未知）
 
@@ -705,169 +633,102 @@ endmodule
 
 ## 79. 请用HDL描述四位的全加法器、5分频电路。（仕兰微电子）
 
+```verilog
 module adder4(a,b,ci,s,co);
-
-input ci;
-
-input [3:0] a,b;
-
-output co;
-
-output [3:0] s;
-
-assign {co,s}=a+b+ci;
-
+  input ci;
+  input [3:0] a,b;
+  output co;
+  output [3:0] s;
+  assign {co,s}=a+b+ci;
 endmodule
+```
 
+```verilog
 module div5(clk,rst,clk_out);
-
-input clk,rst;
-
-output clk_out;
-
-reg [3:0] count;
-
-always@(posedge clk)
-
-begin
-
-if(!rst)
-
-begin
-
-count<=0;
-
-clk_out=0;
-
-end
-
-else if(count==3’d5)
-
-begin
-
-count<=0;
-
-clk_out=~clk_out;
-
-end
-
-else
-
-count<=count+1;
-
-end
-
+  input clk,rst;
+  output clk_out;
+  reg [3:0] count;
+  always@(posedge clk)
+  begin
+    if(!rst)
+      begin
+        count<=0;
+        clk_out=0;
+      end
+    else if(count==3’d5)
+      begin
+        count<=0;
+        clk_out=~clk_out;
+      end
+    else
+      count<=count+1;
+    end
 endmodule
+```
+
 
 实现奇数倍分频且占空比为50%的情况：
 
+```verilog
 module div7 ( clk, reset_n, clkout );
-
-input clk,reset_n;
-
-output clkout;
-
-reg [3:0] count;
-
-reg div1;
-
-reg div2;
-
-always @( posedge clk )
-
-begin
-
-if ( ! reset_n )
-
-count <= 3'b000;
-
-else
-
-case ( count )
-
-3'b000 : count <= 3'b001;
-
-3'b001 : count <= 3'b010;
-
-3'b010 : count <= 3'b011;
-
-3'b011 : count <= 3'b100;
-
-3'b100 : count <= 3'b101;
-
-3'b101 : count <= 3'b110;
-
-3'b110 : count <= 3'b000;
-
-default :
-
-count <= 3'b000;
-
-endcase
-
-end
-
-always @( posedge clk )
-
-begin
-
-if ( ! reset_n )
-
-div1 <= 1'b0;
-
-else if ( count == 3'b000 )
-
-div1 <= ~ div1;
-
-end
-
-always @( negedge clk )
-
-begin
-
-if ( ! reset_n )
-
-div2 <= 1'b0;
-
-else if ( count == 3'b100 )
-
-div2 <= ~ div2;
-
-end
-
-assign clkout = div1 ^ div2;
-
+  input clk,reset_n;
+  output clkout;
+  reg [3:0] count;
+  reg div1;
+  reg div2;
+  always @( posedge clk )
+  begin
+    if ( ! reset_n )
+      count <= 3'b000;
+    else
+      case ( count )
+    3'b000 : count <= 3'b001;
+    3'b001 : count <= 3'b010;
+    3'b010 : count <= 3'b011;
+    3'b011 : count <= 3'b100;
+    3'b100 : count <= 3'b101;
+    3'b101 : count <= 3'b110;
+    3'b110 : count <= 3'b000;
+    default :
+    count <= 3'b000;
+  endcase
+  end
+  always @( posedge clk )
+  begin
+    if ( ! reset_n )
+      div1 <= 1'b0;
+    else if ( count == 3'b000 )
+      div1 <= ~ div1;
+  end
+  always @( negedge clk )
+  begin
+    if ( ! reset_n )
+      div2 <= 1'b0;
+    else if ( count == 3'b100 )
+      div2 <= ~ div2;
+  end
+  assign clkout = div1 ^ div2;
 endmodule
+```
 
 ## 80. 用VERILOG或VHDL写一段代码，实现10进制计数器。（未知）
 
+```verilog
 module counter10(clk,rst,count);
-
-input clk,rst;
-
-output [3:0] count;
-
-reg [3:0] count;
-
-always@(posedge clk)
-
-begin
-
-if(!rst)
-
-count<=0;
-
-else if(count>=4’d9)
-
-count<=0;
-
-else
-
-count<=count+1;
-
-end
-
+  input clk,rst;
+  output [3:0] count;
+  reg [3:0] count;
+  always@(posedge clk)
+  begin
+    if(!rst)
+      count<=0;
+    else if(count>=4’d9)
+      count<=0;
+    else
+      count<=count+1;
+  end
 endmodule
+```
 
 ## 81. 描述一个交通信号灯的设计。（仕兰微电子）
 
