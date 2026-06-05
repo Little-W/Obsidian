@@ -1,0 +1,1 @@
++SIM+ +UVM_TESTNAME=i2c_smoke_test +SEQ=i2c_reg_boundary_seq +I2C_TARGET_ADDR=55 +I2C_SLAVE_TYPE=generic +I2C_SPEED_MODE=standard +I2C_VIP_WAIT_FIRST_WRITE

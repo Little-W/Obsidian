@@ -1,0 +1,2 @@
+#! /usr/bin/csh
+bsub -q tmp verdi -ssf wave.fsdb  &

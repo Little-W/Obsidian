@@ -1,0 +1,15 @@
+session_rules:
+  - name: stop_test_when_log_gt_500mb
+    condition: (log_file_size) > (200)
+    action: stop_test
+
+  - name: stop_test_when_debug_log_gt_500mb
+    condition: (debug_log_file_size) > (200)
+    action: stop_test
+
+  - name: stop_test_when_mem_gt_50000mb
+    condition: (test_mem) > (50000)
+    action: stop_test
+
+
+
