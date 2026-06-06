@@ -69,6 +69,12 @@ SOPC，高速串行I/O，低功耗，可靠性，可测试性和设计验证流�
 
 ![图 01](assets/数字IC设计经典笔试题/fig-01-v2-fdd83b76527486f5a0c9b179e67d27c2_1440w.jpg)
 
+补充答案：
+
+FPGA 和 CPLD 都属于可编程逻辑器件，但结构和适用场景不同。CPLD 通常基于乘积项结构，资源规模较小，组合逻辑延时较确定，上电后一般可立即工作，适合胶合逻辑、地址译码、简单控制逻辑等场景。FPGA 通常基于 LUT、触发器、Block RAM、DSP、PLL 等可配置资源，逻辑规模大、布线资源丰富，适合复杂数字系统、SoC 原型、算法加速和高速接口设计。
+
+CPLD 的优点是时序可预测、配置简单、非易失特性常见；FPGA 的优点是容量大、灵活性强、可实现复杂时序逻辑和大规模并行处理。缺点上，CPLD 资源有限；FPGA 一般需要配置过程，设计和时序约束复杂度更高。
+
 ## 13. 锁存器（latch）和触发器（flip-flop）区别？
 
 电平敏感的存储器件称为锁存器。可分为高电平锁存器和低电平锁存器，用于不同时钟之间的信号同步。
@@ -331,9 +337,51 @@ Mealy 状态机的输出不仅与当前状态值有关, 而且与当前输入值
 
 ![图 03](assets/数字IC设计经典笔试题/fig-03-v2-5e069f4a022e85a6317a477f5f4c5d53_1440w.jpg)
 
+补充答案：
+
+二输入 CMOS 与非门 NAND 的结构是“上并下串”：上拉网络由两个 PMOS 并联接到 VDD，下拉网络由两个 NMOS 串联接到 GND。只有当 A=1 且 B=1 时，两个 NMOS 同时导通、两个 PMOS 同时关断，输出被拉低为 0；其他输入组合下至少有一个 PMOS 导通，输出为 1。
+
+真值表：
+
+```text
+A B | Y = ~(A & B)
+0 0 | 1
+0 1 | 1
+1 0 | 1
+1 1 | 0
+```
+
+与非门是 CMOS 标准单元中很常用的基本门，因为它面积小、速度快，并且任意组合逻辑都可以用 NAND 门实现。
+
 ## 37. 画出NOT,NAND,NOR的符号,真值表,还有transistor level（晶体管级）的电路？
 
 <数字电子技术基础（第五版）> 117页—134页
+
+补充答案：
+
+NOT、NAND、NOR 的逻辑关系如下：
+
+```text
+NOT:  Y = ~A
+NAND: Y = ~(A & B)
+NOR:  Y = ~(A | B)
+```
+
+真值表：
+
+```text
+A | NOT
+0 | 1
+1 | 0
+
+A B | NAND | NOR
+0 0 |  1   |  1
+0 1 |  1   |  0
+1 0 |  1   |  0
+1 1 |  0   |  0
+```
+
+晶体管级实现中，反相器由一个 PMOS 上拉和一个 NMOS 下拉构成；NAND 为 PMOS 并联、NMOS 串联；NOR 为 PMOS 串联、NMOS 并联。记忆口诀是：NAND 上并下串，NOR 上串下并。
 
 ## 38. 画出CMOS的图,画出tow-to-one mux gate.(威盛VIA 2003.11.06 上海笔试试题) ？
 
@@ -375,9 +423,37 @@ Y=A*B+C*D=((AB)’(CD)’)’ 三个两输入与非门
 
 通过摩根定律化成用与非门实现。
 
+补充答案：
+
+全加器有三个输入 `A`、`B`、`Cin`，两个输出 `Sum` 和 `Cout`：
+
+```text
+Sum  = A ^ B ^ Cin
+Cout = A&B | A&Cin | B&Cin
+```
+
+如果要求用与非门实现，可以先把逻辑化为与或形式，再用两次取反转换成 NAND-NAND 结构。因为 NAND 是通用门，异或、与、或、非都可以由 NAND 拼出。工程里更常见的结构是两个半加器加一个或门：第一级计算 `A+B`，第二级加 `Cin`，两个进位再或起来得到 `Cout`。
+
 ## 42. A,B,C,D,E进行投票,多数服从少数,输出是F(也就是如果A,B,C,D,E中1的个数比0 多,那么F输出为1,否则F为0),用与非门实现,输入数目没有限制？（与非-与非形式）
 
 先画出卡诺图来化简，化成与或形式，再两次取反便可。
+
+补充答案：
+
+这是 5 输入多数表决器。输出 F=1 的条件是 A、B、C、D、E 中至少有 3 个为 1。因此逻辑表达式可以写成所有三输入乘积项的或：
+
+```text
+F = ABC + ABD + ABE + ACD + ACE + ADE + BCD + BCE + BDE + CDE
+```
+
+如果用与非门实现，可将上式整体取两次反，得到 NAND-NAND 结构：
+
+```text
+F = ~( ~(ABC) & ~(ABD) & ~(ABE) & ~(ACD) & ~(ACE)
+     & ~(ADE) & ~(BCD) & ~(BCE) & ~(BDE) & ~(CDE) )
+```
+
+第一层 NAND 产生每个三输入项的反，第二层 NAND 汇总输出。题目说输入数目没有限制，因此可以直接使用多输入 NAND；如果实际库中没有多输入门，需要用多级 NAND 树实现。
 
 ## 43. 画出一种CMOS的D锁存器的电路图和版图？
 
@@ -387,7 +463,19 @@ Y=A*B+C*D=((AB)’(CD)’)’ 三个两输入与非门
 
 也可以将右图中的与非门和反相器用CMOS电路画出来。
 
+补充答案：
+
+CMOS D 锁存器通常由传输门和反相器构成。时钟有效时，输入传输门打开，D 信号进入内部存储节点，锁存器透明，Q 跟随 D；时钟无效时，输入传输门关闭，反馈传输门打开，由两个反相器形成反馈环保持原来的数据。
+
+也可以用门级结构理解：D latch = 使能控制的存储单元。当 `EN=1` 时采样输入，当 `EN=0` 时保持输出。版图实现时需要画出 PMOS/NMOS 有源区、多晶硅栅、传输门、反相器和反馈路径，同时注意 PMOS/NMOS 尺寸匹配、井接触和衬底接触。
+
 ## 44. LATCH和DFF的概念和区别？
+
+补充答案：
+
+Latch 是电平敏感器件，当使能信号处于有效电平时，输出会跟随输入变化；当使能无效时，保持原状态。DFF 是边沿敏感器件，只在时钟上升沿或下降沿采样输入 D，并在下一个有效边沿到来前保持输出 Q 不变。
+
+主要区别：Latch 对电平敏感，DFF 对时钟边沿敏感；Latch 存在透明窗口，可能用于 time borrowing，但也容易引入意外组合通路；DFF 时序边界清晰，更适合同步 RTL 设计。写 RTL 时如果组合逻辑分支赋值不完整，综合工具可能推断出 latch，这是常见风险。
 
 ## 45. latch与register的区别,为什么现在多用register.行为级描述中latch如何产生的？
 
@@ -441,6 +529,20 @@ module counter7(clk,rst,load,data,cout);
 endmodule
 ```
 
+补充答案：
+
+可预置初值的 7 进制计数器需要包含复位、装载和计数逻辑。计数范围是 0 到 6，当计数到 6 后回到 0；当 `load=1` 时，把外部输入 `data` 装入计数器。15 进制计数器同理，只是计数范围变为 0 到 14，需要 4 bit 寄存器。
+
+7 进制核心逻辑：
+
+```text
+reset -> count = 0
+load  -> count = data
+count == 6 -> count = 0
+else -> count = count + 1
+```
+
+15 进制只需把位宽改为 4 bit，并把终值判断从 6 改为 14。面试时要强调：这是模 N 计数器，寄存器位宽至少满足 `2^width >= N`，预置值如果超出合法范围需要额外处理。
 
 ## 49. 你所知道的可编程逻辑器件有哪些？
 
@@ -483,6 +585,14 @@ SDRAM：即同步动态随机存取存储器。
 ## 53. ASIC设计流程中什么时候修正Setup time violation 和Hold time violation?如何修正？解释setup和hold time violation，画图说明，并说明解决办法。（威盛VIA2003.11.06 上海笔试试题）
 
 见前面的建立时间和保持时间，violation违反，不满足
+
+补充答案：
+
+Setup violation 和 hold violation 一般在综合后 STA、布局布线后 STA 中修正，尤其布局布线后由于真实连线延时更准确，是时序收敛的关键阶段。前端 RTL 阶段也可以通过结构调整提前规避。
+
+Setup violation 表示数据到达太晚，不能在捕获时钟边沿前满足建立时间。常见修正方法：降低时钟频率、优化组合逻辑、拆分长路径、加流水线、换更快单元、改善布局、减少负载。
+
+Hold violation 表示数据到达太早，在捕获时钟边沿后没有保持足够时间。常见修正方法：在数据路径插 buffer、增加最短路径延时、调整时钟偏斜、修改布局布线。Hold violation 与时钟周期无关，不能靠降频解决。
 
 ## 54. 给出一个组合逻辑电路，要求分析逻辑功能。
 
@@ -550,6 +660,31 @@ T3hold>T1min+T2min 时钟沿到来之后数据保持的最短时间，一定要�
 
 ## 61. 给出某个一般时序电路的图，有Tsetup，Tdelay，Tck->q（Tco），还有 clock的delay,写出决定最大时钟的因素，同时给出表达式。 T+Tclkdealy>Tsetup+Tco+Tdelay; Thold>Tclkdelay+Tco+Tdelay; 保持时间与时钟周期无关
 
+补充答案：
+
+决定最大时钟频率的是发射触发器的 clock-to-Q 延时、组合逻辑最大延时、接收触发器建立时间，以及时钟偏斜、时钟不确定度等因素。典型 setup 约束为：
+
+```text
+Tclk >= Tco_max + Tcomb_max + Tsetup + Tskew + Tuncertainty
+Fmax <= 1 / Tclk
+```
+
+如果考虑 launch clock 和 capture clock 的到达时间，setup 检查可写成：
+
+```text
+Tclk + Tcapture_clk_delay - Tlaunch_clk_delay
+  >= Tco_max + Tcomb_max + Tsetup
+```
+
+Hold 检查与时钟周期无关，主要看最短路径是否太快：
+
+```text
+Tlaunch_clk_delay + Tco_min + Tcomb_min
+  >= Tcapture_clk_delay + Thold
+```
+
+Setup violation 通常通过降低频率、优化组合逻辑、加流水线、改善布局布线解决；hold violation 通常通过增加数据路径延时、调整 clock skew 或插 buffer 解决，不能靠降低时钟频率解决。
+
 ## 62. 实现三分频电路，3/2分频电路等（偶数倍分频 奇数倍分频）
 
 图2是3分频电路，用JK-FF实现3分频很方便，不需要附加任何逻辑电路就能实现同步计数分频。但用D-FF实现3分频时，必须附加译码反馈电路，如图2所示的译码复位电路，强制计数状态返回到初始全零状态，就是用NOR门电路把Q2，Q1=“11B”的状态译码产生“H”电平复位脉冲，强迫FF1和FF2同时瞬间（在下一时钟输入Fi的脉冲到来之前）复零，于是Q2，Q1=“11B”状态仅瞬间作为“毛刺”存在而不影响分频的周期，这种“毛刺”仅在Q1中存在，实用中可能会造成错误，应当附加时钟同步电路或阻容低通滤波电路来滤除，或者仅使用Q2作为输出。D-FF的3分频，还可以用AND门对Q2，Q1译码来实现返回复零。
@@ -588,11 +723,43 @@ BIOS是英文"Basic Input Output System"的缩略语，直译过来后中文名�
 
 ![图 10](assets/数字IC设计经典笔试题/fig-10-v2-5353e80f0d8da58d7b5d2f5dddef4a00_1440w.jpg)
 
+补充答案：
+
+三极管输出特性曲线通常描述在不同基极电流 Ib 下，集电极电流 Ic 随集电极-发射极电压 Vce 的变化关系。主要工作区包括截止区、放大区和饱和区。
+
+截止区：Ib 近似为 0，Ic 很小，三极管等效关断。放大区：发射结正偏、集电结反偏，Ic 近似等于 beta * Ib，适合模拟放大。饱和区：发射结和集电结均正偏，Vce 很小，Ic 不再随 Ib 按比例增加，三极管等效导通开关。数字电路中常用截止区和饱和区表示开关状态。
+
 ## 65. Please show the CMOS inverter schematic, layout and its cross section with P-well process. Plot its transfer curve (Vout-Vin) and also explain the operation region of PMOS and NMOS for each segment of the transfer curve? （威盛笔试题circuit design-beijing-03.11.09）
+
+补充答案：
+
+CMOS inverter 由上拉 PMOS 和下拉 NMOS 组成：PMOS 源极接 VDD，NMOS 源极接 GND，两者漏极相连作为输出，两个栅极相连作为输入。
+
+传输特性 Vout-Vin 可分为几个区间：Vin=0 附近，NMOS 截止、PMOS 导通，输出为高；Vin 逐渐升高进入翻转区，NMOS 和 PMOS 同时导通，输出快速翻转，此时存在短路电流；Vin 接近 VDD 时，PMOS 截止、NMOS 导通，输出为低。
+
+P-well 工艺中，NMOS 做在 P-well 中，PMOS 做在 N 型衬底或 N-well 区域中。版图上通常包含 PMOS/NMOS 有源区、多晶硅栅、金属互连、N+/P+ 扩散区以及井接触/衬底接触。为了避免 latch-up，需要良好的 well tap 和 substrate tap。
 
 ## 66. To design a CMOS inverter with balance rise and fall time, please define the ration of channel width of PMOS and NMOS and explain? P管要比N管宽
 
+补充答案：
+
+为了让上升沿和下降沿延时接近平衡，需要让 PMOS 的上拉能力接近 NMOS 的下拉能力。由于空穴迁移率低于电子迁移率，PMOS 在相同尺寸下驱动能力弱于 NMOS，所以 PMOS 的宽度通常要做得比 NMOS 更宽。
+
+经验上：
+
+```text
+Wp / Wn ≈ μn / μp
+```
+
+在常见 CMOS 工艺中，电子迁移率约为空穴迁移率的 2 到 3 倍，因此常取 `Wp/Wn ≈ 2~3`。实际比例还要根据工艺库模型、负载、电源电压和目标噪声容限通过仿真确定。
+
 ## 67. Please draw the transistor level schematic of a CMOS 2 input AND gate and explain which input has faster response for output rising edge.(less delay time)。（威盛笔试题circuit design-beijing-03.11.09）
+
+补充答案：
+
+CMOS 2 输入 AND 门通常由一个 2 输入 NAND 门后接一个反相器实现。NAND 部分中，PMOS 上拉网络为两个 PMOS 并联，NMOS 下拉网络为两个 NMOS 串联；再经过一级 inverter 得到 AND 输出。
+
+输出上升沿对应 NAND 内部节点先下降，再由后级反相器输出上升。对 NAND 的下降过程而言，串联 NMOS 中更靠近输出节点的输入通常响应更快，因为它直接控制输出节点到中间节点的放电通路；更靠近 GND 的 NMOS 还受中间节点电容影响，延时可能更大。严格结论取决于具体晶体管排列和寄生电容。
 
 ## 68. 为了实现逻辑Y=A’B+AB’+CD，请选用以下逻辑中的一种，并说明为什么？
 
@@ -602,11 +769,23 @@ BIOS是英文"Basic Input Output System"的缩略语，直译过来后中文名�
 
 ![图 11](assets/数字IC设计经典笔试题/fig-11-v2-5ef17f29888a525b28b9ffcba0dd3651_1440w.jpg)
 
+补充答案：
+
+D 触发器在有效时钟边沿采样 D 输入，并把采样值送到 Q 输出。若为上升沿触发，则只有在 `clk` 上升沿到来时，`Q <= D`；在两个上升沿之间，即使 D 发生变化，Q 也保持不变。
+
+波形判断要点：看每个有效时钟边沿到来瞬间 D 的值，边沿之后经过 clock-to-Q 延时，Q 更新为该值。非有效边沿或时钟电平期间 D 的毛刺不应改变 Q，前提是毛刺没有破坏建立/保持时间。
+
 ## 70. 用传输门和倒向器搭一个边沿触发器（DFF）。（扬智电子笔试）
 
 ![图 12](assets/数字IC设计经典笔试题/fig-12-v2-8a90225373281a4fb0fae73e28efef99_1440w.jpg)
 
 通过级联两个D锁存器组成
+
+补充答案：
+
+边沿触发 DFF 可以由两个电平敏感 D latch 串联构成，即 master-slave 结构。以正边沿触发为例：当 clk=0 时，master latch 透明，slave latch 关闭，输入 D 被 master 捕获；当 clk 从 0 跳到 1 时，master 关闭并保持刚才的数据，slave 打开，把 master 中保存的数据传到 Q。因此 Q 只在时钟上升沿附近更新。
+
+用传输门实现 latch 时，传输门负责采样通路，反相器交叉反馈负责保持数据。两个 latch 使用互补时钟控制，就可以形成边沿触发器。
 
 ## 71. 用逻辑门画出D触发器。（威盛VIA 2003.11.06 上海笔试试题）
 
@@ -635,6 +814,27 @@ module dff(clk,d,qout);
 endmodule
 ```
 
+补充答案：
+
+结构上，DFF 可看作两个 D latch 级联的 master-slave 结构，也可以直接理解为一个边沿采样寄存器。Verilog 描述时一般写成时钟边沿触发的 `always` 块。如果需要复位，应把 `reset` 加到端口列表中；原代码里使用了 `reset`，但模块端口未声明，严格来说需要补齐。
+
+更完整的同步复位写法如下：
+
+```verilog
+module dff(
+  input  wire clk,
+  input  wire rst_n,
+  input  wire d,
+  output reg  qout
+);
+  always @(posedge clk) begin
+    if (!rst_n)
+      qout <= 1'b0;
+    else
+      qout <= d;
+  end
+endmodule
+```
 
 ## 73. 画出一种CMOS的D锁存器的电路图和版图。（未知）
 
@@ -642,7 +842,28 @@ endmodule
 
 或者是利用前面与非门搭的D锁存器实现
 
+补充答案：
+
+CMOS D 锁存器可以用传输门实现。基本结构是输入传输门、两个反相器形成的存储环，以及反馈传输门。`CLK=1` 时输入传输门导通，反馈传输门关闭，锁存器透明；`CLK=0` 时输入传输门关闭，反馈传输门导通，输出状态被反馈环保持。
+
+如果画版图，需要体现 PMOS 在 N-well 中、NMOS 在 P-sub/P-well 中，poly 形成栅，active 形成源漏，metal 完成互连。传输门由并联的 PMOS 和 NMOS 构成，分别用互补时钟控制，以减小单管传输高/低电平时的阈值损失。
+
 ## 74. 用filp-flop和logic-gate设计一个1位加法器，输入carryin和current-stage，输出carryout和next-stage. （未知）
+
+补充答案：
+
+这题本质是用一个触发器保存当前位 `current-stage`，并与输入进位 `carryin` 完成一位加法。两个 1 bit 数相加时：
+
+```text
+next-stage = current-stage ^ carryin
+carryout   = current-stage & carryin
+```
+
+其中 `next-stage` 是本位求和结果，`carryout` 是向高位产生的进位。用门电路实现时，一个 XOR 门产生 `next-stage`，一个 AND 门产生 `carryout`；如果没有 XOR 门，也可以用与、或、非门实现：
+
+```text
+next-stage = (~current-stage & carryin) | (current-stage & ~carryin)
+```
 
 ## 75. 用D触发器做个4进制的计数。（华为）
 
@@ -662,7 +883,68 @@ endmodule
 
 ## 76. 实现N位Johnson Counter, N=5。（南山之桥）
 
+补充答案：
+
+Johnson Counter 又叫扭环计数器，本质是移位寄存器首尾相连，但反馈到最低位的是最高位的反相信号。N 位 Johnson Counter 有 `2N` 个有效状态，因此 N=5 时有 10 个状态。
+
+典型状态序列：
+
+```text
+00000 -> 10000 -> 11000 -> 11100 -> 11110 -> 11111
+11111 -> 01111 -> 00111 -> 00011 -> 00001 -> 00000
+```
+
+Verilog 示例：
+
+```verilog
+module johnson_counter_5 (
+  input  wire       clk,
+  input  wire       rst_n,
+  output reg  [4:0] q
+);
+  always @(posedge clk) begin
+    if (!rst_n)
+      q <= 5'b00000;
+    else
+      q <= {~q[0], q[4:1]};
+  end
+endmodule
+```
+
+也可以写成 `{q[3:0], ~q[4]}`，方向不同但原理相同。关键点是“移位 + 末位取反反馈”。
+
 ## 78. 数字电路设计当然必问Verilog/VHDL，如设计计数器。（未知）
+
+补充答案：
+
+设计计数器时一般先确定计数范围、复位方式、是否可加载、是否使能、溢出条件和输出编码。RTL 中通常使用时钟边沿触发的 `always` 块，所有寄存器用非阻塞赋值。
+
+一个带同步复位和使能的 4 bit 计数器示例：
+
+```verilog
+module counter #(
+  parameter WIDTH = 4,
+  parameter MAX_VALUE = 9
+)(
+  input  wire             clk,
+  input  wire             rst_n,
+  input  wire             en,
+  output reg  [WIDTH-1:0] count
+);
+  always @(posedge clk) begin
+    if (!rst_n)
+      count <= '0;
+    else if (en) begin
+      if (count == MAX_VALUE)
+        count <= '0;
+      else
+        count <= count + 1'b1;
+    end
+  end
+endmodule
+```
+
+面试中要说明：计数器属于时序逻辑；复位要明确同步/异步；计数到最大值后回零；如果跨时钟域使用计数值，需要额外同步或使用 Gray code。
 
 ## 79. 请用HDL描述四位的全加法器、5分频电路。（仕兰微电子）
 
@@ -745,6 +1027,11 @@ module div7 ( clk, reset_n, clkout );
 endmodule
 ```
 
+补充答案：
+
+四位全加器可以直接用 Verilog 加法表达式实现，综合工具会推导出加法器结构。`{co, s} = a + b + ci` 中，`s` 是 4 bit 和，`co` 是最高位进位。
+
+5 分频属于奇数分频，如果只在单个边沿翻转，难以得到严格 50% 占空比。常见做法是分别在上升沿和下降沿产生两个相位错开的分频信号，再异或或组合得到接近 50% 占空比的输出。代码里还应注意常量写法应为 ASCII 形式，例如 `3'd5`，不要写成弯引号 `3’d5`。
 
 ## 80. 用VERILOG或VHDL写一段代码，实现10进制计数器。（未知）
 
@@ -765,10 +1052,38 @@ module counter10(clk,rst,count);
 endmodule
 ```
 
+补充答案：
+
+10 进制计数器也叫 decade counter，计数范围为 0 到 9，需要 4 bit 寄存器表示。当复位有效时清零；否则每个时钟加 1；当计数到 9 后下一个时钟回到 0。
+
+代码要点：
+
+```text
+if reset: count = 0
+else if count == 9: count = 0
+else count = count + 1
+```
+
+原代码思路是正确的，但常量建议写成 `4'd9`，不要使用弯引号。时序逻辑中寄存器赋值应使用非阻塞赋值 `<=`。
 
 ## 81. 描述一个交通信号灯的设计。（仕兰微电子）
 
 按照时序逻辑电路的设计方法：
+
+补充答案：
+
+交通灯可以抽象成有限状态机。以东西向和南北向两组灯为例，常见状态包括：
+
+```text
+S0：东西绿，南北红
+S1：东西黄，南北红
+S2：东西红，南北绿
+S3：东西红，南北黄
+```
+
+每个状态保持固定时间，由计数器计时；计数到达设定值后进入下一状态。输出由当前状态决定，例如 S0 时 `EW_G=1, NS_R=1`，S1 时 `EW_Y=1, NS_R=1`。
+
+设计步骤：明确输入时钟、复位、车流/行人请求；明确两方向红黄绿灯输出；定义状态和状态转移条件；用计数器产生各状态持续时间；用状态机输出灯控信号。工程实现中通常采用三段式 FSM。
 
 ## 82. 画状态机，接受1，2，5分钱的卖报机，每份报纸5分钱。（扬智电子笔试）
 
@@ -804,11 +1119,23 @@ a为输入端，b为输出端，如果a连续输入为101101则b输出为1，否
 
 ![图 16](assets/数字IC设计经典笔试题/fig-16-v2-5da2e6b357132b3f6318f3bdca7a42b7_1440w.jpg)
 
+补充答案：
+
+单管 DRAM 单元通常是 1T1C 结构，即一个访问晶体管加一个存储电容。访问晶体管的栅极接字线 WL，源/漏一端接位线 BL，另一端接存储电容，电容另一端接固定电位或参考板线。
+
+写入时，字线 WL 打开访问管，位线 BL 上的电平给存储电容充电或放电，高电荷表示 1，低电荷表示 0。读取时，字线打开，存储电容与位线共享电荷，感放检测位线微小电压变化并放大。由于读取会扰动电容电荷，DRAM 读操作通常是破坏性读，需要读后恢复；同时电容会漏电，所以必须周期性刷新。
+
 ## 88. 什么叫做OTP片(OTP（一次性可编程）)、掩膜片，两者的区别何在？（仕兰微面试题目）
 
 OTP与掩膜 OTP是一次性写入的单片机。过去认为一个单片机产品的成熟是以投产掩膜型单片机为标志的。由于掩膜需要一定的生产周期，而OTP型单片机价格不断下降，使得近年来直接使用OTP完成最终产品制造更为流行。它较之掩膜具有生产周期短、风险小的特点。近年来，OTP型单片机需量大幅度上扬，为适应这种需求许多单片机都采用了在系统编程技术(In System Programming)。未编程的OTP芯片可采用裸片Bonding技术或表面贴技术，先焊在印刷板上，然后通过单片机上引出的编程线、串行数据、时钟线等对单片机编程。解决了批量写OTP 芯片时容易出现的芯片与写入器接触不好的问题。使OTP的裸片得以广泛使用，降低了产品的成本。编程线与I/O线共用，不增加单片机的额外引脚。而一些生产厂商推出的单片机不再有掩膜型，全部为有ISP功能的OTP。
 
 ## 89. 你知道的集成电路设计的表达方式有哪几种？（仕兰微面试题目）
+
+补充答案：
+
+集成电路设计可以有多种表达层次和表达方式：系统级/算法级描述、行为级描述、RTL 级描述、门级网表、晶体管级描述和版图级描述。
+
+从抽象到具体大致是：规格/算法 -> RTL -> gate-level netlist -> transistor-level -> layout。数字 IC 前端最核心的是 RTL 表达，综合后得到门级网表；后端则进一步转换为布局布线后的物理版图，最终以 GDS/OASIS 等格式交付制造。
 
 ## 90. 描述你对集成电路设计流程的认识。（仕兰微面试题目）
 
@@ -913,6 +1240,14 @@ In electronics, tape-out is the name of the final stage of the design of an inte
 制造工艺：我们经常说的0.18微米、0.13微米制程，就是指制造工艺了。制造工艺直接关系到cpu的电气性能。而0.18微米、0.13微米这个尺度就是指的是cpu核心中线路的宽度。线宽越小，cpu的功耗和发热量就越低，并可以工作在更高的频率上了。所以以前0.18微米的cpu最高的频率比较低，用0.13微米制造工艺的cpu会比0.18微米的制造工艺的发热量低都是这个道理了。
 
 ## 97. 请描述一下国内的工艺现状。（仕兰微面试题目）
+
+补充答案：
+
+这个问题通常考察对产业链和制程能力的宏观认识。可以从“先进制程、成熟制程、特色工艺、封装测试、EDA/IP 生态”几个角度回答。
+
+国内晶圆制造在成熟制程和特色工艺上应用广泛，例如功率器件、模拟/混合信号、MCU、显示驱动、CIS、射频、嵌入式存储等领域。先进制程方面与国际最先进水平仍有差距，主要受光刻、关键设备、材料、良率、EDA/IP 和长期工艺积累等因素制约。封装测试能力相对较强，先进封装、Chiplet、2.5D/3D 封装也是重要发展方向。
+
+面试回答可以这样总结：国内工艺能力正在快速提升，成熟制程和特色工艺更适合当前大量产业需求；先进制程仍需要在设备、材料、工艺平台、设计生态和量产良率上持续突破。
 
 ## 98. 半导体工艺中，掺杂有哪几种方式？（仕兰微面试题目）
 
