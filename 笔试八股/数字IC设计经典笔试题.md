@@ -1260,3 +1260,61 @@ In electronics, tape-out is the name of the final stage of the design of an inte
 ## 100. 解释latch-up现象和Antenna effect及其预防措施.（科广试题）
 
 在芯片生产过程中，暴露的金属线或者多晶硅(polysilicon)等导体，就象是一根根天线，会收集电荷（如等离子刻蚀产生的带电粒子）导致电位升高。天线越长，收集的电荷也就越多，电压就越高。若这片导体碰巧只接了MOS 的栅，那么高电压就可能把薄栅氧化层击穿，使电路失效，这种现象我们称之为“天线效应”。随着工艺技术的发展，栅的尺寸越来越小，金属的层数越来越多，发生天线效应的可能性就越大
+
+## 101. 异步复位、同步释放的解释、原因和实现方法
+
+异步复位、同步释放是指：复位信号拉有效时，不等待时钟边沿，寄存器立即进入复位状态；复位信号撤销时，不直接异步撤销到所有寄存器，而是经过目标时钟域同步后，在时钟边沿对该时钟域内的寄存器释放复位。
+
+为什么复位要异步有效：系统上电、时钟未稳定、PLL 未锁定或时钟被关断时，也需要能把电路强制拉到确定初始状态。如果复位只能同步生效，那么没有时钟时复位就无法进入寄存器。
+
+为什么释放要同步：复位撤销如果发生在时钟有效边沿附近，寄存器可能违反 recovery/removal timing，导致亚稳态；不同寄存器看到复位释放的时间也可能不同，造成部分逻辑先跑、部分逻辑还在复位，状态机和计数器可能进入非法状态。因此复位释放应在每个时钟域内同步，保证该域所有逻辑在确定的时钟边沿之后开始工作。
+
+典型实现方法是在每个时钟域放一个 reset synchronizer。复位有效端异步进入两个触发器，释放时通过两级触发器同步移出。
+
+低有效复位示例：
+
+```verilog
+module reset_sync (
+  input  wire clk,
+  input  wire arst_n,
+  output wire srst_n
+);
+  reg [1:0] sync_ff;
+
+  always @(posedge clk or negedge arst_n) begin
+    if (!arst_n)
+      sync_ff <= 2'b00;
+    else
+      sync_ff <= {sync_ff[0], 1'b1};
+  end
+
+  assign srst_n = sync_ff[1];
+endmodule
+```
+
+使用方式：
+
+```verilog
+wire rst_n_cpu;
+
+reset_sync u_reset_sync_cpu (
+  .clk    (clk_cpu),
+  .arst_n (global_rst_n),
+  .srst_n (rst_n_cpu)
+);
+
+always @(posedge clk_cpu or negedge rst_n_cpu) begin
+  if (!rst_n_cpu)
+    state <= IDLE;
+  else
+    state <= next_state;
+end
+```
+
+注意事项：
+
+1. 每个时钟域都应有自己的 reset synchronizer，不能把一个时钟域同步后的复位直接送到另一个时钟域。
+2. 同步器前两级触发器要避免被综合优化掉，工程中常加 `ASYNC_REG`、`dont_touch` 等属性。
+3. 复位释放前要确认目标时钟稳定，例如 PLL lock 后再释放全局复位。
+4. 对复位跨域路径，STA 中通常检查 recovery/removal；同步器内部路径可能需要按公司约束规范设置 false path 或 async reset 约束。
+5. 数据通路寄存器不一定都需要复位，控制寄存器、状态机和有效标志通常需要复位，过度复位会增加面积、布线和时序压力。
