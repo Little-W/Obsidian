@@ -65,7 +65,7 @@ SSD 虽然比机械硬盘更擅长随机访问，但它并不意味着随机写�
 所以，我们希望 I/O 不要阻塞主计算路径，而是通过异步线程、CUDA stream、DeepSpeed offload buffer 和训练阶段调度实现重叠。
 
 在 forward 阶段，可以预取后续 layer 即将使用的参数或状态。因为模型执行顺序通常是已知的，所以当 GPU 正在计算当前 layer 时，系统可以提前把后面 layer 所需的数据从 SSD 或 CPU 内存读到合适位置。
-
+f
 在 backward 阶段，可以读取即将用于反向传播的 activation，同时把已经不再需要的数据写回或释放。反向传播的顺序和前向传播相反，因此 activation 的重用距离可以被分析和预测。如果调度得当，就可以在 GPU 计算当前梯度时，提前准备下一步需要的数据。
 
 在 optimizer step 阶段，可以批量读写 optimizer state。由于 optimizer state 数据量大，并且更新模式相对规律，非常适合按照 shard 进行批量调度。同时，checkpoint 和日志写入应该尽量与 optimizer state 写入错峰，避免 SSD 带宽在同一时间被多个大流量任务占满。
