@@ -281,55 +281,121 @@ Checkpoint 与 Offload 流需要解耦。若 checkpoint 写入与 optimizer stat
 
 ## 3.4 面向 SSD 特性的训练 I/O 优化方法
 
-![[3.4.png]]
+在大模型训练中，模型参数、梯度、优化器状态、activation、checkpoint、日志和 profile 数据会产生大量读写需求。随着模型规模扩大，GPU 显存难以容纳全部训练状态，系统需要引入 CPU 内存和 SSD 构成分层存储结构，将部分训练数据卸载到主机侧存储中。SSD 具有容量大、顺序读写带宽较高、成本相对较低等优点，适合承担大规模训练状态的扩展存储任务。然而，SSD 的访问延迟高于 GPU 显存和 CPU 内存，并且对小粒度、随机、频繁覆盖的写入较为敏感。如果训练系统直接以 Tensor 为单位频繁读写 SSD，容易产生大量小 I/O、随机 I/O 和元数据开销，从而影响训练吞吐，并增加 SSD 内部管理负担。
 
-### 3.4.1 大块化写入方法
+因此，面向 SSD 的训练 I/O 优化不能只依赖底层文件系统或存储设备本身，而需要结合训练过程的数据语义进行设计。训练中的不同数据对象具有不同生命周期、访问模式和可靠性要求。例如，参数分片和优化器状态直接影响训练主流程，需要按计算顺序及时预取和写回；activation 生命周期较短，可以通过重算减少保存；checkpoint 数据量大但写入频率较低，适合后台顺序写入；日志和 profile 数据主要用于诊断，应采用低优先级缓冲追加。基于这些差异，训练系统需要对 SSD I/O 进行对象感知的组织、调度和削减。
 
-大块化写入是降低小随机写和元数据开销的基本策略。训练中大量 Tensor 尺寸不一致，若按 Tensor 粒度逐个写入 SSD，会导致请求数量过多。方案将同类数据按 layer、rank、state shard 或时间窗口合并为更大的写入块。Optimizer state 按固定 shard 合并，activation 按 ring buffer slot 写入，日志按时间窗口缓冲追加，checkpoint 按 rank 和 shard 写入大文件。
+![[3.4-2.png]]
 
-大块化还可以提高元数据表达能力。每个大块可带有统一的数据类型、生命周期和访问模式标签，而不是为每个小 Tensor 分别维护复杂元数据。这样既便于训练侧恢复数据，也便于 AI SSD 侧识别数据流。
+本节从四个方面展开优化：第一，采用大块化与对齐 I/O 方法，将零散 Tensor 合并为 shard、bucket、tile 或 slot 等较大的 I/O 单元；第二，采用顺序化写入与生命周期感知放置方法，使不同训练数据按照访问模式和生命周期分区管理；第三，采用分层缓存、异步预取和计算 I/O 重叠方法，减少 GPU 等待 SSD I/O 的时间；第四，采用写入削减方法，从训练语义出发减少不必要写入，降低 SSD 压力并延长设备使用寿命。
 
-大块化需要设置合理阈值。阈值过小，无法减少小写；阈值过大，可能增加缓冲等待和显存/内存占用。阈值应结合 SSD 带宽、CPU 内存、GPU 等待时间和数据重用距离调整。调度器应记录合并前后请求数量、平均写入大小和等待时间，判断大块化是否真正降低了关键路径开销。
+表 10 给出了主要训练数据对象及其 SSD I/O 特征。
 
-### 3.4.2 顺序化写入方法
+**表 10 训练数据对象及其 SSD I/O 特征**
 
-顺序化写入适合 SSD 的物理特性，也便于底层写入聚合和垃圾回收。方案对 checkpoint 采用 append-only 或分片顺序写；对 activation 临时数据采用预分配连续区域和 slot 顺序复用；对 optimizer state 探索固定 offset 更新与日志式写入两种方式；对日志和 profile 数据采用缓冲追加。
+| 数据对象                  | 生命周期 | 访问特征                           | 是否影响训练关键路径 | SSD 优化重点                     |
+| --------------------- | ---- | ------------------------------ | ---------- | ---------------------------- |
+| Parameter shard       | 长期   | forward/backward 前读取，更新后可能写回   | 是          | 分片预取、缓存保留、按 layer 调度         |
+| Gradient shard        | 短期   | backward 产生，optimizer step 后释放 | 是          | 尽量减少落盘，必要时短生命周期缓冲            |
+| Optimizer state shard | 长期   | optimizer step 中读、改、写          | 是          | tile 化读写、批量更新、流水写回           |
+| Activation spill      | 短期   | forward 产生，backward 前再次使用      | 是          | 优先重算或 CPU offload，必要时临时写 SSD |
+| Checkpoint            | 中长期  | 低频大块写入，恢复时读取                   | 通常否        | 分片顺序写、版本管理、后台写入              |
+| Log/Profile           | 短到中期 | 追加写，诊断时读取                      | 否          | 缓冲追加、采样记录、低优先级处理             |
+| Dataset cache         | 长期   | 读密集                            | 间接影响训练     | 与写密集卸载数据分离                   |
 
-表 10 对比不同写入组织方式。
+通过对训练数据对象进行分类，系统可以避免将所有数据都作为普通文件处理，而是根据数据的训练语义采用差异化 I/O 策略。这样既有利于提高 SSD 读写效率，也有利于降低 SSD 上的无效写入和空间回收压力。
 
-| 写入方式 | 适用数据 | 优点 | 风险 | 使用建议 |
+### 3.4.1 大块化与对齐 I/O 方法
+
+大块化 I/O 是降低 SSD 小粒度访问开销的基本方法。训练过程中存在大量尺寸不同的 Tensor。如果系统按照单个 Tensor 粒度向 SSD 提交读写请求，会产生大量小 I/O 请求。这类请求不仅数量多，而且容易带来系统调用、文件系统元数据维护、I/O 队列调度和 SSD 内部映射管理等额外开销。对于训练系统而言，这些开销可能直接转化为 GPU 等待时间，影响整体吞吐。
+
+因此，本方案将训练数据从单个 Tensor 组织为更大的逻辑 I/O 单元。根据不同数据对象的特点，可以采用 shard、bucket、tile 和 slot 等组织方式。Parameter shard 可以按照 layer 或 rank 合并为预取 bucket；optimizer state 可以按照 shard 或 tile 组织为批量读写单元；activation spill 可以按照 ring buffer slot 写入临时区域；checkpoint 可以按照 rank 和 shard 组织为较大的分片文件；日志和 profile 数据可以按照时间窗口进行缓冲追加。通过这种方式，SSD 侧看到的是更少数量、更大粒度、结构更清晰的 I/O 请求，而不是大量离散的小 Tensor 请求。
+
+大块化 I/O 不仅适用于写入，也适用于读取和预取。对于参数分片，系统可以根据 forward 和 backward 的执行顺序，提前将后续 layer 所需的数据合并读取到 CPU 缓冲区中。对于优化器状态，系统可以在 optimizer step 中以 tile 为单位批量读取、更新和写回。对于 checkpoint，系统可以将多个小状态合并后统一写入，减少小文件数量和频繁元数据更新。这样可以使训练系统在读、写两个方向都更加符合 SSD 的访问特性。
+
+大块化的关键在于使 I/O 单元与训练调度单元保持一致。若只是为了增大 I/O 块而盲目合并数据，可能导致读放大或缓存浪费。例如，将短期不会使用的参数与即将使用的参数放在同一个 I/O 块中，虽然单次读取变大，但会占用 CPU 缓冲区，并可能挤占真正需要的数据。因此，parameter shard 的合并应服务于 layer 执行顺序，optimizer state 的合并应服务于 optimizer step 的 tile 更新顺序，activation 的合并应服务于 backward 阶段的重用顺序。
+
+为了支持大块化 I/O，系统需要维护卸载对象的元数据。每个卸载对象应记录对象类型、所属 rank、layer 编号、shard 编号、数据大小、数据类型、生命周期、访问模式、重用距离和可靠性需求等信息。训练调度器根据这些信息判断哪些对象可以合并，哪些对象需要提前读取，哪些对象可以延迟写回，哪些对象可以释放或重算。这样，大块化不只是底层存储优化，而是训练运行时数据管理的一部分。
+
+大块化阈值需要根据训练任务和系统资源动态调整。阈值过小，无法有效减少小 I/O；阈值过大，则可能增加数据等待时间和 CPU 缓冲区占用。对于位于训练关键路径上的 parameter shard 和 optimizer state，应避免为了形成过大的 I/O 块而延误计算；对于 checkpoint、log/profile 等非关键路径数据，则可以采用更大的缓冲区和更长的合并窗口。通过区分前台关键 I/O 和后台辅助 I/O，系统可以在训练吞吐和 SSD 访问效率之间取得平衡。
+
+### 3.4.2 顺序化写入与生命周期感知放置方法
+
+SSD 更适合处理连续、大块、生命周期相近的数据流。虽然 SSD 的随机访问性能明显优于机械硬盘，但这并不意味着随机写没有代价。对于频繁覆盖、小粒度、地址分散的写入，SSD 内部仍然需要进行地址映射、空间回收和数据搬移。训练系统如果将短生命周期 activation、频繁更新的 optimizer state、长期保存的 checkpoint 和低优先级日志混合写入同一逻辑区域，就容易增加 SSD 内部管理压力。
+
+因此，本方案采用顺序化写入与生命周期感知放置相结合的方法。顺序化写入关注单个数据流的写入组织方式，生命周期感知放置关注不同数据流之间是否应该分离。系统应根据训练数据的语义，将数据划分为长期训练状态、短生命周期临时数据、后台可靠性数据、低优先级诊断数据和读密集缓存数据等类别，并为每类数据设计不同的 SSD 放置策略。
+
+对于 parameter shard 和 optimizer state shard，这类数据属于长期训练状态。它们需要稳定的索引结构，以便训练过程中快速定位和恢复。Parameter shard 可以按照 rank、layer 或 shard 编号组织，支持按计算顺序预取。Optimizer state 可以采用 fixed shard 方式，为每个状态分片分配稳定位置，并在 optimizer step 中按照 tile 粒度进行大块读写。fixed shard 的优点是索引清晰、恢复方便，但需要合理管理更新偏移和写回时机，避免过多小范围覆盖写。
+
+对于 activation spill，这类数据生命周期较短，通常只在 forward 之后到 backward 使用之前有效。系统可以采用预分配连续区域和 ring buffer slot 管理 activation 临时数据。当某个 slot 中的数据完成 backward 使用后，该 slot 可以被新的 activation 复用。这样既避免了频繁创建和删除小文件，也便于快速回收临时空间。需要注意的是，activation 写入 SSD 应作为补充策略。系统应优先采用 activation checkpointing、recomputation 或 CPU offload，只有当 CPU 内存不足或 activation 压力过大时，才将部分 activation spill 到 SSD。
+
+对于 checkpoint，推荐采用 append-only 或分片顺序写方式。每次保存 checkpoint 时，系统按照 rank 和 shard 生成连续的大文件或大块区域，而不是在大量小文件上进行随机覆盖。旧 checkpoint 的删除和版本清理应由后台任务完成，避免阻塞训练主流程。由于 checkpoint 通常不在每个 step 的关键路径上，其写入应作为低优先级后台 I/O，与参数预取和优化器状态读写错峰执行。
+
+对于 log/profile 数据，应采用缓冲追加方式。日志和 profile 通常用于调试和性能分析，不应与训练关键路径数据竞争 SSD 资源。系统可以按照时间窗口或事件窗口进行缓冲，将多条记录合并后再追加写入。正常训练阶段可以降低记录粒度，只保存关键事件和摘要信息；当出现异常、性能下降或调试需求时，再提高记录频率。
+
+对于 dataset cache，应与写密集的训练卸载数据分离。Dataset cache 主要服务于数据加载路径，具有读密集特征。如果它与 optimizer state、activation spill 等写密集数据混放，可能导致读写干扰，影响 data loader 稳定性。因此，系统应将读密集缓存与写密集卸载区域分开管理。
+
+表 11 对比了不同写入组织方式及其适用场景。
+
+**表 11 不同写入组织方式对比**
+
+|写入组织方式|适用数据|优点|风险|使用建议|
 |---|---|---|---|---|
-| 每 Tensor 独立写 | 小型调试数据 | 实现简单 | 小文件多、随机性强 | 不作为主要策略 |
-| Fixed Shard | optimizer state、参数分片 | 稳定、便于索引 | 更新位置需管理 | 重点采用 |
-| Ring Buffer | activation 临时数据 | 适合短生命周期复用 | 需要 slot 管理 | 重点采用 |
-| Append-only | checkpoint、日志 | 顺序性好 | 需要版本和清理机制 | 重点采用 |
-| Log-structured | 频繁更新状态 | 顺序写友好 | 需要 compaction | 作为增强探索 |
+|每 Tensor 独立写|小型调试数据|实现简单|小文件多、随机性强、元数据开销高|不作为主要策略|
+|Fixed Shard|parameter shard、optimizer state|索引稳定、恢复方便|需要管理固定偏移和版本|重点采用|
+|Ring Buffer|activation spill、临时 gradient spill|适合短生命周期复用|需要 slot 生命周期管理|有条件采用|
+|Append-only|checkpoint、log/profile|顺序性好、实现清晰|需要版本清理机制|重点采用|
+|Log-structured|频繁更新状态|顺序写友好|需要后台整理和索引维护|作为增强探索|
+|Read-mostly Cache|dataset cache|有利于读取稳定性|可能与写密集数据竞争空间|与写密集区域分离|
 
-顺序化策略还应避免冷热数据混放。短生命周期 activation 与长期 checkpoint 不应共享同一逻辑区域；读密集 dataset cache 不应与写密集 optimizer state 混为一类；日志/Profile 应作为低优先级追加流单独处理。若 AI SSD 支持主机侧放置提示或类似多流写入机制，可将不同语义数据映射到不同放置类别。
+如果 SSD 支持主机侧放置提示、多流写入、区域化写入或类似接口，训练框架可以进一步将数据对象的生命周期和访问模式传递给设备侧。例如，将 activation spill 标记为短生命周期临时数据，将 checkpoint 标记为长期顺序写数据，将 optimizer state 标记为频繁更新状态数据。这样可以帮助 SSD 更合理地组织内部空间，减少不同生命周期数据混放带来的管理开销。
 
-### 3.4.3 计算与 I/O 重叠方法
+### 3.4.3 分层缓存、异步预取与计算 I/O 重叠方法
 
-计算与 I/O 重叠是保证训练吞吐的关键。方案通过异步线程、CUDA stream、DeepSpeed offload buffer 和训练阶段调度实现重叠。在 forward 阶段，预取后续 layer 参数或状态；在 backward 阶段，读取即将使用的 activation，并写回已不再需要的数据；在 optimizer step 阶段，批量读写优化器状态，并尽量与 checkpoint 和日志写入错峰。
+在 SSD 协同卸载训练中，影响训练吞吐的关键不只是 SSD 的裸读写速度，而是 SSD I/O 是否暴露在 GPU 计算关键路径上。如果 GPU 在 forward、backward 或 optimizer step 中等待 SSD 数据返回，即使 SSD 本身具有较高带宽，也会造成训练吞吐下降。因此，系统需要通过分层缓存、异步预取和流水调度，将 SSD I/O 尽可能隐藏在 GPU 计算过程中。
 
-重叠策略需要基于 profiler 结果动态调整。如果 SSD 带宽已被 checkpoint 占用，则 activation 写回应降级或推迟；如果 GPU utilization 下降且 I/O 队列积压，则说明预取不及时或写入过度；如果 CPU staging buffer 长期满载，则需要调整 CPU 缓存容量或减少同时 offload 的对象。
+本方案采用 GPU HBM、CPU 内存和 SSD 构成的三级数据管理结构。GPU HBM 保存当前计算立即需要的数据；CPU 内存作为中间缓存和 staging buffer，承担 SSD 与 GPU 之间的数据中转；SSD 保存暂时无法驻留在 GPU 或 CPU 中的参数分片、优化器状态、activation spill 和 checkpoint。训练调度器根据数据访问顺序，在合适时间将数据从 SSD 预取到 CPU，再传输到 GPU，同时将暂时不再需要的数据从 GPU 或 CPU 驱逐到下一级存储。
 
-重叠策略的评估不能只看平均 step time，还要看尾延迟和等待分解。报告应包含 compute time、prefetch wait、offload write wait、checkpoint stall、data loader wait 和 log/profile overhead。只有当 I/O 等待被有效隐藏且训练正确性不受影响时，重叠策略才算有效。
+在 forward 阶段，调度器根据 layer 执行顺序提前预取后续 layer 的 parameter shard。当 GPU 正在计算当前 layer 时，系统可以异步读取未来 layer 所需的数据，并将其放入 CPU staging buffer 或进一步传输到 GPU。这样，parameter shard 的读取可以与当前 layer 的计算重叠，减少 GPU 等待。
 
-### 3.4.4 写入削减方法
+在 backward 阶段，调度器需要同时考虑参数、activation 和梯度的生命周期。反向传播的执行顺序通常与前向传播相反，因此系统可以根据 backward 顺序预取即将使用的 activation 或参数分片。对于已经完成梯度计算且后续不再需要的 activation，可以释放、标记为可重算，或在必要时写入临时区域。对于 gradient shard，应优先在通信和 optimizer 更新中直接使用，只有在内存压力较大时才考虑短生命周期 spill。
 
-写入削减是降低 SSD 压力的重要目标。方案采用四类削减方法。第一，可重算数据少写，通过 activation checkpointing 和 recomputation 减少 SSD 保存。第二，低价值数据少写，日志和 profile 数据采用采样与缓冲。第三，重复状态少写，优化器状态通过 CPU 缓存和批量写回减少频繁覆盖。第四，checkpoint 有策略地写，通过保存频率、保留版本和增量探索控制写入规模。
+在 optimizer step 阶段，optimizer state 是 SSD 卸载系统中的重要数据对象。以 Adam 类优化器为例，每个参数分片通常对应一阶矩和二阶矩等状态，数据量较大。系统可以将 optimizer state 按 tile 组织，在处理当前 tile 的同时读取下一 tile，并将已经更新完成的上一 tile 异步写回 SSD，从而形成“读下一块、算当前块、写上一块”的流水结构。该方式可以避免 optimizer step 被单次大规模读写完全阻塞。
 
-表 11 给出写入削减策略。
+为了实现有效重叠，系统需要维护异步 I/O 队列和 CPU 缓冲池。异步 I/O 队列负责向 SSD 提交并发读写请求；CPU 缓冲池负责承接 SSD 与 GPU 之间的数据搬运；训练调度器负责决定预取距离、驱逐时机和写回顺序。当 CPU 缓冲区空间紧张时，应优先保留即将使用的数据，驱逐重用距离较远的数据；当 checkpoint 或 log/profile 写入与关键路径 I/O 冲突时，应降低其优先级或延迟执行。
 
-| 策略 | 适用对象 | 削减逻辑 | 可能代价 |
-|---|---|---|---|
-| Recomputation | activation | 用计算替代保存 | 增加 GPU 计算 |
-| Sampling | log/profile | 降低记录频率 | 诊断粒度下降 |
-| Version Management | checkpoint | 控制保留数量 | 历史恢复点减少 |
-| CPU Cache | optimizer state | 减少 SSD 写回 | 增加 CPU 内存占用 |
-| Write Coalescing | 小 Tensor | 合并后写入 | 增加缓冲管理复杂度 |
+重叠策略还需要与训练阶段配合。forward 和 backward 阶段以参数和 activation 预取为主，optimizer step 阶段以 optimizer state 的批量读写为主，checkpoint 和日志写入应尽量安排在不会阻塞训练主流程的时间段。通过训练阶段感知调度，系统可以避免多个大规模 I/O 流同时冲击 SSD，降低 GPU 因数据未及时到达而等待的概率。
 
-写入削减不能牺牲恢复正确性和训练数学语义。Checkpoint、optimizer state 等可靠性关键数据必须保证完整性；activation 可重算策略需要保证反向传播结果一致；日志采样需要保留必要诊断信息。所有削减策略应记录被削减的数据量、削减原因和可能代价，便于实验分析。
+此外，系统还需要避免过度预取。预取距离过短，数据可能无法及时到达 GPU；预取距离过长，则会占用 CPU 缓冲区，并可能造成数据在真正使用前就被挤出缓存。因此，调度器应根据 layer 执行顺序、数据重用距离、CPU 缓冲区占用和当前 I/O 队列状态动态调整预取策略。对于短期即将使用的数据，应优先保留在 CPU 或 GPU 中；对于重用距离较远的数据，可以驱逐到 SSD；对于可重算数据，则不必强制保存完整副本。
+
+### 3.4.4 写入削减与 SSD 寿命优化方法
+
+写入削减是降低 SSD 压力和延长设备使用寿命的重要方法。对于大模型训练而言，并非所有数据都必须完整写入 SSD。不同训练数据具有不同的数学语义和可靠性要求：parameter 和 optimizer state 属于训练状态的核心数据，必须保证一致性；activation 多数情况下可以通过重算获得；log/profile 主要用于诊断，可以降低记录频率；checkpoint 虽然重要，但可以通过保存策略和版本管理控制写入规模。因此，写入削减应基于训练语义进行，而不能简单丢弃数据。
+
+第一类方法是通过 recomputation 减少 activation 写入。Activation 在反向传播中需要使用，但并不一定全部保存。系统可以采用 activation checkpointing，只保存少量关键 activation，在 backward 阶段通过重新执行部分 forward 计算恢复中间结果。这样可以减少 activation 对 GPU、CPU 和 SSD 的存储压力。对于必须保存但短期使用的 activation，可以优先放入 CPU 内存；只有当 CPU 内存不足或重算代价过高时，才将其 spill 到 SSD 的临时区域。
+
+第二类方法是通过 CPU cache 和 dirty writeback 减少 optimizer state 的频繁写回。Optimizer state 在每个 optimizer step 中都会更新，如果每次更新后立即写回 SSD，容易造成大量重复写入。系统可以在 CPU 内存中缓存近期可能继续访问的 optimizer shard，并通过 dirty 标记记录其更新状态。当 shard 在短期内仍可能被使用时，可以暂缓写回；当内存压力增大或进入合适的后台写回阶段时，再将多个 dirty shard 批量写入 SSD。这样可以减少不必要的覆盖写，并提高写入组织的连续性。
+
+第三类方法是通过 checkpoint 策略控制可靠性数据写入。Checkpoint 是训练恢复的重要保障，不能随意省略，但也不需要过于频繁地进行全量保存。系统可以根据训练阶段、迭代间隔、验证结果或故障恢复需求决定 checkpoint 频率，并通过版本管理控制历史 checkpoint 数量。对于长期训练任务，可以保留最近版本和关键里程碑版本，删除过旧且价值较低的版本。若系统支持增量 checkpoint，也可以进一步探索只保存变化部分，但需要保证恢复流程的正确性和实现复杂度可控。
+
+第四类方法是减少低价值日志和 profile 写入。日志和 profile 对调试和性能分析有重要作用，但不应在正常训练阶段以过高频率写入 SSD。系统可以采用采样、缓冲和分级记录机制。例如，正常阶段只记录关键事件和摘要信息；当训练出现异常、吞吐下降或数值不稳定时，再提高记录频率并保存更详细信息。这样既能保留必要诊断能力，又能避免日志写入干扰训练 I/O。
+
+第五类方法是小 Tensor 写入合并。对于仍然需要写入 SSD 的小对象，系统不应逐个提交请求，而应先在内存中合并为更大的写入块。该方法可以用于小规模状态、日志片段、调试信息以及部分临时数据。合并过程需要记录每个对象在大块中的偏移和长度，以便恢复或读取时能够正确定位。
+
+表 12 总结了主要写入削减策略。
+
+**表 12 写入削减策略**
+
+|策略|适用对象|削减逻辑|可能代价|使用建议|
+|---|---|---|---|---|
+|Recomputation|activation|用计算替代保存|增加 GPU 计算|优先采用|
+|CPU Cache|optimizer state|合并多次更新后批量写回|增加 CPU 内存占用|重点采用|
+|Dirty Writeback|optimizer state、parameter shard|只写回被修改的数据块|需要维护脏标记|重点采用|
+|Version Management|checkpoint|控制保存频率和保留版本|历史恢复点减少|重点采用|
+|Sampling|log/profile|降低记录频率|诊断粒度下降|常规采用|
+|Write Coalescing|小 Tensor、小日志|合并后写入|增加缓冲管理复杂度|常规采用|
+
+需要强调的是，写入削减不能破坏训练数学语义和恢复正确性。Parameter、optimizer state、随机数状态、学习率调度器状态等关键数据必须在 checkpoint 中保持一致；activation 重算必须保证反向传播结果与原始计算逻辑一致；日志采样也应保留必要的错误信息和诊断线索。系统应为每类削减策略设置明确边界，确保优化 SSD I/O 的同时不影响训练正确性和故障恢复能力。
 
 ## 3.5 面向 AI SSD 的训练语义提示接口
 
