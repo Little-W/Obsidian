@@ -1,0 +1,100 @@
+@verdi rc file Version 1.0
+[General]
+saveDB = TRUE
+relativePath = FALSE
+saveSingleView = FALSE
+saveNWaveWinId = 
+VerdiVersion = Verdi_T-2022.06-SP2
+[KeyNote]
+Line1 = Automatic Backup 0
+Line2 = Save Open Database Information: Yes
+Line3 = Path Option: Absolute Paths
+Line4 = Windows Option: All Windows
+[OneSearch]
+isExisted = FALSE
+[TestBench]
+ConstrViewShow = 0
+InherViewShow = 0
+FSDBMsgShow = 0
+AnnotationShow = 0
+Console = FALSE
+powerDumped = 0
+[fusa]
+fdb_server = 
+fdb_proj = 
+fdb_campaign = 
+fdb_tool = 
+[hb]
+postSimFile = /tmpdata/zc_data/yusen/work/chip_top/cpu_test4/cpu_test/cpu_core1_wfe_test.0.0/wave.fsdb
+syncTime = 3136.99675397588
+viewport = 0 27 1920 977 0 0 189 1918
+activeNode = "hdl_top.T100_TOP_u.PD_MCU_SUB_0.MCU_CPU_900_0.U_ux900_cluster_top"
+activeScope = "hdl_top.T100_TOP_u.PD_MCU_SUB_0.MCU_CPU_900_0.U_ux900_cluster_top"
+activeFile = "/projects/platform/temp/yusen/t100_br_dv_1114/branches/br_dv/1_rtl/ip/mcu_cpu_900/src/core/ux900k_cluster_top.v"
+interactiveMode = False
+viewType = Source
+simulatorMode = False
+sourceBeginLine = 35
+baMode = False
+srcLineNum = True
+AutoWrap = True
+IdentifyFalseLogic = False
+syncSignal = False
+traceMode = Hierarchical
+showTraceInSchema = True
+paMode = False
+funcMode = False
+powerAwareAnnot = True
+safetyAwareAnnot = True
+amsAnnot = True
+DnDtraceCrossHierOnly = True
+leadingZero = False
+signalPane = False
+SourceVerticalScrollLines = 5
+Scope1 = "hdl_top.T100_TOP_u.PD_MCU_SUB_0.MCU_CPU_900_0.U_ux900_cluster_top"
+Scope2 = "hdl_top.T100_TOP_u.PD_MCU_SUB_0.MCU_CPU_900_0.U_ux900_cluster_top.u_core0"
+Scope3 = "hdl_top.T100_TOP_u.PD_MCU_SUB_0.MCU_CPU_900_0"
+Scope4 = "hdl_top.T100_TOP_u.PD_MCU_SUB_0"
+Scope5 = "hdl_top.T100_TOP_u"
+Scope6 = "hdl_top"
+Scope7 = "hvl_top"
+rangeSelection = 57 59 3 1 6 1
+sdfCheckUndef = FALSE
+simFlow = FALSE
+[hb.design]
+importCmd = "-sverilog" "-dbdir" "/tmpdata/zc_data/yusen/work/chip_top/cpu_test4/cpu_test/cpu_core1_wfe_test.0.0/../simv.daidir" 
+invokeDir = /projects/platform/temp/yusen/t100_br_dv_1114/verif/chip_top/test/c/cpu_test/cpu_core1_wfe_test
+[hb.sourceTab.1]
+scope = hdl_top.T100_TOP_u.PD_MCU_SUB_0.MCU_CPU_900_0.U_ux900_cluster_top
+File = /projects/platform/temp/yusen/t100_br_dv_1114/branches/br_dv/1_rtl/ip/mcu_cpu_900/src/core/ux900k_cluster_top.v
+Line = 36
+[nMemoryManager]
+WaveformFile = /tmpdata/zc_data/yusen/work/chip_top/cpu_test4/cpu_test/cpu_core1_wfe_test.0.0/wave.fsdb
+UserActionNum = 0
+nMemWindowNum = 0
+[wave.0]
+viewPort = 0 25 1920 522 281 65
+primaryWindow = TRUE
+SessionFile = /projects/platform/temp/yusen/t100_br_dv_1114/verif/chip_top/test/c/cpu_test/cpu_core1_wfe_test/verdiLog/novas_autosave.ses.wave.0
+displayGrid = FALSE
+hierarchicalName = FALSE
+snap = TRUE
+displayLeadingZeros = FALSE
+fixDelta = FALSE
+displayCursorMarker = FALSE
+autoUpdate = FALSE
+highlightGlitchs = FALSE
+waveformSyncCursorMarker = FALSE
+waveformSyncHorizontalRange = FALSE
+waveformSyncVerticalscroll = FALSE
+displayErrors = TRUE
+displayMsgSymbols = TRUE
+showMsgDescriptions = TRUE
+autoFit = FALSE
+displayDeltaY = FALSE
+centerCursor = FALSE
+fsaRegMask = TRUE
+fsaCoreMask = TRUE
+fsaSfsmMask = TRUE
+fsaEcrMask = TRUE
+tPropMask = TRUE

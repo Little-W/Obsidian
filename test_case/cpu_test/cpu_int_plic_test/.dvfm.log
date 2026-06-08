@@ -1,0 +1,14 @@
+[2026-04-24 12:33:20] Job Start!
+[2026-04-24 12:33:20] Check environment variables: WORK_PATH PASS!
+[2026-04-24 12:33:20] Check environment variables: WORK_PATH PASS!
+[2026-04-24 12:33:20] Attention: File path is existed: /tmpdata/zc_data/yusen/work/chip_top/int_cov
+[2026-04-24 12:33:20] Attention: File path is existed: /tmpdata/zc_data/yusen/work/chip_top/int_cov/cpu_test
+[2026-04-24 12:33:20] Attention: File path is existed: /tmpdata/zc_data/yusen/work/chip_top/int_cov/cpu_test/cpu_int_plic_test.0.0
+[2026-04-24 12:33:20] Attention: File path is existed: /tmpdata/zc_data/yusen/work/chip_top/int_cov/cpu_test/cpu_int_plic1_test.0.0
+[2026-04-24 12:33:20] Attention: File path is existed: /tmpdata/zc_data/yusen/work/chip_top/int_cov/cpu_test/cpu_int_eclic_test.0.0
+[2026-04-24 12:33:20] Attention: File path is existed: /tmpdata/zc_data/yusen/work/chip_top/int_cov/cpu_test/cpu_int_eclic1_test.0.0
+[2026-04-24 12:33:20] Attention: File path is existed: /tmpdata/zc_data/yusen/work/chip_top/int_cov/cpu_test/cpu_int_eclic2_test.0.0
+[2026-04-24 12:33:20] Attention: File path is existed: /tmpdata/zc_data/yusen/work/chip_top/int_cov/cpu_test/cpu_int_eclic3_test.0.0
+[2026-04-24 12:33:25] job submit done
+[2026-04-24 15:40:51] Attention: File path is existed: /tmpdata/zc_data/yusen/work/chip_top/int_cov/cpu_test/cov
+[2026-04-24 15:41:58] Job Done!
