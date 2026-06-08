@@ -362,7 +362,265 @@ DMA sequence 内部关键字段：
 | `dinc` | `1` | `0` | 目标地址增量/固定策略 |
 | `src_tr_width/dst_tr_width` | `3'h2` | `3'h2` | 32-bit 传输宽度 |
 
-## 7. 典型 Case 编写模板
+## 7. Case 配置信息矩阵
+
+这一节把各类 case 的配置项集中列出来。阅读单个 case 时可以先看 `build_phase`，确认 VIP 拓扑、DUT 角色和 I3C 实例；再看 `main_phase`，确认寄存器地址、命令参数、数据方向和 scoreboard 接口。
+
+### 7.1 接口控制变量
+
+`m_i3c_intf` 里的两个控制量是 case 拓扑选择的核心：
+
+| 控制项 | 常见值 | 说明 |
+| --- | --- | --- |
+| `i3c_num_ctrl = 0` | I3C0 普通 case | base `main_phase` 配置 I3C0 pad，寄存器一般访问 `I3C0_BASE` |
+| `i3c_num_ctrl = 1` | I3C1 普通 case | base `main_phase` 配置 I3C1 pad，寄存器一般访问 `I3C1_BASE` |
+| `i3c_num_ctrl = 2` | I3C0 特殊 TXFIFO case | 用在 `i3c0_master_transmit_withtxfifo_test`，寄存器仍访问 `I3C0_BASE`，但 IOMUX/scoreboard 控制走特殊分支 |
+| `i3c_num_ctrl = 'h3` | I3C0 interrupt case | CPU 中断场景，SV 侧等待 C 程序 label |
+| `i3c_num_ctrl = 'h4` | I3C1 interrupt case | I3C1 CPU 中断场景 |
+| `i3c_num_ctrl = 5` | 部分特殊/扩展场景 | base 里预留了对应 IOMUX 分支，需要结合具体 case 确认 |
+
+`i3c_scb_ctrl` 主要用于告诉 scoreboard 当前要按哪种方向解释 transaction：
+
+| `i3c_scb_ctrl` | 代表场景 | 典型 case |
+| --- | --- | --- |
+| `3'h1` | DUT slave receive，VIP master write | `i3c0_slave_receive_trans_test`、`i2c0_slave_receive_trans_test` |
+| `3'h2` | DUT slave transmit / secondary master | `i3c0_slave_transmit_trans_test`、`i3c0_slave_to_secmaster_test` |
+| `3'h3` | DUT master read，RX FIFO 或 RX DMA | `i3c0_master_transmit_withrxfifo_test`、`i3c0_trans_rxfifo_to_mem_withdma_test` |
+| `3'h4` | I2C legacy master write | `i2c0_master_transmit_withtxfifo_test` |
+| `3'h5` | DUT master write，TX FIFO/CCC/速率/DMA TX | `i3c0_master_mode_sdr0_rate_test`、`i3c0_master_broadcast_ccc_trans_test` |
+| `3'h6` | CPU interrupt case | `i3c0_intr_test`、`i3c1_intr_test` |
+
+### 7.2 默认 VIP 地址配置
+
+base test 默认先建立一套 VIP 地址，具体 case 再按场景打开或关闭 active：
+
+| VIP 对象 | 类型 | 默认地址/能力 | 常见用途 |
+| --- | --- | --- | --- |
+| `master_cfg[0]` | Main Master | dynamic address `0x30` | DUT 做 slave 时，由 VIP main master 发起访问 |
+| `master_cfg[1]` | Secondary Master | static address `0x31`，dynamic address `0x34` | secondary master 相关流程 |
+| `slave_cfg[0]` | I2C Legacy Slave | 默认 legacy static address | I2C FM/FM+ case |
+| `slave_cfg[1]` | I3C Slave | static address `0x63`，dynamic address `0x64` | DUT 做 master 时的目标 I3C slave |
+
+最常见的 DUT master + VIP I3C slave 配置如下：
+
+| 配置项 | 值 | 含义 |
+| --- | --- | --- |
+| `cfg.master_cfg[0].is_active` | `0` | 关闭 VIP main master，避免和 DUT master 抢总线 |
+| `cfg.master_cfg[1].is_active` | `0` | 关闭 VIP secondary master |
+| `cfg.slave_cfg[0].is_active` | `0` | 不启用 I2C legacy slave |
+| `cfg.slave_cfg[1].is_active` | `1` | 启用 VIP I3C slave 作为 DUT master 的访问目标 |
+| `cfg.slave_cfg[1].device_static_addr_en` | `1` | 允许目标 slave 使用 static address 参与地址流程 |
+| `dev_addr` | `7'h63` | 目标 slave static address |
+| `dynamic_addr` | `8'h64` 或 `8'he3` | 目标 slave dynamic address，写入 DAT `[23:16]` |
+
+最常见的 DUT slave 配置如下：
+
+| 配置项 | 值 | 含义 |
+| --- | --- | --- |
+| `m_i3c_intf.i3c_scb_ctrl` | `3'h1` 或 `3'h2` | receive 用 `1`，transmit 用 `2` |
+| `m_i3c_intf.i3c_num_ctrl` | `0` 或 `1` | 选择 I3C0/I3C1 |
+| `MCUSS_I3C*_STAT[18]` | `1` | 使能静态地址相关配置 |
+| `MCUSS_I3C*_STAT[17:11]` | `7'h31` | DUT slave static address |
+| `DEVICE_CTRL_EXTENDED` | `32'h1` | DUT controller 进入 slave mode |
+| `DEVICE_ADDR[6:0]` | `7'h31` | DUT slave static address |
+| `DEVICE_ADDR[15]` | `1` | static address valid/enable |
+| `DEVICE_CTRL[27]` | `1` | slave 相关控制位，case 中作为进入可响应状态的必要配置 |
+| `DEVICE_CTRL[31]` | `1` | enable controller |
+
+### 7.3 Master 速率类 case 配置
+
+I3C0/I3C1 的 SDR0~SDR4 case 基本对称，差异主要是 `i3c_num`、`i3c_num_ctrl`、`speed` 和 SCL timing。
+
+| case 类型 | I3C 实例 | 目标地址 | `i3c_block_init` | timing/cmd 参数 | 数据配置 |
+| --- | --- | --- | --- | --- | --- |
+| SDR0 | I3C0/1 | static `7'h63`，dynamic `8'h64` | `(i3c_num, 0, dev_addr, 8'h64, 0, 1, 1)` | `i3c_set_scl_timing(i3c_num, 0)`，`i3c_set_transfer_cmd(... speed=0, isread=0, tr_id=2, isstop=1)` | `i3c_set_transfer_arg(...,16)`，TX FIFO 写 4 word |
+| SDR1 | I3C0/1 | static `7'h63`，dynamic `8'h64` | 同 SDR0 | `speed=1`，`SCL_EXT_LCNT_TIMING` 配 SDR1 | 通常传 16 byte |
+| SDR2 | I3C0/1 | static `7'h63`，dynamic `8'h64` | 同 SDR0 | `speed=2`，`i3c_set_scl_timing(...,2)` | 通常传 16 byte |
+| SDR3 | I3C0/1 | static `7'h63`，dynamic `8'h64` | 同 SDR0 | `speed=3`，`i3c_set_scl_timing(...,3)` | 通常传 16 byte |
+| SDR4 | I3C0/1 | static `7'h63`，dynamic `8'h64` | 同 SDR0 | `speed=4`，`i3c_set_scl_timing(...,4)` | 通常传 16 byte |
+| HDR-DDR | I3C0/1 | static `7'h63`，dynamic 常用 `8'he3` | `(i3c_num, 0, dev_addr, 8'he3)` | `i3c_set_transfer_cmd(... speed=6, iscp=1, cmd=8'h20, isread=0)` | `i3c_set_transfer_arg(...,4)` |
+| I2C FM | I3C0/1 | static `7'h63`，dynamic 常用 `8'he3` | `(i3c_num, 0, dev_addr, 8'he3)` | `i3c_set_transfer_cmd(... speed=7, isread=0)` | `i3c_set_transfer_arg(...,4)` |
+
+以 `i3c0_master_mode_sdr0_rate_test` 为例，实际寄存器访问顺序是：
+
+| 顺序 | 操作 | 地址/寄存器 | 参数或写入值 | 目的 |
+| --- | --- | --- | --- | --- |
+| 清状态 | `noc_reg_write` | `MCU_SUB_SCU_BASE_ADDR + MCUSS_I3C0_STAT` | `0` | 清 I3C0 SCU 状态 |
+| 配 timing | `i3c_set_scl_timing(0,0)` | `I3C0_BASE + SCL_I3C_OD_TIMING/PP_TIMING/EXT_LCNT` | speed `0` | 配置 SDR0 SCL timing |
+| 初始化 | `i3c_block_init(0,0,7'h63,8'h64,0,1,1)` | `I3C0_BASE + QUEUE_THLD_CTRL` | `resp_buf_thld=0` -> `[15:8]` | 设置 response threshold |
+| 初始化 | 同上 | `I3C0_BASE + DATA_BUFFER_THLD_CTRL` | `tx_empty=1` -> `[2:0]`，`tx_start=1` -> `[18:16]`，`rx=0` -> `[10:8]` | 设置 FIFO threshold |
+| 初始化 | 同上 | `I3C0_BASE + DEVICE_CTRL_EXTENDED` | `0` | DUT 为 master |
+| 初始化 | 同上 | `I3C0_BASE + INTR_STATUS_EN/SIGNAL_EN` | `32'hffff` | 打开状态和信号中断 |
+| 初始化 | 同上 | `I3C0_BASE + DEVICE_ADDR` | `[22:16]=7'h55`，`[31]=1` | 设置 controller 自身 dynamic address |
+| 初始化 | 同上 | `I3C0_BASE + DEV_ADDR_TABLE_LOC1` | `[6:0]=7'h63`，`[23:16]=8'h64` | 设置目标 slave DAT |
+| 使能 | `i3c_block_enable(0)` | `I3C0_BASE + DEVICE_CTRL` | 读改写 `[31]=1` | enable controller |
+| 地址流程 | `i3c_set_daa_cmd(0,1)` | `I3C0_BASE + COMMAND_QUEUE_PORT` | `[14:7]=8'h87`，`[2:0]=3'h3` | 发 directed DAA/SETDASA 类命令 |
+| 参数 | `i3c_set_transfer_arg(0,16)` | `I3C0_BASE + COMMAND_QUEUE_PORT` | `[31:16]=16`，`[2:0]=3'h1` | 设置传输长度 |
+| 命令 | `i3c_set_transfer_cmd(0,0,0,0,0,0,2,1)` | `I3C0_BASE + COMMAND_QUEUE_PORT` | speed `0`，write，tr_id `2`，stop `1` | 发起 SDR0 write |
+| 数据 | `i3c_wirte_data_to_txfifo(0,4,4,tx_data_q)` | `I3C0_BASE + TX_DATA_PORT` | 4 个 word：`32'h5a5a5a5a + i` | 写 TX FIFO 并生成 byte queue |
+| 检查 | `i3c_master_txdata_to_vip_slave_pre_tr(1,dev_addr,tx_data_q)` | scoreboard | slave index `1`，addr `7'h63` | 构造 VIP slave 预期 transaction |
+
+### 7.4 CCC 与地址分配类 case 配置
+
+CCC case 和普通 master write 的底层流程相同，主要差异在 `i3c_set_transfer_cmd` 的 `iscp/cmd` 字段，以及是否显式调用 `i3c_set_daa_cmd`。
+
+| case | 关键配置 | CCC 参数 | 地址配置 | 数据/检查 |
+| --- | --- | --- | --- | --- |
+| `master_broadcast_ccc_trans` | DUT master，VIP I3C slave active，`i3c_scb_ctrl=3'h5` | 先 `i3c_set_transfer_cmd(... iscp=1, cmd=8'h02, tr_id=1)`，再普通 write cmd | `dev_addr=7'h63`，DAT dynamic `8'he3` | `transfer_arg=4`，TX FIFO 1 word，scoreboard 用 slave `1` |
+| `master_directed_ccc_trans` | 同 broadcast | `i3c_set_transfer_cmd(... iscp=1, cmd=8'h82, tr_id=2)` | `dev_addr=7'h63`，DAT dynamic `8'he3` | `transfer_arg=4`，TX FIFO 1 word |
+| `master_setaasa` | DUT master，VIP I3C slave active | `i3c_set_transfer_cmd(... iscp=1, cmd=8'h29)` | SETAASA 后读取/更新 DAT | 用于静态地址转动态地址类流程 |
+| `master_setdasa` | DUT master，VIP I3C slave active | `i3c_set_daa_cmd(...,1)` 或 `cmd=8'h87` | static `7'h63`，dynamic `8'h64/8'he3` | 验证 directed address assignment |
+
+`iscp=1` 时，`COMMAND_QUEUE_PORT[15]` 置位，`cmd` 写入 `[14:7]`；`iscp=0` 时这 8 bit 不作为 CCC 解释，case 就退回普通 private transfer。
+
+### 7.5 FIFO 与短数据 case 配置
+
+| case | build 配置 | transfer 参数 | FIFO/数据路径 | 关键检查 |
+| --- | --- | --- | --- | --- |
+| `master_transmit_withtxfifo` | `i3c_scb_ctrl=3'h5`，I3C0 特例 `i3c_num_ctrl=2` | `i3c_block_init(0,0,7'h63,8'h64)`，`transfer_arg=4`，`isread=0` | `i3c_wirte_data_to_txfifo(0,1,1,tx_data_q)` 写 1 word 到 `TX_DATA_PORT` | `i3c_master_txdata_to_vip_slave_pre_tr(1,7'h63,tx_data_q)` |
+| `master_transmit_withrxfifo` | `i3c_scb_ctrl=3'h3`，VIP slave active | 先发 `cmd=8'h29`，更新 DAT `[23:16]=8'he3`，`transfer_arg=4`，`isread=1` | VIP slave sequence 提供数据，DUT 从 `RX_DATA_PORT` 读 1 word | `i3c_master_rxdata_to_vip_slave_post_tr(7'h63,rx_data_q)` |
+| `master_transmit_withshortdata` | `i3c_scb_ctrl=3'h5`，VIP slave active | `i3c_set_short_data_arg` 后 `i3c_set_transfer_cmd(... isshortarg=1,isread=0)` | short data 直接写 command queue，不走普通 TX FIFO | short data 为 `0x55,0xaa,0xff` 三个 byte |
+
+短数据 task 的命令队列字段比较特殊：
+
+| 字段 | 值 | 含义 |
+| --- | --- | --- |
+| `COMMAND_QUEUE_PORT[2:0]` | `3'h2` | short data argument entry |
+| `[5:3]` | `3'h7` | short data 长度/控制字段 |
+| `[15:8]` | `8'h55` | 第 1 个 byte |
+| `[23:16]` | `8'haa` | 第 2 个 byte |
+| `[31:24]` | `8'hff` | 第 3 个 byte |
+
+### 7.6 Slave receive/transmit case 配置
+
+以 `i3c0_slave_receive_trans_test` 为例，DUT 被配置成 I3C0 slave，VIP `master_sequencer[0]` 在另一个 fork 分支发起 write：
+
+| 顺序 | 操作 | 地址/寄存器 | 参数或写入值 | 目的 |
+| --- | --- | --- | --- | --- |
+| SCU 地址 | `noc_reg_write` | `MCU_SUB_SCU_BASE_ADDR + MCUSS_I3C0_STAT` | `[18]=1`，`[17:11]=7'h31` | 配置 DUT slave static address |
+| RX threshold | 读改写 | `I3C0_BASE + DATA_BUFFER_THLD_CTRL` | `[10:8]=0` | RX FIFO threshold |
+| slave mode | 写 | `I3C0_BASE + DEVICE_CTRL_EXTENDED` | `32'h1` | 进入 slave mode |
+| 中断状态 | 写 | `I3C0_BASE + INTR_STATUS_EN` | `32'hffff` | 使能状态位 |
+| dev ctrl | 写 | `I3C0_BASE + DEVICE_CTRL` | `[27]=1` | slave 侧控制配置 |
+| 地址 | 写 | `I3C0_BASE + DEVICE_ADDR` | `[6:0]=7'h31`，`[15]=1` | DUT slave static address valid |
+| enable | 读改写 | `I3C0_BASE + DEVICE_CTRL` | `[31]=1` | enable controller |
+| 接收 | `i3c_read_data_from_rxfifo(0,2,1,rx_data_q)` | `I3C0_BASE + RX_DATA_PORT` | 读 2 word，threshold 1 | 接收 VIP master 写入的数据 |
+| 检查 | `i3c_slave_rxdata_to_vip_master_post_tr(0,rx_data_q)` | scoreboard | master index `0` | 构造 VIP master observed transaction |
+
+`i3c0_slave_transmit_trans_test` 和 receive 的前半段配置基本一致，差异如下：
+
+| 配置/动作 | receive | transmit |
+| --- | --- | --- |
+| `i3c_scb_ctrl` | `3'h1` | `3'h2` |
+| FIFO threshold | 设置 RX threshold `[10:8]` | 设置 TX empty `[2:0]` 和 TX start `[18:16]` |
+| VIP sequence | `i3c_vip_mst_write_sequence` | `i3c_vip_mst_read_sequence` |
+| DUT 数据方向 | 从 `RX_DATA_PORT` 读 | 向 `TX_DATA_PORT` 写 |
+| 前置命令 | 无显式 transfer cmd | 等 `INTR_STATUS[3]` 后发 `i3c_set_transfer_cmd(0,0,1,8'h87,0,0,1,1)` |
+| scoreboard | `i3c_slave_rxdata_to_vip_master_post_tr` | `i3c_slave_txdata_to_vip_master_pre_tr` |
+
+### 7.7 DMA case 配置
+
+| case | 方向 | build 配置 | DMA 配置 | I3C transfer 配置 |
+| --- | --- | --- | --- | --- |
+| `trans_txfifo_to_mem_withdma` | SRAM -> I3C TX FIFO -> bus | `i3c_scb_ctrl=3'h5`，VIP slave active | `i3c_dma_write_config(SRAM+0x4000, I3C0_BASE+TX_DATA_PORT, 7'h1e, 1, 1)` | `block_init(0,0,7'h63,8'h64)`，DMA enable，DAA，`transfer_arg=8`，write cmd |
+| `trans_rxfifo_to_mem_withdma` | bus -> I3C RX FIFO -> SRAM | `i3c_scb_ctrl=3'h3`，VIP slave active | `i3c_dma_read_config(I3C0_BASE+RX_DATA_PORT, SRAM+0x4000, 7'h1f, 1, 1)` | `block_init(0,1,7'h63)`，DMA enable，SETAASA `8'h29`，DAT dynamic 改 `8'he3`，`transfer_arg=4`，read cmd |
+
+TX DMA case 的 memory 初始化也要看：
+
+| 数据源 | 地址 | 初始值 | byte queue 顺序 |
+| --- | --- | --- | --- |
+| `wdata_arr[0]` | `MCU_SUB_SRAM_BASE_ADDR + 0x4000` | `32'haa5599ff` | `ff,99,55,aa` |
+| `wdata_arr[1]` | `MCU_SUB_SRAM_BASE_ADDR + 0x4004` | `32'h5a5a5a5a` | `5a,5a,5a,5a` |
+
+所以 `transfer_arg=8` 对应 8 byte，scoreboard 期望数据来自同一份 `tx_data_q`，不是再次从总线采样生成。
+
+### 7.8 Secondary Master case 配置
+
+`i3c0_slave_to_secmaster_test` 的关键点是 DUT 先按 slave 配好，然后通过 master request/IBI 申请总线控制权：
+
+| 阶段 | 寄存器/配置 | 参数 | 含义 |
+| --- | --- | --- | --- |
+| build | `cfg.master_cfg[0].is_active=1` | VIP main master active | 让 VIP main master 主导前置流程 |
+| build | `cfg.master_cfg[1].device_static_address='h31`，`dynamic='h34` | secondary master 地址 | 配置 secondary master 地址模型 |
+| slave 初始化 | `MCUSS_I3C0_STAT[18]=1`，`[17:11]=7'h31` | static address | DUT 初始作为 slave |
+| slave 初始化 | `DEVICE_CTRL_EXTENDED=1`，`DEVICE_ADDR=0x8031` | static valid | 进入 slave 可响应状态 |
+| 等地址完成 | `INTR_STATUS[8]` | 等于 1 | dynamic address done |
+| MR 能力 | `SLV_EVENT_STATUS[1]` | 等于 1 | 当前 master 已允许 master request |
+| 发 MR | `SLV_INTR_REQ[3]=1` | 写 1 | DUT slave 发起 master request |
+| 等 IBI | `INTR_STATUS[12]` | 等于 1 | IBI update status |
+| ACK 检查 | `SLV_INTR_REQ[9:8]` | `2'b01` | MR ACK，否则报错 |
+| bus owner | `INTR_STATUS[13]` | 等于 1 | bus owner update |
+| resume | `DEVICE_CTRL[30]=1` | 写 1 | controller resume，准备后续 master 行为 |
+| DAT | `DEV_ADDR_TABLE_LOC1[23:16]=8'hb0` | dynamic addr | 设置后续访问目标 |
+| 传输 | `transfer_arg=4`，`speed=0`，`isread=0` | SDR0 write | DUT 以新角色发起传输 |
+
+### 7.9 中断 case 配置
+
+中断 case 由 SV 和 C 配合。SV 侧只负责等软件准备完成后启动 VIP master；真正的 I3C slave 和中断寄存器配置在 `main.c`。
+
+| 项目 | I3C0 | I3C1 | 说明 |
+| --- | --- | --- | --- |
+| SV `i3c_scb_ctrl` | `3'h6` | `3'h6` | interrupt scoreboard 场景 |
+| SV `i3c_num_ctrl` | `'h3` | `'h4` | 区分 I3C0/I3C1 中断场景 |
+| CPU 中断号 | `Ext_MCU_I3C0_INTR_IRQn` | `Ext_MCU_I3C1_INTR_IRQn` | PLIC 注册的 IRQ |
+| label | `0x12345678` | 通常同模式 | C 配置完成后通知 SV |
+| RX 检查 | `0x998855aa`、`0xaa558899` | 同类期望 | handler 从 `RX_DATA_PORT` 读两次 |
+
+`i3c0_intr_test/main.c` 的关键寄存器配置：
+
+| 顺序 | C 操作 | 地址/寄存器 | 写入值 | 说明 |
+| --- | --- | --- | --- | --- |
+| PLIC | `PLIC_Register_IRQ` | `Ext_MCU_I3C0_INTR_IRQn` | priority `1`，handler `mcu_i3c0_intr_handler` | 注册 I3C0 中断 |
+| SCU | `write32` | `MCU_SUB_SCU_BASE_ADDR + MCUSS_I3C0_STAT` | `0x58800` | 配置 I3C0 slave static address/status |
+| threshold | read/modify/write | `MCU_SUB_I3C0_BASE_ADDR + DATA_BUFFER_THLD_CTRL` | `rdata & 0xfffff8ff` | 清 RX threshold 字段 `[10:8]` |
+| slave mode | `write32` | `DEVICE_CTRL_EXTENDED` | `0x1` | DUT 为 slave |
+| 状态中断 | `write32` | `INTR_STATUS_EN` | `0xffff` | 打开状态位 |
+| 信号中断 | `write32` | `INTR_SIGNAL_EN` | `0x2` | 只打开 RX 相关中断信号 |
+| dev ctrl | `write32` | `DEVICE_CTRL` | `0x08000000` | 设置 `[27]` |
+| 地址 | `write32` | `DEVICE_ADDR` | `0x8031` | static addr `0x31` + static valid |
+| enable | read/modify/write | `DEVICE_CTRL` | `rdata | 0x80000000` | enable controller |
+| handler 读数 | `read32` | `RX_DATA_PORT` | 两次读取 | 期望 `0x998855aa`、`0xaa558899` |
+
+### 7.10 Debug、Reg、Reset、Clock case 配置
+
+| case 类型 | 关键配置 | 主要检查点 |
+| --- | --- | --- |
+| `i3c0_debug_port_test` | `i3c_num_ctrl=0`，读 `MCUSS_I3C0_SVL_DBG_PORT_H/L` | force wrapper 内部 debug 信号为 0/1，检查 SCU debug port 映射 |
+| `i3c1_debug_port_test` | `i3c_num_ctrl=1`，读 `MCUSS_I3C1_SVL_DBG_PORT_H/L` | 同 I3C0，对称检查 I3C1 |
+| `i3c0_reg_test`/`i3c1_reg_test` | 遍历 `i3c_reg_struct.sv` 寄存器表 | reset value、RW mask、写读一致性 |
+| `i3c0_rstn_test`/`i3c1_rstn_test` | force/reset wrapper reset 信号 | reset 后寄存器和状态恢复 |
+| `i3c0_clk_test`/`i3c1_clk_test` | 配置 clock/reset gating 相关路径 | clock 使能、关闭、恢复后的可访问性 |
+
+### 7.11 典型 case 索引速查
+
+下面这张表适合在写新 case 或 debug fail 时快速定位配置差异。I3C1 对应 case 通常把 `i3c_num` 从 `0` 换成 `1`，寄存器 base 从 `I3C0_BASE` 换成 `I3C1_BASE`，`i3c_num_ctrl` 从 `0` 换成 `1`。
+
+| case 文件 | DUT 角色/方向 | `i3c_scb_ctrl` | `i3c_num_ctrl` | 关键地址/参数 |
+| --- | --- | --- | --- | --- |
+| `i3c0_master_mode_sdr0_rate_test.sv` | master write，SDR0 | `3'h5` | `0` | target static `7'h63`，dynamic `8'h64`，`speed=0`，`transfer_arg=16` |
+| `i3c0_master_mode_sdr1_rate_test.sv` | master write，SDR1 | `3'h5` | `0` | target static `7'h63`，dynamic `8'h64`，`speed=1`，`transfer_arg=16` |
+| `i3c0_master_mode_sdr2_rate_test.sv` | master write，SDR2 | `3'h5` | `0` | target static `7'h63`，dynamic `8'h64`，`speed=2`，`transfer_arg=16` |
+| `i3c0_master_mode_sdr3_rate_test.sv` | master write，SDR3 | `3'h5` | `0` | target static `7'h63`，dynamic `8'h64`，`speed=3`，`transfer_arg=16` |
+| `i3c0_master_mode_sdr4_rate_test.sv` | master write，SDR4 | `3'h5` | `0` | target static `7'h63`，dynamic `8'h64`，`speed=4`，`transfer_arg=16` |
+| `i3c0_master_mode_hdr_ddr_rate_test.sv` | master HDR-DDR write | `3'h5` | `0` | dynamic `8'he3`，`speed=6`，`iscp=1`，`cmd=8'h20`，`transfer_arg=4` |
+| `i3c0_master_mode_i2c_fm_rate_test.sv` | master I2C FM write | `3'h5` | `0` | dynamic `8'he3`，`speed=7`，`transfer_arg=4` |
+| `i3c0_master_broadcast_ccc_trans_test.sv` | broadcast CCC + write | `3'h5` | `0` | `cmd=8'h02`，dynamic `8'he3`，后续普通 write |
+| `i3c0_master_directed_ccc_trans_test.sv` | directed CCC + write | `3'h5` | `0` | `cmd=8'h82`，dynamic `8'he3`，后续普通 write |
+| `i3c0_master_setaasa_test.sv` | SETAASA 地址流程 | `3'h5` | `0` | `cmd=8'h29`，读取 response 后更新 DAT |
+| `i3c0_master_setdasa_test.sv` | SETDASA/DAA 地址流程 | `3'h5` | `0` | `i3c_set_daa_cmd(0,1)` -> `cmd=8'h87`，target dynamic `8'h64` |
+| `i3c0_master_transmit_withtxfifo_test.sv` | master write，普通 TX FIFO | `3'h5` | `2` | `transfer_arg=4`，TX FIFO 写 1 word，case 末尾 force reset |
+| `i3c0_master_transmit_withrxfifo_test.sv` | master read，普通 RX FIFO | `3'h3` | `0` | `cmd=8'h29`，DAT dynamic 改 `8'he3`，`isread=1` |
+| `i3c0_master_transmit_withshortdata_test.sv` | master write，short data | `3'h5` | `0` | short data `55 aa ff`，`isshortarg=1` |
+| `i3c0_slave_receive_trans_test.sv` | slave receive | `3'h1` | `0` | DUT static `7'h31`，`DEVICE_CTRL_EXTENDED=1`，VIP master write |
+| `i3c0_slave_transmit_trans_test.sv` | slave transmit | `3'h2` | `0` | DUT static `7'h31`，`cmd=8'h87`，VIP master read |
+| `i3c0_slave_to_secmaster_test.sv` | slave -> secondary master | `3'h2` | `0` | DUT static `7'h31`，等 `INTR_STATUS[8/12/13]`，DAT dynamic `8'hb0` |
+| `i3c0_trans_txfifo_to_mem_withdma_test.sv` | DMA TX，SRAM -> TX FIFO | `3'h5` | `0` | `SRAM+0x4000` -> `I3C0_BASE+TX_DATA_PORT`，`dst_per=7'h1e`，`transfer_arg=8` |
+| `i3c0_trans_rxfifo_to_mem_withdma_test.sv` | DMA RX，RX FIFO -> SRAM | `3'h3` | `0` | `I3C0_BASE+RX_DATA_PORT` -> `SRAM+0x4000`，`src_per=7'h1f`，`isread=1` |
+| `i3c0_intr_test.sv` + `main.c` | CPU interrupt slave receive | `3'h6` | `'h3` | C 侧 static `0x31`，`INTR_SIGNAL_EN=0x2`，期望 `0x998855aa/0xaa558899` |
+| `i3c0_reg_test.sv` | register test | 不依赖传输方向 | 通常 I3C0 | 遍历 reset value 和 RW mask |
+| `i3c0_debug_port_test.sv` | debug port map | 不依赖传输方向 | `0` | force debug signal，读 `MCUSS_I3C0_SVL_DBG_PORT_H/L` |
+
+## 8. 典型 Case 编写模板
 
 一个 I3C SV case 基本都遵循这个结构：
 
@@ -393,7 +651,7 @@ endtask
 
 这套模板里最重要的是：`build_phase` 决定 TB 拓扑，`main_phase` 决定真实验证流程。
 
-## 8. Master Mode 传输类 Case
+## 9. Master Mode 传输类 Case
 
 代表文件：`i3c0_master_mode_sdr0_rate_test.sv`、`i3c0_master_transmit_withtxfifo_test.sv`
 
@@ -431,7 +689,7 @@ SDR0~SDR4 的差异主要体现在：
 | HDR-DDR | 使用 HDR 相关 speed/transfer 配置 |
 | I2C FM/FM+ | `i3c_block_init` 中 `isi2c_mode` 置位，DAT 标记 legacy I2C |
 
-## 9. CCC 命令类 Case
+## 10. CCC 命令类 Case
 
 代表文件：`i3c0_master_broadcast_ccc_trans_test.sv`、`i3c0_master_directed_ccc_trans_test.sv`、`i3c0_master_setaasa_test.sv`、`i3c0_master_setdasa_test.sv`
 
@@ -454,7 +712,7 @@ enable controller
 
 从代码看，CCC 命令和普通 private transfer 的差异主要是 command queue 中 `iscp/cmd` 字段不同。其他流程仍然复用同一套 `block_init -> enable -> arg -> cmd -> FIFO -> scoreboard` 模板。
 
-## 10. Slave Mode 类 Case
+## 11. Slave Mode 类 Case
 
 代表文件：`i3c0_slave_receive_trans_test.sv`、`i3c0_slave_transmit_trans_test.sv`、`i2c0_slave_receive_trans_test.sv`
 
@@ -480,7 +738,7 @@ DEVICE_CTRL_EXTENDED = 1，进入 slave mode
 
 这里要注意：Slave 类 case 不调用 `i3c_block_init`，因为 `i3c_block_init` 默认把 DUT 配成 master。Slave 模式下 case 直接写 `DEVICE_CTRL_EXTENDED`、`DEVICE_ADDR`、`DEVICE_CTRL`。
 
-## 11. Secondary Master Case
+## 12. Secondary Master Case
 
 代表文件：`i3c0_slave_to_secmaster_test.sv`
 
@@ -511,7 +769,7 @@ main_phase:
 
 这类 case 是最能体现 I3C 特性的场景之一：DUT 先是 slave，随后通过 master request/IBI 相关流程切换到能够发起传输的状态。
 
-## 12. DMA Case
+## 13. DMA Case
 
 代表文件：`i3c0_trans_txfifo_to_mem_withdma_test.sv`、`i3c0_trans_rxfifo_to_mem_withdma_test.sv`
 
@@ -535,7 +793,7 @@ i3c_set_transfer_cmd
 
 DMA case 和普通 FIFO case 的差异是：普通 case 由 TB task 直接写 `TX_DATA_PORT`，DMA case 则由 DMA sequence 把 SRAM 数据搬到 `TX_DATA_PORT` 或把 `RX_DATA_PORT` 搬到 memory。
 
-## 13. Reg Test
+## 14. Reg Test
 
 代表文件：`i3c0_reg_test.sv`
 
@@ -555,7 +813,7 @@ expected = (write_value & RW_MASK) | (old_value & ~RW_MASK)
 
 这种写法可以避免只读位、保留位导致误判，是寄存器测试里很典型的 TB 写法。
 
-## 14. Debug Port Case
+## 15. Debug Port Case
 
 代表文件：`i3c0_debug_port_test.sv`
 
@@ -576,7 +834,7 @@ force 所有 debug 信号为 1
 
 这个 case 的价值在于验证 debug 信号汇聚和寄存器映射，而不是验证 I3C 协议本身。
 
-## 15. 中断 Case
+## 16. 中断 Case
 
 中断 case 由 SV 和 C 两部分配合：
 
@@ -601,7 +859,7 @@ SV check_simend
 
 这类 case 的关注点是硬件中断链路：I3C 中断源、PLIC 注册、CPU handler 进入、RX FIFO 读取和软件侧结果判断。
 
-## 16. 新增 Case 的推荐写法
+## 17. 新增 Case 的推荐写法
 
 如果要新增一个 I3C case，建议按下面顺序写：
 
@@ -619,7 +877,7 @@ SV check_simend
 9. 调用对应 `*_to_vip_*_tr` task，把期望 transaction 送入 scoreboard。
 10. 结束前留出足够仿真时间，再 drop objection。
 
-## 17. 典型 TB 编写套路总结
+## 18. 典型 TB 编写套路总结
 
 I3C case 的 TB 编写可以归纳为一句话：
 
