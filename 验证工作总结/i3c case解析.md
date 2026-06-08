@@ -106,6 +106,59 @@ phase.drop_objection(this);
 
 ## 6. 公共 Task 解析
 
+### 6.0 地址与寄存器速查
+
+I3C test 中寄存器地址由 `i3c_define.svh` 统一定义。I3C0/I3C1 的选择主要由 `i3c_num` 决定：
+
+| 选择值 | Base 宏 | 含义 |
+| --- | --- | --- |
+| `i3c_num = 0` | `I3C0_BASE` | 访问 I3C0 寄存器 |
+| `i3c_num = 1` | `I3C1_BASE` | 访问 I3C1 寄存器 |
+
+常用寄存器 offset：
+
+| 寄存器 | Offset | 代码用途 |
+| --- | ---: | --- |
+| `DEVICE_CTRL` | `0x00` | 使能 controller、设置 master/slave 相关控制位、resume 等 |
+| `DEVICE_ADDR` | `0x04` | 配置本机 static/dynamic address 及使能位 |
+| `COMMAND_QUEUE_PORT` | `0x0c` | 写入 DAA、transfer arg、CCC、transfer command |
+| `RESPONSE_QUEUE_PORT` | `0x10` | 读取 response queue 返回状态 |
+| `RX_DATA_PORT` | `0x14` | 从 RX FIFO 读数据 |
+| `TX_DATA_PORT` | `0x14` | 向 TX FIFO 写数据，和 RX data port 共用 offset |
+| `QUEUE_THLD_CTRL` | `0x1c` | 配置 response queue threshold |
+| `DATA_BUFFER_THLD_CTRL` | `0x20` | 配置 TX/RX data buffer threshold |
+| `SLV_EVENT_STATUS` | `0x38` | Slave event 状态，例如 master request 使能状态 |
+| `INTR_STATUS` | `0x3c` | 轮询 TX/RX/command/response/DAA 等状态 |
+| `INTR_STATUS_EN` | `0x40` | 使能中断状态 |
+| `INTR_SIGNAL_EN` | `0x44` | 使能中断信号输出 |
+| `DEVICE_CTRL_EXTENDED` | `0xb0` | 选择 master/slave 模式，`0` 为 master，`1` 为 slave |
+| `SCL_I3C_OD_TIMING` | `0xb4` | I3C open-drain SCL timing |
+| `SCL_I3C_PP_TIMING` | `0xb8` | I3C push-pull SCL timing |
+| `SCL_EXT_LCNT_TIMING` | `0xc8` | SDR1~SDR4 扩展 low count timing |
+| `SLV_INTR_REQ` | `0x8c` | Slave 发起 master request/IBI 相关请求 |
+| `DEV_ADDR_TABLE_LOC1` | `0x280` | Device Address Table 第 1 项 |
+
+SCU 侧和 debug 相关寄存器：
+
+| 寄存器 | Offset | 用途 |
+| --- | ---: | --- |
+| `MCUSS_I3C0_STAT` | `0x400` | I3C0 静态地址、状态、pad/模式相关控制 |
+| `MCUSS_I3C0_SVL_DBG_PORT_H/L` | `0x410/0x414` | I3C0 debug port 高/低位 |
+| `MCUSS_I3C1_STAT` | `0x418` | I3C1 静态地址、状态、pad/模式相关控制 |
+| `MCUSS_I3C1_SVL_DBG_PORT_H/L` | `0x428/0x42c` | I3C1 debug port 高/低位 |
+
+常用状态位在代码中的含义：
+
+| 状态位 | 使用位置 | 代码含义 |
+| --- | --- | --- |
+| `INTR_STATUS[0]` | `i3c_wirte_data_to_txfifo` | TX FIFO 可写或 TX threshold 事件 |
+| `INTR_STATUS[1]` | `i3c_read_data_from_rxfifo` | RX FIFO 有数据或 RX threshold 事件 |
+| `INTR_STATUS[3]` | 多数 case 写 command 前轮询 | command queue 可继续写入 |
+| `INTR_STATUS[4]` | `i3c_check_resp_status` | response queue 有响应 |
+| `INTR_STATUS[8]` | Secondary Master case | dynamic address done |
+| `INTR_STATUS[12]` | Secondary Master case | IBI update status |
+| `INTR_STATUS[13]` | Secondary Master case | bus owner update status |
+
 ### 6.1 寄存器访问
 
 `noc_reg_write(addr, reg_data)` 通过 `axi_master_directed_write_sequence` 发 AXI 写操作：
@@ -134,6 +187,21 @@ phase.drop_objection(this);
 | 设置本机动态地址 | `DEVICE_ADDR` | 配置 controller 自身 dynamic address |
 | 配置 DAT | `DEV_ADDR_TABLE_LOC1` | 配置目标设备 static/dynamic address，I2C mode 时置 legacy 标志 |
 
+参数和寄存器位设置展开：
+
+| 参数 | 典型值 | 写入位置 | 含义 |
+| --- | --- | --- | --- |
+| `i3c_num` | `0`/`1` | 选择 `I3C0_BASE` 或 `I3C1_BASE` | 选择 I3C 实例 |
+| `isi2c_mode` | `0`/`1` | `DEV_ADDR_TABLE_LOC1[31]` | `1` 表示目标设备按 legacy I2C 设备处理 |
+| `static_addr` | 常见 `7'h63`、`7'h31` | `DEV_ADDR_TABLE_LOC1[6:0]` | 目标设备静态地址 |
+| `dynamic_addr` | 常见 `8'h64`、`8'he3` | `DEV_ADDR_TABLE_LOC1[23:16]` | 目标设备动态地址 |
+| `resp_buf_thld` | 常见 `0` | `QUEUE_THLD_CTRL[15:8]` | response buffer threshold |
+| `tx_empty_buf_thld` | 常见 `0`/`1` | `DATA_BUFFER_THLD_CTRL[2:0]` | TX empty threshold |
+| `rx_buf_thld` | 常见 `0` | `DATA_BUFFER_THLD_CTRL[10:8]` | RX buffer threshold |
+| `tx_start_thld` | 常见 `0`/`1` | `DATA_BUFFER_THLD_CTRL[18:16]` | TX start threshold |
+
+`DEVICE_ADDR` 在 base task 里写入 `wdata[22:16] = 'h55`，并置 `wdata[31] = 1`。这表示配置 controller 自身 dynamic address 为 `0x55` 并使能 dynamic address 字段。目标设备地址则通过 DAT，即 `DEV_ADDR_TABLE_LOC1` 设置。
+
 ### 6.3 使能 I3C
 
 `i3c_block_enable(i3c_num)` 读取 `DEVICE_CTRL`，将 bit31 置 1 后写回，用于使能 I3C controller。
@@ -142,9 +210,29 @@ phase.drop_objection(this);
 
 `i3c_set_daa_cmd(i3c_num, isdirect)` 向 `COMMAND_QUEUE_PORT` 写入 CCC command。`isdirect` 为 1 时使用 `0x87`，否则使用 `0x07`。从 case 使用方式看，它主要用于动态地址相关流程。
 
+该 task 对 `COMMAND_QUEUE_PORT` 的字段拼接如下：
+
+| 字段 | 赋值 | 含义 |
+| --- | --- | --- |
+| `[2:0]` | `3'h3` | command queue entry 类型，当前用于 DAA/CCC 类命令 |
+| `[6:3]` | `4'h5` | transaction id/command id 类字段 |
+| `[14:7]` | `0x87` 或 `0x07` | DAA/SETDASA 相关 CCC command |
+| `[20:16]` | `0` | device index/参数字段 |
+| `[25:21]` | `1` | transfer length/参数字段 |
+| `[26]` | `1` | 使能类控制位 |
+| `[30]` | `1` | command 有效/ready 类控制位 |
+
 ### 6.5 设置传输参数
 
 `i3c_set_transfer_arg(i3c_num, data_len)` 向 command queue 写入 argument 类型命令，`data_len` 放在高 16 bit，用于指定后续 transfer 的数据长度。
+
+字段拼接：
+
+| 字段 | 赋值 | 含义 |
+| --- | --- | --- |
+| `[2:0]` | `3'h1` | command queue entry 类型，表示 transfer argument |
+| `[15:8]` | `0` | argument 低字段，当前未使用 |
+| `[31:16]` | `data_len` | 传输数据长度，单位按 controller 设计解释，case 中常用 `4`、`8`、`16` |
 
 ### 6.6 设置传输命令
 
@@ -163,6 +251,45 @@ phase.drop_objection(this);
 | `isstop` | 是否 stop |
 
 该 task 本质是在拼 `COMMAND_QUEUE_PORT` 的 transfer command，并通过寄存器写入触发 controller 执行。
+
+字段拼接：
+
+| 字段 | 来源 | 含义 |
+| --- | --- | --- |
+| `[2:0]` | `0` | transfer command entry 类型 |
+| `[6:3]` | `tr_id` | transaction id |
+| `[14:7]` | `cmd`，仅 `iscp=1` 时写入 | CCC command code |
+| `[15]` | `iscp` | 是否 CCC/command present |
+| `[20:16]` | `0` | DAT index，当前固定第 0 项 |
+| `[23:21]` | `speed` | 速率/模式 |
+| `[25]` | `0` | 保留或控制位，当前固定 0 |
+| `[26]` | `1` | command 有效控制位 |
+| `[27]` | `isshortarg`，仅 `speed<=4` 时设置 | 是否使用 short argument |
+| `[28]` | `isread` | `0` 写传输，`1` 读传输 |
+| `[30]` | `1` | command 有效/queue push |
+| `[31]` | `1`，仅 `speed<=4` 时设置 | stop/terminate 类控制位 |
+
+case 中常见 speed 编码：
+
+| speed | 代码注释/用途 |
+| ---: | --- |
+| `0` | SDR0 |
+| `1` | SDR1，或部分 I2C FM+ slave transmit case 中使用 |
+| `2` | SDR2 |
+| `3` | SDR3 |
+| `4` | SDR4 |
+| `6` | HDR-DDR |
+| `7` | I2C FM |
+
+case 中常见 CCC command：
+
+| command | 出现场景 | 说明 |
+| --- | --- | --- |
+| `8'h02` | Broadcast CCC case | 广播 CCC，代码注释为 `entas0 cmd` |
+| `8'h82` | Directed CCC case | 定向 CCC |
+| `8'h87` | DAA/SETDASA 相关、I2C slave transmit 场景 | 地址分配/设置类 CCC |
+| `8'h29` | SETAASA、master read 前置命令 | 地址配置/状态切换类 CCC |
+| `8'h20` | HDR-DDR case | 进入 HDR-DDR 相关 command |
 
 ### 6.7 FIFO 读写
 
@@ -213,6 +340,27 @@ DMA 相关 task 使用 `mcu_dma_transfer_virt_sequence`：
 | `i3c_fill_memory` | 初始化 memory 数据 | 用 `sram_wr32_bd` 写 SRAM |
 
 DMA case 的核心就是先准备 memory 数据，再配置 DMA handshake，最后启动 I3C transfer，用 VIP 对比总线上实际数据。
+
+DMA 参数设置：
+
+| Task | 参数 | 典型值 | 含义 |
+| --- | --- | --- | --- |
+| `i3c_dma_write_config` | `src_addr` | `MCU_SUB_SRAM_BASE_ADDR + 0x4000` | SRAM 源地址 |
+| `i3c_dma_write_config` | `dst_addr` | `I3C0_BASE/I3C1_BASE + TX_DATA_PORT` | I3C TX FIFO 目标地址 |
+| `i3c_dma_write_config` | `dst_per_num` | I3C0 常见 `7'h1e`，I3C1 常见 `7'h0` | 目标外设 DMA request number |
+| `i3c_dma_read_config` | `src_addr` | `I3C0_BASE/I3C1_BASE + RX_DATA_PORT` | I3C RX FIFO 源地址 |
+| `i3c_dma_read_config` | `dst_addr` | `MCU_SUB_SRAM_BASE_ADDR + 0x4000` | SRAM 目标地址 |
+| `i3c_dma_read_config` | `src_per_num` | 常见 `7'h1f` | 源外设 DMA request number |
+| `arlengh/awlengh` | `0`/`1` | burst 长度配置 |
+
+DMA sequence 内部关键字段：
+
+| 字段 | write config | read config | 含义 |
+| --- | --- | --- | --- |
+| `tt_fc` | `3'h1` | `3'h2` | `1` 表示 memory to peripheral，`2` 表示 peripheral to memory |
+| `sinc` | `0` | `1` | 源地址增量/固定策略 |
+| `dinc` | `1` | `0` | 目标地址增量/固定策略 |
+| `src_tr_width/dst_tr_width` | `3'h2` | `3'h2` | 32-bit 传输宽度 |
 
 ## 7. 典型 Case 编写模板
 
