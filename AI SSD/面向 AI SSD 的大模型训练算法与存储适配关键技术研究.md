@@ -3,63 +3,44 @@
 
 ## 0 编制说明
 
-本技术方案围绕 AI SSD 在大模型训练场景中的应用需求，研究训练算法与训练框架如何生成更适合 SSD 处理的数据访问模式。方案重点不在 SSD 控制器或固件实现，而在 PyTorch、DeepSpeed、ZeRO、Activation 管理、Checkpoint 管理和训练数据调度等上层训练系统中识别训练数据对象，分析其生命周期、读写模式、可重算性和访问优先级，并据此设计 SSD 友好的 Offload、预取、写回、Checkpoint 和 I/O 组织方法。
-
 大模型训练中的 SSD 适配不能简单理解为“把数据写入 SSD”。真实训练系统中，参数、梯度、优化器状态、激活值、Checkpoint、数据集缓存和日志/Profile 数据具有不同的生命周期和访问模式。若训练框架不区分这些对象，而是以普通文件或无语义块 I/O 的方式混合写入 SSD，将导致训练侧难以控制小随机写、临时写、重复写和 Checkpoint 突发写对训练吞吐的影响，SSD 侧也难以区分短生命周期数据、长期训练状态和持久化恢复数据。
 
-本方案的核心思路是将训练数据由“无差别 I/O 请求”提升为“带训练语义的数据流”。训练侧负责识别数据对象、输出语义标签、组织 I/O 形态、控制调度优先级，并提供可复现实验指标；AI SSD 侧可基于这些信息开展放置、调度、缓存和寿命相关优化。方案中涉及的性能收益均以实验测量和可复现 trace 为依据，不使用未经验证的绝对提升承诺。
+本方案的核心思路是将训练数据由“无差别 I/O 请求”提升为“带训练语义的数据流”。训练侧负责识别数据对象、输出语义标签、组织 I/O 形态、控制调度优先级，并提供可复现实验指标；AI SSD 侧可基于这些信息开展放置、调度、缓存和寿命相关优化。
 
 ---
 
-# 1 发展现状（研究现状）
+# 1 发展现状
 
 ## 1.1 大模型训练对存储系统的新需求
 
 ### 1.1.1 显存容量瓶颈与分层存储趋势
 
-以 Transformer 为核心架构的大模型训练已经从单纯计算密集型任务演进为计算、显存、内存、存储和互连共同受限的复杂系统任务。训练过程中，GPU 显存不仅需要容纳模型参数，还需要容纳前向传播产生的激活值、反向传播产生的梯度、优化器状态、混合精度训练中的 FP32 master weight、通信缓冲区以及框架运行时产生的临时张量。Adam 和 AdamW 等优化器通常需要为每个参数维护一阶矩和二阶矩，在混合精度训练中还可能保留 FP32 权重副本，使训练状态规模显著大于模型参数本身。
+大模型训练已经从单纯计算密集型任务演进为计算、显存、内存、存储和互连共同受限的复杂系统任务。训练过程中，GPU 显存不仅需要容纳模型参数，还需要容纳前向传播产生的激活值、反向传播产生的梯度、优化器状态、混合精度训练中的 FP32 master weight、通信缓冲区以及框架运行时产生的临时张量，使训练状态规模显著大于模型参数本身。
 
-随着参数规模、序列长度和 batch size 增长，单卡 GPU 显存容量逐渐成为训练系统瓶颈。为缓解该问题，业界和学术界提出了模型并行、流水线并行、张量并行、ZeRO 分片、Activation Checkpointing、CPU Offload 和 NVMe Offload 等技术。DeepSpeed ZeRO 系列通过分片优化器状态、梯度和参数降低单卡冗余显存占用；ZeRO-Infinity 进一步将 NVMe SSD 纳入 GPU、CPU、NVMe 组成的异构内存层级，说明 SSD 可作为大模型训练容量扩展的重要组成部分。
 
-SSD 进入训练运行时后，问题从“是否有足够容量”进一步扩展为“数据以什么形态进入 SSD”。大模型训练中的 SSD 适配需要同时考虑训练正确性、显存占用、训练吞吐、I/O 等待、写入粒度、写入频率和数据生命周期。训练侧若能提前提供数据语义，SSD 侧才有可能区分临时 activation、长期 optimizer state、低频 checkpoint 和读密集 dataset cache。
+ ![[Pasted image 20260605121056.png]]
+表1-1大模型参数存储需求
 
-表 1 给出了典型训练数据对象及其存储适配关注点。
+![[Pasted image 20260605122014.png]]
+图1-1 GPU内存容量增长落后于模型需求。
 
-| 序号 | 数据对象 | 产生阶段 | 生命周期特征 | 压力来源 | SSD 适配关注点 |
-|---|---|---|---|---|---|
-| 1 | 模型参数 | 初始化后长期存在 | 贯穿训练过程 | 参数规模随模型增大增长 | 分片、预取、按层访问、冷热区分 |
-| 2 | 梯度 | 反向传播阶段 | 从 backward 到 optimizer step | 与参数规模接近 | 优先避免高频短生命周期 SSD 写入 |
-| 3 | 优化器状态 | 优化器初始化后长期存在 | 周期更新 | Adam/AdamW 状态规模大 | fixed shard、批量写回、缓存 |
-| 4 | 激活值 | 前向传播阶段 | forward 产生、backward 消费 | 长序列和深层模型下占用显著 | 重算优先、选择性 offload、ring buffer |
-| 5 | Checkpoint | 周期保存阶段 | 按版本持久化 | 单次写入规模大 | 分片、大块顺序写、异步写、版本管理 |
-| 6 | 数据集缓存 | 数据加载阶段 | 跨 step 或 epoch 存在 | 读吞吐影响 GPU 供数 | 预取、缓存布局、读多写少 |
-| 7 | 日志/Profile | 训练监控阶段 | 可丢弃或短期保留 | 高频小写干扰主训练流 | 缓冲、采样、低优先级写入 |
 
-### 1.1.2 训练 I/O 瓶颈与关键路径耦合
+![[Pasted image 20260605130537.png]]
+图1-2 单个NVIDIA DGX-2系统可用内存/存储的分布。相较GPU内存拥有3倍CPU内存和超过50倍的NVMe存储。
 
-大模型训练的 I/O 瓶颈主要来自四类路径：训练数据加载、训练状态迁移、Checkpoint 保存和日志/Profile 输出。数据加载负责持续向 GPU 提供 batch 输入，若读取吞吐不足，GPU 会出现供数等待；训练状态迁移负责在 GPU、CPU 与 SSD 之间移动参数、优化器状态和 activation，若预取不及时或写回阻塞，会直接增加 step time；Checkpoint 具有低频、大块、突发写入特征，若与 Offload 流共享同一路径，可能形成 I/O 峰值冲击；日志和 Profile 单次规模较小，但高频小写和元数据更新会在长时间训练中形成干扰。
+可以看出，随着参数规模、训练层数和隐藏层维度增长，单卡 GPU 显存容量逐渐成为训练系统瓶颈。为缓解该问题，业界和学术界提出了模型并行、流水线并行、张量并行、ZeRO 分片、Activation Checkpointing、CPU Offload 和 NVMe Offload 等技术。DeepSpeed ZeRO 系列通过分片优化器状态、梯度和参数降低单卡冗余显存占用；ZeRO-Infinity 进一步将 NVMe SSD 纳入 GPU、CPU、NVMe 组成的异构内存层级，说明 SSD 可作为大模型训练容量扩展的重要组成部分。
 
-与传统离线存储不同，训练 I/O 与 GPU 计算存在强耦合关系。SSD 的理论吞吐只有在数据迁移能够与计算重叠时才可能转化为训练收益。对于参数和优化器状态 Offload，训练框架必须在数据被使用前完成预取，并在使用完成后及时释放或写回。对于 Activation Offload，训练框架需要比较保存到 SSD 的代价与重新计算的代价。对于 Checkpoint，训练框架需要尽量将写入从训练关键路径中移出，并保证恢复正确性。
-
-表 2 对比了几类典型训练 I/O 流。
-
-| I/O 流类型 | 主要数据 | 读写特征 | 关键路径关系 | 主要风险 | 优化方向 |
-|---|---|---|---|---|---|
-| Dataset Read | tokenized dataset、样本索引 | 读密集，部分随机读 | 通常在关键路径上 | GPU 等待数据 | 预取、缓存、顺序化读取 |
-| Parameter Prefetch | 参数分片 | 按 layer 读取 | 关键路径 | 预取不及时 | 提前量控制、分层缓存 |
-| Optimizer State Offload | Adam m/v、master weight | 周期读写 | optimizer step 相关 | 状态读写拖慢 step | fixed shard、批量写回 |
-| Activation Offload | 中间激活值 | 写一次读一次 | 部分关键 | 高频临时写 | 选择性 offload、ring buffer、重算 |
-| Checkpoint Write | 模型与优化器状态 | 低频大块写 | 可异步化 | 突发写影响训练 | 分片、异步、大块顺序写 |
-| Log/Profile Write | 日志、trace | 高频小写 | 非关键 | 元数据和小写干扰 | 缓冲、采样、低优先级 |
-
-### 1.1.3 SSD 在训练系统中的角色变化
+### 1.1.2 SSD 在训练系统中的角色变化
 
 SSD 在大模型训练中的角色正在从“数据集存储介质”和“Checkpoint 保存介质”扩展为“训练状态容量扩展层”和“训练语义承载层”。传统训练流程中，SSD 主要用于保存训练语料和模型 Checkpoint，GPU 计算所需的中间状态主要驻留在 HBM 或 CPU DRAM 中。随着模型规模增长，CPU 内存和 SSD 被逐步纳入训练运行时，使训练系统能够在显存不足时继续运行更大模型或更长序列。
 
-DeepSpeed ZeRO-3 支持参数和优化器状态向 CPU 或 NVMe Offload，ZeRO-Infinity 将 GPU、CPU 和 NVMe 组织为异构内存层级。PyTorch Distributed Checkpoint 面向分布式训练提供并行保存、加载和 resharding 能力。NVIDIA GPUDirect Storage 和 RAPIDS KvikIO 从 GPU 与存储高效数据通路角度优化大规模数据访问。SSDTrain 等研究说明 activation 也可通过 hook、预取和计算重叠机制向 SSD 卸载。这些工作共同说明，训练系统与 SSD 的关系已经从简单文件读写转向计算、显存和存储协同。
+Smart-infinity研究把 Adam 等优化器的更新执行位置从 CPU 移到 SSD 内部 FPGA，实现近存运算，并加入Top-K 梯度压缩以节约流量。SSDTrain 研究分析得到activation 参数量增长速度快于其他参数，选择将其卸载到SSD，并将数据传输与计算完全重叠，在不影响性能的情况下降低 GPU 内存使用。这些工作共同说明，训练系统与 SSD 的关系已经从简单文件读写转向计算存储协同以及根据参数特性卸载。
 
-SSD 本身仍是具有写入约束的持久化介质。写入粒度、随机性、覆盖写、冷热数据混放和垃圾回收会影响性能与寿命。AI SSD 的价值在于利用存储侧能力适配 AI 负载，但训练侧必须提供明确语义，避免让底层从普通读写请求中被动推断数据含义。
+![[Pasted image 20260605124000.png]]
+图1-4 Smart-infinity架构图，将更新和解压缩计算卸载到SSD
 
+![[Pasted image 20260605124307.png|552]]
+图1-5 SSDTrain卸载和预取激活的流水线示意图
 ## 1.2 大模型训练框架与存储适配技术现状
 
 ### 1.2.1 PyTorch 训练框架现状
@@ -74,123 +55,34 @@ PyTorch 原生 Tensor 管理主要关注设备间拷贝和自动求导正确性�
 
 DeepSpeed 是面向大模型训练的系统级优化框架，ZeRO 系列技术是当前具有代表性的训练状态分片机制。ZeRO-1 分片优化器状态，ZeRO-2 在此基础上分片梯度，ZeRO-3 进一步分片模型参数。通过逐步消除数据并行副本中的冗余状态，ZeRO 显著降低单卡显存压力。ZeRO-Offload 和 ZeRO-Infinity 将训练状态迁移至 CPU 或 NVMe，从而进一步扩大可训练模型规模。
 
-ZeRO-Infinity 的重要意义在于证明 NVMe SSD 可以参与大模型训练运行时，而不仅是保存训练数据和 Checkpoint。它通过异构内存调度、数据预取和带宽重叠机制，在 GPU、CPU 和 NVMe 之间管理模型状态。现有 DeepSpeed Offload 配置通常以 offload device、nvme_path、buffer_count、buffer_size、max_in_cpu 等参数为核心，强调数据是否放入 NVMe 以及如何配置缓冲区，但没有直接表达“该写入属于 optimizer state”“该数据短生命周期”“该 Checkpoint 可后台保存”“该 activation 可重算”等训练语义。
+![[Pasted image 20260605143428.png]]
+图1-6 ZeRO系列原理图
+
+ZeRO-Infinity 的重要意义在于证明 NVMe SSD 可以参与大模型训练运行时，而不仅是保存训练数据和 Checkpoint。它通过异构内存调度、数据预取和带宽重叠机制，在 GPU、CPU 和 NVMe 之间管理模型状态。现有 DeepSpeed Offload 配置通常以 offload device、nvme_path、buffer_count、buffer_size、max_in_cpu 等参数为核心，强调数据是否放入 NVMe 以及如何配置缓冲区，但没有直接表达“该写入属于 optimizer state”“该数据短生命周期”“该 activation 可重算”等训练语义。
 
 本方案将在 DeepSpeed 默认 NVMe Offload 基础上分析其 I/O 模式，并增加语义分类、写入组织、调度优先级和元数据输出能力，使训练状态 Offload 不只是容量扩展机制，也成为可被 AI SSD 利用的语义化数据流。
 
-### 1.2.3 Activation 管理与 Offload 技术现状
-
-Activation 是 Transformer 训练中显存占用的重要来源，尤其在长序列、多层网络和大 batch size 场景中，前向传播保存的中间张量可能带来显著显存压力。Activation Checkpointing 通过减少保存中间结果并在反向传播时重新计算，以额外计算换取显存节省。Activation Offload 则通过将部分中间结果迁移到 CPU 或 SSD，降低 GPU 常驻激活值规模。
-
-FlashNeuron 和 SSDTrain 是 Activation SSD Offload 的代表性研究。SSDTrain 针对大语言模型训练提出将 activation offload 到 NVMe SSD，并通过 PyTorch hook、预取、计算与 I/O 重叠、张量转发和去重等机制降低开销。相关研究证明 activation 写入 SSD 具有可行性，同时也说明短生命周期数据高频写入会带来写入压力和调度挑战。
-
-本方案不将 Activation Offload 作为孤立问题处理，而是把 activation 放入参数、优化器状态、Checkpoint、数据集缓存和日志共同构成的训练数据分类体系中。对于 activation，默认策略不是“能写就写”，而是根据大小、重用距离、可重算性、显存压力和 SSD 负载进行选择：可重算且代价低的数据优先重算，必须保存且规模较大的数据才进入 SSD 临时缓冲，并采用 ring buffer 降低文件系统和写入碎片开销。
-
-### 1.2.4 Checkpoint 优化技术现状
-
-Checkpoint 是大模型训练可靠性的基础。大规模训练任务通常运行时间长、资源昂贵，硬件故障、通信异常或软件错误都可能导致训练中断，因此需要定期保存可恢复状态。Checkpoint 内容不仅包括模型参数，还包括优化器状态、学习率调度器状态、随机数状态和分布式训练元数据。随着模型和并行规模增大，Checkpoint 文件数量、单次写入规模和恢复复杂度显著增加。
-
-PyTorch Distributed Checkpoint 面向分布式训练提供并行保存和加载能力，并支持在不同并行拓扑之间进行状态重新分片。DeepSpeed 也提供面向 ZeRO 分片训练的 Checkpoint 能力。现有优化方向包括异步 Checkpoint、增量 Checkpoint、分片 Checkpoint 和快速恢复，目标是降低 Checkpoint 对训练主循环的阻塞。
-
-本方案将 Checkpoint 作为独立数据流处理，而不是将其与训练状态 Offload 混为一类。Checkpoint 的低频、大块、持久化特征适合大块顺序写；Activation 的短生命周期与 Optimizer State 的周期更新具有完全不同的 I/O 规律。因此，训练框架应为 Checkpoint 设置独立调度策略，避免其与关键路径 Offload 争用 SSD 带宽，并通过元数据提示持久化级别和可靠性要求。
-
 ## 1.3 现有方案不足与本方案切入点
 
-现有训练框架和系统使用 SSD 的方式主要包括训练数据读取、Checkpoint 持久化和训练状态 Offload。DeepSpeed 支持 NVMe Offload，PyTorch Distributed Checkpoint 支持分布式状态保存，NVIDIA GPUDirect Storage 和 KvikIO 优化 GPU 与存储之间的数据通路，SSDTrain 和 FlashNeuron 关注 Activation Offload，BaM 和 G10 探索 GPU 与存储之间更直接或统一的访问架构。这些工作提供了重要基础，但多数方案仍以“训练框架使用 SSD”为主，尚未充分解决“训练框架如何适配 AI SSD”的问题。
+现有训练框架和系统使用 SSD 的方式主要包括训练数据读取、Checkpoint 持久化和训练状态 Offload。DeepSpeed 支持 NVMe Offload，NVIDIA GPUDirect Storage 和 KvikIO 优化 GPU 与存储之间的数据通路，SSDTrain 和 FlashNeuron 关注 Activation Offload，BaM 和 G10 探索 GPU 与存储之间更直接或统一的访问架构。这些工作提供了重要基础，但多数方案仍以训练框架使用 SSD为主，尚未解决训练框架如何适配 AI SSD的问题。
 
 不足主要体现在四个方面。第一，训练数据缺乏统一语义分类。参数、梯度、优化器状态、Activation、Checkpoint、数据集缓存和日志在训练框架内部是不同对象，但在存储层往往表现为普通文件读写。第二，Offload 策略主要关注显存和吞吐，对 SSD 写入粒度、生命周期隔离和写入削减关注不足。第三，多类 I/O 流之间缺少协调，Checkpoint 写入、Activation 临时写入、Optimizer State 更新和 Dataset Read 可能同时争用 SSD。第四，缺少面向 AI SSD 的接口规范，训练侧拥有语义但缺少稳定方式传递给底层。
 
-表 3 总结现有方向与本方案切入点。
-
-| 方向 | 代表技术或系统 | 已解决问题 | 仍存在不足 | 本方案切入点 |
-|---|---|---|---|---|
-| ZeRO/ZeRO-Infinity | DeepSpeed | 训练状态分片与 Offload | 语义标签和 SSD 友好性不足 | 增加语义分类和调度策略 |
-| Activation Offload | FlashNeuron、SSDTrain | 降低 activation 显存占用 | 主要关注单类数据 | 放入多类训练数据统一调度框架 |
-| Checkpoint 优化 | PyTorch DCP、DeepSpeed Checkpoint | 分布式保存和恢复 | 与 Offload 流协同不足 | 独立调度并提供持久化语义 |
-| GPU-Storage 通路 | GDS、KvikIO、BaM | 提升数据移动效率 | 不直接解决训练数据分类 | 与训练语义调度结合 |
-| SSD 放置优化 | FDP、ZNS、多流写入 | 支持主机侧放置提示 | 缺少训练框架语义来源 | 输出类型、生命周期和优先级标签 |
-
 ---
 
-# 2 需求分析（研究目的及意义）
+# 2 研究目的及意义
 
-## 2.1 项目背景与核心问题
+## 2.1 研究目的
 
-![[2.1.png]]
-
-大模型训练已经形成 GPU HBM、CPU DRAM、NVMe SSD 和远端存储共同组成的多级存储体系。GPU HBM 带宽高、延迟低但容量有限；CPU DRAM 容量较大但与 GPU 间传输受 PCIe/NVLink 等通路限制；NVMe SSD 容量大、成本低并具备持久化能力，但延迟高于内存且存在写入寿命约束；远端存储适合归档和共享，但不适合训练关键路径上的高频访问。训练算法必须根据数据对象的访问特征决定其所在层级，不能只依据容量大小进行放置。
-
-本方案要解决的核心问题可以概括为：训练框架如何把内部可见的训练语义转化为 SSD 可利用的数据流。具体包括：哪些数据适合进入 SSD，哪些数据应留在 GPU 或 CPU，哪些数据应通过重算替代保存，哪些数据必须持久化保存；进入 SSD 的数据应以什么粒度、顺序、优先级和生命周期标签写入；训练侧如何输出可验证、可统计、可联调的语义元数据。
-
-表 4 描述训练存储层级和适合承载的数据。
-
-| 存储层级     | 主要优势       | 主要限制        | 适合承载的数据                  | 训练侧策略        |
-| -------- | ---------- | ----------- | ------------------------ | ------------ |
-| GPU HBM  | 带宽高、延迟低    | 容量有限、成本高    | 当前计算所需参数、activation、梯度   | 保留关键路径数据     |
-| CPU DRAM | 容量较大、访问较快  | GPU 传输受通路限制 | 热状态缓存、Offload staging    | 作为中间缓存层      |
-| NVMe SSD | 容量大、持久化    | 延迟高、写入受限    | 冷参数、优化器状态、Checkpoint、数据集 | 大块化、顺序化、语义标注 |
-| 远端存储     | 容量可扩展、便于共享 | 延迟高、依赖网络    | 归档 Checkpoint、大数据集       | 异步传输、本地缓存    |
-
-## 2.2 研究需求
-
-![[2.2.png|697]]
-### 2.2.1 训练数据分类需求
-
-训练数据分类是后续调度的前提。没有分类，就无法判断哪些数据适合 SSD，哪些数据应留在 GPU 或 CPU，哪些数据应重算，哪些数据可延迟写入。分类不仅要基于数据名称，还要基于生命周期、大小、访问频率、可重算性、可靠性要求和关键路径关系。
-
-分类模型需要覆盖训练运行时的主要对象，并兼容 PyTorch、DeepSpeed 和 ZeRO 等常用训练栈。对于 PyTorch，可利用 module hook、parameter hook、saved_tensors_hooks 和 profiler 采集对象来源与生命周期；对于 DeepSpeed，可分析 ZeRO-3、CPU/NVMe Offload、buffer 管理和 checkpoint 保存过程中的数据流；对于 activation，可参考 SSDTrain 的 hook 与预取思路，同时加入生命周期标签、可重算判断和写入削减策略。
-
-表 5 给出训练数据分类维度。
-
-| 分类维度 | 可选取值 | 说明 | 对调度的影响 |
-|---|---|---|---|
-| 数据类型 | parameter、gradient、optimizer_state、activation、checkpoint、dataset_cache、log_profile | 表示训练语义 | 决定默认策略 |
-| 生命周期 | temporary、short_lived、long_lived、persistent | 表示存活时间 | 决定隔离、回收和持久化策略 |
-| 访问模式 | read_heavy、write_heavy、read_write、append_only、write_once_read_once | 表示读写规律 | 决定写入组织和预取方式 |
-| 可重算性 | recomputable、non_recomputable | 表示能否用计算替代保存 | 决定是否减少 SSD 写入 |
-| 关键性 | critical、delayable、discardable | 表示对训练主路径影响 | 决定 I/O 优先级 |
-| 数据规模 | small、medium、large、huge | 表示写入粒度 | 决定合并、分片或直接保留 |
-
-### 2.2.2 训练数据调度需求
-
-训练数据调度需要在显存、吞吐和 SSD 写入压力之间做权衡。如果显存充足，过度 Offload 会增加不必要 I/O；如果显存不足，不 Offload 会导致 OOM；若重算过多，会增加 GPU 计算时间；若写 SSD 过多，会增加 I/O 等待和写入压力。因此，调度策略必须基于运行时状态和数据语义进行决策。
-
-调度策略至少需要回答四个问题：数据是否进入 SSD；何时写入 SSD；以何种粒度和顺序写入；何时预取回 GPU 或 CPU。对于参数，依据是 layer 执行顺序、显存压力和缓存命中；对于优化器状态，依据是 optimizer step 的更新窗口和分片布局；对于 activation，依据是 backward 重用距离、重算代价和显存峰值；对于 checkpoint，依据是保存周期、异步写入能力和恢复可靠性。
-
-调度模块还需要具备降级机制。当 SSD 队列积压或 checkpoint 写入占用带宽时，activation offload 应减少或推迟；当 GPU 显存压力上升时，选择性 offload 可提高优先级；当日志或 profile 写入影响主循环时，应转为采样或缓冲输出。该机制能够提高长时间训练过程中的稳定性。
-
-### 2.2.3 训练方法适配 SSD 需求
-
-训练方法适配 SSD 的核心是改变训练侧数据输出形态。传统训练框架中的很多写入是按对象自然产生的，例如一个 Tensor 保存一次、一个状态文件写一次、一个日志事件写一次。这种方式便于实现，但不一定适合 SSD。方案需要将这些自然产生的数据流重新组织为 SSD 友好的数据流。
-
-小 Tensor 写入应合并为大 block；短生命周期数据应进入可复用缓冲区；长期状态应按固定分片组织；Checkpoint 应采用分片顺序写；日志应缓冲后异步写。训练侧还应避免多个大规模 I/O 流在同一时间集中发生，例如 Checkpoint 保存应与 optimizer state 高峰写回错峰，日志写入应降低优先级，dataset prefetch 应与 activation offload 进行带宽隔离或限速。
-
-适配策略不改变模型数学定义、损失函数或优化目标。所有策略都以保持训练正确性为前提，优先作用于数据放置、保存、预取、写回和元数据标注。Checkpoint 等可靠性关键数据必须保留完整性校验和恢复验证；Activation 等临时数据只有在读取时机和复用规则清晰时才进入 SSD 缓冲；Optimizer state 必须保证分片映射和更新顺序与训练框架一致。
-
-### 2.2.4 与 AI SSD 协同需求
-
-AI SSD 需要训练侧提供可解释、可记录、可测试的语义信息。训练侧不能只输出读写量，还要输出这些数据的类型、生命周期、访问模式、优先级、可重算性和可靠性要求。协同接口可采用分阶段方式建设：早期通过目录约定、sidecar JSON 元数据、I/O trace 和离线报告验证语义字段；中期通过用户态库或训练框架插件在 I/O 发起时携带标签；后期根据 AI SSD 的接口能力映射到底层设备或驱动机制。
-
-表 6 给出训练语义提示示例。
-
-| 提示类别 | 示例标签 | 典型数据 | 可能用途 |
-|---|---|---|---|
-| 数据类型 | optimizer_state | Adam m/v | 与短生命周期数据区分放置 |
-| 生命周期 | short_lived | activation offload | 临时区管理、快速回收 |
-| 访问模式 | append_only | checkpoint | 顺序写、版本管理 |
-| 优先级 | critical | 参数预取、activation 取回 | 降低关键路径排队时间 |
-| 可丢弃性 | discardable | debug log、profile trace | 延迟处理或低优先级处理 |
-| 可靠性 | persistent | checkpoint | 持久化和一致性保障 |
-
-## 2.3 研究目的
+![[Pasted image 20260605114758.png]]
 
 本方案的目标是建立一套从训练数据识别、生命周期建模、SSD 友好调度到 AI SSD 语义接口的完整方法。具体包括：构建面向 AI SSD 的训练数据语义分类模型；设计 SSD 友好的 Offload、预取、写回和 Checkpoint 调度方法；优化训练过程中的 I/O 访问模式；降低无效写入、小随机写和关键路径 I/O 等待；建立训练框架与 AI SSD 之间的语义协同接口机制。
 
-这些目标共同服务于一个原则：在不改变模型结构和训练目标的情况下，让训练系统更可观测、更可调度、更适合 SSD。方案不以“尽量写入 SSD”为目标，而是在显存、计算和 I/O 之间进行选择。可重算 activation 优先重算，长期 optimizer state 采用分片和批量写回，checkpoint 采用异步分片顺序写，日志和 profile 采用缓冲与采样，数据集缓存采用预取和读缓存。
+这些目标共同服务于一个原则：在不改变模型结构和训练目标的情况下，让训练系统更可观测、更可调度、更适合 SSD。可重算 activation 优先重算，长期 optimizer state 采用分片和批量写回，checkpoint 采用异步分片顺序写，日志和 profile 采用缓冲与采样，数据集缓存采用预取和读缓存。
 
-目标验证采用同环境 baseline 对比。对比对象包括 PyTorch 原生策略、DeepSpeed 默认 NVMe Offload 策略和本方案策略。评价指标包括 tokens/s、step time、GPU memory peak、Host writes、Small write ratio、Average write size、Checkpoint stall、Offload wait time 和 Tag coverage。所有结论以可复现实验和 trace 为依据。
+目标验证采用同环境 baseline 对比。对比对象包括 PyTorch 原生策略、DeepSpeed 默认 NVMe Offload 策略和本方案策略。评价指标包括 tokens/s、step time、GPU memory peak、Host writes、Small write ratio、Average write size、Checkpoint stall、Offload wait time 和 Tag coverage。
 
-## 2.4 研究意义
+## 2.2 研究意义
 
 本方案对大模型训练的意义在于提升训练系统资源使用的可控性。通过数据分类和调度，有限 GPU 显存可以承载更大模型、更长序列或更大 batch size；通过 SSD 友好 I/O 组织，训练系统可以降低因 Offload 和 Checkpoint 带来的吞吐损失；通过语义化调度，训练过程可以减少 I/O 随机性和抖动，提高长时间训练稳定性。
 
@@ -207,7 +99,8 @@ AI SSD 需要训练侧提供可解释、可记录、可测试的语义信息。�
 ### 3.1.1 技术路线概述
 
 总体技术路线采用“采集分析、语义建模、策略生成、框架适配、实验验证”的流程。首先，在 PyTorch 和 DeepSpeed 训练流程中插桩，采集参数、梯度、优化器状态、activation、checkpoint、dataset cache 和日志/Profile 数据的生命周期与 I/O 行为。其次，基于采集结果建立训练数据语义分类模型，形成数据类型、生命周期、访问模式、优先级、可重算性和持久化要求等标签。再次，根据分类结果设计 SSD 友好的 Offload、Prefetch、Write-back、Checkpoint 和日志管理策略。最后，将策略集成到训练框架中，并通过普通 NVMe SSD、软件 trace 和可用的 AI SSD 接口开展验证。在 AI SSD 接口明确后，可将训练语义标签映射到用户态库、驱动或设备接口；在联合测试中，可根据设备反馈调整调度阈值和 I/O 组织方式。
-
+![[Pasted image 20260604192236.png]]
+图3-1 总体技术路线图
 ### 3.1.2 总体架构
 
 总体架构由七个模块组成：训练任务层、训练框架层、生命周期 Profiler、语义分类模块、SSD 友好调度模块、AI SSD 语义接口模块和实验评估模块。训练任务层提供模型、数据集和训练配置；训练框架层基于 PyTorch、DeepSpeed 和 ZeRO 执行训练；Profiler 负责采集元数据和事件；语义分类模块将对象转化为标签；调度模块决定 offload、prefetch、write-back 和写入组织；语义接口模块输出元数据或附带标签的 I/O 请求；评估模块统计训练性能和 I/O 指标。
@@ -224,28 +117,45 @@ AI SSD 需要训练侧提供可解释、可记录、可测试的语义信息。�
 | 语义接口模块        | 数据标签、I/O 请求            | 元数据、trace、接口调用 | 向 AI SSD 侧传递训练语义                     |
 | 实验评估模块        | 训练日志、I/O 日志、设备统计       | 报告和图表          | 评估吞吐、显存、写入和稳定性                       |
 
-### 3.1.3 数据流闭环
-
 训练数据流从对象产生开始进入闭环。模型 forward 产生 activation，参数参与计算，optimizer state 在 optimizer step 中更新，checkpoint 在保存周期触发，dataset cache 在数据加载时被读取，日志/Profile 在训练过程中追加。Profiler 记录对象元数据和事件顺序，分类模块为对象生成标签，调度模块基于标签和资源状态选择策略，I/O 模块执行实际读写并输出 trace，评估模块再将结果反馈给分类阈值和调度策略。
 
 闭环中包含两类反馈。第一类是训练侧反馈，例如显存峰值、step time、offload wait time、checkpoint stall 和 GPU utilization；第二类是存储侧反馈，例如 Host writes、请求大小分布、小写比例、队列深度和设备延迟。两类反馈共同决定后续策略是否需要调整。若 SSD 队列积压，则降低可延迟写入优先级；若显存峰值接近 OOM，则提高可安全 offload 数据的比例；若 checkpoint stall 明显，则调整 checkpoint 异步写和带宽限制。
-
-
+![[Pasted image 20260604195050.png|697]]
+图3-2 系统架构及数据流示意图
 ## 3.2 大模型训练数据生命周期分析技术
+
+本节按照“数据类型识别、生命周期采集与特征建模、语义分类模型”的逻辑展开。数据类型识别用于明确训练过程中有哪些对象；生命周期采集与特征建模用于记录对象的产生、访问、迁移、写回和释放行为；语义分类模型则基于对象类型和生命周期特征生成标签、策略和聚合统计，为后续 SSD 友好调度提供输入。
+
+![[Pasted image 20260605114227.png]]
+图：生命周期分析技术路径图
 
 ### 3.2.1 训练数据类型识别
 
-训练数据类型识别覆盖 Tensor 对象和文件对象两类数据。Tensor 对象包括模型参数、梯度、优化器状态和 activation；文件对象包括 checkpoint、dataset cache、日志和 profile 文件。Tensor 对象通过 PyTorch 和 DeepSpeed 插桩采集，文件对象通过训练框架回调、路径规则、I/O 日志和系统监控采集。
+训练数据类型识别覆盖 Tensor 对象和文件对象两类数据。Tensor 对象主要包括模型参数、梯度、优化器状态和 Activation；文件对象主要包括 Checkpoint、Dataset Cache、日志文件和 Profile 文件。不同类型数据在产生阶段、生命周期、读写模式和存储需求方面存在明显差异，因此需要在采集阶段首先完成类型识别。
 
-每个数据对象生成统一描述，字段包括 object_id、name、data_type、layer_id、rank_id、shape、dtype、size_bytes、device、created_at、last_used_at、access_count、read_write_pattern、recomputable、criticality 和 persistence。统一描述用于支撑分类、调度和接口输出。
+Tensor 对象主要通过 PyTorch 和 DeepSpeed 训练流程中的插桩进行识别。模型参数可通过 model.named_parameters()、DeepSpeed 参数管理状态或 ZeRO 分片信息识别；梯度可通过 backward 过程中的 parameter hook 或梯度分片状态识别；优化器状态可通过 optimizer 内部状态、Adam/AdamW 的一阶矩和二阶矩状态、ZeRO optimizer state 等信息识别；Activation 可通过模型 forward hook、autograd 保存张量事件等方式识别。通过这些方法，可以将训练框架内部的 Tensor 对象映射为 parameter、gradient、optimizer_state 和 activation 等基础数据类型。
 
-对象识别需处理别名和共享存储问题。PyTorch 中多个 Tensor 对象可能指向同一底层 storage，activation 可能被 view、slice 或 reshape 形成多个引用。Profiler 应基于 storage id、shape、dtype、创建时间和层级上下文建立对象唯一标识，避免重复统计和重复写入。SSDTrain 中针对张量标识和去重的设计表明，activation offload 若不处理标识冲突，可能产生冗余 I/O 或错误读取。
+文件对象主要通过训练框架回调、路径规则、文件命名规则、I/O 日志和系统监控进行识别。Checkpoint 通常由训练框架在固定 step 或 epoch 触发保存，可通过 checkpoint callback、保存路径和文件名识别；Dataset Cache 通常来自数据加载、预处理缓存或 mmap 数据文件，可通过数据集目录和 dataloader 行为识别；日志和 Profile 文件通常由 logger、TensorBoard、性能分析工具或 trace 工具产生，可通过文件路径、写入频率和事件来源进行识别。
 
-### 3.2.2 Tensor 生命周期采集方法
+表 3-2 给出训练数据类型识别对象。
 
-Tensor 生命周期采集分为模型层、autograd 层、优化器层、DeepSpeed 层和系统 I/O 层。模型层通过 forward hook 采集模块输出 activation；autograd 层通过 saved_tensors_hooks 采集保存和取回事件；参数层通过 parameter hook 采集梯度产生；优化器层采集 optimizer state 初始化和更新；DeepSpeed 层采集 ZeRO 分片参数、分片优化器状态、NVMe Offload buffer 和状态迁移事件；系统层采集文件写入、SSD 读写量和 I/O 延迟。
+| 数据类型            | 对象形态         | 主要来源                                | 典型对象                                       | 基本特征                            |
+| --------------- | ------------ | ----------------------------------- | ------------------------------------------ | ------------------------------- |
+| Parameter       | Tensor       | 模型参数表、DeepSpeed 参数分片                | weight、bias、embedding                      | 长期存在，训练计算高频读取                   |
+| Gradient        | Tensor       | backward 过程、parameter hook          | `.grad`、gradient shard                     | 生命周期短，通常在 optimizer step 后释放或清零 |
+| Optimizer State | Tensor/State | optimizer 内部状态、ZeRO optimizer state | Adam `exp_avg`、`exp_avg_sq`、master weight  | 长期存在，周期读写，不可重算                  |
+| Activation      | Tensor       | forward hook、autograd saved tensor  | hidden states、attention output、MLP output  | forward 产生，backward 使用，部分可重算    |
+| Checkpoint      | File         | checkpoint callback、保存路径            | model state、optimizer state、training state | 低频大块写，可靠持久化                     |
+| Dataset Cache   | File         | dataloader、缓存目录、数据索引                | tokenized shard、sample index、mmap file     | 读多写少，影响数据加载吞吐                   |
+| Log/Profile     | File         | logger、profiler、trace 工具            | event file、trace file、training log         | 高频小写，部分可采样或可丢弃                  |
 
-表 8 给出生命周期采集方法。
+### 3.2.2 元数据记录与生命周期特征提取
+
+在完成训练数据类型识别后，Profiler 需要进一步记录每个数据对象在训练过程中的产生、访问、迁移、写回和释放过程。该步骤把训练过程中分散在 PyTorch、DeepSpeed、优化器、Checkpoint 机制和系统 I/O 层的信息整理成可用于语义分类的基础输入。
+
+生命周期采集需要覆盖多个层级。模型层通过 forward hook 采集模块输出 Activation；autograd 层通过 `saved_tensors_hooks` 采集中间张量保存和取回事件；参数层通过 parameter hook 采集梯度产生事件；优化器层采集 optimizer state 的初始化、访问和更新；DeepSpeed 层采集 ZeRO 分片参数、分片优化器状态、NVMe Offload buffer、prefetch 和 write-back 等状态迁移事件；系统 I/O 层采集文件写入、SSD 读写量、请求大小、队列深度和 I/O 延迟。
+
+表 3-3 给出生命周期采集方法。
 
 | 层级             | 采集对象            | 采集方法                     | 采集信息                            |
 | -------------- | --------------- | ------------------------ | ------------------------------- |
@@ -257,33 +167,73 @@ Tensor 生命周期采集分为模型层、autograd 层、优化器层、DeepSpe
 | Checkpoint     | 状态文件            | framework callback       | 文件大小、写入时间、版本信息                  |
 | 系统 I/O         | SSD 请求          | iostat、nvme-cli、eBPF 或日志 | 读写量、请求大小、延迟、队列深度                |
 
-采集开销必须受控。方案采用只记录元数据、不复制数据内容、按 step 聚合、按 layer 采样、异步写日志和开关化采集等方式降低 overhead。Profiler 默认不记录 Tensor 内容，只记录类型、大小、设备、层级、时间戳和事件关系。对于高频事件，可采用采样或窗口聚合方式，避免 profiler 本身成为训练瓶颈。
 
-### 3.2.3 生命周期特征建模
+为了统一描述不同来源的数据对象，建立标准化元数据结构。元数据主要包括三类：第一类是对象身份信息，用于说明该对象是谁、属于哪类数据、来自哪个层和哪个 rank；第二类是规模与位置描述，用于说明该对象的数据大小、数据类型和当前所在设备；第三类是底层存储与视图关系，用于处理 Tensor 别名、view、slice、reshape、transpose 等情况，避免重复统计和重复写入 SSD。
 
-生命周期建模将训练对象转化为可计算特征。通用特征包括 size_bytes、lifetime_steps、lifetime_layers、reuse_distance、read_count、write_count、write_frequency、critical_path_flag、recompute_cost_estimate 和 offload_candidate_flag。类型特定特征包括 activation 的 backward 重用距离、optimizer state 的 step 更新频率、checkpoint 的保存周期与版本保留时间、dataset cache 的命中率和顺序读比例、log/profile 的事件频率和可丢弃性。
+表 3-4 给出训练数据对象统一元数据字段。
 
-生命周期特征用于离线分析，也用于在线调度。如果某个 activation 大小较大、反向重用距离较长且重算代价高，可考虑 SSD 临时缓冲；如果某个 activation 较小或容易重算，则避免写入 SSD；如果某个 optimizer shard 近期不会访问，可以延迟预取；如果 checkpoint 正在写入且 SSD 带宽占用高，则降低日志写入和可延迟 activation 写回优先级。
+| 字段               | 类型      | 含义                         | 示例                                                                 |
+| ---------------- | ------- | -------------------------- | ------------------------------------------------------------------ |
+| `object_id`      | 对象身份字段  | 训练数据对象的唯一编号                | `rank0_step10_layer3_q`                                            |
+| `name`           | 对象身份字段  | 数据对象名称，通常来自模型模块名、参数名或文件名   | `transformer.layers.3.attn.q`                                      |
+| `data_type`      | 对象身份字段  | 数据类型                       | `parameter`、`gradient`、`activation`、`optimizer_state`、`checkpoint` |
+| `layer_id`       | 对象身份字段  | 所属模型层编号                    | `3`                                                                |
+| `rank_id`        | 对象身份字段  | 分布式训练中的进程编号                | `rank0`                                                            |
+| `shape`          | 规模与位置字段 | Tensor 的逻辑形状               | `[8, 16, 128, 64]`                                                 |
+| `dtype`          | 规模与位置字段 | 数据精度类型                     | `fp32`、`fp16`、`bf16`                                               |
+| `size_bytes`     | 规模与位置字段 | 数据大小，单位为字节                 | `16777216`                                                         |
+| `device`         | 规模与位置字段 | 当前所在设备或存储位置                | `cuda:0`、`cpu`、`nvme`                                              |
+| `created_at`     | 事件字段    | 数据产生的时间或训练阶段               | `step10_forward_layer3`                                            |
+| `last_used_at`   | 事件字段    | 数据最后一次被使用的时间或训练阶段          | `step10_backward_layer3`                                           |
+| `read_count`     | 事件字段    | 数据被读取的次数                   | `1`                                                                |
+| `write_count`    | 事件字段    | 数据被写入的次数                   | `1`                                                                |
+| `recomputable`   | 策略辅助字段  | 是否可以通过重新计算得到               | `true`、`false`                                                     |
+| `persistence`    | 策略辅助字段  | 数据是否需要持久保存                 | `temporary`、`long_lived`、`persistent`                              |
+| `storage_id`     | 底层存储字段  | 底层 storage 的唯一标识           | `cuda0_ptr140390129344512_size50331648`                            |
+| `storage_offset` | 底层存储字段  | Tensor 在底层 storage 中的起始偏移  | `0`、`1024`                                                         |
+| `stride`         | 底层存储字段  | Tensor 在 storage 中按各维访问的步长 | `[131072, 8192, 64, 1]`                                            |
+| `is_view`        | 底层存储字段  | 是否是其他 Tensor 的视图           | `true`、`false`                                                     |
+| `base_object_id` | 底层存储字段  | 如果当前对象是视图，指向其基础对象          | `rank0_step10_layer3_qkv`                                          |
+| `alias_group_id` | 底层存储字段  | 共享同一底层 storage 的对象组编号      | `alias_group_003`                                                  |
 
-特征建模还应输出风险标记。例如，高频短生命周期写入标记为 write_pressure_risk；checkpoint 与 offload 时间重叠标记为 bandwidth_conflict_risk；大量小文件写入标记为 metadata_overhead_risk；频繁覆盖同一状态分片标记为 update_hotspot_risk。这些风险标记用于指导调度模块和实验分析。
+在元数据基础上，生命周期特征提取进一步把训练事件转化为少量可用于分类的行为特征。对于所有对象，重点提取数据规模、生命周期长度、重用距离、读写次数和写入频率；对于不同数据类型，再提取少量类型相关特征。例如，Activation 重点关注 backward 重用距离和可重算性；Optimizer State 重点关注更新频率；Checkpoint 重点关注保存周期和写入规模；Dataset Cache 重点关注读取频率和缓存命中情况；Log/Profile 重点关注事件频率和可丢弃性。
 
-### 3.2.4 训练数据语义分类模型
+表 3-5 给出生命周期特征提取内容。
 
-语义分类模型采用规则驱动和 profiling 反馈结合的方式。第一阶段使用可解释规则，便于实现和调试；第二阶段使用 profiler 统计调整阈值，例如 activation 大小阈值、重用距离阈值、SSD 带宽阈值和显存压力阈值。规则示例包括：checkpoint 默认归类为 persistent、append_only、large_write；activation 默认归类为 short_lived、write_once_read_once，并根据可重算性决定是否写入；optimizer state 默认归类为 long_lived、read_write、periodic_update；dataset cache 默认归类为 read_mostly。
+| 特征                        | 适用对象            | 含义                           |
+| ------------------------- | --------------- | ---------------------------- |
+| `size_bytes`              | 全部对象            | 数据对象大小                       |
+| `lifetime`                | 全部对象            | 数据从产生到最后使用或释放的时间跨度           |
+| `reuse_distance`          | Tensor 对象       | 数据从产生或上次使用到下次使用之间的距离         |
+| `read_count`              | 全部对象            | 数据读取次数                       |
+| `write_count`             | 全部对象            | 数据写入次数                       |
+| `write_frequency`         | 全部对象            | 单位 step 或单位时间内的写入频率          |
+| `backward_reuse_distance` | Activation      | forward 产生到 backward 使用之间的距离 |
+| `update_frequency`        | Optimizer State | optimizer step 中被更新的频率       |
+| `save_interval`           | Checkpoint      | Checkpoint 保存周期              |
+| `cache_hit_rate`          | Dataset Cache   | 缓存命中率                        |
+| `event_frequency`         | Log/Profile     | 日志或 Profile 事件产生频率           |
+| `discardability`          | Log/Profile     | 数据是否可采样、延迟或丢弃                |
+### 3.2.3 训练数据语义分类模型
 
-表 9 给出分类与策略映射。
+本项目的语义分类模型拟采用“规则驱动 + Profiler 反馈修正”的方式构建。项目初期首先使用可解释规则，以 3.2.1 中识别出的数据类型和 3.2.2 中采集到的生命周期特征为输入，生成面向调度模块和 AI SSD 语义接口的分类标签，对训练数据进行分类，以降低实现复杂度并便于调试。例如，Checkpoint 具有低频、大块、可靠持久化特征，可默认标注为 persistent、append_only 和 large_write；Activation 通常在 forward 阶段产生并在 backward 阶段使用，可默认标注为 short_lived 和 write_once_read_once，并进一步根据是否可重算、大小和重用距离决定是否写入 SSD；Optimizer State 贯穿整个训练过程，并在 optimizer step 中周期性读写，可默认标注为 long_lived、read_write 和 periodic_update；Dataset Cache 主要服务于数据读取，可默认标注为 read_mostly。
 
-| 数据类别 | 生命周期标签 | 访问模式标签 | 默认策略 | SSD 友好组织方式 |
-|---|---|---|---|---|
-| Parameter | long_lived | read_heavy/read_write | 分层缓存、按需预取 | layer-wise shard |
-| Gradient | short_lived | write_then_read | 优先 GPU/CPU 管理 | 谨慎 offload，聚合后写 |
-| Optimizer State | long_lived | periodic_read_write | 分片 offload | fixed-size shard、批量写回 |
-| Activation | short_lived | write_once_read_once | 重算优先，选择性 offload | ring buffer、预分配 slot |
-| Checkpoint | persistent | append_only | 异步分片保存 | 大块顺序写、版本管理 |
-| Dataset Cache | persistent/read_mostly | read_heavy | 预取与缓存 | 大文件 shard、mmap |
-| Log/Profile | temporary/discardable | small_write | 缓冲与采样 | 批量追加、低优先级 |
+在规则运行后，Profiler 会根据实际训练过程中的统计结果修正分类阈值。可用于反馈的指标包括 Activation 大小分布、backward 重用距离、Optimizer State 更新频率、Checkpoint 写入时间、SSD 带宽利用率、GPU 显存压力和关键路径等待时间等。例如，当 GPU 显存峰值接近 OOM 时，可降低安全 Offload 阈值或提高 Activation 重计算比例；当 SSD 队列积压或写入延迟升高时，可提高 Activation Offload 阈值，并降低日志/Profile 等可延迟数据的写入优先级；当 Checkpoint stall 明显时，可调整 Checkpoint 异步写入和带宽限制。通过这种反馈机制，分类规则能够逐步适配具体模型规模、batch size、sequence length、GPU 显存容量和 SSD 性能条件。
+
+表 9 给出规则分类与策略映射。
+
+| 数据类别            | 生命周期标签                 | 访问模式标签                | 默认策略             | SSD 友好组织方式            |
+| --------------- | ---------------------- | --------------------- | ---------------- | --------------------- |
+| Parameter       | long_lived             | read_heavy/read_write | 分层缓存、按需预取        | layer-wise shard      |
+| Gradient        | short_lived            | write_then_read       | 优先 GPU/CPU 管理    | 谨慎 offload，聚合后写       |
+| Optimizer State | long_lived             | periodic_read_write   | 分片 offload       | fixed-size shard、批量写回 |
+| Activation      | short_lived            | write_once_read_once  | 重算优先，选择性 offload | ring buffer、预分配 slot  |
+| Checkpoint      | persistent             | append_only           | 异步分片保存           | 大块顺序写、版本管理            |
+| Dataset Cache   | persistent/read_mostly | read_heavy            | 预取与缓存            | 大文件 shard、mmap        |
+| Log/Profile     | temporary/discardable  | small_write           | 缓冲与采样            | 批量追加、低优先级             |
 
 分类模块输出应包括单对象标签和聚合统计。单对象标签用于调度，聚合统计用于报告和策略评估。聚合统计包括每类数据大小占比、进入 SSD 的比例、平均生命周期、平均重用距离、写入次数、写入块大小分布和关键路径等待贡献。
+
 
 ## 3.3 SSD 友好的训练数据 Offload 策略
 
@@ -331,77 +281,138 @@ Checkpoint 与 Offload 流需要解耦。若 checkpoint 写入与 optimizer stat
 
 ## 3.4 面向 SSD 特性的训练 I/O 优化方法
 
-![[3.4.png]]
+在大模型训练中，模型参数、梯度、优化器状态、activation、checkpoint、日志和性能分析数据会产生大量读写需求。随着模型规模扩大，GPU 显存难以容纳全部训练状态，需要引入 CPU 内存和 SSD 构成分层存储结构，将部分数据卸载到主机侧存储中。SSD 容量大、顺序读写带宽较高，适合承担训练状态的扩展存储任务；但其访问延迟高于 GPU 显存和 CPU 内存，并且对小粒度、随机、频繁覆盖写较为敏感。如果训练系统直接以单个 Tensor 为单位频繁读写 SSD，容易产生大量小 I/O、随机 I/O 和元数据开销，从而影响训练吞吐。
 
-### 3.4.1 大块化写入方法
+因此，面向 SSD 的训练 I/O 优化需要结合训练数据的语义进行设计。不同数据对象具有不同生命周期、访问模式和可靠性要求。例如，参数分片和优化器状态会直接影响训练主流程，需要按计算顺序及时预取和写回；activation 生命周期较短，可通过重算减少保存；checkpoint 数据量大但写入频率较低，适合后台顺序写入；日志和性能分析数据主要用于诊断，应采用低优先级缓冲追加。基于这些差异，系统需要对 SSD I/O 进行对象感知的组织、调度和削减。
 
-大块化写入是降低小随机写和元数据开销的基本策略。训练中大量 Tensor 尺寸不一致，若按 Tensor 粒度逐个写入 SSD，会导致请求数量过多。方案将同类数据按 layer、rank、state shard 或时间窗口合并为更大的写入块。Optimizer state 按固定 shard 合并，activation 按 ring buffer slot 写入，日志按时间窗口缓冲追加，checkpoint 按 rank 和 shard 写入大文件。
+![[images/3.4-2.png]]
 
-大块化还可以提高元数据表达能力。每个大块可带有统一的数据类型、生命周期和访问模式标签，而不是为每个小 Tensor 分别维护复杂元数据。这样既便于训练侧恢复数据，也便于 AI SSD 侧识别数据流。
+本节从四个方面展开优化：第一，通过大块化与对齐 I/O，将零散 Tensor 合并为分片、批次、分块或槽位等较大的 I/O 单元；第二，通过顺序化写入与生命周期感知放置，使不同训练数据按照访问模式分区管理；第三，通过分层缓存、异步预取和计算 I/O 重叠，减少 GPU 等待 SSD I/O 的时间；第四，通过写入削减，从训练语义出发减少不必要写入，降低 SSD 压力并延长设备使用寿命。
 
-大块化需要设置合理阈值。阈值过小，无法减少小写；阈值过大，可能增加缓冲等待和显存/内存占用。阈值应结合 SSD 带宽、CPU 内存、GPU 等待时间和数据重用距离调整。调度器应记录合并前后请求数量、平均写入大小和等待时间，判断大块化是否真正降低了关键路径开销。
+表 10 给出了主要训练数据对象及其 SSD I/O 特征。
 
-### 3.4.2 顺序化写入方法
+**表 10 训练数据对象及其 SSD I/O 特征**
 
-顺序化写入适合 SSD 的物理特性，也便于底层写入聚合和垃圾回收。方案对 checkpoint 采用 append-only 或分片顺序写；对 activation 临时数据采用预分配连续区域和 slot 顺序复用；对 optimizer state 探索固定 offset 更新与日志式写入两种方式；对日志和 profile 数据采用缓冲追加。
-
-表 10 对比不同写入组织方式。
-
-| 写入方式 | 适用数据 | 优点 | 风险 | 使用建议 |
+|数据对象|生命周期|访问特征|是否影响训练关键路径|SSD 优化重点|
 |---|---|---|---|---|
-| 每 Tensor 独立写 | 小型调试数据 | 实现简单 | 小文件多、随机性强 | 不作为主要策略 |
-| Fixed Shard | optimizer state、参数分片 | 稳定、便于索引 | 更新位置需管理 | 重点采用 |
-| Ring Buffer | activation 临时数据 | 适合短生命周期复用 | 需要 slot 管理 | 重点采用 |
-| Append-only | checkpoint、日志 | 顺序性好 | 需要版本和清理机制 | 重点采用 |
-| Log-structured | 频繁更新状态 | 顺序写友好 | 需要 compaction | 作为增强探索 |
+|参数分片|长期|前向/反向传播前读取，更新后可能写回|是|分片预取、缓存保留、按层调度|
+|梯度分片|短期|反向传播产生，参数更新后释放|是|尽量减少落盘，必要时短期缓冲|
+|优化器状态分片|长期|参数更新阶段读、改、写|是|分块读写、批量更新、流水写回|
+|activation 临时数据|短期|前向传播产生，反向传播前再次使用|是|优先重算或 CPU 卸载，必要时临时写 SSD|
+|checkpoint|中长期|低频大块写入，恢复时读取|通常否|分片顺序写、版本管理、后台写入|
+|日志/性能分析数据|短到中期|追加写，诊断时读取|否|缓冲追加、采样记录、低优先级处理|
+|数据集缓存|长期|读密集|间接影响训练|与写密集卸载数据分离|
 
-顺序化策略还应避免冷热数据混放。短生命周期 activation 与长期 checkpoint 不应共享同一逻辑区域；读密集 dataset cache 不应与写密集 optimizer state 混为一类；日志/Profile 应作为低优先级追加流单独处理。若 AI SSD 支持主机侧放置提示或类似多流写入机制，可将不同语义数据映射到不同放置类别。
+通过上述分类，系统可以避免将所有数据都作为普通文件处理，而是根据数据的训练语义采用差异化 I/O 策略，从而提高 SSD 读写效率，减少无效写入和空间回收压力。
 
-### 3.4.3 计算与 I/O 重叠方法
+### 3.4.1 大块化与对齐 I/O 方法
 
-计算与 I/O 重叠是保证训练吞吐的关键。方案通过异步线程、CUDA stream、DeepSpeed offload buffer 和训练阶段调度实现重叠。在 forward 阶段，预取后续 layer 参数或状态；在 backward 阶段，读取即将使用的 activation，并写回已不再需要的数据；在 optimizer step 阶段，批量读写优化器状态，并尽量与 checkpoint 和日志写入错峰。
+大块化 I/O 是降低 SSD 小粒度访问开销的基本方法。训练过程中存在大量尺寸不同的 Tensor。如果系统按单个 Tensor 粒度向 SSD 提交读写请求，会产生大量小 I/O，带来系统调用、文件元数据维护、I/O 队列调度和 SSD 内部映射管理等开销。这些开销最终可能转化为 GPU 等待时间，影响训练吞吐。
 
-重叠策略需要基于 profiler 结果动态调整。如果 SSD 带宽已被 checkpoint 占用，则 activation 写回应降级或推迟；如果 GPU utilization 下降且 I/O 队列积压，则说明预取不及时或写入过度；如果 CPU staging buffer 长期满载，则需要调整 CPU 缓存容量或减少同时 offload 的对象。
+因此，系统应将零散 Tensor 组织为更大的逻辑 I/O 单元。参数分片可以按层或计算节点合并为预取批次；优化器状态可以按分片或分块组织为批量读写单元；activation 临时数据可以写入可复用槽位；checkpoint 可以按计算节点和分片组织为较大的文件；日志和性能分析数据可以按时间窗口缓冲追加。这样，SSD 侧看到的是数量更少、粒度更大、结构更清晰的 I/O 请求。
 
-重叠策略的评估不能只看平均 step time，还要看尾延迟和等待分解。报告应包含 compute time、prefetch wait、offload write wait、checkpoint stall、data loader wait 和 log/profile overhead。只有当 I/O 等待被有效隐藏且训练正确性不受影响时，重叠策略才算有效。
+大块化 I/O 不仅适用于写入，也适用于读取和预取。对于参数分片，系统可以根据前向和反向传播顺序，提前将后续层所需数据读取到 CPU 缓冲区；对于优化器状态，系统可以在参数更新阶段以分块为单位批量读取、更新和写回；对于 checkpoint，系统可以将多个小状态合并后统一写入，减少小文件数量和频繁元数据更新。
 
-### 3.4.4 写入削减方法
+大块化的关键是使 I/O 单元与训练调度单元一致。若只是为了增大 I/O 块而盲目合并数据，可能导致读放大或缓存浪费。例如，将短期不会使用的参数与即将使用的参数放在同一个 I/O 块中，虽然单次读取变大，但会占用 CPU 缓冲区，并可能挤占真正需要的数据。因此，参数合并应服务于层执行顺序，优化器状态合并应服务于参数更新顺序，activation 组织应服务于反向传播的重用顺序。
 
-写入削减是降低 SSD 压力的重要目标。方案采用四类削减方法。第一，可重算数据少写，通过 activation checkpointing 和 recomputation 减少 SSD 保存。第二，低价值数据少写，日志和 profile 数据采用采样与缓冲。第三，重复状态少写，优化器状态通过 CPU 缓存和批量写回减少频繁覆盖。第四，checkpoint 有策略地写，通过保存频率、保留版本和增量探索控制写入规模。
+为支持上述机制，系统需要维护卸载对象元数据，包括对象类型、所属计算节点、层编号、分片编号、数据大小、生命周期、访问模式、重用距离和可靠性需求等信息。调度器据此判断哪些对象可以合并，哪些对象需要提前读取，哪些对象可以延迟写回，哪些对象可以释放或重算。由此，大块化不只是存储层优化，也成为训练运行时数据管理的一部分。
 
-表 11 给出写入削减策略。
+大块化阈值需要根据训练任务和系统资源动态调整。阈值过小，难以减少小 I/O；阈值过大，则可能增加等待时间和 CPU 缓冲区占用。对于训练关键路径上的参数分片和优化器状态，应避免因过度合并而延误计算；对于 checkpoint、日志和性能分析数据等后台数据，则可以采用更大的缓冲区和更长的合并窗口。
 
-| 策略 | 适用对象 | 削减逻辑 | 可能代价 |
-|---|---|---|---|
-| Recomputation | activation | 用计算替代保存 | 增加 GPU 计算 |
-| Sampling | log/profile | 降低记录频率 | 诊断粒度下降 |
-| Version Management | checkpoint | 控制保留数量 | 历史恢复点减少 |
-| CPU Cache | optimizer state | 减少 SSD 写回 | 增加 CPU 内存占用 |
-| Write Coalescing | 小 Tensor | 合并后写入 | 增加缓冲管理复杂度 |
+### 3.4.2 顺序化写入与生命周期感知放置方法
 
-写入削减不能牺牲恢复正确性和训练数学语义。Checkpoint、optimizer state 等可靠性关键数据必须保证完整性；activation 可重算策略需要保证反向传播结果一致；日志采样需要保留必要诊断信息。所有削减策略应记录被削减的数据量、削减原因和可能代价，便于实验分析。
+SSD 更适合处理连续、大块、生命周期相近的数据流。虽然 SSD 的随机访问性能优于机械硬盘，但频繁覆盖、小粒度、地址分散的写入仍会增加内部管理压力。若训练系统将短生命周期 activation、频繁更新的优化器状态、长期保存的 checkpoint 和低优先级日志混合写入同一逻辑区域，就容易造成冷热数据混放和额外空间回收开销。
+
+因此，系统应结合顺序化写入和生命周期感知放置。顺序化写入关注单个数据流的组织方式，生命周期感知放置关注不同数据流之间是否应分离。系统可将训练数据划分为长期训练状态、短期临时数据、后台可靠性数据、低优先级诊断数据和读密集缓存数据，并为每类数据设计不同的 SSD 放置策略。
+
+对于参数分片和优化器状态分片，这类数据属于长期训练状态，需要稳定索引，便于快速定位和恢复。参数分片可以按计算节点、层或分片编号组织，支持按计算顺序预取。优化器状态可以采用固定分片方式，为每个状态分片分配稳定位置，并在参数更新阶段按分块进行大块读写。该方式索引清晰、恢复方便，但需要合理管理更新偏移和写回时机，避免过多小范围覆盖写。
+
+对于 activation 临时数据，其生命周期通常只覆盖前向传播之后到反向传播使用之前。系统可以采用预分配连续区域和环形槽位管理。当某个槽位中的 activation 完成反向传播使用后，该槽位即可复用。这样既避免频繁创建和删除小文件，也便于快速回收临时空间。需要注意的是，将 activation 写入 SSD 应作为补充策略。系统应优先采用重算或 CPU 卸载，只有当 CPU 内存不足或 activation 压力过大时，才将部分数据临时写入 SSD。
+
+对于 checkpoint，推荐采用追加写或分片顺序写方式。每次保存 checkpoint 时，系统按计算节点和分片生成连续的大文件或大块区域，而不是对大量小文件进行随机覆盖。旧 checkpoint 的删除和版本清理应由后台任务完成，避免阻塞训练主流程。由于 checkpoint 通常不在每个训练步的关键路径上，其写入应作为低优先级后台 I/O，与参数预取和优化器状态读写错峰执行。
+
+对于日志和性能分析数据，应采用缓冲追加方式。正常训练阶段只记录关键事件和摘要信息；当出现异常、性能下降或调试需求时，再提高记录频率。对于数据集缓存，由于其以读取为主，应与优化器状态、activation 临时数据等写密集区域分离，避免读写互相干扰。
+
+表 11 对比了不同写入组织方式及其适用场景。
+
+**表 11 不同写入组织方式对比**
+
+|写入组织方式|适用数据|优点|风险|使用建议|
+|---|---|---|---|---|
+|每 Tensor 独立写|小型调试数据|实现简单|小文件多、随机性强、元数据开销高|不作为主要策略|
+|固定分片|参数分片、优化器状态|索引稳定、恢复方便|需要管理固定偏移和版本|重点采用|
+|环形缓冲|activation 临时数据、临时梯度数据|适合短生命周期复用|需要管理槽位生命周期|有条件采用|
+|追加写|checkpoint、日志/性能分析数据|顺序性好、实现清晰|需要版本清理机制|重点采用|
+|日志式写入|频繁更新状态|顺序写友好|需要后台整理和索引维护|作为增强探索|
+|读密集缓存|数据集缓存|有利于读取稳定性|可能与写密集数据竞争空间|与写密集区域分离|
+
+如果 SSD 支持主机侧放置提示、多流写入、区域化写入或类似接口，训练框架可以进一步将数据对象的生命周期和访问模式传递给设备侧。例如，将 activation 标记为短生命周期临时数据，将 checkpoint 标记为长期顺序写数据，将优化器状态标记为频繁更新数据，从而帮助 SSD 更合理地组织内部空间。
+
+### 3.4.3 分层缓存、异步预取与计算 I/O 重叠方法
+
+在 SSD 协同卸载训练中，影响训练吞吐的关键不只是 SSD 的裸读写速度，而是 SSD I/O 是否暴露在 GPU 计算关键路径上。如果 GPU 在前向传播、反向传播或参数更新阶段等待 SSD 数据返回，即使 SSD 本身带宽较高，也会导致训练吞吐下降。因此，系统需要通过分层缓存、异步预取和流水调度，将 SSD I/O 尽可能隐藏在 GPU 计算过程中。
+
+本方案采用 GPU 显存、CPU 内存和 SSD 构成的三级数据管理结构。GPU 显存保存当前计算立即需要的数据；CPU 内存作为中间缓存和数据暂存区，承担 SSD 与 GPU 之间的数据中转；SSD 保存暂时无法驻留在 GPU 或 CPU 中的参数分片、优化器状态、activation 临时数据和 checkpoint。训练调度器根据数据访问顺序，在合适时间将数据从 SSD 预取到 CPU，再传输到 GPU，同时将暂时不再需要的数据从 GPU 或 CPU 驱逐到下一级存储。
+
+在前向传播阶段，调度器根据层执行顺序提前预取后续层的参数分片。当 GPU 正在计算当前层时，系统可以异步读取未来层所需数据，并放入 CPU 暂存区或进一步传输到 GPU。这样，参数读取可以与当前层计算重叠，减少 GPU 等待。
+
+在反向传播阶段，调度器需要同时考虑参数、activation 和梯度的生命周期。反向传播通常与前向传播顺序相反，因此系统可以根据反向顺序预取即将使用的 activation 或参数分片。已经完成梯度计算且后续不再需要的 activation 可以释放、标记为可重算，或在必要时写入临时区域。梯度分片应优先在通信和参数更新中直接使用，只有在内存压力较大时才考虑短期写入 SSD。
+
+在参数更新阶段，优化器状态是 SSD 卸载中的重要对象。以 Adam 类优化器为例，每个参数分片通常对应一阶矩和二阶矩等状态，数据量较大。系统可以将优化器状态按分块组织，在处理当前分块的同时读取下一分块，并将已更新完成的上一分块异步写回 SSD，形成“读下一块、算当前块、写上一块”的流水结构。该方式可以避免参数更新阶段被大规模读写完全阻塞。
+
+为了实现有效重叠，系统需要维护异步 I/O 队列和 CPU 缓冲池。异步 I/O 队列负责向 SSD 提交并发读写请求；CPU 缓冲池负责承接 SSD 与 GPU 之间的数据搬运；训练调度器负责决定预取距离、驱逐时机和写回顺序。当 CPU 缓冲区紧张时，应优先保留即将使用的数据，驱逐重用距离较远的数据；当 checkpoint 或日志写入与关键路径 I/O 冲突时，应降低其优先级或延迟执行。
+
+此外，系统还需要避免过度预取。预取距离过短，数据可能无法及时到达 GPU；预取距离过长，则会占用 CPU 缓冲区，并可能导致数据在真正使用前被挤出缓存。因此，调度器应根据层执行顺序、数据重用距离、CPU 缓冲区占用和当前 I/O 队列状态动态调整预取策略。
+
+### 3.4.4 写入削减与 SSD 寿命优化方法
+
+写入削减是降低 SSD 压力和延长设备使用寿命的重要方法。对于大模型训练而言，并非所有数据都必须完整写入 SSD。不同训练数据具有不同的可靠性要求：模型参数和优化器状态属于核心训练状态，必须保证一致性；activation 多数情况下可以通过重算获得；日志和性能分析数据主要用于诊断，可以降低记录频率；checkpoint 虽然重要，但可以通过保存策略和版本管理控制写入规模。因此，写入削减应基于训练语义进行，而不能简单丢弃数据。
+
+第一类方法是通过重算减少 activation 写入。Activation 在反向传播中需要使用，但并不一定全部保存。系统可以只保存少量关键中间结果，在反向传播阶段通过重新执行部分前向计算恢复所需 activation。这样可以减少 activation 对 GPU 显存、CPU 内存和 SSD 的存储压力。对于必须保存但使用周期较短的 activation，可以优先放入 CPU 内存；只有当 CPU 内存不足或重算代价过高时，才将其临时写入 SSD。
+
+第二类方法是通过 CPU 缓存和脏数据写回减少优化器状态的频繁写入。优化器状态在每个参数更新阶段都会变化，如果每次更新后立即写回 SSD，容易造成大量重复写入。系统可以在 CPU 内存中缓存近期可能继续访问的优化器状态分片，并通过脏标记记录其是否被修改。当某个分片短期内仍可能被使用时，可以暂缓写回；当内存压力增大或进入合适的后台写回阶段时，再将多个已修改分片批量写入 SSD。
+
+第三类方法是通过 checkpoint 策略控制可靠性数据写入。Checkpoint 是训练恢复的重要保障，不能随意省略，但也不需要过于频繁地进行全量保存。系统可以根据训练阶段、迭代间隔、验证结果或故障恢复需求决定保存频率，并通过版本管理控制历史 checkpoint 数量。对于长期训练任务，可以保留最近版本和关键里程碑版本，删除过旧且价值较低的版本。若系统支持增量保存，也可以只保存相对上一版本发生变化的数据，但需要保证恢复流程正确。
+
+第四类方法是减少低价值日志和性能分析数据写入。日志和性能分析数据对调试有帮助，但不应在正常训练阶段以过高频率写入 SSD。系统可以采用采样、缓冲和分级记录机制：正常阶段只记录关键事件和摘要信息；当训练出现异常、吞吐下降或数值不稳定时，再提高记录频率并保存更详细信息。
+
+第五类方法是小 Tensor 写入合并。对于仍然需要写入 SSD 的小规模数据对象，系统不应逐个提交写入请求，而应先在内存中合并为更大的写入块。该方法可用于小规模状态、日志片段、调试信息以及部分临时数据。合并过程需要记录每个对象在大块中的偏移和长度，以便恢复或读取时正确定位。
+
+表 12 总结了主要写入削减策略。
+
+**表 12 写入削减策略**
+
+|策略|适用对象|削减逻辑|可能代价|使用建议|
+|---|---|---|---|---|
+|重算|activation|用计算替代保存|增加 GPU 计算|优先采用|
+|CPU 缓存|优化器状态|合并多次更新后批量写回|增加 CPU 内存占用|重点采用|
+|脏数据写回|优化器状态、参数分片|只写回被修改的数据块|需要维护脏标记|重点采用|
+|版本管理|checkpoint|控制保存频率和保留版本|历史恢复点减少|重点采用|
+|采样记录|日志/性能分析数据|降低记录频率|诊断粒度下降|常规采用|
+|写入合并|小 Tensor、小日志|合并后写入|增加缓冲管理复杂度|常规采用|
+
+需要强调的是，写入削减不能破坏训练正确性和恢复能力。模型参数、优化器状态、随机数状态、学习率调度器状态等关键数据必须在 checkpoint 中保持一致；activation 重算必须保证反向传播结果正确；日志采样也应保留必要的错误信息和诊断线索。系统应为每类削减策略设置明确边界，确保优化 SSD I/O 的同时不影响训练可靠性。
 
 ## 3.5 面向 AI SSD 的训练语义提示接口
 
-### 3.5.1 接口目标与边界
+![[images/3.5.png]]
+### 3.5.1 接口设计原则与语义模型
 
-语义提示接口的目标是把训练侧已经掌握的数据含义传递给 AI SSD 或中间层工具。接口不假设底层一定具备特定硬件能力，也不绑定单一 SSD 实现。早期可通过 sidecar metadata、路径约定和 trace 文件验证；具备条件后，可映射到用户态库、驱动接口或设备侧提示机制。
+训练语义提示接口的目标是将训练框架内部已经掌握的数据含义传递给 AI SSD 或相关存储管理组件，使存储系统能够感知训练数据的生命周期、访问模式和重要程度，从而为数据放置、缓存管理、调度优化和资源分配提供依据。
 
-接口边界包括三点。第一，接口传递语义和建议，不改变训练数据内容。第二，接口不替代训练框架的正确性管理，checkpoint、optimizer state 等仍需由训练侧保证一致性。第三，接口字段应稳定、可扩展、可解析，避免过度依赖某一模型结构或框架内部命名。
+本接口不依赖特定 SSD 硬件实现，也不改变训练数据本身内容，仅负责传递训练侧已经掌握的语义信息。接口设计遵循可解释、可扩展、可验证和与训练框架解耦的原则，既能够通过元数据文件和离线 Trace 实现验证，也能够进一步扩展到用户态库、驱动程序或 AI SSD 专用接口。
 
-### 3.5.2 数据类型与生命周期提示
+在语义模型方面，训练数据被统一描述为具有数据类型、生命周期、访问模式、优先级、可重算性和持久化要求等属性的语义对象。典型数据类型包括 Parameter、Gradient、Optimizer State、Activation、Checkpoint、Dataset Cache 和 Log/Profile。不同数据对象具有不同的生命周期和访问特征，例如 Activation 通常属于短生命周期且写一次读一次的数据，而 Checkpoint 则属于持久化的大规模顺序写数据。通过统一语义模型，可为后续调度和存储优化提供标准化描述。
 
-数据类型提示包括 parameter、gradient、optimizer_state、activation、checkpoint、dataset_cache 和 log_profile。生命周期提示包括 temporary、short_lived、long_lived、persistent、append_only 和 read_mostly。二者共同用于区分临时数据、长期状态、持久化数据和读密集数据。
+### 3.5.2 语义标签体系与接口字段设计
 
-例如，activation offload 通常标注为 data_type=activation、lifecycle=short_lived、access_pattern=write_once_read_once；optimizer state 通常标注为 data_type=optimizer_state、lifecycle=long_lived、access_pattern=periodic_read_write；checkpoint 通常标注为 data_type=checkpoint、lifecycle=persistent、access_pattern=append_only 或 sequential_write。
+为了准确描述训练数据特征，接口定义了一套统一语义标签体系。标签内容主要包括数据类型、生命周期、访问模式、优先级以及可靠性要求等信息。
 
-### 3.5.3 访问模式与优先级提示
+数据类型标签用于区分 Parameter、Optimizer State、Activation、Checkpoint 等不同训练对象；生命周期标签用于描述 temporary、short-lived、long-lived 和 persistent 等生命周期特征；访问模式标签用于表示 read-heavy、write-heavy、read-write、append-only、write-once-read-once 等访问行为；优先级标签用于区分 critical、high、normal、low 和 background 等不同等级的数据流。
 
-访问模式提示描述数据读写行为，包括 read_heavy、write_heavy、read_write、sequential_write、random_read、write_once_read_once 和 discardable。优先级提示用于减少关键路径等待，取值可包括 critical、high、normal、low 和 background。
+在接口实现中，每个数据对象对应一个统一描述结构。核心字段包括 object_id、data_type、lifecycle、access_pattern、priority、size_bytes 和 persistence 等必选字段；扩展字段包括 recomputable、rank_id、layer_id、reuse_distance、suggested_io、version 和 checksum 等信息。
 
-参数预取、即将用于 backward 的 activation 读取、optimizer step 必需状态属于高优先级；checkpoint 后台写入、日志和可延迟 profile 属于较低优先级。调度器可在 SSD 负载高时优先保证 critical 和 high 数据，推迟 low 和 background 数据。
-
-### 3.5.4 接口字段定义
+通过统一字段定义，训练框架能够持续输出结构化语义信息，为 AI SSD 提供可解析、可统计和可利用的数据依据。
 
 表 12 给出接口字段建议。
 
@@ -422,45 +433,54 @@ Checkpoint 与 Offload 流需要解耦。若 checkpoint 写入与 optimizer stat
 | version | 数据版本 | step_10000 |
 | checksum | 完整性校验 | sha256:... |
 
-字段可分为必选字段和扩展字段。必选字段包括 object_id、data_type、lifecycle、access_pattern、priority、size_bytes 和 persistence；扩展字段包括 recomputable、rank_id、layer_id、reuse_distance、suggested_io、version 和 checksum。早期验证可只实现必选字段，后续根据 AI SSD 能力扩展。
+### 3.5.3 接口实现与协同机制
 
-### 3.5.5 接口实现方式
+训练语义接口采用分阶段实现方式。
 
-接口实现分三阶段。第一阶段使用软件元数据文件和路径约定，例如不同数据类型写入不同目录，并为每个大块写入生成 JSON 元数据。第二阶段使用用户态库或训练框架插件，在 I/O 请求发起时附带标签。第三阶段根据 AI SSD 能力将标签映射到底层设备接口。
+第一阶段通过目录组织规则、Sidecar Metadata 文件和 I/O Trace 等方式输出训练语义信息，实现训练侧数据分类结果的离线验证。不同类型的数据分别存放于独立目录，并为每次写入生成对应元数据记录。
 
-软件元数据样例可采用 JSON Lines，每条记录对应一个对象或大块 I/O。训练完成后，评估模块读取元数据与 I/O trace，统计标签覆盖率、不同数据流写入量、优先级分布和请求大小分布。若底层设备能够反馈统计信息，则将设备统计与训练侧标签关联，分析不同语义流的延迟、写入量和排队情况。
+第二阶段通过用户态库或训练框架插件，在实际 I/O 请求发起时附带语义标签，使训练语义能够与读写请求同步传递。
+
+第三阶段根据 AI SSD 的实际能力，将训练语义进一步映射至驱动层或设备接口，实现训练系统与 AI SSD 的深度协同。
+
+在协同过程中，训练侧负责提供数据类型、生命周期、访问模式和优先级等语义信息；存储侧则根据这些语义信息开展数据放置、缓存管理、调度优化和寿命管理等工作。双方通过统一的元数据格式和 Trace 分析机制形成闭环反馈，不断优化训练过程中的存储访问行为。
+
+通过该接口机制，训练框架内部可见的数据语义能够被存储系统有效利用，为 AI SSD 提供更符合实际训练场景的优化依据，实现训练算法与存储系统的协同优化。
 
 ## 3.6 训练框架适配与原型系统实现
+![[images/3.6.png]]
 
-### 3.6.1 PyTorch 适配
+### 3.6.1 训练框架适配实现
 
-PyTorch 适配围绕模型层、autograd 层和优化器层展开。模型层提供 hook 注册工具，自动记录模块输出、参数引用和 layer 信息；autograd 层通过 saved_tensors_hooks 捕捉 activation 保存和取回；优化器层采集 optimizer state 的结构、大小和更新时机。对于常见 Transformer 模型，适配模块提供 embedding、attention、MLP、LayerNorm、residual 和输出层的识别规则。
+为了验证所提出的训练数据分类、SSD 友好调度以及语义提示机制，本方案基于 PyTorch 与 DeepSpeed 构建原型系统，并在不改变模型训练逻辑和数学正确性的前提下实现训练框架适配。
 
-PyTorch 适配还需要支持 activation 管理策略。saved_tensors_hooks 可用于替换默认保存行为，将部分 activation 保存到 CPU、SSD 或标记为重算。策略模块根据 activation 大小、重用距离、可重算性和显存压力决定处理方式。为避免影响训练正确性，适配模块必须保证 backward 取回的 Tensor 与原始计算所需一致，并对异常情况提供回退路径。
+PyTorch 适配主要围绕模型层、Autograd 层和优化器层展开。通过 Forward Hook、Parameter Hook 以及 Saved Tensor Hooks 等机制，采集 Activation、Gradient、Parameter 和 Optimizer State 的生命周期信息，并将其转化为统一的数据对象描述。对于 Activation 管理，适配模块能够根据数据大小、重用距离和可重算性判断其采用保留、重算或 SSD Offload 等不同策略。
 
-### 3.6.2 DeepSpeed 适配
+DeepSpeed 适配重点面向 ZeRO-3 与 NVMe Offload 机制展开。通过分析参数分片、优化器状态分片以及 Offload Buffer 的运行行为，实现训练数据的语义标注和 SSD 友好调度。对于参数数据，重点优化 Layer-wise Prefetch；对于 Optimizer State，重点研究 Fixed Shard 与批量写回机制；对于 Checkpoint，则支持异步分片保存和与 Offload 数据流解耦。
 
-DeepSpeed 适配围绕 ZeRO-3 和 NVMe Offload 展开。方案分析 DeepSpeed 默认 Offload 的 I/O 行为，识别参数分片、优化器状态、NVMe buffer 和 checkpoint 的读写模式。在此基础上增加语义标签输出和 SSD 友好调度策略。对于 optimizer state，重点研究 fixed shard 和批量写回；对于 parameter，重点研究预取时机和分层缓存；对于 checkpoint，重点研究异步分片保存和与 Offload 流解耦。
+整个适配过程采用插件化和配置化设计方式，尽量减少对训练框架核心代码的修改，使同一训练任务能够在原生策略、DeepSpeed 默认策略和本方案策略之间灵活切换，为后续实验验证提供统一平台。
 
-DeepSpeed 适配应尽量以配置扩展和 wrapper 方式实现，避免深度修改框架核心。可通过 engine 状态读取分片信息，通过配置文件指定 offload 路径、buffer 大小、策略阈值和语义元数据输出路径。适配模块应保留关闭开关，使同一训练脚本能够在默认策略和本方案策略之间切换，便于 baseline 对比。
+### 3.6.2 原型系统关键模块设计
 
-### 3.6.3 Profiler 工具实现
+原型系统由生命周期 Profiler、语义分类模块、SSD 友好调度模块和语义接口模块组成。
 
-Profiler 工具输出训练数据生命周期报告和 I/O 行为报告。生命周期报告包括各类数据大小占比、生命周期分布、重用距离、可重算比例、显存贡献和进入 SSD 的比例。I/O 行为报告包括 SSD 读写量、请求大小分布、写入频率、checkpoint 峰值、offload 阻塞时间和日志写入开销。
+生命周期 Profiler 负责采集训练过程中各类数据对象的创建、访问、释放和写回行为，形成训练数据生命周期画像。采集信息包括对象大小、设备位置、创建时间、释放时间、重用距离以及读写次数等内容，并以结构化日志形式输出。
 
-Profiler 需要支持多粒度报告。step 级报告用于分析训练波动；layer 级报告用于识别 activation 和参数热点；rank 级报告用于分布式训练负载均衡；数据类型级报告用于判断不同语义流对 SSD 的压力。报告应同时输出 Markdown/CSV/JSON，方便人工阅读和后续脚本处理。
+语义分类模块根据生命周期特征对训练数据进行统一建模，将 Parameter、Gradient、Optimizer State、Activation、Checkpoint、Dataset Cache 和 Log/Profile 等对象映射为标准语义标签。分类结果不仅用于统计分析，同时作为后续调度决策的重要依据。
 
-### 3.6.4 调度策略模块实现
+SSD 友好调度模块根据数据语义和系统资源状态，动态决定数据的 Offload、Prefetch、Write-back 和缓存策略。对于 Activation 采用“重算优先、选择性 Offload”的管理机制；对于 Optimizer State 采用 Fixed Shard 和批量写回策略；对于 Checkpoint 采用异步顺序写和版本管理机制；对于日志和 Profile 数据则采用缓冲与采样策略。
 
-调度策略模块第一阶段采用规则驱动方式。典型规则包括：checkpoint 使用顺序异步写；activation 大于阈值、不可重算且重用距离较长时进入 ring buffer；optimizer state 使用 fixed shard；log/profile 采用缓冲采样；参数按 layer 执行顺序预取。第二阶段引入代价模型，根据显存压力、SSD 当前负载、数据大小和重用距离动态调整策略。
+语义接口模块负责将训练侧生成的数据类型、生命周期、访问模式和优先级等信息输出为标准化元数据，为 AI SSD 提供可利用的训练语义输入，实现训练系统与存储系统之间的协同优化。
 
-调度模块需要维护资源状态，包括 GPU memory pressure、CPU cache occupancy、SSD queue pressure、checkpoint_active、offload_wait_time 和 data_loader_wait_time。策略选择不是静态开关，而是根据状态进行动态降级或升级。例如，当 checkpoint_active 为真且 SSD queue pressure 高时，低优先级日志延迟写入，activation offload 阈值提高；当 GPU memory pressure 高时，activation offload 阈值降低，但仍优先选择不可重算或重算代价高的数据。
+### 3.6.3 实验评估与验证机制
 
-### 3.6.5 实验评估模块实现
+为了验证方案有效性，原型系统建立完整的实验评估与验证机制，对训练性能、显存利用率、SSD 友好性以及接口覆盖率等指标进行综合分析。
 
-实验评估模块统计训练性能、显存收益、SSD 友好性和接口覆盖率。训练性能包括 tokens/s、step time、GPU utilization 和尾延迟；显存收益包括 GPU memory peak 和 OOM 规避情况；SSD 友好性包括 Host writes、平均写入请求大小、小随机写比例、I/O 等待时间、checkpoint stall 和 offload wait time；接口覆盖率包括 Tag coverage、字段完整率和 trace 可解析率。
+训练性能指标主要包括 Tokens/s、Step Time、GPU Utilization 和尾延迟等，用于评价调度策略对训练效率的影响；显存相关指标包括 GPU Memory Peak 和 OOM 避免能力，用于评估 Offload 策略的容量扩展效果；存储相关指标包括 Host Writes、平均请求大小、小随机写比例、Offload Wait Time 和 Checkpoint Stall，用于衡量训练 I/O 是否更加符合 SSD 特性。
 
-评估模块至少支持三类 baseline：PyTorch 原生训练或无 offload 策略、DeepSpeed 默认 NVMe Offload 策略、本方案 SSD 友好策略。所有实验应记录模型配置、训练配置、硬件环境、软件版本、策略参数和随机种子。若某项硬件侧指标无法直接采集，应使用训练侧 trace 或系统 I/O 工具作为替代，并在报告中说明限制。
+在验证过程中，系统设置三类对照组，包括 PyTorch 原生训练策略、DeepSpeed 默认 NVMe Offload 策略以及本方案提出的 SSD 友好训练策略。所有实验统一记录模型配置、训练参数、硬件环境和软件版本，确保结果可复现和可比较。
+
+除性能测试外，系统还对 Checkpoint 恢复正确性、语义标签完整性以及 Trace 可解析性进行验证，确保优化策略在提升训练效率的同时保持训练正确性和系统可靠性。最终形成训练性能报告、生命周期分析报告、I/O 行为报告和语义接口评估报告，为后续 AI SSD 联合优化提供依据。
 
 ---
 
@@ -470,13 +490,9 @@ Profiler 需要支持多粒度报告。step 级报告用于分析训练波动；
 
 第一项创新是建立面向 AI SSD 的训练数据语义分类方法。与现有训练框架只在内部区分 Tensor 和状态不同，本方案将数据类型、生命周期、访问模式、可重算性、持久化要求和优先级统一为可输出的语义标签，使底层存储侧能够理解训练数据的真实含义。
 
-该方法把训练框架内部可见信息转化为标准化字段，使 AI SSD 能够区分 short_lived activation、long_lived optimizer state、persistent checkpoint 和 read_mostly dataset cache。分类结果不仅用于统计，还直接驱动调度策略。例如 checkpoint 默认进入 append-only sequential write，activation 默认先判断 recomputable，optimizer state 默认采用 fixed shard 或批量写回，log/profile 默认标为 delayable 或 discardable。
-
-该创新点的输出包括分类规则、生命周期特征、语义标签字段、标签覆盖率统计和数据画像报告。通过这些输出，训练数据不再只是普通 I/O 请求，而是具有可调度、可解释和可验证的语义对象。
+该方法把训练框架内部可见信息转化为标准化字段，使 AI SSD 能够区分 short_lived activation、long_lived optimizer state、persistent checkpoint 和 read_mostly dataset cache。分类结果不仅用于统计，还直接驱动调度策略。通过这些输出，训练数据不再只是普通 I/O 请求，而是具有可调度、可解释和可验证的语义对象。
 
 ## 4.2 SSD 友好的训练数据 Offload 与调度方法
-
-![[4.2.png]]
 
 第二项创新是将 Offload 从容量扩展机制提升为 SSD 友好调度机制。方案在显存、计算和 I/O 之间进行选择，形成参数预取、优化器状态 fixed shard、activation ring buffer、checkpoint 异步顺序写和日志缓冲采样等组合策略。
 
@@ -485,8 +501,6 @@ Profiler 需要支持多粒度报告。step 级报告用于分析训练波动；
 调度方法具备动态降级能力。当 SSD 负载高或 checkpoint 正在写入时，低优先级数据延迟写入；当 GPU 显存压力接近阈值时，选择性 offload 提高优先级；当某类 activation 可重算时，优先使用计算替代保存。该策略能够避免简单 offload 带来的无效写入和训练抖动。
 
 ## 4.3 面向训练过程的 I/O 大块化、顺序化与削减机制
-
-![[4.3.png]]
 
 第三项创新是针对训练过程不同数据流设计具体 I/O 形态。通过大块化写入减少小请求，通过顺序化写入降低随机性，通过写入削减减少无效写入，通过优先级控制降低关键路径阻塞。这些机制把训练 I/O 从碎片化模式转化为更适合 SSD 的规整化模式。
 
@@ -516,15 +530,11 @@ Profiler 需要支持多粒度报告。step 级报告用于分析训练波动；
 
 ## 5.1 第一阶段：训练数据生命周期分析与需求建模
 
-第一阶段完成实验环境搭建、模型选择、插桩工具开发和生命周期分析。验证对象可选取 GPT、BERT、T5 或 LLaMA-like 小中型模型，基于 PyTorch 和 DeepSpeed 采集参数、梯度、优化器状态、activation 和 checkpoint 的生命周期信息。阶段输出包括 Profiler 原型、数据分类模型初稿和典型模型训练数据画像报告。
+第一阶段完成实验环境搭建、模型选择、插桩工具开发和生命周期分析。验证对象可选取 GPT、BERT、T5 或 LLaMA-like 小中型模型，基于 PyTorch 和 DeepSpeed 采集参数、梯度、优化器状态、activation 和 checkpoint 的生命周期信息。阶段输出包括 Profiler 原型、数据分类模型初稿。
 
-本阶段重点是建立可信观测基础。先在可控规模模型上验证 hook、profiler 和 I/O trace 是否能够稳定采集数据，再逐步引入 DeepSpeed ZeRO 和 NVMe Offload 配置。采集内容包括对象大小、产生阶段、释放阶段、重用距离、读写次数、是否进入 checkpoint、是否可重算以及是否参与训练关键路径。
-
-阶段内形成初版分类规则和数据画像模板。分类规则用于把训练对象映射为 parameter、gradient、optimizer_state、activation、checkpoint、dataset_cache 和 log_profile 等类别；数据画像模板用于展示不同模型和训练配置下各类数据的规模占比、生命周期分布和 I/O 行为。第一阶段重点不在性能提升，而在观测准确性、分类覆盖率和报告可复现性。
+本阶段重点是建立可信观测基础。先在可控规模模型上验证 hook、profiler 和 I/O trace 是否能够稳定采集数据，再逐步引入 DeepSpeed ZeRO 和 NVMe Offload 配置。采集内容包括对象大小、产生阶段、释放阶段、重用距离、读写次数、是否进入 checkpoint、是否可重算以及是否参与训练关键路径。第一阶段重点不在性能提升，而在观测准确性、分类覆盖率和报告可复现性。
 
 ## 5.2 第二阶段：SSD 友好训练调度方法研发
-
-![[5.2.png]]
 
 第二阶段完成训练侧调度策略设计与实现。重点研发参数预取策略、优化器状态 fixed shard 策略、activation ring buffer 策略、checkpoint 异步顺序写策略和日志缓冲策略。阶段输出包括调度模块、策略配置文件、DeepSpeed 适配扩展和初步性能对比结果。
 
@@ -554,92 +564,3 @@ Profiler 需要支持多粒度报告。step 级报告用于分析训练波动；
 | 第二阶段 | SSD 友好调度研发 | Offload 调度模块 | 是否减少小写和无效写 |
 | 第三阶段 | 语义接口研发 | 接口规范、测试样例 | 标签是否可解析、可统计、可对接 |
 | 第四阶段 | 系统集成验证 | 原型系统、实验报告 | 训练性能、正确性和 SSD 友好性 |
-
----
-
-# 6 预期成果
-
-## 6.1 技术成果
-
-技术成果包括大模型训练数据生命周期分析方法、面向 SSD 的训练数据分类模型、SSD 友好的 Offload 调度算法、训练框架与 AI SSD 语义协同接口，以及基于 PyTorch/DeepSpeed 的原型系统。这些成果共同为 AI SSD 在大模型训练场景中的应用提供训练侧支撑。
-
-生命周期分析方法用于识别训练对象的产生、复用、释放和写回规律；分类模型用于把不同训练数据映射到可调度语义；Offload 调度算法用于在显存、计算和 I/O 之间做选择；语义协同接口用于把训练侧意图传递给 AI SSD；原型系统用于验证上述方法是否可运行、可观测、可对比。
-
-技术成果以不改变模型数学定义和训练目标为前提。方案关注数据放置、预取、写回、缓冲、checkpoint 和语义标注，不改变模型结构、损失函数或优化器数学语义。性能收益以可复现实验数据为依据，不以未测试的绝对提升作为结论。
-
-## 6.2 软件成果
-
-软件成果包括 Tensor 生命周期 Profiler、训练数据分类与标注模块、SSD 友好数据调度模块、DeepSpeed 适配插件或扩展模块、实验评估脚本和可视化工具。软件应具备可复现实验能力，能够在联合验证环境中运行。
-
-Profiler 负责采集模型层级、Tensor 元数据、生命周期事件和 I/O 行为；分类与标注模块负责输出数据类型、生命周期、访问模式、优先级和可重算性；调度模块负责执行选择性 offload、预取、批量写回、ring buffer 和 checkpoint 异步写；评估脚本负责生成指标表、trace 报告和 baseline 对比。
-
-软件成果支持分模块使用。即使 AI SSD 接口尚未接入，也应能够单独运行 Profiler 和分类报告；即使调度策略暂未全部启用，也应能够输出语义元数据和 I/O trace。配置文件应包含模型、batch size、DeepSpeed 选项、offload 路径、策略阈值和日志输出等参数。
-
-## 6.3 性能与评估指标
-
-评估指标覆盖训练性能、显存收益、SSD 友好性、接口覆盖率和可靠性五个方面。训练性能包括 tokens/s、step time、GPU utilization 和尾延迟；显存收益包括 GPU memory peak、OOM 规避情况和可支持 batch size 变化；SSD 友好性包括 Host writes、小随机写比例、平均写入请求大小、checkpoint stall 和 offload wait time；接口覆盖率包括 Tag coverage、字段完整率和 trace 可解析率；可靠性包括 checkpoint 完整性和恢复成功率。
-
-表 14 给出建议指标体系。
-
-| 指标类别    | 指标名称                | 含义               | 评价方式               |
-| ------- | ------------------- | ---------------- | ------------------ |
-| 训练性能    | tokens/s            | 单位时间训练 token 数   | 与 baseline 对比      |
-| 训练性能    | step time           | 单步训练耗时           | 均值和尾延迟             |
-| 训练性能    | GPU utilization     | GPU 利用率          | profiler 或系统工具统计   |
-| 显存收益    | GPU memory peak     | GPU 显存峰值         | 降低比例或峰值变化          |
-| SSD 友好性 | Host writes         | SSD 主机侧写入量       | 每 step 或每 epoch 统计 |
-| SSD 友好性 | Small write ratio   | 小写请求比例           | 请求大小分布             |
-| SSD 友好性 | Average write size  | 平均写入请求大小         | 与 baseline 对比      |
-| I/O 干扰  | Checkpoint stall    | Checkpoint 对训练阻塞 | 阻塞时间               |
-| I/O 干扰  | Offload wait time   | Offload 导致等待     | profiler 统计        |
-| 协同接口    | Tag coverage        | 语义标签覆盖率          | 标注数据量比例            |
-| 可靠性     | Checkpoint recovery | Checkpoint 恢复能力  | 恢复测试结果             |
-
-指标解释应结合正确性和稳定性。若显存降低但 step time 显著恶化，需要分析是否过度 offload；若平均写入块变大但 checkpoint 恢复失败，则策略不可接受；若 Host writes 下降但训练正确性受影响，也不符合目标。因此，性能指标必须与正确性、稳定性和可恢复性共同评价。
-
-## 6.4 协同成果
-
-协同成果包括面向 AI SSD 的数据语义接口规范、训练侧 I/O 访问模式报告、联合评估数据集与测试用例、联合验证报告和问题反馈清单。这些成果帮助 AI SSD 设计方理解真实训练负载，并据此优化底层能力。
-
-协同成果覆盖“规范、样例、流程、反馈”四个层面。规范定义字段和语义；样例展示典型训练对象如何标注；流程说明如何采集和重放 trace；反馈清单记录设备侧发现的问题及训练侧调整建议。联合评估数据集与测试用例可采用公开模型结构、小中型验证模型、合成 token 数据或合作方认可的数据集，重点验证数据流形态和调度策略。
-
-协同目标是让 AI SSD 侧能够回答三个问题：训练数据流有哪些类型；每类数据的生命周期、优先级和访问模式是什么；底层设备优化后如何通过训练侧指标体现收益。若这些问题能被 trace、元数据和实验报告共同回答，则协同成果具备可验证性。
-
-## 6.5 知识产权与文档成果
-
-知识产权重点可围绕训练数据生命周期分类、SSD 友好 Offload 调度、Activation ring buffer、Optimizer fixed shard、Checkpoint 顺序化写入和训练语义接口展开。重点突出训练侧贡献，而不是泛泛声明 SSD 硬件能力。
-
-可凝练的方向包括：面向大模型训练的语义标签体系；基于生命周期和重用距离的 SSD offload 决策方法；面向短生命周期 activation 的缓冲复用策略；面向优化器状态的分片写回策略；面向 checkpoint 的训练干扰降低方法；训练框架到 AI SSD 的协同接口。
-
-
----
-
-# 7 参考资料
-
-[1] DeepSpeed ZeRO 官方文档。https://deepspeed.readthedocs.io/en/stable/zero3.html
-
-[2] DeepSpeed ZeRO-Offload 官方教程。https://www.deepspeed.ai/tutorials/zero-offload/
-
-[3] DeepSpeed ZeRO 官方教程。https://www.deepspeed.ai/tutorials/zero/
-
-[4] ZeRO-Infinity: Breaking the GPU Memory Wall for Extreme Scale Deep Learning。https://arxiv.org/abs/2104.07857
-
-[5] PyTorch Distributed Checkpoint 官方文档。https://docs.pytorch.org/docs/stable/distributed.checkpoint.html
-
-[6] PyTorch saved tensors hooks 教程。https://docs.pytorch.org/tutorials/intermediate/autograd_saved_tensors_hooks_tutorial.html
-
-[7] NVIDIA GPUDirect Storage 官方文档。https://docs.nvidia.com/gpudirect-storage/
-
-[8] RAPIDS KvikIO 官方文档。https://docs.rapids.ai/api/kvikio/stable/
-
-[9] SSDTrain: An Activation Offloading Framework to SSDs for Faster Large Language Model Training。https://arxiv.org/abs/2408.10013
-
-[10] BaM: GPU-Initiated On-Demand High-Throughput Storage Access in the BaM System Architecture。https://arxiv.org/abs/2203.04910
-
-[11] Samsung Flexible Data Placement 技术介绍。https://semiconductor.samsung.com/news-events/tech-blog/flexible-data-placement/
-
-[12] NVM Express Flexible Data Placement 相关资料。https://nvmexpress.org/nvmeflexible-data-placement-fdp-blog/
-
-[13] PyTorch 官方文档。https://docs.pytorch.org/docs/stable/index.html
-
-[14] G10: Enabling An Efficient Unified GPU Memory and Storage Architecture with Smart Tensor Migrations。https://arxiv.org/abs/2310.09443
