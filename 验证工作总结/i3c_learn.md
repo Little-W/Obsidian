@@ -1,37 +1,35 @@
 # I3C 协议学习笔记
 
-> 基于本地资料 `C:\Users\yusen\Downloads\I3C协议详解 - yooooooo - 博客园.html` 整理。
-
 ## 1. I3C 是什么
 
 I3C，全称 `Improved Inter Integrated Circuit`，可以理解为 I2C 的增强版两线串行总线。它仍然使用 `SDA` 和 `SCL` 两根信号线，但目标是解决传统 I2C 在传感器数量、带宽、功耗、中断线数量和地址管理上的限制。
 
 I3C 的核心定位：
 
-| 方向 | 说明 |
-| --- | --- |
-| 兼容性 | 向下兼容 I2C，可在同一总线上混接 I3C 设备和部分 I2C 设备 |
-| 性能 | 支持更高传输速率，SDR 模式已明显高于传统 I2C，HDR 模式进一步提升带宽 |
-| 功耗 | 通过推挽驱动、更高传输效率和带内事件机制降低系统功耗 |
-| 设备管理 | 支持动态地址分配，减少静态地址冲突 |
+| 方向   | 说明                                       |
+| ---- | ---------------------------------------- |
+| 兼容性  | 向下兼容 I2C，可在同一总线上混接 I3C 设备和部分 I2C 设备      |
+| 性能   | 支持更高传输速率，SDR 模式已明显高于传统 I2C，HDR 模式进一步提升带宽 |
+| 功耗   | 通过推挽驱动、更高传输效率和带内事件机制降低系统功耗               |
+| 设备管理 | 支持动态地址分配，减少静态地址冲突                        |
 | 系统集成 | 支持带内中断、热加入、Secondary Master 等机制，减少额外引脚需求 |
 
 I3C 特别适合传感器较多、空间紧张、低功耗要求高的系统，例如移动设备、可穿戴设备、sensor hub 和 always-on sensor 场景。
 
 ## 2. 基本术语
 
-| 术语 | 含义 |
-| --- | --- |
-| SDR | `Single Data Rate`，单数据率模式，是 I3C 默认通信模式 |
-| HDR | `High Data Rate`，高数据率模式，用于更高带宽传输 |
-| Main Master | 当前配置为 I3C 总线主设备的控制端 |
-| Current Master | 当前这一刻真正掌控总线的主设备 |
-| Secondary Master | 具备 Master 能力，但当前作为 Slave 挂在总线上的设备 |
-| CCC | `Common Command Code`，I3C 通用命令码 |
-| IBI | `In-Band Interrupt`，带内中断，从设备可通过总线主动请求主设备关注 |
-| Hot-Join | 热加入，设备可在总线已运行后加入并请求地址分配 |
-| ENTDAA | `Enter Dynamic Address Assignment`，进入动态地址分配流程 |
-| SETDASA | 通过静态地址分配动态地址的 CCC 命令 |
+| 术语               | 含义                                            |
+| ---------------- | --------------------------------------------- |
+| SDR              | `Single Data Rate`，单数据率模式，是 I3C 默认通信模式        |
+| HDR              | `High Data Rate`，高数据率模式，用于更高带宽传输              |
+| Main Master      | 当前配置为 I3C 总线主设备的控制端                           |
+| Current Master   | 当前这一刻真正掌控总线的主设备                               |
+| Secondary Master | 具备 Master 能力，但当前作为 Slave 挂在总线上的设备             |
+| CCC              | `Common Command Code`，I3C 通用命令码               |
+| IBI              | `In-Band Interrupt`，带内中断，从设备可通过总线主动请求主设备关注    |
+| Hot-Join         | 热加入，设备可在总线已运行后加入并请求地址分配                       |
+| ENTDAA           | `Enter Dynamic Address Assignment`，进入动态地址分配流程 |
+| SETDASA          | 通过静态地址分配动态地址的 CCC 命令                          |
 
 ## 3. 总线连接与电气行为
 
@@ -41,6 +39,8 @@ I3C 和 I2C 一样使用两根线：
 | --- | --- |
 | SCL | 时钟线 |
 | SDA | 数据线 |
+
+![I3C 总线拓扑](assets/i3c_learn/811006-20260219182746650-2085676287.png)
 
 I3C 与 I2C 的关键差异在驱动方式：
 
@@ -79,6 +79,8 @@ I3C 支持为从设备动态分配 7-bit 地址，解决 I2C 静态地址容易�
 | DCR | `Device Characteristic Register`，描述设备类型，例如传感器类别 |
 | LVR | `Legacy Virtual Register`，传统 I2C 设备用于描述自身能力 |
 
+![BCR 位域说明](assets/i3c_learn/811006-20260219183456321-898848573.png)
+
 典型动态地址流程：
 
 1. Current Master 发送广播 CCC，进入动态地址分配流程。
@@ -103,6 +105,8 @@ I3C 总线上常见三类地址：
 | 静态地址 | 传统 I2C 或未分配动态地址前的 I3C 设备使用 |
 | 广播地址 | I3C 广播命令使用，常见为 `0x7E` |
 | 动态地址 | I3C Master 分配给 Slave 的运行时地址 |
+
+![I3C/I2C 地址头对比](assets/i3c_learn/811006-20260219183609062-492957670.png)
 
 其中广播地址用于 CCC、动态地址分配、设备发现等流程；动态地址用于正常 I3C 设备访问。
 
@@ -159,6 +163,8 @@ CCC 常见用途：
 START + Broadcast Address + CCC + Data + STOP
 ```
 
+![Broadcast CCC 传输格式](assets/i3c_learn/811006-20260219183805323-1473190710.png)
+
 定向 CCC 会在广播或寻址之后指定目标设备，只让目标设备执行对应命令。
 
 ## 10. IBI、Hot-Join 与 Secondary Master
@@ -197,6 +203,8 @@ IBI 常用于传感器数据就绪、阈值触发、状态变化等场景。相�
 | SPI | 同步串行 | SDO、SDI、SCLK、SS | 主从结构 | 速度高，但线多 |
 | I2C | 同步串行 | SDA、SCL | 主从结构 | 线少、地址静态、速度有限 |
 | I3C | 同步串行 | SDA、SCL | 主从结构 | 线少、动态地址、高速、低功耗 |
+
+![I3C、I2C、SPI 对比](assets/i3c_learn/811006-20260219183926228-1641370385.png)
 
 ## 13. 验证关注点
 

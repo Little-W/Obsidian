@@ -23,44 +23,48 @@
 
 ## Feature 列表
 
-| 模块 | 功能方向 | Feature |
-| --- | --- | --- |
-| I3C0/I3C1 | 寄存器测试 | 寄存器默认值及读写正确 |
-| I3C0/I3C1 | 时钟与复位 | 配置时钟和工作时钟为 APB 时钟、指定频率下功能正常、复位 release 后重新配置流程正常 |
-| I3C0/I3C1 | Master mode 通信 | I3C SDR0、SDR1、SDR2、SDR3、SDR4、HDR-DDR 速率测试，以及 I2C FM、FM+ 兼容传输测试 |
-| I3C0/I3C1 | CCC read/write transfers | Broadcast CCC 命令传输、Directed CCC 命令传输、SETAASA、SETDASA |
-| I3C0/I3C1 | Private read/write transfers | 通过 TX FIFO 发送数据、通过 RX FIFO 接收数据、通过 short data 发送数据 |
-| I3C0/I3C1 | Slave mode receive | 作为 I3C slave mode 接收数据、作为 I2C slave mode 接收数据 |
-| I3C0/I3C1 | Slave mode transmit | 作为 I3C slave mode 发送数据、作为 I2C slave mode 发送数据 |
-| I3C0/I3C1 | Secondary Master | I3C slave 与 I3C master/I2C slave 组合场景下的 Secondary Master 流程 |
-| I3C0/I3C1 | DMA 测试 | 通过 DMA 搬运 TX FIFO/RX FIFO 与 memory 间数据 |
-| I3C0/I3C1 | 中断与错误处理 | 中断置起后进入中断处理函数，执行 C code test |
-| I3C0/I3C1 | Debug port | 正常通信模式下检查 CBB REG 各状态值是否正确 |
+| 模块        | 一级 Feature                   | 二级 Feature 描述                                   | 覆盖说明                                                                              |
+| --------- | ---------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------- |
+| I3C0/I3C1 | 寄存器测试                        | 寄存器默认值检查、寄存器读写回读检查                              | 读取寄存器默认值，并写入多组典型数据后回读比对，确认寄存器访问路径正确                                               |
+| I3C0/I3C1 | 时钟与复位                        | I3C 系统时钟、I3C 系统复位                               | 配置时钟和工作时钟为 APB 时钟，检查指定频率下功能正常；复位 release 后重新执行配置流程并确认通信恢复                         |
+| I3C0/I3C1 | Master mode 通信               | I3C SDR0、SDR1、SDR2、SDR3、SDR4、HDR-DDR 速率测试       | 覆盖 I3C mode 下多种速率传输，检查 transfer command、response queue、data port 和数据比对结果          |
+| I3C0/I3C1 | Master mode 通信               | I2C FM、I2C FM+ 兼容传输测试                           | 将 I3C 控制器配置为 I2C mode，覆盖 FM/FM+ 速率下与 I2C slave 的兼容传输                              |
+| I3C0/I3C1 | CCC read/write transfers     | Broadcast CCC command transfer                  | 通过广播 CCC 命令进行通信，检查广播命令发送、响应状态和传输数据                                                |
+| I3C0/I3C1 | CCC read/write transfers     | Directed CCC command transfer、SETAASA、SETDASA   | 通过定向 CCC 及地址相关命令完成目标设备配置，确认命令流程和动态地址配置行为正常                                        |
+| I3C0/I3C1 | Private read/write transfers | TX FIFO transmit transfer                       | 通过 TX FIFO 发送数据，检查命令队列、TX data port 和传输完成状态                                       |
+| I3C0/I3C1 | Private read/write transfers | RX FIFO receive transfer                        | 通过 RX FIFO 接收数据，检查 RX FIFO 状态、RX data port 和接收数据正确性                               |
+| I3C0/I3C1 | Private read/write transfers | short data transmit transfer                    | 通过 short data/short argument 方式发送数据，确认短数据路径可正常传输                                  |
+| I3C0/I3C1 | Slave mode receive           | I3C slave mode receive、I2C slave mode receive   | 作为 I3C/I2C slave 接收数据，检查 slave 静态地址、模式配置、FIFO 状态和接收数据                             |
+| I3C0/I3C1 | Slave mode transmit          | I3C slave mode transmit、I2C slave mode transmit | 作为 I3C/I2C slave 发送数据，检查 slave 模式、TX FIFO 写入、发送命令和数据比对                            |
+| I3C0/I3C1 | Secondary Master             | I3C slave to Secondary Master 场景                | 在 I3C slave 与 I3C master/I2C slave 组合场景下，验证 master request、bus owner 更新和总线控制权获取流程 |
+| I3C0/I3C1 | DMA 测试                       | TX FIFO to memory、RX FIFO to memory             | 通过 DMA 搬运 TX FIFO/RX FIFO 与 memory 间数据，检查 DMA 配置、搬运完成和数据一致性                       |
+| I3C0/I3C1 | 中断与错误处理                      | INT 中断处理、C code test                            | 触发中断后进入中断处理函数，读取 RX data port 或状态信息，并检查中断路径和传输数据                                  |
+| I3C0/I3C1 | Debug port                   | Debug port/CBB REG 状态检查                         | 在正常通信模式下检查 CBB REG 各状态值，确认 debug port 可观测性和状态更新正确                                 |
 
 ## Case 列表
 
-| 模块 | 验证方向 | Case |
-| --- | --- | --- |
-| I3C0 | 寄存器测试 | i3c0_register_test |
-| I3C0 | 时钟与复位 | i3c0_clk_test、i3c0_rstn_test |
+| 模块   | 验证方向           | Case                                                                                                                                                                                                                                                                                                                  |
+| ---- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| I3C0 | 寄存器测试          | i3c0_register_test                                                                                                                                                                                                                                                                                                    |
+| I3C0 | 时钟与复位          | i3c0_clk_test、i3c0_rstn_test                                                                                                                                                                                                                                                                                          |
 | I3C0 | Master mode 速率 | i3c0_master_mode_sdr0_rate_test、i3c0_master_mode_sdr1_rate_test、i3c0_master_mode_sdr2_rate_test、i3c0_master_mode_sdr3_rate_test、i3c0_master_mode_sdr4_rate_test、i3c0_master_mode_hdr_ddr_rate_test、i3c0_master_mode_i2c_fm_rate_test、i2c0_slave_i2c_fm_transmit_trans_test、i2c0_slave_i2c_fm_plus_transmit_trans_test |
-| I3C0 | CCC 命令传输 | i3c0_master_broadcast_ccc_trans_test、i3c0_master_directed_ccc_trans_test、i3c0_master_setaasa_test、i3c0_master_setdasa_test |
-| I3C0 | Private 传输 | i3c0_master_transmit_withtxfifo_test、i3c0_master_receive_withrxfifo_test、i3c0_master_transmit_withshortdata_test |
-| I3C0 | Slave mode 通信 | i3c0_slave_receive_trans_test、i3c0_slave_transmit_trans_test、i2c0_slave_receive_trans_test、i2c0_slave_transmit_trans_test、i3c0_slave_to_secmaster_test |
-| I3C0 | DMA 测试 | i3c0_trans_txfifo_to_mem_withdma_test、i3c0_trans_rxfifo_to_mem_withdma_test |
-| I3C0 | 中断与 debug | i3c0_intr_test、i3c0_debug_port_test |
-| I3C1 | 寄存器测试 | i3c1_register_test |
-| I3C1 | 时钟与复位 | i3c1_clk_test、i3c1_rstn_test |
+| I3C0 | CCC 命令传输       | i3c0_master_broadcast_ccc_trans_test、i3c0_master_directed_ccc_trans_test、i3c0_master_setaasa_test、i3c0_master_setdasa_test                                                                                                                                                                                            |
+| I3C0 | Private 传输     | i3c0_master_transmit_withtxfifo_test、i3c0_master_receive_withrxfifo_test、i3c0_master_transmit_withshortdata_test                                                                                                                                                                                                      |
+| I3C0 | Slave mode 通信  | i3c0_slave_receive_trans_test、i3c0_slave_transmit_trans_test、i2c0_slave_receive_trans_test、i2c0_slave_transmit_trans_test、i3c0_slave_to_secmaster_test                                                                                                                                                                |
+| I3C0 | DMA 测试         | i3c0_trans_txfifo_to_mem_withdma_test、i3c0_trans_rxfifo_to_mem_withdma_test                                                                                                                                                                                                                                           |
+| I3C0 | 中断与 debug      | i3c0_intr_test、i3c0_debug_port_test                                                                                                                                                                                                                                                                                   |
+| I3C1 | 寄存器测试          | i3c1_register_test                                                                                                                                                                                                                                                                                                    |
+| I3C1 | 时钟与复位          | i3c1_clk_test、i3c1_rstn_test                                                                                                                                                                                                                                                                                          |
 | I3C1 | Master mode 速率 | i3c1_master_mode_sdr0_rate_test、i3c1_master_mode_sdr1_rate_test、i3c1_master_mode_sdr2_rate_test、i3c1_master_mode_sdr3_rate_test、i3c1_master_mode_sdr4_rate_test、i3c1_master_mode_hdr_ddr_rate_test、i3c1_master_mode_i2c_fm_rate_test、i2c1_slave_i2c_fm_transmit_trans_test、i2c1_slave_i2c_fm_plus_transmit_trans_test |
-| I3C1 | CCC 命令传输 | i3c1_master_broadcast_ccc_trans_test、i3c1_master_directed_ccc_trans_test、i3c1_master_setaasa_test、i3c1_master_setdasa_test |
-| I3C1 | Private 传输 | i3c1_master_transmit_withtxfifo_test、i3c1_master_receive_withrxfifo_test、i3c1_master_transmit_withshortdata_test |
-| I3C1 | Slave mode 通信 | i3c1_slave_receive_trans_test、i3c1_slave_transmit_trans_test、i2c1_slave_receive_trans_test、i2c1_slave_transmit_trans_test、i3c1_slave_to_secmaster_test |
-| I3C1 | DMA 测试 | i3c1_trans_txfifo_to_mem_withdma_test、i3c1_trans_rxfifo_to_mem_withdma_test |
-| I3C1 | 中断与 debug | i3c1_intr_test、i3c1_debug_port_test |
+| I3C1 | CCC 命令传输       | i3c1_master_broadcast_ccc_trans_test、i3c1_master_directed_ccc_trans_test、i3c1_master_setaasa_test、i3c1_master_setdasa_test                                                                                                                                                                                            |
+| I3C1 | Private 传输     | i3c1_master_transmit_withtxfifo_test、i3c1_master_receive_withrxfifo_test、i3c1_master_transmit_withshortdata_test                                                                                                                                                                                                      |
+| I3C1 | Slave mode 通信  | i3c1_slave_receive_trans_test、i3c1_slave_transmit_trans_test、i2c1_slave_receive_trans_test、i2c1_slave_transmit_trans_test、i3c1_slave_to_secmaster_test                                                                                                                                                                |
+| I3C1 | DMA 测试         | i3c1_trans_txfifo_to_mem_withdma_test、i3c1_trans_rxfifo_to_mem_withdma_test                                                                                                                                                                                                                                           |
+| I3C1 | 中断与 debug      | i3c1_intr_test、i3c1_debug_port_test                                                                                                                                                                                                                                                                                   |
 
 ## 工作总结
 
-本阶段完成了 I3C0 和 I3C1 两个模块的 Feature 与 Case 覆盖关系整理。两个实例的验证结构基本一致，均覆盖寄存器、时钟复位、主模式速率遍历、CCC 命令、private transfer、slave mode 收发、Secondary Master、DMA、中断和 debug port 等关键功能面。
+本阶段完成了 I3C0 和 I3C1 两个模块的 Feature 与 Case 覆盖关系整理，并按一级 Feature 和二级 Feature 描述对功能点进行了补充归类。两个实例的验证结构基本一致，均覆盖寄存器、时钟复位、主模式速率遍历、CCC 命令、private transfer、slave mode 收发、Secondary Master、DMA、中断和 debug port 等关键功能面。
 
 在基础配置方面，已完成寄存器默认值和读写检查，并验证 I3C 配置时钟、工作时钟以及复位 release 后重新初始化流程。相关 case 表明模块在指定频率下能够正常工作，复位后重新配置和通信流程符合预期。
 
