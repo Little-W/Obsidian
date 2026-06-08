@@ -1,0 +1,63 @@
+version: (200506)
+
+available memory: 64M bytes
+used memory: 2M bytes [need 2M bytes if disable swap]
+
+used block: 86 [memory(86) file(0)]
+                 [ 8K(73) 64K(13) { total 2M bytes } ]
+overhead: (20680) bytes for (86) blocks [Average: (240) bytes/block]
+
+write  => 0(times) 0K(bytes) [0K bytes to file]
+read   => 13(times) 766K(bytes) [86K bytes compressed data from file]
+access => 959078(times) 7614M(bytes)
+          [hit ratio: 99.9986%]
+
+time: write(0) read(0.008)  unit: second
+
+swap file directory: (/projects/platform/temp/yusen/t100_br_dv_1114/verif/chip_top/test/c/cpu_test/cpu_core1_wfe_test/verdiLog)
+used swap file number: (10)
+
+
+
+swap file manager:
+arrSize: (256)
+idxCnt: (11)
+closeHead: (1)
+closeTail: (10)
+openCnt: (8)
+fid(10): fd(1073741830) fileName(/tmpdata/zc_data/yusen/work/chip_top/cpu_test4/cpu_test/simv.daidir/kdb.elab++/hdl_top_lib.lib++/ux900k_core_rams.v.tdc)
+	size(56542) lastModTime(1772263794) curModTime(1772263794)
+	mode(rb)	hot(0) cool(9) pos(0)
+fid(9): fd(1073741829) fileName(/tmpdata/zc_data/yusen/work/chip_top/cpu_test4/cpu_test/simv.daidir/kdb.elab++/hdl_top_lib.lib++/ux900k_cluster_top.v.tdc)
+	size(43026) lastModTime(1772263794) curModTime(1772263794)
+	mode(rb)	hot(10) cool(8) pos(0)
+fid(8): fd(1073741828) fileName(/tmpdata/zc_data/yusen/work/chip_top/cpu_test4/cpu_test/simv.daidir/kdb.elab++/hdl_top_lib.lib++/mcu_cpu_900.v.tdc)
+	size(23820) lastModTime(1772263794) curModTime(1772263794)
+	mode(rb)	hot(9) cool(7) pos(0)
+fid(7): fd(1073741827) fileName(/tmpdata/zc_data/yusen/work/chip_top/cpu_test4/cpu_test/simv.daidir/kdb.elab++/hdl_top_lib.lib++/pd_mcu_sub.v.tdc)
+	size(201193) lastModTime(1772263791) curModTime(1772263791)
+	mode(rb)	hot(8) cool(6) pos(0)
+fid(6): fd(1073741826) fileName(/tmpdata/zc_data/yusen/work/chip_top/cpu_test4/cpu_test/simv.daidir/kdb.elab++/hdl_top_lib.lib++/t100_top.v.tdc)
+	size(475551) lastModTime(1772263704) curModTime(1772263704)
+	mode(rb)	hot(7) cool(4) pos(0)
+fid(5): fd(0) fileName(/tmpdata/zc_data/yusen/work/chip_top/cpu_test4/cpu_test/simv.daidir/kdb.elab++/hdl_top_lib.lib++/nvmeha_macros.vh.tdc)
+	size(6258) lastModTime(1772263790) curModTime(1772263790)
+	mode(rb)	hot(0) cool(0) pos(0)
+fid(4): fd(1073741825) fileName(/tmpdata/zc_data/yusen/work/chip_top/cpu_test4/cpu_test/simv.daidir/kdb.elab++/hdl_top_lib.lib++/hdl_top.sv.tdc)
+	size(24676) lastModTime(1772263820) curModTime(1772263820)
+	mode(rb)	hot(6) cool(2) pos(0)
+fid(3): fd(0) fileName(/tmpdata/zc_data/yusen/work/chip_top/cpu_test4/cpu_test/simv.daidir/kdb.elab++/hvl_top_lib.lib++/svt_pkg_precursor.svp#inc___vcs_unit__1__311#.tdc)
+	size(1680) lastModTime(1772263860) curModTime(1772263860)
+	mode(rb)	hot(0) cool(0) pos(0)
+fid(2): fd(23) fileName(/projects/platform/temp/yusen/t100_br_dv_1114/verif/chip_top/test/c/cpu_test/cpu_core1_wfe_test/verdiLog/_swap_0001#470469662#197812)
+	size(0) lastModTime(0) curModTime(1772266539)
+	mode(w+b)	hot(4) cool(1) pos(0)
+fid(1): fd(1073741824) fileName(/tmpdata/zc_data/yusen/work/chip_top/cpu_test4/cpu_test/simv.daidir/kdb.elab++/hvl_top_lib.lib++/hvl_top.sv#inc___vcs_unit__1__1873#.tdc)
+	size(61090) lastModTime(1772263901) curModTime(1772263901)
+	mode(rb)	hot(2) cool(0) pos(0)
+fid(0): fd(0) fileName(NULL)
+	mode(NULL)	hot(0) cool(0) pos(0)
+==================================================
+mySelf(0x71363030) pre(0x712feae0) next((nil))
+version(200506)
+date(Nov 14 2022 02:32:13)

@@ -1227,13 +1227,13 @@ OTP与掩膜 OTP是一次性写入的单片机。过去认为一个单片机产�
 
 In electronics, tape-out is the name of the final stage of the design of an integrated circuit such as a microprocessor; the point at which the description of a circuit is sent for manufacture.
 
-## 95. 是否接触过自动布局布线？请说出一两种工具软件。自动布局布线需要哪些基本元 素？（仕兰微面试题目）
+## 95. 是否接触过自动布局布线？请说出一两种工具软件。自动布局布线需要哪些基本元素？（仕兰微面试题目）
 
 自动布局布线其基本流程如下：
 
 1. 读入网表，跟foundry提供的标准单元库和Pad库以及宏模块库进行映射； 2、整体布局，规定了芯片的大致面积和管脚位置以及宏单元位置等粗略的信息； 3、读入时序约束文件，设置好timing setup菜单，为后面进行时序驱动的布局布线做准备； 4、详细布局，力求使后面布线能顺利满足布线布通率100%的要求和时序的要求； 5、时钟树综合，为了降低clock skew而产生由许多buffer单元组成的“时钟树”； 6、布线，先对电源线和时钟信号布线，然后对信号线布线，目标是最大程度地满足时序； 7、为满足design rule从而foundry能成功制造出该芯片而做的修补工作，如填充一些dummy等。 常用的工具有Synopsys的ASTRO，Cadence的SE，ISE，Quartus II也可实现布局布线。
 
-## 96. 列举几种集成电路典型工艺。工艺上常提到0.25,0.18指的是什么？（仕兰微面试题 目）
+## 96. 列举几种集成电路典型工艺。工艺上常提到0.25,0.18指的是什么？（仕兰微面试题目）
 
 典型工艺：氧化，离子注入，光刻，刻蚀，扩散，淀积。/0.13,90,65
 

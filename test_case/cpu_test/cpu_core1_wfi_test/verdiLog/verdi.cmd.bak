@@ -1,0 +1,97 @@
+verdiSetActWin -dock widgetDock_<Message>
+simSetSimulator "-vcssv" -exec \
+           "/tmpdata/zc_data/yusen/work/chip_top/cpu_test3/cpu_test/cpu_core1_wfe_test.0.0/../simv" \
+           -args \
+           "+TESTDIR=/tmpdata/zc_data/yusen/work/chip_top/cpu_test3/cpu_test/cpu_core1_wfe_test.0.0 +vcs+lic+wait +UVM_VERBOSITY=UVM_MEDIUM +USER_CONTROLLED_PLLTS6FFLJFRACS_LOCK_TIME=20 +USER_CONTROLLED_PLLTS6FFFRACG4_LOCK_TIME=20 +UVM_MAX_QUIT_COUNT=50 +speed_grades=SG9600ODR +vcs+initreg+0+noreg +ELF=/projects/platform/temp/yusen/t100_br_dv_1114/verif/chip_top/test/c/cpu_test/cpu_core1_wfe_test/cpu_core1_wfe_test.elf -sv_lib /projects/platform/temp/yusen/t100_br_dv_1114/verif/chip_top/tb/hvl_top/rvv_cpu/rvv_cpu_dpi +DUAL_BOOT +ntb_random_seed=666 -ucli +UVM_TESTNAME=cpu_core1_wfe_test"
+debImport "-sverilog" "-dbdir" \
+          "/tmpdata/zc_data/yusen/work/chip_top/cpu_test3/cpu_test/cpu_core1_wfe_test.0.0/../simv.daidir"
+debLoadSimResult \
+           /tmpdata/zc_data/yusen/work/chip_top/cpu_test3/cpu_test/cpu_core1_wfe_test.0.0/wave.fsdb
+wvCreateWindow
+verdiSetActWin -dock widgetDock_MTB_SOURCE_TAB_1
+srcHBSelect "hdl_top" -win $_nTrace1
+verdiSetActWin -dock widgetDock_<Inst._Tree>
+srcHBSelect "hdl_top" -win $_nTrace1
+srcSetScope "hdl_top" -delim "." -win $_nTrace1
+srcHBSelect "hdl_top" -win $_nTrace1
+srcHBSelect "hdl_top.T100_TOP_u" -win $_nTrace1
+srcSetScope "hdl_top.T100_TOP_u" -delim "." -win $_nTrace1
+srcHBSelect "hdl_top.T100_TOP_u" -win $_nTrace1
+srcHBSelect "hdl_top.T100_TOP_u.PD_HS_SUB_0" -win $_nTrace1
+srcHBSelect "hdl_top.T100_TOP_u.PD_MCU_SUB_0" -win $_nTrace1
+srcSetScope "hdl_top.T100_TOP_u.PD_MCU_SUB_0" -delim "." -win $_nTrace1
+srcHBSelect "hdl_top.T100_TOP_u.PD_MCU_SUB_0" -win $_nTrace1
+srcHBSelect "hdl_top.T100_TOP_u.PD_MCU_SUB_0.MCU_CRG_0" -win $_nTrace1
+srcHBSelect "hdl_top.T100_TOP_u.PD_MCU_SUB_0.MCU_DMAC_WRAPPER_0" -win $_nTrace1
+srcHBSelect "hdl_top.T100_TOP_u.PD_MCU_SUB_0.MCU_CPU_900_0" -win $_nTrace1
+srcSetScope "hdl_top.T100_TOP_u.PD_MCU_SUB_0.MCU_CPU_900_0" -delim "." -win \
+           $_nTrace1
+srcHBSelect "hdl_top.T100_TOP_u.PD_MCU_SUB_0.MCU_CPU_900_0" -win $_nTrace1
+srcHBSelect "hdl_top.T100_TOP_u.PD_MCU_SUB_0.MCU_CPU_900_0.U_ux900_cluster_top" \
+           -win $_nTrace1
+srcSetScope "hdl_top.T100_TOP_u.PD_MCU_SUB_0.MCU_CPU_900_0.U_ux900_cluster_top" \
+           -delim "." -win $_nTrace1
+srcHBSelect "hdl_top.T100_TOP_u.PD_MCU_SUB_0.MCU_CPU_900_0.U_ux900_cluster_top" \
+           -win $_nTrace1
+srcDeselectAll -win $_nTrace1
+verdiSetActWin -dock widgetDock_MTB_SOURCE_TAB_1
+srcSelect -win $_nTrace1 -range {79 99 2 1 1 1} -backward
+srcAddSelectedToWave -clipboard -win $_nTrace1
+wvDrop -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoom -win $_nWave2 2808389772614.641602 2982166380166.187988
+verdiSetActWin -win $_nWave2
+wvZoom -win $_nWave2 2936076317259.589355 2945749540338.751953
+wvZoom -win $_nWave2 2940206599805.505371 2941017452820.654785
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoom -win $_nWave2 2924199855131.039551 2947853186307.735840
+wvZoom -win $_nWave2 2938652086950.199707 2941300888280.399414
+wvZoom -win $_nWave2 2940567133884.411133 2940749271500.436523
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoomIn -win $_nWave2
+wvZoomIn -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvSetCursor -win $_nWave2 2940095210192.332031 -snap {("G1" 19)}
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoom -win $_nWave2 2898274224796.476074 2998145838331.847168
+wvZoom -win $_nWave2 2940067257572.574219 2941963967980.253418
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+wvZoomOut -win $_nWave2
+srcDeselectAll -win $_nTrace1
+verdiSetActWin -dock widgetDock_MTB_SOURCE_TAB_1
+debExit
