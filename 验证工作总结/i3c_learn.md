@@ -90,11 +90,195 @@ I3C 支持为从设备动态分配 7-bit 地址，解决 I2C 静态地址容易�
 
 常见命令：
 
-| 命令 | 作用 |
-| --- | --- |
-| ENTDAA | 进入动态地址分配流程 |
-| SETDASA | 基于静态地址设置动态地址 |
+| 命令      | 作用                      |
+| ------- | ----------------------- |
+| ENTDAA  | 进入动态地址分配流程              |
+| SETDASA | 基于静态地址设置动态地址            |
 | SETAASA | 将静态地址作为动态地址使用，常用于简化配置场景 |
+
+### 5.1 动态地址分配要解决什么问题
+
+I2C 设备通常依赖固定 7-bit 静态地址。如果两个设备静态地址冲突，系统只能通过 strap pin、外部 mux 或软件规避。I3C 引入动态地址后，设备上电时可以先用静态地址或唯一 ID 参与发现，随后由 Current Master 分配一个运行时地址。正常 private transfer 阶段，Master 访问的是动态地址，而不是一直访问静态地址。
+
+可以把地址分配理解成三层信息：
+
+| 层次 | 信息 | 作用 |
+| --- | --- | --- |
+| 设备身份 | Provisional ID、BCR、DCR | 让 Master 识别“这是谁、有什么能力” |
+| 初始可达地址 | static address | 用于 SETDASA/SETAASA 或兼容 I2C 场景 |
+| 运行时地址 | dynamic address | 后续 I3C private read/write 和 directed CCC 使用 |
+
+动态地址不是简单把寄存器里某个字段写一下。协议层需要确保：总线上每个 I3C slave 获得唯一地址；slave 知道自己被分配了哪个地址；Master 侧的 device address table 也记录了目标设备地址，后续 command queue 才能用 DAT index 找到目标。
+
+### 5.2 标准 ENTDAA 流程
+
+ENTDAA 是最标准的动态地址分配流程，适合总线上有多个 I3C slave、且 Master 需要根据设备 ID 逐个发现设备的场景。
+
+典型流程如下：
+
+```text
+Bus Available
+-> Current Master 发送 START
+-> 发送广播地址 0x7E + Write
+-> 发送 ENTDAA CCC
+-> Repeated START
+-> 发送广播地址 0x7E + Read
+-> I3C Slave 依次输出 Provisional ID / BCR / DCR
+-> Master 通过仲裁识别一个 Slave
+-> Master 回写一个 dynamic address
+-> 被分配地址的 Slave ACK，并退出本轮 DAA
+-> 如果仍有未分配设备，继续下一轮
+-> STOP，DAA 结束
+```
+
+这个流程里最关键的是“仲裁”。多个 slave 可能同时响应 DAA read 阶段，它们会按 ID bit 在 SDA 上仲裁。仲裁胜出的 slave 被 Master 识别并分配地址，其他 slave 退出当前轮，等待后续轮次。这样 Master 不需要预先知道总线上有多少设备，也能逐个分配地址。
+
+ENTDAA 验证时要关注：
+
+| 测试点 | 说明 |
+| --- | --- |
+| 广播 CCC 是否正确 | ENTDAA 必须通过广播 CCC 进入 |
+| 多设备仲裁 | 多个 slave 同时参与时，只有一个设备赢得当前轮 |
+| PID/BCR/DCR 采样 | Master 读取到的设备身份信息要正确 |
+| dynamic address 唯一 | 每个 slave 获得唯一动态地址，不能重复 |
+| 分配后退出 | 已获得地址的 slave 不应继续参与后续 DAA 轮次 |
+| 后续访问 | private transfer 应使用 dynamic address 成功访问设备 |
+
+### 5.3 SETDASA 流程
+
+SETDASA 是 `Set Dynamic Address from Static Address`。它不走完整 ID 仲裁，而是 Master 已经知道某个 slave 的 static address，然后通过定向 CCC 给它设置 dynamic address。
+
+适用场景：
+
+| 场景 | 说明 |
+| --- | --- |
+| 板级设备固定 | Master 已知道目标设备 static address |
+| 只有少量设备 | 不需要完整 ENTDAA 枚举 |
+| 验证定向地址配置 | case 中常用于快速让 VIP slave 进入可访问状态 |
+
+概念流程：
+
+```text
+Master 知道目标 static address
+-> Master 在 DAT 中记录 static address 和计划分配的 dynamic address
+-> Master 发送 directed CCC SETDASA
+-> 目标 slave ACK 并更新自己的 dynamic address
+-> Master 后续使用 dynamic address 访问该 slave
+```
+
+在本地 case 里，`i3c_set_daa_cmd(i3c_num, 1)` 走的就是这种“定向地址分配/设置”思路。该 task 会向 `COMMAND_QUEUE_PORT` 写一条 command：
+
+| 字段 | 值 | 含义 |
+| --- | --- | --- |
+| `[2:0]` | `3'h3` | DAA/CCC 类 command entry |
+| `[6:3]` | `4'h5` | transaction id 或命令相关字段 |
+| `[14:7]` | `8'h87` | directed DAA/SETDASA 类命令 |
+| `[25:21]` | `5'h1` | 传输长度/参数字段 |
+| `[26]` | `1` | command 有效控制 |
+| `[30]` | `1` | push/valid 类控制 |
+
+对应地址表由 `i3c_block_init` 提前写好：
+
+| 寄存器 | 字段 | 典型值 | 含义 |
+| --- | --- | --- | --- |
+| `DEVICE_ADDR` | `[22:16]` | `7'h55` | controller 自身 dynamic address |
+| `DEVICE_ADDR` | `[31]` | `1` | controller dynamic address valid |
+| `DEV_ADDR_TABLE_LOC1` | `[6:0]` | `7'h63` | 目标 slave static address |
+| `DEV_ADDR_TABLE_LOC1` | `[23:16]` | `8'h64` 或 `8'he3` | 目标 slave dynamic address |
+| `DEV_ADDR_TABLE_LOC1` | `[31]` | I2C mode 时为 `1` | legacy I2C 标志 |
+
+所以在 `i3c0_master_setdasa_test.sv`、SDR rate case、TX FIFO case、DMA TX case 中，地址分配相关动作可以理解为：
+
+```text
+i3c_block_init(0, 0, 7'h63, 8'h64 或 8'he3)
+-> 写 DEVICE_ADDR，配置 Master 自身 dynamic address
+-> 写 DEV_ADDR_TABLE_LOC1，配置目标 static/dynamic address
+-> i3c_block_enable
+-> i3c_set_daa_cmd(0, 1)，发送 8'h87
+-> 后续 private transfer 使用 DAT 中的目标地址
+```
+
+这里验证的重点不是多设备 ENTDAA 仲裁，而是“已知 static address 的目标 slave 能否被设置 dynamic address，并基于 DAT 完成后续访问”。
+
+### 5.4 SETAASA 流程
+
+SETAASA 是 `Set All Addresses to Static Address`。它的意思是让设备把 static address 当作 dynamic address 使用，常用于简化系统配置或验证环境。它不需要 Master 给每个设备重新挑选 dynamic address，但前提是总线上 static address 不能冲突。
+
+本地 case 中 `i3c0_master_setaasa_test.sv`、`i3c0_master_transmit_withrxfifo_test.sv`、`i3c0_trans_rxfifo_to_mem_withdma_test.sv` 等会使用：
+
+```systemverilog
+i3c_set_transfer_cmd(0, 0, 1, 8'h29, 0, 0, 1, 1);
+```
+
+这里的关键参数是：
+
+| 参数 | 值 | 说明 |
+| --- | --- | --- |
+| `speed` | `0` | SDR0 |
+| `iscp` | `1` | 当前 command 是 CCC |
+| `cmd` | `8'h29` | SETAASA 类命令 |
+| `isread` | `0` | 写方向 CCC |
+| `tr_id` | `1` | transaction id |
+| `isstop` | `1` | command 后产生 stop 类控制 |
+
+SETAASA case 的一个典型写法是：先发 `8'h29`，再读取 response queue 和 DAT，然后手动把 DAT 中的 dynamic address 字段改成 `8'he3`，再继续做 read/private transfer：
+
+```text
+i3c_set_transfer_cmd(... cmd=8'h29)
+-> i3c_check_resp_status
+-> 读取 DEV_ADDR_TABLE_LOC1
+-> 修改 rdata[23:16] = 8'he3
+-> 写回 DEV_ADDR_TABLE_LOC1
+-> i3c_set_transfer_arg
+-> i3c_set_transfer_cmd(... isread=1 或 isread=0)
+```
+
+这说明这些 case 关注的是“SETAASA/地址状态切换后，DAT 更新和后续读写是否能继续跑通”，并不是完整验证所有设备的 SETAASA 广播响应。
+
+### 5.5 本地 Case 中动态地址相关覆盖点
+
+| case | 地址分配方式 | 关键命令/地址 | 主要验证点 |
+| --- | --- | --- | --- |
+| `i3c0_master_setdasa_test.sv` | SETDASA/定向 DAA | `i3c_set_daa_cmd(0,1)`，`cmd=8'h87` | static `7'h63` 被配置为 dynamic `8'h64` 后可继续传输 |
+| `i3c0_master_setaasa_test.sv` | SETAASA | `cmd=8'h29`，DAT dynamic 后续改 `8'he3` | SETAASA response、DAT 更新、后续 private write |
+| `i3c0_master_mode_sdr*_rate_test.sv` | DAA 前置 | static `7'h63`，dynamic `8'h64` | 地址流程完成后，各 SDR 速率传输正确 |
+| `i3c0_master_transmit_withrxfifo_test.sv` | SETAASA 前置 | `cmd=8'h29`，DAT dynamic `8'he3` | 地址状态准备好后，master read 能读 RX FIFO |
+| `i3c0_trans_rxfifo_to_mem_withdma_test.sv` | SETAASA 前置 | `cmd=8'h29`，DAT dynamic `8'he3` | 地址状态准备好后，RX DMA 数据搬运正确 |
+| `i3c0_slave_to_secmaster_test.sv` | 外部 master 地址流程 | 等 `INTR_STATUS[8]` | DUT slave 获得 dynamic address 后发起 master request |
+
+I3C1 对应 case 与 I3C0 基本对称，只是 `i3c_num=1`，寄存器 base 换成 `I3C1_BASE`。
+
+### 5.6 动态地址相关寄存器观察点
+
+| 寄存器/状态 | 字段 | 观察意义 |
+| --- | --- | --- |
+| `DEVICE_ADDR` | `[6:0]` | slave 模式下本机 static address |
+| `DEVICE_ADDR` | `[15]` | static address valid |
+| `DEVICE_ADDR` | `[22:16]` | master/controller 自身 dynamic address |
+| `DEVICE_ADDR` | `[31]` | dynamic address valid |
+| `DEV_ADDR_TABLE_LOC1` | `[6:0]` | 目标设备 static address |
+| `DEV_ADDR_TABLE_LOC1` | `[23:16]` | 目标设备 dynamic address |
+| `DEV_ADDR_TABLE_LOC1` | `[31]` | legacy I2C device 标志 |
+| `COMMAND_QUEUE_PORT` | `[14:7]` | CCC command code，例如 `8'h87`、`8'h29` |
+| `COMMAND_QUEUE_PORT` | `[15]` | `iscp`，表示 command present/CCC |
+| `INTR_STATUS[3]` | command queue ready | 写下一条 command 前需要等待 |
+| `INTR_STATUS[4]` | response ready | CCC/地址命令完成后可读 response |
+| `RESPONSE_QUEUE_PORT` | response data | 检查命令是否完成、有无错误 |
+| `INTR_STATUS[8]` | dynamic address done | secondary master/slave 场景中用于判断地址分配完成 |
+
+### 5.7 验证时怎么判断动态地址流程是正常的
+
+建议按下面顺序查：
+
+1. `DEV_ADDR_TABLE_LOC1[6:0]` 是否等于目标 static address，例如 `7'h63`。
+2. `DEV_ADDR_TABLE_LOC1[23:16]` 是否写入预期 dynamic address，例如 `8'h64` 或 `8'he3`。
+3. `COMMAND_QUEUE_PORT` 中 CCC command 是否正确，SETDASA 类看 `8'h87`，SETAASA 看 `8'h29`。
+4. 写 command 前是否等待 `INTR_STATUS[3]`，避免 command queue 未 ready。
+5. CCC 后是否通过 `INTR_STATUS[4]` 和 `RESPONSE_QUEUE_PORT` 看到响应。
+6. 后续 private transfer 是否能用同一个 DAT entry 正常访问 VIP slave。
+7. 如果是 secondary master/slave 场景，额外看 `INTR_STATUS[8]` 是否置位。
+
+如果地址分配失败，常见现象是：response queue 返回错误、后续 private transfer NACK、RX/TX FIFO 没有预期状态、scoreboard 收不到对应 transaction。调试时优先看 DAT 和 command queue，其次看 VIP slave 的 static/dynamic address 配置是否和 DUT 写入一致。
 
 ## 6. I3C 地址类型
 
