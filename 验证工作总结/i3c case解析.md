@@ -312,13 +312,13 @@ case 中常见 CCC command：
 
 base test 中有几类 `*_to_vip_*_tr` task，会把 DUT 侧收发的数据封装成 VIP transaction，再写入 scoreboard observed port。
 
-| Task | 使用场景 |
-| --- | --- |
-| `i3c_master_txdata_to_vip_slave_pre_tr` | DUT master 写 slave，预期 slave 侧收到这些数据 |
-| `i3c_master_rxdata_to_vip_slave_post_tr` | DUT master 读 slave 后，对 slave 侧 observed 数据 |
-| `i3c_slave_rxdata_to_vip_master_post_tr` | DUT slave 收到 VIP master 写入数据后，对 master observed 数据 |
-| `i3c_slave_txdata_to_vip_master_pre_tr` | DUT slave 发送数据前，构造 master 侧预期 transaction |
-| `i3c_secmaster_txdata_to_vip_master_pre_tr` | Secondary Master 场景下构造一组 CCC/读写 transaction |
+| Task                                        | 使用场景                                               |
+| ------------------------------------------- | -------------------------------------------------- |
+| `i3c_master_txdata_to_vip_slave_pre_tr`     | DUT master 写 slave，预期 slave 侧收到这些数据                |
+| `i3c_master_rxdata_to_vip_slave_post_tr`    | DUT master 读 slave 后，对 slave 侧 observed 数据         |
+| `i3c_slave_rxdata_to_vip_master_post_tr`    | DUT slave 收到 VIP master 写入数据后，对 master observed 数据 |
+| `i3c_slave_txdata_to_vip_master_pre_tr`     | DUT slave 发送数据前，构造 master 侧预期 transaction          |
+| `i3c_secmaster_txdata_to_vip_master_pre_tr` | Secondary Master 场景下构造一组 CCC/读写 transaction        |
 
 典型模式是：
 
