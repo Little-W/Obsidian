@@ -231,15 +231,15 @@ IBI 常用于传感器数据就绪、阈值触发、状态变化等场景。相�
 
 ### 14.1 Master 传输与速率模式
 
-| case | 协议点 | 关键配置 | 主要测试点 |
-| --- | --- | --- | --- |
-| `i3c0_master_mode_sdr0_rate_test.sv` | SDR0 private write | `dev_addr=7'h63`，dynamic `8'h64`，`speed=0`，`transfer_arg=16` | DUT 作为 master 完成 SDR0 写传输，TX FIFO 数据能被 VIP slave 正确接收 |
-| `i3c0_master_mode_sdr1_rate_test.sv` | SDR1 private write | `speed=1`，`i3c_set_scl_timing(0,1)` | SDR1 timing 配置后，command queue 和数据发送路径正常 |
-| `i3c0_master_mode_sdr2_rate_test.sv` | SDR2 private write | `speed=2` | SDR2 模式下数据一致性 |
-| `i3c0_master_mode_sdr3_rate_test.sv` | SDR3 private write | `speed=3` | SDR3 模式下 SCL 扩展 timing 与传输正确性 |
-| `i3c0_master_mode_sdr4_rate_test.sv` | SDR4 private write | `speed=4` | SDR4 模式下高速 SDR 传输正确性 |
-| `i3c0_master_mode_hdr_ddr_rate_test.sv` | HDR-DDR | `speed=6`，`iscp=1`，`cmd=8'h20` | 进入 HDR-DDR 相关命令后，HDR 模式传输可执行 |
-| `i3c0_master_mode_i2c_fm_rate_test.sv` | I2C FM 兼容 | `speed=7` | I3C controller 以 I2C FM 兼容方式访问目标设备 |
+| case                                    | 协议点                | 关键配置                                                         | 主要测试点                                                 |
+| --------------------------------------- | ------------------ | ------------------------------------------------------------ | ----------------------------------------------------- |
+| `i3c0_master_mode_sdr0_rate_test.sv`    | SDR0 private write | `dev_addr=7'h63`，dynamic `8'h64`，`speed=0`，`transfer_arg=16` | DUT 作为 master 完成 SDR0 写传输，TX FIFO 数据能被 VIP slave 正确接收 |
+| `i3c0_master_mode_sdr1_rate_test.sv`    | SDR1 private write | `speed=1`，`i3c_set_scl_timing(0,1)`                          | SDR1 timing 配置后，command queue 和数据发送路径正常               |
+| `i3c0_master_mode_sdr2_rate_test.sv`    | SDR2 private write | `speed=2`                                                    | SDR2 模式下数据一致性                                         |
+| `i3c0_master_mode_sdr3_rate_test.sv`    | SDR3 private write | `speed=3`                                                    | SDR3 模式下 SCL 扩展 timing 与传输正确性                         |
+| `i3c0_master_mode_sdr4_rate_test.sv`    | SDR4 private write | `speed=4`                                                    | SDR4 模式下高速 SDR 传输正确性                                  |
+| `i3c0_master_mode_hdr_ddr_rate_test.sv` | HDR-DDR            | `speed=6`，`iscp=1`，`cmd=8'h20`                               | 进入 HDR-DDR 相关命令后，HDR 模式传输可执行                          |
+| `i3c0_master_mode_i2c_fm_rate_test.sv`  | I2C FM 兼容          | `speed=7`                                                    | I3C controller 以 I2C FM 兼容方式访问目标设备                    |
 
 这组 case 的学习重点是：I3C 的“速率/模式”不是只改 VIP timing，而是通过 `i3c_set_scl_timing` 和 `i3c_set_transfer_cmd` 的 `speed` 字段共同驱动。真正启动传输的是写 `COMMAND_QUEUE_PORT`，数据通路则由 `TX_DATA_PORT/RX_DATA_PORT` 承载。
 
