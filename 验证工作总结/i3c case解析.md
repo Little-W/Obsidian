@@ -39,19 +39,19 @@ class xxx_test extends i3c_base_test;
 
 `i3c_base_test` 是 TB 编写的核心，它承担以下职责：
 
-| 职责 | 说明 |
-| --- | --- |
-| 环境对接 | 从 `chip_noc_base_test` 继承，拿到 SoC env、AXI master、I3C env 和 virtual sequencer |
-| VIP 配置 | 创建 `cust_svt_mipi_i3c_system_configuration`，配置 main master、secondary master、I2C legacy slave、I3C slave |
-| Factory override | 将默认 VIP transaction 替换为自定义 transaction |
-| BCR/DCR 配置 | 配置 master/slave 的 BCR、DCR、dynamic address、static address、HDR 能力 |
-| Timing 配置 | 配置 open-drain、push-pull、start/stop、SCL high/low 等时序参数 |
-| config_db 分发 | 把 I3C cfg、env handle、virtual interface 分发给 sequencer 和 env |
-| IOMUX 配置 | 在 base `main_phase` 中根据 `m_i3c_intf.i3c_num_ctrl` 配置 I3C0/I3C1 pad |
-| 寄存器访问 | 封装 `noc_reg_write`，通过 AXI master sequence 访问寄存器 |
-| 协议配置 | 封装 block init、enable、DAA、transfer arg、transfer command、SCL timing |
-| 数据通路 | 封装 TX FIFO 写入、RX FIFO 读取、DMA 配置、memory 填充 |
-| 数据检查 | 把 DUT 侧观测数据转换为 VIP transaction，写入 scoreboard observed port |
+| 职责               | 说明                                                                                                     |
+| ---------------- | ------------------------------------------------------------------------------------------------------ |
+| 环境对接             | 从 `chip_noc_base_test` 继承，拿到 SoC env、AXI master、I3C env 和 virtual sequencer                            |
+| VIP 配置           | 创建 `cust_svt_mipi_i3c_system_configuration`，配置 main master、secondary master、I2C legacy slave、I3C slave |
+| Factory override | 将默认 VIP transaction 替换为自定义 transaction                                                                 |
+| BCR/DCR 配置       | 配置 master/slave 的 BCR、DCR、dynamic address、static address、HDR 能力                                        |
+| Timing 配置        | 配置 open-drain、push-pull、start/stop、SCL high/low 等时序参数                                                  |
+| config_db 分发     | 把 I3C cfg、env handle、virtual interface 分发给 sequencer 和 env                                             |
+| IOMUX 配置         | 在 base `main_phase` 中根据 `m_i3c_intf.i3c_num_ctrl` 配置 I3C0/I3C1 pad                                     |
+| 寄存器访问            | 封装 `noc_reg_write`，通过 AXI master sequence 访问寄存器                                                        |
+| 协议配置             | 封装 block init、enable、DAA、transfer arg、transfer command、SCL timing                                      |
+| 数据通路             | 封装 TX FIFO 写入、RX FIFO 读取、DMA 配置、memory 填充                                                              |
+| 数据检查             | 把 DUT 侧观测数据转换为 VIP transaction，写入 scoreboard observed port                                             |
 
 可以把 `i3c_base_test` 理解成“测试基础设施层”：它把底层寄存器位拼接、AXI 写寄存器、VIP transaction 构造这些重复工作全部收敛起来。
 
@@ -110,8 +110,8 @@ phase.drop_objection(this);
 
 I3C test 中寄存器地址由 `i3c_define.svh` 统一定义。I3C0/I3C1 的选择主要由 `i3c_num` 决定：
 
-| 选择值 | Base 宏 | 含义 |
-| --- | --- | --- |
+| 选择值           | Base 宏      | 含义          |
+| ------------- | ----------- | ----------- |
 | `i3c_num = 0` | `I3C0_BASE` | 访问 I3C0 寄存器 |
 | `i3c_num = 1` | `I3C1_BASE` | 访问 I3C1 寄存器 |
 

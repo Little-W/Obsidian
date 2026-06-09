@@ -225,7 +225,177 @@ IBI 常用于传感器数据就绪、阈值触发、状态变化等场景。相�
 | DMA | FIFO 与 memory 间搬运、方向、长度、完成中断、数据一致性 |
 | Debug port | CBB REG 状态、总线状态、异常场景下可观测性 |
 
-## 14. 学习抓手
+## 14. 结合 Case 的测试点拆解
+
+协议学习最终要落到 case 里，需要把每个协议机制对应到“配置了什么、触发了什么、检查了什么”。当前 `test_case/i3c_test` 里的 case 可以按下面几条验证主线理解。
+
+### 14.1 Master 传输与速率模式
+
+| case | 协议点 | 关键配置 | 主要测试点 |
+| --- | --- | --- | --- |
+| `i3c0_master_mode_sdr0_rate_test.sv` | SDR0 private write | `dev_addr=7'h63`，dynamic `8'h64`，`speed=0`，`transfer_arg=16` | DUT 作为 master 完成 SDR0 写传输，TX FIFO 数据能被 VIP slave 正确接收 |
+| `i3c0_master_mode_sdr1_rate_test.sv` | SDR1 private write | `speed=1`，`i3c_set_scl_timing(0,1)` | SDR1 timing 配置后，command queue 和数据发送路径正常 |
+| `i3c0_master_mode_sdr2_rate_test.sv` | SDR2 private write | `speed=2` | SDR2 模式下数据一致性 |
+| `i3c0_master_mode_sdr3_rate_test.sv` | SDR3 private write | `speed=3` | SDR3 模式下 SCL 扩展 timing 与传输正确性 |
+| `i3c0_master_mode_sdr4_rate_test.sv` | SDR4 private write | `speed=4` | SDR4 模式下高速 SDR 传输正确性 |
+| `i3c0_master_mode_hdr_ddr_rate_test.sv` | HDR-DDR | `speed=6`，`iscp=1`，`cmd=8'h20` | 进入 HDR-DDR 相关命令后，HDR 模式传输可执行 |
+| `i3c0_master_mode_i2c_fm_rate_test.sv` | I2C FM 兼容 | `speed=7` | I3C controller 以 I2C FM 兼容方式访问目标设备 |
+
+这组 case 的学习重点是：I3C 的“速率/模式”不是只改 VIP timing，而是通过 `i3c_set_scl_timing` 和 `i3c_set_transfer_cmd` 的 `speed` 字段共同驱动。真正启动传输的是写 `COMMAND_QUEUE_PORT`，数据通路则由 `TX_DATA_PORT/RX_DATA_PORT` 承载。
+
+典型配置路径：
+
+```text
+i3c_set_scl_timing
+-> i3c_block_init
+-> i3c_block_enable
+-> i3c_set_daa_cmd 或 CCC 前置命令
+-> 等 INTR_STATUS[3] command queue ready
+-> i3c_set_transfer_arg
+-> i3c_set_transfer_cmd
+-> FIFO/DMA 数据搬运
+-> scoreboard 比对
+```
+
+### 14.2 地址分配与 CCC 命令
+
+I3C 相比 I2C 的一个核心增强是动态地址和 CCC。对应 case 主要覆盖 SETDASA、SETAASA、broadcast CCC 和 directed CCC。
+
+| case | CCC/地址机制 | 命令参数 | 检查点 |
+| --- | --- | --- | --- |
+| `i3c0_master_setdasa_test.sv` | SETDASA/DAA 类流程 | `i3c_set_daa_cmd(0,1)`，内部 `cmd=8'h87` | DAT 中目标 static/dynamic address 配置后，slave 能按动态地址参与后续传输 |
+| `i3c0_master_setaasa_test.sv` | SETAASA | `cmd=8'h29` | response queue 有响应，DAT 更新后继续 private transfer |
+| `i3c0_master_broadcast_ccc_trans_test.sv` | Broadcast CCC | `iscp=1`，`cmd=8'h02` | 广播 CCC 后仍能继续普通 write 数据传输 |
+| `i3c0_master_directed_ccc_trans_test.sv` | Directed CCC | `iscp=1`，`cmd=8'h82` | 定向 CCC 只针对目标设备生效，后续数据通路正确 |
+
+从 case 角度看，CCC 的关键测试点有三个：
+
+| 测试点 | 观察方式 |
+| --- | --- |
+| command queue 字段拼接正确 | `COMMAND_QUEUE_PORT[15]=iscp`，`[14:7]=cmd`，`[23:21]=speed` |
+| response queue 有有效响应 | 轮询 `INTR_STATUS[4]` 后读 `RESPONSE_QUEUE_PORT` |
+| 地址表被正确用于后续访问 | 读写 `DEV_ADDR_TABLE_LOC1`，重点看 `[6:0]` static address 和 `[23:16]` dynamic address |
+
+### 14.3 FIFO、Short Data 与数据一致性
+
+I3C 数据通路验证不只是看总线波形，还要看 FIFO 阈值、状态位和 scoreboard 数据是否一致。
+
+| case | 数据路径 | 关键参数 | 测试点 |
+| --- | --- | --- | --- |
+| `i3c0_master_transmit_withtxfifo_test.sv` | DUT master -> TX FIFO -> VIP slave | `transfer_arg=4`，`i3c_wirte_data_to_txfifo(0,1,1,tx_data_q)` | TX FIFO 可写状态、1 word 数据发送、VIP slave observed 数据一致 |
+| `i3c0_master_transmit_withrxfifo_test.sv` | VIP slave -> RX FIFO -> DUT master | `isread=1`，`transfer_arg=4` | RX FIFO 有数据后，DUT 读出的 byte queue 与 VIP 数据一致 |
+| `i3c0_master_transmit_withshortdata_test.sv` | command queue short data | `isshortarg=1`，short data `55 aa ff` | 不经过普通 TX FIFO，短数据直接随 command queue 发出 |
+
+FIFO 类 case 的共同检查方法：
+
+| 状态/接口 | 含义 |
+| --- | --- |
+| `INTR_STATUS[0]` | TX FIFO 可写，case 才继续写 `TX_DATA_PORT` |
+| `INTR_STATUS[1]` | RX FIFO 有数据，case 才读 `RX_DATA_PORT` |
+| `DATA_BUFFER_THLD_CTRL[2:0]` | TX empty threshold |
+| `DATA_BUFFER_THLD_CTRL[10:8]` | RX buffer threshold |
+| `DATA_BUFFER_THLD_CTRL[18:16]` | TX start threshold |
+| `tx_data_q/rx_data_q` | TB 保存的 byte 级期望数据，最终送 scoreboard |
+
+### 14.4 Slave 模式与主从方向切换
+
+Slave 类 case 的重点是 DUT 不再通过 `i3c_block_init` 进入 master mode，而是直接写寄存器进入 slave mode。
+
+| case | DUT 角色 | VIP 行为 | 关键配置 | 测试点 |
+| --- | --- | --- | --- | --- |
+| `i3c0_slave_receive_trans_test.sv` | I3C slave receive | VIP master write | `DEVICE_CTRL_EXTENDED=1`，`DEVICE_ADDR=0x8031` | DUT slave 能接收 VIP master 写入数据 |
+| `i3c0_slave_transmit_trans_test.sv` | I3C slave transmit | VIP master read | `cmd=8'h87`，TX FIFO 写 1 word | DUT slave 能响应 master read 并发送数据 |
+| `i2c0_slave_receive_trans_test.sv` | I2C slave receive | VIP I2C/master write | I2C legacy 兼容配置 | I2C 模式下 slave 接收路径可用 |
+| `i2c0_slave_transmit_trans_test.sv` | I2C slave transmit | VIP I2C/master read | I2C FM/FM+ 相关 speed | I2C 兼容发送路径可用 |
+
+Slave 初始化测试点：
+
+| 寄存器/字段 | 典型值 | 作用 |
+| --- | --- | --- |
+| `MCUSS_I3C0_STAT[18]` | `1` | 使能 SCU 侧 static address 配置 |
+| `MCUSS_I3C0_STAT[17:11]` | `7'h31` | DUT slave static address |
+| `DEVICE_CTRL_EXTENDED` | `1` | 选择 slave mode |
+| `DEVICE_ADDR[6:0]` | `7'h31` | slave static address |
+| `DEVICE_ADDR[15]` | `1` | static address valid |
+| `DEVICE_CTRL[31]` | `1` | enable controller |
+
+### 14.5 DMA 数据搬运
+
+DMA case 验证的是 I3C FIFO 与 SRAM 之间的数据通路，不只是 I3C 协议本身。
+
+| case | DMA 方向 | DMA 配置 | I3C 配置 | 检查点 |
+| --- | --- | --- | --- | --- |
+| `i3c0_trans_txfifo_to_mem_withdma_test.sv` | SRAM -> I3C TX FIFO | `src=SRAM+0x4000`，`dst=I3C0_BASE+TX_DATA_PORT`，`dst_per=7'h1e` | `transfer_arg=8`，write | SRAM 中 8 byte 经 DMA 进入 TX FIFO，VIP slave 收到一致数据 |
+| `i3c0_trans_rxfifo_to_mem_withdma_test.sv` | I3C RX FIFO -> SRAM | `src=I3C0_BASE+RX_DATA_PORT`，`dst=SRAM+0x4000`，`src_per=7'h1f` | `isread=1`，`transfer_arg=4` | VIP slave 提供的数据经 RX FIFO 和 DMA 写入 SRAM |
+| `i3c1_trans_txfifo_to_mem_withdma_test.sv` | I3C1 TX DMA | `dst=I3C1_BASE+TX_DATA_PORT`，`dst_per=7'h0` | I3C1 对称流程 | I3C1 DMA request mapping 是否正确 |
+| `i3c1_trans_rxfifo_to_mem_withdma_test.sv` | I3C1 RX DMA | `src=I3C1_BASE+RX_DATA_PORT` | I3C1 read | I3C1 RX DMA 搬运正确 |
+
+DMA 的学习重点是区分两套长度：`transfer_arg` 描述 I3C 传输字节数，DMA sequence 的 burst/width 描述 AXI/DMA 搬运方式。两者不一致时，容易出现总线传输完成但 memory 数据不完整，或 DMA 搬运多余数据的问题。
+
+### 14.6 Secondary Master、IBI 与事件状态
+
+`i3c0_slave_to_secmaster_test.sv` 是最能体现 I3C 系统特性的 case。DUT 初始是 slave，随后通过 master request/IBI 相关流程请求总线控制权。
+
+| 阶段 | 关键寄存器/状态 | 测试点 |
+| --- | --- | --- |
+| slave 初始化 | `DEVICE_CTRL_EXTENDED=1`，`DEVICE_ADDR=0x8031` | DUT 先作为 slave 挂在总线上 |
+| 动态地址完成 | `INTR_STATUS[8]` | 确认地址分配或 SETDASA 流程完成 |
+| Master Request 能力 | `SLV_EVENT_STATUS[1]` | 当前 master 是否允许 slave 发起 MR |
+| 发起 MR | `SLV_INTR_REQ[3]=1` | DUT slave 主动请求成为 master |
+| IBI 更新 | `INTR_STATUS[12]` | IBI/MR 请求流程被硬件处理 |
+| ACK/NACK | `SLV_INTR_REQ[9:8]` | `2'b01` 表示 MR ACK |
+| bus owner 切换 | `INTR_STATUS[13]` | 总线所有权切换完成 |
+| resume | `DEVICE_CTRL[30]=1` | DUT 以新状态继续发起传输 |
+
+这个 case 对学习 I3C 很有价值：它把 IBI、Secondary Master、bus ownership、普通 private transfer 串成了一条完整链路。
+
+### 14.7 CPU 中断链路
+
+`i3c0_intr_test.sv` 和 `i3c0_intr_test/main.c` 是软硬件协同验证。SV 侧负责启动 VIP master，C 侧负责配置 I3C slave 和 PLIC 中断。
+
+| 配置点 | 典型值 | 测试意义 |
+| --- | --- | --- |
+| `i3c_scb_ctrl` | `3'h6` | scoreboard 按中断场景解释 |
+| `i3c_num_ctrl` | I3C0 为 `'h3`，I3C1 为 `'h4` | 区分 I3C0/I3C1 CPU interrupt case |
+| `INTR_STATUS_EN` | `0xffff` | 打开 I3C 状态中断 |
+| `INTR_SIGNAL_EN` | `0x2` | 打开 RX 相关中断信号 |
+| `DEVICE_ADDR` | `0x8031` | static address `0x31` + valid |
+| handler 读取 | `RX_DATA_PORT` | CPU handler 从 RX FIFO 取数据 |
+| 期望数据 | `0x998855aa`、`0xaa558899` | 软件侧最终 pass/fail 判断 |
+
+这类 case 的测试点可以总结为：VIP master 写数据后，I3C RX 事件要能变成 PLIC 中断，CPU handler 要能读到 FIFO 数据，软件最终要能判断数据正确。
+
+### 14.8 Reg、Reset、Clock、Debug 可观测性
+
+协议数据 case 能证明功能路径，但调试和量产验证还需要寄存器、复位、时钟和 debug port。
+
+| case | 测试点 | 学习价值 |
+| --- | --- | --- |
+| `i3c0_reg_test.sv`、`i3c1_reg_test.sv` | reset value、RW mask、只读/保留位保护 | 判断寄存器模型和 RTL 实现是否一致 |
+| `i3c0_rstn_test.sv`、`i3c1_rstn_test.sv` | reset 后状态恢复、重新初始化 | 验证异常恢复和复位清理能力 |
+| `i3c0_clk_test.sv`、`i3c1_clk_test.sv` | clock gating/ungating 后访问和传输 | 验证低功耗或时钟控制路径 |
+| `i3c0_debug_port_test.sv`、`i3c1_debug_port_test.sv` | SCU debug port 映射内部信号 | debug fail 时确认内部状态是否可观测 |
+
+这些 case 不一定直接覆盖 I3C 总线波形，但它们决定了真实项目里“出问题时能不能定位”和“复位/低功耗后能不能恢复”。
+
+## 15. Case 测试点与协议机制对应表
+
+| 协议机制 | 目标行为 | 对应 case | 关键观察点 |
+| --- | --- | --- | --- |
+| 动态地址 | static address 转 dynamic address，DAT 正确生效 | `master_setdasa`、`master_setaasa`、SDR rate case | `DEV_ADDR_TABLE_LOC1`、`INTR_STATUS[4]`、后续传输地址 |
+| CCC | Broadcast/Directed CCC 被正确编码和响应 | `master_broadcast_ccc_trans`、`master_directed_ccc_trans` | `COMMAND_QUEUE_PORT[15]`、`cmd[14:7]`、response queue |
+| SDR private write | Master 写数据到 slave | SDR0~SDR4、TXFIFO、DMA TX | `TX_DATA_PORT`、`INTR_STATUS[0]`、VIP slave observed |
+| SDR private read | Master 从 slave 读数据 | RXFIFO、DMA RX | `RX_DATA_PORT`、`INTR_STATUS[1]`、VIP slave/source data |
+| HDR-DDR | 进入 HDR 相关传输模式 | `master_mode_hdr_ddr_rate` | `speed=6`、`cmd=8'h20` |
+| I2C 兼容 | I3C controller 访问 legacy I2C | I2C FM/FM+、I2C slave case | `isi2c_mode`、legacy address、`speed=7` |
+| Slave 模式 | DUT 被 VIP master 访问 | slave receive/transmit | `DEVICE_CTRL_EXTENDED=1`、`DEVICE_ADDR=0x8031` |
+| Secondary Master | slave 请求并获得 bus owner | `slave_to_secmaster` | `SLV_INTR_REQ`、`INTR_STATUS[12/13]` |
+| 中断 | I3C RX 事件触发 CPU handler | `intr_test` + `main.c` | `INTR_SIGNAL_EN`、PLIC handler、RX FIFO 数据 |
+| DMA | FIFO 与 SRAM 数据一致 | DMA TX/RX case | DMA src/dst address、peripheral number、SRAM readback |
+| Debug | 内部状态映射到 SCU debug port | debug port case | debug high/low register |
+| Reset/Clock | reset/clock 后功能可恢复 | rstn/clk case | reset 后寄存器、clock 后访问路径 |
+
+## 16. 学习抓手
 
 理解 I3C 可以按下面这条线走：
 
