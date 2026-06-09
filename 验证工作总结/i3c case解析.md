@@ -6,15 +6,15 @@
 
 I3C case 目录是一套基于 UVM/SystemVerilog 的模块级或子系统级验证 case 集合。整体组织方式是：公共逻辑集中在 `i3c_base_test.sv`，具体 case 只负责选择场景、配置角色、调用公共 task 完成传输和检查。
 
-| 文件/目录 | 作用 |
-| --- | --- |
-| `i3c_test_pkg.svh` | I3C test package 入口，统一 include base test、define、reg struct 和各类 case |
-| `i3c_define.svh` | I3C0/I3C1 base address、寄存器 offset、SCU debug/status 寄存器宏定义 |
-| `i3c_reg_struct.sv` | 寄存器 reset value、RW mask、寄存器列表，用于 reg test |
-| `i3c_base_test.sv` | 所有 I3C case 的公共基类，封装 VIP 配置、IOMUX、寄存器访问、I3C 初始化、FIFO、DMA 和 scoreboard 对接 |
-| `i3c0_*.sv` | I3C0 相关 case |
-| `i3c1_*.sv` | I3C1 相关 case，整体逻辑与 I3C0 对称 |
-| `i3c0_intr_test/`、`i3c1_intr_test/` | 中断类 case 的 C 程序和 Makefile，用于 CPU 侧中断处理流程 |
+| 文件/目录                               | 作用                                                                       |
+| ----------------------------------- | ------------------------------------------------------------------------ |
+| `i3c_test_pkg.svh`                  | I3C test package 入口，统一 include base test、define、reg struct 和各类 case      |
+| `i3c_define.svh`                    | I3C0/I3C1 base address、寄存器 offset、SCU debug/status 寄存器宏定义                |
+| `i3c_reg_struct.sv`                 | 寄存器 reset value、RW mask、寄存器列表，用于 reg test                                |
+| `i3c_base_test.sv`                  | 所有 I3C case 的公共基类，封装 VIP 配置、IOMUX、寄存器访问、I3C 初始化、FIFO、DMA 和 scoreboard 对接 |
+| `i3c0_*.sv`                         | I3C0 相关 case                                                             |
+| `i3c1_*.sv`                         | I3C1 相关 case，整体逻辑与 I3C0 对称                                               |
+| `i3c0_intr_test/`、`i3c1_intr_test/` | 中断类 case 的 C 程序和 Makefile，用于 CPU 侧中断处理流程                                 |
 
 ## 2. Package 组织逻辑
 
