@@ -1,0 +1,43 @@
+[VLOGAN]
+-full64
+-sverilog
+-timescale=1ns/1ps
+-ntb_opts uvm-1.2
++define+UVM_NO_DEPRECATED
++define+UVM_PACKER_MAX_BYTES=200000
+
+-kdb
++vcs+lic+wait -notice +nospecify +notimingcheck
+-CFLAGS "-std=c99" -DVCS -pcmakeprof -debug_acc+all+dmptf+pp -debug_region+cell+encrypt
+-l vlogan.log
+
++incdir+$ZC_NPU_VERIF_ROOT/2_verf/it/fifo_tb/tb
++incdir+$ZC_NPU_VERIF_ROOT/2_verf/it/fifo_tb/env
++incdir+$ZC_NPU_VERIF_ROOT/2_verf/it/fifo_tb/env/agent
++incdir+$ZC_NPU_VERIF_ROOT/2_verf/it/fifo_tb/seq_lib
++incdir+$ZC_NPU_VERIF_ROOT/2_verf/it/fifo_tb/seq_lib/common
++incdir+$ZC_NPU_VERIF_ROOT/2_verf/it/fifo_tb/seq_lib/fifo_seq
+
+[VCS_RTL_ELAB]
+-full64
+-lca
+-debug_access+all
+-top sync_fifo
+-Mupdate
+-pcmakeprof
+-partcomp
+-fastpartcomp=j4
+-l vcs_elb.log
+-CFLAGS -DVCS +plusarg_save
+
+[VCS_TEST_ELAB]
+-full64
+-lca
+-debug_access+all
+-top fifo_tb
+-Mupdate
+-pcmakeprof
+-partcomp ${VCS_HOME}/etc/uvm-1.2/dpi/uvm_dpi.cc
+-fastpartcomp=j4
+-l vcs_elb.log
+-CFLAGS -DVCS +plusarg_save
