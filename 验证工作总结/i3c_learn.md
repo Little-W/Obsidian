@@ -378,7 +378,62 @@ open-drain 阶段常用于 START、仲裁、地址/CCC 早期阶段等需要多�
 
 需要注意一个细节：SDR1~SDR4 case 当前是直接写整个 `SCL_EXT_LCNT_TIMING`，不是 read-modify-write。因此单个 case 只保证当前 speed 对应 byte 有效，其他 byte 会被写成 0。由于每个 rate case 只验证一种速度，这种写法是可以接受的；如果将来一个 case 内连续切换 SDR1~SDR4，就应该改成 read-modify-write，避免前一个速度的配置被清掉。
 
-### 8.4 Transfer Command 中的速度字段
+### 8.4 不同阶段的时钟频率
+
+I3C 总线上的 SCL 频率不是一个固定值。一次传输里可能先经历 open-drain 阶段，再进入 push-pull 数据阶段；如果是 SDR1~SDR4、HDR-DDR 或 I2C 兼容模式，还会使用不同的 speed/timing 规则。
+
+在没有明确 `core_clk` 频率时，可以先按下面的方式理解：
+
+```text
+SCL 频率 ≈ I3C core clock / (SCL high count + SCL low count)
+```
+
+实际芯片中计数器是否包含额外 offset，要以设计手册和波形量测为准；但对 case debug 来说，下面这个近似关系足够判断“哪个阶段由哪个寄存器控制”。
+
+| 阶段 | 使用场景 | 主要寄存器/字段 | 频率理解 |
+| --- | --- | --- | --- |
+| Bus idle/free | 总线空闲、等待 START | `BUS_FREE_AVAIL_TIMING`、`BUS_IDLE_TIMING` 等 | 不产生连续 SCL，只检查空闲时间是否满足要求 |
+| Open-drain 阶段 | START、地址、仲裁、CCC/DAA 早期阶段 | `SCL_I3C_OD_TIMING` | 频率由 OD high/low count 决定，通常慢于 push-pull |
+| Push-pull SDR0 阶段 | SDR0 private data、常规数据传输 | `SCL_I3C_PP_TIMING` | 频率由 PP high/low count 决定，是 SDR0 数据阶段的主要 SCL |
+| SDR1~SDR4 扩展阶段 | SDR 低速档或扩展速率档 | `SCL_EXT_LCNT_TIMING` + 当前 PP high count | 主要通过增加 low count 拉低有效 SCL 频率 |
+| HDR-DDR 阶段 | HDR-DDR 数据传输 | HDR 相关 command/timing，case 中用 `speed=6`、`cmd=8'h20` | 不能只按 SDR high/low count 看，数据边沿和 HDR 规则也要一起看 |
+| I2C FM/FM+ 阶段 | legacy I2C 兼容访问 | I2C FM/FMP timing 或设计默认 timing，case 中 master FM 用 `speed=7` | 更接近 I2C open-drain 频率模型 |
+
+结合当前 `i3c_set_scl_timing` 的配置，可以得到这些近似关系：
+
+| 阶段/模式 | case 配置 | 近似周期计数 | 近似频率公式 |
+| --- | --- | ---: | --- |
+| SDR0 OD | OD low `0x09`，OD high `0x0a` | `9 + 10 = 19` | `Fcore / 19` |
+| SDR0 PP | PP low `0x07`，PP high `0x09` | `7 + 9 = 16` | `Fcore / 16` |
+| SDR1 | EXT low `0x0d`，PP high 通常取当前值 | `13 + PP_HCNT` | `Fcore / (13 + PP_HCNT)` |
+| SDR2 | EXT low `0x11`，PP high 通常取当前值 | `17 + PP_HCNT` | `Fcore / (17 + PP_HCNT)` |
+| SDR3 | EXT low `0x19`，PP high 通常取当前值 | `25 + PP_HCNT` | `Fcore / (25 + PP_HCNT)` |
+| SDR4 | EXT low `0x32`，PP high 通常取当前值 | `50 + PP_HCNT` | `Fcore / (50 + PP_HCNT)` |
+
+如果假设 `I3C core clock = 100 MHz`，并且 SDR1~SDR4 使用 reset/default PP high count `0x0a`，可以得到一个便于估算的表：
+
+| 阶段/模式 | 近似 SCL 频率 | 说明 |
+| --- | ---: | --- |
+| SDR0 OD | `100 MHz / 19 ≈ 5.26 MHz` | 地址/CCC/仲裁类 open-drain 阶段 |
+| SDR0 PP | `100 MHz / 16 = 6.25 MHz` | SDR0 数据 push-pull 阶段 |
+| SDR1 | `100 MHz / (13+10) ≈ 4.35 MHz` | 扩展 low count 后比 SDR0 慢 |
+| SDR2 | `100 MHz / (17+10) ≈ 3.70 MHz` | low count 继续增加 |
+| SDR3 | `100 MHz / (25+10) ≈ 2.86 MHz` | 更低的 SDR 档 |
+| SDR4 | `100 MHz / (50+10) ≈ 1.67 MHz` | 当前配置中最低的 SDR 扩展档 |
+
+这里容易误解的一点是：`SDR1~SDR4` 在很多控制器里不是“数字越大越快”，而是通过扩展 low count 得到更低的有效速率，用来兼容能力较弱或需要降速的设备。当前 case 里的配置也符合这个趋势：`0x0d -> 0x11 -> 0x19 -> 0x32`，low count 越来越大，SCL 频率越来越低。
+
+调波形时可以按阶段量测：
+
+| 量测位置 | 期望 |
+| --- | --- |
+| 地址/CCC 前半段 | 更接近 OD timing |
+| 普通 SDR0 数据段 | 更接近 PP timing |
+| SDR1~SDR4 数据段 | low time 明显变长 |
+| HDR-DDR 数据段 | 不能只按普通 SDR 周期判断，要结合 HDR 进入命令和双沿数据 |
+| I2C FM/FM+ | 更接近 legacy I2C 的开漏传输节奏 |
+
+### 8.5 Transfer Command 中的速度字段
 
 时序寄存器配置好以后，真正发起传输时还要通过 `i3c_set_transfer_cmd` 写 `COMMAND_QUEUE_PORT`。速度字段位于 command queue entry 的 `[23:21]`。
 
@@ -408,7 +463,7 @@ i3c_set_transfer_cmd(i3c_num, speed, iscp, cmd, isshortarg, isread, tr_id, issto
 | I2C FM | `i3c_set_transfer_cmd(0,7,0,0,0,0,2,1)` | I2C FM 兼容模式访问 |
 | RX FIFO read | `i3c_set_transfer_cmd(0,0,0,0,0,1,2,1)` | SDR0 read，数据进入 RX FIFO |
 
-### 8.5 SDR0~SDR4 的验证重点
+### 8.6 SDR0~SDR4 的验证重点
 
 SDR0~SDR4 case 的共同主线是：DUT 作为 master，VIP I3C slave 作为目标设备，完成地址配置后发起 private write。
 
@@ -430,7 +485,7 @@ SDR0~SDR4 case 的共同主线是：DUT 作为 master，VIP I3C slave 作为目�
 | VIP slave observed transaction | slave 侧是否收到一致 byte queue |
 | scoreboard | DUT 与 VIP 的 transaction 是否匹配 |
 
-### 8.6 HDR-DDR 模式
+### 8.7 HDR-DDR 模式
 
 HDR-DDR 属于 I3C 的高速扩展模式。和 SDR0~SDR4 不同，HDR-DDR case 不只是把 `speed` 改成 6，还会设置 `iscp=1` 和 `cmd=8'h20`，表示当前 command 带有模式切换/CCC 类含义。
 
@@ -451,7 +506,7 @@ i3c_set_transfer_cmd(0, 6, 1, 8'h20, 0, 0, 2, 1);
 
 HDR-DDR 验证时要重点看三件事：模式进入命令是否被正确编码，slave/VIP 是否按 HDR-DDR 模式响应，传输结束后总线是否能回到可继续工作的状态。当前 case 主要覆盖 HDR-DDR 命令路径和写传输通路，不等价于覆盖所有 HDR 子模式。
 
-### 8.7 I2C FM/FM+ 兼容模式
+### 8.8 I2C FM/FM+ 兼容模式
 
 I3C 支持和 I2C legacy device 共存，因此 controller 需要能以 I2C 风格访问目标设备。case 中常见两类：
 
@@ -473,7 +528,7 @@ I2C 兼容模式的验证重点：
 | open-drain 行为 | I2C 兼容传输更接近开漏行为 |
 | scoreboard | VIP legacy I2C slave/master transaction 是否匹配 |
 
-### 8.8 时序相关 debug 方法
+### 8.9 时序相关 debug 方法
 
 速度或时序类 case fail 时，建议按下面顺序查：
 
@@ -524,17 +579,17 @@ IBI 常用于传感器数据就绪、阈值触发、状态变化等场景。相�
 
 ## 11. I3C 与 I2C 的关键区别
 
-| 对比项 | I2C | I3C |
-| --- | --- | --- |
-| 标准来源 | Philips/NXP 传统总线 | MIPI Alliance |
-| 信号线 | SDA + SCL | SDA + SCL |
-| 驱动方式 | 全程开漏 | 开漏 + 推挽 |
-| 地址方式 | 固定静态地址 | 支持动态地址 |
-| 从设备主动通知 | 通常需要额外中断线 | 支持 IBI |
-| 热加入 | 非标准核心能力 | 支持 Hot-Join |
-| 速率 | 常见 100 kHz/400 kHz/1 MHz，HS 可到 3.4 MHz | SDR 可到 12.5 MHz，HDR 更高 |
-| 功耗 | 上拉和较慢边沿带来额外消耗 | 传输效率更高，功耗更低 |
-| 兼容性 | 原生 I2C | 向下兼容 I2C |
+| 对比项     | I2C                                    | I3C                    |
+| ------- | -------------------------------------- | ---------------------- |
+| 标准来源    | Philips/NXP 传统总线                       | MIPI Alliance          |
+| 信号线     | SDA + SCL                              | SDA + SCL              |
+| 驱动方式    | 全程开漏                                   | 开漏 + 推挽                |
+| 地址方式    | 固定静态地址                                 | 支持动态地址                 |
+| 从设备主动通知 | 通常需要额外中断线                              | 支持 IBI                 |
+| 热加入     | 非标准核心能力                                | 支持 Hot-Join            |
+| 速率      | 常见 100 kHz/400 kHz/1 MHz，HS 可到 3.4 MHz | SDR 可到 12.5 MHz，HDR 更高 |
+| 功耗      | 上拉和较慢边沿带来额外消耗                          | 传输效率更高，功耗更低            |
+| 兼容性     | 原生 I2C                                 | 向下兼容 I2C               |
 
 一句话理解：I3C 保留 I2C 的两线和兼容性，但通过动态地址、推挽传输、带内中断和高速模式，把它扩展成更适合现代传感器系统的总线。
 
