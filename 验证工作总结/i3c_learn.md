@@ -802,14 +802,14 @@ i3c_set_transfer_cmd(i3c_num, 6, 1, 8'h20, 0, 0, 2, 1);
 
 参数含义：
 
-| 参数 | 值 | 说明 |
-| --- | --- | --- |
-| `speed` | `6` | controller 按 HDR-DDR 模式执行 |
-| `iscp` | `1` | command present，当前 entry 带 CCC/command code |
-| `cmd` | `8'h20` | `ENTHDR0`，进入 HDR-DDR |
-| `isread` | `0` | 当前本地 case 走 write |
-| `tr_id` | `2` | transaction id |
-| `isstop` | `1` | 当前 task 参数保留，但 task 中 `speed>4` 时不会置 `[31]` |
+| 参数       | 值       | 说明                                          |
+| -------- | ------- | ------------------------------------------- |
+| `speed`  | `6`     | controller 按 HDR-DDR 模式执行                   |
+| `iscp`   | `1`     | command present，当前 entry 带 CCC/command code |
+| `cmd`    | `8'h20` | `ENTHDR0`，进入 HDR-DDR                        |
+| `isread` | `0`     | 当前本地 case 走 write                           |
+| `tr_id`  | `2`     | transaction id                              |
+| `isstop` | `1`     | 当前 task 参数保留，但 task 中 `speed>4` 时不会置 `[31]` |
 
 概念流程：
 
