@@ -565,6 +565,308 @@ START + Broadcast Address + CCC + Data + STOP
 
 定向 CCC 会在广播或寻址之后指定目标设备，只让目标设备执行对应命令。
 
+### 9.1 CCC 编码规则
+
+CCC 是 8-bit command code。一般可以先用 bit7 区分广播和定向：
+
+| 类型 | bit7 | 编码范围 | 说明 |
+| --- | --- | --- | --- |
+| Broadcast CCC | `0` | `0x00~0x7f` | 对总线上所有支持该 CCC 的 target 生效 |
+| Direct CCC | `1` | `0x80~0xfe` | 对指定 target 或 group 生效 |
+| Vendor/Standard Extension | broadcast 常见 `0x61~0x7f`，direct 常见 `0xe0~0xfe` | 扩展命令 | 由厂商或标准组织定义，验证时要看具体设备规范 |
+
+很多 CCC 同时有 broadcast 和 direct 两种形式，direct 形式通常是在 broadcast code 上加 `0x80`。例如：
+
+```text
+ENEC broadcast = 0x00
+ENEC direct    = 0x80
+
+DISEC broadcast = 0x01
+DISEC direct    = 0x81
+```
+
+也有一些命令只允许 broadcast，例如 `ENTDAA`、`SETAASA`、`ENTHDRx`；还有一些只允许 direct，例如 `SETDASA`、`GETPID`、`GETBCR`。
+
+### 9.2 Broadcast CCC 指令表
+
+下面按公开 I3C/Zephyr/Linux 头文件中常见命名整理。不同 I3C 版本中命名可能略有变化，例如 `DEFSLVS` 在新术语中也写作 `DEFTGTS`。
+验证时要以 IP spec 和 VIP 支持列表为准：下表是协议命令全集视角，不等于当前 case 已经覆盖了每条命令。
+
+| Code | 命令 | 方向 | 作用 |
+| ---: | --- | --- | --- |
+| `0x00` | `ENEC` | Broadcast Set | Enable Events，允许 target 发起 IBI、Controller Role Request、Hot-Join 等事件 |
+| `0x01` | `DISEC` | Broadcast Set | Disable Events，禁止对应事件 |
+| `0x02` | `ENTAS0` | Broadcast Set | 进入 Activity State 0，正常工作态 |
+| `0x03` | `ENTAS1` | Broadcast Set | 进入 Activity State 1 |
+| `0x04` | `ENTAS2` | Broadcast Set | 进入 Activity State 2 |
+| `0x05` | `ENTAS3` | Broadcast Set | 进入 Activity State 3 |
+| `0x06` | `RSTDAA` | Broadcast Set | Reset Dynamic Address Assignment，清除动态地址 |
+| `0x07` | `ENTDAA` | Broadcast Set | Enter Dynamic Address Assignment，进入动态地址分配流程 |
+| `0x08` | `DEFTGTS` / `DEFSLVS` | Broadcast Set | Define List of Targets，广播已知 target 列表 |
+| `0x09` | `SETMWL` | Broadcast Set | Set Max Write Length，设置最大写长度 |
+| `0x0a` | `SETMRL` | Broadcast Set | Set Max Read Length，设置最大读长度，也可关联 IBI payload 长度 |
+| `0x0b` | `ENTTM` | Broadcast Set | Enter Test Mode |
+| `0x0c` | `SETBUSCON` | Broadcast Set | Set Bus Context，声明总线/规范上下文 |
+| `0x12` | `ENDXFER` | Broadcast Set | Data Transfer Ending Procedure Control |
+| `0x20` | `ENTHDR0` | Broadcast Set | Enter HDR Mode 0，HDR-DDR |
+| `0x21` | `ENTHDR1` | Broadcast Set | Enter HDR Mode 1，HDR-TSP |
+| `0x22` | `ENTHDR2` | Broadcast Set | Enter HDR Mode 2，HDR-TSL |
+| `0x23` | `ENTHDR3` | Broadcast Set | Enter HDR Mode 3，HDR-BT |
+| `0x24` | `ENTHDR4` | Broadcast Set | Enter HDR Mode 4，版本/实现相关 |
+| `0x25` | `ENTHDR5` | Broadcast Set | Enter HDR Mode 5，版本/实现相关 |
+| `0x26` | `ENTHDR6` | Broadcast Set | Enter HDR Mode 6，版本/实现相关 |
+| `0x27` | `ENTHDR7` | Broadcast Set | Enter HDR Mode 7，版本/实现相关 |
+| `0x28` | `SETXTIME` | Broadcast Set | Exchange Timing Information，交换/配置时序相关信息 |
+| `0x29` | `SETAASA` | Broadcast Set | Set All Addresses to Static Addresses，让所有 target 使用 static address 作为 dynamic address |
+| `0x2a` | `RSTACT` | Broadcast Set | Target Reset Action，配置 target 对 reset pattern 的响应 |
+| `0x2b` | `DEFGRPA` | Broadcast Set | Define List of Group Address，定义 group address 列表 |
+| `0x2c` | `RSTGRPA` | Broadcast Set | Reset Group Address，清除 group address |
+| `0x2d` | `MLANE` | Broadcast Set | Multi-Lane Data Transfer Control |
+| `0x61~0x7f` | `VENDOR` / Standard Extension | Broadcast | 厂商或标准扩展 CCC |
+
+常见保留区间：
+
+| Code 范围 | 说明 |
+| --- | --- |
+| `0x0d~0x11` | 当前公开头文件中未作为常用基础 CCC 展开，按保留/版本相关处理 |
+| `0x13~0x1f` | 多数场景按保留处理；HDR-DDR 中 `0x1f` 可作为特殊 dummy command code 出现 |
+| `0x2e~0x60` | 保留或版本相关扩展 |
+
+### 9.3 Direct CCC 指令表
+
+| Code | 命令 | 方向 | 作用 |
+| ---: | --- | --- | --- |
+| `0x80` | `ENEC` | Direct Set | 对单个 target 使能事件 |
+| `0x81` | `DISEC` | Direct Set | 对单个 target 禁止事件 |
+| `0x82` | `ENTAS0` | Direct Set | 指定 target 进入 Activity State 0 |
+| `0x83` | `ENTAS1` | Direct Set | 指定 target 进入 Activity State 1 |
+| `0x84` | `ENTAS2` | Direct Set | 指定 target 进入 Activity State 2 |
+| `0x85` | `ENTAS3` | Direct Set | 指定 target 进入 Activity State 3 |
+| `0x86` | `RSTDAA_DC` | Direct Set | Direct Reset Dynamic Address，版本相关/部分规范中不推荐使用 |
+| `0x87` | `SETDASA` | Direct Set | Set Dynamic Address from Static Address，按静态地址设置动态地址 |
+| `0x88` | `SETNEWDA` | Direct Set | Set New Dynamic Address，重设已有动态地址 |
+| `0x89` | `SETMWL` | Direct Set | 对单个 target 设置最大写长度 |
+| `0x8a` | `SETMRL` | Direct Set | 对单个 target 设置最大读长度 |
+| `0x8b` | `GETMWL` | Direct Get | 获取最大写长度 |
+| `0x8c` | `GETMRL` | Direct Get | 获取最大读长度 |
+| `0x8d` | `GETPID` | Direct Get | 获取 48-bit Provisioned ID |
+| `0x8e` | `GETBCR` | Direct Get | 获取 Bus Characteristic Register |
+| `0x8f` | `GETDCR` | Direct Get | 获取 Device Characteristic Register |
+| `0x90` | `GETSTATUS` | Direct Get | 获取 target 状态 |
+| `0x91` | `GETACCCR` / `GETACCMST` | Direct Get | 获取是否接受 controller/master role 相关能力，命名随版本变化 |
+| `0x92` | `ENDXFER` | Direct Set | Data Transfer Ending Procedure Control，部分版本中也可能标为保留/版本相关 |
+| `0x93` | `SETBRGTGT` | Direct Set | Set Bridge Targets，桥接目标配置 |
+| `0x94` | `GETMXDS` | Direct Get | Get Max Data Speed，获取最大数据速率能力 |
+| `0x95` | `GETCAPS` / `GETHDRCAP` | Direct Get | 获取可选能力或 HDR capability，命名随版本变化 |
+| `0x96` | `SETROUTE` | Direct Set | Set Route，路由相关配置 |
+| `0x97` | `D2DXFER` | Direct Set | Device-to-Device tunneling/data transfer control |
+| `0x98` | `SETXTIME` | Direct Set | Exchange Timing Information，定向设置 timing 信息 |
+| `0x99` | `GETXTIME` | Direct Get | 获取 exchange timing 信息 |
+| `0x9a` | `RSTACT` | Direct Set/Get | Target Reset Action |
+| `0x9b` | `SETGRPA` | Direct Set | Set Group Address |
+| `0x9c` | `RSTGRPA` | Direct Set | Reset Group Address |
+| `0x9d` | `MLANE` | Direct Set | Multi-Lane Data Transfer Control |
+| `0xe0~0xfe` | `VENDOR` / Standard Extension | Direct | 厂商或标准扩展 CCC |
+
+常见保留区间：
+
+| Code 范围 | 说明 |
+| --- | --- |
+| `0x9e~0xdf` | 多数公开基础头文件中未定义为常用 CCC，按保留/版本相关处理 |
+| `0xff` | 不作为普通 CCC 使用 |
+
+### 9.4 CCC 通用传输帧
+
+Broadcast CCC 的基本帧：
+
+```text
+START
+-> Broadcast Address 7'h7e + W
+-> CCC code
+-> Defining Byte，可选
+-> Data，可选
+-> STOP 或 Repeated START
+```
+
+Direct CCC 的基本帧：
+
+```text
+START
+-> Broadcast Address 7'h7e + W
+-> Direct CCC code
+-> Repeated START
+-> Target Dynamic Address + R/W
+-> Defining Byte / Sub-command / Data，按 CCC 定义
+-> STOP
+```
+
+Direct CCC 不是直接用目标地址作为第一拍地址，而是先用 `7'h7e` 广播地址通知“我要发 CCC”，再通过 repeated START 指向具体 target。
+
+Direct CCC 还常见 Direct Write/Read 组合形式：先用同一个 Direct CCC 对目标写入参数，再紧接着读取返回数据。典型例子是能力、状态、timing 信息查询类命令，验证时要同时看写入阶段的 CCC code 和读取阶段的目标动态地址。
+
+### 9.5 不同速率的传输流程
+
+不同速率模式的差异可以归纳为：先准备地址和 timing，再通过 command queue 的 `speed` 字段启动对应模式。
+
+#### SDR0 private write
+
+```text
+配置 IOMUX 和 VIP 拓扑
+-> i3c_set_scl_timing(i3c_num, 0)
+-> i3c_block_init(i3c_num, 0, static_addr, dynamic_addr)
+-> i3c_block_enable
+-> i3c_set_daa_cmd 或 SETAASA/SETDASA 前置地址流程
+-> 等 INTR_STATUS[3]，command queue ready
+-> i3c_set_transfer_arg(i3c_num, data_len)
+-> 等 INTR_STATUS[3]
+-> i3c_set_transfer_cmd(i3c_num, 0, 0, 0, 0, 0, tr_id, 1)
+-> 写 TX_DATA_PORT
+-> scoreboard 比对 VIP slave observed data
+```
+
+本地典型调用：
+
+```systemverilog
+i3c_set_scl_timing(0, 0);
+i3c_block_init(0, 0, 7'h63, 8'h64, 0, 1, 1);
+i3c_block_enable(0);
+i3c_set_daa_cmd(0, 1);
+i3c_set_transfer_arg(0, 16);
+i3c_set_transfer_cmd(0, 0, 0, 0, 0, 0, 2, 1);
+```
+
+#### SDR1~SDR4 private write
+
+```text
+配置对应 SCL_EXT_LCNT_TIMING
+-> 其余地址流程与 SDR0 类似
+-> transfer command 的 speed 改为 1/2/3/4
+-> TX FIFO 写数据
+-> scoreboard 比对
+```
+
+对应关系：
+
+| 模式 | timing 配置 | transfer command |
+| --- | --- | --- |
+| SDR1 | `i3c_set_scl_timing(i3c_num, 1)` | `speed=1` |
+| SDR2 | `i3c_set_scl_timing(i3c_num, 2)` | `speed=2` |
+| SDR3 | `i3c_set_scl_timing(i3c_num, 3)` | `speed=3` |
+| SDR4 | `i3c_set_scl_timing(i3c_num, 4)` | `speed=4` |
+
+#### SDR read / RX FIFO
+
+```text
+完成地址流程
+-> 可先发 SETAASA，更新 DAT dynamic address
+-> i3c_set_transfer_arg(i3c_num, read_len)
+-> i3c_set_transfer_cmd(i3c_num, speed, 0, 0, 0, 1, tr_id, 1)
+-> VIP slave 提供数据
+-> DUT 从 RX_DATA_PORT 读数据
+-> scoreboard 比对
+```
+
+关键区别是 `isread=1`：
+
+```systemverilog
+i3c_set_transfer_cmd(0, 0, 0, 0, 0, 1, 2, 1);
+```
+
+#### I2C FM 兼容传输
+
+```text
+配置 DAT legacy I2C 标志
+-> 使用 static address
+-> 不依赖 I3C DAA 后的 dynamic address
+-> transfer command 设置 speed=7
+-> 通过 TX/RX FIFO 完成数据传输
+```
+
+本地 master FM case 的关键命令：
+
+```systemverilog
+i3c_block_init(0, 0, dev_addr, 8'he3);
+i3c_set_transfer_arg(0, 4);
+i3c_set_transfer_cmd(0, 7, 0, 0, 0, 0, 2, 1);
+```
+
+如果是真正访问 legacy I2C target，通常还要确认 `DEV_ADDR_TABLE_LOC1[31]` 被设置为 legacy 标志。
+
+### 9.6 如何进入 HDR-DDR 模式
+
+HDR-DDR 的入口是 Broadcast CCC `ENTHDR0`，命令码为 `0x20`。本地 case 用 `i3c_set_transfer_cmd` 把它编码成 command queue entry：
+
+```systemverilog
+i3c_set_transfer_cmd(i3c_num, 6, 1, 8'h20, 0, 0, 2, 1);
+```
+
+参数含义：
+
+| 参数 | 值 | 说明 |
+| --- | --- | --- |
+| `speed` | `6` | controller 按 HDR-DDR 模式执行 |
+| `iscp` | `1` | command present，当前 entry 带 CCC/command code |
+| `cmd` | `8'h20` | `ENTHDR0`，进入 HDR-DDR |
+| `isread` | `0` | 当前本地 case 走 write |
+| `tr_id` | `2` | transaction id |
+| `isstop` | `1` | 当前 task 参数保留，但 task 中 `speed>4` 时不会置 `[31]` |
+
+概念流程：
+
+```text
+Bus 处于 SDR 模式
+-> Current Master 发送 Broadcast Address 7'h7e + W
+-> 发送 ENTHDR0 CCC，code = 0x20
+-> 支持 HDR-DDR 的 target 进入 HDR-DDR 模式
+-> controller 按 HDR-DDR 规则发送/接收 HDR data word
+-> HDR transfer 结束后通过 HDR exit/结束过程回到 SDR 可管理状态
+```
+
+本地 HDR-DDR case 的简化流程：
+
+```text
+i3c_block_init(i3c_num, 0, 7'h63, 8'he3)
+-> i3c_block_enable
+-> 等 command queue ready
+-> i3c_set_transfer_arg(i3c_num, 4)
+-> 等 command queue ready
+-> i3c_set_transfer_cmd(i3c_num, 6, 1, 8'h20, 0, 0, 2, 1)
+-> 写 TX FIFO
+-> 构造 VIP slave transaction
+```
+
+验证 HDR-DDR 时要重点看：
+
+| 观察点 | 说明 |
+| --- | --- |
+| CCC code | `COMMAND_QUEUE_PORT[14:7]` 应为 `8'h20` |
+| `iscp` | `COMMAND_QUEUE_PORT[15]` 应为 `1` |
+| speed | `COMMAND_QUEUE_PORT[23:21]` 应为 `3'b110` |
+| target 能力 | VIP/target 需要支持 HDR-DDR，否则应 NACK 或保持监听 |
+| 数据阶段 | 不能按普通 SDR 单沿采样理解，要按 HDR-DDR 规则看 |
+| 退出过程 | 结束后总线应能回到 SDR/CCC 可管理状态 |
+
+### 9.7 本地 case 的 CCC 覆盖映射
+
+本地 case 并没有逐条遍历所有 CCC，而是选了几类关键控制路径：活动状态、地址分配、能力/状态类 direct CCC、HDR 入口。
+
+| Case | CCC | Command Queue 参数 | 测试点 |
+| --- | --- | --- | --- |
+| `i3c0_master_broadcast_ccc_trans_test.sv` | `ENTAS0 = 0x02` | `i3c_set_transfer_cmd(0,0,1,8'h02,0,0,1,1)` | Broadcast CCC 能从 command queue 发出，之后继续 SDR0 private write |
+| `i3c0_master_directed_ccc_trans_test.sv` | `ENTAS0 direct = 0x82` | `i3c_set_transfer_cmd(0,0,1,8'h82,0,0,2,1)` | Directed CCC 带 `iscp=1` 和 direct command code，后续数据传输不被破坏 |
+| `i3c0_master_setdasa_test.sv` | `SETDASA = 0x87` | `i3c_set_daa_cmd(0,1)` 内部写 `[14:7]=8'h87` | static address 已知时设置 dynamic address，DAT/response queue 状态正确 |
+| `i3c0_master_setaasa_test.sv` | `SETAASA = 0x29` | `i3c_set_transfer_cmd(0,0,1,8'h29,0,0,1,1)` | 所有 target 用 static address 作为 dynamic address，后续 DAT 更新和 private transfer 正常 |
+| `i3c0_master_mode_hdr_ddr_rate_test.sv` | `ENTHDR0 = 0x20` | `i3c_set_transfer_cmd(0,6,1,8'h20,0,0,2,1)` | 通过 Broadcast CCC 进入 HDR-DDR，`speed=6` 触发 HDR-DDR 数据阶段 |
+| Secondary master 预期流 | `GETACCCR = 0x91` | VIP scoreboard 中 `set_ccc=1, ccc='h91` | 检查 controller role request/accept 相关 direct CCC 交互 |
+| Timing 信息预期流 | `GETXTIME = 0x99` | VIP 预期中出现 `ccc='h99` | 检查 exchange timing 信息相关 direct CCC/普通事务预期 |
+
+看覆盖时可以这样拆：
+
+```text
+协议全集覆盖：看 9.2/9.3 表中每条 CCC 是否有正向/异常/不支持响应。
+当前 case 覆盖：看本节映射，主要覆盖地址、活动态、HDR 入口和部分 direct read/write 预期。
+```
+
 ## 10. IBI、Hot-Join 与 Secondary Master
 
 这三类机制是 I3C 相比 I2C 更“系统化”的地方。
@@ -751,15 +1053,15 @@ DMA 的学习重点是区分两套长度：`transfer_arg` 描述 I3C 传输字�
 
 `i3c0_intr_test.sv` 和 `i3c0_intr_test/main.c` 是软硬件协同验证。SV 侧负责启动 VIP master，C 侧负责配置 I3C slave 和 PLIC 中断。
 
-| 配置点 | 典型值 | 测试意义 |
-| --- | --- | --- |
-| `i3c_scb_ctrl` | `3'h6` | scoreboard 按中断场景解释 |
-| `i3c_num_ctrl` | I3C0 为 `'h3`，I3C1 为 `'h4` | 区分 I3C0/I3C1 CPU interrupt case |
-| `INTR_STATUS_EN` | `0xffff` | 打开 I3C 状态中断 |
-| `INTR_SIGNAL_EN` | `0x2` | 打开 RX 相关中断信号 |
-| `DEVICE_ADDR` | `0x8031` | static address `0x31` + valid |
-| handler 读取 | `RX_DATA_PORT` | CPU handler 从 RX FIFO 取数据 |
-| 期望数据 | `0x998855aa`、`0xaa558899` | 软件侧最终 pass/fail 判断 |
+| 配置点              | 典型值                       | 测试意义                            |
+| ---------------- | ------------------------- | ------------------------------- |
+| `i3c_scb_ctrl`   | `3'h6`                    | scoreboard 按中断场景解释              |
+| `i3c_num_ctrl`   | I3C0 为 `'h3`，I3C1 为 `'h4` | 区分 I3C0/I3C1 CPU interrupt case |
+| `INTR_STATUS_EN` | `0xffff`                  | 打开 I3C 状态中断                     |
+| `INTR_SIGNAL_EN` | `0x2`                     | 打开 RX 相关中断信号                    |
+| `DEVICE_ADDR`    | `0x8031`                  | static address `0x31` + valid   |
+| handler 读取       | `RX_DATA_PORT`            | CPU handler 从 RX FIFO 取数据       |
+| 期望数据             | `0x998855aa`、`0xaa558899` | 软件侧最终 pass/fail 判断              |
 
 这类 case 的测试点可以总结为：VIP master 写数据后，I3C RX 事件要能变成 PLIC 中断，CPU handler 要能读到 FIFO 数据，软件最终要能判断数据正确。
 
