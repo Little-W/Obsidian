@@ -318,14 +318,173 @@ START + 7-bit Address + RnW + ACK/NACK + Data ... + STOP
 
 但 I3C 在具体传输类型上更丰富，主要包括：
 
-| 类型 | 用途 |
+| 类型                       | 用途                                  |
+| ------------------------ | ----------------------------------- |
+| SDR                      | 默认模式，常用于 private read/write 和普通控制传输 |
+| HDR                      | 高速模式，包括 DDR、TSP、TSF 等变体             |
+| CCC                      | 通用命令，用于广播控制、动态地址分配、事件管理等            |
+| IBI                      | 从设备主动发起带内中断请求                       |
+| Hot-Join                 | 新设备加入总线并请求地址分配                      |
+| Secondary Master Request | 具备 Master 能力的 Slave 请求成为主控          |
+
+### 8.1 速度模式整体理解
+
+I3C 的速度模式可以分成三层理解：I2C 兼容模式、I3C SDR 模式、I3C HDR 模式。case 里的 `speed` 参数就是把这几类模式编码进 controller 的 command queue。
+
+| 模式 | case 中 `speed` | 协议含义 | 当前 case 覆盖 |
+| --- | ---: | --- | --- |
+| SDR0 | `0` | I3C 默认 SDR 模式，最常用的 private transfer 速率档 | SDR0 rate、CCC、TX/RX FIFO、DMA、Secondary Master |
+| SDR1 | `1` | SDR 扩展速率档，低电平计数与 SDR0 不同 | `i3c*_master_mode_sdr1_rate_test` |
+| SDR2 | `2` | SDR 扩展速率档 | `i3c*_master_mode_sdr2_rate_test` |
+| SDR3 | `3` | SDR 扩展速率档 | `i3c*_master_mode_sdr3_rate_test` |
+| SDR4 | `4` | SDR 扩展速率档，case 中设置最大扩展 low count | `i3c*_master_mode_sdr4_rate_test` |
+| HDR-DDR | `6` | High Data Rate DDR 模式，数据在双沿或 HDR 规则下传输 | `i3c*_master_mode_hdr_ddr_rate_test` |
+| I2C FM | `7` | I2C Fast Mode 兼容访问 | `i3c*_master_mode_i2c_fm_rate_test` |
+
+这里的 `speed` 并不是单独决定 SCL 频率的唯一因素。真正影响波形的有两部分：
+
+| 配置来源 | 作用 |
 | --- | --- |
-| SDR | 默认模式，常用于 private read/write 和普通控制传输 |
-| HDR | 高速模式，包括 DDR、TSP、TSF 等变体 |
-| CCC | 通用命令，用于广播控制、动态地址分配、事件管理等 |
-| IBI | 从设备主动发起带内中断请求 |
-| Hot-Join | 新设备加入总线并请求地址分配 |
-| Secondary Master Request | 具备 Master 能力的 Slave 请求成为主控 |
+| timing register | 决定 SCL open-drain、push-pull、扩展 low count 等计数 |
+| transfer command `speed[23:21]` | 告诉 controller 本次 command 按哪个速度/模式解释 |
+
+因此一个完整速度 case 一般要同时做两件事：先通过 `i3c_set_scl_timing` 写 timing，再通过 `i3c_set_transfer_cmd` 写 command queue 的 `speed` 字段。
+
+### 8.2 Open-Drain 与 Push-Pull 时序
+
+I3C 保留 I2C 风格的 open-drain 阶段，同时在数据传输阶段大量使用 push-pull。两者的时序寄存器分开配置：
+
+| 寄存器 | Offset | 用途 |
+| --- | ---: | --- |
+| `SCL_I3C_OD_TIMING` | `0xb4` | 配置 I3C open-drain SCL low/high 相关计数 |
+| `SCL_I3C_PP_TIMING` | `0xb8` | 配置 I3C push-pull SCL low/high 相关计数 |
+| `SCL_EXT_LCNT_TIMING` | `0xc8` | 配置 SDR1~SDR4 的扩展 low count |
+| `SCL_EXT_TERMN_LCNT_TIMING` | `0xcc` | 扩展模式终止 low count，当前 base task 中预留但未实际启用 |
+
+open-drain 阶段常用于 START、仲裁、地址/CCC 早期阶段等需要多设备共享总线的场景；push-pull 阶段用于提高数据传输速率。验证时如果看到同一个 transaction 中 SCL/SDA 行为分段变化，这是 I3C 混合驱动模型的正常表现。
+
+### 8.3 本地 `i3c_set_scl_timing` 的实际配置
+
+当前 base task 的实现集中在 `i3c_base_test::i3c_set_scl_timing(i3c_num, speed)`。`i3c_num=0` 选择 `I3C0_BASE`，`i3c_num=1` 选择 `I3C1_BASE`。
+
+| speed | 写寄存器 | 写入字段 | 等价写入值 | 含义 |
+| ---: | --- | --- | --- | --- |
+| `0` | `SCL_I3C_OD_TIMING` | `[23:16]=8'ha`，`[7:0]=8'h9` | `0x000a0009` | SDR0 open-drain timing |
+| `0` | `SCL_I3C_PP_TIMING` | `[23:16]=8'h9`，`[7:0]=8'h7` | `0x00090007` | SDR0 push-pull timing |
+| `1` | `SCL_EXT_LCNT_TIMING` | `[7:0]=8'h0d` | `0x0000000d` | SDR1 扩展 low count |
+| `2` | `SCL_EXT_LCNT_TIMING` | `[15:8]=8'h11` | `0x00001100` | SDR2 扩展 low count |
+| `3` | `SCL_EXT_LCNT_TIMING` | `[23:16]=8'h19` | `0x00190000` | SDR3 扩展 low count |
+| `4` | `SCL_EXT_LCNT_TIMING` | `[31:24]=8'h32` | `0x32000000` | SDR4 扩展 low count |
+
+需要注意一个细节：SDR1~SDR4 case 当前是直接写整个 `SCL_EXT_LCNT_TIMING`，不是 read-modify-write。因此单个 case 只保证当前 speed 对应 byte 有效，其他 byte 会被写成 0。由于每个 rate case 只验证一种速度，这种写法是可以接受的；如果将来一个 case 内连续切换 SDR1~SDR4，就应该改成 read-modify-write，避免前一个速度的配置被清掉。
+
+### 8.4 Transfer Command 中的速度字段
+
+时序寄存器配置好以后，真正发起传输时还要通过 `i3c_set_transfer_cmd` 写 `COMMAND_QUEUE_PORT`。速度字段位于 command queue entry 的 `[23:21]`。
+
+```systemverilog
+i3c_set_transfer_cmd(i3c_num, speed, iscp, cmd, isshortarg, isread, tr_id, isstop);
+```
+
+关键字段：
+
+| 字段 | 来源 | 说明 |
+| --- | --- | --- |
+| `COMMAND_QUEUE_PORT[23:21]` | `speed` | 当前传输的速度/模式编码 |
+| `[15]` | `iscp` | 是否为 CCC command |
+| `[14:7]` | `cmd` | CCC command code，例如 HDR-DDR case 用 `8'h20` |
+| `[27]` | `isshortarg` | SDR0~SDR4 下可用于 short data |
+| `[28]` | `isread` | `0` 为 write，`1` 为 read |
+| `[31]` | `isstop` 相关控制 | 当前 task 中仅 `speed<=4` 时置 1 |
+
+典型调用如下：
+
+| case 类型 | 调用 | 说明 |
+| --- | --- | --- |
+| SDR0 write | `i3c_set_transfer_cmd(0,0,0,0,0,0,2,1)` | 普通 SDR0 private write |
+| SDR1 write | `i3c_set_transfer_cmd(0,1,0,0,0,0,2,1)` | SDR1 private write |
+| SDR4 write | `i3c_set_transfer_cmd(0,4,0,0,0,0,2,1)` | SDR4 private write |
+| HDR-DDR | `i3c_set_transfer_cmd(0,6,1,8'h20,0,0,2,1)` | 通过 CCC/command 进入 HDR-DDR 相关传输 |
+| I2C FM | `i3c_set_transfer_cmd(0,7,0,0,0,0,2,1)` | I2C FM 兼容模式访问 |
+| RX FIFO read | `i3c_set_transfer_cmd(0,0,0,0,0,1,2,1)` | SDR0 read，数据进入 RX FIFO |
+
+### 8.5 SDR0~SDR4 的验证重点
+
+SDR0~SDR4 case 的共同主线是：DUT 作为 master，VIP I3C slave 作为目标设备，完成地址配置后发起 private write。
+
+| 速度 | 关键 timing | 关键 command | 主要验证点 |
+| --- | --- | --- | --- |
+| SDR0 | 写 OD/PP timing | `speed=0` | 基础 SDR 模式能完成 DAA、arg、cmd、TX FIFO、scoreboard |
+| SDR1 | `SCL_EXT_LCNT_TIMING[7:0]=8'h0d` | `speed=1` | 扩展 low count 生效后，传输仍能完成 |
+| SDR2 | `SCL_EXT_LCNT_TIMING[15:8]=8'h11` | `speed=2` | SDR2 编码和数据一致性 |
+| SDR3 | `SCL_EXT_LCNT_TIMING[23:16]=8'h19` | `speed=3` | SDR3 编码和数据一致性 |
+| SDR4 | `SCL_EXT_LCNT_TIMING[31:24]=8'h32` | `speed=4` | SDR4 编码和数据一致性 |
+
+这些 case 的 pass/fail 不应只看 SCL 波形，还要看：
+
+| 观察点 | 说明 |
+| --- | --- |
+| `COMMAND_QUEUE_PORT[23:21]` | 是否写入预期 speed |
+| `INTR_STATUS[3]` | command queue 是否 ready |
+| `TX_DATA_PORT` | TX FIFO 是否按预期写入 |
+| VIP slave observed transaction | slave 侧是否收到一致 byte queue |
+| scoreboard | DUT 与 VIP 的 transaction 是否匹配 |
+
+### 8.6 HDR-DDR 模式
+
+HDR-DDR 属于 I3C 的高速扩展模式。和 SDR0~SDR4 不同，HDR-DDR case 不只是把 `speed` 改成 6，还会设置 `iscp=1` 和 `cmd=8'h20`，表示当前 command 带有模式切换/CCC 类含义。
+
+典型调用：
+
+```systemverilog
+i3c_set_transfer_cmd(0, 6, 1, 8'h20, 0, 0, 2, 1);
+```
+
+解读：
+
+| 参数 | 值 | 含义 |
+| --- | --- | --- |
+| `speed` | `6` | HDR-DDR 模式编码 |
+| `iscp` | `1` | command present，当前命令不是普通 private transfer |
+| `cmd` | `8'h20` | HDR-DDR 相关进入/控制命令 |
+| `isread` | `0` | 当前 case 走写方向 |
+
+HDR-DDR 验证时要重点看三件事：模式进入命令是否被正确编码，slave/VIP 是否按 HDR-DDR 模式响应，传输结束后总线是否能回到可继续工作的状态。当前 case 主要覆盖 HDR-DDR 命令路径和写传输通路，不等价于覆盖所有 HDR 子模式。
+
+### 8.7 I2C FM/FM+ 兼容模式
+
+I3C 支持和 I2C legacy device 共存，因此 controller 需要能以 I2C 风格访问目标设备。case 中常见两类：
+
+| case 类型 | 配置方式 | 说明 |
+| --- | --- | --- |
+| `i3c*_master_mode_i2c_fm_rate_test` | transfer command `speed=7` | DUT master 以 I2C FM 兼容方式访问 |
+| `i2c*_slave_i2c_fm_transmit_trans_test` | slave transmit 中 `speed=0` | I2C slave FM 发送场景 |
+| `i2c*_slave_i2c_fm_plus_transmit_trans_test` | slave transmit 中 `speed=1` | I2C FM+ 类发送场景 |
+
+在 `i3c_block_init` 中，`isi2c_mode=1` 时会设置 `DEV_ADDR_TABLE_LOC1[31]`，表示 DAT 里的目标设备按 legacy I2C 设备处理；如果是 I3C slave，则该 bit 不应置位。
+
+I2C 兼容模式的验证重点：
+
+| 测试点 | 说明 |
+| --- | --- |
+| legacy 标志 | `DEV_ADDR_TABLE_LOC1[31]` 是否按 I2C 目标设置 |
+| 地址阶段 | 使用 static address，而不是 I3C dynamic address 流程 |
+| 速度编码 | master FM case 使用 `speed=7` |
+| open-drain 行为 | I2C 兼容传输更接近开漏行为 |
+| scoreboard | VIP legacy I2C slave/master transaction 是否匹配 |
+
+### 8.8 时序相关 debug 方法
+
+速度或时序类 case fail 时，建议按下面顺序查：
+
+1. 确认是否调用了 `i3c_set_scl_timing(i3c_num, speed)`，且 `i3c_num` 与 case 实例一致。
+2. 读回 `SCL_I3C_OD_TIMING`、`SCL_I3C_PP_TIMING`、`SCL_EXT_LCNT_TIMING`，确认写入值是否正确。
+3. 检查 `COMMAND_QUEUE_PORT[23:21]` 是否等于本 case 预期 speed。
+4. 看 `INTR_STATUS[3]`，确认 command queue ready 后再写下一条 command。
+5. 对 SDR1~SDR4，特别确认 `SCL_EXT_LCNT_TIMING` 的目标 byte 是否被其他写操作清掉。
+6. 对 HDR-DDR，确认 `iscp=1` 和 `cmd=8'h20` 是否同时存在。
+7. 对 I2C FM，确认 DAT legacy 标志和目标 VIP 类型是否匹配。
+8. 最后再看波形上的 SCL high/low 宽度、START/STOP、ACK/NACK 和数据采样点。
 
 ## 9. CCC 通用命令
 
