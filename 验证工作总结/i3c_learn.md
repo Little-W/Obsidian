@@ -425,13 +425,13 @@ SCL 频率 ≈ I3C core clock / (SCL high count + SCL low count)
 
 调波形时可以按阶段量测：
 
-| 量测位置 | 期望 |
-| --- | --- |
-| 地址/CCC 前半段 | 更接近 OD timing |
-| 普通 SDR0 数据段 | 更接近 PP timing |
-| SDR1~SDR4 数据段 | low time 明显变长 |
-| HDR-DDR 数据段 | 不能只按普通 SDR 周期判断，要结合 HDR 进入命令和双沿数据 |
-| I2C FM/FM+ | 更接近 legacy I2C 的开漏传输节奏 |
+| 量测位置          | 期望                                |
+| ------------- | --------------------------------- |
+| 地址/CCC 前半段    | 更接近 OD timing                     |
+| 普通 SDR0 数据段   | 更接近 PP timing                     |
+| SDR1~SDR4 数据段 | low time 明显变长                     |
+| HDR-DDR 数据段   | 不能只按普通 SDR 周期判断，要结合 HDR 进入命令和双沿数据 |
+| I2C FM/FM+    | 更接近 legacy I2C 的开漏传输节奏            |
 
 ### 8.5 Transfer Command 中的速度字段
 
@@ -443,14 +443,15 @@ i3c_set_transfer_cmd(i3c_num, speed, iscp, cmd, isshortarg, isread, tr_id, issto
 
 关键字段：
 
-| 字段 | 来源 | 说明 |
-| --- | --- | --- |
-| `COMMAND_QUEUE_PORT[23:21]` | `speed` | 当前传输的速度/模式编码 |
-| `[15]` | `iscp` | 是否为 CCC command |
-| `[14:7]` | `cmd` | CCC command code，例如 HDR-DDR case 用 `8'h20` |
-| `[27]` | `isshortarg` | SDR0~SDR4 下可用于 short data |
-| `[28]` | `isread` | `0` 为 write，`1` 为 read |
-| `[31]` | `isstop` 相关控制 | 当前 task 中仅 `speed<=4` 时置 1 |
+| 字段                          | 来源            | 说明                                         |
+| --------------------------- | ------------- | ------------------------------------------ |
+| `COMMAND_QUEUE_PORT[23:21]` | `speed`       | 当前传输的速度/模式编码                               |
+| `[15]`                      | `iscp`        | 是否为 CCC command                            |
+| `[14:7]`                    | `cmd`         | CCC command code，例如 HDR-DDR case 用 `8'h20` |
+| `[27]`                      | `isshortarg`  | SDR0~SDR4 下可用于 short data                  |
+| `[28]`                      | `isread`      | `0` 为 write，`1` 为 read                     |
+| `[31]`                      | `isstop` 相关控制 | 当前 task 中仅 `speed<=4` 时置 1                 |
+
 
 典型调用如下：
 
@@ -485,6 +486,73 @@ SDR0~SDR4 case 的共同主线是：DUT 作为 master，VIP I3C slave 作为目�
 | VIP slave observed transaction | slave 侧是否收到一致 byte queue |
 | scoreboard | DUT 与 VIP 的 transaction 是否匹配 |
 
+#### SDR 线上时序拆解
+
+SDR 是 I3C 的默认数据传输格式。无论是 SDR0 还是 SDR1~SDR4，线上帧顺序基本一致，差别主要在 SCL timing 和 command queue 的 `speed` 编码。
+
+从 APB 配置视角，本地 SDR write case 的顺序是：
+
+```text
+1. 写 SCU/IOMUX 或状态寄存器，准备 I3C0/I3C1 运行环境
+2. i3c_set_scl_timing(i3c_num, speed)
+3. i3c_block_init(i3c_num, mode, static_addr, dynamic_addr, ...)
+4. i3c_block_enable(i3c_num)
+5. 地址准备：i3c_set_daa_cmd / SETAASA / SETDASA
+6. 等 INTR_STATUS[3] = 1，command queue ready
+7. i3c_set_transfer_arg(i3c_num, data_len)
+8. 再等 INTR_STATUS[3] = 1
+9. i3c_set_transfer_cmd(i3c_num, speed, 0, 0, 0, isread, tr_id, isstop)
+10. write case 写 TX_DATA_PORT，read case 等 RX_DATA_PORT
+```
+
+从总线波形视角，普通 SDR private write 可以按下面理解：
+
+```text
+Bus idle
+-> START
+-> Target Dynamic Address + W
+-> ACK / T-bit 阶段
+-> Data byte 0
+-> ACK / T-bit 阶段
+-> Data byte 1
+-> ACK / T-bit 阶段
+-> ...
+-> Last data byte
+-> 结束响应 / T-bit
+-> STOP
+```
+
+普通 SDR private read 的顺序是：
+
+```text
+Bus idle
+-> START
+-> Target Dynamic Address + R
+-> ACK / T-bit 阶段
+-> Target 驱动 Data byte 0
+-> Controller 继续/结束响应
+-> Target 驱动 Data byte 1
+-> Controller 继续/结束响应
+-> ...
+-> Last data byte
+-> Controller 结束读
+-> STOP
+```
+
+这里的 `ACK / T-bit` 不要简单等同于 I2C 的 ACK。I3C SDR 数据阶段有自己的 turnaround/transition 规则，VIP 波形中可能看到 SDA 驱动方在 byte 边界发生切换。验证时更实用的判断方式是：地址方向、byte 数量、最后结束条件、scoreboard 数据是否一致。
+
+SDR0 和 SDR1~SDR4 的差异：
+
+| 项目 | SDR0 | SDR1~SDR4 |
+| --- | --- | --- |
+| 线上帧顺序 | `START -> Addr -> Data -> STOP` | 与 SDR0 基本一致 |
+| command `speed` | `0` | `1/2/3/4` |
+| timing 来源 | `SCL_I3C_OD_TIMING` + `SCL_I3C_PP_TIMING` | `SCL_EXT_LCNT_TIMING` 对应 byte + PP high count |
+| 波形变化 | 默认 OD/PP 切换 | data 阶段 low time 会变长 |
+| case 目的 | 基础 SDR 通路 | 验证不同 low count/speed 编码下仍能正常传输 |
+
+所以看 SDR 波形时，先确认“帧顺序对不对”，再量“每个阶段的 high/low 宽度”。如果帧顺序错了，通常是地址、DAT、command queue 或 FIFO 逻辑问题；如果帧顺序对但频率不对，再回头查 timing 寄存器。
+
 ### 8.7 HDR-DDR 模式
 
 HDR-DDR 属于 I3C 的高速扩展模式。和 SDR0~SDR4 不同，HDR-DDR case 不只是把 `speed` 改成 6，还会设置 `iscp=1` 和 `cmd=8'h20`，表示当前 command 带有模式切换/CCC 类含义。
@@ -497,12 +565,93 @@ i3c_set_transfer_cmd(0, 6, 1, 8'h20, 0, 0, 2, 1);
 
 解读：
 
-| 参数 | 值 | 含义 |
+| 参数       | 值       | 含义                                        |
+| -------- | ------- | ----------------------------------------- |
+| `speed`  | `6`     | HDR-DDR 模式编码                              |
+| `iscp`   | `1`     | command present，当前命令不是普通 private transfer |
+| `cmd`    | `8'h20` | HDR-DDR 相关进入/控制命令                         |
+| `isread` | `0`     | 当前 case 走写方向                              |
+
+更准确地说，`8'h20` 是 Broadcast CCC `ENTHDR0`。它不是普通 private write 的目标地址命令，而是告诉总线上的 HDR-capable target：接下来进入 HDR Mode 0，也就是 HDR-DDR。
+
+#### HDR-DDR 的先后顺序
+
+HDR-DDR 可以拆成三个阶段：SDR 入口阶段、HDR-DDR 数据阶段、HDR 退出/回到 SDR 阶段。
+
+```text
+阶段 1：仍处于 SDR 模式
+Bus idle
+-> START
+-> Broadcast Address 7'h7e + W
+-> ENTHDR0 CCC，code = 8'h20
+-> controller/VIP 预期目标支持 HDR-DDR，支持的 target 进入 HDR-DDR 解释规则
+
+阶段 2：进入 HDR-DDR 模式
+-> HDR restart / HDR-DDR 起始序列，具体形态由 controller/VIP 实现
+-> HDR-DDR command word，携带目标、方向、长度或控制信息
+-> HDR-DDR data word 0
+-> HDR-DDR data word 1
+-> ...
+-> CRC / parity / token / turnaround 等 HDR-DDR 规则相关字段
+
+阶段 3：退出 HDR 或结束本次传输
+-> HDR exit pattern 或 controller 内部结束序列
+-> 总线回到 SDR 可管理状态
+-> 后续才能继续发普通 CCC、SDR private transfer 或 STOP/START 类控制
+```
+
+因此 HDR-DDR 的关键点是：**入口 CCC 是 SDR 规则，真正的数据阶段才是 HDR-DDR 规则**。如果波形上先看到 `7'h7e + W` 和 `0x20`，这是正常的；不能因为入口阶段看起来像普通 CCC，就认为 HDR 没有进入。
+
+#### 本地 HDR-DDR case 的 APB 顺序
+
+本地 `i3c0_master_mode_hdr_ddr_rate_test.sv` 的实际顺序是：
+
+```text
+1. 清 I3C0 SCU 状态
+2. i3c_block_init(0, 0, 7'h63, 8'he3)
+3. i3c_block_enable(0)
+4. 等 INTR_STATUS[3] = 1
+5. i3c_set_transfer_arg(0, 4)
+6. 再等 INTR_STATUS[3] = 1
+7. i3c_set_transfer_cmd(0, 6, 1, 8'h20, 0, 0, 2, 1)
+8. i3c_wirte_data_to_txfifo(0, 1, 1, tx_data_q)
+9. VIP slave 侧构造预期 transaction
+```
+
+对应 command queue 字段是：
+
+| 字段 | 值 | 作用 |
 | --- | --- | --- |
-| `speed` | `6` | HDR-DDR 模式编码 |
-| `iscp` | `1` | command present，当前命令不是普通 private transfer |
-| `cmd` | `8'h20` | HDR-DDR 相关进入/控制命令 |
-| `isread` | `0` | 当前 case 走写方向 |
+| `[23:21] speed` | `3'b110` | 选择 HDR-DDR |
+| `[15] iscp` | `1` | 当前 entry 带 command/CCC |
+| `[14:7] cmd` | `8'h20` | `ENTHDR0` |
+| `[28] isread` | `0` | 本地 case 是 HDR write |
+| `[31] stop` | task 中 `speed>4` 不置位 | HDR 结束不按普通 SDR STOP 字段理解 |
+
+这一点对看波形很重要：SDR0~SDR4 的 `isstop` 会写到 `[31]`，但 HDR-DDR 因为 `speed=6`，当前 task 不会置 `[31]`。所以 HDR case 里不要只用 command queue 的 STOP bit 判断结束，要看 HDR exit/总线恢复状态以及 scoreboard 是否闭环。
+
+#### HDR-DDR 波形关注点
+
+| 阶段 | 先看什么 | 期望现象 |
+| --- | --- | --- |
+| SDR 入口 | Broadcast address | 出现 `7'h7e + W` |
+| SDR 入口 | CCC code | 出现 `ENTHDR0 = 8'h20` |
+| 模式切换 | SCL/SDA 规则 | 入口后不再按普通 SDR byte + ACK 逐拍理解 |
+| HDR 数据 | 数据边沿 | HDR-DDR 数据阶段要按双沿/word 规则看，而不是只看单沿 byte |
+| HDR 数据 | 数据量 | 本地 `transfer_arg=4`，TX FIFO task 写入 1 个 32-bit word，对应 4 byte 数据 |
+| 退出阶段 | 总线恢复 | 后续能回到 SDR/CCC 可管理状态 |
+| scoreboard | VIP observed data | VIP 侧预期与 DUT 发出的数据一致 |
+
+#### HDR-DDR 与 SDR 的核心差别
+
+| 对比项 | SDR | HDR-DDR |
+| --- | --- | --- |
+| 入口方式 | 直接 private transfer 或 CCC | 先通过 SDR CCC `ENTHDR0=0x20` 进入 |
+| 地址阶段 | `Target Dynamic Address + R/W` | 入口先广播 `7'h7e + W`，HDR 数据阶段再按 HDR command word 描述目标/方向 |
+| 数据单位 | byte + ACK/T-bit/turnaround | HDR-DDR word/双沿规则，带额外校验或 token 机制 |
+| command queue | `speed=0~4`，通常 `iscp=0` | `speed=6`，`iscp=1`，`cmd=8'h20` |
+| STOP/结束 | 普通 STOP 或 repeated START | HDR exit pattern/控制器内部结束序列，之后回 SDR |
+| 调试重点 | 地址、ACK/T-bit、FIFO byte 数、STOP | ENTHDR0 是否发出、是否进入 HDR 数据阶段、HDR exit 是否正常 |
 
 HDR-DDR 验证时要重点看三件事：模式进入命令是否被正确编码，slave/VIP 是否按 HDR-DDR 模式响应，传输结束后总线是否能回到可继续工作的状态。当前 case 主要覆盖 HDR-DDR 命令路径和写传输通路，不等价于覆盖所有 HDR 子模式。
 
@@ -592,37 +741,37 @@ DISEC direct    = 0x81
 下面按公开 I3C/Zephyr/Linux 头文件中常见命名整理。不同 I3C 版本中命名可能略有变化，例如 `DEFSLVS` 在新术语中也写作 `DEFTGTS`。
 验证时要以 IP spec 和 VIP 支持列表为准：下表是协议命令全集视角，不等于当前 case 已经覆盖了每条命令。
 
-| Code | 命令 | 方向 | 作用 |
-| ---: | --- | --- | --- |
-| `0x00` | `ENEC` | Broadcast Set | Enable Events，允许 target 发起 IBI、Controller Role Request、Hot-Join 等事件 |
-| `0x01` | `DISEC` | Broadcast Set | Disable Events，禁止对应事件 |
-| `0x02` | `ENTAS0` | Broadcast Set | 进入 Activity State 0，正常工作态 |
-| `0x03` | `ENTAS1` | Broadcast Set | 进入 Activity State 1 |
-| `0x04` | `ENTAS2` | Broadcast Set | 进入 Activity State 2 |
-| `0x05` | `ENTAS3` | Broadcast Set | 进入 Activity State 3 |
-| `0x06` | `RSTDAA` | Broadcast Set | Reset Dynamic Address Assignment，清除动态地址 |
-| `0x07` | `ENTDAA` | Broadcast Set | Enter Dynamic Address Assignment，进入动态地址分配流程 |
-| `0x08` | `DEFTGTS` / `DEFSLVS` | Broadcast Set | Define List of Targets，广播已知 target 列表 |
-| `0x09` | `SETMWL` | Broadcast Set | Set Max Write Length，设置最大写长度 |
-| `0x0a` | `SETMRL` | Broadcast Set | Set Max Read Length，设置最大读长度，也可关联 IBI payload 长度 |
-| `0x0b` | `ENTTM` | Broadcast Set | Enter Test Mode |
-| `0x0c` | `SETBUSCON` | Broadcast Set | Set Bus Context，声明总线/规范上下文 |
-| `0x12` | `ENDXFER` | Broadcast Set | Data Transfer Ending Procedure Control |
-| `0x20` | `ENTHDR0` | Broadcast Set | Enter HDR Mode 0，HDR-DDR |
-| `0x21` | `ENTHDR1` | Broadcast Set | Enter HDR Mode 1，HDR-TSP |
-| `0x22` | `ENTHDR2` | Broadcast Set | Enter HDR Mode 2，HDR-TSL |
-| `0x23` | `ENTHDR3` | Broadcast Set | Enter HDR Mode 3，HDR-BT |
-| `0x24` | `ENTHDR4` | Broadcast Set | Enter HDR Mode 4，版本/实现相关 |
-| `0x25` | `ENTHDR5` | Broadcast Set | Enter HDR Mode 5，版本/实现相关 |
-| `0x26` | `ENTHDR6` | Broadcast Set | Enter HDR Mode 6，版本/实现相关 |
-| `0x27` | `ENTHDR7` | Broadcast Set | Enter HDR Mode 7，版本/实现相关 |
-| `0x28` | `SETXTIME` | Broadcast Set | Exchange Timing Information，交换/配置时序相关信息 |
-| `0x29` | `SETAASA` | Broadcast Set | Set All Addresses to Static Addresses，让所有 target 使用 static address 作为 dynamic address |
-| `0x2a` | `RSTACT` | Broadcast Set | Target Reset Action，配置 target 对 reset pattern 的响应 |
-| `0x2b` | `DEFGRPA` | Broadcast Set | Define List of Group Address，定义 group address 列表 |
-| `0x2c` | `RSTGRPA` | Broadcast Set | Reset Group Address，清除 group address |
-| `0x2d` | `MLANE` | Broadcast Set | Multi-Lane Data Transfer Control |
-| `0x61~0x7f` | `VENDOR` / Standard Extension | Broadcast | 厂商或标准扩展 CCC |
+|        Code | 命令                            | 方向            | 作用                                                                                    |
+| ----------: | ----------------------------- | ------------- | ------------------------------------------------------------------------------------- |
+|      `0x00` | `ENEC`                        | Broadcast Set | Enable Events，允许 target 发起 IBI、Controller Role Request、Hot-Join 等事件                   |
+|      `0x01` | `DISEC`                       | Broadcast Set | Disable Events，禁止对应事件                                                                 |
+|      `0x02` | `ENTAS0`                      | Broadcast Set | 进入 Activity State 0，正常工作态                                                             |
+|      `0x03` | `ENTAS1`                      | Broadcast Set | 进入 Activity State 1                                                                   |
+|      `0x04` | `ENTAS2`                      | Broadcast Set | 进入 Activity State 2                                                                   |
+|      `0x05` | `ENTAS3`                      | Broadcast Set | 进入 Activity State 3                                                                   |
+|      `0x06` | `RSTDAA`                      | Broadcast Set | Reset Dynamic Address Assignment，清除动态地址                                               |
+|      `0x07` | `ENTDAA`                      | Broadcast Set | Enter Dynamic Address Assignment，进入动态地址分配流程                                           |
+|      `0x08` | `DEFTGTS` / `DEFSLVS`         | Broadcast Set | Define List of Targets，广播已知 target 列表                                                 |
+|      `0x09` | `SETMWL`                      | Broadcast Set | Set Max Write Length，设置最大写长度                                                          |
+|      `0x0a` | `SETMRL`                      | Broadcast Set | Set Max Read Length，设置最大读长度，也可关联 IBI payload 长度                                       |
+|      `0x0b` | `ENTTM`                       | Broadcast Set | Enter Test Mode                                                                       |
+|      `0x0c` | `SETBUSCON`                   | Broadcast Set | Set Bus Context，声明总线/规范上下文                                                            |
+|      `0x12` | `ENDXFER`                     | Broadcast Set | Data Transfer Ending Procedure Control                                                |
+|      `0x20` | `ENTHDR0`                     | Broadcast Set | Enter HDR Mode 0，HDR-DDR                                                              |
+|      `0x21` | `ENTHDR1`                     | Broadcast Set | Enter HDR Mode 1，HDR-TSP                                                              |
+|      `0x22` | `ENTHDR2`                     | Broadcast Set | Enter HDR Mode 2，HDR-TSL                                                              |
+|      `0x23` | `ENTHDR3`                     | Broadcast Set | Enter HDR Mode 3，HDR-BT                                                               |
+|      `0x24` | `ENTHDR4`                     | Broadcast Set | Enter HDR Mode 4，版本/实现相关                                                              |
+|      `0x25` | `ENTHDR5`                     | Broadcast Set | Enter HDR Mode 5，版本/实现相关                                                              |
+|      `0x26` | `ENTHDR6`                     | Broadcast Set | Enter HDR Mode 6，版本/实现相关                                                              |
+|      `0x27` | `ENTHDR7`                     | Broadcast Set | Enter HDR Mode 7，版本/实现相关                                                              |
+|      `0x28` | `SETXTIME`                    | Broadcast Set | Exchange Timing Information，交换/配置时序相关信息                                               |
+|      `0x29` | `SETAASA`                     | Broadcast Set | Set All Addresses to Static Addresses，让所有 target 使用 static address 作为 dynamic address |
+|      `0x2a` | `RSTACT`                      | Broadcast Set | Target Reset Action，配置 target 对 reset pattern 的响应                                     |
+|      `0x2b` | `DEFGRPA`                     | Broadcast Set | Define List of Group Address，定义 group address 列表                                      |
+|      `0x2c` | `RSTGRPA`                     | Broadcast Set | Reset Group Address，清除 group address                                                  |
+|      `0x2d` | `MLANE`                       | Broadcast Set | Multi-Lane Data Transfer Control                                                      |
+| `0x61~0x7f` | `VENDOR` / Standard Extension | Broadcast     | 厂商或标准扩展 CCC                                                                           |
 
 常见保留区间：
 
@@ -1080,20 +1229,20 @@ DMA 的学习重点是区分两套长度：`transfer_arg` 描述 I3C 传输字�
 
 ## 15. Case 测试点与协议机制对应表
 
-| 协议机制 | 目标行为 | 对应 case | 关键观察点 |
-| --- | --- | --- | --- |
-| 动态地址 | static address 转 dynamic address，DAT 正确生效 | `master_setdasa`、`master_setaasa`、SDR rate case | `DEV_ADDR_TABLE_LOC1`、`INTR_STATUS[4]`、后续传输地址 |
-| CCC | Broadcast/Directed CCC 被正确编码和响应 | `master_broadcast_ccc_trans`、`master_directed_ccc_trans` | `COMMAND_QUEUE_PORT[15]`、`cmd[14:7]`、response queue |
-| SDR private write | Master 写数据到 slave | SDR0~SDR4、TXFIFO、DMA TX | `TX_DATA_PORT`、`INTR_STATUS[0]`、VIP slave observed |
-| SDR private read | Master 从 slave 读数据 | RXFIFO、DMA RX | `RX_DATA_PORT`、`INTR_STATUS[1]`、VIP slave/source data |
-| HDR-DDR | 进入 HDR 相关传输模式 | `master_mode_hdr_ddr_rate` | `speed=6`、`cmd=8'h20` |
-| I2C 兼容 | I3C controller 访问 legacy I2C | I2C FM/FM+、I2C slave case | `isi2c_mode`、legacy address、`speed=7` |
-| Slave 模式 | DUT 被 VIP master 访问 | slave receive/transmit | `DEVICE_CTRL_EXTENDED=1`、`DEVICE_ADDR=0x8031` |
-| Secondary Master | slave 请求并获得 bus owner | `slave_to_secmaster` | `SLV_INTR_REQ`、`INTR_STATUS[12/13]` |
-| 中断 | I3C RX 事件触发 CPU handler | `intr_test` + `main.c` | `INTR_SIGNAL_EN`、PLIC handler、RX FIFO 数据 |
-| DMA | FIFO 与 SRAM 数据一致 | DMA TX/RX case | DMA src/dst address、peripheral number、SRAM readback |
-| Debug | 内部状态映射到 SCU debug port | debug port case | debug high/low register |
-| Reset/Clock | reset/clock 后功能可恢复 | rstn/clk case | reset 后寄存器、clock 后访问路径 |
+| 协议机制              | 目标行为                                      | 对应 case                                                  | 关键观察点                                                 |
+| ----------------- | ----------------------------------------- | -------------------------------------------------------- | ----------------------------------------------------- |
+| 动态地址              | static address 转 dynamic address，DAT 正确生效 | `master_setdasa`、`master_setaasa`、SDR rate case          | `DEV_ADDR_TABLE_LOC1`、`INTR_STATUS[4]`、后续传输地址         |
+| CCC               | Broadcast/Directed CCC 被正确编码和响应           | `master_broadcast_ccc_trans`、`master_directed_ccc_trans` | `COMMAND_QUEUE_PORT[15]`、`cmd[14:7]`、response queue   |
+| SDR private write | Master 写数据到 slave                         | SDR0~SDR4、TXFIFO、DMA TX                                  | `TX_DATA_PORT`、`INTR_STATUS[0]`、VIP slave observed    |
+| SDR private read  | Master 从 slave 读数据                        | RXFIFO、DMA RX                                            | `RX_DATA_PORT`、`INTR_STATUS[1]`、VIP slave/source data |
+| HDR-DDR           | 进入 HDR 相关传输模式                             | `master_mode_hdr_ddr_rate`                               | `speed=6`、`cmd=8'h20`                                 |
+| I2C 兼容            | I3C controller 访问 legacy I2C              | I2C FM/FM+、I2C slave case                                | `isi2c_mode`、legacy address、`speed=7`                 |
+| Slave 模式          | DUT 被 VIP master 访问                       | slave receive/transmit                                   | `DEVICE_CTRL_EXTENDED=1`、`DEVICE_ADDR=0x8031`         |
+| Secondary Master  | slave 请求并获得 bus owner                     | `slave_to_secmaster`                                     | `SLV_INTR_REQ`、`INTR_STATUS[12/13]`                   |
+| 中断                | I3C RX 事件触发 CPU handler                   | `intr_test` + `main.c`                                   | `INTR_SIGNAL_EN`、PLIC handler、RX FIFO 数据              |
+| DMA               | FIFO 与 SRAM 数据一致                          | DMA TX/RX case                                           | DMA src/dst address、peripheral number、SRAM readback   |
+| Debug             | 内部状态映射到 SCU debug port                    | debug port case                                          | debug high/low register                               |
+| Reset/Clock       | reset/clock 后功能可恢复                        | rstn/clk case                                            | reset 后寄存器、clock 后访问路径                                |
 
 ## 16. 学习抓手
 
