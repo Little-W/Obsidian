@@ -1176,8 +1176,8 @@ DMA case 验证的是 I3C FIFO 与 SRAM 之间的数据通路，不只是 I3C �
 | --- | --- | --- | --- | --- |
 | `i3c0_trans_txfifo_to_mem_withdma_test.sv` | SRAM -> I3C TX FIFO | `src=SRAM+0x4000`，`dst=I3C0_BASE+TX_DATA_PORT`，`dst_per=7'h1e` | `transfer_arg=8`，write | SRAM 中 8 byte 经 DMA 进入 TX FIFO，VIP slave 收到一致数据 |
 | `i3c0_trans_rxfifo_to_mem_withdma_test.sv` | I3C RX FIFO -> SRAM | `src=I3C0_BASE+RX_DATA_PORT`，`dst=SRAM+0x4000`，`src_per=7'h1f` | `isread=1`，`transfer_arg=4` | VIP slave 提供的数据经 RX FIFO 和 DMA 写入 SRAM |
-| `i3c1_trans_txfifo_to_mem_withdma_test.sv` | I3C1 TX DMA | `dst=I3C1_BASE+TX_DATA_PORT`，`dst_per=7'h0` | I3C1 对称流程 | I3C1 DMA request mapping 是否正确 |
-| `i3c1_trans_rxfifo_to_mem_withdma_test.sv` | I3C1 RX DMA | `src=I3C1_BASE+RX_DATA_PORT` | I3C1 read | I3C1 RX DMA 搬运正确 |
+| `i3c1_trans_txfifo_to_mem_withdma_test.sv` | I3C1 TX DMA | `dst=I3C1_BASE+TX_DATA_PORT`，`dst_per=7'h0` | I3C1 TX request 编号为 0 | SRAM 数据经 DMA 写入 I3C1 TX FIFO |
+| `i3c1_trans_rxfifo_to_mem_withdma_test.sv` | I3C1 RX DMA | `src=I3C1_BASE+RX_DATA_PORT`，`src_per=7'h1` | I3C1 RX request 编号为 1 | I3C1 RX FIFO 数据经 DMA 写入 SRAM |
 
 DMA 的学习重点是区分两套长度：`transfer_arg` 描述 I3C 传输字节数，DMA sequence 的 burst/width 描述 AXI/DMA 搬运方式。两者不一致时，容易出现总线传输完成但 memory 数据不完整，或 DMA 搬运多余数据的问题。
 

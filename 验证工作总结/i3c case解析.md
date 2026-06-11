@@ -347,10 +347,10 @@ DMA 参数设置：
 | --- | --- | --- | --- |
 | `i3c_dma_write_config` | `src_addr` | `MCU_SUB_SRAM_BASE_ADDR + 0x4000` | SRAM 源地址 |
 | `i3c_dma_write_config` | `dst_addr` | `I3C0_BASE/I3C1_BASE + TX_DATA_PORT` | I3C TX FIFO 目标地址 |
-| `i3c_dma_write_config` | `dst_per_num` | I3C0 常见 `7'h1e`，I3C1 常见 `7'h0` | 目标外设 DMA request number |
+| `i3c_dma_write_config` | `dst_per_num` | I3C0 TX `7'h1e`，I3C1 TX `7'h0` | 目标外设 DMA request number |
 | `i3c_dma_read_config` | `src_addr` | `I3C0_BASE/I3C1_BASE + RX_DATA_PORT` | I3C RX FIFO 源地址 |
 | `i3c_dma_read_config` | `dst_addr` | `MCU_SUB_SRAM_BASE_ADDR + 0x4000` | SRAM 目标地址 |
-| `i3c_dma_read_config` | `src_per_num` | 常见 `7'h1f` | 源外设 DMA request number |
+| `i3c_dma_read_config` | `src_per_num` | I3C0 RX `7'h1f`，I3C1 RX `7'h1` | 源外设 DMA request number |
 | `arlengh/awlengh` | `0`/`1` | burst 长度配置 |
 
 DMA sequence 内部关键字段：
@@ -616,6 +616,8 @@ TX DMA case 的 memory 初始化也要看：
 | `i3c0_slave_to_secmaster_test.sv` | slave -> secondary master | `3'h2` | `0` | DUT static `7'h31`，等 `INTR_STATUS[8/12/13]`，DAT dynamic `8'hb0` |
 | `i3c0_trans_txfifo_to_mem_withdma_test.sv` | DMA TX，SRAM -> TX FIFO | `3'h5` | `0` | `SRAM+0x4000` -> `I3C0_BASE+TX_DATA_PORT`，`dst_per=7'h1e`，`transfer_arg=8` |
 | `i3c0_trans_rxfifo_to_mem_withdma_test.sv` | DMA RX，RX FIFO -> SRAM | `3'h3` | `0` | `I3C0_BASE+RX_DATA_PORT` -> `SRAM+0x4000`，`src_per=7'h1f`，`isread=1` |
+| `i3c1_trans_txfifo_to_mem_withdma_test.sv` | DMA TX，SRAM -> TX FIFO | `3'h5` | `1` | `SRAM+0x4000` -> `I3C1_BASE+TX_DATA_PORT`，`dst_per=7'h0` |
+| `i3c1_trans_rxfifo_to_mem_withdma_test.sv` | DMA RX，RX FIFO -> SRAM | `3'h3` | `1` | `I3C1_BASE+RX_DATA_PORT` -> `SRAM+0x4000`，`src_per=7'h1`，`isread=1` |
 | `i3c0_intr_test.sv` + `main.c` | CPU interrupt slave receive | `3'h6` | `'h3` | C 侧 static `0x31`，`INTR_SIGNAL_EN=0x2`，期望 `0x998855aa/0xaa558899` |
 | `i3c0_reg_test.sv` | register test | 不依赖传输方向 | 通常 I3C0 | 遍历 reset value 和 RW mask |
 | `i3c0_debug_port_test.sv` | debug port map | 不依赖传输方向 | `0` | force debug signal，读 `MCUSS_I3C0_SVL_DBG_PORT_H/L` |

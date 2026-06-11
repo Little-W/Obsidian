@@ -79,7 +79,7 @@ task i3c1_trans_rxfifo_to_mem_withdma_test::main_phase(uvm_phase phase);
 
         #1us;
         //dma cfg
-        i3c_dma_read_config(`I3C1_BASE+`RX_DATA_PORT, `MCU_SUB_SRAM_BASE_ADDR+32'h4000,7'h1f,1,1);
+        i3c_dma_read_config(`I3C1_BASE+`RX_DATA_PORT, `MCU_SUB_SRAM_BASE_ADDR+32'h4000,7'h1,1,1);
         
         #1us;
         rdata=sram_rd32_bd(`MCU_SUB_SRAM_BASE_ADDR+32'h4000);
