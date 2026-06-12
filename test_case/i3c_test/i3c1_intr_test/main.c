@@ -11,11 +11,17 @@ uint32_t rx_data[2];
 volatile uint32_t rx_data1 = 0;
 volatile uint32_t rx_data2 = 0;
 
+#define I3C_RX_INTR_MASK 0x2
+
 // i30 interrupt func
 void mcu_i3c1_intr_handler(void) {
+    uint32_t intr_status;
+
     cpu_info("[INT]mcu_i3c1_intr            hit\n");
     send_label(Ext_MCU_I3C1_INTR_IRQn             );
     wait(100);
+    intr_status = read32(MCU_SUB_I3C1_BASE_ADDR + INTR_STATUS);
+    cpu_info("==i3c1 intr status before clear :0x%x==\n", intr_status);
     cpu_info("==[Hurydebug1104]READ FX FIFO DATA==\n");
 
     if(int_flg==0){
@@ -28,6 +34,9 @@ void mcu_i3c1_intr_handler(void) {
       cpu_info("==rx fifo data2 :0x%x==\n",rx_data2);
 
     }
+   write32(MCU_SUB_I3C1_BASE_ADDR + INTR_STATUS, I3C_RX_INTR_MASK);
+   intr_status = read32(MCU_SUB_I3C1_BASE_ADDR + INTR_STATUS);
+   cpu_info("==i3c1 intr status after clear :0x%x==\n", intr_status);
    int_flg++;
 }
 
@@ -66,6 +75,8 @@ int main(void)
     write32(MCU_SUB_I3C1_BASE_ADDR + DATA_BUFFER_THLD_CTRL ,rdata & 0XFFFFF8FF);
     //1.2 set slave
     write32(MCU_SUB_I3C1_BASE_ADDR + DEVICE_CTRL_EXTENDED ,0X1);
+    // clear stale RX interrupt status before enabling signal
+    write32(MCU_SUB_I3C1_BASE_ADDR + INTR_STATUS, I3C_RX_INTR_MASK);
     //2. enable intr
     write32(MCU_SUB_I3C1_BASE_ADDR + INTR_STATUS_EN ,0xFFFF);
     write32(MCU_SUB_I3C1_BASE_ADDR + INTR_SIGNAL_EN ,0x2);
