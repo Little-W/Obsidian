@@ -89,8 +89,8 @@ int main(void)
     write32(MCU_SUB_I3C1_BASE_ADDR + DEVICE_CTRL ,rdata  | 0x80000000);
 
     //iomux
-    iomux_mcu1_cfg(70, 0);//uart0 tX
-    iomux_mcu1_cfg(71, 0);//uart0 rx
+    iomux_mcu1_cfg(70, 0);//i3c1 first mux scl
+    iomux_mcu1_cfg(71, 0);//i3c1 first mux sda
     iomux_mcu1_cfg(72, 1);//i3c1 second mux scl
     iomux_mcu1_cfg(73, 1);//i3c1 second mux sda
 
