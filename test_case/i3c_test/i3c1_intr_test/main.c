@@ -91,6 +91,8 @@ int main(void)
     //iomux
     iomux_mcu1_cfg(70, 0);//uart0 tX
     iomux_mcu1_cfg(71, 0);//uart0 rx
+    iomux_mcu1_cfg(72, 1);//i3c1 second mux scl
+    iomux_mcu1_cfg(73, 1);//i3c1 second mux sda
 
     send_label(0x12345678);
 

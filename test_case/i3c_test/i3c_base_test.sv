@@ -324,10 +324,16 @@ class i3c_base_test extends chip_noc_base_test;
       if(m_i3c_intf.i3c_num_ctrl ==0)begin
         iomux_mcu0_cfg(16, 0, 0);
         iomux_mcu0_cfg(17, 0, 0);
+        // Enable the alternate I3C0 mux path as well for mux setting checks.
+        iomux_mcu0_cfg(36, 1, 0);
+        iomux_mcu0_cfg(37, 1, 0);
       end
       if(m_i3c_intf.i3c_num_ctrl ==1)begin
         iomux_mcu1_cfg(70, 0, 0);
         iomux_mcu1_cfg(71, 0, 0);
+        // Enable the alternate I3C1 mux path as well for mux setting checks.
+        iomux_mcu1_cfg(72, 1, 0);
+        iomux_mcu1_cfg(73, 1, 0);
       end
       // i3c0 pad
       if(m_i3c_intf.i3c_num_ctrl ==2)begin
