@@ -66,7 +66,7 @@ task i3c1_trans_txfifo_to_mem_withdma_test::main_phase(uvm_phase phase);
     i3c_set_daa_cmd(1,1);
     
     //dma cfg
-    i3c_dma_write_config(`MCU_SUB_SRAM_BASE_ADDR+32'h4000, `I3C1_BASE+`TX_DATA_PORT,7'h0,0,0);
+    i3c_dma_write_config(`MCU_SUB_SRAM_BASE_ADDR+32'h4000, `I3C1_BASE+`TX_DATA_PORT,7'h0,1,1);
 
     //5.set transfer arg [@--0:i3c_num 1:data_lenth --@]
    noc_reg_read(`I3C1_BASE+`INTR_STATUS, rdata);
@@ -74,7 +74,7 @@ task i3c1_trans_txfifo_to_mem_withdma_test::main_phase(uvm_phase phase);
         noc_reg_read(`I3C1_BASE+`INTR_STATUS, rdata);
     end
     
-    i3c_set_transfer_arg(1,4);
+    i3c_set_transfer_arg(1,8);
 
    //5.1
    noc_reg_read(`I3C1_BASE+`INTR_STATUS, rdata);

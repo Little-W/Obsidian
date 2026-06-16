@@ -1017,7 +1017,7 @@ endtask
                                dst_addr == local::dst_addr;
                                sinc == 1'b0; // 1: Fixed Addr
                                dinc == 1'b1;
-                               block_ts == 'h2;
+                               block_ts == 'h1; // 2 x 32-bit beats for current TX DMA data list
                                src_tr_width == 3'h2;//0 : 8bit  1 : 16bit  2 : 32bit   3 : 64bit
                                dst_tr_width == 3'h2;//0 : 8bit  1 : 16bit  2 : 32bit   3 : 64bit
                                src_msize == 4'h1;//source burst transaction total length
