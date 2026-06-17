@@ -176,7 +176,401 @@ $$
 
 ![通道切分与分块排布局示意](https://ncnkvwuxka57.feishu.cn/space/api/box/stream/download/asynccode/?code=NDlkODZiMTE1OTRiMmRiZjkxMGUyMTczZGYyMWZkM2JfUWF2OExKNGl1N0FYb2VFSThYeWJscE93Y1ZqZjU4SDlfVG9rZW46V3hDdmJXdUVmb2VkdHB4MXh2RGNZcTRZbldoXzE3NzU3MTk2MTE6MTc3NTcyMzIxMV9WNA)
 
-### 3.4 验证建议：先数学映射，后代码实现
+### 3.4 DMA 视角下的 `NSliceHWC32` 内存排布
+
+DMA spec 中提到 DMA 可以将一个一至五维的 `NSliceHWC32` Tensor 从 `src memory` 搬到 `dst memory`。这里的重点是：DMA 不理解“图片”“token”“特征图”这些高级语义，它看到的是描述符给出的源地址、目的地址、形状、步长和 layout，然后按地址映射规则发起读写。
+
+`NSliceHWC32` 可以理解为把逻辑通道维 `C` 按 32 个元素一组切块：
+
+- `N`：batch 或更外层样本维。
+- `Slice`：通道块编号，通常为 `ceil(C / 32)`。
+- `H`：高度或行方向。
+- `W`：宽度或列方向。
+- `C32`：每个通道块内部的 32 个通道，最内层连续存放。
+
+用箭头表达就是：
+
+```text
+n -> slice -> h -> w -> c32
+```
+
+因此逻辑元素 `x[n, c, h, w]` 在 `NSliceHWC32` 中需要先拆通道：
+
+```text
+slice = c / 32
+c32   = c % 32
+```
+
+设元素大小为 `elem_bytes`，`S = ceil(C / 32)`，则连续紧凑排布时，线性偏移为：
+
+```text
+offset_elem = ((((n * S + slice) * H + h) * W + w) * 32 + c32)
+addr        = base_addr + offset_elem * elem_bytes
+```
+
+这个公式比“看起来是五维张量”更重要。验证 DMA 时，本质上就是检查 RTL 是否按这个公式从源空间读出，并按目的 layout 的公式写入目标空间。
+
+#### 例 1：`C=64`，没有尾块 padding
+
+假设一个激活张量：
+
+```text
+N = 1
+C = 64
+H = 2
+W = 3
+elem_bytes = 1  // int8
+base_addr = 0x1000
+S = C / 32 = 2
+```
+
+物理排布顺序是：
+
+```text
+n0 slice0 h0 w0 c0..c31
+n0 slice0 h0 w1 c0..c31
+n0 slice0 h0 w2 c0..c31
+n0 slice0 h1 w0 c0..c31
+n0 slice0 h1 w1 c0..c31
+n0 slice0 h1 w2 c0..c31
+n0 slice1 h0 w0 c32..c63
+...
+```
+
+几个具体元素地址：
+
+| 逻辑元素 | `slice` | `c32` | `offset_elem` | 地址 |
+|---|---:|---:|---:|---:|
+| `x[0, 0, 0, 0]` | 0 | 0 | 0 | `0x1000` |
+| `x[0, 31, 0, 0]` | 0 | 31 | 31 | `0x101f` |
+| `x[0, 0, 0, 1]` | 0 | 0 | 32 | `0x1020` |
+| `x[0, 0, 1, 0]` | 0 | 0 | 96 | `0x1060` |
+| `x[0, 32, 0, 0]` | 1 | 0 | 192 | `0x10c0` |
+| `x[0, 63, 1, 2]` | 1 | 31 | 383 | `0x117f` |
+
+注意 `x[0, 32, 0, 0]` 并不是紧跟在 `x[0, 31, 0, 0]` 后面。因为 layout 是 `slice -> h -> w -> c32`，所以硬件会先把 `slice0` 的所有 `H*W` 位置放完，再进入 `slice1`。
+
+#### 例 2：`C=48`，最后一个 slice 有 padding
+
+假设：
+
+```text
+N = 1
+C = 48
+H = 1
+W = 2
+elem_bytes = 1
+base_addr = 0x2000
+S = ceil(48 / 32) = 2
+```
+
+逻辑数据量是：
+
+```text
+N * C * H * W = 1 * 48 * 1 * 2 = 96 bytes
+```
+
+但 `NSliceHWC32` 的物理占用是：
+
+```text
+N * S * H * W * 32 = 1 * 2 * 1 * 2 * 32 = 128 bytes
+```
+
+多出来的 32 bytes 是尾块 padding。具体来说，`slice1` 只包含真实通道 `c=32..47`，对应 `c32=0..15`；`c32=16..31` 是 padding，不应该参与有效计算。
+
+| 物理位置 | 含义 |
+|---|---|
+| `slice0, w0, c32=0..31` | 真实通道 `c=0..31` |
+| `slice0, w1, c32=0..31` | 真实通道 `c=0..31` |
+| `slice1, w0, c32=0..15` | 真实通道 `c=32..47` |
+| `slice1, w0, c32=16..31` | padding |
+| `slice1, w1, c32=0..15` | 真实通道 `c=32..47` |
+| `slice1, w1, c32=16..31` | padding |
+
+验证时必须同时检查两类行为：
+
+- DMA 是否搬运了按 layout 对齐后的物理区域，也就是 128 bytes。
+- 消费该数据的 Tensor/VA 是否只把 `C=48` 的真实通道作为有效数据，尾块 padding 不应影响结果。
+
+#### 例 3：`fp16` 数据的地址步长
+
+如果同样是 `N=1, C=64, H=2, W=3`，但元素类型是 `fp16`：
+
+```text
+elem_bytes = 2
+base_addr = 0x8000
+```
+
+则 `offset_elem` 不变，只是字节地址乘 2：
+
+| 逻辑元素 | `offset_elem` | 地址 |
+|---|---:|---:|
+| `x[0, 0, 0, 0]` | 0 | `0x8000` |
+| `x[0, 31, 0, 0]` | 31 | `0x803e` |
+| `x[0, 0, 0, 1]` | 32 | `0x8040` |
+| `x[0, 32, 0, 0]` | 192 | `0x8180` |
+
+这也是很多 DMA bug 的来源：描述符里如果按元素数填写长度，scoreboard 就要按元素大小换算字节；如果描述符字段本身是字节长度，就不能再乘一次 `elem_bytes`。
+
+#### 例 4：从 DDR 搬到 L1BUF 时，`src` 和 `dst` 可以是不同排布
+
+DMA 描述符通常要同时描述源 tensor 和目的 tensor。比如源 DDR 是普通 NHWC，目标 L1BUF 是 `NSliceHWC32`：
+
+```text
+src layout: n -> h -> w -> c
+dst layout: n -> slice -> h -> w -> c32
+```
+
+逻辑元素 `x[n,c,h,w]` 在源地址和目的地址的公式不同：
+
+```text
+src_offset = ((n * H + h) * W + w) * C + c
+
+slice = c / 32
+c32   = c % 32
+dst_offset = ((((n * S + slice) * H + h) * W + w) * 32 + c32)
+```
+
+以 `N=1, C=64, H=2, W=3, int8` 为例，逻辑元素 `x[0,32,0,0]`：
+
+```text
+src_offset = ((0 * 2 + 0) * 3 + 0) * 64 + 32 = 32
+dst_offset = ((((0 * 2 + 1) * 2 + 0) * 3 + 0) * 32 + 0) = 192
+```
+
+所以 DMA 可能从 `src_base + 32` 读这个元素，却写到 `dst_base + 192`。这就是“搬运”和“重排”绑定在一起时，不能只比较连续内存 dump 的原因：scoreboard 要按逻辑坐标逐元素比对。
+
+#### DMA/排布验证检查点
+
+- `Slice` 是否按 `ceil(C / 32)` 计算，而不是 `C / 32` 向下取整。
+- 最内层 `C32` 是否连续，连续 32 个元素的 byte lane 顺序是否正确。
+- `H/W` 步长是否按 `W * 32`、`H * W * 32` 推导。
+- 尾块 padding 是否被搬运、清零或保持 don't-care，需要和 spec 对齐。
+- 源 layout 与目的 layout 不同时，scoreboard 应按逻辑坐标比对，不要直接 `memcmp`。
+- 描述符中的长度单位要明确是元素数、byte 数、还是按 32B/128B 对齐后的 beat 数。
+- L1BUF 对齐约束要单独检查：即使逻辑 tensor 很小，DMA burst 也可能按硬件要求对齐到更大的边界。
+
+### 3.5 Spec Layout 表解读
+
+从 DMA spec 的 Layout 表看，DDR 和 L1BUF 的排布并不总是一致。DDR 更偏向软件/MC 侧容易生成和存放的格式；L1BUF 更偏向 Tensor/VA 计算单元容易读取的格式。因此 DMA 经常不只是“搬一段连续 bytes”，而是在搬运过程中完成 layout 变换。
+
+| 数据类型 | 场景 | DDR 排布 | L1BUF 排布 | 解读 |
+|---|---|---|---|---|
+| Activation | Conv | `NHWC` | 依赖 Conv 输入要求 | DDR 侧按常见激活格式保存，同一像素的通道连续，适合前处理/软件侧组织。 |
+| Activation | MatMul | `NHW` | `NSlice(32B)HW32` 或 `NHW(MoE, convert)` | Linear/MatMul 会把 hidden 维切成硬件喜欢的 32-lane 块。`H <= 1` 时按 Linear 排布，其余情况 padding 到 `H16`。 |
+| Weight | Conv | `NSlice(32B)WH32` | `NSlice(32B)WH32` | 权重在 DDR 中已经按硬件计算格式离线排好，DMA 主要负责搬运。 |
+| Weight | MatMul | `NSlice(32B)WH32` | `NSlice(32B)WH32` | Linear 权重同样采用硬件友好格式，备注里的“Linear 传输，只读”可理解为该路径主要面向权重只读搬入。 |
+| KV Cache | Transpose | `NHW` | `NSlice(32B)HW32` | 需要转置。当前 DDR 受 MC 限制，KV cache 暂按 `NHW` 放置，搬入 L1BUF 时转成硬件计算格式。 |
+| KV Cache | Normal | `NHW` | `NSlice(32B)WH32` | 不做 transpose 语义时，仍按 L1BUF 中 weight 类格式摆放。 |
+
+这里可以把几种 layout 名字拆开看：
+
+- `NHWC`：`n -> h -> w -> c`，通道 `c` 最内层连续。
+- `NHW`：`n -> h -> w`，常用于把最后一维隐含为 hidden/head 内的连续向量，表格中 MatMul/KV cache 都把它作为 DDR 侧简化表示。
+- `NSlice(32B)HW32`：`n -> slice -> h -> w -> lane32`，适合按 H/W 空间位置读取，每个位置内有 32 路/lane 的连续小块。
+- `NSlice(32B)WH32`：`n -> slice -> w -> h -> lane32`，只是 `H` 和 `W` 的内外顺序对调，更贴近 weight 或某些矩阵乘访问方向。
+
+`NSlice(32B)HW32` 和 `NSlice(32B)WH32` 的核心差别不是有没有切块，而是中间两维谁更连续：
+
+```text
+NSlice(32B)HW32: n -> slice -> h -> w -> lane32
+NSlice(32B)WH32: n -> slice -> w -> h -> lane32
+```
+
+如果用连续紧凑排布近似，二者的地址公式可以写成：
+
+```text
+// HW32
+offset_hw32 = ((((n * S + slice) * H + h) * W + w) * 32 + lane)
+
+// WH32
+offset_wh32 = ((((n * S + slice) * W + w) * H + h) * 32 + lane)
+```
+
+举一个小例子，设：
+
+```text
+N = 1
+S = 1
+H = 2
+W = 3
+lane = 0
+elem_bytes = 1
+base = 0x4000
+```
+
+同一个逻辑位置 `(h=1, w=0, lane=0)`：
+
+```text
+HW32 offset = (((0 * 1 + 0) * 2 + 1) * 3 + 0) * 32 + 0 = 96
+WH32 offset = (((0 * 1 + 0) * 3 + 0) * 2 + 1) * 32 + 0 = 32
+```
+
+所以：
+
+| 排布 | 地址 |
+|---|---:|
+| `NSlice(32B)HW32` | `0x4000 + 96 = 0x4060` |
+| `NSlice(32B)WH32` | `0x4000 + 32 = 0x4020` |
+
+这说明 `HW32` 和 `WH32` 不能只看名字里都有 `32` 就当成一样。它们对 DMA 来说是完全不同的 stride 关系；如果 scoreboard 用错公式，会表现为大块数据都对不上，但每个 32-lane 小块内部看起来又像是对的。
+
+关于 `Slice(32B)` 的一个容易混淆点：`32B` 更像硬件搬运/对齐粒度提示，而末尾 `32` 更像每个块内的 lane 数。对 `int8` 来说 32 lane 刚好是 32 bytes；对 `fp16/bf16` 来说 32 lane 是 64 bytes。因此验证时不要只从 layout 字符串推断 byte 数，要回到描述符里的数据类型、元素大小、burst 对齐字段和 L1BUF bank 规则。
+
+#### Activation MatMul 的 `H16 padding`
+
+表格备注里提到：`H <= 1` 时按 Linear 排布，其余情况 padding 到 `H16`。可以这样理解：
+
+- Linear 常见输入近似是 `[N, H=1, W=hidden]` 或 `[token, hidden]`，不需要额外把 H 方向凑齐。
+- 当 `H > 1` 时，硬件可能要求 H 维按 16 对齐，以便 Tensor/VA 侧固定并行粒度读取。
+- padding 后的物理高度 `H_pad = ceil(H / 16) * 16`，真实计算仍只使用原始 `H` 范围。
+
+例子：
+
+```text
+N = 1
+H = 5
+W = 2
+lane32 = 32
+elem_bytes = 1
+H_pad = 16
+```
+
+逻辑数据量：
+
+```text
+1 * 5 * 2 * 32 = 320 bytes
+```
+
+L1BUF 物理占用：
+
+```text
+1 * 16 * 2 * 32 = 1024 bytes
+```
+
+其中 `h=5..15` 都是 H padding。验证时需要确认 DMA 是否写了 padding 区、padding 值是否有约定，以及计算模块是否正确 mask 掉 padding 区。
+
+### 3.6 KV cache 搬运解读
+
+KV cache 搬运的特殊性在于：它不是一次性搬一块普通 activation，而是围绕 attention 的历史 token 窗口反复读写，并且要跨 DDR channel 组织带宽。
+
+从 spec 描述可以整理出几个规则：
+
+- KV cache 按 `head_size` 大小均匀存储在 4 个 DDR channel 中。
+- 支持 KV cache 搬运，也支持多通道 interleave 读。
+- 支持 1/2/4 个 DDR channel 交织。
+- 支持 KV cache 量化参数搬运。
+- 支持普通搬运，即没有滑动窗口。
+- 支持 ring 搬运，即有滑动窗口，读/写地址到结束边界后回到起始地址。
+- 读写可以覆盖多个 chunk；当前需求中写只需要写一个 chunk。
+
+`head_size` 和 `interleave_num` 的关系：
+
+| `head_size` | `interleave_num` | 含义 |
+|---:|---:|---|
+| 1 | 4 | 单个 head 数据太窄，需要 4 个 DDR channel 并行交织来凑带宽。 |
+| 2 | 2 | 每个 head 稍宽，用 2 个 DDR channel 交织。 |
+| `>= 4` | 1 | 单个 head 已经足够宽，单 channel 顺序访问即可。 |
+
+一个直观理解是：`head_size` 越小，单 head 连续数据越少，DDR burst 越不容易打满，所以需要更高的 channel interleave；`head_size` 越大，单 head 自身就能形成较长连续访问，反而不需要跨太多 channel。
+
+#### 例 1：普通 KV cache 读取，没有滑动窗口
+
+假设：
+
+```text
+seq_len = 8
+head_size = 2
+interleave_num = 2
+chunk = 4 tokens
+```
+
+普通搬运读取 token `[0, 1, 2, 3]` 时，可以理解为顺序读：
+
+```text
+read token 0
+read token 1
+read token 2
+read token 3
+```
+
+如果按 2 channel interleave，逻辑上可近似理解为：
+
+```text
+channel0: token 0, token 2
+channel1: token 1, token 3
+```
+
+真实 RTL 里 channel 选择可能由地址低位、interleave 粒度和 NOC/DDR 配置共同决定，但验证模型至少要检查：同一个 chunk 的数据是否完整、顺序是否按 spec 恢复、跨 channel 返回后是否能重组成原始 token 顺序。
+
+#### 例 2：ring 搬运，有滑动窗口
+
+ring 搬运用于滑动窗口 KV cache。它有一个固定的环形缓存区：
+
+```text
+ring_start = 0
+ring_end   = 8    // token index 上界，采用 [start, end)
+window     = 4
+```
+
+如果当前读指针从 `6` 开始，要读 4 个 token：
+
+```text
+6, 7, 0, 1
+```
+
+因为读地址到达结束边界 `8` 后，会回到起始地址 `0` 继续读。写 ring 也是同理：写地址到结束边界后回到起始地址写入。
+
+这个场景的 scoreboard 不能简单地期望 DDR 地址单调递增，而要按 ring 规则生成 golden：
+
+```text
+next_idx = idx + 1
+if next_idx == ring_end:
+    next_idx = ring_start
+```
+
+#### 例 3：写一个 chunk，读多个 chunk
+
+当前需求是“写只需要写一个 chunk”，但读可以读多个 chunk。可以这样理解：
+
+- 写路径：通常是当前 step 新生成的 K/V，只追加一个新 token 或一小段 token，所以写一个 chunk 足够。
+- 读路径：attention 需要读取历史窗口内多个 token，可能跨多个 chunk，尤其在 ring 场景中还可能跨 ring 边界。
+
+假设：
+
+```text
+chunk_size = 4 tokens
+read_start = 6
+read_len = 10
+ring range = [0, 16)
+```
+
+读取序列是：
+
+```text
+6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+```
+
+如果 `read_start = 12, read_len = 10`：
+
+```text
+12, 13, 14, 15, 0, 1, 2, 3, 4, 5
+```
+
+这类 case 很适合验证 ring 边界：一个 case 覆盖不回绕，一个 case 覆盖读回绕，一个 case 覆盖写回绕，一个 case 覆盖读写同时接近边界。
+
+#### KV cache 搬运验证检查点
+
+- `head_size` 到 `interleave_num` 的映射是否正确：`1 -> 4`、`2 -> 2`、`>=4 -> 1`。
+- 4 个 DDR channel 中 KV cache 是否按 `head_size` 粒度均匀分布。
+- 普通搬运时地址是否线性递增，chunk 边界是否正确。
+- ring 搬运时读地址和写地址是否在结束边界回绕到起始地址。
+- 读多个 chunk 时，跨 chunk 的数据顺序是否和逻辑 token 顺序一致。
+- 写一个 chunk 时，是否只更新目标 chunk，没有覆盖相邻 chunk。
+- KV cache 量化参数是否和对应 K/V 数据使用同一套 head/token 索引规则，避免参数和数据错位。
+- DDR `NHW` 到 L1BUF `NSlice(32B)HW32/WH32` 的转换是否和 transpose/normal 模式一致。
+
+### 3.7 验证建议：先数学映射，后代码实现
 
 先写映射关系，再写 C/SV/PyTorch 实现，可显著降低重排类 bug 定位成本。
 
