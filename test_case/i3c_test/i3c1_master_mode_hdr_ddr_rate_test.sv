@@ -31,6 +31,7 @@ task i3c1_master_mode_hdr_ddr_rate_test::main_phase(uvm_phase phase);
     bit[31:0] wdata ;
     bit[31:0] rdata ;
     bit[7:0] tx_data_q[$];
+    bit[7:0] exp_data_q[$];
     bit [6:0] dev_addr = 7'h63;
     phase.raise_objection(this);
     super.main_phase(phase);
@@ -58,11 +59,32 @@ task i3c1_master_mode_hdr_ddr_rate_test::main_phase(uvm_phase phase);
         noc_reg_read(`I3C1_BASE+`INTR_STATUS, rdata);
     end
     //6.set transfer command  ( 0:i3c_num, 1:bit[2:0] speed, 2:bit iscp, 3:bit[7:0] cmd, 4: bit isshortarg, 5: bit isread, 6:tid, 7:is sstop)
-    i3c_set_transfer_cmd(1,6,1,'h20,0,0,2,1);//speed:hdr_ddr:6
+    exp_data_q.push_back(8'h5a);
+    exp_data_q.push_back(8'h5a);
+    exp_data_q.push_back(8'h5a);
+    exp_data_q.push_back(8'h5a);
 
-    //7.write data to txffifo
-    // @@@### 0: i3c_num, 1:data_lenth, 2:tx_thld ###
-    i3c_wirte_data_to_txfifo(1, 1, 1, tx_data_q);  
+    fork
+      begin
+        i3c_check_hdr_slave_payload(1, exp_data_q, 20us);
+      end
+      begin
+        i3c_set_transfer_cmd(1,6,1,'h20,0,0,2,1);//speed:hdr_ddr:6
+
+        //7.write data to txffifo
+        // @@@### 0: i3c_num, 1:data_lenth, 2:tx_thld ###
+        i3c_wirte_data_to_txfifo(1, 1, 1, tx_data_q);
+      end
+    join
+
+    if(tx_data_q.size() != exp_data_q.size()) begin
+        `uvm_error(get_type_name(), $sformatf("[I3C_HDR_CHECK] tx_data_q size mismatch: act=%0d exp=%0d", tx_data_q.size(), exp_data_q.size()))
+    end
+    foreach(exp_data_q[i]) begin
+        if((i < tx_data_q.size()) && (tx_data_q[i] != exp_data_q[i])) begin
+            `uvm_error(get_type_name(), $sformatf("[I3C_HDR_CHECK] tx_data_q[%0d] mismatch: act=0x%02h exp=0x%02h", i, tx_data_q[i], exp_data_q[i]))
+        end
+    end
     i3c_master_txdata_to_vip_slave_pre_tr(1, dev_addr,tx_data_q);
  
     #10us;

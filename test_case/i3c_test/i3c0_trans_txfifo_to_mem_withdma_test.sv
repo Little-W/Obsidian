@@ -81,6 +81,7 @@ task i3c0_trans_txfifo_to_mem_withdma_test::main_phase(uvm_phase phase);
     end
     //6.set transfer command  ( 0:i3c_num, 1:bit[2:0] speed, 2:bit iscp, 3:bit[7:0] cmd, 4: bit isshortarg, 5: bit isread)
     i3c_set_transfer_cmd(0,0,0,0,0,0,2,1);//speed:sdr0:0
+    i3c_check_tx_response(0, 4'h2, tx_data_q.size());
       
     //@0:slave_num
     i3c_master_txdata_to_vip_slave_pre_tr(1, dev_addr,tx_data_q);

@@ -72,6 +72,8 @@ class i3c_base_test extends chip_noc_base_test;
   extern virtual task i3c_set_transfer_arg(input bit i3c_num, input bit[15:0] data_len);
   extern virtual task i3c_set_transfer_cmd(input bit i3c_num, input bit[2:0] speed, input bit iscp, input bit[7:0] cmd,input bit isshortarg, input bit isread, input bit[3:0]tr_id, input bit isstop);
   extern virtual task i3c_check_resp_status(input bit i3c_num, output bit[31:0] rdata);
+  extern virtual task i3c_check_tx_response(input bit i3c_num, input bit[3:0] exp_tr_id, input bit[15:0] exp_data_len);
+  extern virtual task i3c_check_hdr_slave_payload(input int slave_num, input bit[7:0] exp_data_q[$], input time timeout_time);
   extern virtual task i3c_wirte_data_to_txfifo(input bit i3c_num, input int data_lenth, input int tx_thld,output bit[7:0] tx_data_q[$]);
   extern virtual task i3c_read_data_from_rxfifo(input bit i3c_num, input int data_lenth, input int rx_thld, output bit[7:0] rx_data_q[$]);
   extern virtual task i3c_slave_rxdata_to_vip_master_post_tr(input bit i3c_num, input bit[7:0] rx_data_q[$]);
@@ -602,6 +604,140 @@ task i3c_base_test::i3c_check_resp_status(input bit i3c_num, output bit[31:0] rd
     end
     noc_reg_read(i3c_baddr+`RESPONSE_QUEUE_PORT, rdata);
 
+endtask
+//----------------------------------------------------------------------------
+task i3c_base_test::i3c_check_hdr_slave_payload(input int slave_num, input bit[7:0] exp_data_q[$], input time timeout_time);
+    string ready_path;
+    string ready_ack_path;
+    string data_path;
+    string hdr_byte_count_path;
+    string observed_str;
+    logic ready;
+    logic prev_ready;
+    logic ready_ack;
+    logic prev_ready_ack;
+    logic[7:0] data;
+    logic[7:0] hdr_byte_count;
+    bit has_ready_ack;
+    bit has_hdr_byte_count;
+    int match_idx;
+    int ready_count;
+    int ack_count;
+    time end_time;
+
+    ready_path = $sformatf("hvl_top.Slave%0d.if_port.scrbrd_slave_data_ready", slave_num);
+    ready_ack_path = $sformatf("hvl_top.Slave%0d.if_port.scrbrd_slave_data_ready_ack", slave_num);
+    data_path  = $sformatf("hvl_top.Slave%0d.if_port.scrbrd_slave_data[7:0]", slave_num);
+    hdr_byte_count_path = $sformatf("hvl_top.Slave%0d.if_port.mon_hdr_bt_byte_rcvd[7:0]", slave_num);
+
+    if(exp_data_q.size() == 0) begin
+        `uvm_error(get_type_name(), $sformatf("[I3C_HDR_CHECK] empty expected payload for Slave%0d", slave_num))
+        return;
+    end
+
+    if(!uvm_hdl_read(ready_path, ready)) begin
+        `uvm_error(get_type_name(), $sformatf("[I3C_HDR_CHECK] cannot read %s", ready_path))
+        return;
+    end
+
+    prev_ready = ready;
+    has_ready_ack = uvm_hdl_read(ready_ack_path, ready_ack);
+    prev_ready_ack = ready_ack;
+    has_hdr_byte_count = uvm_hdl_read(hdr_byte_count_path, hdr_byte_count);
+    match_idx = 0;
+    ready_count = 0;
+    ack_count = 0;
+    observed_str = "";
+    end_time = $time + timeout_time;
+
+    while(($time < end_time) && (match_idx < exp_data_q.size())) begin
+        #1ns;
+        if(!uvm_hdl_read(ready_path, ready)) begin
+            `uvm_error(get_type_name(), $sformatf("[I3C_HDR_CHECK] cannot read %s", ready_path))
+            return;
+        end
+
+        if(has_ready_ack) begin
+            if(!uvm_hdl_read(ready_ack_path, ready_ack)) begin
+                has_ready_ack = 0;
+            end
+            else if((ready_ack === 1'b1) && (prev_ready_ack !== 1'b1)) begin
+                ack_count++;
+            end
+        end
+
+        if((ready === 1'b1) && (prev_ready !== 1'b1)) begin
+            if(!uvm_hdl_read(data_path, data)) begin
+                `uvm_error(get_type_name(), $sformatf("[I3C_HDR_CHECK] cannot read %s", data_path))
+                return;
+            end
+
+            ready_count++;
+            observed_str = $sformatf("%s 0x%02h", observed_str, data);
+            `uvm_info(get_type_name(), $sformatf("[I3C_HDR_CHECK] Slave%0d ready_count=%0d observed=0x%02h", slave_num, ready_count, data), UVM_LOW)
+
+            if(data == exp_data_q[match_idx]) begin
+                match_idx++;
+            end
+            else if(data == exp_data_q[0]) begin
+                match_idx = 1;
+            end
+            else begin
+                match_idx = 0;
+            end
+        end
+
+        prev_ready = ready;
+        prev_ready_ack = ready_ack;
+    end
+
+    if(has_hdr_byte_count) begin
+        if(uvm_hdl_read(hdr_byte_count_path, hdr_byte_count)) begin
+            `uvm_info(get_type_name(), $sformatf("[I3C_HDR_CHECK] Slave%0d hdr_byte_count=%0d ready_count=%0d ready_ack_count=%0d", slave_num, hdr_byte_count, ready_count, ack_count), UVM_LOW)
+            if(!$isunknown(hdr_byte_count) && (hdr_byte_count < exp_data_q.size())) begin
+                `uvm_error(get_type_name(), $sformatf("[I3C_HDR_CHECK] Slave%0d HDR byte count too small: act=%0d exp>=%0d", slave_num, hdr_byte_count, exp_data_q.size()))
+            end
+        end
+    end
+
+    if(match_idx != exp_data_q.size()) begin
+        `uvm_error(get_type_name(), $sformatf("[I3C_HDR_CHECK] Slave%0d payload mismatch: matched %0d/%0d expected bytes, ready_count=%0d ready_ack_count=%0d observed:%s", slave_num, match_idx, exp_data_q.size(), ready_count, ack_count, observed_str))
+    end
+    else begin
+        `uvm_info(get_type_name(), $sformatf("[I3C_HDR_CHECK] Slave%0d payload check pass, ready_count=%0d ready_ack_count=%0d observed:%s", slave_num, ready_count, ack_count, observed_str), UVM_LOW)
+    end
+endtask
+//----------------------------------------------------------------------------
+task i3c_base_test::i3c_check_tx_response(input bit i3c_num, input bit[3:0] exp_tr_id, input bit[15:0] exp_data_len);
+    bit[31:0] i3c_baddr;
+    bit[31:0] intr_status;
+    bit[31:0] resp_data;
+    bit[31:0] queue_level;
+    bit[31:0] data_level;
+
+    if(i3c_num)
+        i3c_baddr=`I3C1_BASE;
+    else
+        i3c_baddr=`I3C0_BASE;
+
+    noc_reg_read(i3c_baddr+`INTR_STATUS, intr_status);
+    while(intr_status[4] != 1'b1) begin
+        noc_reg_read(i3c_baddr+`INTR_STATUS, intr_status);
+    end
+
+    noc_reg_read(i3c_baddr+`RESPONSE_QUEUE_PORT, resp_data);
+    noc_reg_read(i3c_baddr+`QUEUE_STATUS_LEVEL, queue_level);
+    noc_reg_read(i3c_baddr+`DATA_BUFFER_STATUS_LEVEL, data_level);
+
+    if(resp_data[31:28] != 4'h0) begin
+        `uvm_error(get_type_name(), $sformatf("[I3C_TX_CHECK] response error: i3c%0d resp=0x%0h exp_tr_id=0x%0h exp_len=%0d", i3c_num, resp_data, exp_tr_id, exp_data_len))
+    end
+
+    if(resp_data[27:24] != exp_tr_id) begin
+        `uvm_error(get_type_name(), $sformatf("[I3C_TX_CHECK] response tr_id mismatch: i3c%0d resp=0x%0h act_tr_id=0x%0h exp_tr_id=0x%0h", i3c_num, resp_data, resp_data[27:24], exp_tr_id))
+    end
+
+    `uvm_info(get_type_name(), $sformatf("[I3C_TX_CHECK] i3c%0d tx done: resp=0x%0h exp_len=%0d queue_level=0x%0h data_level=0x%0h", i3c_num, resp_data, exp_data_len, queue_level, data_level), UVM_LOW)
 endtask
 //----------------------------------------------------------------------------
  task i3c_base_test::i3c_wirte_data_to_txfifo(input bit i3c_num, input int data_lenth, input int tx_thld, output bit[7:0] tx_data_q[$]);
