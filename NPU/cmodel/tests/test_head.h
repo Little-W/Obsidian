@@ -1,0 +1,31 @@
+#include "booth_multiply.h"
+#include "cmodel.h"
+#include "conv_func.h"
+#include "conv_subcmd_func.h"
+#include "dop_ops.h"
+#include "dop_utils.h"
+#include "matrix_struct.h"
+#include "sfu_exp.h"
+#include "sfu_sincos.h"
+#include "sfu_sqrt_rcp.h"
+#include "sfu_tanh.h"
+#include "sm_data_struct.h"
+#include "softfloat.h"
+#include "tb_fp4.h"
+#include "test_common_vae.h"
+#include "test_common_vae_neo.h"
+#include "test_compare_ci.h"
+#include "unit_test_dop.h"
+#include "vae_common.h"
+#include "tb_fp32_to_f8_1.h"
+#include "test_framework.h"
+
+void test_softfp();
+void test_dop();
+void test_matmul();
+void test_pproc();
+void test_data_convert();
+void test_sfu(uint8_t opcode = 0);
+void test_vae();
+void test_conv_subcmd();
+bool test_conv();

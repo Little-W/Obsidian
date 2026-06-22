@@ -1,0 +1,67 @@
+project:
+  name: cmodel                
+  description: ZC AI Core CMODEL Coverage Test
+
+# Adapt to 4 compilers: system_gcc/system_clang/riscv_gcc/riscv_clang
+language:
+  c_cpp:
+    enabled: true
+    project_path: ../                
+    coverage_data_dir: "./coverage_data"
+    # Compiler type (system_gcc / system_clang / riscv_gcc / riscv_clang)
+    compiler_type: "system_gcc"            
+
+    # Support multiple paths for cross-compiler (will try in order)
+    compiler_mapping:
+      system_gcc: ["g++"] 
+      system_clang: ["clang++"]
+      riscv_gcc: [
+        "/workspace/nuclei/gcc/bin/riscv64-unknown-elf-g++",
+        "/data/nuclei/gcc/bin/riscv64-unknown-elf-g++"
+      ]
+      riscv_clang: [
+        "/workspace/nuclei/gcc/bin/riscv64-unknown-elf-clang++",
+        "/data/nuclei/gcc/bin/riscv64-unknown-elf-clang++"
+      ]
+
+    # Support multiple paths for coverage tools (will try in order)
+    cov_tool_mapping:
+      system_gcc: ["gcov"]                                         
+      system_clang: ["llvm-cov gcov"]                               
+      riscv_gcc: [
+        "/workspace/nuclei/gcc/bin/riscv64-unknown-elf-gcov",
+        "/data/nuclei/gcc/bin/riscv64-unknown-elf-gcov"
+      ]
+      riscv_clang: [
+        "/workspace/nuclei/gcc/bin/riscv64-unknown-elf-llvm-cov gcov",
+        "/data/nuclei/gcc/bin/riscv64-unknown-elf-llvm-cov gcov"
+      ]
+
+    # clean_command: make -C ../ distclean && rm -rf ../*.gcda ../*.gcno ../coverage.info
+    # source_paths: ["../sm_model_common", "../sm_matrix", "../sm_sfu", "../sm_vae", "../sm_export"]
+    # test_paths: ["../tests"]  
+    coverage_tool: gcov+lcov+genhtml
+    report_type: html
+    report_dir: coverage_reports/c_cpp  
+    ignore_paths: ["../softfloat", "../build", "../bin", "../lint-report", "../.git", "../venv", "../temp", "/usr/include/*"]
+    thresholds:                    
+      line: 10       
+      branch: 10     
+      function: 10   
+
+  python:
+    enabled: false  
+    project_path: ../  
+    test_command: python3 -m coverage run -m pytest ../tests/python/ -v --tb=short
+    source_paths: ["../python_src", "../scripts"]  
+    coverage_tool: coverage.py  
+    report_type: html  
+    report_dir: coverage_reports/python  
+    thresholds:
+      line: 75  
+
+global:
+  clean_before_run: true
+  verbose: true
+  ignore_paths: [".git/", ".log", "temp/", "../venv/*"]  
+  fail_on_threshold: true  

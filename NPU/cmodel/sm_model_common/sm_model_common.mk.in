@@ -1,0 +1,16 @@
+sm_model_common_subproject_deps = softfloat
+
+sm_model_common_srcs = \
+    operators_state.cc
+
+
+sm_model_common_install_shared_lib = yes
+
+sm_model_common_test_srcs =
+
+sm_model_common_install_hdrs = \
+    sm_data_struct.h \
+    matrix_opcode.h \
+    sm_datatype_utils.h \
+    pproc_opcode.h \
+    matrix_struct.h
