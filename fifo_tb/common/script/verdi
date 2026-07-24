@@ -1,1 +1,0 @@
-verdi -sv -f ../vcs_com/rtl.f -f ../vcs_com/verif.f -top fifo_tb &

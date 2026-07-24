@@ -1,1 +1,0 @@
-+SIM+ +UVM_TESTNAME=i2c_smoke_test +SEQ=i2c_data_nack_seq +I2C_TARGET_ADDR=55 +I2C_SLAVE_TYPE=generic +I2C_SPEED_MODE=standard

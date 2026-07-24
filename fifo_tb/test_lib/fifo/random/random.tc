@@ -1,1 +1,0 @@
-+UVM_TESTNAME=fifo_smoke_test +SEQ=fifo_random_seq +ITEM_NUM=200
