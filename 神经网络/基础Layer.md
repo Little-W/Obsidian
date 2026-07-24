@@ -181,9 +181,9 @@ print(bilinear(a, b).shape)  # (5, 2)
 | `Tanh` | $(e^{2x}-1)/(e^{2x}+1)$ | 输出位于 $(-1,1)$ |
 | `LogSigmoid` | $\log\sigma(x)$ | 对数概率形式更稳定 |
 | `Softplus(\beta,t)` | $\log(1+e^{\beta x})/\beta$ | 当 $\beta x>t$ 时直接取 $x$ |
-| `Softsign` | $x/(1+|x|)$ | 输出位于 $(-1,1)$ |
+| `Softsign` | $x/(1+\operatorname{abs}(x))$ | 输出位于 $(-1,1)$ |
 | `Softshrink(\lambda)` | $x-\lambda$（$x>\lambda$）；$x+\lambda$（$x<-\lambda$）；否则 $0$ | 软阈值稀疏化 |
-| `Hardshrink(\lambda)` | $x$（$|x|>\lambda$），否则 $0$ | 硬阈值稀疏化 |
+| `Hardshrink(\lambda)` | $x$（$\operatorname{abs}(x)>\lambda$），否则 $0$ | 硬阈值稀疏化 |
 | `Tanhshrink` | $x-\tanh(x)$ | 平滑收缩函数 |
 
 `GELU` 的常用快速近似为：
