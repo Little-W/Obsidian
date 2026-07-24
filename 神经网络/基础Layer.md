@@ -52,6 +52,17 @@ with torch.inference_mode():
 | 序列与注意力 | `Embedding`、`EmbeddingBag`、RNN/GRU/LSTM 及 Cell、Multi-Head Attention、Transformer 家族 |
 | 损失与度量 | 回归、分类、概率分布、排序、度量学习损失，以及 `CosineSimilarity`、`PairwiseDistance`、`AdaptiveLogSoftmaxWithLoss` |
 
+### 1.4 阅读复杂层的通用方法
+
+复杂层第一次看不懂通常不是公式本身太难，而是没有同时看清“输入怎么分块、每一块做了什么、结果放到哪里”。阅读下文的复杂层时，按下面四步检查：
+
+1. **先写形状**：例如图像写成 `(N,C,H,W)`，序列写成 `(N,S,E)`。先确定哪个维度是批、通道、空间位置或时间位置。
+2. **取一个最小例子**：把大张量缩成一个通道、两三个位置，手工列出本层实际读取的数。
+3. **逐步计算一个输出元素**：卷积看一个窗口，Softmax 看一行，LSTM 看一个时间步，注意力看一个 Query。
+4. **检查结果形状和数据去向**：有的层只改数值，有的层改尺寸，有的层会把局部块展开成列，有的层会把列累加回平面。
+
+本文在卷积、归一化、池化、`Unfold/Fold`、`EmbeddingBag`、LSTM、注意力和分类损失处补充了小型手算例子。它们都刻意使用小整数或两三个 token；理解过程后，再把同一规则扩展到真实形状即可。
+
 ---
 
 ## 2. 组织网络与调整形状
@@ -296,7 +307,7 @@ bn.eval(); y_eval = bn(images)
 ### 4.3 InstanceNorm、GroupNorm、LayerNorm 与 LRN
 
 | 模块 | 统计量的计算范围 | 仿射参数形状 | 适用情况 |
-| --- | --- | --- |
+| --- | --- | --- | --- |
 | `InstanceNorm1d/2d/3d` | 每个样本、每个通道的空间位置 | 每通道（`affine=True` 时） | 图像风格相关任务、样本间统计差异较大时 |
 | `GroupNorm(G,C)` | 每个样本内，每组 $C/G$ 个通道及其空间位置 | 每通道 | 小批大小也稳定；`G=C` 类似 InstanceNorm，`G=1` 类似 LayerNorm |
 | `LayerNorm(normalized_shape)` | 每个样本最后若干维 | 与 `normalized_shape` 相同 | Transformer、MLP |
@@ -318,9 +329,90 @@ print(ln(tokens).shape)                     # (2, 5, 8)
 print(gn(torch.randn(2, 4, 6, 6)).shape)    # (2, 4, 6, 6)
 ```
 
+#### 手算：BatchNorm 与 LayerNorm 到底在对哪些数求统计量
+
+先忽略 `epsilon`，并取 `gamma=1`、`beta=0`。输入只有两个样本、两个特征：
+
+$$
+x=
+\begin{bmatrix}
+1 & 3\\
+5 & 7
+\end{bmatrix}.
+$$
+
+对 `BatchNorm1d(2)`，每一列代表一个特征通道，统计量跨样本计算：
+
+$$
+\mu=[3,5],\qquad v=[4,4].
+$$
+
+所以输出近似为：
+
+$$
+\begin{bmatrix}
+(1-3)/2 & (3-5)/2\\
+(5-3)/2 & (7-5)/2
+\end{bmatrix}
+=
+\begin{bmatrix}
+-1 & -1\\
+1 & 1
+\end{bmatrix}.
+$$
+
+对 `LayerNorm(2)`，每一行是一个样本，统计量在该样本的最后一维中计算。第一行的均值为 $2$、方差为 $1$；第二行的均值为 $6$、方差为 $1$，所以输出近似为：
+
+$$
+\begin{bmatrix}
+-1 & 1\\
+-1 & 1
+\end{bmatrix}.
+$$
+
+也就是说，BatchNorm 的同一通道会比较不同样本，LayerNorm 的同一个样本会比较自己的各个特征。下面代码可直接看到近似结果：
+
+```python
+x_small = torch.tensor([[1., 3.], [5., 7.]])
+bn_small = nn.BatchNorm1d(2, affine=False, track_running_stats=False)
+ln_small = nn.LayerNorm(2, elementwise_affine=False)
+bn_small.train()
+print(bn_small(x_small))  # 约为 [[-1, -1], [1, 1]]
+print(ln_small(x_small))  # 约为 [[-1,  1], [-1, 1]]
+```
+
+#### 同一张小图中，InstanceNorm 与 GroupNorm 分别统计哪些数
+
+再取两个样本、两个通道，每个通道有两个空间位置：
+
+$$
+\text{样本 0:}\quad
+\begin{cases}
+\text{通道 0}=[1,3]\\
+\text{通道 1}=[5,7]
+\end{cases}
+\qquad
+\text{样本 1:}\quad
+\begin{cases}
+\text{通道 0}=[2,4]\\
+\text{通道 1}=[6,8].
+\end{cases}
+$$
+
+下表只列出“样本 0、通道 0”相关的统计范围：
+
+| 层 | 用于统计均值、方差的数 | 均值 |
+| --- | --- | ---: |
+| `BatchNorm2d(2)` 的通道 0 | $[1,3,2,4]$ | $2.5$ |
+| `InstanceNorm2d(2)` 的样本 0、通道 0 | $[1,3]$ | $2$ |
+| `GroupNorm(2,2)` 的样本 0、第 0 组 | $[1,3]$ | $2$ |
+| `GroupNorm(1,2)` 的样本 0 | $[1,3,5,7]$ | $4$ |
+
+因此，`GroupNorm(2,2)` 在这个形状下每组只有一个通道，统计范围与 InstanceNorm 相同；`GroupNorm(1,2)` 把两个通道放进同一组。`LayerNorm((2,1,2))` 对样本 0 的统计范围也是 $[1,3,5,7]$，但它的可学习参数按完整的 `(2,1,2)` 形状保存，和 GroupNorm 的每通道参数不同。
+
 `LocalResponseNorm(size, alpha, beta, k)` 的计算为：
 
-$$b_c=k+\frac{\alpha}{size}\sum_{c'\in\mathcal N(c)}x_{c'}^2,qquad
+$$b_c=k+\frac{\alpha}{size}\sum_{c'\in\mathcal N(c)}x_{c'}^2,\qquad
 y_c=\frac{x_c}{b_c^{\beta}},$$
 
 其中 $\mathcal N(c)$ 是以通道 $c$ 为中心、宽度为 `size` 的邻近通道集合。`CrossMapLRN2d` 是旧式二维 LRN 实现，现代模型通常优先使用 BatchNorm、GroupNorm 或 LayerNorm。
@@ -353,6 +445,55 @@ x = torch.randn(4, 3, 32, 32)
 print(conv(x).shape)  # (4, 16, 16, 16)
 ```
 
+#### 手算：一个 `Conv2d` 输出元素如何得到
+
+先只看单张、单通道、大小为 `3×3` 的输入，卷积核大小为 `2×2`，stride 为 1，没有 bias：
+
+$$
+x=
+\begin{bmatrix}
+1&2&3\\
+4&5&6\\
+7&8&9
+\end{bmatrix},
+\qquad
+w=
+\begin{bmatrix}
+1&2\\
+3&4
+\end{bmatrix}.
+$$
+
+左上角输出只读取输入左上角的 `2×2` 小块：
+
+$$
+y_{0,0}=1\times1+2\times2+4\times3+5\times4=37.
+$$
+
+卷积核再向右移动一格时读取 $[2,3;5,6]$，结果为 $2+6+15+24=47$。四个位置都这样计算，因此输出是：
+
+$$
+y=
+\begin{bmatrix}
+37&47\\
+67&77
+\end{bmatrix}.
+$$
+
+PyTorch 的 `Conv2d` 按权重张量给出的顺序直接做乘加，不会先把卷积核旋转 180 度。
+
+```python
+x_small = torch.tensor([[[[1., 2., 3.],
+                          [4., 5., 6.],
+                          [7., 8., 9.]]]])
+conv_small = nn.Conv2d(1, 1, kernel_size=2, bias=False)
+with torch.no_grad():
+    conv_small.weight.copy_(torch.tensor([[[[1., 2.], [3., 4.]]]]))
+print(conv_small(x_small))
+# tensor([[[[37., 47.],
+#           [67., 77.]]]])
+```
+
 `groups` 控制通道连接方式：
 
 | 设置 | 含义 |
@@ -360,6 +501,22 @@ print(conv(x).shape)  # (4, 16, 16, 16)
 | `groups=1` | 每个输出通道使用全部输入通道 |
 | `groups=G` | 输入与输出通道各分为 `G` 组，只在组内计算 |
 | `groups=C_in` 且 `C_out=K*C_in` | 深度卷积；每个输入通道有 `K` 个卷积核 |
+
+#### 手算：`groups` 改变哪些通道会相加
+
+取一个空间大小为 `1×1` 的双通道输入 $[2,10]$。若 `groups=1`，一个输出通道的两个权重为 $[3,4]$，则：
+
+$$
+y=2\times3+10\times4=46.
+$$
+
+若 `groups=2`，每个组只有一个输入通道和一个输出通道，第 0 组用权重 $3$，第 1 组用权重 $4$，则输出两个通道：
+
+$$
+[2\times3,\;10\times4]=[6,40].
+$$
+
+因此 `groups=2` 时，数字 2 与数字 10 不会在同一个输出通道中相加。深度卷积就是每组只有一个输入通道的特殊情况。
 
 深度可分卷积常先做深度卷积，再用 `1×1` 卷积混合通道：
 
@@ -384,6 +541,52 @@ upconv = nn.ConvTranspose2d(16, 8, kernel_size=4, stride=2, padding=1)
 feature = torch.randn(2, 16, 16, 16)
 print(upconv(feature).shape)  # (2, 8, 32, 32)
 ```
+
+#### 手算：转置卷积为什么会放大长度
+
+使用一维例子更容易看清。令输入为 $[1,2]$，卷积核为 $[1,2,1]$，`stride=2`，没有 padding。输出长度为：
+
+$$
+(2-1)\times2+3=5.
+$$
+
+可以把每个输入数理解为生成一段加权结果，并按 stride 指定的间隔放到输出上：
+
+$$
+1\times[1,2,1]\rightarrow[1,2,1,0,0],
+$$
+
+$$
+2\times[1,2,1]\rightarrow[0,0,2,4,2].
+$$
+
+两段结果在同一位置出现时相加，故最终输出为：
+
+$$
+[1,2,1,0,0]+[0,0,2,4,2]=[1,2,3,4,2].
+$$
+
+```python
+x_1d = torch.tensor([[[1., 2.]]])
+deconv = nn.ConvTranspose1d(1, 1, kernel_size=3, stride=2, bias=False)
+with torch.no_grad():
+    deconv.weight.copy_(torch.tensor([[[1., 2., 1.]]]))
+print(deconv(x_1d))  # tensor([[[1., 2., 3., 4., 2.]]])
+```
+
+这说明转置卷积不是“把原图倒着还原”。它是一个可学习的上采样算子：相邻输入位置生成的结果可能相加，权重由训练得到。
+
+#### `output_padding` 只决定输出尺寸
+
+以 `kernel_size=2, stride=2` 的普通一维卷积为例，输入长度为 4 和 5 时，输出长度都可能为 2：
+
+$$
+\left\lfloor\frac{4-2}{2}+1\right\rfloor=2,
+\qquad
+\left\lfloor\frac{5-2}{2}+1\right\rfloor=2.
+$$
+
+因此，当转置卷积的输入长度为 2 时，硬件无法只从这个长度判断原输入是 4 还是 5。此时 `output_padding=0` 选择长度 4，`output_padding=1` 选择长度 5。它不在结果末尾写入一个固定数，只是选择哪一种合法的输出尺寸。
 
 ### 5.3 LazyConv 家族
 
@@ -425,6 +628,19 @@ print(values)  # [[[[6., 8.], [4., 3.]]]]
 print(nn.AvgPool2d(2)(x))
 ```
 
+#### 按窗口看：MaxPool 和 AvgPool 到底保留了什么
+
+上面输入是一个 `4×4` 图，`kernel_size=2`、`stride=2`，因此它被分成四个互不重叠的窗口：
+
+| 窗口位置 | 窗口中的数 | MaxPool 输出 | AvgPool 输出 |
+| --- | --- | ---: | ---: |
+| 左上 | $\begin{bmatrix}1&2\\5&6\end{bmatrix}$ | $6$ | $(1+2+5+6)/4=3.5$ |
+| 右上 | $\begin{bmatrix}3&4\\7&8\end{bmatrix}$ | $8$ | $5.5$ |
+| 左下 | $\begin{bmatrix}2&1\\4&2\end{bmatrix}$ | $4$ | $2.25$ |
+| 右下 | $\begin{bmatrix}0&3\\1&0\end{bmatrix}$ | $3$ | $1$ |
+
+所以 MaxPool 输出为 $[[6,8],[4,3]]$。它只保留每个窗口中最大的数；AvgPool 则保留每个窗口的平均值。`indices` 记录的是最大数在原输入中的位置，而不是窗口内的第几个数。
+
 ### 6.2 自适应池化与分数最大池化
 
 `AdaptiveAvgPool1d/2d/3d(output_size)`、`AdaptiveMaxPool1d/2d/3d(output_size)` 自动选择窗口，使输出空间尺寸严格等于 `output_size`。`output_size=1` 特别常见，它把任意 `H×W` 特征图变成每通道一个数：
@@ -453,6 +669,19 @@ print(restored)
 # 只有原来每个 2×2 窗口的最大值位置保留数值
 ```
 
+对上一个 `4×4` 输入，反池化的实际结果为：
+
+$$
+\begin{bmatrix}
+0&0&0&0\\
+0&6&0&8\\
+0&0&0&3\\
+4&0&0&0
+\end{bmatrix}.
+$$
+
+例如数字 $6$ 回到左上窗口中的原位置（第 2 行、第 2 列），数字 $8$ 回到右上窗口中的原位置。窗口内原来不是最大值的数已经在 MaxPool 时丢失，因此反池化不能把它们补回来。
+
 ### 6.4 填充层
 
 | 模块 | 填充内容 | 输入要求 |
@@ -475,26 +704,162 @@ print(nn.ConstantPad2d(1, value=-1.)(x))
 
 ### 6.5 `Unfold` 与 `Fold`
 
-`Unfold`（也称 im2col）从四维输入提取局部块。输入 `(N,C,H,W)` 经 `Unfold(kernel_size)` 后得到：
+这一对层最容易混淆。可以先记一句话：
+
+- `Unfold`：把每个滑动窗口**复制出来，并排成一列**。
+- `Fold`：把这些列还原成窗口，并按原位置**逐项相加**。
+
+它们只处理四维图像张量 `(N,C,H,W)`。`Unfold`（也称 im2col）从输入提取局部块，输出为：
 
 $$\text{patches}\in\mathbb R^{N\times(CK_hK_w)\times L},$$
 
-其中 $L$ 是滑动窗口个数。它能把卷积改写成“局部块矩阵乘权重矩阵”。
+其中：
 
-`Fold(output_size, kernel_size)` 将 `(N, C K_h K_w, L)` 的块加回二维平面；相互重叠的位置会**相加**，所以一般有：
+- $C K_hK_w$ 是每个窗口展开后的长度；
+- $L$ 是窗口个数；
+- 输出的最后一维每一列对应一个窗口。
 
-$$\operatorname{Fold}(\operatorname{Unfold}(x))=\operatorname{divisor}\odot x.$$
+它能把卷积改写成“局部块矩阵乘权重矩阵”。下面用最小的二维例子把每一步写出来。
+
+#### 第一步：`Unfold` 如何把窗口排成列
+
+令输入为一个单通道 `3×3` 图，卷积窗口大小为 `2×2`、stride 为 1：
+
+$$
+x=
+\begin{bmatrix}
+1&2&3\\
+4&5&6\\
+7&8&9
+\end{bmatrix}.
+$$
+
+窗口一共有四个，按从左到右、从上到下的顺序为：
+
+| 列编号 | 取到的窗口 | 展开后的列 |
+| --- | --- | --- |
+| 0 | $\begin{bmatrix}1&2\\4&5\end{bmatrix}$ | $[1,2,4,5]^T$ |
+| 1 | $\begin{bmatrix}2&3\\5&6\end{bmatrix}$ | $[2,3,5,6]^T$ |
+| 2 | $\begin{bmatrix}4&5\\7&8\end{bmatrix}$ | $[4,5,7,8]^T$ |
+| 3 | $\begin{bmatrix}5&6\\8&9\end{bmatrix}$ | $[5,6,8,9]^T$ |
+
+因此 `Unfold` 的结果形状是 `(1,4,4)`。去掉 batch 维后，它是下面这个矩阵；**每一列就是一个窗口**：
+
+$$
+\begin{bmatrix}
+1&2&4&5\\
+2&3&5&6\\
+4&5&7&8\\
+5&6&8&9
+\end{bmatrix}.
+$$
+
+#### 第二步：为什么 `Unfold` 能用于卷积
+
+继续使用卷积核：
+
+$$
+w=
+\begin{bmatrix}
+1&0\\
+0&-1
+\end{bmatrix}
+\quad\Longrightarrow\quad
+w_{\mathrm{flat}}=[1,0,0,-1].
+$$
+
+将这个长度为 4 的行向量乘上上面的 `Unfold` 结果：
+
+$$
+[1,0,0,-1]
+\begin{bmatrix}
+1&2&4&5\\
+2&3&5&6\\
+4&5&7&8\\
+5&6&8&9
+\end{bmatrix}
+=[-4,-4,-4,-4].
+$$
+
+再把这四个数按 `2×2` 摆回去，正好就是 `Conv2d` 的输出：
+
+$$
+\begin{bmatrix}
+-4&-4\\
+-4&-4
+\end{bmatrix}.
+$$
+
+这就是“卷积可写成矩阵乘”的具体含义：`Unfold` 负责整理窗口，矩阵乘负责对每个窗口做乘加。
+
+#### 第三步：`Fold` 为什么不会总是直接还原原图
+
+`Fold(output_size, kernel_size)` 接收形状 `(N,C K_hK_w,L)` 的列，把每列看回一个窗口并放回对应位置。这里四个 `2×2` 窗口会在中间位置重叠，例如中心数字 $5$ 出现在四个窗口中，所以 `Fold` 会把四个 $5$ 相加。
+
+对上面的 `Unfold` 结果执行 `Fold`，得到：
+
+$$
+\operatorname{Fold}(\operatorname{Unfold}(x))=
+\begin{bmatrix}
+1&4&3\\
+8&20&12\\
+7&16&9
+\end{bmatrix}.
+$$
+
+每个位置被窗口覆盖的次数是：
+
+$$
+\operatorname{divisor}=
+\begin{bmatrix}
+1&2&1\\
+2&4&2\\
+1&2&1
+\end{bmatrix}.
+$$
+
+所以应逐元素相除，才能得到原输入：
+
+$$
+\operatorname{Fold}(\operatorname{Unfold}(x))
+=\operatorname{divisor}\odot x.
+$$
 
 ```python
-x = torch.arange(16., dtype=torch.float32).reshape(1, 1, 4, 4)
+x = torch.tensor([[[[1., 2., 3.],
+                    [4., 5., 6.],
+                    [7., 8., 9.]]]])
 unfold = nn.Unfold(kernel_size=2, stride=1)
 patches = unfold(x)
-fold = nn.Fold(output_size=(4, 4), kernel_size=2, stride=1)
+print(patches.shape)  # torch.Size([1, 4, 4])
+print(patches[0])
+# tensor([[1., 2., 4., 5.],
+#         [2., 3., 5., 6.],
+#         [4., 5., 7., 8.],
+#         [5., 6., 8., 9.]])
+
+# 使用 Unfold 结果完成一次 2×2 卷积
+kernel_flat = torch.tensor([1., 0., 0., -1.])
+conv_out = (kernel_flat.unsqueeze(0) @ patches[0]).reshape(1, 1, 2, 2)
+print(conv_out[0, 0])
+# tensor([[-4., -4.],
+#         [-4., -4.]])
+
+fold = nn.Fold(output_size=(3, 3), kernel_size=2, stride=1)
 summed = fold(patches)
 divisor = fold(unfold(torch.ones_like(x)))
-print(patches.shape)                 # (1, 4, 9)
-print(torch.allclose(summed / divisor, x))  # True
+print(summed[0, 0])
+# tensor([[ 1.,  4.,  3.],
+#         [ 8., 20., 12.],
+#         [ 7., 16.,  9.]])
+print(divisor[0, 0])
+# tensor([[1., 2., 1.],
+#         [2., 4., 2.],
+#         [1., 2., 1.]])
+print(summed / divisor)  # 恢复为原始 x
 ```
+
+若窗口彼此不重叠且完整覆盖输入，例如 `4×4` 输入配合 `kernel_size=2, stride=2`，每个位置的覆盖次数都为 1，此时 `Fold(Unfold(x))` 才会直接等于 $x$。
 
 ### 6.6 `PixelShuffle`、`PixelUnshuffle`、`ChannelShuffle`
 
@@ -515,6 +880,29 @@ back = nn.PixelUnshuffle(2)(up)
 print(up.shape, torch.equal(x, back))  # (2, 3, 10, 14), True
 print(nn.ChannelShuffle(groups=3)(torch.randn(2, 12, 5, 5)).shape)
 ```
+
+#### 手算：`PixelShuffle(2)` 改变的是位置，不是数值
+
+取最小输入 `(N,C,H,W)=(1,4,1,1)`，四个通道的数依次为 $10,20,30,40$。因为放大倍率 $r=2$，输入通道数 $4$ 恰好等于输出通道数 $1$ 乘 $r^2$：
+
+$$
+[10,20,30,40]\longrightarrow
+\begin{bmatrix}
+10&20\\
+30&40
+\end{bmatrix}.
+$$
+
+```python
+x_small = torch.tensor([[[[10.]], [[20.]], [[30.]], [[40.]]]])
+y_small = nn.PixelShuffle(2)(x_small)
+print(y_small.shape)   # torch.Size([1, 1, 2, 2])
+print(y_small[0, 0])
+# tensor([[10., 20.],
+#         [30., 40.]])
+```
+
+这里没有插值、平均或乘法，四个数完全不变，只是从通道维重新排到高和宽。`PixelUnshuffle(2)` 会把这个 `2×2` 图重新放回四个通道。
 
 ### 6.7 `Upsample` 与旧式上采样模块
 
@@ -574,6 +962,49 @@ offsets = torch.tensor([0, 3], dtype=torch.long)  # 两袋：[1,2,3] 与 [4,5]
 print(bag(flat_ids, offsets).shape)  # (2, 8)
 ```
 
+#### 手算：`offsets` 怎样把一维索引分成多个袋
+
+假设查找表中只关心以下四行：
+
+$$
+E=
+\begin{bmatrix}
+0&0\\
+1&10\\
+2&20\\
+3&30
+\end{bmatrix}.
+$$
+
+输入为 `ids=[1,2,3]`、`offsets=[0,2]`，并使用 `mode="mean"`。`offsets` 的含义是“每个袋从 `ids` 的哪个位置开始”：
+
+- 第 0 个袋从位置 0 开始，到下一个起点位置 2 之前结束，因此它包含索引 $[1,2]$；
+- 第 1 个袋从位置 2 开始，到 `ids` 末尾结束，因此它包含索引 $[3]$。
+
+查表后：
+
+$$
+E_1=[1,10],\qquad E_2=[2,20],\qquad E_3=[3,30].
+$$
+
+两个袋的平均结果为：
+
+$$
+\operatorname{bag}_0=([1,10]+[2,20])/2=[1.5,15],
+\qquad
+\operatorname{bag}_1=[3,30].
+$$
+
+```python
+weight = torch.tensor([[0., 0.], [1., 10.], [2., 20.], [3., 30.]])
+bag_small = nn.EmbeddingBag.from_pretrained(weight, mode="mean", freeze=True)
+ids = torch.tensor([1, 2, 3])
+offsets = torch.tensor([0, 2])
+print(bag_small(ids, offsets))
+# tensor([[ 1.5000, 15.0000],
+#         [ 3.0000, 30.0000]])
+```
+
 ### 7.3 `RNN` 与 `RNNCell`
 
 最简单的循环神经网络在第 $t$ 个位置计算：
@@ -595,6 +1026,23 @@ for x_t in seq.unbind(dim=1):
 print(h.shape)  # (3, 10)
 ```
 
+#### 手算：`RNNCell` 的前一时刻状态如何参与下一步
+
+把所有向量缩成一个数，令 $x_t=1$、$h_{t-1}=0.5$、$W_{ih}=2$、$W_{hh}=0.4$，两个 bias 都为 0。则：
+
+$$
+h_t=\tanh(2\times1+0.4\times0.5)=\tanh(2.2)\approx0.976.
+$$
+
+下一步若 $x_{t+1}=0$，仍然会使用刚得到的 $h_t$：
+
+$$
+h_{t+1}=\tanh(2\times0+0.4\times0.976)
+=\tanh(0.3904)\approx0.372.
+$$
+
+这就是循环层的核心：当前输入和上一时刻状态共同决定新状态。真实网络只是把这些标量换成向量和矩阵。
+
 双向时输出最后一维是 `2*hidden_size`，而 `h_n` 的第 0 维为 `num_layers * 2`。若输入中不同样本有效长度不同，可使用 `pack_padded_sequence`，避免对填充位置做无意义计算。
 
 ### 7.4 `GRU` 与 `GRUCell`
@@ -613,6 +1061,22 @@ gru = nn.GRU(6, 10, batch_first=True, dropout=0.1, num_layers=2)
 output, h_n = gru(torch.randn(3, 5, 6))
 print(output.shape, h_n.shape)  # (3, 5, 10), (2, 3, 10)
 ```
+
+#### 手算：GRU 的更新门决定保留多少旧状态
+
+GRU 最后一式为：
+
+$$
+h_t=(1-z_t)n_t+z_t h_{t-1}.
+$$
+
+若旧状态 $h_{t-1}=0.8$、候选新状态 $n_t=0.2$、更新门 $z_t=0.75$，则：
+
+$$
+h_t=(1-0.75)\times0.2+0.75\times0.8=0.65.
+$$
+
+这里 $z_t$ 越接近 1，输出越接近旧状态；$z_t$ 越接近 0，输出越接近候选新状态。例如改为 $z_t=0.1$ 时，$h_t=0.26$。这正是 GRU 能按需保留历史信息的原因。
 
 注意：RNN、GRU、LSTM 的 `dropout` 只放在相邻循环层之间；`num_layers=1` 时该参数没有作用。
 
@@ -638,6 +1102,36 @@ print(c_n.shape)     # (4, 3, 12)
 cell = nn.LSTMCell(6, 12)
 h, c = cell(torch.randn(3, 6), (torch.zeros(3, 12), torch.zeros(3, 12)))
 ```
+
+#### 手算：LSTM 的四个门怎样更新记忆状态
+
+实际 LSTM 先通过矩阵乘得到四个门的原始值。为了只看门控含义，令两个时间步的门值都为：
+
+$$
+i_t=f_t=o_t=0.5,\qquad g_t=\tanh(1)\approx0.7616,
+$$
+
+并从 $h_0=c_0=0$ 开始。第一个时间步：
+
+$$
+c_1=0.5\times0+0.5\times0.7616=0.3808,
+$$
+
+$$
+h_1=0.5\times\tanh(0.3808)\approx0.1817.
+$$
+
+第二个时间步仍使用 $c_1$：
+
+$$
+c_2=0.5\times0.3808+0.5\times0.7616=0.5712,
+$$
+
+$$
+h_2=0.5\times\tanh(0.5712)\approx0.2581.
+$$
+
+这里 $c_t$ 是用于长期保留信息的内部记忆，$h_t$ 是当前时间步向外给出的隐藏状态。遗忘门 $f_t$ 控制旧记忆保留多少，输入门 $i_t$ 控制候选内容写入多少，输出门 $o_t$ 控制从记忆中输出多少。真实层中这些门值由输入、上一时刻状态和可学习权重计算得到。
 
 ---
 
@@ -666,6 +1160,60 @@ attended, weights = mha(x, x, x, key_padding_mask=padding_mask,
                         need_weights=True)
 print(attended.shape, weights.shape)  # (2, 5, 16), (2, 5, 5)
 ```
+
+#### 手算：三个 token 的单头注意力
+
+为了只看注意力本身，令单头宽度 $d_h=2$，并人为令 Q、K、V 的投影矩阵和输出投影矩阵都是单位矩阵。三个 token 为：
+
+$$
+X=
+\begin{bmatrix}
+1&0\\
+0&1\\
+1&1
+\end{bmatrix}.
+$$
+
+因此 $Q=K=V=X$。第 0 个 token 的 Query 与全部 Key 相乘，并除以 $\sqrt2$：
+
+$$
+\frac{q_0K^T}{\sqrt2}=[0.707,0,0.707].
+$$
+
+对这一行做 Softmax：
+
+$$
+\operatorname{Softmax}([0.707,0,0.707])
+\approx[0.4011,0.1978,0.4011].
+$$
+
+它的输出是对三个 Value 的加权和：
+
+$$
+0.4011[1,0]+0.1978[0,1]+0.4011[1,1]
+\approx[0.8022,0.5989].
+$$
+
+这表示第 0 个 token 同时读取三个 token 的信息，但给第 0 个和第 2 个 token 更大的权重。
+
+因果掩码会阻止位置 $i$ 查看未来位置。例如第 1 个 token 原始分数为 $[0,0.707,0.707]$；第三个位置属于未来，加入掩码后变为：
+
+$$
+[0,0.707,-\infty].
+$$
+
+其权重与输出为：
+
+$$
+\operatorname{Softmax}([0,0.707,-\infty])
+\approx[0.3302,0.6698,0],
+$$
+
+$$
+0.3302[1,0]+0.6698[0,1]=[0.3302,0.6698].
+$$
+
+`key_padding_mask` 是按 Key 的列生效：一个填充位置会对所有 Query 都不可用；`attn_mask` 则可以指定每一对 Query 与 Key 是否允许互相关注。
 
 因果自注意力中，第 $i$ 个位置不得看未来位置。可构造上三角掩码：
 
@@ -700,6 +1248,21 @@ memory = encoder(src, src_key_padding_mask=src_padding)
 print(memory.shape)  # (2, 7, 16)
 ```
 
+#### 形状跟踪：一个 EncoderLayer 内部发生了什么
+
+以本例的 `src.shape=(2,7,16)`、`nhead=4` 为例，内部主要张量形状如下：
+
+| 阶段 | 形状 | 含义 |
+| --- | --- | --- |
+| 输入 token | $(2,7,16)$ | 2 个样本，每个 7 个 token，每个 token 16 维 |
+| 每个头的 Q、K、V | $(2,4,7,4)$ | 16 维按 4 个头拆成每头 4 维 |
+| 每个头的注意力权重 | $(2,4,7,7)$ | 每个 Query token 对 7 个 Key token 的权重 |
+| 拼接后的注意力输出 | $(2,7,16)$ | 四个头拼回 16 维 |
+| FFN 第一层输出 | $(2,7,64)$ | `dim_feedforward=64` |
+| FFN 第二层输出 | $(2,7,16)$ | 回到模型宽度，便于做残差相加 |
+
+残差相加要求两侧形状相同，因此注意力子层和 FFN 子层的最终输出都必须回到 $(2,7,16)$。
+
 ### 8.3 `TransformerDecoderLayer` 与 `TransformerDecoder`
 
 解码器层依次含有：目标序列自注意力、目标对编码器输出的交叉注意力、前馈网络。交叉注意力使用目标表示作 $Q$，编码器输出作 $K,V$。`TransformerDecoder` 堆叠多个解码器层。
@@ -715,6 +1278,17 @@ tgt_mask = torch.triu(torch.full((4, 4), float("-inf")), diagonal=1)
 out = decoder(tgt, memory, tgt_mask=tgt_mask)
 print(out.shape)  # (2, 4, 16)
 ```
+
+#### 形状跟踪：Decoder 的自注意力和交叉注意力有什么不同
+
+在上例中，`tgt` 的形状为 $(2,4,16)$，`memory` 的形状为 $(2,7,16)$，且 `nhead=4`。两种注意力的张量形状如下：
+
+| 子层 | Query | Key / Value | 注意力权重 | 输出 |
+| --- | --- | --- | --- | --- |
+| 目标自注意力 | $(2,4,4,4)$ | $(2,4,4,4)$ | $(2,4,4,4)$ | $(2,4,16)$ |
+| 交叉注意力 | $(2,4,4,4)$ | $(2,4,7,4)$ | $(2,4,4,7)$ | $(2,4,16)$ |
+
+这里四维顺序是 $(N,\text{头数},\text{序列长度},\text{单头宽度})$。目标自注意力的 Query、Key、Value 都来自 `tgt`；交叉注意力的 Query 来自 `tgt`，Key 和 Value 来自 Encoder 输出 `memory`。因此 `tgt_mask` 的形状为 $(4,4)$，而若使用 `memory_mask`，它的形状应为 $(4,7)$。
 
 ### 8.4 完整 `Transformer`
 
@@ -742,10 +1316,10 @@ print(transformer(src, tgt).shape)  # (2, 4, 16)
 
 | 模块 | 公式 | 输入与目标 |
 | --- | --- | --- |
-| `L1Loss` | $|x-y|$ | 同形状连续值 |
+| `L1Loss` | $\lvert x-y\rvert$ | 同形状连续值 |
 | `MSELoss` | $(x-y)^2$ | 同形状连续值 |
-| `SmoothL1Loss(\beta)` | $0.5(x-y)^2/\beta$（$|x-y|<\beta$），否则 $|x-y|-0.5\beta$ | 对异常大误差较稳健 |
-| `HuberLoss(\delta)` | $0.5(x-y)^2$（$|x-y|<\delta$），否则 $\delta(|x-y|-0.5\delta)$ | Huber 形式；与 SmoothL1 的缩放不同 |
+| `SmoothL1Loss(\beta)` | $0.5(x-y)^2/\beta$（$\lvert x-y\rvert<\beta$），否则 $\lvert x-y\rvert-0.5\beta$ | 对异常大误差较稳健 |
+| `HuberLoss(\delta)` | $0.5(x-y)^2$（$\lvert x-y\rvert<\delta$），否则 $\delta(\lvert x-y\rvert-0.5\delta)$ | Huber 形式；与 SmoothL1 的缩放不同 |
 | `BCELoss` | $-[y\log x+(1-y)\log(1-x)]$ | 输入必须是概率值 $(0,1)$ |
 | `BCEWithLogitsLoss` | 同 BCE，但内部以稳定方式处理 logits | 输入为未激活 logits；可用 `pos_weight` 处理类别不均衡 |
 | `GaussianNLLLoss` | $\frac12[\log(\max(v,\epsilon))+(x-y)^2/\max(v,\epsilon)]$ | 预测均值 `x`、方差 `v` 与目标 `y` |
@@ -782,6 +1356,23 @@ log_prob = F.log_softmax(logits, dim=1)
 print(nn.NLLLoss()(log_prob, labels))
 ```
 
+#### 手算：一个 `CrossEntropyLoss` 数值
+
+若某个样本的 logits 为 $[2,1,0]$，正确类别是第 0 类，则：
+
+$$
+\operatorname{Softmax}([2,1,0])
+\approx[0.665,0.245,0.090].
+$$
+
+损失只取正确类别的概率：
+
+$$
+\ell=-\log(0.665)\approx0.408.
+$$
+
+若模型把第 0 类的 logit 提高，正确类别的概率会变大，损失会变小。传给 `CrossEntropyLoss` 的应是原始 logits；该层内部已经完成 `LogSoftmax` 和取负对数。
+
 | 模块 | 作用 |
 | --- | --- |
 | `NLLLoss` | 接收对数概率，目标是类别编号；`NLLLoss2d` 是旧名 |
@@ -814,6 +1405,16 @@ $$\mathcal L_{CTC}=-\log\sum_{\pi\in\mathcal B^{-1}(y)}\prod_{t=1}^{T}p(\pi_t\mi
 
 其中 blank 的类别编号由 `blank` 指定，$\mathcal B$ 会移除 blank 并合并连续重复标签。
 
+#### 小例子：CTC 为什么要对多条路径求和
+
+令 blank 为 $0$，标签 $A=1$、$B=2$，目标序列为 $[A,B]$，时间长度为 3。以下四条逐时刻路径在合并连续重复标签、再删除 blank 后，都会得到目标 $[A,B]$：
+
+$$
+[A,A,B],\qquad[A,0,B],\qquad[0,A,B],\qquad[A,B,B].
+$$
+
+因此 CTC 不只看其中一条路径，而是把所有这类路径的概率相加后再取负对数。它适合语音等任务：已知最终标签顺序，却不知道每个标签准确出现在哪个时间位置。
+
 ```python
 # T=6，N=2，C=5；第 0 类留作 blank
 log_probs = F.log_softmax(torch.randn(6, 2, 5), dim=2)
@@ -832,10 +1433,10 @@ print(ctc(log_probs, targets, input_lengths, target_lengths))
 | `HingeEmbeddingLoss(margin)` | $x$（$y=1$）；$\max(0,m-x)$（$y=-1$） |
 | `SoftMarginLoss` | $\log(1+\exp(-yx))$，$y\in\{-1,1\}$ |
 | `CosineEmbeddingLoss(margin)` | $1-\cos(x_1,x_2)$（$y=1$）；$\max(0,\cos(x_1,x_2)-m)$（$y=-1$） |
-| `TripletMarginLoss(margin,p)` | $\max(\|a-p\|_p-\|a-n\|_p+m,0)$ |
+| `TripletMarginLoss(margin,p)` | $\max(\lVert a-p\rVert_p-\lVert a-n\rVert_p+m,0)$ |
 | `TripletMarginWithDistanceLoss` | 与上一行相同，但距离函数可自定义 |
-| `CosineSimilarity(dim)` | $\frac{x_1\cdot x_2}{\max(\|x_1\|_2\|x_2\|_2,\epsilon)}$ |
-| `PairwiseDistance(p)` | $\|x_1-x_2+\epsilon e\|_p$ |
+| `CosineSimilarity(dim)` | $\frac{x_1\cdot x_2}{\max(\lVert x_1\rVert_2\lVert x_2\rVert_2,\epsilon)}$ |
+| `PairwiseDistance(p)` | $\lVert x_1-x_2+\epsilon e\rVert_p$ |
 
 ```python
 anchor = torch.randn(4, 16)
