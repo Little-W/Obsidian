@@ -3383,7 +3383,7 @@ $$
 C_{\mathrm{out}}=C_{\mathrm{in}}M.
 $$
 
-PyTorch 可以把 `out_channels` 设为 $C_{\mathrm{in}}M$，同时保持 `groups=C_{\mathrm{in}}`，得到相同的 Channel 数变化。
+PyTorch 可以把 `out_channels` 设为 $C_{\mathrm{in}}M$，同时保持 $groups=C_{\mathrm{in}}$，得到相同的 Channel 数变化。
 
 Depthwise Conv2D 权重参数数目为：
 
@@ -3514,6 +3514,88 @@ y_{n,h,w}=Wx_{n,h,w}+b,
 \qquad
 W\in\mathbb R^{C_{\mathrm{out}}\times C_{\mathrm{in}}}.
 $$
+
+#### 为什么 Pointwise 不需要 img2col：它原生就是矩阵乘法
+
+普通 $K_h\times K_w$ 卷积若使用 img2col 方式实现，需要先把每个局部窗口展开成一行。展开矩阵的形状通常可写成：
+
+$$
+X_{\mathrm{col}}
+\in
+\mathbb R^{
+(NH_{\mathrm{out}}W_{\mathrm{out}})
+\times
+(C_{\mathrm{in}}K_hK_w)
+}.
+$$
+
+当窗口互相重叠时，同一个输入元素会在 $X_{\mathrm{col}}$ 中出现多次。完成窗口展开后，才与展平的卷积核做矩阵乘法。
+
+Pointwise 卷积的空间核只有 $1\times1$。在 stride 为 1、空间尺寸保持不变的常见设置下，一个输出位置只读取同一位置的 $C_{\mathrm{in}}$ 个 Channel，不需要收集上下左右的数据。令：
+
+$$
+P=NHW,
+$$
+
+把 Batch维度和全部空间位置合并成 $P$ 行，每一行保存一个位置的 Channel 向量：
+
+$$
+X_{\mathrm{flat}}
+\in
+\mathbb R^{P\times C_{\mathrm{in}}}.
+$$
+
+再把 Pointwise 卷积核去掉两个长度为 1 的空间轴，得到：
+
+$$
+K
+\in
+\mathbb R^{C_{\mathrm{in}}\times C_{\mathrm{out}}}.
+$$
+
+Keras `Conv2D` 的核常保存为 $(1,1,C_{\mathrm{in}},C_{\mathrm{out}})$，去掉两个空间轴后正好得到 $K$。PyTorch `Conv2d` 的权重常保存为 $(C_{\mathrm{out}},C_{\mathrm{in}},1,1)$，去掉空间轴后为 $(C_{\mathrm{out}},C_{\mathrm{in}})$，在上面的行向量写法中使用其转置。
+
+整张特征图的计算直接写成：
+
+$$
+Y_{\mathrm{flat}}
+=
+X_{\mathrm{flat}}K
++\mathbf 1_Pb^T,
+$$
+
+其中：
+
+- $P=NHW$ 是一个 Batch 中位置的总数；
+- $X_{\mathrm{flat}}$ 的每一行是一个位置的 $C_{\mathrm{in}}$ 个输入 Channel；
+- $K$ 的每一列产生一个输出 Channel；
+- $\mathbf 1_P$ 是长度为 $P$、元素全为 1 的列向量，用于让同一个 bias 加到全部位置；
+- $Y_{\mathrm{flat}}$ 的形状为 $(P,C_{\mathrm{out}})$。
+
+矩阵乘法完成后，只需把 $P$ 拆回 $N,H,W$：
+
+$$
+(P,C_{\mathrm{out}})
+\rightarrow
+(N,H,W,C_{\mathrm{out}})
+$$
+
+或 PyTorch 常见的：
+
+$$
+(N,C_{\mathrm{out}},H,W).
+$$
+
+因此，Pointwise 的核心计算从一开始就是二维矩阵乘法，不需要生成包含空间邻域的 img2col 中间张量。若通用卷积程序仍把 $1\times1$ 情况写成 img2col，那么得到的“列”只是各位置 Channel 向量的重新排列；显式保存这份中间数据没有必要。
+
+> [!IMPORTANT] 数据排布调整不等于 img2col
+> Keras 默认 channels-last 时，每个位置的 Channel 通常连续存放，较容易直接观察成 $(P,C_{\mathrm{in}})$。PyTorch 常用 channels-first，底层程序可能需要重新排布或分块读取数据，以便矩阵乘单元高效工作；这个步骤没有提取 $K_h\times K_w$ 邻域，也不会像普通 img2col 那样复制重叠窗口。
+
+> [!NOTE] 框架可能选择专用卷积内核
+> 数学计算不要求 img2col。实际运行时，PyTorch 或 Keras 所用后端可以选择 GEMM、专用 $1\times1$ 卷积内核或带数据打包的实现。无论采用哪一种，核心乘加仍等价于 $X_{\mathrm{flat}}K$。
+
+> [!NOTE] 分组 Pointwise 是多次较小的矩阵乘法
+> 上述公式描述 `groups=1` 的普通 Pointwise。若设置 groups，每组只读取本组输入 Channel，可以看成各组分别执行较小矩阵乘法，再沿 Channel维度组合结果。
 
 #### 手算：三个 Channel 变成两个 Channel
 
