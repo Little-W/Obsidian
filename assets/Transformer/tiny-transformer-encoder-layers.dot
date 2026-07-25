@@ -1,0 +1,66 @@
+digraph TinyTransformerEncoder {
+  graph [
+    rankdir=TB,
+    bgcolor="transparent",
+    pad="0.16",
+    nodesep="0.30",
+    ranksep="0.38",
+    splines=polyline,
+    size="7.0,8.2!",
+    fontname="Noto Sans CJK SC"
+  ];
+
+  node [
+    shape=box,
+    style="rounded,filled",
+    color="#385170",
+    penwidth=1.15,
+    fontname="Noto Sans CJK SC",
+    fontsize=12,
+    margin="0.14,0.08"
+  ];
+
+  edge [
+    color="#52667A",
+    penwidth=1.15,
+    arrowsize=0.72
+  ];
+
+  input_ids [label="input_ids\n[B, S]", fillcolor="#F7D9D9"];
+  embed_pos [label="Token Embedding + 位置编码\n[B, S, d_model]", fillcolor="#FBE3C0"];
+  x0 [label="初始表示 x₀", fillcolor="#E6F1FA"];
+
+  subgraph cluster_encoder {
+    label="Encoder Layer × num_layers（Post-Norm）";
+    color="#86A8C8";
+    penwidth=1.4;
+    style="rounded,dashed";
+    fontname="Noto Sans CJK SC";
+    fontsize=13;
+    margin=14;
+
+    mha [label="Multi-Head Self-Attention\nQKV 线性层 → 分头 → 注意力", fillcolor="#F9D3A0"];
+    mask [label="可选 attention mask\n[B, 1, S, S]", fillcolor="#F4E4F7"];
+    add1 [label="残差相加\nx + dropout(attention)", shape=diamond, fillcolor="#DFF2E1"];
+    norm1 [label="LayerNorm 1", fillcolor="#FFF4B8"];
+    ffn [label="Feed Forward Network\nLinear(d_model→d_ff) → ReLU\n→ Linear(d_ff→d_model)", fillcolor="#C8E7F2"];
+    add2 [label="残差相加\nx + dropout(ffn)", shape=diamond, fillcolor="#DFF2E1"];
+    norm2 [label="LayerNorm 2", fillcolor="#FFF4B8"];
+    layer_out [label="本层输出 xₗ₊₁\n[B, S, d_model]", fillcolor="#E6F1FA"];
+
+    { rank=same; mha; add1; norm1; }
+    { rank=same; ffn; add2; norm2; }
+
+    mha -> add1 -> norm1;
+    norm1 -> ffn -> add2 -> norm2 -> layer_out;
+    mask -> mha [style=dashed];
+    x0 -> add1 [constraint=false, color="#8DA2B5"];
+    norm1 -> add2 [constraint=false, color="#8DA2B5"];
+  }
+
+  final_norm [label="Final LayerNorm", fillcolor="#FFF4B8"];
+  output [label="上下文表示\n[B, S, d_model]", fillcolor="#E6F1FA"];
+
+  input_ids -> embed_pos -> x0 -> mha;
+  layer_out -> final_norm -> output;
+}
