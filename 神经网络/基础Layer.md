@@ -17,16 +17,19 @@
 | 任务 | 常用输入形状 | 含义 |
 | --- | --- | --- |
 | 全连接 | `(*, H_in)` | 前面的 `*` 可以有任意数量的维度 |
-| 一维卷积 | `(N, C, L)` | 批大小、通道数、长度 |
-| 二维卷积 | `(N, C, H, W)` | 批大小、通道数、高、宽 |
-| 三维卷积 | `(N, C, D, H, W)` | 批大小、通道数、深度、高、宽 |
-| 序列（默认） | `(L, N, E)` | 序列长度、批大小、特征宽度 |
-| 序列（`batch_first=True`） | `(N, L, E)` | 批大小、序列长度、特征宽度 |
+| 一维卷积 | `(N, C, L)` | Batch Size、通道数、长度 |
+| 二维卷积 | `(N, C, H, W)` | Batch Size、通道数、高、宽 |
+| 三维卷积 | `(N, C, D, H, W)` | Batch Size、通道数、深度、高、宽 |
+| 序列（默认） | `(L, N, E)` | 序列长度、Batch Size、特征宽度 |
+| 序列（`batch_first=True`） | `(N, L, E)` | Batch Size、序列长度、特征宽度 |
 
 > [!NOTE] `*` 表示零个或多个前导维度
 > `Linear` 的输入写成 `(*,H_in)`，表示最后一维必须是 `H_in`，前面可以没有维度，也可以有很多维。例如 `(8,)`、`(4,8)`、`(2,5,8)` 都能传给 `Linear(8,3)`，输出依次为 `(3,)`、`(4,3)`、`(2,5,3)`。
 
-`N` 表示批大小，`C` 表示通道数，`L/H/W/D` 是空间尺寸，`E` 是嵌入宽度。模块的 `weight` 和 `bias` 都是 `nn.Parameter`，会由优化器更新；均值、方差等统计量通常是 buffer，不会由优化器更新，但会随 `state_dict()` 保存。
+`N` 表示 Batch Size，`C` 表示通道数，`L/H/W/D` 是空间尺寸，`E` 是嵌入宽度。模块的 `weight` 和 `bias` 都是 `nn.Parameter`，会由优化器更新；均值、方差等统计量通常是 buffer，不会由优化器更新，但会随 `state_dict()` 保存。
+
+> [!NOTE] 本文统一使用的 Batch 术语
+> `Batch维度` 表示用于排列多个样本的维度，通常是第 0 维；`Batch Size` 表示该维度的长度；`一个 Batch` 表示一次共同送入模型的一组样本；`不含 Batch维度的输入` 表示只提供单个样本。代码参数仍保持 PyTorch 原名，例如 `batch_size` 与 `batch_first`。
 
 ```python
 import torch
@@ -68,7 +71,7 @@ with torch.inference_mode():
 
 复杂层第一次看不懂通常不是公式本身太难，而是没有同时看清“输入怎么分块、每一块做了什么、结果放到哪里”。阅读下文的复杂层时，按下面四步检查：
 
-1. **先写形状**：例如图像写成 `(N,C,H,W)`，序列写成 `(N,S,E)`。先确定哪个维度是批、通道、空间位置或时间位置。
+1. **先写形状**：例如图像写成 `(N,C,H,W)`，序列写成 `(N,S,E)`。先确定哪个维度是 Batch维度、通道、空间位置或时间位置。
 2. **取一个最小例子**：把大张量缩成一个通道、两三个位置，手工列出本层实际读取的数。
 3. **逐步计算一个输出元素**：卷积看一个窗口，Softmax 看一行，LSTM 看一个时间步，注意力看一个 Query。
 4. **检查结果形状和数据去向**：有的层只改数值，有的层改尺寸，有的层会把局部块展开成列，有的层会把列累加回平面。
@@ -193,7 +196,7 @@ x = torch.randn(3, 4, device=device)
 y = model(x)
 ```
 
-若模型在 GPU、输入在 CPU，矩阵乘无法直接执行。常见做法是先确定 `device`，再让模型和每个小批都调用 `.to(device)`。
+若模型在 GPU、输入在 CPU，矩阵乘无法直接执行。常见做法是先确定 `device`，再让模型和每个 Batch 的输入都调用 `.to(device)`。
 
 浮点层还可以改变参数类型：
 
@@ -414,11 +417,11 @@ print(nn.Flatten(2)(x).shape)     # (2, 3, 20)
 print(nn.Flatten(0, 1)(x).shape)  # (6, 4, 5)
 ```
 
-- `Flatten(1)` 保留批维，把整张图变成每样本一个向量；
-- `Flatten(2)` 保留批和通道，只合并空间维；
-- `Flatten(0,1)` 连批与通道一起合并，通常只在明确需要时使用。
+- `Flatten(1)` 保留 Batch维度，把整张图变成每个样本一个向量；
+- `Flatten(2)` 保留 Batch维度和通道维度，只合并空间维度；
+- `Flatten(0,1)` 把 Batch维度与通道维度一起合并，通常只在明确需要时使用。
 
-> [!WARNING] 分类网络中不要误把批维合并
+> [!WARNING] 分类网络中不要误把 Batch维度合并
 > `nn.Flatten()` 的默认 `start_dim=1` 正适合常见图像分类。若写成 `Flatten(0)`，多个样本会合成一个长向量，后续层将失去样本分隔。
 
 #### 2.3.5 前向钩子可用于观察形状
@@ -471,7 +474,7 @@ y = fc(x)
 print(fc.weight.shape, fc.bias.shape, y.shape)  # (3, 5), (3,), (1, 3)
 ```
 
-`LazyLinear(out_features)` 在第一次前向计算时，从输入的最后一维自动确定 `in_features`。第一次调用前它的权重尚未初始化；因此应先给一批真实形状的数据，再创建依赖参数形状的优化器或检查点流程。
+`LazyLinear(out_features)` 在第一次前向计算时，从输入的最后一维自动确定 `in_features`。第一次调用前它的权重尚未初始化；因此应先提供一组具有真实形状的数据，再创建依赖参数形状的优化器或检查点流程。
 
 ```python
 lazy_fc = nn.LazyLinear(4)
@@ -562,7 +565,7 @@ $$\operatorname{Softmax}(x)_i=\frac{e^{x_i}}{\sum_j e^{x_j}},\qquad
 
 $$\log\operatorname{Softmax}(x)_i=x_i-\log\sum_j e^{x_j},$$
 
-比先算 Softmax 再取对数更稳定。`Softmax2d` 对 `(N,C,H,W)` 的通道维 `C` 做 Softmax，等价于 `Softmax(dim=1)`。
+比先算 Softmax 再取对数更稳定。`Softmax2d` 对 `(N,C,H,W)` 的通道维度 `C` 做 Softmax，等价于 `Softmax(dim=1)`。
 
 ```python
 gated = nn.GLU(dim=1)(torch.randn(2, 8))
@@ -676,7 +679,7 @@ print("导数:", x.grad)
 `BCEWithLogitsLoss` 已把 Sigmoid 与二元交叉熵合在一个数值更稳定的计算中。若模型先手动做 Sigmoid，再把结果传给它，就等于重复处理。`CrossEntropyLoss` 同样接收 logits，并在内部完成所需的对数概率计算。
 
 > [!EXAMPLE] “logit” 是什么
-> 模型给出 `[-1.2, 2.0, 0.3]` 时，这三个数还不是概率，可以为负，也不要求总和为 1。对它们沿类别维做 Softmax 后，才得到总和为 1 的三个类别概率。训练阶段保留 logits 交给损失函数，展示预测时再求概率。
+> 模型给出 `[-1.2, 2.0, 0.3]` 时，这三个数还不是概率，可以为负，也不要求总和为 1。对它们沿类别维度做 Softmax 后，才得到总和为 1 的三个类别概率。训练阶段保留 logits 交给损失函数，展示预测时再求概率。
 
 #### 3.4.3 `inplace=True` 为什么要谨慎
 
@@ -776,7 +779,7 @@ $$y_i=\frac{m_i}{1-p}x_i.$$
 | 模块 | 置零单位 | 典型输入 |
 | --- | --- | --- |
 | `Dropout` | 每个元素 | 任意形状 |
-| `Dropout1d` | 整个通道 | `(N,C,L)` 或无批维的 `(C,L)` |
+| `Dropout1d` | 整个通道 | `(N,C,L)` 或不含 Batch维度的 `(C,L)` |
 | `Dropout2d` | 整个二维特征图通道 | `(N,C,H,W)` |
 | `Dropout3d` | 整个三维特征体通道 | `(N,C,D,H,W)` |
 | `AlphaDropout` | 元素，并保持 SELU 所需的均值、方差性质 | SELU 网络 |
@@ -794,18 +797,18 @@ print(spatial_drop(torch.ones(2, 3, 4, 4)).shape)
 
 ### 4.2 BatchNorm 家族
 
-对某个通道 $c$，批归一化使用小批样本及空间位置求均值和方差：
+对某个通道 $c$，BatchNorm 使用同一 Batch 中的样本及空间位置求均值和方差：
 
 $$\mu_c=\frac{1}{m}\sum_{i=1}^{m}x_i,\qquad
 \sigma_c^2=\frac{1}{m}\sum_{i=1}^{m}(x_i-\mu_c)^2,$$
 
 $$y_i=\gamma_c\frac{x_i-\mu_c}{\sqrt{\sigma_c^2+\epsilon}}+\beta_c.$$
 
-`BatchNorm1d(C)` 用于 `(N,C)` 或 `(N,C,L)`；`BatchNorm2d(C)` 用于 `(N,C,H,W)`；`BatchNorm3d(C)` 用于 `(N,C,D,H,W)`。训练阶段用当前小批统计量，并更新 `running_mean`、`running_var`；评估阶段默认使用运行统计量。更新式为：
+`BatchNorm1d(C)` 用于 `(N,C)` 或 `(N,C,L)`；`BatchNorm2d(C)` 用于 `(N,C,H,W)`；`BatchNorm3d(C)` 用于 `(N,C,D,H,W)`。训练阶段使用当前 Batch 的统计量，并更新 `running_mean`、`running_var`；评估阶段默认使用运行统计量。更新式为：
 
 $$\widehat\mu\leftarrow(1-\alpha)\widehat\mu+\alpha\mu_{batch},$$
 
-其中 `momentum=α`，它不是优化器中的动量概念。小批计算的方差采用有偏形式，而保存到 `running_var` 的方差使用无偏估计。
+其中 `momentum=α`，它不是优化器中的动量概念。当前 Batch 的方差计算采用有偏形式，而保存到 `running_var` 的方差使用无偏估计。
 
 ```python
 bn = nn.BatchNorm2d(3, eps=1e-5, momentum=0.1, affine=True)
@@ -822,7 +825,7 @@ bn.eval(); y_eval = bn(images)
 | 模块 | 统计量的计算范围 | 仿射参数形状 | 适用情况 |
 | --- | --- | --- | --- |
 | `InstanceNorm1d/2d/3d` | 每个样本、每个通道的空间位置 | 每通道（`affine=True` 时） | 图像风格相关任务、样本间统计差异较大时 |
-| `GroupNorm(G,C)` | 每个样本内，每组 $C/G$ 个通道及其空间位置 | 每通道 | 小批大小也稳定；`G=C` 类似 InstanceNorm，`G=1` 类似 LayerNorm |
+| `GroupNorm(G,C)` | 每个样本内，每组 $C/G$ 个通道及其空间位置 | 每通道 | Batch Size 较小时也稳定；`G=C` 类似 InstanceNorm，`G=1` 类似 LayerNorm |
 | `LayerNorm(normalized_shape)` | 每个样本最后若干维 | 与 `normalized_shape` 相同 | Transformer、MLP |
 | `LocalResponseNorm` | 同一位置邻近通道 | 无 | 早期视觉网络中按通道做局部抑制 |
 
@@ -937,7 +940,7 @@ y_c=\frac{x_c}{b_c^{\beta}},$$
 1. 哪些元素放在一起计算均值和方差？
 2. 哪些维度各自保留一套均值和方差？
 3. 可学习参数 $\gamma$、$\beta$ 怎样加到多维输出上？
-4. 训练状态与评估状态是否使用同一批统计数据？
+4. 训练状态与评估状态是否使用同一 Batch 的统计量？
 
 > [!IMPORTANT] 先记住最重要的结论
 > 绝大多数归一化层都不会改变输入形状。它们改变的是“哪些数互相比较，以及每个数怎样重新调整”。如果输入形状是 `[2, 3, 4, 5]`，输出通常仍是 `[2, 3, 4, 5]`。
@@ -950,7 +953,7 @@ $$
 x\in\mathbb R^{A_0\times A_1\times\cdots\times A_{p-1}}.
 $$
 
-$p$ 是张量的维数，$A_j$ 是第 $j$ 个维度的长度。例如图像张量 `(N,C,H,W)` 有四个维度，分别对应批、通道、高和宽。
+$p$ 是张量的维数，$A_j$ 是第 $j$ 个维度的长度。例如图像张量 `(N,C,H,W)` 有四个维度，分别对应 Batch维度、通道、高和宽。
 
 某个归一化层会选出一组**统计维度** $\mathcal R$。对于不在 $\mathcal R$ 中的下标保持不变，把 $\mathcal R$ 中所有下标能够取到的元素放在一起。若这一组共有 $M$ 个元素，则：
 
@@ -1027,7 +1030,7 @@ BatchNorm、InstanceNorm、GroupNorm 和 LayerNorm 都会给输入中的每个�
 BatchNorm 的核心规则可以压缩成一句话：
 
 > [!NOTE] BatchNorm 的通道规则
-> 固定通道下标 `C`，让批下标和所有空间下标变化，把得到的全部元素放在一起计算。每个通道各有一套均值、方差、`weight` 和 `bias`。
+> 固定通道下标 `C`，让 Batch维度下标和所有空间下标变化，把得到的全部元素放在一起计算。每个通道各有一套均值、方差、`weight` 和 `bias`。
 
 #### 4.5.1 `BatchNorm1d(C)` 接收二维输入 `(N,C)`
 
@@ -1062,8 +1065,8 @@ $$
 
 这是因为第二个通道恰好是第一个通道的 10 倍。减均值并除以各自标准差后，它们具有相同的相对分布。
 
-> [!WARNING] 二维输入的第 0 维一定被当作批
-> 对 `BatchNorm1d` 来说，二维形状 `(C,L)` 不表示“无批输入”，而会被解释为 `(N,C)`。因此它与 `InstanceNorm1d` 的无批形式不同，不能仅凭维数判断含义。
+> [!WARNING] 二维输入的第 0 维一定被当作 Batch维度
+> 对 `BatchNorm1d` 来说，二维形状 `(C,L)` 不表示“不含 Batch维度的输入”，而会被解释为 `(N,C)`。因此它与 `InstanceNorm1d` 的单样本形式不同，不能仅凭维数判断含义。
 
 #### 4.5.2 `BatchNorm1d(C)` 接收三维输入 `(N,C,L)`
 
@@ -1157,7 +1160,7 @@ $$
 \mu_e=\frac{1}{NL}\sum_n\sum_l x_{n,l,e}.
 $$
 
-如果把 `(N,L,E)` 直接传给 `BatchNorm1d(L)`，代码可能正常执行，但层会把 token 位置 $L$ 当作通道，并跨批与特征维 $E$ 统计。这通常不是设计者想要的含义。
+如果把 `(N,L,E)` 直接传给 `BatchNorm1d(L)`，代码可能正常执行，但层会把 token 位置 $L$ 当作通道，并跨 Batch维度与特征维度 $E$ 统计。这通常不是设计者想要的含义。
 
 > [!WARNING] 形状恰好相等时更要小心
 > 假设 `L=E=8`，把 `(N,L,E)` 直接传给 `BatchNorm1d(8)` 不会因尺寸不符而报错，但它统计的是第 1 维，也就是 token 位置。尺寸正确不等于含义正确。
@@ -1165,7 +1168,7 @@ $$
 > [!EXAMPLE] 同一个三维序列经过 BatchNorm 与 LayerNorm
 > 设两个样本各有两个 token，每个 token 有两个特征：样本 0 为 `[[1,10],[3,30]]`，样本 1 为 `[[5,50],[7,70]]`。换轴后的 `BatchNorm1d(2)` 对特征 0 使用 `[1,3,5,7]`，均值为 4、方差为 5；对特征 1 使用 `[10,30,50,70]`，均值为 40、方差为 500。`LayerNorm(2)` 则分别处理 `[1,10]`、`[3,30]`、`[5,50]`、`[7,70]`，忽略 `eps` 与仿射参数时，每个 token 都得到 `[-1,1]`。两层输入和输出形状可以相同，但计算所用的数完全不同。
 
-对带补齐位的文本批次还要考虑：BatchNorm 会把补齐位置也放入统计集合。即使后续注意力使用 mask，均值和方差已经受到补齐值影响。Transformer 因此更常使用只在每个 token 特征内部计算的 LayerNorm。
+对由文本样本组成且含补齐位置的一个 Batch，还要考虑：BatchNorm 会把补齐位置也放入统计集合。即使后续注意力使用 mask，均值和方差已经受到补齐值影响。Transformer 因此更常使用只在每个 token 特征内部计算的 LayerNorm。
 
 #### 4.5.4 `BatchNorm2d(C)` 接收四维图像 `(N,C,H,W)`
 
@@ -1180,7 +1183,7 @@ $$
 x_{n,c,h,w}.
 $$
 
-方差也对同样的 $N\times H\times W$ 个元素计算。一个 RGB 批次 `(32,3,224,224)` 会得到 3 个均值和 3 个方差，而不是每张图 3 个，也不是每个像素 3 个。
+方差也对同样的 $N\times H\times W$ 个元素计算。由 32 张 RGB 图像组成的一个 Batch `(32,3,224,224)` 会得到 3 个均值和 3 个方差，而不是每张图 3 个，也不是每个像素 3 个。
 
 `weight` 和 `bias` 的形状都是 `(C,)`。计算时可把它们想成：
 
@@ -1225,7 +1228,7 @@ $$
 
 #### 4.5.6 训练状态、评估状态与运行统计量
 
-训练状态下，BatchNorm 使用当前小批的 $\mu_{\text{batch}}$ 和 $v_{\text{batch}}$ 生成当前输出，同时更新 buffer：
+训练状态下，BatchNorm 使用当前 Batch 的 $\mu_{\text{batch}}$ 和 $v_{\text{batch}}$ 生成当前输出，同时更新 buffer：
 
 $$
 \text{running\_mean}
@@ -1234,7 +1237,7 @@ $$
 +\alpha\mu_{\text{batch}}.
 $$
 
-`momentum=α` 控制新小批对运行统计量的影响。它与优化器里常见的 momentum 含义不同。`momentum=None` 表示使用累计平均，每一批的权重会随已处理批次数变化。
+`momentum=α` 控制当前 Batch 对运行统计量的影响。它与优化器里常见的 momentum 含义不同。`momentum=None` 表示使用累计平均，每个 Batch 的权重会随已处理的 Batch 数量变化。
 
 ```python
 bn = nn.BatchNorm1d(3, momentum=0.1)
@@ -1243,21 +1246,21 @@ _ = bn(torch.randn(16, 3))
 
 print(bn.running_mean.shape)     # (3,)
 print(bn.running_var.shape)      # (3,)
-print(bn.num_batches_tracked)    # 已处理的小批数
+print(bn.num_batches_tracked)    # 已处理的 Batch 数量
 
 bn.eval()
 with torch.inference_mode():
     y = bn(torch.randn(4, 3))    # 使用 running_mean 与 running_var
 ```
 
-当前小批前向计算中的方差使用 `unbiased=False` 的形式，也就是除以 $M$；写入 `running_var` 时使用无偏估计，也就是样本数足够时除以 $M-1$。初学阶段只需知道：手算当前输出时用除以 $M$ 的方差。
+当前 Batch 前向计算中的方差使用 `unbiased=False` 的形式，也就是除以 $M$；写入 `running_var` 时使用无偏估计，也就是样本数足够时除以 $M-1$。初学阶段只需知道：手算当前输出时用除以 $M$ 的方差。
 
 > [!WARNING] `eval()` 不会重新计算当前输入的均值
-> 默认设置下，评估状态使用训练期间保存的运行统计量。因此，同一张图单独推理与放进更大的推理批次，BatchNorm 输出通常一致；训练状态下则可能不同。
+> 默认设置下，评估状态使用训练期间保存的运行统计量。因此，无论同一张图是单独推理，还是与更多样本组成一个 Batch 后再推理，BatchNorm 输出通常一致；训练状态下则可能不同。
 
-若设置 `track_running_stats=False`，模块不保存运行均值和运行方差，训练与评估都会使用当前输入的统计数据。这样会使一个样本的输出可能受到同批其他样本影响，使用前应明确是否符合任务需求。
+若设置 `track_running_stats=False`，模块不保存运行均值和运行方差，训练与评估都会使用当前输入的统计数据。这样会使一个样本的输出可能受到同一 Batch 中其他样本的影响，使用前应明确是否符合任务需求。
 
-#### 4.5.7 为什么很小的小批可能出现问题
+#### 4.5.7 为什么很小的 Batch Size 可能出现问题
 
 训练状态下，每个通道至少需要两个可用于统计的值。以下输入会报错：
 
@@ -1267,16 +1270,16 @@ x = torch.randn(1, 4)  # 每通道只有一个值
 # bn(x)  # ValueError: Expected more than 1 value per channel when training
 ```
 
-但 `BatchNorm2d(4)` 接收 `(1,4,8,8)` 时，每个通道仍有 $1\times8\times8=64$ 个值，通常可以执行。能够执行并不代表统计数据一定足够可靠；空间尺寸逐渐缩到 `1×1` 时，小批大小的影响会更明显。
+但 `BatchNorm2d(4)` 接收 `(1,4,8,8)` 时，每个通道仍有 $1\times8\times8=64$ 个值，通常可以执行。能够执行并不代表统计数据一定足够可靠；空间尺寸逐渐缩到 `1×1` 时，Batch Size 的影响会更明显。
 
-> [!TIP] 小批图像模型的常见选择
-> 如果显存限制使每卡只能处理很少样本，可以考虑 GroupNorm。它不跨样本计算，因此不会随小批组成发生同样的变化。
+> [!TIP] Batch Size 较小时的图像模型选择
+> 如果显存限制使每张卡只能处理很少样本，可以考虑 GroupNorm。它不跨样本计算，因此不会随 Batch 中的样本组成发生同样的变化。
 
 #### 4.5.8 `SyncBatchNorm` 合并多进程中的统计数据
 
-分布式训练时，普通 BatchNorm 默认只查看当前进程所持有的小批。`SyncBatchNorm` 会让参与训练的进程交换必要的统计数据，再使用合并后的均值和方差。
+分布式训练时，普通 BatchNorm 默认只查看当前进程持有的 Batch。`SyncBatchNorm` 会让参与训练的进程交换必要的统计数据，再使用合并后的均值和方差。
 
-`SyncBatchNorm(C)` 接受形如 `(N,C,...)`、维数至少为 2 的输入。它固定通道 `C`，在参与同步的进程中，对批维与全部尾部维度共同统计。
+`SyncBatchNorm(C)` 接受形如 `(N,C,...)`、维数至少为 2 的输入。它固定通道 `C`，在参与同步的进程中，对 Batch维度与全部尾部维度共同统计。
 
 例如 4 个进程各持有 2 张图，普通 BatchNorm 每次看到 2 张图及其空间位置；同步版本在统计意义上看到 8 张图及其空间位置。可使用：
 
@@ -1358,7 +1361,7 @@ print(ln(x))
 ```
 
 > [!NOTE] 序列长度可以变化
-> `LayerNorm(E)` 只要求最后一维长度等于 `E`。同一个层可以先处理 `(2,10,E)`，再处理 `(5,37,E)`，因为批大小和 token 数都属于前导维度。
+> `LayerNorm(E)` 只要求最后一维长度等于 `E`。同一个层可以先处理 `(2,10,E)`，再处理 `(5,37,E)`，因为 Batch Size 和 token 数都属于前导维度。
 
 #### 4.6.2 多维 `normalized_shape`：最后多维一起计算
 
@@ -1473,7 +1476,7 @@ InstanceNorm 的核心规则是：
 
 把一维、二维、三维版本写在一起：
 
-| 模块 | 有批输入 | 无批输入 | 每一组使用的元素 |
+| 模块 | 含 Batch维度的输入 | 不含 Batch维度的输入 | 每一组使用的元素 |
 | --- | --- | --- | --- |
 | `InstanceNorm1d(C)` | `(N,C,L)` | `(C,L)` | 固定 $n,c$ 后的 $L$ 个数 |
 | `InstanceNorm2d(C)` | `(N,C,H,W)` | `(C,H,W)` | 固定 $n,c$ 后的 $HW$ 个数 |
@@ -1595,7 +1598,7 @@ GroupNorm 只有一个通用模块：
 nn.GroupNorm(num_groups=G, num_channels=C)
 ```
 
-它不区分一维、二维、三维，因为所有通道之后的维度都作为空间维参与统计。
+它不区分一维、二维、三维，因为所有通道之后的维度都作为空间维度参与统计。
 
 > [!NOTE] GroupNorm 的形状拆分法
 > 对 `(N,C,...)`，可以暂时把通道拆成 `(G,C/G)`，从而把输入看作 `(N,G,C/G,...)`。固定样本 `n` 和组号 `g`，让组内通道及全部空间下标变化。
@@ -1630,7 +1633,7 @@ $$
 \sum_{c\in g}\sum_h\sum_w x_{n,c,h,w}.
 $$
 
-一共得到 $N\times G$ 套均值和方差。批中其他样本不会参与。
+一共得到 $N\times G$ 套均值和方差。同一 Batch 中的其他样本不会参与。
 
 例如输入 `(2,8,4,4)`，使用 `GroupNorm(4,8)`：
 
@@ -1702,7 +1705,7 @@ nn.GroupNorm(num_groups=1, num_channels=C)
 
 此外，GroupNorm 默认 `affine=True`；InstanceNorm 默认 `affine=False`。所以“统计集合相似”并不代表两个模块可以在任何设置下直接替换。
 
-#### 4.8.4 GroupNorm 不依赖小批组成
+#### 4.8.4 GroupNorm 不依赖 Batch 中的样本组成
 
 GroupNorm 不跨样本统计，也不保存运行均值和运行方差。训练与评估使用相同的当前输入计算规则：
 
@@ -1729,7 +1732,7 @@ $$
 N\times\frac{C}{G}\times\text{空间元素数}.
 $$
 
-例如 `(1,C)` 配置 `GroupNorm(C,C)` 时该值为 1，会报错。即使某些更大批次能够执行，每个样本、每组若实际只有一个值，标准化中间结果也只能为 0，通常缺少有用变化。
+例如 `(1,C)` 配置 `GroupNorm(C,C)` 时该值为 1，会报错。即使增大 Batch Size 后能够执行，每个样本、每组若实际只有一个值，标准化中间结果也只能为 0，通常缺少有用变化。
 
 ### 4.9 LocalResponseNorm：同一位置查看邻近通道
 
@@ -2036,7 +2039,7 @@ $$
 
 | 模块与设置 | 训练状态 | 评估状态 |
 | --- | --- | --- |
-| BatchNorm，默认追踪运行统计 | 当前小批；同时更新 buffer | 使用运行统计 |
+| BatchNorm，默认追踪运行统计 | 当前 Batch；同时更新 buffer | 使用运行统计 |
 | BatchNorm，`track_running_stats=False` | 当前输入 | 当前输入 |
 | SyncBatchNorm，默认设置 | 训练时按参与进程合并 | 使用运行统计 |
 | InstanceNorm，默认设置 | 当前样本 | 当前样本 |
@@ -2083,21 +2086,21 @@ with torch.inference_mode():
 
 | 数据与网络 | 常见选择 | 主要原因 |
 | --- | --- | --- |
-| MLP 输入 `(...,E)` | `LayerNorm(E)` 或不使用归一化 | 最后一维含义清楚，不依赖同批样本 |
+| MLP 输入 `(...,E)` | `LayerNorm(E)` 或不使用归一化 | 最后一维含义清楚，不依赖同一 Batch 中的其他样本 |
 | Transformer 输入 `(N,L,E)` | `LayerNorm(E)` | 每个 token 独立处理自己的特征 |
 | RNN/LSTM 隐状态 `(...,H)` | `LayerNorm(H)` | 可按时间位置处理隐藏特征 |
-| 常规二维卷积，单卡小批较充足 | `BatchNorm2d(C)` | 每通道统计，使用成熟广泛 |
+| 常规二维卷积，单卡 Batch Size 较大 | `BatchNorm2d(C)` | 每通道统计，使用成熟广泛 |
 | 每卡样本很少的卷积网络 | `GroupNorm(G,C)` | 不跨样本统计 |
 | 图像风格处理 | `InstanceNorm2d(C)` | 每张图、每通道独立处理空间数值 |
 | 视频或体数据 | `BatchNorm3d(C)`、`InstanceNorm3d(C)` 或 GroupNorm | 取决于是否希望跨样本、跨通道组 |
 | 每个像素对通道处理 | 转成 `(N,H,W,C)` 后 `LayerNorm(C)` | 固定像素，只比较通道 |
 | 复现早期视觉模型 | LocalResponseNorm | 保持原模型计算方式 |
-| 多进程训练且需要跨进程批统计 | SyncBatchNorm | 合并参与进程的数据 |
+| 多进程训练且需要跨进程计算 BatchNorm 统计量 | SyncBatchNorm | 合并参与进程的数据 |
 
 #### 4.13.1 一个简洁的选择顺序
 
 1. 先写输入形状，并给每个维度标上含义。
-2. 决定一个样本是否应受到同批其他样本影响。
+2. 决定一个样本是否应受到同一 Batch 中其他样本的影响。
 3. 决定通道应分开、分组，还是与其他特征一起处理。
 4. 决定空间位置或 token 位置是否应参与同一组统计。
 5. 检查输入长度和空间尺寸是否会变化。
@@ -2132,7 +2135,7 @@ with torch.inference_mode():
 | `LayerNorm(E)` | 所有前导尺寸可变化，最后一维必须是 `E` |
 | `LayerNorm((H,W))` | 前导尺寸可变化，最后两维必须固定为 `H,W` |
 
-例如 `LayerNorm(768)` 可以处理不同批大小和不同 token 数，只要每个 token 的特征宽度始终为 768。`LayerNorm((14,14))` 则不能直接处理空间尺寸变成 `(16,16)` 的输入。
+例如 `LayerNorm(768)` 可以处理不同 Batch Size 和不同 token 数，只要每个 token 的特征宽度始终为 768。`LayerNorm((14,14))` 则不能直接处理空间尺寸变成 `(16,16)` 的输入。
 
 ### 4.14 常见报错、静默错误与排查代码
 
@@ -2170,7 +2173,7 @@ correct = bn(x.transpose(1, 2)).transpose(1, 2)
 > [!IMPORTANT] 每次使用归一化层都写一句轴说明
 > 例如：“输入 `(N,L,E)`，本层固定 `n,l`，对 `e` 统计。”这句话能在代码评审时快速暴露维度误用。
 
-还有一种容易误导初学者的情况：关闭依赖通道数的参数和运行统计后，PyTorch 2.0.1 的部分后端路径未必检查构造参数中的 `C` 是否与实际第 1 维一致。例如默认 InstanceNorm，或同时使用 `affine=False, track_running_stats=False` 的 BatchNorm，某些错误配置可能仍能执行。应始终主动核对通道维，不要把“没有报错”当作配置正确。
+还有一种容易误导初学者的情况：关闭依赖通道数的参数和运行统计后，PyTorch 2.0.1 的部分后端路径未必检查构造参数中的 `C` 是否与实际第 1 维一致。例如默认 InstanceNorm，或同时使用 `affine=False, track_running_stats=False` 的 BatchNorm，某些错误配置可能仍能执行。应始终主动核对通道维度，不要把“没有报错”当作配置正确。
 
 #### 4.14.3 用 `keepdim=True` 打印统计数据形状
 
@@ -2228,7 +2231,7 @@ print(torch.allclose(ln(x)[0], ln(x_changed)[0]))  # True
 ### 4.15 初学者常问的归一化问题
 
 > [!QUESTION] 名字中的 1d、2d、3d 是张量维数吗？
-> 不是。它表示空间维的数量。`BatchNorm1d` 可接收二维 `(N,C)` 或三维 `(N,C,L)`；`BatchNorm2d` 的常规输入是四维 `(N,C,H,W)`；`BatchNorm3d` 的常规输入是五维 `(N,C,D,H,W)`。
+> 不是。它表示空间维度的数量。`BatchNorm1d` 可接收二维 `(N,C)` 或三维 `(N,C,L)`；`BatchNorm2d` 的常规输入是四维 `(N,C,H,W)`；`BatchNorm3d` 的常规输入是五维 `(N,C,D,H,W)`。
 
 > [!QUESTION] 归一化会不会丢掉均值和尺度信息？
 > 标准化中间步骤会移除当前统计集合的中心和尺度，但可学习的 $\gamma,\beta$ 能重新调整输出。网络的其他层也会保留和组合信息。是否适合使用仍取决于模型结构与任务。
@@ -2243,10 +2246,10 @@ print(torch.allclose(ln(x)[0], ln(x_changed)[0]))  # True
 > 不一定。组数增大后，每组通道数减少；组数减小后，更多通道一起统计。两者改变了模型看到的特征组合，应结合通道数和任务选择。
 
 > [!QUESTION] 为什么训练与评估的 BatchNorm 结果差很多？
-> 常见原因包括：训练时间太短，运行统计尚不稳定；训练和评估数据分布差异明显；小批太小；忘记在训练后调用 `eval()`；加载模型时遗漏了 buffer。
+> 常见原因包括：训练时间太短，运行统计尚不稳定；训练和评估数据分布差异明显；Batch Size 太小；忘记在训练后调用 `eval()`；加载模型时遗漏了 buffer。
 
-> [!QUESTION] 为什么 LayerNorm 能处理任意批大小？
-> `LayerNorm(E)` 不在批维上计算，每个前导位置独立使用最后的 $E$ 个特征。因此批从 1 变成 100 不会改变单个位置所用的统计集合。
+> [!QUESTION] 为什么 LayerNorm 能处理任意 Batch Size？
+> `LayerNorm(E)` 不在 Batch维度上计算，每个前导位置独立使用最后的 $E$ 个特征。因此 Batch Size 从 1 变成 100，不会改变单个位置所用的统计集合。
 
 > [!QUESTION] 换轴后为什么输出还要换回来？
 > 下游层通常约定原来的维度顺序。例如 Transformer 常使用 `(N,L,E)`，而 BatchNorm1d 要求 `(N,E,L)`。计算后换回，可让后续注意力和线性层继续按原约定读取。
@@ -2292,11 +2295,11 @@ w_{o,i,r,s}\;x_{n,\,i+qC_{in}/g,\,h\cdot s_h-p_h+r\cdot d_h,\,w\cdot s_w-p_w+s\c
 
 其中 $q$ 是输出通道所属的组，$s$ 为 stride，$p$ 为 padding，$d$ 为 dilation。超出原图范围的取值由填充给出，`padding_mode` 可选 `zeros`、`reflect`、`replicate`、`circular`。
 
-每个空间维的输出长度为：
+每个空间维度的输出长度为：
 
 $$L_{out}=\left\lfloor\frac{L_{in}+2p-d(k-1)-1}{s}+1\right\rfloor.$$
 
-`Conv1d` 只保留一个空间维；`Conv3d` 把同一规则扩展到深、高、宽。参数可以是一个整数，也可以是按各维给出的元组。
+`Conv1d` 只保留一个空间维度；`Conv3d` 把同一规则扩展到深、高、宽。参数可以是一个整数，也可以是按每个维度给出的元组。
 
 ```python
 conv = nn.Conv2d(
@@ -2309,9 +2312,9 @@ print(conv(x).shape)  # (4, 16, 16, 16)
 
 #### 先从输入形状读懂三类卷积
 
-`Conv1d`、`Conv2d`、`Conv3d` 中的数字表示卷积核沿几个空间维滑动，不表示输入张量总共有几个维度。加入小批维和通道维后，张量维数通常比层名称中的数字多 2。
+`Conv1d`、`Conv2d`、`Conv3d` 中的数字表示卷积核沿几个空间维度滑动，不表示输入张量总共有几个维度。加入 Batch维度和通道维度后，张量维数通常比层名称中的数字多 2。
 
-| 层 | 带小批维的输入 | 权重形状 | 输出 |
+| 层 | 含 Batch维度的输入 | 权重形状 | 输出 |
 | --- | --- | --- | --- |
 | `Conv1d` | `(N,C_in,L)` | `(C_out,C_in/groups,K)` | `(N,C_out,L_out)` |
 | `Conv2d` | `(N,C_in,H,W)` | `(C_out,C_in/groups,K_h,K_w)` | `(N,C_out,H_out,W_out)` |
@@ -2319,17 +2322,17 @@ print(conv(x).shape)  # (4, 16, 16, 16)
 
 表中：
 
-- $N$ 是小批中的样本数；
+- $N$ 是 Batch Size；
 - $C_{\mathrm{in}}$ 和 $C_{\mathrm{out}}$ 是输入、输出通道数；
 - $L$ 可以表示音频采样点、时间步或序列位置；
 - $H,W$ 是图像的高和宽；
 - $D$ 可以表示医学体数据的深度，也可以表示视频时间；
-- $K$ 表示卷积核在相应空间维的大小。
+- $K$ 表示卷积核在相应空间维度的大小。
 
 > [!NOTE] 一个输出通道对应一组完整权重
 > 对普通 `Conv2d` 而言，一组权重不只是一个 $K_h\times K_w$ 小片，而是覆盖所有输入通道的 $C_{\mathrm{in}}\times K_h\times K_w$ 张量。它先在各输入通道做乘加，再把结果相加成一个输出通道。`out_channels=16` 表示会产生 16 组这样的结果。
 
-PyTorch 允许省略小批维，因此 `Conv2d` 也能接收 `(C,H,W)`。不过网络代码通常保留小批维，即使一次只有一张图，也整理成 `(1,C,H,W)`，这样更容易与数据读取器和后续层配合。
+PyTorch 允许省略 Batch维度，因此 `Conv2d` 也能接收 `(C,H,W)`。不过网络代码通常保留 Batch维度，即使一次只有一张图，也整理成 `(1,C,H,W)`，这样更容易与数据读取器和后续层配合。
 
 > [!WARNING] PyTorch 卷积默认采用 channels-first
 > 图像通常写成 `(N,C,H,W)`，而不是 `(N,H,W,C)`；视频或体数据通常写成 `(N,C,D,H,W)`。若外部工具给出 channels-last 数据，应先用 `permute` 调整各轴次序。
@@ -2348,7 +2351,7 @@ print(y.shape)
 > [!EXAMPLE] `Conv1d` 不只用于音频
 > 若一句话有 20 个 token，每个 token 用 64 个数表示，输入可看成 64 个特征通道、每个通道长度为 20。大小为 3 的卷积核每次查看相邻三个 token，可以学习局部词组附近的组合特征。
 
-#### 每个空间维都可以单独计算输出大小
+#### 每个空间维度都可以单独计算输出大小
 
 先定义卷积核在某一维上的实际覆盖长度：
 
@@ -2547,7 +2550,7 @@ print(depthwise_separable(torch.randn(2, 8, 20, 20)).shape)  # (2, 24, 20, 20)
 
 $$L_{out}=(L_{in}-1)s-2p+d(k-1)+\text{output\_padding}+1.$$
 
-二维、三维分别对每个空间维应用该式。`output_padding` 只用于消除 stride 大于 1 时多个可能输出尺寸之间的歧义，不会在输出上额外填入数值。
+二维、三维分别对每个空间维度应用该式。`output_padding` 只用于消除 stride 大于 1 时多个可能输出尺寸之间的歧义，不会在输出上额外填入数值。
 
 ```python
 upconv = nn.ConvTranspose2d(16, 8, kernel_size=4, stride=2, padding=1)
@@ -2631,7 +2634,7 @@ $$y=\frac{1}{|\mathcal W|}\sum_{u\in\mathcal W}x_u.$$
 
 $$y=\left(\sum_{u\in\mathcal W}x_u^p\right)^{1/p}.$$
 
-池化层的每个空间维输出长度同卷积公式。`MaxPool` 的 `return_indices=True` 会同时返回最大值的位置索引，供 `MaxUnpool` 使用；`ceil_mode=True` 允许窗口从左侧起点开始但在右侧未完整覆盖时仍产生输出。
+池化层的每个空间维度输出长度同卷积公式。`MaxPool` 的 `return_indices=True` 会同时返回最大值的位置索引，供 `MaxUnpool` 使用；`ceil_mode=True` 允许窗口从左侧起点开始但在右侧未完整覆盖时仍产生输出。
 
 ```python
 x = torch.tensor([[[[1., 2., 3., 4.],
@@ -2711,11 +2714,11 @@ $$
 | `ConstantPad1d/2d/3d(padding, value)` | 常量 `value` | 对应维度的任意浮点或整数张量 |
 | `ZeroPad2d(padding)` | 0 | 二维图像张量 |
 | `ReflectionPad1d/2d/3d` | 以端点内侧的值反射 | 每侧填充量必须小于对应输入尺寸 |
-| `ReplicationPad1d/2d/3d` | 重复最外侧数值 | 对应空间维 |
+| `ReplicationPad1d/2d/3d` | 重复最外侧数值 | 对应空间维度 |
 
 二维 `padding=(left, right, top, bottom)`。一维只给 `(left, right)`；三维给 `(left, right, top, bottom, front, back)`。例如：
 
-> [!TIP] 填充元组从最后一个空间维开始写
+> [!TIP] 填充元组从最后一个空间维度开始写
 > 二维输入的最后一维是宽，所以先写 `(left,right)`；倒数第二维是高，再写 `(top,bottom)`。因此 `(1,2,3,4)` 表示左 1、右 2、上 3、下 4。
 
 ```python
@@ -2771,7 +2774,7 @@ $$
 | 2 | $\begin{bmatrix}4&5\\7&8\end{bmatrix}$ | $[4,5,7,8]^T$ |
 | 3 | $\begin{bmatrix}5&6\\8&9\end{bmatrix}$ | $[5,6,8,9]^T$ |
 
-因此 `Unfold` 的结果形状是 `(1,4,4)`。去掉 batch 维后，它是下面这个矩阵；**每一列就是一个窗口**：
+因此 `Unfold` 的结果形状是 `(1,4,4)`。去掉 Batch维度后，它是下面这个矩阵；**每一列就是一个窗口**：
 
 $$
 \begin{bmatrix}
@@ -2894,7 +2897,7 @@ print(summed / divisor)  # 恢复为原始 x
 
 ### 6.6 `PixelShuffle`、`PixelUnshuffle`、`ChannelShuffle`
 
-`PixelShuffle(r)` 将通道中的子像素重排到空间维：
+`PixelShuffle(r)` 将通道中的子像素重排到空间维度：
 
 $$ (N, C r^2, H, W)\rightarrow(N,C,Hr,Wr).$$
 
@@ -2936,7 +2939,7 @@ print(y_small[0, 0])
 #         [30., 40.]])
 ```
 
-这里没有插值、平均或乘法，四个数完全不变，只是从通道维重新排到高和宽。`PixelUnshuffle(2)` 会把这个 `2×2` 图重新放回四个通道。
+这里没有插值、平均或乘法，四个数完全不变，只是从通道维度重新排到高和宽。`PixelUnshuffle(2)` 会把这个 `2×2` 图重新放回四个通道。
 
 ### 6.7 `Upsample` 与旧式上采样模块
 
@@ -3179,7 +3182,7 @@ $$
 
 | 符号 | 含义 |
 | --- | --- |
-| $N$ | 小批大小 |
+| $N$ | Batch Size |
 | $L$ | 序列长度 |
 | $I$ | 输入特征宽度 `input_size` |
 | $H$ | 隐藏宽度 `hidden_size` |
@@ -3197,7 +3200,7 @@ $$
 | `c_n` | 无 | $(KR,N,H)$ |
 
 > [!IMPORTANT] `batch_first` 不改变状态张量的次序
-> `batch_first=True` 只把输入与逐位置输出改成小批在前。`h_n` 和 `c_n` 仍以“层与方向”作为第 0 维，不会变成 `(N,K,H)`。
+> `batch_first=True` 只把输入与逐位置输出改成 Batch维度在前。`h_n` 和 `c_n` 仍以“层与方向”作为第 0 维，不会变成 `(N,K,H)`。
 
 以两层双向 GRU 为例，`h_n.shape=(4,N,H)`。第 0 维依次保存：
 
@@ -3285,7 +3288,7 @@ LSTM 同时返回 $h_n$ 和 $c_n$：
 
 - $h_n$ 是向外提供的隐藏状态；
 - $c_n$ 是内部记忆状态；
-- 普通 LSTM 中两者的层数、方向数、小批数和最后一维都相同。
+- 普通 LSTM 中两者的层数、方向数、Batch Size 和最后一维都相同。
 
 ```python
 lstm = nn.LSTM(
@@ -3354,7 +3357,7 @@ print(c_n.shape)     # (4,3,12)
 
 ### 7.7 不同样本长度不同：补齐、打包与还原
 
-一批句子常有不同长度。例如三个样本的有效长度分别是 5、3、2。为了组成规则张量，短样本要补到长度 5：
+一个 Batch 内的句子常有不同长度。例如三个样本的有效长度分别是 5、3、2。为了组成规则张量，短样本要补到长度 5：
 
 ```text
 样本 0：a b c d e
@@ -3439,7 +3442,7 @@ print(sequence_features.shape)  # (3,12)
 - `total_length` 可强制还原到指定长度，后面还要堆叠其他模块时很有用。
 
 > [!WARNING] 长度必须与样本内容一致
-> 若某个样本实际只有 3 个有效位置，却把长度写成 5，循环层会把两个补齐位置当成真实输入；若长度写得过小，末尾真实内容又会被跳过。长度应在整理小批时从原始数据可靠地保存。
+> 若某个样本实际只有 3 个有效位置，却把长度写成 5，循环层会把两个补齐位置当成真实输入；若长度写得过小，末尾真实内容又会被跳过。构造一个 Batch 时，应从原始数据可靠地保存每个样本的有效长度。
 
 > [!WARNING] 不要把长度为 0 的样本直接送入打包函数
 > 有效长度必须大于 0。空文本可以加入 `[UNK]`、`[CLS]` 等占位 token，或在整理数据时单独处理。
@@ -3554,7 +3557,7 @@ y, _ = mha(x, x, x, attn_mask=causal_mask)
 
 令：
 
-- $N$ 为小批大小；
+- $N$ 为 Batch Size；
 - $L_q$ 为 Query 长度；
 - $L_k$ 为 Key 和 Value 长度；
 - $E$ 为输入宽度；
@@ -3573,7 +3576,7 @@ y, _ = mha(x, x, x, attn_mask=causal_mask)
 
 `embed_dim` 必须能被 `num_heads` 整除，每个头的宽度为 $d_h=E/h$。例如 `embed_dim=8,num_heads=2` 时，每个头处理 4 维 Query、Key 和 Value。
 
-默认 `average_attn_weights=True`，返回的权重已经在头维取平均。要观察每个头，应传入 `average_attn_weights=False`：
+默认 `average_attn_weights=True`，返回的权重已经在 Head维度取平均。要观察每个 Head，应传入 `average_attn_weights=False`：
 
 ```python
 import torch
@@ -3875,7 +3878,7 @@ print(result.output.shape, result.loss.shape)  # (4,), 标量
 
 $$D_{KL}(q\parallel p)=\sum_i q_i(\log q_i-\log p_i).$$
 
-若 `log_target=True`，目标也应传入 $\log q$。当批大小不同时，`reduction="batchmean"` 与 KL 的数学定义更一致。
+若 `log_target=True`，目标也应传入 $\log q$。当 Batch Size 不同时，`reduction="batchmean"` 与 KL 的数学定义更一致。
 
 `CTCLoss` 用于输入时间长度与目标标签长度不一致、且没有逐位置对齐标注的序列任务。对所有能压缩成目标标签序列的路径 $\pi$ 求概率和：
 
@@ -3965,16 +3968,16 @@ print(nn.MSELoss(reduction="mean")(pred, target))
 
 #### 9.5.1 序列交叉熵与 `ignore_index`
 
-语言模型 logits 常写成 `(N,L,V)`，其中 $V$ 是词表大小。但 `CrossEntropyLoss` 规定类别维位于第 1 维，所以有两种常见写法：
+语言模型 logits 常写成 `(N,L,V)`，其中 $V$ 是词表大小。但 `CrossEntropyLoss` 规定类别维度位于第 1 维，所以有两种常见写法：
 
 ```python
-# 写法一：把类别维换到第 1 维。
+# 写法一：把类别维度换到第 1 维。
 loss = nn.CrossEntropyLoss(ignore_index=0)(
     logits.transpose(1, 2),  # (N,V,L)
     targets,                 # (N,L)
 )
 
-# 写法二：合并小批维与序列维。
+# 写法二：合并 Batch维度与序列维度。
 loss = nn.CrossEntropyLoss(ignore_index=0)(
     logits.reshape(-1, logits.size(-1)),  # (N*L,V)
     targets.reshape(-1),                  # (N*L,)
@@ -4005,7 +4008,7 @@ per_token = nn.functional.cross_entropy(
 valid = targets.ne(pad_id)
 valid_count = valid.sum()
 if valid_count == 0:
-    raise ValueError("这个小批没有有效目标")
+    raise ValueError("当前 Batch 没有有效目标")
 
 loss = per_token.sum() / valid_count
 loss.backward()
@@ -4058,7 +4061,7 @@ print(criterion(logits, labels))
 `BCEWithLogitsLoss` 中的 `weight` 与 `pos_weight` 含义不同：
 
 - `weight` 缩放每个样本或每个元素的完整损失；
-- `pos_weight` 只改变正标签项的影响，形状通常与类别维相容。
+- `pos_weight` 只改变正标签项的影响，形状通常与类别维度相容。
 
 > [!WARNING] 单标签多类别与多标签是两类任务
 > 单标签多类别任务中，一个样本只属于一个类别，常用 `CrossEntropyLoss` 和整数标签；多标签任务中，一个样本可同时属于多个类别，常用 `BCEWithLogitsLoss` 和 0/1 浮点矩阵。
@@ -4126,11 +4129,11 @@ print(logits.shape, loss.item())
 关键检查项：卷积的输入通道应等于上一层输出通道；`GroupNorm` 的 `num_channels` 必须能被 `num_groups` 整除；分类标签是 `long` 类型且不应 one-hot；训练代码直接把 logits 传给 `CrossEntropyLoss`。
 
 > [!NOTE] 这段示例只演示一次前向与反向计算
-> 完整训练循环通常在每个小批依次执行 `optimizer.zero_grad()`、前向计算、`loss.backward()` 和 `optimizer.step()`。验证时切换到 `eval()` 并使用 `torch.inference_mode()`，返回训练前再调用 `train()`。
+> 完整训练循环通常对每个 Batch 依次执行 `optimizer.zero_grad()`、前向计算、`loss.backward()` 和 `optimizer.step()`。验证时切换到 `eval()` 并使用 `torch.inference_mode()`，返回训练前再调用 `train()`。
 
 ### 10.1 先用形状表读懂整个模型
 
-设小批大小为 $N=8$。`SmallCNN` 中各步的形状如下：
+设 Batch Size 为 $N=8$。`SmallCNN` 中各步的形状如下：
 
 | 步骤 | 输入形状 | 输出形状 | 这一层做了什么 |
 | --- | --- | --- | --- |
@@ -4142,7 +4145,7 @@ print(logits.shape, loss.item())
 | `GroupNorm(4,32)` | `(8,32,16,16)` | `(8,32,16,16)` | 每 8 个通道组成一组 |
 | `GELU()` | `(8,32,16,16)` | `(8,32,16,16)` | 逐元素加入平滑非线性 |
 | `AdaptiveAvgPool2d(1)` | `(8,32,16,16)` | `(8,32,1,1)` | 每个通道汇总为一个数 |
-| `Flatten(1)` | `(8,32,1,1)` | `(8,32)` | 保留小批维，合并其余维 |
+| `Flatten(1)` | `(8,32,1,1)` | `(8,32)` | 保留 Batch维度，合并其余维度 |
 | `Linear(32,10)` | `(8,32)` | `(8,10)` | 为每张图产生 10 个 logits |
 
 第一个卷积为什么保持 $32\times32$？把卷积输出公式代入：
@@ -4160,8 +4163,8 @@ $$
 
 式中，$H_{in}=32$ 是输入高度，$p=1$ 是两侧填充，$d=1$ 是膨胀系数，$k=3$ 是卷积核高度，$s=1$ 是步幅。宽度用同一方法计算。
 
-> [!TIP] 先检查一批数据，再开始长时间训练
-> 用 `next(iter(loader))` 取一个小批，打印输入、标签和输出形状，可以很早发现通道次序、标签类型及类别数错误。
+> [!TIP] 先检查一个 Batch，再开始长时间训练
+> 用 `next(iter(loader))` 取出一个 Batch，打印输入、标签和输出形状，可以很早发现通道次序、标签类型及类别数错误。
 
 ### 10.2 从人造数据开始搭建可运行的数据读取过程
 
@@ -4200,9 +4203,9 @@ print(labels.dtype)  # torch.int64
 > [!NOTE] 随机数据上的准确率没有任务含义
 > 标签和图像彼此无关，模型不可能学到可靠规律。这里关注的是代码、形状、梯度和状态切换。替换成真实数据后，仍应检查样本含义、预处理方式和训练集与验证集的划分。
 
-### 10.3 一个小批的五个训练步骤
+### 10.3 一个 Batch 的五个训练步骤
 
-一个小批通常按以下次序处理：
+一个 Batch 通常按以下次序处理：
 
 ```python
 optimizer.zero_grad(set_to_none=True)
@@ -4216,13 +4219,13 @@ optimizer.step()
 
 #### 第一步：清理旧梯度
 
-PyTorch 默认把多次反向计算所得梯度相加。若上一个小批留下了梯度而没有清理，当前小批的结果会继续累加到 `parameter.grad`。普通训练每个小批都先调用
+PyTorch 默认把多次反向计算所得梯度相加。若上一个 Batch 留下了梯度而没有清理，当前 Batch 的结果会继续累加到 `parameter.grad`。普通训练对每个 Batch 都先调用
 
 ```python
 optimizer.zero_grad(set_to_none=True)
 ```
 
-`set_to_none=True` 会把梯度设为 `None`，而不是填成全零张量，常能减少不必要的写入。若确实想把多个小批的梯度相加后再更新参数，就要明确设计累加次数，并对损失缩放。
+`set_to_none=True` 会把梯度设为 `None`，而不是填成全零张量，常能减少不必要的写入。若确实想把多个 Batch 的梯度相加后再更新参数，就要明确设计累加次数，并对损失缩放。
 
 #### 第二步：前向计算
 
@@ -4238,9 +4241,9 @@ logits = model(images)
 loss = criterion(logits, labels)
 ```
 
-默认 `CrossEntropyLoss(reduction="mean")` 对小批中所有样本的损失取平均，因而 `loss.shape` 是空形状 `torch.Size([])`，也就是一个标量张量。
+默认 `CrossEntropyLoss(reduction="mean")` 对当前 Batch 中所有样本的损失取平均，因而 `loss.shape` 是空形状 `torch.Size([])`，也就是一个标量张量。
 
-假设一个小批有两个样本，单样本损失分别为 1.2 和 0.8，那么平均损失为
+假设一个 Batch 有两个样本，单样本损失分别为 1.2 和 0.8，那么平均损失为
 
 $$\frac{1.2+0.8}{2}=1.0.$$
 
@@ -4355,7 +4358,7 @@ for epoch in range(2):
     )
 ```
 
-`loss.item()` 得到的是当前小批的平均损失。为了正确得到整套数据的平均值，代码先乘回 `batch_size`，累计各样本损失，再除以总样本数。最后一个小批可能小于设定的 `batch_size`，因此不能简单地对“小批平均值”再次等权平均。
+`loss.item()` 得到的是当前 Batch 的平均损失。为了正确得到整套数据的平均值，代码先乘回 `batch_size`，累计各样本损失，再除以总样本数。最后一个 Batch 的样本数可能小于设定的 `batch_size`，因此不能简单地对“每个 Batch 的平均值”再次等权平均。
 
 准确率使用
 
@@ -4367,7 +4370,7 @@ predictions = logits.argmax(dim=1)
 
 #### 10.4.1 `train()`、`eval()` 与 `inference_mode()` 分别控制什么
 
-- `model.train()` 把模型及所有子模块设为训练状态，Dropout 会随机置零，BatchNorm 会使用当前小批统计并更新运行统计；
+- `model.train()` 把模型及所有子模块设为训练状态，Dropout 会随机置零，BatchNorm 会使用当前 Batch 的统计量并更新运行统计；
 - `model.eval()` 把它们设为评估状态，Dropout 不再随机置零，BatchNorm 使用已保存的运行统计；
 - `torch.inference_mode()` 停止记录自动求导信息，并进行适合推理的额外优化。
 
@@ -4423,7 +4426,7 @@ print(start_epoch)
 > [!CAUTION] 只加载可信来源的文件
 > `torch.load` 使用 Python 的序列化机制。对来源不明的文件，不应直接加载。版本较新的 PyTorch 提供了更严格的加载选项，但使用前要核对当前安装版本的函数签名。
 
-### 10.6 用一个小批进行系统排查
+### 10.6 用一个 Batch 进行系统排查
 
 模型报错或结果异常时，可以先执行下面的检查：
 
@@ -4489,7 +4492,7 @@ for name, parameter in layer.named_parameters():
 | 需求 | 优先选择 |
 | --- | --- |
 | 固定宽度特征变换 | `Linear` + `ReLU/GELU/SiLU` |
-| 图像局部纹理 | `Conv2d`；小批时可配 `GroupNorm` |
+| 图像局部纹理 | `Conv2d`；Batch Size 较小时可配 `GroupNorm` |
 | 变长离散词序列 | `Embedding` + `GRU/LSTM/TransformerEncoder` |
 | token 间全局交互 | `MultiheadAttention` 或 `TransformerEncoderLayer` |
 | 缩小任意尺寸特征图 | `AdaptiveAvgPool2d(1)` |
@@ -4499,4 +4502,4 @@ for name, parameter in layer.named_parameters():
 | 连续数值预测 | `MSELoss`、`L1Loss`、`SmoothL1Loss` 或 `HuberLoss` |
 | 向量检索或人脸比对 | `CosineSimilarity`、`TripletMarginLoss` |
 
-选择模块时，先写清输入/输出形状、参数量、训练与评估状态下的差异，再用一小批随机输入跑通前向和反向计算；这能及早发现通道数、类别维度、数据类型或掩码形状不匹配的问题。
+选择模块时，先写清输入/输出形状、参数量、训练与评估状态下的差异，再构造一个较小的随机 Batch，跑通前向和反向计算；这能及早发现通道数、类别维度、数据类型或掩码形状不匹配的问题。
