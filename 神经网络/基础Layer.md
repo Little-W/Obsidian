@@ -2,6 +2,12 @@
 
 > 本文按本仓库已安装的 PyTorch 2.0.1 整理 `torch.nn` 中可直接用于搭建网络的基础模块。`torch.nn.functional` 中的同名函数通常与这些模块做同一种计算；模块形式会把可学习参数、运行统计量及训练状态保存到模型中。
 
+> [!ABSTRACT] 本文怎样使用
+> 这是一篇从张量形状出发的入门教程。第一次阅读可以先看每节的用途、形状表和引用框，再运行最小代码；需要手工推导时，再回到公式与数值例子。文中尽量把“层读取哪些数、怎样计算、输出放到哪里”逐项写清。
+
+> [!TIP] 引用框的含义
+> `NOTE` 补充概念，`TIP` 给出阅读或调试方法，`WARNING` 提醒常见错误，`EXAMPLE` 展开小例子，`QUESTION` 回答初学者常问的问题。只快速浏览引用框，也能复习各层最容易混淆的部分。
+
 ## 1. 先建立统一的阅读方式
 
 ### 1.1 张量记号与形状
@@ -16,6 +22,9 @@
 | 三维卷积 | `(N, C, D, H, W)` | 批大小、通道数、深度、高、宽 |
 | 序列（默认） | `(L, N, E)` | 序列长度、批大小、特征宽度 |
 | 序列（`batch_first=True`） | `(N, L, E)` | 批大小、序列长度、特征宽度 |
+
+> [!NOTE] `*` 表示零个或多个前导维度
+> `Linear` 的输入写成 `(*,H_in)`，表示最后一维必须是 `H_in`，前面可以没有维度，也可以有很多维。例如 `(8,)`、`(4,8)`、`(2,5,8)` 都能传给 `Linear(8,3)`，输出依次为 `(3,)`、`(4,3)`、`(2,5,3)`。
 
 `N` 表示批大小，`C` 表示通道数，`L/H/W/D` 是空间尺寸，`E` 是嵌入宽度。模块的 `weight` 和 `bias` 都是 `nn.Parameter`，会由优化器更新；均值、方差等统计量通常是 buffer，不会由优化器更新，但会随 `state_dict()` 保存。
 
@@ -38,6 +47,9 @@ model = nn.Linear(3, 2).eval()
 with torch.inference_mode():
     y = model(torch.randn(5, 3))
 ```
+
+> [!WARNING] `eval()` 不等于关闭梯度
+> `eval()` 只改变 Dropout、BatchNorm 等模块的工作方式，不会禁止 PyTorch 保存反向计算所需的数据。推理时仍应配合 `torch.inference_mode()`；回到训练前再调用 `model.train()`。
 
 ### 1.3 本文覆盖范围
 
@@ -109,6 +121,9 @@ heads = nn.ModuleDict({"class": nn.Linear(4, 3), "score": nn.Linear(4, 1)})
 out = heads["class"](x)
 ```
 
+> [!WARNING] 普通 Python 列表不会逐项登记其中的模块
+> 将若干层放进普通 `list` 后再赋给成员变量，PyTorch 不会把每个子层当作已登记模块。需要训练和保存这些子层时，应使用 `ModuleList`；如果还希望系统自动依次调用，则使用 `Sequential`。
+
 ### 2.2 `Identity`、`Flatten` 与 `Unflatten`
 
 `Identity` 原样返回输入：$y=x$。它常用于按配置选择“启用或不启用某层”而不改动外部代码。
@@ -129,6 +144,9 @@ optional_norm = nn.Identity()
 print(optional_norm(torch.tensor([1., 2.])))
 ```
 
+> [!NOTE] `Unflatten` 只恢复形状，不理解各维含义
+> 只要元素总数相等，它就能拆分维度，但不知道每一维代表通道、高还是宽。若尺寸顺序写错，代码仍可能执行，元素所代表的位置却已经不同。
+
 ---
 
 ## 3. 仿射层与激活层
@@ -140,6 +158,9 @@ print(optional_norm(torch.tensor([1., 2.])))
 $$y=xW^T+b,$$
 
 其中 $W\in\mathbb{R}^{H_{out}\times H_{in}}$，$b\in\mathbb{R}^{H_{out}}$。输入可为 `(*, H_in)`，输出为 `(*, H_out)`。
+
+> [!EXAMPLE] `Linear` 会独立处理每个 token
+> 输入 `(2,5,8)` 可表示 2 个样本、每个样本 5 个 token、每个 token 8 维。经过 `Linear(8,3)` 后得到 `(2,5,3)`。同一组权重会分别作用于 10 个 token；token 之间不会在这个线性层中交换信息。
 
 ```python
 fc = nn.Linear(5, 3)
@@ -232,6 +253,9 @@ Softmax 在指定维度 `dim` 上归一化：
 $$\operatorname{Softmax}(x)_i=\frac{e^{x_i}}{\sum_j e^{x_j}},\qquad
 \operatorname{Softmin}(x)_i=\frac{e^{-x_i}}{\sum_j e^{-x_j}}.$$
 
+> [!QUESTION] Softmax 的 `dim` 选错会发生什么？
+> 对形状 `(N,C)` 的分类 logits，通常使用 `dim=1`，让每个样本的 `C` 个类别概率之和为 1。若误用 `dim=0`，得到的是同一类别在不同样本之间的比例，含义已经改变。
+
 `LogSoftmax` 直接计算
 
 $$\log\operatorname{Softmax}(x)_i=x_i-\log\sum_j e^{x_j},$$
@@ -259,6 +283,9 @@ print(nn.LogSoftmax(dim=1)(logits).exp())   # 与 Softmax 相同
 $$y_i=\frac{m_i}{1-p}x_i.$$
 
 因此训练阶段的期望输出仍为 $x_i$；评估阶段直接返回 $x_i$。
+
+> [!NOTE] “期望不变”不代表每次结果不变
+> 当 `p=0.5` 时，保留下来的元素会除以 `0.5`，也就是乘 2。大量随机试验的平均输出接近原输入，但某一次前向计算仍可能出现较多的 0 或较多的 2。
 
 | 模块 | 置零单位 | 典型输入 |
 | --- | --- | --- |
@@ -313,11 +340,11 @@ bn.eval(); y_eval = bn(images)
 | `LayerNorm(normalized_shape)` | 每个样本最后若干维 | 与 `normalized_shape` 相同 | Transformer、MLP |
 | `LocalResponseNorm` | 同一位置邻近通道 | 无 | 早期视觉网络中按通道做局部抑制 |
 
-它们的通用形式为：
+除 LocalResponseNorm 外，BatchNorm、InstanceNorm、GroupNorm 与 LayerNorm 都可以写成下面的均值—方差形式：
 
 $$y=\gamma\frac{x-\mu}{\sqrt{v+\epsilon}}+\beta.$$
 
-差别只在 $\mu,v$ 的取样范围。`InstanceNorm` 默认 `track_running_stats=False`，训练与评估时均用当前输入统计量；可显式开启运行统计量。`LazyInstanceNorm1d/2d/3d` 会延迟确定通道数。
+这些层的主要差别是 $\mu,v$ 的取样范围，以及 $\gamma,\beta$ 的共享方式。LocalResponseNorm 不减均值、不计算方差，也没有 $\gamma,\beta$；它使用邻近通道的平方和缩放当前值。`InstanceNorm` 默认 `track_running_stats=False`，训练与评估时均用当前输入统计量；可显式开启运行统计量。`LazyInstanceNorm1d/2d/3d` 会延迟确定通道数。
 
 `LayerNorm` 的例子中，`normalized_shape=8` 表示每个 token 的最后 8 个数共同计算均值和方差：
 
@@ -417,6 +444,1355 @@ y_c=\frac{x_c}{b_c^{\beta}},$$
 
 其中 $\mathcal N(c)$ 是以通道 $c$ 为中心、宽度为 `size` 的邻近通道集合。`CrossMapLRN2d` 是旧式二维 LRN 实现，现代模型通常优先使用 BatchNorm、GroupNorm 或 LayerNorm。
 
+### 4.4 多维张量进入归一化层后，究竟会发生什么
+
+前面的公式适合建立第一印象，但初学者最容易卡住的问题通常不是“减均值、除标准差”本身，而是下面四件事：
+
+1. 哪些元素放在一起计算均值和方差？
+2. 哪些维度各自保留一套均值和方差？
+3. 可学习参数 $\gamma$、$\beta$ 怎样加到多维输出上？
+4. 训练状态与评估状态是否使用同一批统计数据？
+
+> [!IMPORTANT] 先记住最重要的结论
+> 绝大多数归一化层都不会改变输入形状。它们改变的是“哪些数互相比较，以及每个数怎样重新调整”。如果输入形状是 `[2, 3, 4, 5]`，输出通常仍是 `[2, 3, 4, 5]`。
+
+#### 4.4.1 用“统计维度”和“保留维度”阅读公式
+
+设输入张量为：
+
+$$
+x\in\mathbb R^{A_0\times A_1\times\cdots\times A_{p-1}}.
+$$
+
+$p$ 是张量的维数，$A_j$ 是第 $j$ 个维度的长度。例如图像张量 `(N,C,H,W)` 有四个维度，分别对应批、通道、高和宽。
+
+某个归一化层会选出一组**统计维度** $\mathcal R$。对于不在 $\mathcal R$ 中的下标保持不变，把 $\mathcal R$ 中所有下标能够取到的元素放在一起。若这一组共有 $M$ 个元素，则：
+
+$$
+\mu=\frac{1}{M}\sum_{j=1}^{M}x_j,
+\qquad
+v=\frac{1}{M}\sum_{j=1}^{M}(x_j-\mu)^2,
+$$
+
+$$
+\widehat x_j=\frac{x_j-\mu}{\sqrt{v+\epsilon}},
+\qquad
+y_j=\gamma\widehat x_j+\beta.
+$$
+
+这里：
+
+| 符号 | 初学者可以怎样理解 |
+| --- | --- |
+| $\mathcal R$ | 哪些维度中的元素要放在一起计算 |
+| $M$ | 当前这一组一共有多少个数 |
+| $\mu$ | 当前这一组数的平均值 |
+| $v$ | 当前这一组数的方差；衡量这些数离均值有多分散 |
+| $\epsilon$ | 加在方差上的很小正数，避免除以零并改善数值稳定性 |
+| $\widehat x$ | 减去均值并除以标准差后的中间结果 |
+| $\gamma$ | 可学习的缩放参数 |
+| $\beta$ | 可学习的平移参数 |
+| $y$ | 层的最终输出 |
+
+不参与统计的维度可以称为**保留维度**。每一种保留下标组合都有自己的一套 $\mu$ 和 $v$。
+
+> [!TIP] 一个非常实用的阅读方法
+> 先不要急着代入公式。先把某个输出元素的下标全部写出来，再问：“为了计算这个元素所用的均值，我能让哪些下标变化？”能变化的就是统计维度，必须固定的就是保留维度。
+
+下面用常见形状做总览：
+
+| 层与输入 | 统计时变化的下标 | 必须固定的下标 | 每套统计数据对应什么 |
+| --- | --- | --- | --- |
+| `BatchNorm1d`，`(N,C)` | $n$ | $c$ | 一个通道 |
+| `BatchNorm1d`，`(N,C,L)` | $n,l$ | $c$ | 一个通道 |
+| `BatchNorm2d`，`(N,C,H,W)` | $n,h,w$ | $c$ | 一个通道 |
+| `BatchNorm3d`，`(N,C,D,H,W)` | $n,d,h,w$ | $c$ | 一个通道 |
+| `InstanceNorm2d`，`(N,C,H,W)` | $h,w$ | $n,c$ | 一个样本中的一个通道 |
+| `GroupNorm(G,C)`，`(N,C,H,W)` | 组内通道、$h,w$ | $n$、组号 | 一个样本中的一个通道组 |
+| `LayerNorm(E)`，`(N,L,E)` | $e$ | $n,l$ | 一个样本中的一个 token |
+| `LayerNorm((H,W))`，`(N,C,H,W)` | $h,w$ | $n,c$ | 一个样本中的一个通道平面 |
+
+#### 4.4.2 “按维度计算”并不是把那个维度删除
+
+例如 `LayerNorm(8)` 接收 `(N,L,8)`。最后一维的 8 个数一起计算均值和方差，但输出中这 8 个位置仍全部保留。归一化不是 `mean(dim=-1)` 那样把最后一维压成长度 1，而是先以 `keepdim=True` 的效果得到统计数据，再把结果用于原张量中的每个元素。
+
+可以把一次计算想成：
+
+```python
+x = torch.randn(2, 5, 8)
+mean = x.mean(dim=-1, keepdim=True)                 # (2, 5, 1)
+var = x.var(dim=-1, unbiased=False, keepdim=True)  # (2, 5, 1)
+y = (x - mean) / torch.sqrt(var + 1e-5)            # 广播后仍是 (2, 5, 8)
+```
+
+`mean` 的最后一维虽然是 1，但它可以在减法中自动扩展到 8 个位置。这个规则叫作广播。
+
+> [!NOTE] 广播不是复制八份存储
+> 可以把广播理解成“同一个统计值供八个位置使用”。底层实现不必真的先创建八份完全相同的数据，因此既便于书写，也避免了无意义的额外存储。
+
+#### 4.4.3 归一化层通常只改数值，不改元素次序
+
+BatchNorm、InstanceNorm、GroupNorm 和 LayerNorm 都会给输入中的每个元素产生一个对应输出。它们不会像卷积那样组合邻域形成新位置，也不会像池化那样减少空间尺寸。
+
+`LocalResponseNorm` 也保持形状，但它与前四类不同：它不计算均值和方差，而是在同一空间位置查看邻近通道的平方和，再缩小当前通道的值。第 4.9 节会单独解释。
+
+### 4.5 BatchNorm 如何处理二维、三维、四维和五维输入
+
+BatchNorm 的核心规则可以压缩成一句话：
+
+> [!NOTE] BatchNorm 的通道规则
+> 固定通道下标 `C`，让批下标和所有空间下标变化，把得到的全部元素放在一起计算。每个通道各有一套均值、方差、`weight` 和 `bias`。
+
+#### 4.5.1 `BatchNorm1d(C)` 接收二维输入 `(N,C)`
+
+二维输入中没有额外的长度维。对通道 $c$：
+
+$$
+\mu_c=\frac{1}{N}\sum_{n=0}^{N-1}x_{n,c},
+\qquad
+v_c=\frac{1}{N}\sum_{n=0}^{N-1}(x_{n,c}-\mu_c)^2.
+$$
+
+例如：
+
+$$
+x=
+\begin{bmatrix}
+1&10\\
+3&20\\
+5&30
+\end{bmatrix},
+\qquad x.shape=(3,2).
+$$
+
+第 0 个通道使用 $[1,3,5]$，均值为 3；第 1 个通道使用 $[10,20,30]$，均值为 20。两个通道互不混合。
+
+若暂时忽略 $\epsilon$，并令 `affine=False`，两个通道的结果都是：
+
+$$
+\left[-\sqrt{\frac32},\ 0,\ \sqrt{\frac32}\right]
+\approx[-1.225,0,1.225].
+$$
+
+这是因为第二个通道恰好是第一个通道的 10 倍。减均值并除以各自标准差后，它们具有相同的相对分布。
+
+> [!WARNING] 二维输入的第 0 维一定被当作批
+> 对 `BatchNorm1d` 来说，二维形状 `(C,L)` 不表示“无批输入”，而会被解释为 `(N,C)`。因此它与 `InstanceNorm1d` 的无批形式不同，不能仅凭维数判断含义。
+
+#### 4.5.2 `BatchNorm1d(C)` 接收三维输入 `(N,C,L)`
+
+三维输入常见于一维信号和经过换轴的序列。此时：
+
+$$
+\mu_c=\frac{1}{NL}
+\sum_{n=0}^{N-1}\sum_{l=0}^{L-1}x_{n,c,l},
+$$
+
+$$
+v_c=\frac{1}{NL}
+\sum_{n=0}^{N-1}\sum_{l=0}^{L-1}(x_{n,c,l}-\mu_c)^2.
+$$
+
+取 $N=2,C=2,L=3$：
+
+$$
+\begin{aligned}
+\text{样本 0，通道 0}&=[1,2,3],&
+\text{样本 0，通道 1}&=[10,20,30],\\
+\text{样本 1，通道 0}&=[4,5,6],&
+\text{样本 1，通道 1}&=[40,50,60].
+\end{aligned}
+$$
+
+通道 0 的统计集合为 $[1,2,3,4,5,6]$：
+
+$$
+\mu_0=3.5,\qquad
+v_0=\frac{17.5}{6}\approx2.9167,\qquad
+\sqrt{v_0}\approx1.7078.
+$$
+
+通道 1 的统计集合为 $[10,20,30,40,50,60]$：
+
+$$
+\mu_1=35,\qquad
+v_1\approx291.6667,\qquad
+\sqrt{v_1}\approx17.078.
+$$
+
+忽略 $\epsilon$ 后，两个通道都会得到近似序列：
+
+$$
+[-1.464,-0.878,-0.293,\ 0.293,\ 0.878,\ 1.464].
+$$
+
+这六个输出会按原来的样本、通道和长度位置放回，形状仍为 `(2,2,3)`。
+
+```python
+x = torch.tensor([
+    [[1., 2., 3.], [10., 20., 30.]],
+    [[4., 5., 6.], [40., 50., 60.]],
+])
+
+bn = nn.BatchNorm1d(2, affine=False, track_running_stats=False)
+y = bn(x)
+print(y.shape)               # torch.Size([2, 2, 3])
+print(y[:, 0, :].reshape(-1))
+print(y[:, 1, :].reshape(-1))
+```
+
+> [!EXAMPLE] 怎样数出每个通道使用多少个元素
+> 对 `(N,C,L)`，固定一个 `c` 后，`n` 有 `N` 种取值，`l` 有 `L` 种取值，所以每个通道使用 `N×L` 个元素。对 `(N,C,H,W)` 则是 `N×H×W` 个。
+
+#### 4.5.3 序列 `(N,L,E)` 为什么经常需要换轴
+
+很多序列模型在 `batch_first=True` 时使用：
+
+$$
+x.shape=(N,L,E),
+$$
+
+其中 $L$ 是 token 数，$E$ 是特征宽度。`BatchNorm1d(num_features)` 规定通道必须位于第 1 维，因此若希望把每个特征当作一个通道，应先变成 `(N,E,L)`：
+
+```python
+N, L, E = 4, 6, 8
+x = torch.randn(N, L, E)
+bn = nn.BatchNorm1d(E)
+
+x_nel = x.transpose(1, 2)  # (N, E, L)
+y_nel = bn(x_nel)
+y = y_nel.transpose(1, 2)  # 回到 (N, L, E)
+print(y.shape)             # torch.Size([4, 6, 8])
+```
+
+此时每个特征 $e$ 的均值和方差由所有样本、所有 token 共同提供：
+
+$$
+\mu_e=\frac{1}{NL}\sum_n\sum_l x_{n,l,e}.
+$$
+
+如果把 `(N,L,E)` 直接传给 `BatchNorm1d(L)`，代码可能正常执行，但层会把 token 位置 $L$ 当作通道，并跨批与特征维 $E$ 统计。这通常不是设计者想要的含义。
+
+> [!WARNING] 形状恰好相等时更要小心
+> 假设 `L=E=8`，把 `(N,L,E)` 直接传给 `BatchNorm1d(8)` 不会因尺寸不符而报错，但它统计的是第 1 维，也就是 token 位置。尺寸正确不等于含义正确。
+
+> [!EXAMPLE] 同一个三维序列经过 BatchNorm 与 LayerNorm
+> 设两个样本各有两个 token，每个 token 有两个特征：样本 0 为 `[[1,10],[3,30]]`，样本 1 为 `[[5,50],[7,70]]`。换轴后的 `BatchNorm1d(2)` 对特征 0 使用 `[1,3,5,7]`，均值为 4、方差为 5；对特征 1 使用 `[10,30,50,70]`，均值为 40、方差为 500。`LayerNorm(2)` 则分别处理 `[1,10]`、`[3,30]`、`[5,50]`、`[7,70]`，忽略 `eps` 与仿射参数时，每个 token 都得到 `[-1,1]`。两层输入和输出形状可以相同，但计算所用的数完全不同。
+
+对带补齐位的文本批次还要考虑：BatchNorm 会把补齐位置也放入统计集合。即使后续注意力使用 mask，均值和方差已经受到补齐值影响。Transformer 因此更常使用只在每个 token 特征内部计算的 LayerNorm。
+
+#### 4.5.4 `BatchNorm2d(C)` 接收四维图像 `(N,C,H,W)`
+
+对每个通道 $c$：
+
+$$
+\mu_c=
+\frac{1}{NHW}
+\sum_{n=0}^{N-1}
+\sum_{h=0}^{H-1}
+\sum_{w=0}^{W-1}
+x_{n,c,h,w}.
+$$
+
+方差也对同样的 $N\times H\times W$ 个元素计算。一个 RGB 批次 `(32,3,224,224)` 会得到 3 个均值和 3 个方差，而不是每张图 3 个，也不是每个像素 3 个。
+
+`weight` 和 `bias` 的形状都是 `(C,)`。计算时可把它们想成：
+
+$$
+\gamma.shape=(1,C,1,1),\qquad
+\beta.shape=(1,C,1,1),
+$$
+
+从而同一通道的所有样本和空间位置共享一对参数。
+
+```python
+x = torch.randn(8, 3, 16, 16)
+bn = nn.BatchNorm2d(3)
+y = bn(x)
+
+print(y.shape)          # (8, 3, 16, 16)
+print(bn.weight.shape)  # (3,)
+print(bn.bias.shape)    # (3,)
+```
+
+> [!QUESTION] `BatchNorm2d` 会把图像展平成一条长向量吗？
+> 概念上可以把一个通道的 `N×H×W` 个数列成一组来理解，但输出仍按原来的四维位置保存。实现也不要求真的创建一个长向量。
+
+#### 4.5.5 `BatchNorm3d(C)` 接收五维体数据 `(N,C,D,H,W)`
+
+五维输入常见于视频片段、医学体数据和三维卷积。对通道 $c$：
+
+$$
+\mu_c=
+\frac{1}{NDHW}
+\sum_n\sum_d\sum_h\sum_w x_{n,c,d,h,w}.
+$$
+
+这里 $D$ 可以表示深度，也可以表示帧数。BatchNorm 不关心它在业务中的名称，只依据维度位置执行计算。
+
+| 模块 | 输入 | 每个通道用于统计的元素数 |
+| --- | --- | ---: |
+| `BatchNorm1d(C)` | `(N,C)` | $N$ |
+| `BatchNorm1d(C)` | `(N,C,L)` | $NL$ |
+| `BatchNorm2d(C)` | `(N,C,H,W)` | $NHW$ |
+| `BatchNorm3d(C)` | `(N,C,D,H,W)` | $NDHW$ |
+
+#### 4.5.6 训练状态、评估状态与运行统计量
+
+训练状态下，BatchNorm 使用当前小批的 $\mu_{\text{batch}}$ 和 $v_{\text{batch}}$ 生成当前输出，同时更新 buffer：
+
+$$
+\text{running\_mean}
+\leftarrow
+(1-\alpha)\text{running\_mean}
++\alpha\mu_{\text{batch}}.
+$$
+
+`momentum=α` 控制新小批对运行统计量的影响。它与优化器里常见的 momentum 含义不同。`momentum=None` 表示使用累计平均，每一批的权重会随已处理批次数变化。
+
+```python
+bn = nn.BatchNorm1d(3, momentum=0.1)
+bn.train()
+_ = bn(torch.randn(16, 3))
+
+print(bn.running_mean.shape)     # (3,)
+print(bn.running_var.shape)      # (3,)
+print(bn.num_batches_tracked)    # 已处理的小批数
+
+bn.eval()
+with torch.inference_mode():
+    y = bn(torch.randn(4, 3))    # 使用 running_mean 与 running_var
+```
+
+当前小批前向计算中的方差使用 `unbiased=False` 的形式，也就是除以 $M$；写入 `running_var` 时使用无偏估计，也就是样本数足够时除以 $M-1$。初学阶段只需知道：手算当前输出时用除以 $M$ 的方差。
+
+> [!WARNING] `eval()` 不会重新计算当前输入的均值
+> 默认设置下，评估状态使用训练期间保存的运行统计量。因此，同一张图单独推理与放进更大的推理批次，BatchNorm 输出通常一致；训练状态下则可能不同。
+
+若设置 `track_running_stats=False`，模块不保存运行均值和运行方差，训练与评估都会使用当前输入的统计数据。这样会使一个样本的输出可能受到同批其他样本影响，使用前应明确是否符合任务需求。
+
+#### 4.5.7 为什么很小的小批可能出现问题
+
+训练状态下，每个通道至少需要两个可用于统计的值。以下输入会报错：
+
+```python
+bn = nn.BatchNorm1d(4)
+x = torch.randn(1, 4)  # 每通道只有一个值
+# bn(x)  # ValueError: Expected more than 1 value per channel when training
+```
+
+但 `BatchNorm2d(4)` 接收 `(1,4,8,8)` 时，每个通道仍有 $1\times8\times8=64$ 个值，通常可以执行。能够执行并不代表统计数据一定足够可靠；空间尺寸逐渐缩到 `1×1` 时，小批大小的影响会更明显。
+
+> [!TIP] 小批图像模型的常见选择
+> 如果显存限制使每卡只能处理很少样本，可以考虑 GroupNorm。它不跨样本计算，因此不会随小批组成发生同样的变化。
+
+#### 4.5.8 `SyncBatchNorm` 合并多进程中的统计数据
+
+分布式训练时，普通 BatchNorm 默认只查看当前进程所持有的小批。`SyncBatchNorm` 会让参与训练的进程交换必要的统计数据，再使用合并后的均值和方差。
+
+`SyncBatchNorm(C)` 接受形如 `(N,C,...)`、维数至少为 2 的输入。它固定通道 `C`，在参与同步的进程中，对批维与全部尾部维度共同统计。
+
+例如 4 个进程各持有 2 张图，普通 BatchNorm 每次看到 2 张图及其空间位置；同步版本在统计意义上看到 8 张图及其空间位置。可使用：
+
+```python
+model = nn.SyncBatchNorm.convert_sync_batchnorm(model)
+```
+
+应在用 `DistributedDataParallel` 包装模型之前执行转换。PyTorch 2.0.1 只有训练状态会执行同步路径，该路径要求 CUDA，并采用每个进程一张 GPU 的方式。评估状态仍使用保存的运行统计量。
+
+它会带来额外通信。它解决的是多进程之间统计数据彼此分离的问题，不会自动处理补齐 token、错误维度或不合适的通道定义。
+
+> [!WARNING] SyncBatchNorm 不是普通单机代码的加速开关
+> 未初始化分布式进程组时，它可以像普通 BatchNorm 那样执行；真正启用同步后会增加通信。只有确实需要跨进程合并统计数据时才使用。
+
+### 4.6 LayerNorm 如何处理任意数量的前导维度
+
+LayerNorm 的核心规则是：
+
+> [!NOTE] LayerNorm 的末尾维度规则
+> `normalized_shape` 有几个数，就从输入末尾取几个维度共同计算。输入前面可以有任意数量的维度，每一种前导下标组合都独立计算。
+
+设：
+
+```python
+ln = nn.LayerNorm(normalized_shape)
+```
+
+若 `normalized_shape=(a_1,a_2,\ldots,a_D)`，输入最后 $D$ 个维度必须正好也是这些长度。对每一种前导下标组合，共有：
+
+$$
+M=\prod_{j=1}^{D}a_j
+$$
+
+个元素参与同一组统计。
+
+#### 4.6.1 一维 `normalized_shape=E`：每个 token 独立处理
+
+输入 `(N,L,E)` 配置 `LayerNorm(E)` 时，固定样本 $n$ 和 token 位置 $l$，只让特征下标 $e$ 变化：
+
+$$
+\mu_{n,l}
+=\frac{1}{E}\sum_{e=0}^{E-1}x_{n,l,e},
+$$
+
+$$
+v_{n,l}
+=\frac{1}{E}\sum_{e=0}^{E-1}
+(x_{n,l,e}-\mu_{n,l})^2.
+$$
+
+因此共有 $N\times L$ 套均值和方差。不同样本不混合，不同 token 也不混合。
+
+取一个样本的三个 token，每个 token 有两个特征：
+
+$$
+x=
+\begin{bmatrix}
+1&3\\
+2&6\\
+10&14
+\end{bmatrix},
+\qquad x.shape=(1,3,2).
+$$
+
+三个 token 的均值分别为 $2,4,12$，方差分别为 $1,4,4$。忽略 $\epsilon$ 并关闭仿射参数后，输出为：
+
+$$
+\begin{bmatrix}
+-1&1\\
+-1&1\\
+-1&1
+\end{bmatrix}.
+$$
+
+```python
+x = torch.tensor([[[1., 3.], [2., 6.], [10., 14.]]])
+ln = nn.LayerNorm(2, elementwise_affine=False)
+print(ln(x))
+```
+
+> [!NOTE] 序列长度可以变化
+> `LayerNorm(E)` 只要求最后一维长度等于 `E`。同一个层可以先处理 `(2,10,E)`，再处理 `(5,37,E)`，因为批大小和 token 数都属于前导维度。
+
+#### 4.6.2 多维 `normalized_shape`：最后多维一起计算
+
+若输入为 `(N,C,H,W)`：
+
+```python
+ln_hw = nn.LayerNorm((H, W))
+ln_chw = nn.LayerNorm((C, H, W))
+```
+
+两者差别很大：
+
+| 设置 | 每一组共同统计的元素 | 共有多少组 | `weight` 形状 |
+| --- | --- | ---: | --- |
+| `LayerNorm((H,W))` | 同一样本、同一通道的整个平面 | $NC$ | `(H,W)` |
+| `LayerNorm((C,H,W))` | 同一样本的全部通道和空间位置 | $N$ | `(C,H,W)` |
+
+`LayerNorm((H,W))` 固定 $n,c$，对 $h,w$ 统计；`LayerNorm((C,H,W))` 只固定 $n$，对 $c,h,w$ 统计。虽然两者输出形状都与输入相同，但统计数据和参数数量都不同。
+
+> [!WARNING] `LayerNorm(C)` 直接接收 `(N,C,H,W)` 通常不是按通道处理
+> LayerNorm 总是检查最后一个维度。对 `(N,C,H,W)`，最后一维是 `W`。如果 `C!=W` 会报尺寸错误；如果碰巧 `C==W`，代码虽然能执行，却是在每一行的宽度方向统计。
+
+#### 4.6.3 想对每个像素的通道做 LayerNorm，应先改成 channels-last
+
+若目标是固定 $(n,h,w)$，让通道 $c$ 变化，应把输入从 `(N,C,H,W)` 改成 `(N,H,W,C)`：
+
+```python
+N, C, H, W = 2, 3, 4, 5
+x = torch.randn(N, C, H, W)
+ln_channel = nn.LayerNorm(C)
+
+x_nhwc = x.permute(0, 2, 3, 1)     # (N, H, W, C)
+y_nhwc = ln_channel(x_nhwc)
+y = y_nhwc.permute(0, 3, 1, 2)     # (N, C, H, W)
+```
+
+此时每个像素位置独立使用自己的 $C$ 个通道值。换轴只改变维度次序，不改变元素值。
+
+> [!TIP] `permute` 后是否需要 `contiguous`
+> LayerNorm 本身通常可以处理非连续张量。若后续使用 `view` 或某些要求连续存储的算子，再调用 `contiguous()`。不要在不了解需要的情况下到处添加，它会产生一次实际的数据整理。
+
+#### 4.6.4 LayerNorm 的参数为什么比 GroupNorm 更细
+
+`LayerNorm((C,H,W))` 的 `weight`、`bias` 形状都是 `(C,H,W)`。每个通道和每个空间位置都有自己的 $\gamma$、$\beta$：
+
+$$
+y_{n,c,h,w}
+=\gamma_{c,h,w}\widehat x_{n,c,h,w}
++\beta_{c,h,w}.
+$$
+
+相比之下，`GroupNorm(G,C)` 的参数只有 `(C,)`，同一通道在所有空间位置共享参数：
+
+$$
+y_{n,c,h,w}
+=\gamma_c\widehat x_{n,c,h,w}
++\beta_c.
+$$
+
+即使 `GroupNorm(1,C)` 与 `LayerNorm((C,H,W))` 选取了相同的统计元素，它们在仿射参数上仍不完全相同。
+
+#### 4.6.5 LayerNorm 不保存运行统计量
+
+LayerNorm 始终使用当前输入中最后若干维的统计数据。它没有 `running_mean`、`running_var`，训练状态和评估状态的计算规则相同：
+
+```python
+ln = nn.LayerNorm(8)
+x = torch.randn(2, 5, 8)
+
+ln.train()
+y_train = ln(x)
+ln.eval()
+y_eval = ln(x)
+
+print(torch.allclose(y_train, y_eval))  # True
+```
+
+这里没有 Dropout 等随机层参与，所以同一输入的结果相同。梯度记录是否开启仍由 `torch.no_grad()` 或 `torch.inference_mode()` 决定。
+
+#### 4.6.6 手工复现 `LayerNorm((H,W))`
+
+下面把最后两个维度一起统计：
+
+```python
+x = torch.tensor([
+    [
+        [[1., 2.], [3., 4.]],
+        [[10., 20.], [30., 40.]],
+    ]
+])  # (N=1, C=2, H=2, W=2)
+
+mean = x.mean(dim=(-2, -1), keepdim=True)
+var = x.var(dim=(-2, -1), unbiased=False, keepdim=True)
+manual = (x - mean) / torch.sqrt(var + 1e-5)
+
+layer = nn.LayerNorm((2, 2), elementwise_affine=False)
+actual = layer(x)
+torch.testing.assert_close(actual, manual)
+```
+
+第 0 个通道用 `[1,2,3,4]`，第 1 个通道用 `[10,20,30,40]`。两个通道分别计算，并不会把八个数放进同一组。
+
+> [!QUESTION] 为什么归一化后不一定精确等于均值 0、方差 1？
+> 首先，分母中加入了 $\epsilon$，所以方差很小时会有可见差异；其次，默认还会乘 $\gamma$、加 $\beta$；最后，BatchNorm 在评估状态可能使用保存的数据，而不是当前输入的数据。
+
+### 4.7 InstanceNorm：每个样本、每个通道各算各的
+
+InstanceNorm 的核心规则是：
+
+> [!NOTE] InstanceNorm 的统计规则
+> 固定样本下标 `N` 和通道下标 `C`，只让空间下标变化。不同样本不共享均值和方差，同一样本中的不同通道也不共享。
+
+把一维、二维、三维版本写在一起：
+
+| 模块 | 有批输入 | 无批输入 | 每一组使用的元素 |
+| --- | --- | --- | --- |
+| `InstanceNorm1d(C)` | `(N,C,L)` | `(C,L)` | 固定 $n,c$ 后的 $L$ 个数 |
+| `InstanceNorm2d(C)` | `(N,C,H,W)` | `(C,H,W)` | 固定 $n,c$ 后的 $HW$ 个数 |
+| `InstanceNorm3d(C)` | `(N,C,D,H,W)` | `(C,D,H,W)` | 固定 $n,c$ 后的 $DHW$ 个数 |
+
+对二维图像：
+
+$$
+\mu_{n,c}
+=\frac{1}{HW}
+\sum_{h=0}^{H-1}\sum_{w=0}^{W-1}x_{n,c,h,w},
+$$
+
+$$
+v_{n,c}
+=\frac{1}{HW}
+\sum_h\sum_w(x_{n,c,h,w}-\mu_{n,c})^2.
+$$
+
+总共有 $N\times C$ 套均值和方差。
+
+#### 4.7.1 同一通道的两张图不会互相影响
+
+设输入只有一个通道，两张图各有四个数：
+
+$$
+\text{样本 0}=
+\begin{bmatrix}1&2\\3&4\end{bmatrix},
+\qquad
+\text{样本 1}=
+\begin{bmatrix}100&200\\300&400\end{bmatrix}.
+$$
+
+第二张图恰好是第一张图的 100 倍。InstanceNorm2d 分别计算两张图：
+
+$$
+\mu_{0,0}=2.5,\qquad
+\mu_{1,0}=250.
+$$
+
+忽略 $\epsilon$ 时，两张图在关闭仿射参数后会得到相同的标准化结果。使用默认 `eps=1e-5` 时结果几乎相同，但会有很小的数值差异，因为两张图的方差尺度不同。若把第二张图改成别的数，第一张图的输出仍不变。
+
+```python
+x = torch.tensor([
+    [[[1., 2.], [3., 4.]]],
+    [[[100., 200.], [300., 400.]]],
+])
+
+layer = nn.InstanceNorm2d(1, affine=False, track_running_stats=False)
+y = layer(x)
+print(y[0])
+print(y[1])
+```
+
+而 BatchNorm2d 会把两张图同一通道的八个数放在一起，所以第一张图的结果会受到第二张图影响。
+
+> [!EXAMPLE] 用切片直接表示统计集合
+> 对 `(N,C,H,W)`，`InstanceNorm2d` 为 `x[n,c,:,:]` 计算；`BatchNorm2d` 为 `x[:,c,:,:]` 计算。一个固定 `n,c`，另一个只固定 `c`。
+
+#### 4.7.2 `affine` 和 `track_running_stats` 的默认值
+
+InstanceNorm 默认：
+
+```python
+affine=False
+track_running_stats=False
+```
+
+因此默认没有可学习的 `weight`、`bias`，也不保存运行均值和运行方差。训练与评估都使用当前样本自己的空间统计数据。
+
+若设置 `affine=True`，参数形状为 `(C,)`，同一通道在所有样本和空间位置共享 $\gamma_c,\beta_c$：
+
+```python
+layer = nn.InstanceNorm2d(3, affine=True)
+print(layer.weight.shape, layer.bias.shape)  # (3,), (3,)
+```
+
+若设置 `track_running_stats=True`，训练时会更新每通道运行统计量，评估时默认使用保存的数据。这样评估规则会更接近 BatchNorm，但训练前向仍按每个样本、每个通道计算当前统计数据。
+
+> [!WARNING] 不要只根据层名猜默认参数
+> BatchNorm 默认 `affine=True`、`track_running_stats=True`；InstanceNorm 默认 `affine=False`、`track_running_stats=False`。两者的构造参数很相似，默认行为却不同。
+
+#### 4.7.3 序列输入中，InstanceNorm 与 LayerNorm 做的不是一件事
+
+假设序列形状为 `(N,L,E)`：
+
+- `LayerNorm(E)`：固定样本和 token，对一个 token 的 $E$ 个特征计算。
+- 将输入换成 `(N,E,L)` 后使用 `InstanceNorm1d(E)`：固定样本和特征，对该特征在 $L$ 个 token 上的数值计算。
+
+```python
+x = torch.randn(2, 6, 8)  # (N, L, E)
+
+ln = nn.LayerNorm(8)
+y_ln = ln(x)              # 每个 token 的 8 个特征一起计算
+
+in1d = nn.InstanceNorm1d(8, affine=True)
+y_in = in1d(x.transpose(1, 2)).transpose(1, 2)
+# 每个样本、每个特征在 6 个 token 上一起计算
+```
+
+两种输出形状相同，但统计集合完全不同。
+
+> [!QUESTION] `InstanceNorm1d` 为什么也要换轴？
+> 它与 `BatchNorm1d` 一样要求通道位于第 1 维。差别在于 BatchNorm 跨样本和长度统计，InstanceNorm 只在每个样本内部跨长度统计。
+
+#### 4.7.4 空间元素太少时会怎样
+
+默认 InstanceNorm 使用 `track_running_stats=False`，训练与评估都依赖当前输入的空间统计。若每个通道只有一个空间元素，例如输入 `(N,C,1,1)`，两种状态都会报错，因为每个 `(n,c)` 都只有一个可用值。
+
+只有先设置 `track_running_stats=True`，在具有多个空间元素的训练输入上积累运行数据，再切换到评估状态，模块才可以使用保存的统计量处理 `(N,C,1,1)`。
+
+即使空间元素多于一个，如果某个样本某个通道内所有值完全相同，则 $v=0$。标准化中间结果会接近 0；若启用仿射参数，最终输出接近该通道的 $\beta_c$。
+
+### 4.8 GroupNorm：先把通道分组，再在每个样本内计算
+
+GroupNorm 只有一个通用模块：
+
+```python
+nn.GroupNorm(num_groups=G, num_channels=C)
+```
+
+它不区分一维、二维、三维，因为所有通道之后的维度都作为空间维参与统计。
+
+> [!NOTE] GroupNorm 的形状拆分法
+> 对 `(N,C,...)`，可以暂时把通道拆成 `(G,C/G)`，从而把输入看作 `(N,G,C/G,...)`。固定样本 `n` 和组号 `g`，让组内通道及全部空间下标变化。
+
+必须满足：
+
+$$
+C\bmod G=0.
+$$
+
+也就是通道数必须能被组数整除。
+
+#### 4.8.1 四维输入的公式
+
+输入为 `(N,C,H,W)` 时，每组通道数为：
+
+$$
+C_g=\frac{C}{G}.
+$$
+
+固定样本 $n$ 和组 $g$，共有：
+
+$$
+M=C_gHW
+$$
+
+个元素参与计算：
+
+$$
+\mu_{n,g}
+=\frac{1}{C_gHW}
+\sum_{c\in g}\sum_h\sum_w x_{n,c,h,w}.
+$$
+
+一共得到 $N\times G$ 套均值和方差。批中其他样本不会参与。
+
+例如输入 `(2,8,4,4)`，使用 `GroupNorm(4,8)`：
+
+1. 每组有 $8/4=2$ 个通道。
+2. 每个样本每组使用 $2\times4\times4=32$ 个元素。
+3. 两个样本、四个组，共有 $2\times4=8$ 套统计数据。
+
+#### 4.8.2 手算四个通道、两个组
+
+取一个样本，四个通道，每个通道有两个位置：
+
+$$
+\begin{aligned}
+c_0&=[1,3],&
+c_1&=[5,7],\\
+c_2&=[2,4],&
+c_3&=[6,8].
+\end{aligned}
+$$
+
+使用 `GroupNorm(2,4, affine=False)`：
+
+- 第 0 组包含 $c_0,c_1$，统计集合为 $[1,3,5,7]$；
+- 第 1 组包含 $c_2,c_3$，统计集合为 $[2,4,6,8]$。
+
+两组方差都为 5，均值分别为 4 和 5。忽略 $\epsilon$ 后，第 0 组输出约为：
+
+$$
+[-1.342,-0.447,0.447,1.342],
+$$
+
+第 1 组也得到同样的相对数值。结果再按原通道和位置放回。
+
+```python
+x = torch.tensor([[
+    [[1., 3.]],
+    [[5., 7.]],
+    [[2., 4.]],
+    [[6., 8.]],
+]])  # (1, 4, 1, 2)
+
+gn = nn.GroupNorm(2, 4, affine=False)
+print(gn(x))
+```
+
+> [!TIP] 组是连续划分的
+> `GroupNorm(2,4)` 默认把通道 0、1 放进第 0 组，把通道 2、3 放进第 1 组。它不会自行寻找相似通道，也不会在每次前向时改变分组。
+
+#### 4.8.3 两个特殊设置
+
+当 `G=C` 时，每组只有一个通道，统计数据的选取方式与 InstanceNorm 相似：
+
+```python
+nn.GroupNorm(num_groups=C, num_channels=C)
+```
+
+当 `G=1` 时，所有通道位于同一组，每个样本独立对全部通道和空间位置计算：
+
+```python
+nn.GroupNorm(num_groups=1, num_channels=C)
+```
+
+第二种设置与 `LayerNorm((C,H,W))` 的统计集合相同，但参数仍不同：
+
+| 层 | `weight` 形状 | 参数共享方式 |
+| --- | --- | --- |
+| `GroupNorm(1,C)` | `(C,)` | 同一通道的所有空间位置共享 |
+| `LayerNorm((C,H,W))` | `(C,H,W)` | 每个通道、每个空间位置分别保存 |
+
+此外，GroupNorm 默认 `affine=True`；InstanceNorm 默认 `affine=False`。所以“统计集合相似”并不代表两个模块可以在任何设置下直接替换。
+
+#### 4.8.4 GroupNorm 不依赖小批组成
+
+GroupNorm 不跨样本统计，也不保存运行均值和运行方差。训练与评估使用相同的当前输入计算规则：
+
+```python
+gn = nn.GroupNorm(4, 32)
+print(gn.weight.shape)  # (32,)
+
+x = torch.randn(2, 32, 8, 8)
+gn.train()
+y1 = gn(x)
+gn.eval()
+y2 = gn(x)
+print(torch.allclose(y1, y2))  # True
+```
+
+它适合每卡样本数较少的卷积网络。组数是需要选择的超参数：组太多时，每组通道很少；组太少时，许多性质不同的通道会一起统计。常见设置是让每组包含固定数量的通道，但仍需结合通道数和任务测试。
+
+> [!WARNING] `num_channels` 必须与实际第 1 维一致
+> 输入 `(N,64,H,W)` 必须搭配 `num_channels=64`。如果前一层改变了通道数，GroupNorm 的构造参数也要同步修改。
+
+PyTorch 2.0.1 还要求一次 GroupNorm 调用中每组可用的总元素数不能只有 1。检查量可写为：
+
+$$
+N\times\frac{C}{G}\times\text{空间元素数}.
+$$
+
+例如 `(1,C)` 配置 `GroupNorm(C,C)` 时该值为 1，会报错。即使某些更大批次能够执行，每个样本、每组若实际只有一个值，标准化中间结果也只能为 0，通常缺少有用变化。
+
+### 4.9 LocalResponseNorm：同一位置查看邻近通道
+
+`LocalResponseNorm(size, alpha, beta, k)` 与前面几类均值—方差归一化不同。对固定样本 $n$ 和固定空间位置，只在通道方向取以 $c$ 为中心的邻近通道：
+
+$$
+y_{n,c,\ldots}
+=
+\frac{x_{n,c,\ldots}}
+{\left(
+k+\frac{\alpha}{size}
+\sum_{c'\in\mathcal N(c)}
+x_{n,c',\ldots}^{2}
+\right)^\beta}.
+$$
+
+公式中的省略号代表任意空间下标。例如四维图像中，它就是固定 $(n,h,w)$，查看相邻通道；不会查看旁边的像素。
+
+#### 4.9.1 三个通道的数值例子
+
+固定一个空间位置，三个通道值为：
+
+$$
+[x_0,x_1,x_2]=[1,2,3].
+$$
+
+设置：
+
+$$
+size=3,\quad \alpha=3,\quad \beta=1,\quad k=1.
+$$
+
+第 0 个通道可看到通道 0、1，平方和为 $1^2+2^2=5$：
+
+$$
+y_0=\frac{1}{1+(3/3)\times5}=\frac16.
+$$
+
+第 1 个通道可看到三个通道，平方和为 14：
+
+$$
+y_1=\frac{2}{1+14}=\frac{2}{15}.
+$$
+
+第 2 个通道可看到通道 1、2，平方和为 13：
+
+$$
+y_2=\frac{3}{1+13}=\frac{3}{14}.
+$$
+
+靠近通道序列两端时，不存在的通道可理解为贡献 0。该层没有可学习的 $\gamma,\beta$，也没有运行统计量，训练与评估规则相同。
+
+```python
+x = torch.tensor([[[[1.]], [[2.]], [[3.]]]])  # (1, 3, 1, 1)
+lrn = nn.LocalResponseNorm(size=3, alpha=3.0, beta=1.0, k=1.0)
+print(lrn(x).flatten())
+# 约为 tensor([0.1667, 0.1333, 0.2143])
+```
+
+> [!NOTE] 不要把 LRN 与 LayerNorm 混为一类
+> LRN 只利用相邻通道的平方和缩放当前值；LayerNorm 使用指定末尾维度的均值和方差。两者名字都含有 Norm，但计算过程明显不同。
+
+`LocalResponseNorm` 要求输入至少有三个维度，常见形式为 `(N,C,L)`、`(N,C,H,W)` 或更高维。`size` 为奇数时邻近通道在左右两侧对称；在 PyTorch 2.0.1 中，`size` 为偶数时左侧会比右侧多取一个位置。通道两端缺少的位置按 0 处理，但分母仍除以完整的 `size`。
+
+### 4.10 用同一个四维张量比较四类归一化
+
+设：
+
+$$
+x.shape=(N=2,C=2,H=1,W=2),
+$$
+
+具体数值为：
+
+$$
+\begin{aligned}
+\text{样本 0}:&\quad c_0=[1,3],\quad c_1=[5,7],\\
+\text{样本 1}:&\quad c_0=[2,4],\quad c_1=[6,8].
+\end{aligned}
+$$
+
+下表列出每种设置的全部统计集合：
+
+| 设置 | 统计集合 | 统计数据组数 |
+| --- | --- | ---: |
+| `BatchNorm2d(2)` | $c_0:[1,3,2,4]$；$c_1:[5,7,6,8]$ | 2 |
+| `InstanceNorm2d(2)` | 每个 `(n,c)` 的两个空间值 | $2\times2=4$ |
+| `GroupNorm(1,2)` | 样本 0 用 `[1,3,5,7]`；样本 1 用 `[2,4,6,8]` | 2 |
+| `GroupNorm(2,2)` | 与本例 InstanceNorm 的四组相同 | 4 |
+| `LayerNorm((2,1,2))` | 与 `GroupNorm(1,2)` 的两组相同 | 2 |
+| `LayerNorm((1,2))` | 与本例 InstanceNorm 的四组相同 | 4 |
+
+虽然一些行选取了相同的数，但仿射参数形状可能不同：
+
+| 设置 | $\gamma,\beta$ 形状 |
+| --- | --- |
+| BatchNorm2d | `(2,)` |
+| InstanceNorm2d，`affine=True` | `(2,)` |
+| GroupNorm | `(2,)` |
+| `LayerNorm((2,1,2))` | `(2,1,2)` |
+| `LayerNorm((1,2))` | `(1,2)` |
+
+> [!IMPORTANT] 比较归一化层要看两件事
+> 第一看哪些元素共同计算均值和方差；第二看 $\gamma,\beta$ 怎样共享。只比较第一项，容易误以为某些层完全相同。
+
+下面用手工公式核对 PyTorch：
+
+```python
+x = torch.tensor([
+    [[[1., 3.]], [[5., 7.]]],
+    [[[2., 4.]], [[6., 8.]]],
+])
+eps = 1e-5
+
+def standardize(x, dims):
+    mean = x.mean(dim=dims, keepdim=True)
+    var = x.var(dim=dims, unbiased=False, keepdim=True)
+    return (x - mean) / torch.sqrt(var + eps)
+
+# BatchNorm2d：统计 N、H、W
+manual_bn = standardize(x, dims=(0, 2, 3))
+actual_bn = nn.BatchNorm2d(
+    2, eps=eps, affine=False, track_running_stats=False
+)(x)
+torch.testing.assert_close(actual_bn, manual_bn)
+
+# InstanceNorm2d：统计 H、W
+manual_in = standardize(x, dims=(2, 3))
+actual_in = nn.InstanceNorm2d(
+    2, eps=eps, affine=False, track_running_stats=False
+)(x)
+torch.testing.assert_close(actual_in, manual_in)
+
+# GroupNorm(1,2)：每个样本统计 C、H、W
+manual_gn1 = standardize(x, dims=(1, 2, 3))
+actual_gn1 = nn.GroupNorm(1, 2, eps=eps, affine=False)(x)
+torch.testing.assert_close(actual_gn1, manual_gn1)
+
+# LayerNorm((2,1,2))：统计最后 C、H、W
+actual_ln = nn.LayerNorm(
+    (2, 1, 2), eps=eps, elementwise_affine=False
+)(x)
+torch.testing.assert_close(actual_ln, manual_gn1)
+```
+
+这段代码中所有层都关闭了仿射参数，所以可以直接与标准化中间结果比较。
+
+#### 4.10.1 五维视频或体数据的具体统计集合
+
+构造连续整数：
+
+```python
+x5 = torch.arange(
+    2 * 4 * 2 * 2 * 2,
+    dtype=torch.float32,
+).reshape(2, 4, 2, 2, 2)
+```
+
+其形状为 `(N,C,D,H,W)=(2,4,2,2,2)`。连续存储下：
+
+- 样本 0、通道 2 是 16 到 23；
+- 样本 0、通道 3 是 24 到 31；
+- 样本 1、通道 2 是 48 到 55。
+
+围绕通道 2 比较：
+
+| 层 | 统计集合 | 元素数 | 均值 | 方差 |
+| --- | --- | ---: | ---: | ---: |
+| `BatchNorm3d(4)` 的通道 2 | 16～23 与 48～55 | 16 | 35.5 | 261.25 |
+| `InstanceNorm3d(4)` 的样本 0、通道 2 | 16～23 | 8 | 19.5 | 5.25 |
+| `GroupNorm(2,4)` 的样本 0、第 1 组 | 16～31 | 16 | 23.5 | 21.25 |
+| `LayerNorm((2,2,2))` 的样本 0、通道 2 | 16～23 | 8 | 19.5 | 5.25 |
+| `LayerNorm((4,2,2,2))` 的样本 0 | 0～31 | 32 | 15.5 | 85.25 |
+
+> [!NOTE] 五维输入没有引入新的计算原理
+> 相比四维图像，它只是多了深度或时间维 `D`。BatchNorm3d 将 `N,D,H,W` 一起统计；InstanceNorm3d 在每个样本、每个通道内部统计 `D,H,W`；LayerNorm 仍只看 `normalized_shape` 指定的最后若干维。
+
+### 4.11 $\gamma$、$\beta$ 与统计数据怎样在多维张量中广播
+
+归一化层中常同时出现三类数据：
+
+1. 可学习参数，例如 `weight` 和 `bias`；
+2. 当前输入算出的均值与方差；
+3. BatchNorm 可选的运行均值与运行方差。
+
+它们的形状不一定与输入相同，但会依据广播规则作用到正确位置。
+
+#### 4.11.1 各层的参数形状
+
+| 模块 | 参数开关 | `weight`、`bias` 的形状 |
+| --- | --- | --- |
+| BatchNorm 家族 | `affine=True` | `(C,)` |
+| SyncBatchNorm | `affine=True` | `(C,)` |
+| InstanceNorm 家族 | `affine=True` | `(C,)` |
+| GroupNorm | `affine=True` | `(C,)` |
+| `LayerNorm(normalized_shape)` | `elementwise_affine=True` | 与 `normalized_shape` 完全相同 |
+| LocalResponseNorm | 无 | 没有这两个参数 |
+
+对 `(N,C,H,W)` 输入，形状为 `(C,)` 的参数可理解为 `(1,C,1,1)`。对 `(N,C,D,H,W)`，可理解为 `(1,C,1,1,1)`。
+
+```python
+x = torch.randn(2, 3, 4, 5)
+
+gamma = torch.tensor([1.0, 2.0, 0.5]).view(1, 3, 1, 1)
+beta = torch.tensor([0.0, 10.0, -1.0]).view(1, 3, 1, 1)
+
+# 假设 normalized 已经是标准化中间结果
+normalized = torch.randn_like(x)
+y = gamma * normalized + beta
+print(y.shape)  # (2, 3, 4, 5)
+```
+
+通道 0 使用 `gamma=1, beta=0`；通道 1 使用 `gamma=2, beta=10`；通道 2 使用 `gamma=0.5, beta=-1`。同一通道中的所有样本和位置共享。
+
+> [!NOTE] GroupNorm 的参数不是每组一个
+> `GroupNorm(4,32)` 会按 4 组计算统计数据，但仍保存 32 个缩放值和 32 个偏移值。组内不同通道可以学习不同参数。
+
+#### 4.11.2 LayerNorm 的参数随 `normalized_shape` 增长
+
+```python
+ln_e = nn.LayerNorm(8)
+ln_hw = nn.LayerNorm((4, 5))
+ln_chw = nn.LayerNorm((3, 4, 5))
+
+print(ln_e.weight.shape)    # (8,)
+print(ln_hw.weight.shape)   # (4, 5)
+print(ln_chw.weight.shape)  # (3, 4, 5)
+```
+
+`LayerNorm((3,4,5))` 有 $3\times4\times5=60$ 个 `weight` 和 60 个 `bias`。这些参数在前导维度上共享，例如输入 `(N,3,4,5)` 时，不同样本共享同一套 60 个参数。
+
+> [!WARNING] 参数多不等于一定更好
+> 把整个 `(C,H,W)` 写入 `normalized_shape` 会让参数依赖固定的空间尺寸，也会明显增加参数数量。若输入高宽可能变化，这种设置往往不合适。
+
+#### 4.11.3 均值张量的形状能帮助理解广播
+
+对 `x.shape=(N,C,H,W)`，使用 `keepdim=True` 后：
+
+| 计算方式 | 均值形状 | 同一个均值供哪些位置使用 |
+| --- | --- | --- |
+| `x.mean((0,2,3), keepdim=True)` | `(1,C,1,1)` | BatchNorm2d 的一个通道 |
+| `x.mean((2,3), keepdim=True)` | `(N,C,1,1)` | InstanceNorm2d 的一个样本、一个通道 |
+| `x.mean((1,2,3), keepdim=True)` | `(N,1,1,1)` | LayerNorm `(C,H,W)` 或 GroupNorm 单组的一个样本 |
+| `x.mean(1, keepdim=True)` | `(N,1,H,W)` | 手工计算每个像素的通道集合 |
+
+最后一行只是帮助理解；对 channels-first 输入直接写 `x.mean(1)` 可以手算每像素通道统计，但 `nn.LayerNorm(C)` 仍要求先把通道移到最后。
+
+### 4.12 方差、`eps`、常量输入与训练状态
+
+#### 4.12.1 手工复现时为什么要写 `unbiased=False`
+
+PyTorch 归一化层当前前向计算通常使用：
+
+$$
+v=\frac{1}{M}\sum_{i=1}^{M}(x_i-\mu)^2.
+$$
+
+对应：
+
+```python
+x.var(dim=dims, unbiased=False, keepdim=True)
+```
+
+BatchNorm 与 SyncBatchNorm 有一个容易混淆的细节：当前训练输出使用上述有偏形式，但更新 `running_var` 时使用无偏估计。后者在 $M>1$ 时以 $M-1$ 为除数。
+
+InstanceNorm 开启 `track_running_stats=True` 后也有类似区别：当前输出仍使用每个样本空间元素的有偏方差；运行均值由各样本的通道均值汇总更新，运行方差由各样本的空间无偏方差汇总更新。默认 InstanceNorm 不追踪这些数据，因此初学时通常不会遇到这一细节。
+
+| 模块 | 当前前向中的方差 |
+| --- | --- |
+| BatchNorm、SyncBatchNorm | `unbiased=False`；运行方差更新另有无偏换算 |
+| InstanceNorm | `unbiased=False` |
+| GroupNorm | `unbiased=False` |
+| LayerNorm | `unbiased=False` |
+| LocalResponseNorm | 不计算方差 |
+
+> [!TIP] 对照模块时先关闭仿射参数和运行统计
+> 例如 `BatchNorm2d(C, affine=False, track_running_stats=False)`，这样输出只由当前输入、方差公式和 `eps` 决定，更适合与手工结果核对。
+
+#### 4.12.2 `eps` 在方差很小时尤其重要
+
+若一组数据是：
+
+$$
+[5,5,5,5],
+$$
+
+则 $\mu=5,v=0$。加入 `eps` 后：
+
+$$
+\widehat x_i=\frac{5-5}{\sqrt{0+\epsilon}}=0.
+$$
+
+关闭仿射参数时输出全 0；有仿射参数时：
+
+$$
+y_i=\gamma\cdot0+\beta=\beta.
+$$
+
+所以“全零输入经过 LayerNorm 后一定还是全零”只在 $\beta=0$ 时成立。初始化时 LayerNorm 的 `bias` 通常是 0，但训练后它可以改变。
+
+不要为了让数值“看起来更标准”而随意把 `eps` 改得极小。低精度训练或接近常量的数据更需要足够的数值保护。若没有明确实验依据，优先使用模块默认值。
+
+#### 4.12.3 哪些层在 `train()` 与 `eval()` 下会改变
+
+| 模块与设置 | 训练状态 | 评估状态 |
+| --- | --- | --- |
+| BatchNorm，默认追踪运行统计 | 当前小批；同时更新 buffer | 使用运行统计 |
+| BatchNorm，`track_running_stats=False` | 当前输入 | 当前输入 |
+| SyncBatchNorm，默认设置 | 训练时按参与进程合并 | 使用运行统计 |
+| InstanceNorm，默认设置 | 当前样本 | 当前样本 |
+| InstanceNorm，开启运行统计 | 当前样本并更新 buffer | 使用运行统计 |
+| GroupNorm | 当前样本、当前组 | 同左 |
+| LayerNorm | 当前输入最后若干维 | 同左 |
+| LocalResponseNorm | 邻近通道平方和 | 同左 |
+
+```python
+layers = {
+    "bn": nn.BatchNorm2d(3),
+    "in": nn.InstanceNorm2d(3),
+    "gn": nn.GroupNorm(1, 3),
+    "ln": nn.LayerNorm((3, 4, 4)),
+}
+
+for name, layer in layers.items():
+    print(name, list(layer.state_dict().keys()))
+```
+
+典型输出含义：
+
+- BatchNorm：有 `weight`、`bias`、`running_mean`、`running_var`、`num_batches_tracked`；
+- 默认 InstanceNorm：没有参数和运行统计，因此 `state_dict` 可为空；
+- GroupNorm：有 `weight`、`bias`；
+- LayerNorm：有 `weight`、`bias`。
+
+> [!NOTE] buffer 会保存，但不会由优化器更新
+> `running_mean` 和 `running_var` 会进入 `state_dict()`，因此保存模型时不会丢失；它们不是 `nn.Parameter`，优化器不会根据梯度修改它们。
+
+#### 4.12.4 `model.eval()` 与停止梯度是两件事
+
+```python
+model.eval()
+with torch.inference_mode():
+    output = model(input_tensor)
+```
+
+第一行改变 BatchNorm、Dropout 等模块的工作状态；第二行让 PyTorch 不再为反向计算保存中间数据。只调用其中一个不能完全替代另一个。
+
+### 4.13 序列、图像、视频和全连接特征怎样选择
+
+下面不是不可更改的规则，而是常见起点：
+
+| 数据与网络 | 常见选择 | 主要原因 |
+| --- | --- | --- |
+| MLP 输入 `(...,E)` | `LayerNorm(E)` 或不使用归一化 | 最后一维含义清楚，不依赖同批样本 |
+| Transformer 输入 `(N,L,E)` | `LayerNorm(E)` | 每个 token 独立处理自己的特征 |
+| RNN/LSTM 隐状态 `(...,H)` | `LayerNorm(H)` | 可按时间位置处理隐藏特征 |
+| 常规二维卷积，单卡小批较充足 | `BatchNorm2d(C)` | 每通道统计，使用成熟广泛 |
+| 每卡样本很少的卷积网络 | `GroupNorm(G,C)` | 不跨样本统计 |
+| 图像风格处理 | `InstanceNorm2d(C)` | 每张图、每通道独立处理空间数值 |
+| 视频或体数据 | `BatchNorm3d(C)`、`InstanceNorm3d(C)` 或 GroupNorm | 取决于是否希望跨样本、跨通道组 |
+| 每个像素对通道处理 | 转成 `(N,H,W,C)` 后 `LayerNorm(C)` | 固定像素，只比较通道 |
+| 复现早期视觉模型 | LocalResponseNorm | 保持原模型计算方式 |
+| 多进程训练且需要跨进程批统计 | SyncBatchNorm | 合并参与进程的数据 |
+
+#### 4.13.1 一个简洁的选择顺序
+
+1. 先写输入形状，并给每个维度标上含义。
+2. 决定一个样本是否应受到同批其他样本影响。
+3. 决定通道应分开、分组，还是与其他特征一起处理。
+4. 决定空间位置或 token 位置是否应参与同一组统计。
+5. 检查输入长度和空间尺寸是否会变化。
+6. 最后才选择类名与构造参数。
+
+> [!TIP] 先画圈，再写代码
+> 在一个很小的张量上，把应该共同计算的数用同一种颜色圈起来。若每列同色，接近二维 BatchNorm；若每行同色，接近 LayerNorm；若一张图的每个通道平面各自同色，接近 InstanceNorm。
+
+#### 4.13.2 带补齐位置的序列
+
+对 `(N,L,E)` 使用 `LayerNorm(E)` 时，每个 token 只使用自己的 $E$ 个特征。补齐 token 不会改变有效 token 的均值和方差。
+
+但是，补齐 token 自己仍会经过 LayerNorm。若其输入全为 0：
+
+- 初始 $\beta=0$ 时输出通常仍为 0；
+- 训练后 $\beta$ 可能不再为 0，输出也可能非零。
+
+因此注意力和损失仍需要正确 mask，池化时也应只汇总有效 token。
+
+对换轴后的 `(N,E,L)` 使用 BatchNorm1d 或 InstanceNorm1d 时，长度维 $L$ 会参与统计。这些层没有接收序列 mask 的参数，补齐值会进入均值和方差。
+
+> [!WARNING] 归一化不能代替序列 mask
+> LayerNorm 只保证有效 token 不使用其他 token 的统计数据；它不会阻止注意力读取补齐位置，也不会阻止损失函数计算补齐标签。
+
+#### 4.13.3 输入尺寸变化对各层有什么影响
+
+| 模块 | 哪些尺寸通常可以变化 |
+| --- | --- |
+| BatchNorm 家族 | `N` 和空间尺寸可变化，`C` 必须等于 `num_features` |
+| InstanceNorm 家族 | `N` 和空间尺寸可变化，`C` 必须等于 `num_features` |
+| GroupNorm | `N` 和空间尺寸可变化，`C` 必须等于 `num_channels` |
+| `LayerNorm(E)` | 所有前导尺寸可变化，最后一维必须是 `E` |
+| `LayerNorm((H,W))` | 前导尺寸可变化，最后两维必须固定为 `H,W` |
+
+例如 `LayerNorm(768)` 可以处理不同批大小和不同 token 数，只要每个 token 的特征宽度始终为 768。`LayerNorm((14,14))` 则不能直接处理空间尺寸变成 `(16,16)` 的输入。
+
+### 4.14 常见报错、静默错误与排查代码
+
+#### 4.14.1 常见报错分别在说什么
+
+| 现象或报错要点 | 常见原因 | 检查方法 |
+| --- | --- | --- |
+| BatchNorm 提示运行均值元素数不符 | 第 1 维通道数与 `num_features` 不同 | 打印 `x.shape[1]` |
+| LayerNorm 提示期望末尾形状 | 输入最后若干维与 `normalized_shape` 不同 | 从右向左逐维比较 |
+| GroupNorm 提示通道数或整除关系不符 | `C!=num_channels` 或 `C%G!=0` | 检查前一层输出通道和组数 |
+| 训练时提示每通道需要多个值 | BatchNorm 每通道只有一个元素 | 计算 `N×空间元素数` |
+| InstanceNorm 提示需要多个空间元素 | 每个 `(n,c)` 只有一个空间值 | 计算 `L`、`H×W` 或 `D×H×W` |
+
+#### 4.14.2 最危险的是“能运行但含义不对”
+
+下面代码在 `L=E` 时可能不报错：
+
+```python
+N, L, E = 2, 8, 8
+x = torch.randn(N, L, E)
+bn = nn.BatchNorm1d(E, affine=False, track_running_stats=False)
+wrong = bn(x)
+```
+
+`BatchNorm1d` 把第 1 维看作通道，所以这里把 token 位置当成了通道。正确写法应依据设计目标决定是否换轴：
+
+```python
+correct = bn(x.transpose(1, 2)).transpose(1, 2)
+```
+
+这里关闭运行统计，是为了单独比较两个统计维度。如果使用默认 BatchNorm，错误的第一次前向还会更新 `running_mean` 和 `running_var`；修正轴顺序后应重新创建模块或恢复正确的运行数据，不能继续混用已经受到错误输入影响的 buffer。
+
+同样地，`LayerNorm(C)` 直接接收 `(N,C,H,W)` 时，如果 `C==W`，它会把宽度当作 `normalized_shape`。仅检查输出形状无法发现问题。
+
+> [!IMPORTANT] 每次使用归一化层都写一句轴说明
+> 例如：“输入 `(N,L,E)`，本层固定 `n,l`，对 `e` 统计。”这句话能在代码评审时快速暴露维度误用。
+
+还有一种容易误导初学者的情况：关闭依赖通道数的参数和运行统计后，PyTorch 2.0.1 的部分后端路径未必检查构造参数中的 `C` 是否与实际第 1 维一致。例如默认 InstanceNorm，或同时使用 `affine=False, track_running_stats=False` 的 BatchNorm，某些错误配置可能仍能执行。应始终主动核对通道维，不要把“没有报错”当作配置正确。
+
+#### 4.14.3 用 `keepdim=True` 打印统计数据形状
+
+```python
+def show_moments(name, x, dims):
+    mean = x.mean(dim=dims, keepdim=True)
+    var = x.var(dim=dims, unbiased=False, keepdim=True)
+    print(
+        f"{name:22s}",
+        "input=", tuple(x.shape),
+        "dims=", dims,
+        "mean=", tuple(mean.shape),
+        "var=", tuple(var.shape),
+    )
+
+x = torch.randn(2, 3, 4, 5)
+show_moments("BatchNorm2d", x, (0, 2, 3))
+show_moments("InstanceNorm2d", x, (2, 3))
+show_moments("LayerNorm(W)", x, (3,))
+show_moments("LayerNorm(H,W)", x, (2, 3))
+show_moments("LayerNorm(C,H,W)", x, (1, 2, 3))
+```
+
+预期均值形状：
+
+```text
+BatchNorm2d       -> (1, 3, 1, 1)
+InstanceNorm2d    -> (2, 3, 1, 1)
+LayerNorm(W)      -> (2, 3, 4, 1)
+LayerNorm(H,W)    -> (2, 3, 1, 1)
+LayerNorm(C,H,W)  -> (2, 1, 1, 1)
+```
+
+注意 `InstanceNorm2d` 和 `LayerNorm((H,W))` 的统计数据形状相同，但仿射参数形状不同，默认设置也不同。
+
+#### 4.14.4 检查是否会受到其他样本影响
+
+```python
+torch.manual_seed(0)
+x = torch.randn(2, 3, 4, 4)
+x_changed = x.clone()
+x_changed[1] = x_changed[1] * 100 + 50  # 只改样本 1
+
+bn = nn.BatchNorm2d(3, affine=False, track_running_stats=False)
+gn = nn.GroupNorm(1, 3, affine=False)
+ln = nn.LayerNorm((3, 4, 4), elementwise_affine=False)
+
+print(torch.allclose(bn(x)[0], bn(x_changed)[0]))  # 通常 False
+print(torch.allclose(gn(x)[0], gn(x_changed)[0]))  # True
+print(torch.allclose(ln(x)[0], ln(x_changed)[0]))  # True
+```
+
+这个小实验直接展示：BatchNorm 在训练规则下跨样本，GroupNorm 和 LayerNorm 不跨样本。
+
+### 4.15 初学者常问的归一化问题
+
+> [!QUESTION] 名字中的 1d、2d、3d 是张量维数吗？
+> 不是。它表示空间维的数量。`BatchNorm1d` 可接收二维 `(N,C)` 或三维 `(N,C,L)`；`BatchNorm2d` 的常规输入是四维 `(N,C,H,W)`；`BatchNorm3d` 的常规输入是五维 `(N,C,D,H,W)`。
+
+> [!QUESTION] 归一化会不会丢掉均值和尺度信息？
+> 标准化中间步骤会移除当前统计集合的中心和尺度，但可学习的 $\gamma,\beta$ 能重新调整输出。网络的其他层也会保留和组合信息。是否适合使用仍取决于模型结构与任务。
+
+> [!QUESTION] 可以在 BatchNorm 后再接 LayerNorm 吗？
+> PyTorch 允许这样写，但两层会连续调整数值。除非模型结构有明确理由，否则不要因为“归一化越多越好”而随意堆叠。先遵循所实现架构的设计，再用对照实验判断。
+
+> [!QUESTION] `affine=False` 是否意味着层没有任何作用？
+> 不是。它仍会减均值、除标准差，只是不再乘可学习的 $\gamma$、加可学习的 $\beta$。
+
+> [!QUESTION] GroupNorm 的组数越大越好吗？
+> 不一定。组数增大后，每组通道数减少；组数减小后，更多通道一起统计。两者改变了模型看到的特征组合，应结合通道数和任务选择。
+
+> [!QUESTION] 为什么训练与评估的 BatchNorm 结果差很多？
+> 常见原因包括：训练时间太短，运行统计尚不稳定；训练和评估数据分布差异明显；小批太小；忘记在训练后调用 `eval()`；加载模型时遗漏了 buffer。
+
+> [!QUESTION] 为什么 LayerNorm 能处理任意批大小？
+> `LayerNorm(E)` 不在批维上计算，每个前导位置独立使用最后的 $E$ 个特征。因此批从 1 变成 100 不会改变单个位置所用的统计集合。
+
+> [!QUESTION] 换轴后为什么输出还要换回来？
+> 下游层通常约定原来的维度顺序。例如 Transformer 常使用 `(N,L,E)`，而 BatchNorm1d 要求 `(N,E,L)`。计算后换回，可让后续注意力和线性层继续按原约定读取。
+
+> [!SUMMARY] 归一化层的最终记忆法
+> 先写输入形状，再回答三个问题：哪些下标变化并共同统计；哪些下标固定并各有一套统计数据；$\gamma,\beta$ 在哪些位置共享。能回答这三问，多维输入就不再只是需要死记的类名列表。
+
+### 4.16 名称相近但计算对象不同的工具
+
+`torch.nn.functional.normalize` 常被简称为 normalize，但它不是前面所讲的均值—方差归一化层。它按指定维度计算向量范数：
+
+$$
+y=\frac{x}{\max(\lVert x\rVert_p,\epsilon)}.
+$$
+
+例如按行计算二范数：
+
+```python
+x = torch.tensor([[3., 4.], [0., 5.]])
+y = F.normalize(x, p=2, dim=1)
+print(y)
+# tensor([[0.6000, 0.8000],
+#         [0.0000, 1.0000]])
+```
+
+第一行的二范数是 $\sqrt{3^2+4^2}=5$，所以除以 5；第二行的二范数也是 5。它不减均值，没有 $\gamma,\beta$，也不保存运行统计。
+
+`weight_norm`、`spectral_norm` 等工具处理的是层的权重，而 BatchNorm、InstanceNorm、GroupNorm、LayerNorm 主要处理前向输入或中间特征。看到名称中含有 norm 时，应先确认“被处理的是输入张量，还是模块参数”。
+
+> [!NOTE] 为什么本节把函数工具单独列出
+> `F.normalize` 不是带状态的 `nn.Module`，权重相关工具也不是普通的输入处理层。把它们与前面的层区分开，可以避免只根据名字误判公式。
+
 ---
 
 ## 5. 卷积层
@@ -482,6 +1858,9 @@ $$
 
 PyTorch 的 `Conv2d` 按权重张量给出的顺序直接做乘加，不会先把卷积核旋转 180 度。
 
+> [!NOTE] 深度学习里的“卷积”实际按互相关方式计算
+> 数学教材中的严格卷积常先翻转卷积核，PyTorch 则直接按权重存放顺序乘加。权重会由训练得到，因此这种写法仍能学习所需的局部模式，深度学习资料也继续把它称为卷积。
+
 ```python
 x_small = torch.tensor([[[[1., 2., 3.],
                           [4., 5., 6.],
@@ -501,6 +1880,9 @@ print(conv_small(x_small))
 | `groups=1` | 每个输出通道使用全部输入通道 |
 | `groups=G` | 输入与输出通道各分为 `G` 组，只在组内计算 |
 | `groups=C_in` 且 `C_out=K*C_in` | 深度卷积；每个输入通道有 `K` 个卷积核 |
+
+> [!WARNING] 分组数必须同时整除输入和输出通道数
+> `groups=G` 时需要满足 `C_in % G == 0` 且 `C_out % G == 0`。每个输出通道只能读取所属组内的 `C_in/G` 个输入通道。
 
 #### 手算：`groups` 改变哪些通道会相加
 
@@ -576,6 +1958,9 @@ print(deconv(x_1d))  # tensor([[[1., 2., 3., 4., 2.]]])
 
 这说明转置卷积不是“把原图倒着还原”。它是一个可学习的上采样算子：相邻输入位置生成的结果可能相加，权重由训练得到。
 
+> [!WARNING] 重叠次数不均可能产生棋盘状纹理
+> 不同输入位置写入输出时，有些输出位置可能收到多次相加，另一些收到的次数较少。核大小与 stride 的组合不合适时，图像上可能出现规律纹理。可以同时比较“插值后接普通卷积”的结果。
+
 #### `output_padding` 只决定输出尺寸
 
 以 `kernel_size=2, stride=2` 的普通一维卷积为例，输入长度为 4 和 5 时，输出长度都可能为 2：
@@ -647,6 +2032,9 @@ print(nn.AvgPool2d(2)(x))
 
 $$y_{n,c}=\frac{1}{HW}\sum_{h,w}x_{n,c,h,w}.$$
 
+> [!NOTE] 自适应池化不要求输入尺寸能整除输出尺寸
+> 从 7 个位置缩成 3 个位置时，PyTorch 会自动选取三个覆盖区间，这些区间的宽度可以不同，也可能共享邻近输入位置。它保证输出尺寸，不保证固定窗口宽度与固定 stride。
+
 ```python
 gap = nn.AdaptiveAvgPool2d((1, 1))
 print(gap(torch.randn(3, 64, 7, 11)).shape)  # (3, 64, 1, 1)
@@ -661,6 +2049,9 @@ print(v.shape, idx.shape)  # 均为 (2, 4, 3, 5)
 ### 6.3 `MaxUnpool1d/2d/3d`
 
 反池化把池化值放回 `indices` 指示的位置，其他位置填零。它不能复原被最大池化丢弃的非最大值。
+
+> [!WARNING] MaxUnpool 必须使用配套的池化索引
+> `indices` 应来自对应的 `MaxPool(..., return_indices=True)`，核大小、stride、padding 等设置也应互相匹配。错用另一层的索引，可能把数值放到错误位置或触发索引错误。
 
 ```python
 unpool = nn.MaxUnpool2d(2, stride=2)
@@ -693,6 +2084,9 @@ $$
 
 二维 `padding=(left, right, top, bottom)`。一维只给 `(left, right)`；三维给 `(left, right, top, bottom, front, back)`。例如：
 
+> [!TIP] 填充元组从最后一个空间维开始写
+> 二维输入的最后一维是宽，所以先写 `(left,right)`；倒数第二维是高，再写 `(top,bottom)`。因此 `(1,2,3,4)` 表示左 1、右 2、上 3、下 4。
+
 ```python
 x = torch.tensor([[[[1., 2.], [3., 4.]]]])
 print(nn.ZeroPad2d((1, 2, 1, 0))(x).shape)           # (1, 1, 3, 5)
@@ -708,6 +2102,9 @@ print(nn.ConstantPad2d(1, value=-1.)(x))
 
 - `Unfold`：把每个滑动窗口**复制出来，并排成一列**。
 - `Fold`：把这些列还原成窗口，并按原位置**逐项相加**。
+
+> [!WARNING] Unfold 可能产生很大的临时张量
+> 相邻窗口会重复保存共享像素。输入较大、窗口较大且 stride 较小时，展开结果可能远大于原图。例如 `3×3` 窗口、stride 1 时，大部分内部像素会在 9 个窗口中重复出现。
 
 它们只处理四维图像张量 `(N,C,H,W)`。`Unfold`（也称 im2col）从输入提取局部块，输出为：
 
@@ -861,6 +2258,9 @@ print(summed / divisor)  # 恢复为原始 x
 
 若窗口彼此不重叠且完整覆盖输入，例如 `4×4` 输入配合 `kernel_size=2, stride=2`，每个位置的覆盖次数都为 1，此时 `Fold(Unfold(x))` 才会直接等于 $x$。
 
+> [!QUESTION] Fold 什么时候能直接得到原图？
+> 需要每个有效位置恰好被一个窗口覆盖。只要窗口重叠，Fold 就会累加；只要有位置未被任何窗口覆盖，就无法从这些列得到该位置。通用方法是先 Fold 全 1 张量，得到覆盖次数，再检查是否可以逐元素相除。
+
 ### 6.6 `PixelShuffle`、`PixelUnshuffle`、`ChannelShuffle`
 
 `PixelShuffle(r)` 将通道中的子像素重排到空间维：
@@ -872,6 +2272,9 @@ $$ (N, C r^2, H, W)\rightarrow(N,C,Hr,Wr).$$
 $$ (N,C,Hr,Wr)\rightarrow(N,C r^2,H,W).$$
 
 它们不引入参数，常用于超分辨率或无插值下采样。`ChannelShuffle(g)` 先把通道视作 `(g,C/g)`，交换这两个通道轴，再展平；常与分组卷积配合以让不同组的特征在下一层相互混合。
+
+> [!WARNING] PixelShuffle 要求输入通道数可被 $r^2$ 整除
+> 使用倍率 `r=2` 时，12 个输入通道可以重排成 3 个输出通道，但 10 个输入通道不能满足要求。该层只改变位置，不会凭空产生或删除元素。
 
 ```python
 x = torch.randn(2, 12, 5, 7)
@@ -933,6 +2336,9 @@ print(bilinear(feature).shape)  # (2, 8, 20, 24)
 $$E\in\mathbb R^{V\times D},$$
 
 输入的整数索引 $i$ 输出第 $i$ 行 $E_i$。输入形状为任意整数张量 `(*)`，输出为 `(*, D)`。输入必须是 `torch.long` 或 `torch.int` 类型，不能直接传 one-hot 浮点张量。
+
+> [!WARNING] Embedding 输入的是编号，不是连续特征
+> 若词表大小为 `V`，每个编号必须位于 `[0,V)`。未知词应在分词阶段替换成专用未知词编号；负数或超过词表大小的编号会报错。
 
 ```python
 embed = nn.Embedding(num_embeddings=1000, embedding_dim=32, padding_idx=0)
@@ -1025,6 +2431,9 @@ for x_t in seq.unbind(dim=1):
     h = cell(x_t, h)
 print(h.shape)  # (3, 10)
 ```
+
+> [!NOTE] `output` 与 `h_n` 保存的内容不同
+> `output` 保存最后一层在每个时间位置的隐藏状态；`h_n` 只保存每层、每个方向的最终状态。双向网络中，不能简单把 `output[:,-1]` 当作两个方向最终状态的组合，因为反向方向的读取顺序相反。
 
 #### 手算：`RNNCell` 的前一时刻状态如何参与下一步
 
@@ -1150,6 +2559,9 @@ $$\operatorname{head}_j=\operatorname{Softmax}\left(\frac{Q_jK_j^T}{\sqrt{d_h}}+
 $$\operatorname{MHA}=\operatorname{Concat}(\operatorname{head}_1,\ldots,\operatorname{head}_h)W_O.$$
 
 `nn.MultiheadAttention(embed_dim=E, num_heads=h, batch_first=True)` 在自注意力中把同一个张量传给 `query`、`key`、`value`。`key_padding_mask` 形状为 `(N,S)`，其中 `True` 表示该 Key 位置应被忽略；浮点 `attn_mask` 加到注意力分数上，布尔 `attn_mask=True` 表示该位置不允许关注。
+
+> [!WARNING] PyTorch 布尔注意力 mask 中的 `True` 表示禁止读取
+> 这一约定与部分库相反。移植代码时应先核对接口说明，并用两三个 token 的小张量确认被遮住位置的注意力权重是否为 0。
 
 ```python
 mha = nn.MultiheadAttention(embed_dim=16, num_heads=4, batch_first=True)
@@ -1304,7 +2716,10 @@ tgt = torch.randn(2, 4, 16)
 print(transformer(src, tgt).shape)  # (2, 4, 16)
 ```
 
-位置位置信息不是 `nn.Transformer` 自动添加的；输入 embedding 前应自行加入可学习位置参数或正弦位置编码。
+位置信息不是 `nn.Transformer` 自动添加的；输入 embedding 前应自行加入可学习位置参数或正弦位置编码。
+
+> [!NOTE] `nn.Transformer` 不是完整的文本生成模型
+> 它不会自动完成分词、Embedding、位置编码和词表分类。文本任务通常还要在输入端加入 Embedding 与位置信息，在输出端加入 `Linear(d_model,vocab_size)`，训练时再计算下一个 token 的分类损失。
 
 ---
 
@@ -1372,6 +2787,9 @@ $$
 $$
 
 若模型把第 0 类的 logit 提高，正确类别的概率会变大，损失会变小。传给 `CrossEntropyLoss` 的应是原始 logits；该层内部已经完成 `LogSoftmax` 和取负对数。
+
+> [!WARNING] 不要在 `CrossEntropyLoss` 前再次使用 Softmax
+> 再加 Softmax 会把概率当作 logits 传入，使损失含义和梯度发生变化。推理时若需要展示概率，再对 logits 调用 Softmax。
 
 | 模块 | 作用 |
 | --- | --- |
@@ -1494,6 +2912,9 @@ print(logits.shape, loss.item())
 
 关键检查项：卷积的输入通道应等于上一层输出通道；`GroupNorm` 的 `num_channels` 必须能被 `num_groups` 整除；分类标签是 `long` 类型且不应 one-hot；训练代码直接把 logits 传给 `CrossEntropyLoss`。
 
+> [!NOTE] 这段示例只演示一次前向与反向计算
+> 完整训练循环通常在每个小批依次执行 `optimizer.zero_grad()`、前向计算、`loss.backward()` 和 `optimizer.step()`。验证时切换到 `eval()` 并使用 `torch.inference_mode()`，返回训练前再调用 `train()`。
+
 ---
 
 ## 11. 版本兼容与非层工具
@@ -1503,6 +2924,8 @@ print(logits.shape, loss.item())
 - `RNNBase`、`RNNCellBase` 是 RNN 家族基类，应实例化 `RNN`、`GRU`、`LSTM` 或对应的 Cell。
 - `DataParallel` 用于把一个模型复制到多张 GPU 执行，不属于网络层。新代码在多 GPU 训练中通常使用 `DistributedDataParallel`。
 - `CrossMapLRN2d` 与 `NLLLoss2d` 主要为旧代码兼容而保留；新模型分别使用 `LocalResponseNorm` 和 `NLLLoss`。
+- PyTorch 2.0.1 的 `LayerNorm` 没有单独的 `bias=` 构造参数；`elementwise_affine=False` 会同时移除 `weight` 和 `bias`。阅读较新版本文档时，应先核对本地函数签名。
+- 若较新版本文档中出现本仓库 2.0.1 没有的归一化模块，应以当前环境的 `hasattr(torch.nn, name)` 与本地 API 为准，再决定是否升级。
 - 除 `Module` 组织工具与损失函数外，本文列出的模块均可通过 `print(module)`、`named_parameters()`、`state_dict()` 查看其结构、参数与保存内容。
 
 ```python
