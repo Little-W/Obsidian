@@ -4342,8 +4342,52 @@ $$
 - $X_{\mathrm{flat}}$ 的第 $p$ 行保存第 $p$ 个位置的全部输入 Channel；
 - $K$ 的第 $i$ 行保存输入 Channel $i$ 到全部输出 Channel 的权重；
 - $\mathbf 1_P$ 是长度为 $P$、元素全为 1 的列向量；
-- $b\in\mathbb R^O$，同一个 $b_o$ 会加到全部位置；
+- $b\in\mathbb R^O$ 表示 bias 中只有 $O$ 个数，即每个输出 Channel 一个数；
 - 输出 $Y_{\mathrm{flat}}$ 的 shape 为 $(P,O)$。
+
+这里的“全部位置”是指：固定输出 Channel $o$ 后，所有样本编号 $n$、所有高度下标 $h$ 和所有宽度下标 $w$。位置 $p$ 是三元组 $(n,h,w)$ 合并后的编号，因此：
+
+$$
+Y_{\mathrm{flat}}[p,o]
+=
+(X_{\mathrm{flat}}K)[p,o]+b_o.
+$$
+
+矩阵：
+
+$$
+\mathbf 1_Pb^T
+$$
+
+的 shape 为 $(P,O)$，其中每一行都是同一个 bias 行向量：
+
+$$
+b^T=[b_0,b_1,\ldots,b_{O-1}].
+$$
+
+例如有 $P=4$ 个位置、$O=3$ 个输出 Channel，并且：
+
+$$
+b=[10,100,1000],
+$$
+
+那么公式中的 bias 项是：
+
+$$
+\mathbf 1_4b^T
+=
+\begin{bmatrix}
+10&100&1000\\
+10&100&1000\\
+10&100&1000\\
+10&100&1000
+\end{bmatrix}.
+$$
+
+第 0 列的四个位置都加 $b_0=10$，第 1 列的四个位置都加 $b_1=100$，第 2 列的四个位置都加 $b_2=1000$。这只是公式上把 bias 扩展到 $(P,O)$；实际存储的可学习 bias 仍然只有 3 个数，计算程序通常按广播规则重复读取它们。
+
+> [!NOTE] 不是把 $b_0,b_1,b_2$ 全部加到同一个输出数
+> 输出 $Y[p,o]$ 只加与它的输出 Channel 编号相同的 $b_o$。例如 $Y[2,1]$ 加 $b_1=100$，不会再加 $b_0$ 或 $b_2$。
 
 $(P,O)$ 连续结果天然对应 NHWC 输出：
 
@@ -4813,34 +4857,130 @@ $$
 
 ### 6.15 bias 如何在空间位置共享
 
-卷积 bias 的形状只与输出 Channel 有关。Conv2D 的第 $o$ 个偏置 $b_o$ 会加到该输出 Channel 的每个高宽位置：
+卷积 bias 的形状只与输出 Channel 数有关。令输出 Channel 数为 $O$，则：
+
+$$
+b=
+[b_0,b_1,\ldots,b_{O-1}]
+\in\mathbb R^O.
+$$
+
+也就是说，无论输出图像有多少个样本、多少行、多少列，Layer 只保存 $O$ 个 bias。$b_o$ 是输出 Channel $o$ 独有的一个标量。
+
+先把卷积乘加但尚未加入 bias 的结果记为 $z$。PyTorch 的输出 shape 为：
+
+$$
+z\in
+\mathbb R^{N\times O\times H_{\mathrm{out}}\times W_{\mathrm{out}}},
+$$
+
+计算规则是：
 
 $$
 y_{n,o,h,w}=z_{n,o,h,w}+b_o,
 $$
 
-其中 $z$ 表示卷积乘加结果。它不会为每个像素准备不同偏置。
-
-假设某个输出 Channel 在四个位置的卷积乘加结果为：
+所以，固定 $o$ 后，$n,h,w$ 无论取什么值，都加同一个 $b_o$。为了观察广播，可以在概念上把 PyTorch bias 看成：
 
 $$
+(1,O,1,1).
+$$
+
+两个长度为 1 的空间轴以及最前面的长度为 1 的轴会重复使用同一数值。实际参数 shape 仍是 $(O)$，通常不会真的复制成完整输出大小。
+
+Keras 默认输出 shape 为：
+
+$$
+z\in
+\mathbb R^{N\times H_{\mathrm{out}}\times W_{\mathrm{out}}\times O},
+$$
+
+计算规则写成：
+
+$$
+y_{n,h,w,o}=z_{n,h,w,o}+b_o.
+$$
+
+此时可在概念上把 bias 看成：
+
+$$
+(1,1,1,O).
+$$
+
+两个框架只是 Channel轴位置不同；每个输出 Channel 仍只有一个 bias。
+
+#### 具体例子：3 个 bias 加到哪些元素
+
+令：
+
+$$
+N=1,\qquad O=3,\qquad
+H_{\mathrm{out}}=W_{\mathrm{out}}=2,
+$$
+
+并设：
+
+$$
+b=[10,100,1000].
+$$
+
+卷积乘加结果的三个输出 Channel 平面分别为：
+
+$$
+z_0=
 \begin{bmatrix}
-2&5\\
--1&3
+1&2\\
+3&4
 \end{bmatrix},
-$$
-
-该 Channel 的 bias 为 0.5，则输出为：
-
-$$
+\qquad
+z_1=
 \begin{bmatrix}
-2.5&5.5\\
--0.5&3.5
+5&6\\
+7&8
+\end{bmatrix},
+\qquad
+z_2=
+\begin{bmatrix}
+9&10\\
+11&12
+\end{bmatrix}.
+$$
+
+输出 Channel 0 的每个位置只加 $b_0=10$：
+
+$$
+y_0=
+\begin{bmatrix}
+11&12\\
+13&14
+\end{bmatrix}.
+$$
+
+输出 Channel 1 的每个位置只加 $b_1=100$：
+
+$$
+y_1=
+\begin{bmatrix}
+105&106\\
+107&108
+\end{bmatrix}.
+$$
+
+输出 Channel 2 的每个位置只加 $b_2=1000$：
+
+$$
+y_2=
+\begin{bmatrix}
+1009&1010\\
+1011&1012
 \end{bmatrix}.
 $$
 
 > [!NOTE] bias 共享是卷积位置共享的一部分
-> 一个输出 Channel 只有一个 bias。输入图像从 $32\times32$ 改成 $256\times256$，bias 参数仍然只有 $C_{\mathrm{out}}$ 个。
+> 一个输出 Channel 只有一个 bias。输入图像从 $32\times32$ 改成 $256\times256$，bias 参数仍然只有 $C_{\mathrm{out}}$ 个。Batch Size 从 1 改成 8 时，bias 参数数目也不变；8 个样本的同名输出 Channel 会重复使用同一个 $b_o$。
+
+> [!TIP] 用一个下标问题判断该加哪个 bias
+> 先问当前输出元素属于哪个输出 Channel。若它属于 Channel 2，就只加 $b_2$；样本编号和高宽坐标不会改变 bias 的选择。
 
 当卷积后立即接带平移参数的 Batch Normalization 时，卷积 bias 有时会关闭，因为归一化后的 $\beta$ 已能提供每 Channel 平移。不过这是一种结构选择，不是所有“卷积后接归一化”都必须关闭 bias。若归一化的轴、参数设置或 Layer 次序不同，应重新分析。
 
