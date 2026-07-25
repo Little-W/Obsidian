@@ -2307,6 +2307,151 @@ x = torch.randn(4, 3, 32, 32)
 print(conv(x).shape)  # (4, 16, 16, 16)
 ```
 
+#### 先从输入形状读懂三类卷积
+
+`Conv1d`、`Conv2d`、`Conv3d` 中的数字表示卷积核沿几个空间维滑动，不表示输入张量总共有几个维度。加入小批维和通道维后，张量维数通常比层名称中的数字多 2。
+
+| 层 | 带小批维的输入 | 权重形状 | 输出 |
+| --- | --- | --- | --- |
+| `Conv1d` | `(N,C_in,L)` | `(C_out,C_in/groups,K)` | `(N,C_out,L_out)` |
+| `Conv2d` | `(N,C_in,H,W)` | `(C_out,C_in/groups,K_h,K_w)` | `(N,C_out,H_out,W_out)` |
+| `Conv3d` | `(N,C_in,D,H,W)` | `(C_out,C_in/groups,K_d,K_h,K_w)` | `(N,C_out,D_out,H_out,W_out)` |
+
+表中：
+
+- $N$ 是小批中的样本数；
+- $C_{\mathrm{in}}$ 和 $C_{\mathrm{out}}$ 是输入、输出通道数；
+- $L$ 可以表示音频采样点、时间步或序列位置；
+- $H,W$ 是图像的高和宽；
+- $D$ 可以表示医学体数据的深度，也可以表示视频时间；
+- $K$ 表示卷积核在相应空间维的大小。
+
+> [!NOTE] 一个输出通道对应一组完整权重
+> 对普通 `Conv2d` 而言，一组权重不只是一个 $K_h\times K_w$ 小片，而是覆盖所有输入通道的 $C_{\mathrm{in}}\times K_h\times K_w$ 张量。它先在各输入通道做乘加，再把结果相加成一个输出通道。`out_channels=16` 表示会产生 16 组这样的结果。
+
+PyTorch 允许省略小批维，因此 `Conv2d` 也能接收 `(C,H,W)`。不过网络代码通常保留小批维，即使一次只有一张图，也整理成 `(1,C,H,W)`，这样更容易与数据读取器和后续层配合。
+
+> [!WARNING] PyTorch 卷积默认采用 channels-first
+> 图像通常写成 `(N,C,H,W)`，而不是 `(N,H,W,C)`；视频或体数据通常写成 `(N,C,D,H,W)`。若外部工具给出 channels-last 数据，应先用 `permute` 调整各轴次序。
+
+自然语言序列常写成 `(N,L,E)`，其中 $E$ 是每个 token 的特征数。若希望 `Conv1d` 沿序列位置滑动，需要暂时把特征轴放到通道位置：
+
+```python
+tokens = torch.randn(8, 20, 64)        # (N,L,E)
+x = tokens.transpose(1, 2)             # (N,E,L)
+conv = nn.Conv1d(64, 96, kernel_size=3, padding=1)
+y = conv(x)                             # (N,96,L)
+y = y.transpose(1, 2)                  # (N,L,96)
+print(y.shape)
+```
+
+> [!EXAMPLE] `Conv1d` 不只用于音频
+> 若一句话有 20 个 token，每个 token 用 64 个数表示，输入可看成 64 个特征通道、每个通道长度为 20。大小为 3 的卷积核每次查看相邻三个 token，可以学习局部词组附近的组合特征。
+
+#### 每个空间维都可以单独计算输出大小
+
+先定义卷积核在某一维上的实际覆盖长度：
+
+$$K_{\mathrm{eff}}=d(K-1)+1,$$
+
+其中 $K$ 是核大小，$d$ 是 dilation。当 `dilation=1` 时，$K_{\mathrm{eff}}=K$；当 `kernel_size=3,dilation=2` 时，三个核元素之间各跳过一个输入位置，实际覆盖长度为 5。
+
+输出长度可以改写为：
+
+$$
+L_{\mathrm{out}}
+=
+\left\lfloor
+\frac{L_{\mathrm{in}}+2p-K_{\mathrm{eff}}}{s}
+\right\rfloor+1.
+$$
+
+> [!TIP] 形状计算分三步
+> 先用 $d(K-1)+1$ 求实际覆盖长度，再计算加入 padding 后可供滑动的长度，最后除以 stride 并向下取整。二维和三维只是分别对每个空间轴重复这三步。
+
+例如输入形状是 `(2,4,9,20,30)`，使用：
+
+```python
+conv3d = nn.Conv3d(
+    in_channels=4,
+    out_channels=6,
+    kernel_size=(3, 5, 3),
+    stride=(1, 2, 2),
+    padding=(1, 2, 1),
+    dilation=(1, 1, 2),
+)
+x = torch.randn(2, 4, 9, 20, 30)
+print(conv3d(x).shape)  # (2,6,9,10,14)
+```
+
+深度方向：
+
+$$
+D_{\mathrm{out}}
+=
+\left\lfloor
+\frac{9+2-1(3-1)-1}{1}+1
+\right\rfloor
+=9.
+$$
+
+高度方向：
+
+$$
+H_{\mathrm{out}}
+=
+\left\lfloor
+\frac{20+4-1(5-1)-1}{2}+1
+\right\rfloor
+=10.
+$$
+
+宽度方向的核大小为 3，dilation 为 2，实际覆盖长度为 $2(3-1)+1=5$：
+
+$$
+W_{\mathrm{out}}
+=
+\left\lfloor
+\frac{30+2-2(3-1)-1}{2}+1
+\right\rfloor
+=14.
+$$
+
+最终输出形状为 `(2,6,9,10,14)`。输出通道数直接等于 `out_channels=6`，不由空间尺寸公式计算。
+
+#### stride、padding 与 dilation 分别改变什么
+
+- stride 决定完成一次输出后，卷积核整体移动几格；
+- padding 决定输入四周补入多少位置；
+- dilation 决定同一卷积核内部相邻权重隔几格读取输入。
+
+> [!IMPORTANT] stride 与 dilation 表示两种不同间隔
+> `stride=2` 表示下一次整体计算向前移动两格；`dilation=2` 表示一次计算中的相邻核元素相隔两格。前者通常减少输出位置数，后者在不增加权重数的情况下扩大单次计算查看的范围。
+
+令一维输入和卷积核为：
+
+$$
+x=[1,2,3,4,5,6,7],
+\qquad
+w=[1,10,100].
+$$
+
+当 `dilation=2,stride=1` 时，第一个输出读取 $x_0,x_2,x_4$：
+
+$$1\times1+3\times10+5\times100=531.$$
+
+第二个输出读取 $x_1,x_3,x_5$，得到 642；第三个输出读取 $x_2,x_4,x_6$，得到 753。因此输出是 `[531,642,753]`。核仍然只有三个权重，但一次计算覆盖五个连续输入位置。
+
+```python
+x = torch.arange(1, 8, dtype=torch.float32).reshape(1, 1, 7)
+conv = nn.Conv1d(1, 1, kernel_size=3, dilation=2, bias=False)
+with torch.no_grad():
+    conv.weight.copy_(torch.tensor([[[1., 10., 100.]]]))
+print(conv(x))  # tensor([[[531., 642., 753.]]])
+```
+
+若再把 stride 改为 2，只计算第一组和第三组，输出便是 `[531,753]`。可见，dilation 改变每个窗口内部读哪些位置，stride 改变一共有多少个窗口。
+
 #### 手算：一个 `Conv2d` 输出元素如何得到
 
 先只看单张、单通道、大小为 `3×3` 的输入，卷积核大小为 `2×2`，stride 为 1，没有 bias：
@@ -3028,6 +3173,290 @@ $$
 
 这里 $c_t$ 是用于长期保留信息的内部记忆，$h_t$ 是当前时间步向外给出的隐藏状态。遗忘门 $f_t$ 控制旧记忆保留多少，输入门 $i_t$ 控制候选内容写入多少，输出门 $o_t$ 控制从记忆中输出多少。真实层中这些门值由输入、上一时刻状态和可学习权重计算得到。
 
+### 7.6 多层、双向循环网络的形状怎样阅读
+
+先统一符号：
+
+| 符号 | 含义 |
+| --- | --- |
+| $N$ | 小批大小 |
+| $L$ | 序列长度 |
+| $I$ | 输入特征宽度 `input_size` |
+| $H$ | 隐藏宽度 `hidden_size` |
+| $K$ | 循环层数 `num_layers` |
+| $R$ | 方向数，单向为 1，双向为 2 |
+| $P$ | LSTM 投影宽度 `proj_size` |
+
+当 `batch_first=True` 时，RNN、GRU 与普通 LSTM 的主要形状如下：
+
+| 张量 | RNN / GRU | 无投影 LSTM |
+| --- | --- | --- |
+| 输入 `x` | $(N,L,I)$ | $(N,L,I)$ |
+| `output` | $(N,L,RH)$ | $(N,L,RH)$ |
+| `h_n` | $(KR,N,H)$ | $(KR,N,H)$ |
+| `c_n` | 无 | $(KR,N,H)$ |
+
+> [!IMPORTANT] `batch_first` 不改变状态张量的次序
+> `batch_first=True` 只把输入与逐位置输出改成小批在前。`h_n` 和 `c_n` 仍以“层与方向”作为第 0 维，不会变成 `(N,K,H)`。
+
+以两层双向 GRU 为例，`h_n.shape=(4,N,H)`。第 0 维依次保存：
+
+| `h_n` 下标 | 内容 |
+| ---: | --- |
+| 0 | 第 0 层正向最终状态 |
+| 1 | 第 0 层反向最终状态 |
+| 2 | 第 1 层正向最终状态 |
+| 3 | 第 1 层反向最终状态 |
+
+```python
+import torch
+from torch import nn
+
+torch.manual_seed(0)
+
+num_layers = 2
+num_directions = 2
+hidden_size = 6
+
+gru = nn.GRU(
+    input_size=4,
+    hidden_size=hidden_size,
+    num_layers=num_layers,
+    bidirectional=True,
+    batch_first=True,
+)
+
+x = torch.randn(3, 5, 4)
+output, h_n = gru(x)
+
+print(output.shape)  # (3,5,12)
+print(h_n.shape)     # (4,3,6)
+
+h_by_layer = h_n.reshape(
+    num_layers,
+    num_directions,
+    x.size(0),
+    hidden_size,
+)
+
+top_forward = h_by_layer[-1, 0]   # (3,6)
+top_backward = h_by_layer[-1, 1]  # (3,6)
+sentence_vector = torch.cat(
+    [top_forward, top_backward],
+    dim=-1,
+)
+print(sentence_vector.shape)      # (3,12)
+```
+
+多层循环网络中，第 0 层接收宽度为 $I$ 的输入。更高层接收上一层的输出，因此双向网络中更高层的输入宽度是 $2H$。
+
+`output` 只包含最高一层的逐位置结果；`h_n` 保存每一层、每一方向的最终状态。选择哪个张量取决于后续任务：
+
+- 需要每个 token 的上下文表示时，使用 `output`；
+- 需要观察各层最终状态时，使用 `h_n`；
+- 需要把整条序列压成一个向量时，常拼接最高层的正向和反向最终状态。
+
+> [!WARNING] 双向网络不能总取 `output[:, -1, :]`
+> 对没有补齐的等长序列，`output[:, -1, :H]` 是正向读取完整条序列后的状态，但 `output[:, -1, H:]` 只是反向刚开始读取末尾 token 时的状态。反向读取完整条序列后的状态位于 `output[:, 0, H:]`。使用 `h_n` 并拆开层和方向通常更清楚。
+
+下面代码验证这一关系：
+
+```python
+rnn = nn.RNN(
+    input_size=3,
+    hidden_size=5,
+    num_layers=1,
+    bidirectional=True,
+    batch_first=True,
+)
+
+x = torch.randn(2, 4, 3)
+output, h_n = rnn(x)
+h = h_n.reshape(1, 2, 2, 5)
+
+print(torch.allclose(output[:, -1, :5], h[-1, 0]))
+print(torch.allclose(output[:, 0, 5:], h[-1, 1]))
+# 两行均为 True
+```
+
+#### 7.6.1 LSTM 为什么返回两组状态
+
+LSTM 同时返回 $h_n$ 和 $c_n$：
+
+- $h_n$ 是向外提供的隐藏状态；
+- $c_n$ 是内部记忆状态；
+- 普通 LSTM 中两者的层数、方向数、小批数和最后一维都相同。
+
+```python
+lstm = nn.LSTM(
+    input_size=8,
+    hidden_size=10,
+    num_layers=3,
+    bidirectional=True,
+    batch_first=True,
+)
+
+x = torch.randn(4, 7, 8)
+output, (h_n, c_n) = lstm(x)
+
+print(output.shape)  # (4,7,20)
+print(h_n.shape)     # (6,4,10)
+print(c_n.shape)     # (6,4,10)
+```
+
+若省略初始状态，PyTorch 使用全零状态。手工提供时，设备、数据类型和形状必须与输入相容：
+
+```python
+directions = 2
+layers = 3
+batch_size = x.size(0)
+hidden_size = 10
+
+h0 = x.new_zeros(layers * directions, batch_size, hidden_size)
+c0 = x.new_zeros(layers * directions, batch_size, hidden_size)
+
+output, (h_n, c_n) = lstm(x, (h0, c0))
+```
+
+> [!TIP] 使用 `x.new_zeros(...)`
+> 与直接写 `torch.zeros(...)` 相比，`x.new_zeros(...)` 会自动沿用输入的设备和数据类型，可减少 CPU、GPU 或浮点类型不一致的问题。
+
+设置 `proj_size=P` 后，内部记忆仍使用宽度 $H$，向外给出的隐藏状态宽度变为 $P$：
+
+| 张量 | 带投影 LSTM 的形状 |
+| --- | --- |
+| `output` | $(N,L,RP)$ |
+| `h_n` | $(KR,N,P)$ |
+| `c_n` | $(KR,N,H)$ |
+
+```python
+lstm = nn.LSTM(
+    input_size=8,
+    hidden_size=12,
+    proj_size=5,
+    num_layers=2,
+    bidirectional=True,
+    batch_first=True,
+)
+
+x = torch.randn(3, 6, 8)
+output, (h_n, c_n) = lstm(x)
+
+print(output.shape)  # (3,6,10)，2 个方向 × 5
+print(h_n.shape)     # (4,3,5)
+print(c_n.shape)     # (4,3,12)
+```
+
+带投影时，`h_n` 与 `c_n` 的最后一维本来就不同，不应强行要求两者同形。
+
+> [!NOTE] 循环层构造参数中的 `dropout`
+> `RNN`、`GRU`、`LSTM` 的 `dropout` 只用在相邻循环层之间。`num_layers=1` 时没有层间位置可以使用它，因此不会产生随机丢弃效果。它也不表示同一层每个时间步后都会额外调用一次普通 `Dropout`。
+
+### 7.7 不同样本长度不同：补齐、打包与还原
+
+一批句子常有不同长度。例如三个样本的有效长度分别是 5、3、2。为了组成规则张量，短样本要补到长度 5：
+
+```text
+样本 0：a b c d e
+样本 1：f g h PAD PAD
+样本 2：i j PAD PAD PAD
+```
+
+若只补齐后直接传给 GRU，GRU 仍会计算 `PAD` 时间步。`Embedding.padding_idx` 只能阻止补齐词向量通过梯度更新，不能阻止循环状态继续变化。
+
+`pack_padded_sequence` 根据真实长度建立紧凑表示，让循环层跳过补齐部分；`pad_packed_sequence` 再把输出还原为规则张量。
+
+```python
+import torch
+from torch import nn
+from torch.nn.utils.rnn import (
+    pad_sequence,
+    pack_padded_sequence,
+    pad_packed_sequence,
+)
+
+torch.manual_seed(1)
+
+sequences = [
+    torch.randn(5, 4),
+    torch.randn(3, 4),
+    torch.randn(2, 4),
+]
+lengths = torch.tensor([len(seq) for seq in sequences])
+
+# 形状为 (3,5,4)，补齐值默认为 0。
+padded = pad_sequence(sequences, batch_first=True)
+
+packed = pack_padded_sequence(
+    padded,
+    lengths.cpu(),
+    batch_first=True,
+    enforce_sorted=False,
+)
+
+gru = nn.GRU(
+    input_size=4,
+    hidden_size=6,
+    num_layers=2,
+    bidirectional=True,
+    batch_first=True,
+)
+
+packed_output, h_n = gru(packed)
+
+output, restored_lengths = pad_packed_sequence(
+    packed_output,
+    batch_first=True,
+    total_length=padded.size(1),
+)
+
+print(padded.shape)          # (3,5,4)
+print(output.shape)          # (3,5,12)
+print(h_n.shape)             # (4,3,6)
+print(restored_lengths)      # tensor([5,3,2])
+
+positions = torch.arange(padded.size(1)).unsqueeze(0)
+valid_mask = positions < lengths.unsqueeze(1)
+print(valid_mask)
+
+# 还原后的无效位置由 pad_packed_sequence 填为 0。
+assert torch.allclose(
+    output[~valid_mask],
+    torch.zeros_like(output[~valid_mask]),
+)
+
+h = h_n.reshape(2, 2, 3, 6)
+sequence_features = torch.cat([h[-1, 0], h[-1, 1]], dim=-1)
+print(sequence_features.shape)  # (3,12)
+```
+
+参数和张量可以这样理解：
+
+- `lengths` 保存每个样本补齐前的有效长度；
+- 若 `lengths` 是张量，通常应放在 CPU；
+- `enforce_sorted=False` 允许输入不按长度从大到小排列；
+- `batch_first=True` 应与补齐张量的排列方式一致；
+- `total_length` 可强制还原到指定长度，后面还要堆叠其他模块时很有用。
+
+> [!WARNING] 长度必须与样本内容一致
+> 若某个样本实际只有 3 个有效位置，却把长度写成 5，循环层会把两个补齐位置当成真实输入；若长度写得过小，末尾真实内容又会被跳过。长度应在整理小批时从原始数据可靠地保存。
+
+> [!WARNING] 不要把长度为 0 的样本直接送入打包函数
+> 有效长度必须大于 0。空文本可以加入 `[UNK]`、`[CLS]` 等占位 token，或在整理数据时单独处理。
+
+对词编号序列，常见次序是：
+
+```text
+编号序列
+  → pad_sequence
+  → Embedding
+  → pack_padded_sequence
+  → RNN / GRU / LSTM
+  → pad_packed_sequence
+```
+
+如果只需要整条序列的最终表示，可以直接从 `h_n` 取得最高层状态，不必先在补齐后的 `output` 中手工寻找最后有效位置。
+
 ---
 
 ## 8. 注意力与 Transformer
@@ -3120,6 +3549,151 @@ L = 5
 causal_mask = torch.triu(torch.full((L, L), float("-inf")), diagonal=1)
 y, _ = mha(x, x, x, attn_mask=causal_mask)
 ```
+
+#### 多头权重与两类遮罩的完整形状
+
+令：
+
+- $N$ 为小批大小；
+- $L_q$ 为 Query 长度；
+- $L_k$ 为 Key 和 Value 长度；
+- $E$ 为输入宽度；
+- $h$ 为头数。
+
+当 `batch_first=True` 时：
+
+| 张量 | 形状 |
+| --- | --- |
+| `query` | $(N,L_q,E)$ |
+| `key` | $(N,L_k,E)$ |
+| `value` | $(N,L_k,E)$ |
+| 注意力输出 | $(N,L_q,E)$ |
+| 各头平均后的权重 | $(N,L_q,L_k)$ |
+| 保留每个头的权重 | $(N,h,L_q,L_k)$ |
+
+`embed_dim` 必须能被 `num_heads` 整除，每个头的宽度为 $d_h=E/h$。例如 `embed_dim=8,num_heads=2` 时，每个头处理 4 维 Query、Key 和 Value。
+
+默认 `average_attn_weights=True`，返回的权重已经在头维取平均。要观察每个头，应传入 `average_attn_weights=False`：
+
+```python
+import torch
+from torch import nn
+
+torch.manual_seed(7)
+
+mha = nn.MultiheadAttention(
+    embed_dim=8,
+    num_heads=2,
+    dropout=0.0,
+    batch_first=True,
+)
+
+query = torch.randn(2, 3, 8)      # L_q=3
+key_value = torch.randn(2, 5, 8)  # L_k=5
+
+key_padding_mask = torch.tensor([
+    [False, False, False, False, True],
+    [False, False, False, True,  True],
+])
+
+# 所有样本、所有头都禁止读取最后一个 Key。
+pair_mask = torch.zeros(3, 5, dtype=torch.bool)
+pair_mask[:, 4] = True
+
+output, weights = mha(
+    query,
+    key_value,
+    key_value,
+    key_padding_mask=key_padding_mask,
+    attn_mask=pair_mask,
+    need_weights=True,
+    average_attn_weights=False,
+)
+
+print(output.shape)   # (2,3,8)
+print(weights.shape)  # (2,2,3,5)
+
+# 第 0 个样本的最后一列不可读。
+assert torch.all(weights[0, :, :, 4] == 0)
+
+# 第 1 个样本的最后两列不可读。
+assert torch.all(weights[1, :, :, 3:] == 0)
+
+# dropout=0 且每行至少有一个可读位置时，每行权重和为 1。
+assert torch.allclose(
+    weights.sum(dim=-1),
+    torch.ones_like(weights.sum(dim=-1)),
+    atol=1e-6,
+)
+```
+
+两类遮罩负责不同事情：
+
+| 参数 | 常见形状 | 作用 |
+| --- | --- | --- |
+| `key_padding_mask` | $(N,L_k)$ | 指定每个样本的哪些 Key 是补齐位置 |
+| 二维 `attn_mask` | $(L_q,L_k)$ | 所有样本、所有头共用同一规则 |
+| 三维 `attn_mask` | $(Nh,L_q,L_k)$ | 每个样本的每个头可以使用独立规则 |
+
+> [!NOTE] 三维 `attn_mask` 的第 0 维
+> `MultiheadAttention` 接收的是 `(N*num_heads,L_q,L_k)`，不是 `(N,num_heads,L_q,L_k)`。若手中已有四维布尔张量，可用 `reshape(N*num_heads,L_q,L_k)` 合并前两维。
+
+布尔遮罩中，`True` 表示禁止读取。浮点遮罩会直接加到注意力分数上，通常用 0 表示允许，用负无穷表示禁止：
+
+```python
+length = 4
+
+bool_causal_mask = torch.triu(
+    torch.ones(length, length, dtype=torch.bool),
+    diagonal=1,
+)
+
+float_causal_mask = torch.zeros(length, length)
+float_causal_mask.masked_fill_(
+    bool_causal_mask,
+    float("-inf"),
+)
+
+print(bool_causal_mask)
+# tensor([[False,  True,  True,  True],
+#         [False, False,  True,  True],
+#         [False, False, False,  True],
+#         [False, False, False, False]])
+```
+
+> [!TIP] 同时传入两类遮罩时尽量保持类型一致
+> `attn_mask` 和 `key_padding_mask` 最好都使用布尔类型，或都使用相容的浮点类型。布尔形式更适合表达“允许”和“禁止”两种状态。
+
+> [!WARNING] 不要把某一行的全部 Key 都遮住
+> Softmax 至少需要一个可读位置。若某个 Query 的全部分数都变成负无穷，输出可能含非有限数。整理数据时应保证每个样本至少有一个有效 token。
+
+#### 补齐 Key 与补齐 Query 不是同一件事
+
+`key_padding_mask` 遮住的是 Key 所在的列：其他 Query 不会读取这些补齐位置。它不会自动把“补齐 Query 对应的输出行”设为零。
+
+假设某个样本有效长度为 2，张量长度补到 4。后两个位置作为 Key 时会被遮住；但后两个位置作为 Query 时，仍可能读取前两个有效 Key，因而产生非零输出。若随后要按序列位置求平均，应再次用有效位置遮罩：
+
+```python
+padding_mask = torch.tensor([
+    [False, False, False, True],
+    [False, False, True,  True],
+])
+
+features = torch.randn(2, 4, 8)
+valid = (~padding_mask).unsqueeze(-1)
+
+pooled = (
+    (features * valid).sum(dim=1)
+    / valid.sum(dim=1).clamp_min(1)
+)
+
+print(pooled.shape)  # (2,8)
+```
+
+分母是每个样本的有效位置数，而不是统一的序列长度 4。这样短句不会因为补齐更多而被额外缩小。
+
+> [!NOTE] `need_weights=False` 可减少不必要的保存
+> 训练中若只需要注意力输出，可传 `need_weights=False`。完整权重张量的元素数随 $L_qL_k$ 增长，长序列时会占用较多内存。分析或展示各 token 关系时再请求权重更合适。
 
 ### 8.2 `TransformerEncoderLayer` 与 `TransformerEncoder`
 
@@ -3358,6 +3932,159 @@ $$\ell=\frac{1}{C}\sum_{j\ne y}\max(0,m-x_y+x_j)^p.$$
 
 `MultiLabelMarginLoss` 对每个正类 $y_j$ 和非正类 $i$ 累加 $\max(0,1-x[y_j]+x[i])$；目标数组中用负数标记未使用位置。
 
+### 9.5 `reduction`、类别权重与 `ignore_index`
+
+以平方误差为例，预测为 $[1,3]$，目标为 $[0,1]$，逐元素损失是：
+
+$$[(1-0)^2,(3-1)^2]=[1,4].$$
+
+三种归约方式分别得到：
+
+$$
+\text{none}=[1,4],\qquad
+\text{sum}=1+4=5,\qquad
+\text{mean}=\frac{1+4}{2}=2.5.
+$$
+
+```python
+import torch
+from torch import nn
+
+pred = torch.tensor([1.0, 3.0])
+target = torch.tensor([0.0, 1.0])
+
+print(nn.MSELoss(reduction="none")(pred, target))
+print(nn.MSELoss(reduction="sum")(pred, target))
+print(nn.MSELoss(reduction="mean")(pred, target))
+```
+
+`reduction="none"` 很适合排查，因为可以看到每个样本或每个位置分别产生多大损失；还可以在之后加入样本权重、位置遮罩或自定义平均方式。
+
+> [!NOTE] 不同损失的 `mean` 分母不一定相同
+> 普通 MSE 通常除以元素数；带类别权重的交叉熵会依据有效目标对应的权重求平均；忽略部分位置后，又只统计未忽略位置。比较不同配置的损失数值前，应先确认分子和分母。
+
+#### 9.5.1 序列交叉熵与 `ignore_index`
+
+语言模型 logits 常写成 `(N,L,V)`，其中 $V$ 是词表大小。但 `CrossEntropyLoss` 规定类别维位于第 1 维，所以有两种常见写法：
+
+```python
+# 写法一：把类别维换到第 1 维。
+loss = nn.CrossEntropyLoss(ignore_index=0)(
+    logits.transpose(1, 2),  # (N,V,L)
+    targets,                 # (N,L)
+)
+
+# 写法二：合并小批维与序列维。
+loss = nn.CrossEntropyLoss(ignore_index=0)(
+    logits.reshape(-1, logits.size(-1)),  # (N*L,V)
+    targets.reshape(-1),                  # (N*L,)
+)
+```
+
+`ignore_index=0` 表示目标编号为 0 的位置不参与损失和梯度，很适合忽略 `[PAD]`：
+
+```python
+torch.manual_seed(3)
+
+vocab_size = 5
+pad_id = 0
+
+logits = torch.randn(2, 4, vocab_size, requires_grad=True)
+targets = torch.tensor([
+    [2, 3, 4, 0],
+    [1, 2, 0, 0],
+])
+
+per_token = nn.functional.cross_entropy(
+    logits.transpose(1, 2),
+    targets,
+    ignore_index=pad_id,
+    reduction="none",
+)
+
+valid = targets.ne(pad_id)
+valid_count = valid.sum()
+if valid_count == 0:
+    raise ValueError("这个小批没有有效目标")
+
+loss = per_token.sum() / valid_count
+loss.backward()
+
+print(per_token.shape)  # (2,4)
+print(per_token)
+print(loss)
+```
+
+`reduction="none"` 时，被忽略位置的结果为 0。手工平均时仍应除以有效位置数，不能直接对整个规则张量调用 `.mean()`；否则补齐位置越多，最终数值会被压得越小。
+
+> [!WARNING] 软标签不能按同一种方式使用 `ignore_index`
+> 目标为类别编号时，可以指定一个被忽略编号；目标本身若是与 logits 同形状的概率分布，应使用额外的布尔遮罩，手工选择有效位置并组合损失。
+
+#### 9.5.2 类别权重怎样参与交叉熵
+
+若类别 $c$ 的权重为 $w_c$，单个样本的加权损失可写为：
+
+$$
+\ell_n
+=
+-w_{y_n}
+\log
+\frac{\exp(x_{n,y_n})}
+{\sum_c\exp(x_{n,c})}.
+$$
+
+在默认 `reduction="mean"` 下，平均时还会考虑有效样本对应的权重之和，所以不是简单除以样本数。
+
+```python
+class_weight = torch.tensor([1.0, 3.0, 0.5])
+criterion = nn.CrossEntropyLoss(weight=class_weight)
+
+logits = torch.tensor([
+    [2.0, 0.0, -1.0],
+    [0.0, 2.0, 1.0],
+])
+labels = torch.tensor([0, 1])
+
+print(criterion(logits, labels))
+```
+
+类别权重张量应满足：
+
+- 长度等于类别数；
+- 与 logits 位于同一设备；
+- 使用相容的浮点类型；
+- 依据训练数据中的标签统计确定，不把验证数据统计混入训练配置。
+
+`BCEWithLogitsLoss` 中的 `weight` 与 `pos_weight` 含义不同：
+
+- `weight` 缩放每个样本或每个元素的完整损失；
+- `pos_weight` 只改变正标签项的影响，形状通常与类别维相容。
+
+> [!WARNING] 单标签多类别与多标签是两类任务
+> 单标签多类别任务中，一个样本只属于一个类别，常用 `CrossEntropyLoss` 和整数标签；多标签任务中，一个样本可同时属于多个类别，常用 `BCEWithLogitsLoss` 和 0/1 浮点矩阵。
+
+若权重属于每个样本，而不是每个类别，可以先保留逐样本损失：
+
+```python
+logits = torch.randn(4, 3, requires_grad=True)
+labels = torch.tensor([0, 2, 1, 0])
+sample_weight = torch.tensor([1.0, 0.5, 2.0, 1.0])
+
+per_sample = nn.functional.cross_entropy(
+    logits,
+    labels,
+    reduction="none",
+)
+
+loss = (
+    (per_sample * sample_weight).sum()
+    / sample_weight.sum().clamp_min(1e-12)
+)
+loss.backward()
+```
+
+这种写法把“每个样本怎样计算”和“怎样组合多个损失”分成两步，便于逐项核对。
+
 ---
 
 ## 10. 一份可运行的图像分类例子
@@ -3400,6 +4127,342 @@ print(logits.shape, loss.item())
 
 > [!NOTE] 这段示例只演示一次前向与反向计算
 > 完整训练循环通常在每个小批依次执行 `optimizer.zero_grad()`、前向计算、`loss.backward()` 和 `optimizer.step()`。验证时切换到 `eval()` 并使用 `torch.inference_mode()`，返回训练前再调用 `train()`。
+
+### 10.1 先用形状表读懂整个模型
+
+设小批大小为 $N=8$。`SmallCNN` 中各步的形状如下：
+
+| 步骤 | 输入形状 | 输出形状 | 这一层做了什么 |
+| --- | --- | --- | --- |
+| `Conv2d(3,16,3,padding=1)` | `(8,3,32,32)` | `(8,16,32,32)` | 从每个 $3\times3$ 邻域提取 16 组特征 |
+| `BatchNorm2d(16)` | `(8,16,32,32)` | `(8,16,32,32)` | 分别处理 16 个通道的数值尺度 |
+| `ReLU()` | `(8,16,32,32)` | `(8,16,32,32)` | 逐元素加入非线性 |
+| `MaxPool2d(2)` | `(8,16,32,32)` | `(8,16,16,16)` | 每个 $2\times2$ 窗口保留最大值 |
+| 第二个 `Conv2d` | `(8,16,16,16)` | `(8,32,16,16)` | 把通道数从 16 改成 32 |
+| `GroupNorm(4,32)` | `(8,32,16,16)` | `(8,32,16,16)` | 每 8 个通道组成一组 |
+| `GELU()` | `(8,32,16,16)` | `(8,32,16,16)` | 逐元素加入平滑非线性 |
+| `AdaptiveAvgPool2d(1)` | `(8,32,16,16)` | `(8,32,1,1)` | 每个通道汇总为一个数 |
+| `Flatten(1)` | `(8,32,1,1)` | `(8,32)` | 保留小批维，合并其余维 |
+| `Linear(32,10)` | `(8,32)` | `(8,10)` | 为每张图产生 10 个 logits |
+
+第一个卷积为什么保持 $32\times32$？把卷积输出公式代入：
+
+$$
+H_{out}
+=\left\lfloor
+\frac{H_{in}+2p-d(k-1)-1}{s}+1
+\right\rfloor
+=\left\lfloor
+\frac{32+2\times1-1\times(3-1)-1}{1}+1
+\right\rfloor
+=32.
+$$
+
+式中，$H_{in}=32$ 是输入高度，$p=1$ 是两侧填充，$d=1$ 是膨胀系数，$k=3$ 是卷积核高度，$s=1$ 是步幅。宽度用同一方法计算。
+
+> [!TIP] 先检查一批数据，再开始长时间训练
+> 用 `next(iter(loader))` 取一个小批，打印输入、标签和输出形状，可以很早发现通道次序、标签类型及类别数错误。
+
+### 10.2 从人造数据开始搭建可运行的数据读取过程
+
+为了只关注 Layer 与训练步骤，下面用随机张量构造数据集。它不具备真实学习价值，但可以验证程序是否能完整执行。
+
+```python
+import torch
+from torch.utils.data import DataLoader, TensorDataset
+
+torch.manual_seed(7)
+
+# 96 张训练图、32 张验证图；每张图有 3 个通道，大小为 32×32。
+train_images = torch.randn(96, 3, 32, 32)
+train_labels = torch.randint(0, 10, (96,), dtype=torch.long)
+valid_images = torch.randn(32, 3, 32, 32)
+valid_labels = torch.randint(0, 10, (32,), dtype=torch.long)
+
+train_set = TensorDataset(train_images, train_labels)
+valid_set = TensorDataset(valid_images, valid_labels)
+
+train_loader = DataLoader(train_set, batch_size=16, shuffle=True)
+valid_loader = DataLoader(valid_set, batch_size=16, shuffle=False)
+
+images, labels = next(iter(train_loader))
+print(images.shape)  # (16, 3, 32, 32)
+print(labels.shape)  # (16,)
+print(labels.dtype)  # torch.int64
+```
+
+这里有三个容易忽略的细节：
+
+1. `TensorDataset` 按第零维把图像和标签配对，所以两者第零维长度必须相同。
+2. 训练数据使用 `shuffle=True`，每轮会重新打乱样本次序；验证数据不需要打乱。
+3. `CrossEntropyLoss` 的类别编号目标应为整数类型 `torch.long`，形状通常是 `(N,)`，每个值位于 $[0,C-1]$。
+
+> [!NOTE] 随机数据上的准确率没有任务含义
+> 标签和图像彼此无关，模型不可能学到可靠规律。这里关注的是代码、形状、梯度和状态切换。替换成真实数据后，仍应检查样本含义、预处理方式和训练集与验证集的划分。
+
+### 10.3 一个小批的五个训练步骤
+
+一个小批通常按以下次序处理：
+
+```python
+optimizer.zero_grad(set_to_none=True)
+logits = model(images)
+loss = criterion(logits, labels)
+loss.backward()
+optimizer.step()
+```
+
+逐行解释如下。
+
+#### 第一步：清理旧梯度
+
+PyTorch 默认把多次反向计算所得梯度相加。若上一个小批留下了梯度而没有清理，当前小批的结果会继续累加到 `parameter.grad`。普通训练每个小批都先调用
+
+```python
+optimizer.zero_grad(set_to_none=True)
+```
+
+`set_to_none=True` 会把梯度设为 `None`，而不是填成全零张量，常能减少不必要的写入。若确实想把多个小批的梯度相加后再更新参数，就要明确设计累加次数，并对损失缩放。
+
+#### 第二步：前向计算
+
+```python
+logits = model(images)
+```
+
+这一步按 `forward` 中定义的计算得到预测。只要输入和参数需要梯度，PyTorch 就会记录反向计算所需的信息。`logits` 的形状为 `(N,10)`，每一行对应一张图的 10 个类别得分。
+
+#### 第三步：计算标量损失
+
+```python
+loss = criterion(logits, labels)
+```
+
+默认 `CrossEntropyLoss(reduction="mean")` 对小批中所有样本的损失取平均，因而 `loss.shape` 是空形状 `torch.Size([])`，也就是一个标量张量。
+
+假设一个小批有两个样本，单样本损失分别为 1.2 和 0.8，那么平均损失为
+
+$$\frac{1.2+0.8}{2}=1.0.$$
+
+#### 第四步：自动求导
+
+```python
+loss.backward()
+```
+
+这一步计算损失对每个可学习参数的偏导，并把结果存入参数的 `.grad`。它只计算梯度，不会自行改变权重。
+
+```python
+first_weight = model.features[0].weight
+print(first_weight.shape)       # (16, 3, 3, 3)
+print(first_weight.grad.shape)  # 与参数形状相同
+```
+
+#### 第五步：优化器更新参数
+
+```python
+optimizer.step()
+```
+
+以最简单的随机梯度下降为例：
+
+$$\theta_{\text{new}}=\theta_{\text{old}}-\eta g,$$
+
+其中 $\theta$ 表示参数，$g$ 表示当前梯度，$\eta$ 表示学习率。Adam 还会维护梯度的一阶和二阶历史统计，但使用步骤仍然是 `zero_grad`、`backward`、`step`。
+
+> [!WARNING] `backward()` 和 `step()` 的职责不同
+> `backward()` 负责求梯度，`step()` 负责依据梯度修改参数。只调用前者，权重保持不变；只调用后者而没有有效梯度，也得不到本轮所需的更新。
+
+### 10.4 完整的训练轮与验证函数
+
+下面代码可直接接在 `SmallCNN` 与数据读取代码之后。它会自动使用可用的 CUDA 设备，否则使用 CPU。
+
+```python
+import torch
+from torch import nn
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model = SmallCNN(n_classes=10).to(device)
+criterion = nn.CrossEntropyLoss()
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+
+
+def train_one_epoch(model, loader, criterion, optimizer, device):
+    model.train()
+    loss_sum = 0.0
+    correct = 0
+    sample_count = 0
+
+    for images, labels in loader:
+        images = images.to(device)
+        labels = labels.to(device)
+
+        optimizer.zero_grad(set_to_none=True)
+        logits = model(images)
+        loss = criterion(logits, labels)
+        loss.backward()
+        optimizer.step()
+
+        batch_size = labels.size(0)
+        loss_sum += loss.item() * batch_size
+        predictions = logits.argmax(dim=1)
+        correct += (predictions == labels).sum().item()
+        sample_count += batch_size
+
+    return {
+        "loss": loss_sum / sample_count,
+        "accuracy": correct / sample_count,
+    }
+
+
+def evaluate(model, loader, criterion, device):
+    model.eval()
+    loss_sum = 0.0
+    correct = 0
+    sample_count = 0
+
+    with torch.inference_mode():
+        for images, labels in loader:
+            images = images.to(device)
+            labels = labels.to(device)
+
+            logits = model(images)
+            loss = criterion(logits, labels)
+
+            batch_size = labels.size(0)
+            loss_sum += loss.item() * batch_size
+            predictions = logits.argmax(dim=1)
+            correct += (predictions == labels).sum().item()
+            sample_count += batch_size
+
+    return {
+        "loss": loss_sum / sample_count,
+        "accuracy": correct / sample_count,
+    }
+
+
+for epoch in range(2):
+    train_metrics = train_one_epoch(
+        model, train_loader, criterion, optimizer, device
+    )
+    valid_metrics = evaluate(model, valid_loader, criterion, device)
+    print(
+        f"epoch={epoch + 1} "
+        f"train_loss={train_metrics['loss']:.4f} "
+        f"train_acc={train_metrics['accuracy']:.3f} "
+        f"valid_loss={valid_metrics['loss']:.4f} "
+        f"valid_acc={valid_metrics['accuracy']:.3f}"
+    )
+```
+
+`loss.item()` 得到的是当前小批的平均损失。为了正确得到整套数据的平均值，代码先乘回 `batch_size`，累计各样本损失，再除以总样本数。最后一个小批可能小于设定的 `batch_size`，因此不能简单地对“小批平均值”再次等权平均。
+
+准确率使用
+
+```python
+predictions = logits.argmax(dim=1)
+```
+
+从每行 10 个得分中选出最大值所在的类别编号。它只用于统计，不参与损失计算。
+
+#### 10.4.1 `train()`、`eval()` 与 `inference_mode()` 分别控制什么
+
+- `model.train()` 把模型及所有子模块设为训练状态，Dropout 会随机置零，BatchNorm 会使用当前小批统计并更新运行统计；
+- `model.eval()` 把它们设为评估状态，Dropout 不再随机置零，BatchNorm 使用已保存的运行统计；
+- `torch.inference_mode()` 停止记录自动求导信息，并进行适合推理的额外优化。
+
+`eval()` 不会自动停止梯度记录，`inference_mode()` 也不会替代 `eval()` 对 Dropout 和 BatchNorm 的状态设置。因此验证时通常两者同时使用。
+
+> [!EXAMPLE] 为什么评估后要重新调用 `train()`
+> 如果在每一轮末尾运行 `evaluate()`，模型会停留在评估状态。下一轮开头的 `model.train()` 不可省略，否则 Dropout 和 BatchNorm 会继续按评估方式工作。
+
+#### 10.4.2 何时使用梯度裁剪
+
+循环网络等模型有时会出现梯度范数非常大。可以在 `backward()` 之后、`step()` 之前加入：
+
+```python
+loss.backward()
+total_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+optimizer.step()
+```
+
+`clip_grad_norm_` 把所有参数的梯度看成一个整体；当总范数大于 `max_norm` 时，按相同比例缩小。返回值是裁剪前的总范数，可用于日志。不要把它写在 `backward()` 之前，因为那时本轮梯度还未算出。
+
+### 10.5 保存与恢复训练状态
+
+只保存模型参数适合推理：
+
+```python
+torch.save(model.state_dict(), "small_cnn_weights.pt")
+
+restored_model = SmallCNN(n_classes=10).to(device)
+state = torch.load("small_cnn_weights.pt", map_location=device)
+restored_model.load_state_dict(state)
+restored_model.eval()
+```
+
+若要稍后继续训练，还应保存优化器状态和当前轮数：
+
+```python
+checkpoint = {
+    "epoch": 2,
+    "model": model.state_dict(),
+    "optimizer": optimizer.state_dict(),
+}
+torch.save(checkpoint, "small_cnn_checkpoint.pt")
+
+loaded = torch.load("small_cnn_checkpoint.pt", map_location=device)
+model.load_state_dict(loaded["model"])
+optimizer.load_state_dict(loaded["optimizer"])
+start_epoch = loaded["epoch"]
+print(start_epoch)
+```
+
+优化器状态可能包含动量或 Adam 的历史统计，只恢复模型权重而新建优化器，会丢失这些训练信息。加载后还要确保模型结构、类别数与保存时相容。
+
+> [!CAUTION] 只加载可信来源的文件
+> `torch.load` 使用 Python 的序列化机制。对来源不明的文件，不应直接加载。版本较新的 PyTorch 提供了更严格的加载选项，但使用前要核对当前安装版本的函数签名。
+
+### 10.6 用一个小批进行系统排查
+
+模型报错或结果异常时，可以先执行下面的检查：
+
+```python
+images, labels = next(iter(train_loader))
+images = images.to(device)
+labels = labels.to(device)
+
+print("images:", images.shape, images.dtype, images.device)
+print("labels:", labels.shape, labels.dtype, labels.device)
+print("label range:", labels.min().item(), labels.max().item())
+
+model.train()
+logits = model(images)
+print("logits:", logits.shape, logits.dtype, logits.device)
+print("finite logits:", torch.isfinite(logits).all().item())
+
+loss = criterion(logits, labels)
+print("loss:", loss.item(), "finite:", torch.isfinite(loss).item())
+
+optimizer.zero_grad(set_to_none=True)
+loss.backward()
+for name, parameter in model.named_parameters():
+    if parameter.grad is None:
+        print("no grad:", name)
+    elif not torch.isfinite(parameter.grad).all():
+        print("non-finite grad:", name)
+```
+
+检查顺序包含：
+
+1. 输入是否是 `(N,C,H,W)`，而不是常见于图像文件的 `(N,H,W,C)`；
+2. 图像与模型参数是否位于同一设备；
+3. 标签是否为 `long`，最小值和最大值是否在类别范围内；
+4. 输出最后一维是否等于类别数；
+5. 输出、损失和梯度是否都是有限数；
+6. 预期参与训练的参数是否真的拿到了梯度。
+
+如果模型能运行但准确率一直接近随机猜测，还应核对图像与标签配对、输入缩放、类别编号、数据重复、学习率以及训练和评估状态。先让几十个样本被模型明显拟合，常能帮助区分“程序有误”和“任务本身较难”。
 
 ---
 
