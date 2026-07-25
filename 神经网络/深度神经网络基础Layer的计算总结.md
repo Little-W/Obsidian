@@ -3,7 +3,7 @@
 > 本文面向刚开始学习深度学习计算的读者，集中总结 PyTorch 与 Keras 中常用基础 Layer 的数学计算、输入输出形状、参数含义、训练状态差异和手算例子。正文不依赖 Python 代码；看到一个 Layer 名称时，可以直接从公式和数字例子理解它究竟读取哪些数、做了哪些运算、产生什么形状的结果。
 
 > [!ABSTRACT] 本文覆盖什么
-> 内容包括形状调整、全连接、Embedding、激活函数、归一化、Dropout、卷积、池化、填充、上采样、循环神经网络、GRU、LSTM、注意力、Transformer 基本子层、常见损失函数、相似度以及多种 Layer 的组合分析。PyTorch 名称主要对应 `torch.nn`，Keras 名称主要对应 Keras 3 的 `keras.layers` 与 `keras.losses`。
+> 内容包括形状调整、全连接、Embedding、激活函数、归一化、Dropout、卷积、池化、填充、上采样、循环神经网络、GRU、LSTM、注意力、Transformer 基本子层、常见损失函数、相似度、反向梯度、数值稳定处理以及多种 Layer 的组合分析。文末还提供一套通用手算模板和 19 道完整练习。PyTorch 名称主要对应 `torch.nn`，Keras 名称主要对应 Keras 3 的 `keras.layers` 与 `keras.losses`。
 
 > [!NOTE] 为什么同时写 PyTorch 与 Keras
 > 两个框架实现的数学原理大多相同，差异主要集中在构造参数名称、默认轴顺序、训练状态控制方式和损失函数的输入约定。把名称并列起来，可以避免把“接口写法不同”误认为“数学计算不同”。
@@ -305,6 +305,9 @@ $$
 - $(B_0,\ldots,B_q)$ 是目标形状；
 - Reshape 的 Parameter 数量为 0；
 - Reshape 通常不改变元素值，只改变各个下标怎样读取这些值。
+
+> [!IMPORTANT] Keras `Reshape` 的 `target_shape` 不包含 Batch维度
+> 例如输入为 `(N,12)`，希望每个样本变成 `(3,4)`，应把 `target_shape` 理解为 `(3,4)`；Layer 会自动保留最前面的 Batch维度，最终输出为 `(N,3,4)`。PyTorch 的张量 `reshape` 则按调用时给出的完整目标形状工作，是否显式写出 $N$ 取决于具体写法。
 
 把 12 个数：
 
@@ -2307,7 +2310,7 @@ $$
 
 #### 5.2.1 训练与推理使用的数据不同
 
-训练时，BatchNorm 使用当前一个 Batch 的均值和方差生成输出，并更新运行统计数据。推理时，默认使用训练期间保存的运行均值和运行方差。
+训练时，BatchNorm 使用当前 Batch 的均值和方差生成输出，并更新运行统计数据。推理时，默认使用训练期间保存的运行均值和运行方差。
 
 PyTorch 的更新形式为：
 
@@ -2331,6 +2334,12 @@ $$
 
 > [!WARNING] 不要只复制 momentum 数值
 > 从一个框架迁移配置到另一个框架时，应先写出更新公式，再确认旧数据与当前数据各占多少。相同的数值可能产生不同更新速度。
+
+> [!NOTE] PyTorch 前向方差与运行方差的除数并不相同
+> 前面标准化公式中的 $v$ 用于当前训练前向，PyTorch 按 $M$ 作除数；写入 `running_var` 的当前方差则采用无偏估计，通常按 $M-1$ 作除数。因此，不能把一次前向中显示的 $v$ 原样当作运行方差更新项。样本数很少时，这个差别更明显。
+
+> [!WARNING] Keras 冻结 Batch Normalization 是一个特殊情况
+> Keras 中把 `BatchNormalization.trainable` 设为 `False`，不仅停止更新 $\gamma,\beta$ 和移动统计数据，还会让该 Layer 按推理规则使用移动均值与移动方差。其他普通 Layer 的 `trainable=False` 不一定会改变前向规则。
 
 > [!TIP] Batch Size 较小时先数每个 Channel 有多少统计元素
 > 对 `(N,C,H,W)`，每个 Channel 使用 $NHW$ 个数。即使 Batch Size 为 1，只要 $H,W$ 较大，仍有多个空间元素；若空间也缩到 `1×1`，每个 Channel 就只剩一个数，训练计算可能无法进行或统计数据不稳定。
@@ -3827,7 +3836,7 @@ $$
 
 PyTorch 提供 `LazyConv1d/2d/3d` 和相应 Lazy 转置卷积。它们允许构造时暂不填写输入 Channel，首次收到输入后再根据 Channel维度创建权重。输出 Channel、kernel size、stride 等仍要提前指定。
 
-Keras Layer 通常在 `build` 阶段根据首次输入的最后一个 Channel维度创建卷积核，因此常规 Keras `Conv1D/2D/3D` 就具有相似的延后建权重行为，用户主要指定 filters 与 kernel size。
+Keras Layer 通常在 `build` 阶段根据首次输入中由 `data_format` 指定的 Channel轴创建卷积核，因此常规 Keras `Conv1D/2D/3D` 就具有相似的延后建权重行为，用户主要指定 filters 与 kernel size。默认 channels-last 时读取最后一轴；channels-first 时读取第 1 轴。
 
 > [!NOTE] 延后创建权重不会改变数学公式
 > 输入 Channel 一旦确定，权重形状、参数数目和普通卷积完全相同。Lazy 只省去构造时手工写入输入 Channel。
@@ -5523,7 +5532,7 @@ $$
 - 单向网络的第 1 层及更高层输入宽度是 $H$；
 - 双向网络的第 1 层及更高层输入宽度是 $2H$，因为上一层两个方向会拼接。
 
-循环 Layer 构造参数中的 Dropout 通常放在相邻循环层之间。只有一层时，没有层间位置可放，因此该设置通常不产生效果。
+PyTorch `RNN`、`GRU`、`LSTM` 构造参数中的 `dropout` 放在相邻循环层之间；当 `num_layers=1` 时没有层间位置，因此该设置不产生预期的层间随机失活。Keras 循环 Layer 的含义不同：`dropout` 作用于输入到状态的计算，`recurrent_dropout` 作用于旧状态到新状态的计算，即使只有一个循环 Layer 也可以生效。跨框架复制设置时必须分别核对。
 
 ### 9.6 不等长序列：补齐位置为何必须单独处理
 
@@ -5564,6 +5573,9 @@ PyTorch 常用打包序列功能，让循环 Layer 只处理有效长度。Keras
 注意力的核心问题是：对某个查询位置，应从哪些信息位置读取内容，并分别读取多少。它通常包含 Query、Key 和 Value 三组向量。
 
 ### 10.1 Query、Key、Value 的含义与形状
+
+> [!IMPORTANT] 本章统一按 `(N,L,E)` 书写
+> Keras 注意力 Layer 默认采用 Batch维度在前的 `(N,L,E)`。以下涉及 PyTorch `MultiheadAttention`、`TransformerEncoderLayer`、`TransformerDecoderLayer` 或 `Transformer` 的形状时，假设已经设置 `batch_first=True`；这些 Layer 的默认值通常是 `False`，默认输入排列为 `(L,N,E)`。改变排列只改变轴次序，不改变注意力公式。
 
 设 Query 序列长度为 $L_q$，Key 和 Value 序列长度为 $L_k$，Feature 宽度为 $E$：
 
@@ -5709,7 +5721,7 @@ $$
 
 ### 10.4 Additive Attention：加性注意力
 
-加性注意力先把 Query 与 Key 分别做线性变换，再相加并使用非线性函数：
+一般的 Bahdanau 风格加性注意力先把 Query 与 Key 分别做线性变换，再相加并使用非线性函数：
 
 $$
 e_{ij}=v_a^\mathsf{T}
@@ -5766,21 +5778,31 @@ $$
 o=0.450\times3+0.550\times7=5.2.
 $$
 
+Keras 内置 `AdditiveAttention` 使用更具体的分数形式。Query 与 Key 的最后一维已经相同时，它计算：
+
+$$
+e_{ij}
+=
+\sum_d\tanh(q_{i,d}+k_{j,d}),
+$$
+
+并可用可学习缩放参数调整分数。它不会在 Layer 内部自动创建上面一般公式中的 $W_q,W_k,v_a$。若输入宽度不同，或希望使用完整的投影形式，应先在 Layer 外用 Dense 把 Query 与 Key 调整到相同宽度。
+
 | 计算 | PyTorch 常见方式 | Keras 常见 Layer |
 | --- | --- | --- |
 | 简单点积 | 张量乘法或 `scaled_dot_product_attention` | `Dot`、`Attention` |
-| 加性注意力 | 组合 `Linear`、加法和激活 | `AdditiveAttention` |
+| 加性注意力 | 组合 `Linear`、加法和激活 | `AdditiveAttention`，内部使用上面的简化分数 |
 | 多头注意力 | `MultiheadAttention` | `MultiHeadAttention` |
 
 ### 10.5 Multi-Head Attention：为什么要分多个 Head
 
-设模型宽度为 $E$，Head 数为 $h$，每个 Head 宽度为：
+在原始 Transformer 与 PyTorch `MultiheadAttention` 的常见设置中，设模型宽度为 $E$，Head 数为 $h$，每个 Head 宽度为：
 
 $$
 d_h=\frac{E}{h}.
 $$
 
-通常要求 $E$ 能被 $h$ 整除。第 $r$ 个 Head 为：
+此时要求 $E$ 能被 $h$ 整除。第 $r$ 个 Head 为：
 
 $$
 \operatorname{head}_r
@@ -5808,6 +5830,9 @@ $$
 
 > [!NOTE] Head 数增加不一定增加最终宽度
 > 在常见设置中，总宽度 $E$ 固定。Head 数从 3 增加到 6 时，每个 Head 的宽度从 4 降为 2，拼接后仍是 12。
+
+> [!IMPORTANT] Keras 可以单独指定每个 Head 的宽度
+> Keras `MultiHeadAttention` 用 `num_heads`、`key_dim` 和可选的 `value_dim` 分别指定 Head 数、Query/Key 的单 Head 宽度与 Value 的单 Head 宽度，因此输入 $E$ 不必能被 `num_heads` 整除。多个 Head 拼接后，默认再投影回 Query 输入的最后一维；也可用 `output_shape` 指定输出宽度。
 
 不同 Head 使用不同参数，可以学习关注不同关系。例如在句子“猫坐在垫子上，因为它很柔软”中，一个 Head 可能强调“它”与“垫子”，另一个 Head 可能强调“柔软”与描述对象，还有一个 Head 可能更关注相邻词。
 
@@ -6258,6 +6283,8 @@ $$
 
 而不是除以总长度 5 得到 0.36。
 
+PyTorch `CrossEntropyLoss` 使用 `ignore_index` 且采用默认平均时，会按未忽略目标的有效权重计算分母。Keras 若只把两个 PAD 的 sample weight 设为 0，同时仍使用默认 `sum_over_batch_size`，分母通常仍包含原损失张量中的全部位置，上例可能得到 0.36。要得到 0.6，可选用 `mean_with_sample_weight`，或先求加权损失总和，再显式除以有效权重之和。
+
 > [!WARNING] 全部位置都是 PAD 时要单独处理
 > 此时没有有效目标，直接求平均可能得到非有限值或无意义结果。整理 Batch 时应保证至少一个有效目标，或跳过该 Batch。
 
@@ -6309,7 +6336,7 @@ PyTorch `KLDivLoss` 常接收模型对数概率和目标概率；Keras 提供 `K
 
 ### 11.6 序列损失：逐 token 交叉熵与 CTC
 
-语言模型输出形状常为：
+从任务含义看，语言模型常把输出组织为：
 
 $$
 \text{logits}:(N,L,V),
@@ -6322,6 +6349,24 @@ $$
 $$
 
 每个有效位置独立计算一次 $V$ 类交叉熵，再排除 PAD 并按有效 token 组合。
+
+Keras 的稀疏类别交叉熵默认把最后一轴视为类别轴，可以直接接收 `(N,L,V)` 与 `(N,L)`。PyTorch `CrossEntropyLoss` 把第 1 轴视为类别轴，因此有两种常见整理方式：
+
+$$
+(N,L,V)\rightarrow(N,V,L),
+\qquad
+\text{target}:(N,L),
+$$
+
+或把前两个维度合并：
+
+$$
+(N,L,V)\rightarrow(NL,V),
+\qquad
+(N,L)\rightarrow(NL).
+$$
+
+两种方式计算的是同一组逐 token 交叉熵，但不能把 `(N,L,V)` 原样交给默认 PyTorch 接口并期待它自动识别最后一轴。
 
 生成任务会把输入与目标错开。例如完整序列：
 
@@ -6357,7 +6402,7 @@ $$
 | $T$ | 输入时间位置数量 |
 | $y$ | 最终目标标签序列 |
 | $\pi$ | 一条逐时间位置路径 |
-| $\mathcal B$ | 删除 blank 并合并连续重复标签的操作 |
+| $\mathcal B$ | 先合并原路径中相邻且相同的非 blank 标签，再删除 blank |
 | $\mathcal B^{-1}(y)$ | 所有能得到目标 $y$ 的路径集合 |
 
 令 blank 为 0，$A=1,B=2$，目标为 $[A,B]$，时间长度为 3。以下路径都可得到 $[A,B]$：
@@ -6367,6 +6412,8 @@ $$
 $$
 
 CTC 会把这些有效路径的概率相加，而不是要求事先说明 $A$、$B$ 分别出现在哪一帧。
+
+操作次序很重要：路径 $[A,0,A]$ 先检查原路径中的连续重复项时，两个 $A$ 被 blank 分开，因此不会合并；删除 blank 后得到 $[A,A]$。若先删除 blank 再合并，就会错误地得到单个 $A$。
 
 | 任务 | PyTorch | Keras |
 | --- | --- | --- |
@@ -6773,6 +6820,8 @@ $$
 | 目标编号 | $(4,4)$ |
 | 逐 token 损失 | $(4,4)$ |
 
+这里的 logits 表按 Keras 默认类别轴和任务直觉写成 `(N,L,V)`。若直接使用 PyTorch `CrossEntropyLoss`，应先调整为 `(N,V,L)`，或整理为 `(NL,V)`；目标也按上一章说明保持 `(N,L)` 或整理为 `(NL)`。
+
 位置 0 读取范围为位置 0；位置 1 可读取 0、1；位置 2 可读取 0、1、2；位置 3 可读取全部四个输入位置。
 
 若某个样本实际只有：
@@ -6813,7 +6862,7 @@ $$
 > Query 长度和 Key 长度分别是多少？Softmax 是否沿 Key 维度？权重形状是否包含 Head？PAD 权重是否为 0？因果任务是否禁止读取未来？
 
 > [!CHECK] Transformer 输入
-> token 向量与位置编码是否同形？模型宽度能否被 Head 数整除？残差两侧形状是否一致？补齐 mask 与因果 mask 是否各自正确？
+> token 向量与位置编码是否同形？若使用 PyTorch 常见等分设置，模型宽度能否被 Head 数整除？若使用 Keras，`key_dim`、`value_dim` 和输出宽度分别是多少？残差两侧形状是否一致？补齐 mask 与因果 mask 是否各自正确？
 
 > [!CHECK] 损失
 > 模型输出是 logits、概率还是对数概率？目标是整数编号、one-hot、连续值还是序列？PAD 是否排除？`reduction` 的分母是什么？类别权重位于哪个设备？
@@ -7228,6 +7277,4692 @@ $$
 > [!SUMMARY] 最后应记住什么
 > Layer 名称只是入口。真正需要掌握的是：输入形状、参与计算的维度、核心公式、参数形状、输出形状和训练状态。PyTorch 与 Keras 的接口可以不同，但只要逐项写出这些信息，大多数基础 Layer 都能用同一套数学语言解释。
 
-<!-- BACKPROP_AND_NUMERICS_SECTION -->
+## 18. 从前向计算到反向计算：基础 Layer 的梯度与数值稳定性
 
-<!-- WORKED_EXERCISES_SECTION -->
+前面的章节主要回答“输入怎样变成输出”。训练还要继续回答另一个问题：损失发生微小变化时，每个输入和 Parameter 应承担多少影响。自动求导可以完成具体计算，但初学者仍应理解梯度从哪里来、经过 Layer 后怎样分配，以及为什么某些写法在数学上等价，计算时却有明显的稳定性差异。
+
+本章不要求手工推导完整模型，而是把复杂反向过程拆成三个动作：
+
+1. 找到当前 Layer 的输入、输出和局部导数；
+2. 接收后方传来的梯度，并乘上局部导数；
+3. 若同一个张量被多处使用，把各处贡献相加。
+
+> [!NOTE] 梯度不是“参数应该改成多少”
+> 梯度描述损失对某个数的局部敏感程度。优化器还会结合学习率、动量和其他状态决定真正的更新值。理解反向计算时，应先把“求梯度”和“优化器更新”分开。
+
+### 18.1 计算图、局部导数与链式法则
+
+设前向计算为：
+
+$$
+u=g(x),\qquad y=f(u),\qquad L=\ell(y).
+$$
+
+这里：
+
+- $x$ 是较早位置的输入；
+- $u,y$ 是中间结果；
+- $L$ 是一个标量损失；
+- $g,f,\ell$ 是依次执行的计算。
+
+反向计算从 $L$ 开始。根据链式法则：
+
+$$
+\frac{\partial L}{\partial u}
+=
+\frac{\partial L}{\partial y}
+\frac{\partial y}{\partial u},
+$$
+
+$$
+\frac{\partial L}{\partial x}
+=
+\frac{\partial L}{\partial u}
+\frac{\partial u}{\partial x}.
+$$
+
+可以把 $\partial L/\partial y$ 看作后方送到当前 Layer 的“上游梯度”，把 $\partial y/\partial u$ 看作当前 Layer 的局部导数。两者相乘，得到继续传向更早位置的梯度。
+
+#### 一个完整的标量手算
+
+设：
+
+$$
+u=wx+b,
+\qquad
+y=u^2,
+\qquad
+L=y.
+$$
+
+取：
+
+$$
+x=2,\quad w=3,\quad b=-1.
+$$
+
+前向结果：
+
+$$
+u=3\times2-1=5,
+$$
+
+$$
+y=5^2=25,
+$$
+
+$$
+L=25.
+$$
+
+从最后开始：
+
+$$
+\frac{\partial L}{\partial y}=1,
+$$
+
+$$
+\frac{\partial y}{\partial u}=2u=10,
+$$
+
+所以：
+
+$$
+\frac{\partial L}{\partial u}=1\times10=10.
+$$
+
+仿射计算的局部导数为：
+
+$$
+\frac{\partial u}{\partial w}=x=2,
+\qquad
+\frac{\partial u}{\partial x}=w=3,
+\qquad
+\frac{\partial u}{\partial b}=1.
+$$
+
+最终：
+
+$$
+\frac{\partial L}{\partial w}=10\times2=20,
+$$
+
+$$
+\frac{\partial L}{\partial x}=10\times3=30,
+$$
+
+$$
+\frac{\partial L}{\partial b}=10.
+$$
+
+> [!TIP] 手算反向时在每个箭头旁写局部导数
+> 先不要一次写出最终答案。按前向次序画出中间变量，再从损失反向移动，每经过一个运算就乘它的局部导数。这样更不容易漏掉激活、缩放或重复使用。
+
+### 18.2 分支为什么要把梯度相加
+
+同一个变量可能供多个计算使用：
+
+$$
+u=x^2,\qquad v=3x,\qquad L=u+v.
+$$
+
+$x$ 对损失的影响有两条路径，因此：
+
+$$
+\frac{\partial L}{\partial x}
+=
+\frac{\partial L}{\partial u}
+\frac{\partial u}{\partial x}
++
+\frac{\partial L}{\partial v}
+\frac{\partial v}{\partial x}.
+$$
+
+因为：
+
+$$
+\frac{\partial L}{\partial u}=1,
+\qquad
+\frac{\partial L}{\partial v}=1,
+$$
+
+所以：
+
+$$
+\frac{\partial L}{\partial x}=2x+3.
+$$
+
+当 $x=2$：
+
+$$
+\frac{\partial L}{\partial x}=7.
+$$
+
+其中 $x^2$ 分支贡献 4，$3x$ 分支贡献 3。残差结构 $y=x+F(x)$ 也遵循同一规则：
+
+$$
+\frac{\partial L}{\partial x}
+=
+\frac{\partial L}{\partial y}
++
+\frac{\partial L}{\partial y}
+\frac{\partial F(x)}{\partial x}.
+$$
+
+第一项来自直接相加的部分，第二项来自 $F(x)$。
+
+> [!NOTE] 自动求导中的累加不是重复计算错误
+> 一个张量被多个后续运算使用时，各处梯度都描述了它对损失的一部分影响。总梯度必须把这些贡献相加。
+
+### 18.3 Linear 与 Dense 的反向计算
+
+单个输入向量的前向公式为：
+
+$$
+y=xW+b.
+$$
+
+设：
+
+$$
+x\in\mathbb{R}^{I},
+\qquad
+W\in\mathbb{R}^{I\times O},
+\qquad
+b\in\mathbb{R}^{O},
+\qquad
+y\in\mathbb{R}^{O}.
+$$
+
+其中：
+
+- $I$ 是输入 Feature 数量；
+- $O$ 是输出 Feature 数量；
+- $W_{i,o}$ 是输入特征 $i$ 对输出特征 $o$ 的系数；
+- $b_o$ 是输出特征 $o$ 的偏置。
+
+设上游梯度为：
+
+$$
+g=\frac{\partial L}{\partial y}
+\in\mathbb{R}^{O}.
+$$
+
+则输入梯度为：
+
+$$
+\frac{\partial L}{\partial x}=gW^T.
+$$
+
+权重梯度为外积：
+
+$$
+\frac{\partial L}{\partial W}=x^Tg.
+$$
+
+bias 梯度为：
+
+$$
+\frac{\partial L}{\partial b}=g.
+$$
+
+#### 数字例子
+
+设只有一个输出：
+
+$$
+x=[2,-1],
+\qquad
+W=
+\begin{bmatrix}
+3\\
+4
+\end{bmatrix},
+\qquad
+b=1.
+$$
+
+前向计算：
+
+$$
+y=2\times3+(-1)\times4+1=3.
+$$
+
+若上游梯度为：
+
+$$
+g=\frac{\partial L}{\partial y}=2,
+$$
+
+则：
+
+$$
+\frac{\partial L}{\partial x}
+=
+2[3,4]=[6,8],
+$$
+
+$$
+\frac{\partial L}{\partial W}
+=
+\begin{bmatrix}
+2\\
+-1
+\end{bmatrix}
+\times2
+=
+\begin{bmatrix}
+4\\
+-2
+\end{bmatrix},
+$$
+
+$$
+\frac{\partial L}{\partial b}=2.
+$$
+
+输入第一个特征为正，因此它给权重带来正向贡献 4；第二个特征为负，因此其权重梯度为 -2。
+
+#### 多个位置共享参数
+
+把一个 Batch 和 Sequence Length 合并成 $M$ 个位置，写成：
+
+$$
+X\in\mathbb{R}^{M\times I},
+\qquad
+Y=XW+B.
+$$
+
+若：
+
+$$
+G=\frac{\partial L}{\partial Y},
+$$
+
+则：
+
+$$
+\frac{\partial L}{\partial W}=X^TG,
+$$
+
+$$
+\frac{\partial L}{\partial b}
+=
+\sum_{m=1}^{M}G_m.
+$$
+
+同一组 Linear 或 Dense Parameter 在所有位置重复使用，所以各位置对它的梯度会汇总。
+
+> [!WARNING] PyTorch 与 Keras 权重形状显示不同
+> 上式按 Keras 常见的 `(I,O)` 书写。PyTorch `Linear.weight` 常保存为 `(O,I)`，所以显示出来的权重梯度也按 `(O,I)` 排列。数学关系相同，比较数值时要先统一轴次序。
+
+### 18.4 Add、Multiply 与 Concatenate 的梯度
+
+#### Add
+
+前向：
+
+$$
+y=a+b.
+$$
+
+设上游梯度为 $g$，则：
+
+$$
+\frac{\partial L}{\partial a}=g,
+\qquad
+\frac{\partial L}{\partial b}=g.
+$$
+
+若 $a=2,b=5,y=7$，上游梯度 $g=3$，则 $a,b$ 都收到梯度 3。
+
+广播时，共用的元素会接收多个位置梯度之和。设：
+
+$$
+y_i=x_i+b,\qquad i=1,2,3.
+$$
+
+若三个位置的上游梯度为 `[1,2,4]`，则共享标量 $b$ 的梯度为：
+
+$$
+\frac{\partial L}{\partial b}=1+2+4=7.
+$$
+
+#### Multiply
+
+前向：
+
+$$
+y=a\odot b.
+$$
+
+反向：
+
+$$
+\frac{\partial L}{\partial a}=g\odot b,
+$$
+
+$$
+\frac{\partial L}{\partial b}=g\odot a.
+$$
+
+取：
+
+$$
+a=[2,-1],
+\qquad
+b=[3,4],
+\qquad
+g=[5,2].
+$$
+
+则：
+
+$$
+\frac{\partial L}{\partial a}
+=[5\times3,2\times4]=[15,8],
+$$
+
+$$
+\frac{\partial L}{\partial b}
+=[5\times2,2\times(-1)]=[10,-2].
+$$
+
+门值越接近 0，传给内容分支的梯度通常也越小。
+
+#### Concatenate
+
+设：
+
+$$
+y=\operatorname{concat}(a,b),
+$$
+
+其中 $a$ 长度为 2，$b$ 长度为 3：
+
+$$
+a=[a_0,a_1],
+\qquad
+b=[b_0,b_1,b_2].
+$$
+
+若输出梯度为：
+
+$$
+g=[1,2,3,4,5],
+$$
+
+则反向只需按原长度切开：
+
+$$
+\frac{\partial L}{\partial a}=[1,2],
+\qquad
+\frac{\partial L}{\partial b}=[3,4,5].
+$$
+
+Concatenate 不会把两侧梯度相加，因为前向时它们没有占用同一输出位置。
+
+> [!TIP] 记忆方法
+> Add 的反向是“复制”，Multiply 的反向是“乘另一侧”，Concatenate 的反向是“沿原轴切开”。若前向含广播，还要把重复使用位置的梯度求和。
+
+### 18.5 ReLU、Sigmoid、Tanh 与 GELU 的局部导数
+
+#### ReLU
+
+$$
+\operatorname{ReLU}(x)=\max(0,x).
+$$
+
+常用导数为：
+
+$$
+\operatorname{ReLU}'(x)=
+\begin{cases}
+0,&x<0,\\
+1,&x>0.
+\end{cases}
+$$
+
+在 $x=0$ 处数学上不可导，框架会采用约定值，PyTorch 常用 0。
+
+输入：
+
+$$
+x=[-2,1,3],
+$$
+
+上游梯度：
+
+$$
+g=[4,5,-1].
+$$
+
+则输入梯度：
+
+$$
+\frac{\partial L}{\partial x}
+=[0,5,-1].
+$$
+
+第一个位置因输入为负而被阻断，后两个正输入原样接收上游梯度。
+
+#### Sigmoid
+
+$$
+\sigma(x)=\frac{1}{1+e^{-x}},
+$$
+
+$$
+\sigma'(x)=\sigma(x)(1-\sigma(x)).
+$$
+
+当 $x=0$：
+
+$$
+\sigma(0)=0.5,
+\qquad
+\sigma'(0)=0.25.
+$$
+
+若上游梯度为 8，输入梯度为：
+
+$$
+8\times0.25=2.
+$$
+
+当 $x=5$ 时，$\sigma(5)\approx0.9933$，导数约为 0.00665。相同上游梯度 8 经过后只剩约 0.0532。
+
+#### Tanh
+
+$$
+\tanh'(x)=1-\tanh^2(x).
+$$
+
+当 $x=0$：
+
+$$
+\tanh(0)=0,
+\qquad
+\tanh'(0)=1.
+$$
+
+当 $x=2$，$\tanh(2)\approx0.9640$，导数约为：
+
+$$
+1-0.9640^2\approx0.0707.
+$$
+
+#### GELU
+
+精确 GELU 为：
+
+$$
+\operatorname{GELU}(x)=x\Phi(x),
+$$
+
+其中 $\Phi(x)$ 是标准正态分布累积分布函数，$\phi(x)$ 是标准正态密度函数。导数为：
+
+$$
+\operatorname{GELU}'(x)
+=
+\Phi(x)+x\phi(x).
+$$
+
+当 $x=0$：
+
+$$
+\Phi(0)=0.5,
+\qquad
+x\phi(x)=0,
+$$
+
+所以局部导数为 0.5。若上游梯度为 6，输入梯度为 3。
+
+> [!NOTE] 平滑激活也可能显著缩小梯度
+> Sigmoid、Tanh、GELU 和 SiLU 的导数都随输入位置改变。比较激活时，不仅要看输出数值，还要看常见输入范围内的导数。
+
+> [!WARNING] 不可导点附近不适合直接做有限差分检查
+> ReLU 的零点、最大池化发生并列最大值的位置都可能让左右两侧导数不同。数值检查时应避开这些特殊位置，或明确框架采用的规则。
+
+### 18.6 Softmax 与交叉熵为什么能得到简洁梯度
+
+对 logits $z\in\mathbb{R}^{C}$：
+
+$$
+p_i=
+\frac{e^{z_i}}{\sum_{j=1}^{C}e^{z_j}}.
+$$
+
+Softmax 的局部导数不是逐元素独立的。其 Jacobian 为：
+
+$$
+\frac{\partial p_i}{\partial z_j}
+=
+p_i(\delta_{ij}-p_j).
+$$
+
+其中：
+
+- $\delta_{ij}=1$ 表示 $i=j$；
+- $\delta_{ij}=0$ 表示 $i\ne j$；
+- 一个 logit 改变会影响同一组中的全部概率。
+
+目标类别为 $t$ 时，交叉熵为：
+
+$$
+L=-\log p_t.
+$$
+
+Softmax 与交叉熵组合后，logits 梯度简化为：
+
+$$
+\frac{\partial L}{\partial z_i}
+=
+p_i-\mathbf 1(i=t).
+$$
+
+其中 $\mathbf 1(i=t)$ 在目标类别处为 1，其他类别为 0。
+
+#### 两类别手算
+
+取：
+
+$$
+z=[\log2,\log1]=[\log2,0].
+$$
+
+Softmax 为：
+
+$$
+p=[2/3,1/3].
+$$
+
+目标是类别 0，损失为：
+
+$$
+L=-\log(2/3)\approx0.4055.
+$$
+
+梯度：
+
+$$
+\frac{\partial L}{\partial z}
+=[2/3-1,1/3-0]
+=[-1/3,1/3].
+$$
+
+目标类别 logit 的梯度为负，优化器沿负梯度方向更新时会倾向于提高它；非目标类别梯度为正，更新时会倾向于降低它。两个梯度之和为 0，符合 Softmax 对整体平移不敏感的性质。
+
+> [!NOTE] 为什么训练常直接提供 logits
+> 框架可把 Softmax、取对数和交叉熵合在一个稳定计算中。若先手工得到极小概率，再取对数，浮点数可能已经变成 0，从而出现无穷大。
+
+### 18.7 卷积的权重梯度与输入梯度
+
+先看一维、单输入 Channel、单输出 Channel、无 bias、步幅为 1 的最小卷积。输入：
+
+$$
+x=[1,2,3],
+$$
+
+卷积核：
+
+$$
+w=[4,-1].
+$$
+
+两个输出为：
+
+$$
+y_0=x_0w_0+x_1w_1
+=1\times4+2\times(-1)=2,
+$$
+
+$$
+y_1=x_1w_0+x_2w_1
+=2\times4+3\times(-1)=5.
+$$
+
+设上游梯度：
+
+$$
+g=[1,2].
+$$
+
+#### 权重梯度
+
+$w_0$ 在两个窗口中分别乘 $x_0,x_1$：
+
+$$
+\frac{\partial L}{\partial w_0}
+=g_0x_0+g_1x_1
+=1\times1+2\times2=5.
+$$
+
+$w_1$ 分别乘 $x_1,x_2$：
+
+$$
+\frac{\partial L}{\partial w_1}
+=g_0x_1+g_1x_2
+=1\times2+2\times3=8.
+$$
+
+所以：
+
+$$
+\frac{\partial L}{\partial w}=[5,8].
+$$
+
+#### 输入梯度
+
+$x_0$ 只参与 $y_0$：
+
+$$
+\frac{\partial L}{\partial x_0}
+=g_0w_0=1\times4=4.
+$$
+
+$x_1$ 同时参与两个输出：
+
+$$
+\frac{\partial L}{\partial x_1}
+=g_0w_1+g_1w_0
+=1\times(-1)+2\times4=7.
+$$
+
+$x_2$ 只参与 $y_1$：
+
+$$
+\frac{\partial L}{\partial x_2}
+=g_1w_1=2\times(-1)=-2.
+$$
+
+因此：
+
+$$
+\frac{\partial L}{\partial x}=[4,7,-2].
+$$
+
+二维卷积遵循相同思想：某个卷积核 Parameter 的梯度，要汇总它在全部样本、全部输出位置上与输入相乘产生的贡献；某个输入像素的梯度，要汇总所有覆盖它的卷积窗口贡献。
+
+若有 bias，每个输出 Channel 的 bias 梯度是该 Channel 所有输出位置上游梯度之和。
+
+> [!TIP] 用“这个数在哪些窗口中出现”理解卷积反向
+> 权重被每个滑动窗口重复使用，所以权重梯度跨窗口相加；输入位置可能被多个窗口覆盖，所以输入梯度也跨相关窗口相加。
+
+> [!NOTE] 输入梯度不是简单把卷积核原样再滑一次
+> 具体实现还要考虑核下标方向、步幅、填充、膨胀和分组。手算时从每个输出公式逐项求导最可靠。
+
+### 18.8 最大池化与平均池化的梯度
+
+#### 最大池化
+
+一个窗口输入：
+
+$$
+x=[1,5,3,2].
+$$
+
+最大池化输出：
+
+$$
+y=5.
+$$
+
+若上游梯度为 7，梯度只传给前向最大值所在位置：
+
+$$
+\frac{\partial L}{\partial x}=[0,7,0,0].
+$$
+
+对两个不重叠窗口 `[1,5]` 与 `[3,2]`，最大池化输出 `[5,3]`。若上游梯度为 `[2,-1]`，则：
+
+$$
+\frac{\partial L}{\partial x}=[0,2,-1,0].
+$$
+
+框架在前向时通常保存最大值位置，反向时使用该位置分配梯度。
+
+#### 平均池化
+
+同一窗口含 4 个元素：
+
+$$
+y=\frac{x_0+x_1+x_2+x_3}{4}.
+$$
+
+若上游梯度为 8，每个输入得到：
+
+$$
+\frac{\partial L}{\partial x_i}
+=\frac{8}{4}=2.
+$$
+
+所以：
+
+$$
+\frac{\partial L}{\partial x}=[2,2,2,2].
+$$
+
+若池化窗口重叠，一个输入位置可能参与多个输出窗口，其梯度需要把这些窗口的贡献相加。
+
+> [!WARNING] 并列最大值要查看框架规则
+> 窗口 `[5,5,1]` 有两个相同最大值。具体 Layer 可能记录其中一个位置。有限差分在这种位置也不稳定，因为极小扰动就可能改变被选中的元素。
+
+### 18.9 Embedding 为什么只更新被使用的行
+
+Embedding 前向是按整数编号取行。设参数表：
+
+$$
+E\in\mathbb{R}^{V\times D}.
+$$
+
+一个输入位置编号为 $t$：
+
+$$
+y=E[t].
+$$
+
+若上游梯度为 $g\in\mathbb{R}^{D}$，它直接加到第 $t$ 行：
+
+$$
+\frac{\partial L}{\partial E[t]}
+\mathrel{+}=g.
+$$
+
+未被使用的行没有来自该位置的梯度。
+
+设一个 Batch 的编号为：
+
+$$
+[2,2,4].
+$$
+
+三个位置的上游梯度分别为：
+
+$$
+g_0=[1,2],
+\qquad
+g_1=[3,-1],
+\qquad
+g_2=[0.5,4].
+$$
+
+第 2 行被使用两次：
+
+$$
+\frac{\partial L}{\partial E[2]}
+=g_0+g_1
+=[4,1].
+$$
+
+第 4 行：
+
+$$
+\frac{\partial L}{\partial E[4]}
+=g_2
+=[0.5,4].
+$$
+
+其他行梯度为 0 或采用稀疏形式不显式保存。
+
+输入编号本身是离散索引，普通 Embedding 不对编号求可用的连续梯度。训练更新的是参数表中的行。
+
+> [!NOTE] 稀疏梯度描述存储形式
+> PyTorch Embedding 可选择只记录被使用行的梯度，从而避免为很大的词表创建完整稠密梯度。并非所有优化器都支持这种形式，选择前要查看优化器要求。
+
+> [!WARNING] 重复编号的梯度必须相加
+> 不能让后一次出现覆盖前一次。一个 token 在一个 Batch 中出现多次时，这些位置对同一参数行都有影响。
+
+### 18.10 LayerNorm 的反向直觉
+
+对一个归一化组，设共有 $E$ 个元素：
+
+$$
+\mu=\frac{1}{E}\sum_i x_i,
+$$
+
+$$
+v=\frac{1}{E}\sum_i(x_i-\mu)^2,
+$$
+
+$$
+s=\sqrt{v+\epsilon},
+$$
+
+$$
+\widehat x_i=\frac{x_i-\mu}{s},
+$$
+
+$$
+y_i=\gamma_i\widehat x_i+\beta_i.
+$$
+
+设上游梯度：
+
+$$
+g_i=\frac{\partial L}{\partial y_i},
+$$
+
+先把缩放参数纳入：
+
+$$
+u_i=g_i\gamma_i.
+$$
+
+输入梯度可写成：
+
+$$
+\frac{\partial L}{\partial x_i}
+=
+\frac{1}{s}
+\left[
+u_i-\overline u
+-\widehat x_i\,
+\overline{u\widehat x}
+\right].
+$$
+
+其中：
+
+$$
+\overline u=\frac{1}{E}\sum_j u_j,
+$$
+
+$$
+\overline{u\widehat x}
+=
+\frac{1}{E}\sum_j u_j\widehat x_j.
+$$
+
+这条公式说明三个作用：
+
+1. $u_i$ 是当前位置的直接梯度；
+2. 减去 $\overline u$，反映所有元素共同影响均值；
+3. 减去与 $\widehat x_i$ 相关的项，反映所有元素共同影响方差。
+
+因此，LayerNorm 的反向不是逐元素独立的。同一归一化组内某个位置的上游梯度会影响其他位置的输入梯度。
+
+#### 三个元素的手算
+
+取：
+
+$$
+x=[1,2,3].
+$$
+
+均值为 2，忽略 $\epsilon$ 时：
+
+$$
+v=\frac{1+0+1}{3}=\frac{2}{3},
+$$
+
+$$
+s=\sqrt{2/3}\approx0.8165,
+$$
+
+$$
+\widehat x\approx[-1.2247,0,1.2247].
+$$
+
+令 $\gamma=[1,1,1]$，上游梯度：
+
+$$
+g=[1,0,0].
+$$
+
+则：
+
+$$
+\overline u=1/3,
+$$
+
+$$
+\overline{u\widehat x}
+=-1.2247/3
+\approx-0.4082.
+$$
+
+代入后，三个输入梯度近似为：
+
+$$
+[0.2041,-0.4082,0.2041].
+$$
+
+三者之和接近 0，反映整体平移对标准化结果影响很小。
+
+缩放与平移 Parameter 的梯度为：
+
+$$
+\frac{\partial L}{\partial\gamma_i}
+=g_i\widehat x_i,
+$$
+
+$$
+\frac{\partial L}{\partial\beta_i}
+=g_i.
+$$
+
+若同一组 $\gamma,\beta$ 供多个样本和位置使用，还要跨这些位置求和。
+
+> [!TIP] 理解归一化反向时先分两层
+> 先看仿射部分得到 $\gamma,\beta$ 梯度，再看标准化部分怎样通过均值和方差使组内元素互相影响。
+
+### 18.11 BatchNorm 的反向直觉
+
+BatchNorm 使用的标准化公式与前一节相似，主要差异是统计组的选择。对二维输入 `(N,C)`，固定 Channel $c$，一个 Batch 中该 Channel 的 $N$ 个元素共同计算均值与方差。对图像 `(N,C,H,W)`，固定 $c$ 后，$N,H,W$ 全部参与。
+
+训练状态下，当前输出使用当前 Batch 的统计数据。因此，一个样本在某 Channel 上的上游梯度，不仅影响自身输入梯度，也会通过均值和方差影响一个 Batch 中其他样本及空间位置。
+
+以一个 Channel、两个样本为例：
+
+$$
+x=[1,3].
+$$
+
+均值为 2，方差为 1，忽略 $\epsilon$ 且令 $\gamma=1,\beta=0$：
+
+$$
+\widehat x=[-1,1].
+$$
+
+若损失只直接使用第一个标准化输出，上游梯度为 `[1,0]`，反向仍要考虑两个输入共同决定均值和方差。第二个输入虽然没有直接上游梯度，也可能通过统计项参与反向。
+
+在只有两个元素且忽略 $\epsilon$ 的特殊例子中，标准化结果对共同平移和正比例缩放保持不变，输入梯度可能出现抵消。增加元素、加入 $\epsilon$ 或改变损失后，通常会得到非零值。这个现象提醒我们：归一化梯度由整组数据共同决定，不能只用单个元素的局部斜率理解。
+
+Parameter 梯度仍为：
+
+$$
+\frac{\partial L}{\partial\gamma_c}
+=
+\sum_{i\in\mathcal S_c}
+g_i\widehat x_i,
+$$
+
+$$
+\frac{\partial L}{\partial\beta_c}
+=
+\sum_{i\in\mathcal S_c}g_i,
+$$
+
+其中 $\mathcal S_c$ 是使用 Channel $c$ 的全部位置。
+
+运行均值与运行方差通常不是通过普通梯度更新，而是按训练规则更新状态。推理状态使用已保存数据时，均值和方差被视为固定值，输入梯度关系会更接近固定仿射缩放；常规推理又通常不需要保留梯度。
+
+> [!WARNING] 梯度检查时要固定 BatchNorm 状态
+> 若每次有限差分计算都会更新运行数据，两次损失不再只差 Parameter 的微小扰动。可选择评估状态，或关闭运行状态更新，并确保两次计算使用完全相同的输入和配置。
+
+### 18.12 Dropout 的期望与反向 mask
+
+训练时，普通 Dropout 计算：
+
+$$
+y_i=\frac{m_i}{1-p}x_i,
+$$
+
+其中：
+
+$$
+m_i\sim\operatorname{Bernoulli}(1-p).
+$$
+
+$p$ 是置零概率，$m_i$ 只取 0 或 1。
+
+输出期望为：
+
+$$
+\mathbb E[y_i]
+=
+\frac{\mathbb E[m_i]}{1-p}x_i
+=
+\frac{1-p}{1-p}x_i
+=x_i.
+$$
+
+反向使用前向采样到的同一个 mask：
+
+$$
+\frac{\partial L}{\partial x_i}
+=
+\frac{m_i}{1-p}
+\frac{\partial L}{\partial y_i}.
+$$
+
+设：
+
+$$
+p=0.5,
+\qquad
+m=[1,0,1],
+\qquad
+g=[2,4,-1].
+$$
+
+则：
+
+$$
+\frac{\partial L}{\partial x}
+=
+\frac{[1,0,1]}{0.5}
+\odot[2,4,-1]
+=[4,0,-2].
+$$
+
+被置零位置的梯度也为 0；保留位置的梯度放大为两倍。
+
+> [!NOTE] 输出期望保持不表示单次输出保持
+> 单次前向可能有很多元素变为 0，另一些元素变大。只有对随机 mask 取平均时，期望才等于原输入。
+
+> [!WARNING] 有随机 Dropout 时不能直接比较两次有限差分
+> 若两次前向使用不同 mask，损失差异主要可能来自随机性。进行梯度检查时应关闭 Dropout，或保证使用相同 mask。
+
+### 18.13 RNN 沿时间方向的梯度
+
+最基本 RNN 可写为：
+
+$$
+a_t=W_xx_t+W_hh_{t-1}+b,
+$$
+
+$$
+h_t=\phi(a_t).
+$$
+
+其中：
+
+- $x_t$ 是时间位置 $t$ 的输入；
+- $h_{t-1}$ 是前一位置隐藏状态；
+- $W_x$ 处理当前输入；
+- $W_h$ 处理前一隐藏状态；
+- $\phi$ 常为 Tanh 或 ReLU。
+
+某个 $h_t$ 的梯度通常来自两个方向：
+
+1. 当前位置输出或损失的直接贡献；
+2. 后续位置通过 $h_{t+1},h_{t+2},\ldots$ 传回的贡献。
+
+可写成：
+
+$$
+\frac{\partial L}{\partial h_t}
+=
+\left.
+\frac{\partial L}{\partial h_t}
+\right|_{\text{direct}}
++
+\frac{\partial L}{\partial h_{t+1}}
+\frac{\partial h_{t+1}}{\partial h_t}.
+$$
+
+对多个时间位置重复使用链式法则后，会出现多个 Jacobian 的乘积。若这些局部系数大多小于 1，较早位置梯度可能逐步缩小；若大多大于 1，梯度可能快速放大。
+
+#### 标量线性循环例子
+
+暂时去掉激活：
+
+$$
+h_t=ah_{t-1}+x_t.
+$$
+
+取：
+
+$$
+h_0=0,\quad a=0.5,\quad x_1=2,\quad x_2=1.
+$$
+
+前向：
+
+$$
+h_1=0.5\times0+2=2,
+$$
+
+$$
+h_2=0.5\times2+1=2.
+$$
+
+令损失：
+
+$$
+L=h_2.
+$$
+
+则：
+
+$$
+\frac{\partial L}{\partial h_2}=1,
+$$
+
+$$
+\frac{\partial L}{\partial h_1}
+=
+1\times a=0.5.
+$$
+
+再向前：
+
+$$
+\frac{\partial L}{\partial h_0}
+=
+0.5\times a=0.25.
+$$
+
+可以看到，向前一个时间位置移动一次，梯度乘一次 0.5。
+
+参数 $a$ 在两个位置共享。这里第一步中 $h_0=0$，只第二步产生贡献：
+
+$$
+\frac{\partial L}{\partial a}
+=
+\frac{\partial h_2}{\partial a}
+=h_1=2.
+$$
+
+> [!TIP] 时间展开后把共享 Parameter 画成同一个对象
+> $W_x,W_h,b$ 在每个时间位置重复使用，反向时各位置对它们的梯度都要相加。不要误以为每个时间位置有独立权重。
+
+### 18.14 GRU 与 LSTM 的门怎样影响梯度
+
+#### GRU
+
+GRU 的更新可概括为：
+
+$$
+h_t=(1-z_t)\odot n_t+z_t\odot h_{t-1}.
+$$
+
+其中：
+
+- $z_t$ 是更新门；
+- $n_t$ 是候选隐藏状态；
+- $h_{t-1}$ 是旧隐藏状态；
+- $z_t$ 常由 Sigmoid 产生，元素位于 0 和 1 之间。
+
+暂时只看最后这一步，并把 $z_t,n_t$ 看作固定值：
+
+$$
+\frac{\partial h_t}{\partial h_{t-1}}=z_t.
+$$
+
+若 $z_t=0.9$，上游梯度 2 通过直接保留项传给旧状态的部分为：
+
+$$
+2\times0.9=1.8.
+$$
+
+若 $z_t=0.1$，则只有 0.2。完整反向还包含 $z_t,n_t$ 自身依赖 $h_{t-1}$ 的路径，所以实际梯度是多项之和。
+
+#### LSTM
+
+LSTM 细胞状态常写为：
+
+$$
+c_t=f_t\odot c_{t-1}+i_t\odot g_t,
+$$
+
+$$
+h_t=o_t\odot\tanh(c_t).
+$$
+
+其中：
+
+- $f_t$ 是遗忘门；
+- $i_t$ 是输入门；
+- $o_t$ 是输出门；
+- $g_t$ 是候选内容；
+- $c_t$ 是细胞状态。
+
+暂时把门值看作固定：
+
+$$
+\frac{\partial c_t}{\partial c_{t-1}}=f_t.
+$$
+
+若连续三个位置的遗忘门都是 0.8，后方梯度沿细胞状态直接项传回三个位置后会乘：
+
+$$
+0.8^3=0.512.
+$$
+
+若门值接近 1，这部分梯度可保留较多；若接近 0，早期状态的直接影响会被明显削弱。完整 LSTM 仍要加上门网络带来的其他梯度。
+
+> [!NOTE] 门控不是保证梯度永远合适
+> GRU 与 LSTM 提供了可学习的保留和更新方式，但仍会受到序列长度、权重、激活范围、初始化和损失位置影响。
+
+> [!WARNING] 双向循环不是让梯度违反时间顺序
+> 双向层包含两个独立方向：一个按原顺序处理，一个按反顺序处理。每个方向都在自己的展开次序中执行反向计算，最后汇总对输入和共享前层的影响。
+
+### 18.15 Attention 的梯度从输出回到 Q、K、V
+
+单个 Attention Head 可写为：
+
+$$
+S=\frac{QK^T}{\sqrt d},
+$$
+
+$$
+A=\operatorname{Softmax}(S),
+$$
+
+$$
+O=AV.
+$$
+
+其中：
+
+- $Q$ 是 Query；
+- $K$ 是 Key；
+- $V$ 是 Value；
+- $d$ 是每个 Head 的 Feature 宽度；
+- $S$ 是注意力分数；
+- $A$ 是每行和为 1 的注意力权重；
+- $O$ 是加权结果。
+
+设输出上游梯度为：
+
+$$
+G_O=\frac{\partial L}{\partial O}.
+$$
+
+矩阵乘 $O=AV$ 给出：
+
+$$
+\frac{\partial L}{\partial A}=G_OV^T,
+$$
+
+$$
+\frac{\partial L}{\partial V}=A^TG_O.
+$$
+
+这说明 Value 梯度按注意力权重分回各位置；注意力权重的梯度由上游梯度与 Value 内容共同决定。
+
+然后，Softmax 把 $\partial L/\partial A$ 转成 $\partial L/\partial S$。每一行内部相互影响。最后：
+
+$$
+\frac{\partial L}{\partial Q}
+=
+\frac{\partial L}{\partial S}
+\frac{K}{\sqrt d},
+$$
+
+更精确的矩阵形式为：
+
+$$
+\frac{\partial L}{\partial Q}
+=
+G_SK/\sqrt d,
+$$
+
+$$
+\frac{\partial L}{\partial K}
+=
+G_S^TQ/\sqrt d.
+$$
+
+#### 两个 Value 的手算
+
+某个 Query 的权重为：
+
+$$
+A=[0.75,0.25],
+$$
+
+两个标量 Value 为：
+
+$$
+V=[2,6]^T.
+$$
+
+输出：
+
+$$
+O=0.75\times2+0.25\times6=3.
+$$
+
+若上游梯度为 2：
+
+$$
+\frac{\partial L}{\partial V}
+=A^T\times2
+=[1.5,0.5]^T.
+$$
+
+对权重的梯度：
+
+$$
+\frac{\partial L}{\partial A}
+=2V^T=[4,12].
+$$
+
+Softmax 反向前先算权重平均：
+
+$$
+\sum_i A_i
+\frac{\partial L}{\partial A_i}
+=0.75\times4+0.25\times12=6.
+$$
+
+每个分数梯度为：
+
+$$
+\frac{\partial L}{\partial S_i}
+=A_i
+\left(
+\frac{\partial L}{\partial A_i}-6
+\right).
+$$
+
+所以：
+
+$$
+\frac{\partial L}{\partial S}
+=[0.75(4-6),0.25(12-6)]
+=[-1.5,1.5].
+$$
+
+两个分数梯度之和为 0。
+
+> [!NOTE] mask 位置通常不应接收有效注意力梯度
+> 被禁止的位置在 Softmax 前使用足够小的分数，使其权重接近 0；对应的 Value 和分数梯度也应接近 0。若全部位置都被禁止，需要专门处理，否则可能出现无定义结果。
+
+> [!TIP] $\sqrt d$ 同时缩放前向分数和反向梯度
+> 分数除以 $\sqrt d$ 可减轻高维点积随维度增大而变大的问题。反向传给 $Q,K$ 的梯度也带同一缩放因子。
+
+### 18.16 梯度累积、Batch Size 与 reduction
+
+设一个 Batch 有 $N$ 个样本，单样本损失为 $L_n$。
+
+使用求和：
+
+$$
+L_{\mathrm{sum}}
+=
+\sum_{n=1}^{N}L_n,
+$$
+
+其参数梯度为：
+
+$$
+\frac{\partial L_{\mathrm{sum}}}{\partial\theta}
+=
+\sum_{n=1}^{N}
+\frac{\partial L_n}{\partial\theta}.
+$$
+
+使用平均：
+
+$$
+L_{\mathrm{mean}}
+=
+\frac{1}{N}
+\sum_{n=1}^{N}L_n,
+$$
+
+梯度为：
+
+$$
+\frac{\partial L_{\mathrm{mean}}}{\partial\theta}
+=
+\frac{1}{N}
+\sum_{n=1}^{N}
+\frac{\partial L_n}{\partial\theta}.
+$$
+
+若三个样本的某个参数梯度分别为 2、4、8，求和得到：
+
+$$
+2+4+8=14.
+$$
+
+平均得到：
+
+$$
+14/3\approx4.667.
+$$
+
+因此，`sum` 下 Batch Size 增大常会直接放大梯度；`mean` 下会除以样本数量，梯度尺度通常更容易保持。
+
+#### 连续处理多个 Batch 时怎样累积梯度
+
+许多框架会把新反向结果加到已有梯度存储中，直到显式清零。若连续处理 $K$ 个大小相同的 Batch，并希望模拟更大的有效 Batch Size，常把每次平均损失再除以 $K$，或在累积结束后把总梯度除以 $K$。
+
+若两个 Batch 的样本数分别为 4 和 2，且各自损失都先取平均，就不能简单地对两个平均梯度等权平均。应按样本数加权：
+
+$$
+g=
+\frac{4g_1+2g_2}{6}.
+$$
+
+否则第二个较小的 Batch 会被赋予过高权重。
+
+> [!WARNING] reduction 可能不只按样本数平均
+> 像素损失、token 损失或多标签损失可能对全部有效元素平均。存在 mask 时，分母可能是有效位置数，而不是 Batch Size。阅读损失定义时要确认究竟对哪些元素求和或平均。
+
+> [!TIP] 比较训练配置时同时记录三项
+> 记录 Batch Size、损失 reduction 和梯度累积次数。只比较学习率而忽略这三项，很难解释梯度尺度差异。
+
+### 18.17 Log-Sum-Exp：Softmax 与交叉熵的稳定核心
+
+直接计算：
+
+$$
+\log\sum_i e^{z_i}
+$$
+
+时，较大的 $z_i$ 可能使指数超出浮点数可表示范围。取：
+
+$$
+m=\max_i z_i.
+$$
+
+则：
+
+$$
+\log\sum_i e^{z_i}
+=
+m+\log\sum_i e^{z_i-m}.
+$$
+
+因为 $z_i-m\le0$，指数不会因正数过大而溢出。
+
+数值例子：
+
+$$
+z=[1000,1001].
+$$
+
+直接计算 $e^{1000}+e^{1001}$ 很危险。令 $m=1001$：
+
+$$
+\operatorname{LSE}(z)
+=
+1001+\log(e^{-1}+e^0),
+$$
+
+$$
+=1001+\log(1.3679)
+\approx1001.3133.
+$$
+
+Softmax 也可先减最大值：
+
+$$
+\operatorname{Softmax}(z)_i
+=
+\frac{e^{z_i-m}}
+{\sum_j e^{z_j-m}}.
+$$
+
+减去共同常数不会改变概率比例。
+
+> [!NOTE] 稳定写法不是近似替代
+> 上述变形在数学上与原公式完全相等，只是让中间数值更适合浮点计算。框架的 Softmax、LogSoftmax 和交叉熵通常已使用同类方法。
+
+### 18.18 二元交叉熵为什么优先接收 logits
+
+二分类概率：
+
+$$
+p=\sigma(z).
+$$
+
+普通二元交叉熵：
+
+$$
+L=-y\log p-(1-y)\log(1-p).
+$$
+
+若 $z$ 很大，$p$ 可能在有限精度中直接变成 1，此时 $\log(1-p)$ 会遇到 $\log0$。把 Sigmoid 与损失合并，可写成稳定形式：
+
+$$
+L=
+\max(z,0)-zy+\log(1+e^{-|z|}).
+$$
+
+其中：
+
+- $z$ 是 logit；
+- $y\in\{0,1\}$ 是目标；
+- $\max(z,0)$ 避免正 logit 直接进入指数；
+- $e^{-|z|}$ 的指数不大于 0。
+
+取 $z=20,y=1$：
+
+$$
+L
+=20-20+\log(1+e^{-20})
+\approx2.06\times10^{-9}.
+$$
+
+取 $z=20,y=0$：
+
+$$
+L
+=20+\log(1+e^{-20})
+\approx20.
+$$
+
+对 logit 的梯度仍是：
+
+$$
+\frac{\partial L}{\partial z}
+=\sigma(z)-y.
+$$
+
+> [!WARNING] 不要在带 logits 的损失前再做 Sigmoid
+> 这样不仅重复计算，还会让损失把概率误当作 logit，梯度与目标公式不再一致。
+
+### 18.19 epsilon、除法与对数的安全处理
+
+归一化常用：
+
+$$
+\widehat x
+=
+\frac{x-\mu}{\sqrt{v+\epsilon}}.
+$$
+
+若输入全部相同，例如：
+
+$$
+x=[5,5,5],
+$$
+
+则：
+
+$$
+\mu=5,\qquad v=0.
+$$
+
+没有 $\epsilon$ 时会出现 $0/0$。加入正数：
+
+$$
+\widehat x
+=
+\frac{[0,0,0]}{\sqrt{\epsilon}}
+=[0,0,0].
+$$
+
+在向量归一化和余弦相似度中，也常对范数设置最小安全值，避免零向量作为分母。
+
+对数要求输入严格大于 0。若数学上要计算概率对数，优先使用直接接收 logits 的稳定函数。随意把很大的 $\epsilon$ 加到概率上会改变损失含义；$\epsilon$ 太小又可能在低精度类型中无法发挥作用。
+
+> [!TIP] epsilon 是数值参数，不是可随意忽略的装饰
+> 手算概念时可以暂时忽略它，但复现框架结果时必须使用相同数值。方差很小时，不同 epsilon 会造成可见差异。
+
+### 18.20 浮点范围、梯度缩放与裁剪
+
+浮点数能表示的最大值、最小正数和有效精度有限。深层网络中，连续乘法可能让梯度非常大或非常小。低精度训练时，这种问题更明显。
+
+梯度缩放的思想是先把损失乘正数 $s$：
+
+$$
+L'=sL.
+$$
+
+反向得到：
+
+$$
+\frac{\partial L'}{\partial\theta}
+=
+s\frac{\partial L}{\partial\theta}.
+$$
+
+更新前再除以 $s$，数学上的最终梯度不变，但中间梯度更不容易小到无法表示。若检测到无穷大或非数值，应跳过该次更新并调整缩放系数。
+
+梯度裁剪常见两类。
+
+逐元素裁剪：
+
+$$
+g_i'
+=
+\min(c,\max(-c,g_i)).
+$$
+
+若 $c=2$、梯度 `[5,-3,1]`，结果为：
+
+$$
+[2,-2,1].
+$$
+
+按整体范数裁剪：
+
+$$
+g'
+=
+g\cdot
+\min\left(
+1,\frac{c}{\lVert g\rVert_2+\epsilon}
+\right).
+$$
+
+若：
+
+$$
+g=[3,4],
+\qquad
+\lVert g\rVert_2=5,
+\qquad
+c=2.5,
+$$
+
+则缩放系数为 0.5，结果：
+
+$$
+g'=[1.5,2].
+$$
+
+> [!NOTE] 裁剪会改变梯度
+> 梯度缩放在除回系数后保持原数学梯度；裁剪会有意限制方向中的幅度。它适合控制异常大的更新，但不能替代对模型结构、学习率或数据异常的分析。
+
+### 18.21 有限差分梯度检查
+
+对标量 Parameter $\theta$，中心差分近似为：
+
+$$
+\frac{\partial L}{\partial\theta}
+\approx
+\frac{L(\theta+h)-L(\theta-h)}{2h}.
+$$
+
+$h$ 是一个较小正数。中心差分通常比只计算一侧变化更准确。
+
+设：
+
+$$
+L(\theta)=(\theta-3)^2.
+$$
+
+解析梯度：
+
+$$
+\frac{\partial L}{\partial\theta}
+=2(\theta-3).
+$$
+
+在 $\theta=1$：
+
+$$
+\frac{\partial L}{\partial\theta}=-4.
+$$
+
+取：
+
+$$
+h=0.001.
+$$
+
+两侧损失：
+
+$$
+L(1.001)=(-1.999)^2=3.996001,
+$$
+
+$$
+L(0.999)=(-2.001)^2=4.004001.
+$$
+
+中心差分：
+
+$$
+\frac{3.996001-4.004001}{0.002}
+=-4.
+$$
+
+与解析结果一致。
+
+常用相对误差为：
+
+$$
+r=
+\frac{|g_{\mathrm{analytic}}-g_{\mathrm{numeric}}|}
+{\max(1,|g_{\mathrm{analytic}}|,|g_{\mathrm{numeric}}|)}.
+$$
+
+分母至少为 1，可以避免两个梯度都接近 0 时比例被无意义放大。
+
+#### 检查前应固定的条件
+
+1. 使用较高精度浮点类型；
+2. 关闭 Dropout 等随机 Layer；
+3. 固定 BatchNorm 等会更新的状态；
+4. 使用很小的模型和标量损失；
+5. 避开 ReLU 零点、最大池化并列值等不可导位置；
+6. 分别检查输入梯度与 Parameter 梯度；
+7. 尝试多个 $h$，确认结果不是步长过大或过小造成。
+
+> [!WARNING] $h$ 不是越小越好
+> $h$ 太大时，差分不再代表局部斜率；$h$ 太小时，两次损失在有限精度中可能几乎相同，减法会丢失有效数字。通常要在若干数量级中比较。
+
+> [!TIP] 先检查一个元素，再扩大范围
+> 对复杂 Layer，可先选择一个权重、一个输入位置和一个标量损失。单点通过后，再随机抽查更多位置。这样更容易定位轴次序、求和范围或共享参数处理错误。
+
+### 18.22 梯度异常的逐步排查顺序
+
+当梯度出现 0、无穷大、非数值或异常放大时，可以依次检查：
+
+1. 损失输入是否符合要求，例如是否把概率误传给接收 logits 的损失；
+2. 数据中是否已有无穷大、非数值或极端值；
+3. 除法、平方根和对数是否有安全处理；
+4. Softmax 是否沿正确轴计算，mask 是否导致整行都不可用；
+5. 激活输入是否长期处于导数很小的区域；
+6. 归一化统计组中是否只有一个有效元素；
+7. RNN 时间展开中局部系数是否反复放大或缩小；
+8. loss reduction、Batch Size 与梯度累积是否共同改变了尺度；
+9. 参数是否真的参与本次损失计算；
+10. 梯度清零、反向和优化器更新的次序是否正确。
+
+还可以在多个关键 Layer 处记录：
+
+- 输出最小值与最大值；
+- 输出均值与标准差；
+- Parameter 梯度范数；
+- 输入梯度范数；
+- 非数值元素数量；
+- 训练状态与推理状态的差异。
+
+> [!NOTE] 没有梯度不一定是错误
+> 未被使用的 Embedding 行、被 ReLU 置零的位置、最大池化中的非最大位置、被注意力 mask 禁止的位置，都可能合理地得到零梯度。排查重点是它是否符合该 Layer 的公式。
+
+### 18.23 向量输出需要用 Jacobian 理解
+
+标量函数只有一个局部导数；向量输入、向量输出的 Layer 会有许多偏导数。设：
+
+$$
+x\in\mathbb{R}^{I},
+\qquad
+y=f(x)\in\mathbb{R}^{O}.
+$$
+
+Jacobian 定义为：
+
+$$
+J_{o,i}
+=
+\frac{\partial y_o}{\partial x_i}.
+$$
+
+其形状为 `(O,I)`：每一行说明一个输出怎样受到全部输入影响，每一列说明一个输入怎样影响全部输出。
+
+设上游梯度为：
+
+$$
+g_o=\frac{\partial L}{\partial y_o}.
+$$
+
+输入梯度为：
+
+$$
+\frac{\partial L}{\partial x_i}
+=
+\sum_{o=1}^{O}
+g_oJ_{o,i}.
+$$
+
+自动求导通常不会显式创建巨大的完整 Jacobian，而是直接计算上游梯度与 Jacobian 的乘积。
+
+#### 两输入、两输出手算
+
+定义：
+
+$$
+y_0=x_0+x_1,
+$$
+
+$$
+y_1=x_0x_1.
+$$
+
+Jacobian 为：
+
+$$
+J=
+\begin{bmatrix}
+1&1\\
+x_1&x_0
+\end{bmatrix}.
+$$
+
+取：
+
+$$
+x=[2,3],
+$$
+
+则：
+
+$$
+J=
+\begin{bmatrix}
+1&1\\
+3&2
+\end{bmatrix}.
+$$
+
+若上游梯度：
+
+$$
+g=[4,-1],
+$$
+
+输入梯度为：
+
+$$
+\frac{\partial L}{\partial x_0}
+=4\times1+(-1)\times3=1,
+$$
+
+$$
+\frac{\partial L}{\partial x_1}
+=4\times1+(-1)\times2=2.
+$$
+
+> [!NOTE] 梯度形状与被求导对象相同
+> $\partial L/\partial x$ 的形状必须与 $x$ 相同，$\partial L/\partial W$ 的形状必须与 $W$ 相同。手算得到结果后，先检查形状通常能发现转置或求和轴错误。
+
+### 18.24 Identity、Flatten、Reshape 与 Permute 怎样传梯度
+
+Identity 前向为：
+
+$$
+y=x.
+$$
+
+所以：
+
+$$
+\frac{\partial L}{\partial x}
+=
+\frac{\partial L}{\partial y}.
+$$
+
+Flatten 和 Reshape 只重新组织形状。反向时把上游梯度按原元素次序恢复为输入形状。
+
+设输入：
+
+$$
+x=
+\begin{bmatrix}
+x_0&x_1\\
+x_2&x_3
+\end{bmatrix},
+$$
+
+Flatten 后：
+
+$$
+y=[x_0,x_1,x_2,x_3].
+$$
+
+若上游梯度：
+
+$$
+g=[1,2,3,4],
+$$
+
+输入梯度就是：
+
+$$
+\frac{\partial L}{\partial x}
+=
+\begin{bmatrix}
+1&2\\
+3&4
+\end{bmatrix}.
+$$
+
+Permute 反向使用逆轴次序。二维转置是最直观例子：
+
+$$
+y=x^T.
+$$
+
+若：
+
+$$
+\frac{\partial L}{\partial y}
+=
+\begin{bmatrix}
+1&2\\
+3&4
+\end{bmatrix},
+$$
+
+则：
+
+$$
+\frac{\partial L}{\partial x}
+=
+\begin{bmatrix}
+1&3\\
+2&4
+\end{bmatrix}.
+$$
+
+> [!WARNING] 改形状 Layer 不改变梯度数值，却会改变下标位置
+> 若前向轴次序错误，反向仍会忠实地按错误次序恢复梯度。自动求导只能执行已写出的计算，无法推断原本想让某个轴表示 Channel 还是 Feature。
+
+### 18.25 mask、有效位置与损失平均
+
+序列任务常有补齐位置。设每个位置损失为 $\ell_i$，mask 为 $m_i\in\{0,1\}$。只对有效位置平均：
+
+$$
+L=
+\frac{\sum_i m_i\ell_i}
+{\sum_i m_i}.
+$$
+
+若：
+
+$$
+\ell=[0.2,0.8,1.1,0.5],
+$$
+
+$$
+m=[1,1,0,1],
+$$
+
+有效位置数为 3，损失：
+
+$$
+L=
+\frac{0.2+0.8+0.5}{3}
+=0.5.
+$$
+
+对每个位置损失的梯度为：
+
+$$
+\frac{\partial L}{\partial\ell_i}
+=
+\frac{m_i}{\sum_jm_j}.
+$$
+
+所以：
+
+$$
+\frac{\partial L}{\partial\ell}
+=[1/3,1/3,0,1/3].
+$$
+
+补齐位置梯度为 0，有效位置按有效数量缩放。若错误地除以总长度 4，每个有效位置只得到 $1/4$，损失与梯度都会偏小。
+
+> [!WARNING] 全部位置都无效时分母为 0
+> 数据整理或损失计算需要明确处理这种样本，例如跳过、修正输入，或保证至少有一个有效目标。不能只依赖很小的 epsilon 掩盖数据含义问题。
+
+### 18.26 标签平滑怎样改变交叉熵梯度
+
+普通单标签目标使用 one-hot 向量。标签平滑把少量目标分配给其他类别。设类别数为 $C$，平滑系数为 $\alpha$：
+
+$$
+q_i=
+\begin{cases}
+1-\alpha+\alpha/C,&i=t,\\
+\alpha/C,&i\ne t.
+\end{cases}
+$$
+
+交叉熵：
+
+$$
+L=-\sum_iq_i\log p_i.
+$$
+
+对 logits 的梯度为：
+
+$$
+\frac{\partial L}{\partial z_i}=p_i-q_i.
+$$
+
+设 $C=3,\alpha=0.1$，目标类别为 0：
+
+$$
+q=[0.9333,0.0333,0.0333].
+$$
+
+若模型概率为：
+
+$$
+p=[0.7,0.2,0.1],
+$$
+
+则：
+
+$$
+\frac{\partial L}{\partial z}
+\approx[-0.2333,0.1667,0.0667].
+$$
+
+不使用标签平滑时梯度为 `[-0.3,0.2,0.1]`。平滑后，目标类别继续获得提高信号，但绝对值较小；非目标类别也不再全部以零作为目标。
+
+若把样本权重 $s$ 作为整个样本损失外的标量：
+
+$$
+L_{\mathrm{weighted}}=sL,
+$$
+
+则该样本损失与整组 logits 梯度都会乘 $s$。逐类别权重与标签平滑同时使用时则不同。若第 $i$ 类权重为 $w_i$：
+
+$$
+L=-\sum_i w_iq_i\log p_i,
+$$
+
+则：
+
+$$
+\frac{\partial L}{\partial z_j}
+=
+p_j\sum_iw_iq_i-w_jq_j.
+$$
+
+此时各类别项分别受到 $w_i$ 影响，通常不能把整组梯度简单地乘目标类别权重。使用逐类别权重、样本权重、标签平滑和 reduction 时，应先把它们放进同一个公式。
+
+> [!NOTE] 标签平滑改变训练目标
+> 它不只是一个数值稳定技巧，而是明确改变目标分布。是否使用及系数大小应由任务需要和验证结果决定。
+
+### 18.27 多 Channel 卷积与分组卷积的梯度范围
+
+多 Channel 一维卷积可写为：
+
+$$
+y_{n,o,t}
+=
+\sum_c\sum_r
+x_{n,c,t+r}W_{o,c,r}+b_o.
+$$
+
+其中：
+
+- $n$ 是 Batch维度下标；
+- $o$ 是输出 Channel；
+- $c$ 是输入 Channel；
+- $t$ 是输出位置；
+- $r$ 是卷积核内部位置。
+
+固定一个输出位置后，上游梯度会乘相应权重分给所有参与的输入 Channel；权重梯度会把所有样本和输出位置中对应输入值乘上游梯度后求和。
+
+最小例子：只有一个空间位置、两个输入 Channel、一个输出 Channel。输入：
+
+$$
+x=[3,5],
+$$
+
+权重：
+
+$$
+w=[2,-1].
+$$
+
+输出：
+
+$$
+y=3\times2+5\times(-1)=1.
+$$
+
+若上游梯度为 4：
+
+$$
+\frac{\partial L}{\partial w}
+=[4\times3,4\times5]
+=[12,20],
+$$
+
+$$
+\frac{\partial L}{\partial x}
+=[4\times2,4\times(-1)]
+=[8,-4].
+$$
+
+分组卷积只让组内输入 Channel 与组内输出 Channel 相连。组外权重根本不存在，因此组外也没有由该输出产生的梯度。深度卷积中，每个输入 Channel 主要由自己的小卷积核处理，输入与权重梯度也按 Channel 分开汇总。
+
+步幅大于 1 时，输出窗口更稀疏；某些输入位置可能被较少窗口覆盖，输入梯度来源也更少。填充产生的虚拟位置不是可学习输入，反向时只保留真实输入范围内的梯度。
+
+> [!TIP] 检查分组卷积先画 Channel 分组
+> 把输入 Channel 和输出 Channel 按组列出，只在允许连接的组内画线。权重数量、前向求和范围和反向梯度范围都会随这张分组关系变化。
+
+### 18.28 归一化参数梯度的数字例子
+
+归一化后：
+
+$$
+y_i=\gamma_i\widehat x_i+\beta_i.
+$$
+
+若同一组 Parameter 供多个位置使用：
+
+$$
+\frac{\partial L}{\partial\gamma_i}
+=
+\sum_m g_{m,i}\widehat x_{m,i},
+$$
+
+$$
+\frac{\partial L}{\partial\beta_i}
+=
+\sum_m g_{m,i}.
+$$
+
+先看一个只有三个位置的简化例子：
+
+$$
+\widehat x=[-1,0,1],
+$$
+
+$$
+g=[2,-1,3].
+$$
+
+若共享一个标量 $\gamma,\beta$，则：
+
+$$
+\frac{\partial L}{\partial\gamma}
+=2\times(-1)+(-1)\times0+3\times1
+=1,
+$$
+
+$$
+\frac{\partial L}{\partial\beta}
+=2+(-1)+3
+=4.
+$$
+
+$\gamma$ 梯度同时取决于上游梯度和标准化后的数值；$\beta$ 梯度只汇总上游梯度。
+
+若每个 Feature 有独立 $\gamma_i,\beta_i$，就不在 Feature 之间求和，而是在使用同一 Parameter 的样本和位置之间求和。LayerNorm 常为每个被归一化 Feature 保存独立参数；BatchNorm 常为每个 Channel 保存独立参数；GroupNorm 即使按组计算均值和方差，通常仍为每个 Channel 保存参数。
+
+> [!NOTE] 统计分组与 Parameter 共享范围可能不同
+> GroupNorm 的均值和方差按组计算，但 $\gamma,\beta$ 通常按 Channel 设置。阅读归一化反向时，要分别写出统计组和 Parameter 下标。
+
+### 18.29 循环共享 Parameter 的完整两步例子
+
+考虑：
+
+$$
+h_t=wh_{t-1}+x_t.
+$$
+
+取：
+
+$$
+h_0=1,\quad x_1=1,\quad x_2=0,\quad w=0.5.
+$$
+
+前向：
+
+$$
+h_1=0.5\times1+1=1.5,
+$$
+
+$$
+h_2=0.5\times1.5+0=0.75.
+$$
+
+令：
+
+$$
+L=h_2^2=0.5625.
+$$
+
+反向从：
+
+$$
+\frac{\partial L}{\partial h_2}
+=2h_2=1.5
+$$
+
+开始。
+
+第二个时间位置对 $w$ 的直接贡献：
+
+$$
+1.5\times h_1
+=1.5\times1.5
+=2.25.
+$$
+
+传给 $h_1$：
+
+$$
+\frac{\partial L}{\partial h_1}
+=1.5\times w
+=0.75.
+$$
+
+第一个时间位置对同一个 $w$ 的贡献：
+
+$$
+0.75\times h_0
+=0.75.
+$$
+
+共享 Parameter 的总梯度：
+
+$$
+\frac{\partial L}{\partial w}
+=2.25+0.75
+=3.
+$$
+
+也可以直接展开：
+
+$$
+h_2=w(wh_0+x_1)+x_2.
+$$
+
+代入 $h_0=1,x_1=1,x_2=0$：
+
+$$
+h_2=w^2+w.
+$$
+
+$$
+\frac{\partial h_2}{\partial w}
+=2w+1=2.
+$$
+
+所以：
+
+$$
+\frac{\partial L}{\partial w}
+=2h_2(2w+1)
+=2\times0.75\times2
+=3.
+$$
+
+两种方法一致。
+
+> [!TIP] 展开式适合核对，逐时间反向适合理解来源
+> 展开后直接求导能快速核对小例子；逐位置反向能看出每个时间位置给共享 Parameter 贡献了多少。
+
+### 18.30 更多常见稳定变形
+
+Softplus 原式：
+
+$$
+\log(1+e^x)
+$$
+
+在 $x$ 很大时可能遇到指数过大。稳定形式为：
+
+$$
+\operatorname{Softplus}(x)
+=
+\max(x,0)
++\log(1+e^{-|x|}).
+$$
+
+当 $x=1000$：
+
+$$
+\operatorname{Softplus}(1000)
+=1000+\log(1+e^{-1000})
+\approx1000.
+$$
+
+无需直接计算 $e^{1000}$。
+
+计算方差时，理论公式：
+
+$$
+v=\mathbb E[x^2]-\mathbb E[x]^2
+$$
+
+可能需要用两个非常接近的大数相减。数值实现常使用更稳健的分步算法，而不是机械套用这一展开式。
+
+计算很小 $u$ 的 $\log(1+u)$ 时，专用的 `log1p` 类计算能保留更多有效数字；计算很小 $u$ 的 $e^u-1$ 时，`expm1` 类计算也更合适。这些函数表达的数学值没有改变，只是减少浮点舍入损失。
+
+> [!WARNING] 公式简洁不代表直接计算最安全
+> 指数后取对数、概率后取对数、两个接近大数相减，都可能损失有效信息。遇到此类组合时，应先查框架是否提供合并后的稳定函数。
+
+### 18.31 本章小结：把任何反向计算拆成五步
+
+面对一个新的 Layer，可以按以下顺序理解：
+
+1. 写出前向公式，并标明输入、输出和 Parameter 形状；
+2. 设一个与输出同形状的上游梯度；
+3. 对每个输入与 Parameter 写局部导数；
+4. 对广播、共享、重叠窗口和时间重复使用的位置执行梯度求和；
+5. 检查指数、对数、除法、平方根和低精度范围是否安全。
+
+Linear 的权重梯度来自输入与上游梯度的外积；Add 把梯度送往两侧；Multiply 乘另一侧输入；Concatenate 把梯度切开；ReLU 由输入符号决定是否传递；Softmax 让同组元素相互影响；卷积在所有窗口中汇总共享权重贡献；池化按最大位置或平均系数分配；Embedding 把梯度加到被使用行；归一化通过均值与方差连接组内元素；Dropout 使用前向 mask；循环 Layer 沿时间反复使用链式法则；Attention 依次经过输出矩阵乘、Softmax 和 $QK^T$ 返回梯度。
+
+> [!TIP] 最可靠的学习方式
+> 选一个只含两三个元素的输入，先算前向，再人为指定简单上游梯度，逐项算出输入梯度和 Parameter 梯度，最后用有限差分核对。数字足够小时，每一个求和来源都能看见。
+
+## 19. 综合手算练习：把 Layer 公式真正串起来
+
+前面的章节分别介绍了形状、参数、公式和框架差异。本章把多个 Layer 放在同一道题中，让读者练习“从输入一路算到输出”。每道题都遵循相同顺序：先写已知条件，再固定一个最小数值例子，随后计算形状、数值和参数，最后检查容易混淆的地方。
+
+> [!IMPORTANT] 手算的目标不是代替框架
+> 真正的模型可能包含成千上万个数，不适合逐个手算。手算的价值是确认自己理解了 Layer 对哪些维度做什么运算。只要能正确算出一个位置、一个 Channel 或一个时间步，就能把同一规则推广到完整张量。
+
+### 19.1 一套可以反复使用的通用解题模板
+
+#### 第一步：给每个维度命名
+
+不要只写 `(2,3,4)`，应写出：
+
+$$
+(N,L,E)=(2,3,4)
+$$
+
+或：
+
+$$
+(N,C,H,W)=(2,3,4,4).
+$$
+
+$N$ 表示 Batch Size，$L$ 表示 Sequence Length，$E$ 表示 Feature维度宽度，$C$ 表示 Channel 数，$H,W$ 表示高和宽。若使用 Keras 默认 channels-last，还应把图像写成 $(N,H,W,C)$。
+
+> [!WARNING] 只有数字，没有轴含义，最容易算错
+> `(2,3,4)` 既可能是两个样本、三个时间步、每步四个 Feature，也可能是两个样本、三个 Channel、长度四的一维信号。Layer 名称和轴说明必须一起看。
+
+#### 第二步：写出 Layer 参数的形状
+
+例如 Linear 或 Dense 从 $E_{\mathrm{in}}$ 变为 $E_{\mathrm{out}}$，权重参与计算的二维形状为：
+
+$$
+E_{\mathrm{in}}\times E_{\mathrm{out}}.
+$$
+
+Conv2D 的普通卷积核包含输入 Channel、输出 Channel 与空间核。GRU 有三组门参数，LSTM 有四组门参数。先写参数形状，再把各维相乘，可以减少漏算 bias 的情况。
+
+#### 第三步：明确求和维度
+
+全连接在输入 Feature维度求和；普通卷积在输入 Channel 和核空间位置求和；归一化只在指定统计轴求均值与方差；Attention 对 Key 位置执行 Softmax，再对 Value 位置加权求和。
+
+> [!TIP] 用一句话描述一个输出数
+> 例如：“固定样本 $n$ 和输出 Feature $j$，把全部输入 Feature 与第 $j$ 列权重相乘后相加，再加偏置。”一句话能说清，公式通常也能写对。
+
+#### 第四步：先算形状，再算数值
+
+形状错误时，后续乘法可能根本没有定义。卷积先用输出尺寸公式；矩阵乘先检查内侧维相等；残差相加先检查相关轴是否相同；拼接先确定在哪个轴合并。
+
+#### 第五步：把广播写成显式重复
+
+若 bias 为 $(E,)$，输入输出为 $(N,L,E)$，bias 会在所有样本和所有序列位置重复使用。若归一化的 $\gamma,\beta$ 形状为 $(C,)$，要说明它们如何沿其他轴共享。
+
+#### 第六步：区分参数与临时结果
+
+权重、bias、可学习的 $\gamma,\beta$ 是参数。Softmax 权重、池化索引、均值、方差、隐藏状态和注意力分数通常是本次计算的中间结果，不应全部计入可学习参数数目。
+
+#### 第七步：标明训练与推理是否不同
+
+Dropout 与 Batch Normalization 在训练和推理时规则不同。Linear、普通卷积、ReLU、Embedding、最大池化在两种状态下通常采用相同前向公式。循环 Layer 的初始状态可以由调用者提供，也可以默认取 0。
+
+#### 第八步：做四项最终自检
+
+1. 输出形状能否与下一层输入要求一致？
+2. 参数数目是否包含 weight 与 bias，但没有误加临时结果？
+3. Softmax 概率和是否约等于 1，归一化后均值与方差是否符合预期？
+4. PyTorch 与 Keras 的默认轴次序是否已分别说明？
+
+---
+
+### 19.2 练习一：MLP 二分类器
+
+#### 已知条件
+
+一个 Batch 含两个样本，每个样本有三个输入 Feature：
+
+$$
+X=
+\begin{bmatrix}
+1&2&-1\\
+0&1&3
+\end{bmatrix},
+\qquad
+X\text{ 的形状为 }(N,E_{\mathrm{in}})=(2,3).
+$$
+
+第一层把三个 Feature 变为两个 Feature：
+
+$$
+H_{\mathrm{pre}}=XW_1+b_1,
+$$
+
+其中：
+
+$$
+W_1=
+\begin{bmatrix}
+1&0\\
+0&1\\
+1&-1
+\end{bmatrix},
+\qquad
+b_1=[0,1].
+$$
+
+随后使用 ReLU，再用第二层产生两个类别的 logits：
+
+$$
+Z=HW_2+b_2,
+$$
+
+$$
+W_2=
+\begin{bmatrix}
+1&-1\\
+2&1
+\end{bmatrix},
+\qquad
+b_2=[0,0].
+$$
+
+$W_1$ 的行数等于输入 Feature 数，列数等于第一层输出 Feature 数；$b_1$ 对第一层的两个输出分别加一个数。
+
+#### 逐步计算
+
+第一个样本 $x^{(0)}=[1,2,-1]$ 经过第一层：
+
+$$
+h_{\mathrm{pre},0}
+=1\times1+2\times0+(-1)\times1+0
+=0,
+$$
+
+$$
+h_{\mathrm{pre},1}
+=1\times0+2\times1+(-1)\times(-1)+1
+=4.
+$$
+
+ReLU 定义为：
+
+$$
+\operatorname{ReLU}(a)=\max(0,a),
+$$
+
+所以第一个样本得到：
+
+$$
+h^{(0)}=[0,4].
+$$
+
+第二层 logits：
+
+$$
+z^{(0)}_0=0\times1+4\times2=8,
+$$
+
+$$
+z^{(0)}_1=0\times(-1)+4\times1=4.
+$$
+
+第一个样本输出 $[8,4]$，类别 0 的 logit 更大。
+
+第二个样本 $x^{(1)}=[0,1,3]$：
+
+$$
+h_{\mathrm{pre},0}=0+0+3+0=3,
+$$
+
+$$
+h_{\mathrm{pre},1}=0+1-3+1=-1.
+$$
+
+ReLU 后：
+
+$$
+h^{(1)}=[3,0].
+$$
+
+第二层输出：
+
+$$
+z^{(1)}=[3,-3].
+$$
+
+最终 logits：
+
+$$
+Z=
+\begin{bmatrix}
+8&4\\
+3&-3
+\end{bmatrix}.
+$$
+
+#### 形状跟踪与参数数目
+
+$$
+(2,3)\rightarrow(2,2)\rightarrow(2,2)\rightarrow(2,2).
+$$
+
+第一层参数：
+
+$$
+3\times2+2=8.
+$$
+
+第二层参数：
+
+$$
+2\times2+2=6.
+$$
+
+总参数：
+
+$$
+8+6=14.
+$$
+
+PyTorch `Linear(3,2)` 内部权重存放形状常为 $(2,3)$，Keras `Dense(2)` 的 kernel 常为 $(3,2)$。本题公式使用 $XW$，所以把权重写成输入宽度乘输出宽度；存储轴不同不改变参数数目。
+
+> [!WARNING] logits 不是概率
+> $[8,4]$ 的两个数不需要落在 0 到 1，也不要求和为 1。若要类别概率，还要在类别 Feature维度上使用 Softmax。
+
+> [!CHECK] 最终自检
+> 两个样本都保留在 Batch维度；ReLU 没有参数且不改形状；两个类别需要两个 logits；14 个参数中没有把中间激活计入。
+
+---
+
+### 19.3 练习二：CNN 图像分类的完整形状表
+
+#### 已知条件
+
+输入是一个 Batch 的单 Channel 灰度图。PyTorch 形状为：
+
+$$
+(N,C,H,W)=(2,1,4,4).
+$$
+
+Keras 默认形状为：
+
+$$
+(N,H,W,C)=(2,4,4,1).
+$$
+
+第一层使用两个 $2\times2$ 卷积核，stride 1、padding 0、带 bias。随后使用 $2\times2$ Max Pooling、stride 2，再做全局平均池化，最后用一个输出宽度为 3 的 Linear 或 Dense 产生三个类别 logits。
+
+为手算一个卷积位置，只看第一个输入 Channel：
+
+$$
+X=
+\begin{bmatrix}
+1&2&0&1\\
+3&1&2&2\\
+0&1&3&1\\
+2&2&1&0
+\end{bmatrix}.
+$$
+
+第一个卷积核与 bias：
+
+$$
+W_0=
+\begin{bmatrix}
+1&0\\
+0&-1
+\end{bmatrix},
+\qquad b_0=1.
+$$
+
+#### 卷积输出尺寸
+
+单轴公式：
+
+$$
+L_{\mathrm{out}}
+=
+\left\lfloor
+\frac{L_{\mathrm{in}}+2p-K}{s}
+\right\rfloor+1.
+$$
+
+这里 $L_{\mathrm{in}}=4,p=0,K=2,s=1$：
+
+$$
+L_{\mathrm{out}}=3.
+$$
+
+所以卷积输出 PyTorch 形状为 $(2,2,3,3)$，Keras 默认形状为 $(2,3,3,2)$。
+
+#### 手算第一个卷积核的前四个位置
+
+左上窗口：
+
+$$
+\begin{bmatrix}
+1&2\\
+3&1
+\end{bmatrix}.
+$$
+
+输出：
+
+$$
+1\times1+2\times0+3\times0+1\times(-1)+1=1.
+$$
+
+向右移动一格：
+
+$$
+\begin{bmatrix}
+2&0\\
+1&2
+\end{bmatrix}
+\rightarrow
+2-2+1=1.
+$$
+
+再向右：
+
+$$
+\begin{bmatrix}
+0&1\\
+2&2
+\end{bmatrix}
+\rightarrow
+0-2+1=-1.
+$$
+
+第二行左侧窗口：
+
+$$
+\begin{bmatrix}
+3&1\\
+0&1
+\end{bmatrix}
+\rightarrow
+3-1+1=3.
+$$
+
+其余位置使用同一乘加规则。另一个输出 Channel 使用自己的 $2\times2$ 核与 bias。
+
+#### 池化、全局平均与分类头
+
+$3\times3$ 特征经过 $2\times2$ Max Pooling、stride 2，默认向下取整，空间尺寸变成 $1\times1$。输出 PyTorch 形状为 $(2,2,1,1)$，Keras 默认形状为 $(2,1,1,2)$。全局平均池化后每个样本得到两个 Feature，即 $(2,2)$。分类头从 2 个 Feature 变成 3 个 logits，输出 $(2,3)$。
+
+#### 参数数目
+
+卷积权重：
+
+$$
+2\times1\times2\times2=8.
+$$
+
+卷积 bias 为 2 个，所以卷积参数共 10 个。Max Pooling 和全局平均池化都没有可学习参数。分类头参数：
+
+$$
+2\times3+3=9.
+$$
+
+模型总参数：
+
+$$
+10+9=19.
+$$
+
+> [!WARNING] 池化输出不能只写“除以二”
+> 输入空间为 3 时，窗口 2、stride 2 的默认输出是 1，不是 1.5，也不会自动变成 2。必须使用带取整的公式。
+
+> [!CHECK] 最终自检
+> 卷积把 Channel 从 1 变成 2；池化与全局平均不改变 Channel；分类头才把两个 Feature 变成三个类别；PyTorch 与 Keras 只是在默认 Channel 轴位置上不同。
+
+---
+
+### 19.4 练习三：Depthwise 加 Pointwise 卷积
+
+#### 已知条件
+
+一个样本有两个输入 Channel，每个 Channel 当前只看一个 $2\times2$ 窗口：
+
+$$
+X_0=
+\begin{bmatrix}
+1&2\\
+3&4
+\end{bmatrix},
+\qquad
+X_1=
+\begin{bmatrix}
+10&20\\
+30&40
+\end{bmatrix}.
+$$
+
+Depthwise 的两个核为：
+
+$$
+D_0=
+\begin{bmatrix}
+1&1\\
+1&1
+\end{bmatrix},
+\qquad
+D_1=
+\begin{bmatrix}
+1&0\\
+0&1
+\end{bmatrix}.
+$$
+
+depth multiplier 为 1，不使用 bias。随后用 $1\times1$ Pointwise 卷积把两个中间 Channel 变成三个输出 Channel，权重为：
+
+$$
+P=
+\begin{bmatrix}
+1&0&1\\
+0&2&-1
+\end{bmatrix},
+\qquad
+b=[0,1,0].
+$$
+
+矩阵 $P$ 的两行对应两个输入 Channel，三列对应三个输出 Channel。
+
+#### 第一步：Depthwise 各 Channel 独立计算
+
+第一个中间 Channel：
+
+$$
+d_0=1+2+3+4=10.
+$$
+
+第二个中间 Channel：
+
+$$
+d_1=10\times1+20\times0+30\times0+40\times1=50.
+$$
+
+中间 Feature 为：
+
+$$
+d=[10,50].
+$$
+
+这一步没有把两个输入 Channel 相加。
+
+#### 第二步：Pointwise 组合 Channel
+
+第一个输出：
+
+$$
+y_0=10\times1+50\times0+0=10.
+$$
+
+第二个输出：
+
+$$
+y_1=10\times0+50\times2+1=101.
+$$
+
+第三个输出：
+
+$$
+y_2=10\times1+50\times(-1)+0=-40.
+$$
+
+最终输出是 $[10,101,-40]$。
+
+#### 形状与参数
+
+若完整输入 PyTorch 形状为 $(N,2,H,W)$，Depthwise 核大小 $2\times2$、stride 1、无 padding，输出为：
+
+$$
+(N,2,H-1,W-1).
+$$
+
+Pointwise 后：
+
+$$
+(N,3,H-1,W-1).
+$$
+
+Keras 默认相应形状从 $(N,H,W,2)$ 变为 $(N,H-1,W-1,2)$，再变为 $(N,H-1,W-1,3)$。
+
+Depthwise 参数：
+
+$$
+2\times1\times2\times2=8.
+$$
+
+Pointwise 参数：
+
+$$
+2\times3+3=9.
+$$
+
+总参数为 17。若直接用普通卷积从 2 个 Channel 变成 3 个 Channel，核大小 $2\times2$ 且带 bias，则需要：
+
+$$
+3\times2\times2\times2+3=27.
+$$
+
+> [!WARNING] Depthwise 不等于每个输出都能读取全部输入 Channel
+> 它只在各自 Channel 内做空间乘加。真正组合 Channel 的是后面的 Pointwise 卷积。
+
+> [!CHECK] 最终自检
+> Depthwise 输出 Channel 数由输入 Channel 与 depth multiplier 决定；Pointwise 不改变高宽；17 个参数中没有重复计算中间 Feature。
+
+---
+
+### 19.5 练习四：Unfold 与 Fold 的重叠计数
+
+#### 已知条件
+
+输入为单样本、单 Channel 的 $3\times3$ 图：
+
+$$
+X=
+\begin{bmatrix}
+1&2&3\\
+4&5&6\\
+7&8&9
+\end{bmatrix}.
+$$
+
+使用 $2\times2$ 窗口、stride 1、padding 0。PyTorch 输入形状为 $(1,1,3,3)$。Unfold 输出形状公式：
+
+$$
+(N,CK_hK_w,L),
+$$
+
+其中 $L$ 是窗口数。
+
+#### 第一步：计算窗口数和列长度
+
+输出高宽都是：
+
+$$
+\left\lfloor\frac{3-2}{1}\right\rfloor+1=2.
+$$
+
+所以：
+
+$$
+L=2\times2=4.
+$$
+
+每个窗口长度：
+
+$$
+CK_hK_w=1\times2\times2=4.
+$$
+
+Unfold 输出形状为 $(1,4,4)$。
+
+#### 第二步：逐列写出窗口
+
+四个窗口依次为：
+
+$$
+\begin{bmatrix}1&2\\4&5\end{bmatrix},
+\quad
+\begin{bmatrix}2&3\\5&6\end{bmatrix},
+\quad
+\begin{bmatrix}4&5\\7&8\end{bmatrix},
+\quad
+\begin{bmatrix}5&6\\8&9\end{bmatrix}.
+$$
+
+每个窗口按行展开，得到：
+
+$$
+U=
+\begin{bmatrix}
+1&2&4&5\\
+2&3&5&6\\
+4&5&7&8\\
+5&6&8&9
+\end{bmatrix}.
+$$
+
+#### 第三步：Fold 放回并相加
+
+左上角的 1 只出现一次；上方中间的 2 出现两次；中心的 5 出现四次。Fold 结果：
+
+$$
+F=
+\begin{bmatrix}
+1&4&3\\
+8&20&12\\
+7&16&9
+\end{bmatrix}.
+$$
+
+覆盖次数：
+
+$$
+M=
+\begin{bmatrix}
+1&2&1\\
+2&4&2\\
+1&2&1
+\end{bmatrix}.
+$$
+
+两者关系：
+
+$$
+F=M\odot X,
+$$
+
+$\odot$ 表示逐元素乘法。逐元素计算 $F/M$ 可以恢复 $X$。
+
+#### 参数与 Keras 形状
+
+Unfold 与 Fold 都没有可学习参数。Keras 常用局部块提取运算把默认 channels-last 输入组织成 $(N,H_{\mathrm{out}},W_{\mathrm{out}},CK_hK_w)$，本题可得到 $(1,2,2,4)$。它与 PyTorch 包含相同四个窗口，但轴组织方式不同。
+
+> [!WARNING] Fold 不是直接覆盖
+> 重叠位置采用加法。若忘记除以覆盖次数，中心数会从 5 变成 20。
+
+> [!CHECK] 最终自检
+> 窗口数为 4，每个窗口有 4 个数；Unfold 输出共 16 个数；原输入只有 9 个数，增加部分来自重复保存；参数数目为 0。
+
+---
+
+### 19.6 练习五：转置卷积放大一维特征
+
+#### 已知条件
+
+输入为单样本、单 Channel：
+
+$$
+x=[1,2],
+$$
+
+卷积核：
+
+$$
+w=[1,2,1].
+$$
+
+使用 stride 2、padding 0、dilation 1、output padding 0，不使用 bias。
+
+#### 第一步：计算输出长度
+
+转置卷积单轴公式：
+
+$$
+L_{\mathrm{out}}
+=(L_{\mathrm{in}}-1)s-2p+d(K-1)+o+1.
+$$
+
+$L_{\mathrm{in}}=2$，$s=2$，$p=0$，$d=1$，$K=3$，$o=0$，所以：
+
+$$
+L_{\mathrm{out}}
+=(2-1)\times2+2+1=5.
+$$
+
+#### 第二步：让每个输入写出一个片段
+
+第一个输入 1 从输出位置 0 开始：
+
+$$
+1\times[1,2,1]
+\rightarrow
+[1,2,1,0,0].
+$$
+
+第二个输入 2 的起点向右移动两格：
+
+$$
+2\times[1,2,1]
+\rightarrow
+[0,0,2,4,2].
+$$
+
+重叠位置相加：
+
+$$
+y=[1,2,3,4,2].
+$$
+
+#### 形状与参数
+
+PyTorch 输入形状 $(1,1,2)$，输出 $(1,1,5)$。Keras 默认输入形状 $(1,2,1)$，输出 $(1,5,1)$。单输入 Channel、单输出 Channel、核长度 3、无 bias，因此参数数目为 3。
+
+若加入一个输出 Channel bias，则同一个 bias 会加到全部五个输出位置，参数数目变成 4。
+
+> [!WARNING] 转置卷积不是普通卷积的数值逆运算
+> 它执行的是“输入片段写入并累加”。即使输出长度与某个旧输入相同，也不能保证数值恢复。
+
+> [!CHECK] 最终自检
+> 长度 5 来自完整公式，不是简单把 2 乘以 2；位置 2 收到两次贡献；output padding 只参与尺寸选择，不是在末尾固定补 0。
+
+---
+
+### 19.7 练习六：多维张量进入归一化层
+
+#### 已知条件
+
+输入形状为：
+
+$$
+(N,C,L)=(2,2,2).
+$$
+
+具体数值：
+
+$$
+X_{0}=
+\begin{bmatrix}
+1&3\\
+2&4
+\end{bmatrix},
+\qquad
+X_{1}=
+\begin{bmatrix}
+5&7\\
+6&8
+\end{bmatrix}.
+$$
+
+每个 $2\times2$ 表中，行是 Channel，列是长度位置。先比较 BatchNorm1d 与 `LayerNorm(2)`。为简化手算，令 $\gamma=1,\beta=0$，并暂时忽略很小的 $\epsilon$。
+
+#### BatchNorm1d：每个 Channel 汇总 $N$ 与 $L$
+
+第 0 个 Channel 的四个数：
+
+$$
+[1,3,5,7].
+$$
+
+均值：
+
+$$
+\mu_0=(1+3+5+7)/4=4.
+$$
+
+总体方差：
+
+$$
+v_0=
+\frac{(1-4)^2+(3-4)^2+(5-4)^2+(7-4)^2}{4}
+=5.
+$$
+
+标准化：
+
+$$
+\widehat x=\frac{x-\mu_0}{\sqrt{v_0+\epsilon}}.
+$$
+
+所以四个数近似为：
+
+$$
+[-1.342,-0.447,0.447,1.342].
+$$
+
+第 1 个 Channel 的数为 $[2,4,6,8]$，均值 5，方差同样为 5，因此得到相同的四个标准化数。
+
+$\mu_c$ 表示第 $c$ 个 Channel 的均值，$v_c$ 表示该 Channel 的总体方差，$\epsilon$ 是防止分母过小的正数，$\gamma_c,\beta_c$ 分别负责标准化后的缩放与平移。
+
+#### LayerNorm：每个前导位置只统计最后 Feature维度
+
+`LayerNorm(2)` 对最后长度为 2 的轴分别计算。例如第一个样本、第 0 个 Channel 的向量为 $[1,3]$：
+
+$$
+\mu=(1+3)/2=2,
+$$
+
+$$
+v=((1-2)^2+(3-2)^2)/2=1.
+$$
+
+输出近似为：
+
+$$
+[-1,1].
+$$
+
+向量 $[2,4]$、$[5,7]$、$[6,8]$ 也都分别得到 $[-1,1]$。这些向量之间不会共同计算均值。
+
+#### 形状、参数与状态
+
+两种 Layer 都保持输入形状 $(2,2,2)$。
+
+BatchNorm1d 有两个 $\gamma$ 和两个 $\beta$，共 4 个可学习参数；运行均值和运行方差是状态，不计入可学习参数。LayerNorm 的 `normalized_shape=2` 也有两个 $\gamma$ 和两个 $\beta$，共 4 个参数，但它不保存 BatchNorm 那样的运行统计。
+
+Keras `BatchNormalization` 默认常把最后一轴当作 Channel维度。本题若使用 Keras 默认 $(N,L,C)$，应令归一化轴指向最后的 $C$。PyTorch `BatchNorm1d` 则要求 Channel 位于第二轴。
+
+> [!WARNING] 输出形状不变也可能统计对象完全不同
+> BatchNorm 汇总同一 Channel 上来自一个 Batch 与长度轴的数；本题 LayerNorm 只汇总每个长度为 2 的最后轴。只看输出形状无法区分。
+
+> [!CHECK] 最终自检
+> BatchNorm 的第 0 个 Channel 均值是 4，第 1 个是 5；LayerNorm 对 $[1,3]$ 单独求均值 2；两层都不交换元素位置；参数各为 4。
+
+---
+
+### 19.8 练习七：残差相加与 Channel 拼接
+
+#### 已知条件
+
+两个分支产生相同空间位置上的 Feature：
+
+$$
+a=[1,2,3],
+\qquad
+b=[4,5,6].
+$$
+
+它们可以做逐元素残差相加，也可以在 Feature维度拼接。
+
+#### 残差相加
+
+$$
+y_{\mathrm{add}}=a+b=[5,7,9].
+$$
+
+输入各有三个 Feature，输出仍有三个 Feature。若完整 PyTorch 图像分支形状都是 $(N,3,H,W)$，相加后仍是 $(N,3,H,W)$。Keras 默认若都是 $(N,H,W,3)$，输出仍是 $(N,H,W,3)$。
+
+相加本身没有可学习参数。梯度会沿两个分支分别传回，但前向输出只保留逐位置和。
+
+#### Feature 或 Channel 拼接
+
+$$
+y_{\mathrm{cat}}
+=[1,2,3,4,5,6].
+$$
+
+输出 Feature 宽度从 3 变成 6。PyTorch 图像通常在 Channel 轴 1 拼接：
+
+$$
+(N,3,H,W)+(N,3,H,W)
+\rightarrow
+(N,6,H,W).
+$$
+
+Keras 默认通常在最后 Channel 轴拼接：
+
+$$
+(N,H,W,3)+(N,H,W,3)
+\rightarrow
+(N,H,W,6).
+$$
+
+拼接本身也没有可学习参数。
+
+#### Channel 不同时怎样做残差
+
+若主分支输出 5 个 Channel，跳接分支只有 3 个 Channel，不能直接相加。可以在跳接分支使用 $1\times1$ 卷积从 3 变成 5。若带 bias，其参数数目：
+
+$$
+5\times3+5=20.
+$$
+
+完成后两个分支形状相同，才能逐元素相加。
+
+> [!WARNING] 拼接与相加不会得到相同形状
+> 相加要求相关维度相同，并保持宽度；拼接要求除拼接轴之外的维度相同，并让拼接轴长度相加。
+
+> [!CHECK] 最终自检
+> $[5,7,9]$ 是相加结果，六元素向量是拼接结果；两种组合操作参数均为 0；若使用投影卷积，20 个参数属于投影 Layer。
+
+---
+
+### 19.9 练习八：Embedding 文本分类
+
+#### 已知条件
+
+词表含 6 个条目，Embedding 宽度为 3。Embedding 参数表：
+
+$$
+E=
+\begin{bmatrix}
+0&0&0\\
+1&0&0\\
+0&1&0\\
+0&0&1\\
+1&1&0\\
+0&1&1
+\end{bmatrix}.
+$$
+
+编号 0 留给补齐位置。一个 Batch 中两个句子的编号为：
+
+$$
+T=
+\begin{bmatrix}
+2&1&2&0\\
+3&4&5&1
+\end{bmatrix}.
+$$
+
+$T$ 的形状是 $(N,L)=(2,4)$。
+
+#### 第一步：按编号查表
+
+第一个句子编号为 $[2,1,2,0]$，查表后：
+
+$$
+\begin{bmatrix}
+0&1&0\\
+1&0&0\\
+0&1&0\\
+0&0&0
+\end{bmatrix}.
+$$
+
+编号 2 出现两次，所以两处取得同一个参数行。Embedding 输出形状：
+
+$$
+(N,L,E)=(2,4,3).
+$$
+
+PyTorch 与 Keras 的普通文本 Embedding 都常使用这个输出轴次序。
+
+#### 第二步：忽略补齐位置做平均
+
+第一个句子有三个有效 token。有效向量之和：
+
+$$
+[0,1,0]+[1,0,0]+[0,1,0]=[1,2,0].
+$$
+
+平均：
+
+$$
+h^{(0)}=[1/3,2/3,0].
+$$
+
+若错误地把编号 0 也计入除数，会得到 $[1/4,2/4,0]$。即使补齐向量全为 0，错误除数仍会改变结果大小。
+
+#### 第三步：接二分类 Dense
+
+设分类权重：
+
+$$
+W=
+\begin{bmatrix}
+1&-1\\
+0&2\\
+1&0
+\end{bmatrix},
+\qquad b=[0,0].
+$$
+
+第一个句子 logits：
+
+$$
+z_0=\frac13\times1+\frac23\times0+0=\frac13,
+$$
+
+$$
+z_1=\frac13\times(-1)+\frac23\times2+0=1.
+$$
+
+#### 参数数目
+
+Embedding 参数：
+
+$$
+6\times3=18.
+$$
+
+分类 Dense 参数：
+
+$$
+3\times2+2=8.
+$$
+
+总参数为 26。token 编号、补齐遮罩和平均结果都不是可学习参数。
+
+> [!WARNING] token 编号不是连续数值 Feature
+> 编号 5 不表示“比编号 2 大 3”。Embedding 直接按编号选择参数行，不把编号本身当作可比较大小。
+
+> [!CHECK] 最终自检
+> 输入 $(2,4)$ 经过查表变为 $(2,4,3)$；遮罩平均后变为 $(2,3)$；分类头输出 $(2,2)$；重复 token 取得相同参数行。
+
+---
+
+### 19.10 练习九：GRU 的两个时间步
+
+#### 已知条件
+
+使用最小的单输入 Feature、单隐藏 Feature GRU。输入序列：
+
+$$
+x_1=1,\qquad x_2=0,
+$$
+
+初始隐藏状态：
+
+$$
+h_0=0.
+$$
+
+更新门、重置门与候选状态采用以下公式。下面把门的两组 bias 合并书写，候选状态则按 PyTorch 以及 Keras 默认 `reset_after=True` 的顺序展开：
+
+$$
+z_t=\sigma(W_zx_t+U_zh_{t-1}+b_z),
+$$
+
+$$
+r_t=\sigma(W_rx_t+U_rh_{t-1}+b_r),
+$$
+
+$$
+\widetilde h_t
+=
+\tanh\left(
+W_hx_t+b_{ih}
++r_t\odot\left(U_hh_{t-1}+b_{hh}\right)
+\right),
+$$
+
+$$
+h_t=z_th_{t-1}+(1-z_t)\widetilde h_t.
+$$
+
+$\sigma$ 是 Sigmoid，输出位于 0 和 1 之间；$z_t$ 是更新门；$r_t$ 是重置门；$\widetilde h_t$ 是候选状态。
+
+为了便于手算，令更新门和重置门全部权重与 bias 为 0，因此：
+
+$$
+z_t=r_t=\sigma(0)=0.5.
+$$
+
+候选状态使用：
+
+$$
+W_h=1,\qquad U_h=1,\qquad b_{ih}=b_{hh}=0.
+$$
+
+#### 时间步 1
+
+$$
+\widetilde h_1
+=\tanh(1+0.5\times0)
+=\tanh(1)
+\approx0.7616.
+$$
+
+$$
+h_1
+=0.5\times0+0.5\times0.7616
+=0.3808.
+$$
+
+#### 时间步 2
+
+$$
+\widetilde h_2
+=\tanh(0+0.5\times0.3808)
+=\tanh(0.1904)
+\approx0.1881.
+$$
+
+$$
+h_2
+=0.5\times0.3808+0.5\times0.1881
+\approx0.2845.
+$$
+
+#### 形状与参数
+
+采用 batch-first 时，输入形状 $(N,L,I)$，$I$ 是输入 Feature 宽度；输出完整序列形状 $(N,L,H)$，$H$ 是隐藏 Feature 宽度；最终隐藏状态按层和方向组织。
+
+PyTorch 单层单向 GRU 在启用两组 bias 时，参数数目为：
+
+$$
+3HI+3H^2+6H.
+$$
+
+本题 $I=H=1$，所以为：
+
+$$
+3+3+6=12.
+$$
+
+手算时把更新门与重置门的两组 bias 分别合并，若把候选状态的两个 bias 也按本题零值合并理解，简化公式相当于 9 个标量。PyTorch 实际保存输入侧与状态侧两组 bias，因此本题对应 12 个 Parameter。
+
+Keras 默认 `reset_after=True`，候选状态采用本题所写的“先做状态线性计算，再乘重置门”的次序。设置 `reset_after=False` 时，常见公式改为：
+
+$$
+\widetilde h_t
+=
+\tanh\left(
+W_hx_t+b_h+U_h(r_t\odot h_{t-1})
+\right).
+$$
+
+当隐藏宽度大于 1 时，$r_t$ 与 $U_h$ 的先后次序可能改变数值；不能只把这种差异理解成 bias 存放方式。本题是标量且相关 bias 为 0，所以两种次序恰好得到相同结果。
+
+> [!WARNING] 不同资料可能交换更新公式中的两项名称
+> 有些公式把 $z_t$ 解释为保留旧状态的比例，有些写法使用互补定义。阅读代码时必须同时看 $h_t$ 的完整公式，不能只凭门名称。
+
+> [!CHECK] 最终自检
+> $h_1$ 参与时间步 2；门值是临时结果，不是额外参数；完整输出保留两个时间步，最终状态只保留最后一步的隐藏值。
+
+---
+
+### 19.11 练习十：LSTM 的记忆状态与隐藏状态
+
+#### 已知条件
+
+仍使用单输入 Feature、单隐藏 Feature。输入：
+
+$$
+x_1=1,\qquad x_2=0,
+$$
+
+初始状态：
+
+$$
+c_0=0,\qquad h_0=0.
+$$
+
+LSTM 公式：
+
+$$
+i_t=\sigma(W_ix_t+U_ih_{t-1}+b_i),
+$$
+
+$$
+f_t=\sigma(W_fx_t+U_fh_{t-1}+b_f),
+$$
+
+$$
+o_t=\sigma(W_ox_t+U_oh_{t-1}+b_o),
+$$
+
+$$
+g_t=\tanh(W_gx_t+U_gh_{t-1}+b_g),
+$$
+
+$$
+c_t=f_tc_{t-1}+i_tg_t,
+$$
+
+$$
+h_t=o_t\tanh(c_t).
+$$
+
+$i_t$ 是输入门，控制候选信息写入多少；$f_t$ 是遗忘门，控制旧记忆保留多少；$o_t$ 是输出门；$g_t$ 是候选记忆；$c_t$ 是记忆状态；$h_t$ 是对外隐藏状态。
+
+为便于手算，令三个 Sigmoid 门的权重与 bias 为 0，因此：
+
+$$
+i_t=f_t=o_t=0.5.
+$$
+
+候选记忆设置为：
+
+$$
+g_t=\tanh(x_t).
+$$
+
+#### 时间步 1
+
+$$
+g_1=\tanh(1)\approx0.7616.
+$$
+
+$$
+c_1
+=0.5\times0+0.5\times0.7616
+=0.3808.
+$$
+
+$$
+h_1
+=0.5\tanh(0.3808)
+\approx0.1817.
+$$
+
+#### 时间步 2
+
+$$
+g_2=\tanh(0)=0.
+$$
+
+$$
+c_2
+=0.5\times0.3808+0.5\times0
+=0.1904.
+$$
+
+$$
+h_2
+=0.5\tanh(0.1904)
+\approx0.0941.
+$$
+
+第二步没有新候选写入，但旧记忆仍以一半比例保留。
+
+#### 形状与参数
+
+batch-first 输入形状 $(N,L,I)$，完整输出形状 $(N,L,H)$。最终状态包含 $h_L$ 与 $c_L$，两者形状相同但含义不同。
+
+PyTorch 单层单向 LSTM 启用两组 bias 时：
+
+$$
+P=4HI+4H^2+8H.
+$$
+
+本题 $I=H=1$：
+
+$$
+P=4+4+8=16.
+$$
+
+Keras LSTM 常把四组输入权重合成一个 kernel，把四组循环权重合成一个 recurrent kernel，并使用一组 bias。轴组织与 PyTorch 不同，但四个门的核心计算相同。
+
+> [!WARNING] $c_t$ 与 $h_t$ 不能互换
+> $c_t$ 先通过输出门和 tanh 才产生 $h_t$。本题 $c_1=0.3808$，而 $h_1\approx0.1817$，数值明显不同。
+
+> [!CHECK] 最终自检
+> 每个时间步有四组门结果；LSTM 返回隐藏状态与记忆状态；参数公式中的系数 4 来自四组门，不来自序列长度。
+
+---
+
+### 19.12 练习十一：三个 token 的 Self-Attention
+
+#### 已知条件
+
+一个样本包含三个 token，每个 token 的 Feature 宽度为 2：
+
+$$
+X=
+\begin{bmatrix}
+1&0\\
+0&1\\
+1&1
+\end{bmatrix}.
+$$
+
+为简化手算，令：
+
+$$
+Q=K=V=X.
+$$
+
+缩放点积注意力：
+
+$$
+S=\frac{QK^T}{\sqrt{d_k}},
+$$
+
+$$
+A=\operatorname{Softmax}(S),
+$$
+
+$$
+O=AV.
+$$
+
+$Q$ 是 Query，$K$ 是 Key，$V$ 是 Value，$d_k=2$ 是每个 Key 向量宽度，$S$ 是分数表，$A$ 是每行和为 1 的注意力权重，$O$ 是输出。
+
+#### 第一步：计算第一个 token 的分数
+
+第一个 Query 是 $q_0=[1,0]$。它与三个 Key 的点积：
+
+$$
+q_0\cdot k_0=1,
+$$
+
+$$
+q_0\cdot k_1=0,
+$$
+
+$$
+q_0\cdot k_2=1.
+$$
+
+除以 $\sqrt2$：
+
+$$
+s_0=[0.7071,0,0.7071].
+$$
+
+#### 第二步：对这一行做 Softmax
+
+$$
+\exp(0.7071)\approx2.028,
+\qquad
+\exp(0)=1.
+$$
+
+分母：
+
+$$
+2.028+1+2.028=5.056.
+$$
+
+权重近似：
+
+$$
+a_0=[0.401,0.198,0.401].
+$$
+
+三项和约为 1。
+
+#### 第三步：对 Value 加权
+
+$$
+o_0
+=0.401[1,0]
++0.198[0,1]
++0.401[1,1].
+$$
+
+逐 Feature 相加：
+
+$$
+o_0=[0.802,0.599].
+$$
+
+第一个 token 的输出不是某一个 Value，而是三个 Value 的加权和。
+
+#### 形状与参数
+
+完整输入形状 $(N,L,E)=(1,3,2)$。单 Head 时：
+
+$$
+Q,K,V:(1,3,2),
+$$
+
+$$
+S,A:(1,3,3),
+$$
+
+$$
+O:(1,3,2).
+$$
+
+若使用带 bias 的完整投影，$W_Q,W_K,W_V,W_O$ 都是 $2\times2$，权重共 $4\times4=16$ 个；四个投影各有长度 2 的 bias，共 8 个，总参数 24。
+
+> [!WARNING] Softmax 在 Key 位置轴上进行
+> 每个 Query 都有自己的一行权重。不能把整张 $3\times3$ 分数表一次归一成总和 1，也不能在 Feature维度上做这一步。
+
+> [!CHECK] 最终自检
+> 分数表最后两轴都是序列长度；每行权重和约为 1；缩放因子是 $\sqrt{d_k}$；输出 Feature 宽度仍为 2。
+
+---
+
+### 19.13 练习十二：Transformer 子层中的残差、归一化与 FFN
+
+#### 已知条件
+
+只手算一个 token，Feature 宽度为 4。注意力子层输入：
+
+$$
+x=[1,2,3,4].
+$$
+
+假设注意力已经得到：
+
+$$
+a=[0.5,-0.5,0.5,-0.5].
+$$
+
+采用“子层输出加残差，再做 LayerNorm”的顺序。LayerNorm 的 $\gamma=[1,1,1,1]$、$\beta=[0,0,0,0]$，忽略很小的 $\epsilon$。
+
+#### 第一步：注意力残差
+
+$$
+u=x+a=[1.5,1.5,3.5,3.5].
+$$
+
+均值：
+
+$$
+\mu_u=(1.5+1.5+3.5+3.5)/4=2.5.
+$$
+
+方差：
+
+$$
+v_u=
+\frac{(-1)^2+(-1)^2+1^2+1^2}{4}
+=1.
+$$
+
+所以：
+
+$$
+z=\operatorname{LayerNorm}(u)=[-1,-1,1,1].
+$$
+
+#### 第二步：FFN 第一层与激活
+
+使用简化 FFN，把宽度 4 变成 2：
+
+$$
+W_1=
+\begin{bmatrix}
+-1&0\\
+0&-1\\
+1&0\\
+0&1
+\end{bmatrix},
+\qquad b_1=[0,0].
+$$
+
+$$
+zW_1=[2,2].
+$$
+
+ReLU 后仍为：
+
+$$
+r=[2,2].
+$$
+
+第二层把宽度 2 变回 4：
+
+$$
+W_2=
+\begin{bmatrix}
+1&0&0.5&0\\
+0&1&0&0.5
+\end{bmatrix},
+\qquad b_2=[0,0,0,0].
+$$
+
+$$
+f=rW_2=[2,2,1,1].
+$$
+
+#### 第三步：FFN 残差与第二次 LayerNorm
+
+$$
+v=z+f=[1,1,2,2].
+$$
+
+均值为 1.5，方差为 0.25，所以第二次 LayerNorm：
+
+$$
+y=[-1,-1,1,1].
+$$
+
+#### 形状与参数
+
+完整序列输入形状 $(N,L,E)$。注意力、两次残差和两次 LayerNorm 都保持 $(N,L,4)$。FFN 中间暂时变成 $(N,L,2)$，随后恢复 $(N,L,4)$，这样才能与残差相加。
+
+本题若注意力使用单 Head、四个带 bias 的 $4\rightarrow4$ 投影，其参数为：
+
+$$
+4(4\times4+4)=80.
+$$
+
+FFN 参数：
+
+$$
+(4\times2+2)+(2\times4+4)=22.
+$$
+
+两次 LayerNorm 各有 4 个 $\gamma$ 与 4 个 $\beta$：
+
+$$
+2\times8=16.
+$$
+
+总参数：
+
+$$
+80+22+16=118.
+$$
+
+Dropout 即使存在也不增加参数。
+
+> [!WARNING] 本题中间宽度 2 只为方便手算
+> 常见 Transformer 的 FFN 中间宽度往往大于模型 Feature 宽度。无论中间宽度多大，第二层都要恢复到 $E$，才能与残差分支相加。
+
+> [!WARNING] LayerNorm 的位置要看结构定义
+> 有的结构先做子层再做残差和归一化，有的结构先归一化再进入子层。二者公式顺序不同，不能只看到“Transformer Layer”就默认完全相同。
+
+> [!CHECK] 最终自检
+> 注意力与 FFN 都有自己的残差；LayerNorm 在最后 Feature维度统计；FFN 输出宽度必须回到 4；118 个参数中没有计入注意力分数和中间激活。
+
+---
+
+### 19.14 练习十三：Cross Entropy 与 reduction
+
+#### 已知条件
+
+一个 Batch 有两个样本、三个类别。logits：
+
+$$
+Z=
+\begin{bmatrix}
+2&1&0\\
+0&1&2
+\end{bmatrix}.
+$$
+
+监督类别编号：
+
+$$
+t=[0,1].
+$$
+
+第一个样本目标是类别 0，第二个样本目标是类别 1。多类别 Cross Entropy 对第 $n$ 个样本：
+
+$$
+\ell_n
+=
+-\log
+\frac{\exp(z_{n,t_n})}
+{\sum_{c=0}^{C-1}\exp(z_{n,c})}.
+$$
+
+$z_{n,c}$ 是样本 $n$ 对类别 $c$ 的 logit，$t_n$ 是正确类别编号，$C$ 是类别总数，$\ell_n$ 是该样本损失。
+
+#### 第一个样本
+
+指数值近似：
+
+$$
+\exp(2)=7.389,\quad
+\exp(1)=2.718,\quad
+\exp(0)=1.
+$$
+
+分母：
+
+$$
+7.389+2.718+1=11.107.
+$$
+
+类别概率：
+
+$$
+p^{(0)}
+\approx[0.6652,0.2447,0.0900].
+$$
+
+正确类别是 0：
+
+$$
+\ell_0=-\log(0.6652)\approx0.4076.
+$$
+
+#### 第二个样本
+
+logits 次序为 $[0,1,2]$，概率：
+
+$$
+p^{(1)}
+\approx[0.0900,0.2447,0.6652].
+$$
+
+正确类别是 1：
+
+$$
+\ell_1=-\log(0.2447)\approx1.4076.
+$$
+
+模型对第二个样本最偏向类别 2，但正确答案是类别 1，因此损失较大。
+
+#### 三种 reduction
+
+不归约：
+
+$$
+\operatorname{none}
+\rightarrow
+[0.4076,1.4076].
+$$
+
+求和：
+
+$$
+\operatorname{sum}
+=0.4076+1.4076
+=1.8152.
+$$
+
+求平均：
+
+$$
+\operatorname{mean}
+=1.8152/2
+=0.9076.
+$$
+
+损失函数没有可学习参数。输入 logits 形状 $(N,C)=(2,3)$，目标形状 $(N)=(2)$；reduction 为 none 时输出 $(2)$，sum 或 mean 时输出标量。
+
+PyTorch `CrossEntropyLoss` 与 Keras 的稀疏类别交叉熵都可以直接接收类别编号目标，但 Keras 是否把输入当作 logits 由 `from_logits` 设置决定。若先做 Softmax 又告诉损失输入是 logits，计算含义会不一致。
+
+> [!WARNING] 不能对两个样本的 logits 一起做 Softmax
+> Softmax 应在每个样本的类别 Feature维度上分别进行。Batch维度只排列样本，不参与类别概率归一。
+
+> [!WARNING] mean 不一定永远是简单除以 Batch Size
+> 使用类别权重、忽略标签或特殊序列遮罩时，有效权重总和可能改变平均规则。遇到这些设置，应查看损失定义中的分母。
+
+> [!CHECK] 最终自检
+> 每个样本的三个概率和约为 1；第二个样本损失更大；none 保留两个损失，sum 与 mean 输出标量；损失函数参数数目为 0。
+
+---
+
+### 19.15 练习十四：把 Embedding、Self-Attention、平均池化和分类损失串起来
+
+这道题把前面的几个 Layer 放到同一条计算序列中，重点是形状。数值使用简化设置，避免重复大量矩阵乘。
+
+#### 已知条件
+
+词表大小 $V=5$，Embedding 宽度 $E=2$，一个 Batch 有两个句子，每句长度 $L=3$：
+
+$$
+T=
+\begin{bmatrix}
+1&2&0\\
+3&4&2
+\end{bmatrix}.
+$$
+
+编号 0 是补齐位置。Embedding 参数表：
+
+$$
+E_{\mathrm{table}}=
+\begin{bmatrix}
+0&0\\
+1&0\\
+0&1\\
+1&1\\
+-1&1
+\end{bmatrix}.
+$$
+
+#### 第一步：Embedding
+
+第一个句子取得：
+
+$$
+\begin{bmatrix}
+1&0\\
+0&1\\
+0&0
+\end{bmatrix}.
+$$
+
+第二个句子取得：
+
+$$
+\begin{bmatrix}
+1&1\\
+-1&1\\
+0&1
+\end{bmatrix}.
+$$
+
+输出形状：
+
+$$
+(N,L,E)=(2,3,2).
+$$
+
+Embedding 参数：
+
+$$
+5\times2=10.
+$$
+
+#### 第二步：Self-Attention
+
+令 $Q=K=V$ 等于 Embedding 输出，并使用一个 Head。分数形状：
+
+$$
+(N,L,L)=(2,3,3).
+$$
+
+第一个句子的补齐位置不能被有效 token 读取，所以在 Softmax 前把指向该位置的分数设为一个很小的数。Softmax 后，该列权重近似 0。Attention 输出仍为：
+
+$$
+(2,3,2).
+$$
+
+若使用完整的四个带 bias 投影，注意力参数：
+
+$$
+4(2\times2+2)=24.
+$$
+
+#### 第三步：遮罩平均
+
+第一个句子只平均前两个有效位置，分母是 2；第二个句子三个位置都有效，分母是 3。无论 Attention 具体数值如何，池化后的形状都是：
+
+$$
+(N,E)=(2,2).
+$$
+
+遮罩和平均没有可学习参数。
+
+#### 第四步：二分类头与损失
+
+Dense 从 2 个 Feature 产生 2 个 logits，参数：
+
+$$
+2\times2+2=6.
+$$
+
+输出形状：
+
+$$
+(2,2).
+$$
+
+若两个监督类别编号形状为 $(2)$，Cross Entropy 在类别 Feature维度计算每个样本损失。reduction 为 mean 时，最终输出一个标量。
+
+总参数：
+
+$$
+10+24+6=40.
+$$
+
+#### 完整形状序列
+
+$$
+(2,3)
+\xrightarrow{\text{Embedding}}
+(2,3,2)
+\xrightarrow{\text{Self-Attention}}
+(2,3,2)
+\xrightarrow{\text{遮罩平均}}
+(2,2)
+\xrightarrow{\text{Dense}}
+(2,2)
+\xrightarrow{\text{Cross Entropy}}
+().
+$$
+
+最后的空形状表示标量。
+
+> [!WARNING] 两种遮罩作用位置不同
+> Attention 遮罩阻止 Query 读取补齐 Key；池化遮罩阻止补齐位置进入句子平均。只设置其中一种，另一处仍可能受到补齐位置影响。
+
+> [!CHECK] 最终自检
+> token 编号输入没有 Feature维度；Embedding 新增宽度 2；Attention 保持序列长度与 Feature 宽度；池化删除序列轴；分类头改变类别宽度；损失 mean 输出标量。
+
+---
+
+### 19.16 练习十五：Conv3D 同时处理深度、高度与宽度
+
+#### 已知条件
+
+一个 Batch 含两个三维样本，每个位置有三个输入 Channel。PyTorch 输入形状：
+
+$$
+(N,C,D,H,W)=(2,3,5,6,6).
+$$
+
+Keras 默认输入形状：
+
+$$
+(N,D,H,W,C)=(2,5,6,6,3).
+$$
+
+Conv3D 输出 Channel 为 4，kernel size 为 $(3,3,3)$，stride 为 $(1,2,2)$，padding 为 $(1,1,1)$，dilation 为 1，使用 bias。
+
+$D$ 可以表示体数据深度，也可以表示视频时间；$H,W$ 是每个切片或每帧的高宽。
+
+#### 第一步：分别计算三个空间轴
+
+深度方向：
+
+$$
+D_{\mathrm{out}}
+=
+\left\lfloor
+\frac{5+2-3}{1}
+\right\rfloor+1
+=5.
+$$
+
+高度方向：
+
+$$
+H_{\mathrm{out}}
+=
+\left\lfloor
+\frac{6+2-3}{2}
+\right\rfloor+1
+=3.
+$$
+
+宽度方向设置相同，因此：
+
+$$
+W_{\mathrm{out}}=3.
+$$
+
+PyTorch 输出形状：
+
+$$
+(2,4,5,3,3).
+$$
+
+Keras 默认输出形状：
+
+$$
+(2,5,3,3,4).
+$$
+
+stride 在深度方向为 1，所以保留五个深度位置；在高宽方向为 2，所以高宽缩小。
+
+#### 第二步：手算一个特殊卷积核的中心输出
+
+完整核会读取：
+
+$$
+3\text{ 个输入 Channel}
+\times3\text{ 个深度位置}
+\times3\text{ 个高度位置}
+\times3\text{ 个宽度位置},
+$$
+
+共 81 个输入数。为了便于手算，假设某个输出 Channel 的 81 个权重中，只有核中心在三个输入 Channel 上的权重非零，分别为：
+
+$$
+[1,2,-1].
+$$
+
+某个输入位置三个 Channel 的值为：
+
+$$
+[1,3,2],
+$$
+
+bias 为 0.5，则该输出位置：
+
+$$
+y=1\times1+3\times2+2\times(-1)+0.5=5.5.
+$$
+
+其他 78 个权重为 0，所以它们不改变本次结果。真实训练中的核通常会让更多位置参与。
+
+#### 参数数目
+
+每个输出 Channel 的核包含：
+
+$$
+3\times3\times3\times3=81
+$$
+
+个权重。四个输出 Channel：
+
+$$
+4\times81=324.
+$$
+
+再加四个 bias：
+
+$$
+P=324+4=328.
+$$
+
+参数数目与输入的深度、高度、宽度无关，但乘加次数会随输出空间位置数变化。
+
+> [!WARNING] 不要把深度轴与 Channel维度混在一起
+> 三个输入 Channel 会在一次输出乘加中求和；五个深度位置则是卷积核移动的空间轴。PyTorch 中两者分别位于第 1、2 轴，Keras 默认分别位于最后轴与第 1 个空间轴。
+
+> [!CHECK] 最终自检
+> 输出 Channel 是 4；深度保持 5；高宽变成 3；每个输出 Channel 有 81 个核权重；328 个参数不包含输出特征张量。
+
+---
+
+### 19.17 练习十六：GroupNorm、InstanceNorm 与 LayerNorm 的统计集合
+
+#### 已知条件
+
+一个样本、四个 Channel，每个 Channel 有两个空间位置。PyTorch 形状：
+
+$$
+(N,C,H,W)=(1,4,1,2).
+$$
+
+四个 Channel 分别为：
+
+$$
+X_0=[1,3],\quad
+X_1=[5,7],\quad
+X_2=[2,4],\quad
+X_3=[6,8].
+$$
+
+使用 `GroupNorm(groups=2,num_channels=4)`。每组有两个 Channel。令 $\gamma=1,\beta=0$，忽略很小的 $\epsilon$。
+
+#### GroupNorm 第一组
+
+第一组包含 Channel 0 与 Channel 1，共四个数：
+
+$$
+[1,3,5,7].
+$$
+
+均值：
+
+$$
+\mu_0=4.
+$$
+
+方差：
+
+$$
+v_0=5.
+$$
+
+标准化结果近似：
+
+$$
+[-1.342,-0.447,0.447,1.342].
+$$
+
+前两个数回到 Channel 0，后两个数回到 Channel 1，元素位置次序不变。
+
+#### GroupNorm 第二组
+
+第二组包含：
+
+$$
+[2,4,6,8].
+$$
+
+均值 5，方差 5，标准化结果同样近似：
+
+$$
+[-1.342,-0.447,0.447,1.342].
+$$
+
+这四个数依次回到 Channel 2 与 Channel 3。
+
+#### 换成 InstanceNorm 会怎样
+
+InstanceNorm 对每个样本、每个 Channel 的空间位置单独统计。Channel 0 的 $[1,3]$ 均值为 2、方差为 1，得到 $[-1,1]$。Channel 1 的 $[5,7]$、Channel 2 的 $[2,4]$、Channel 3 的 $[6,8]$ 也各自得到 $[-1,1]$。
+
+#### 换成 LayerNorm 会怎样
+
+若 `normalized_shape=(4,1,2)`，则一个样本的全部八个数一起统计。八个数正好是 1 到 8，均值：
+
+$$
+\mu=4.5.
+$$
+
+总体方差：
+
+$$
+v=
+\frac{(-3.5)^2+(-2.5)^2+\cdots+(3.5)^2}{8}
+=5.25.
+$$
+
+所有 Channel 和空间位置共享这组均值与方差。
+
+#### 参数数目与 Keras 轴
+
+GroupNorm 的 $\gamma,\beta$ 通常各有四个数，共 8 个可学习参数。InstanceNorm 若开启 affine，也通常各有四个数；PyTorch InstanceNorm 默认 affine 常为关闭。`LayerNorm((4,1,2))` 的 $\gamma,\beta$ 各有 $4\times1\times2=8$ 个数，共 16 个参数，比只按 Channel 缩放更细。
+
+Keras 默认 channels-last，输入相应写成 $(1,1,2,4)$。`GroupNormalization` 的 axis 应指向最后的 Channel维度。若 axis 指错到宽度，统计分组含义就会改变。
+
+> [!WARNING] “每个样本内计算”仍然不够具体
+> GroupNorm 还要说明哪些 Channel 属于同一组；InstanceNorm 每个 Channel 单独统计；多维 LayerNorm 可以让最后多个轴一起统计。
+
+> [!CHECK] 最终自检
+> GroupNorm 第一组均值 4，第二组均值 5；InstanceNorm 有四组独立空间统计；多维 LayerNorm 只有一组八元素统计；三者都保持原形状。
+
+---
+
+### 19.18 练习十七：Multi-Head Attention 的拆头与合头
+
+#### 已知条件
+
+输入形状：
+
+$$
+(N,L,E)=(2,4,8).
+$$
+
+本题统一采用 Keras 默认的 Batch维度在前排列。若直接使用 PyTorch `MultiheadAttention`，需要设置 `batch_first=True`；默认 `batch_first=False` 时，输入应写成 `(L,N,E)`。
+
+Head 数：
+
+$$
+h=2.
+$$
+
+每个 Head 宽度：
+
+$$
+d_h=E/h=8/2=4.
+$$
+
+使用 Self-Attention，所以 Query、Key、Value 都来自同一个输入。为简化形状分析，三个投影都保持总宽度 8。
+
+#### 第一步：线性投影
+
+$$
+Q=XW_Q+b_Q,
+\qquad
+K=XW_K+b_K,
+\qquad
+V=XW_V+b_V.
+$$
+
+$W_Q,W_K,W_V$ 都是 $8\times8$，bias 都是长度 8。投影后：
+
+$$
+Q,K,V:(2,4,8).
+$$
+
+这里第一个 4 是 Sequence Length，最后的 8 是总 Feature 宽度。
+
+#### 第二步：拆成两个 Head
+
+先把最后宽度 8 拆成 $(h,d_h)=(2,4)$，再把 Head 轴放到序列轴之前：
+
+$$
+(2,4,8)
+\rightarrow
+(2,4,2,4)
+\rightarrow
+(2,2,4,4).
+$$
+
+最终四个轴分别是 Batch维度、Head、Query 或 Key 位置、每个 Head 的 Feature。
+
+> [!NOTE] 拆头不复制元素
+> 总 Feature 数仍为 8，只是观察成两个宽度为 4 的 Head。真正让不同 Head 学到不同内容的是各投影权重。
+
+#### 第三步：每个 Head 计算分数
+
+对每个 Head：
+
+$$
+S_r=\frac{Q_rK_r^T}{\sqrt{d_h}}.
+$$
+
+$Q_r$ 形状 $(2,4,4)$，$K_r^T$ 最后两轴为 $(4,4)$，因此每个 Head 的分数为 $(2,4,4)$。合并 Head 轴后：
+
+$$
+S:(2,2,4,4).
+$$
+
+最后两个 4 分别表示四个 Query 位置和四个 Key 位置。Softmax 在最后的 Key 位置轴进行，得到同形状权重 $A$。
+
+#### 第四步：加权 Value 并合头
+
+$$
+O_r=A_rV_r.
+$$
+
+每个 Head 输出 $(2,4,4)$，全部 Head 为 $(2,2,4,4)$。交换并合并 Head 与每 Head Feature：
+
+$$
+(2,2,4,4)
+\rightarrow
+(2,4,2,4)
+\rightarrow
+(2,4,8).
+$$
+
+最后再通过 $8\rightarrow8$ 输出投影，形状仍为 $(2,4,8)$。
+
+#### 参数数目
+
+四个投影分别是 Q、K、V 和输出投影。每个都有：
+
+$$
+8\times8+8=72
+$$
+
+个参数。总参数：
+
+$$
+4\times72=288.
+$$
+
+参数数目不随 Sequence Length 4 改变。Sequence Length 增大时，分数张量最后两轴随之增大，计算与临时存储会增加。
+
+#### 两类常见遮罩
+
+补齐遮罩对每个样本指出哪些 Key 位置无效；因果遮罩让第 $t$ 个 Query 不能读取 $t$ 之后的位置。遮罩应能扩展到 $(N,h,L,L)$，但它本身通常没有可学习参数。
+
+> [!WARNING] Head 数增加不一定增加投影总参数
+> 当总宽度 $E$ 保持 8 时，只是把 8 拆成更多较窄 Head，四个总投影仍可保持 $8\rightarrow8$。Head 数会改变每个 Head 宽度与计算组织。
+
+> [!CHECK] 最终自检
+> 每个 Head 宽度为 4；分数形状 $(2,2,4,4)$；合头后恢复 $(2,4,8)$；Softmax 在 Key 位置轴；总参数为 288。
+
+---
+
+### 19.19 练习十八：解码器中的转置卷积、跳接拼接与普通卷积
+
+#### 已知条件
+
+编码器的低分辨率特征 PyTorch 形状：
+
+$$
+X_{\mathrm{low}}:(N,64,8,8).
+$$
+
+使用 `ConvTranspose2d` 从 64 个 Channel 变成 32 个 Channel，kernel size 4、stride 2、padding 1、output padding 0。编码器保留的跳接特征：
+
+$$
+X_{\mathrm{skip}}:(N,24,16,16).
+$$
+
+上采样结果与跳接特征沿 Channel维度拼接，再使用 $3\times3$ 普通卷积从 56 个 Channel 变成 32 个 Channel，stride 1、padding 1。两层都使用 bias。
+
+#### 第一步：转置卷积输出形状
+
+单轴公式：
+
+$$
+L_{\mathrm{out}}
+=(L_{\mathrm{in}}-1)s-2p+(K-1)+1.
+$$
+
+代入：
+
+$$
+L_{\mathrm{out}}
+=(8-1)\times2-2+3+1
+=16.
+$$
+
+输出：
+
+$$
+X_{\mathrm{up}}:(N,32,16,16).
+$$
+
+它与跳接特征高宽相同。
+
+#### 第二步：沿 Channel 拼接
+
+$$
+32+24=56.
+$$
+
+所以：
+
+$$
+X_{\mathrm{cat}}:(N,56,16,16).
+$$
+
+拼接只把两个 Channel 序列接在一起，不做加法，也没有参数。
+
+若固定一个空间位置，上采样分支可写成 32 维向量 $u$，跳接分支写成 24 维向量 $s$，拼接结果就是：
+
+$$
+[u_0,\ldots,u_{31},s_0,\ldots,s_{23}].
+$$
+
+#### 第三步：普通卷积
+
+$3\times3$、padding 1、stride 1 保持 $16\times16$，输出：
+
+$$
+(N,32,16,16).
+$$
+
+每个输出位置读取拼接后的 56 个 Channel 与 $3\times3$ 空间区域。
+
+#### 参数数目
+
+转置卷积：
+
+$$
+64\times32\times4\times4+32
+=32800.
+$$
+
+普通卷积：
+
+$$
+32\times56\times3\times3+32
+=16160.
+$$
+
+合计：
+
+$$
+32800+16160=48960.
+$$
+
+Keras 默认形状依次为：
+
+$$
+(N,8,8,64)
+\rightarrow
+(N,16,16,32)
+\rightarrow
+(N,16,16,56)
+\rightarrow
+(N,16,16,32).
+$$
+
+Keras 默认沿最后 Channel 轴拼接。
+
+> [!WARNING] 跳接不是残差相加
+> 两个分支 Channel 分别为 32 和 24，不能直接逐元素相加；拼接允许 Channel 不同，并让后续卷积学习怎样组合 56 个 Channel。
+
+> [!CHECK] 最终自检
+> 转置卷积把高宽从 8 变成 16；拼接把 Channel 从 32 与 24 合成 56；普通卷积恢复 32 个 Channel；拼接参数为 0；总参数为 48960。
+
+---
+
+### 19.20 练习十九：序列补齐位置与损失平均
+
+#### 已知条件
+
+一个 Batch 有两个序列，每个序列最多三个位置。逐位置损失已经算好：
+
+$$
+L=
+\begin{bmatrix}
+0.2&0.4&0.0\\
+0.1&0.3&0.5
+\end{bmatrix}.
+$$
+
+第一个序列只有前两个位置有效，第二个序列三个位置都有效。遮罩：
+
+$$
+M=
+\begin{bmatrix}
+1&1&0\\
+1&1&1
+\end{bmatrix}.
+$$
+
+$M_{n,t}=1$ 表示位置有效，0 表示补齐位置。
+
+#### 第一步：应用遮罩
+
+$$
+L_{\mathrm{valid}}=L\odot M.
+$$
+
+本题数值恰好仍为：
+
+$$
+\begin{bmatrix}
+0.2&0.4&0\\
+0.1&0.3&0.5
+\end{bmatrix}.
+$$
+
+即使补齐位置损失原来不是 0，乘以遮罩后也应变成 0。
+
+#### 第二步：按有效位置求和
+
+$$
+0.2+0.4+0.1+0.3+0.5=1.5.
+$$
+
+有效位置数：
+
+$$
+\sum M=5.
+$$
+
+有效位置平均损失：
+
+$$
+\ell_{\mathrm{mean}}=1.5/5=0.3.
+$$
+
+若错误地除以张量全部六个位置，会得到：
+
+$$
+1.5/6=0.25.
+$$
+
+补齐位置较多的 Batch 会因此产生不同缩放。
+
+#### 形状与参数
+
+逐位置损失和遮罩形状都是 $(N,L)=(2,3)$。应用遮罩后形状不变，求和与除法后得到标量。遮罩、损失归约和除法都没有可学习参数。
+
+> [!NOTE] 先定义想平均的对象
+> 可以按有效 token 平均，也可以先对每个句子内部平均，再对两个样本平均。两种规则在句子长度不同时可能给出不同结果，应根据任务定义选择。
+
+> [!WARNING] 遮罩值与有效数分母必须配套
+> 只把补齐损失乘成 0，却仍除以全部位置数，会让结果偏小。应同时使用遮罩求得有效位置数。
+
+> [!CHECK] 最终自检
+> 有效位置共 5 个；损失和为 1.5；按有效位置平均为 0.3；reduction 规则不增加参数。
+
+---
+
+### 19.21 综合练习完成后的统一检查表
+
+完成任何一道 Layer 手算题后，可以按下面顺序逐项核对。
+
+#### 形状检查
+
+1. 是否明确写出 Batch维度？
+2. 图像 Channel维度在 PyTorch 与 Keras 中是否放在正确位置？
+3. 矩阵乘法的内侧维是否相等？
+4. 卷积、池化和转置卷积是否逐轴代入尺寸公式？
+5. 残差相加的两个输入是否具有相同形状？
+6. 拼接是否只让指定轴长度相加？
+7. RNN、GRU、LSTM 是返回完整序列，还是只使用最后状态？
+8. Attention 分数最后两个轴是否分别表示 Query 位置与 Key 位置？
+
+#### 数值检查
+
+1. ReLU 是否把负数变成 0，而不是取绝对值？
+2. Softmax 是否在指定 Feature轴上求和为 1？
+3. LayerNorm 与 BatchNorm 是否使用了正确统计集合？
+4. Fold 的重叠位置是否相加？
+5. 转置卷积的重叠写入是否相加？
+6. 遮罩是否在 Softmax 或平均之前正确排除无效位置？
+7. Cross Entropy 是否取正确类别的负对数？
+
+#### 参数检查
+
+1. 是否把 weight 各维相乘？
+2. 使用 bias 时，是否为每个输出 Feature 或输出 Channel 增加一个参数？
+3. groups 是否让每个输出 Channel 只读取 $C_{\mathrm{in}}/G$ 个输入 Channel？
+4. Depthwise 是否考虑 depth multiplier？
+5. GRU 的三组门与 LSTM 的四组门是否完整计算？
+6. LayerNorm、BatchNorm 的 $\gamma,\beta$ 是否计入？
+7. 是否误把激活、注意力权重、均值、方差、隐藏状态或损失值计入参数？
+
+#### 语义检查
+
+1. token 编号是否只用于查表，而不是作为连续 Feature 参与大小比较？
+2. logits 是否与概率区分？
+3. padding、裁剪和池化是否会丢失或引入位置？
+4. 插值放大是否被误解为恢复原细节？
+5. 训练与推理状态是否会改变 Layer 规则？
+
+> [!SUMMARY] 真正掌握 Layer 的标志
+> 能够从一个最小数字例子说清“读取哪些数、在哪些轴求和、参数怎样共享、输出形状怎样得到”，比背下接口参数更重要。复杂网络只是把这些基本规则反复组合；逐层记录形状与参数，就能把大模型拆成可以检查的小步骤。
