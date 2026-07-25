@@ -3,7 +3,7 @@
 > 本文面向刚开始学习深度学习计算的读者，集中总结 PyTorch 与 Keras 中常用基础 Layer 的数学计算、输入输出形状、参数含义、训练状态差异和手算例子。正文不依赖 Python 代码；看到一个 Layer 名称时，可以直接从公式和数字例子理解它究竟读取哪些数、做了哪些运算、产生什么形状的结果。
 
 > [!ABSTRACT] 本文覆盖什么
-> 内容包括形状调整、全连接、Embedding、激活函数、归一化、Dropout、卷积、池化、填充、上采样、循环神经网络、GRU、LSTM、注意力、Transformer 基本子层、常见损失函数、相似度、反向梯度、数值稳定处理以及多种 Layer 的组合分析。文末还提供一套通用手算模板和 19 道完整练习。PyTorch 名称主要对应 `torch.nn`，Keras 名称主要对应 Keras 3 的 `keras.layers` 与 `keras.losses`。
+> 内容包括逻辑 shape、stride、连续内存顺序、输入与输出排布、Kernel 排布、形状调整、全连接、Embedding、激活函数、归一化、Dropout、卷积、池化、填充、上采样、循环神经网络、GRU、LSTM、注意力、Transformer 基本子层、常见损失函数、相似度、反向梯度、数值稳定处理以及多种 Layer 的组合分析。卷积部分会逐项比较 PyTorch 的 NCHW、OIHW 与 Keras 的 NHWC、HWIO，并说明 Pointwise 怎样直接使用原生矩阵乘法。文末还提供一套通用手算模板和 19 道完整练习。PyTorch 名称主要对应 `torch.nn`，Keras 名称主要对应 Keras 3 的 `keras.layers` 与 `keras.losses`。
 
 > [!NOTE] 为什么同时写 PyTorch 与 Keras
 > 两个框架实现的数学原理大多相同，差异主要集中在构造参数名称、默认轴顺序、训练状态控制方式和损失函数的输入约定。把名称并列起来，可以避免把“接口写法不同”误认为“数学计算不同”。
@@ -106,7 +106,7 @@ PyTorch 图像计算通常采用 channels-first，也就是 Channel维度在空�
 > [!NOTE] 名称中的大小写属于接口差异
 > PyTorch 常写 `Conv2d`、`BatchNorm2d`，Keras 常写 `Conv2D`、`BatchNormalization`。名称不同不会改变卷积或归一化的核心公式。
 
-### 1.5 阅读任意 Layer 的六个问题
+### 1.5 阅读任意 Layer 的七个问题
 
 面对一个陌生 Layer，可以依次回答：
 
@@ -115,9 +115,10 @@ PyTorch 图像计算通常采用 channels-first，也就是 Channel维度在空�
 3. 哪些维度保留，并分别得到独立输出？
 4. Layer 是否有可学习参数？参数形状是什么？
 5. 输出形状怎样由输入形状和构造参数得到？
-6. 训练状态与推理状态是否采用不同规则？
+6. 输入、参数和输出的 stride 是什么，内存中哪个下标最先变化？
+7. 训练状态与推理状态是否采用不同规则？
 
-这六个问题比只记 Layer 名称更重要。例如 Batch Normalization、Layer Normalization 和 Group Normalization 都包含“减均值、除标准差”，真正的差异在于哪些元素放在一起计算统计量，以及参数在哪些位置共享。
+这七个问题比只记 Layer 名称更重要。例如 Batch Normalization、Layer Normalization 和 Group Normalization 都包含“减均值、除标准差”，真正的差异在于哪些元素放在一起计算统计量，以及参数在哪些位置共享。又例如两个图像张量都显示 `(N,C,H,W)`，仍可能具有不同 stride；若只看 shape，就无法判断相邻内存位置保存的是相邻像素还是相邻 Channel。
 
 ### 1.6 本文公式中的常用符号
 
@@ -154,6 +155,161 @@ Dropout 和 Batch Normalization 在训练与推理时行为不同；Linear、Den
 
 > [!WARNING] “没有参数”与“没有状态差异”不是一回事
 > Dropout 没有需要训练的权重，却会根据训练状态决定是否随机置零。Batch Normalization 既有可学习参数，也保存运行统计量。判断 Layer 时应分别检查参数、状态和计算规则。
+
+### 1.8 逻辑形状、stride 与连续内存顺序
+
+前面的形状记号回答“每个轴表示什么、长度是多少”。内存顺序回答另一个问题：“这些元素在线性存储区中按照什么先后次序排列”。二者有关，但不是同一个概念。
+
+> [!IMPORTANT] Shape 不能单独说明内存顺序
+> 两个张量都可以显示形状 `(N,C,H,W)`，其中一个按 NCHW 连续存储，另一个却采用 channels-last 内存格式。数值下标的含义相同，但相邻内存位置保存的元素不同。分析算子实现时，必须同时查看 shape 和 stride。
+
+#### stride 表示沿某个轴移动一格要跨过多少元素
+
+设一个 $D$ 维张量的下标为：
+
+$$
+(i_0,i_1,\ldots,i_{D-1}),
+$$
+
+各轴 stride 为：
+
+$$
+(s_0,s_1,\ldots,s_{D-1}).
+$$
+
+相对于张量起始位置的元素偏移为：
+
+$$
+\operatorname{offset}
+=
+\sum_{k=0}^{D-1}i_ks_k.
+$$
+
+若每个元素占 $B$ 个字节，字节偏移就是：
+
+$$
+B\cdot\operatorname{offset}.
+$$
+
+若张量是较大存储区上的一个视图，还可能有非零的起始偏移 $o_{\mathrm{storage}}$。相对于底层存储区开头的字节地址应写成：
+
+$$
+\operatorname{address}
+=
+\operatorname{base}
++B\left(
+o_{\mathrm{storage}}
++\sum_{k=0}^{D-1}i_ks_k
+\right).
+$$
+
+其中 $\operatorname{base}$ 是底层存储区首地址。本文大多数连续张量例子都令 $o_{\mathrm{storage}}=0$，因此使用前面的简式。
+
+$s_k=1$ 表示沿第 $k$ 个轴移动一格，正好访问下一个元素。标准连续存储通常让最右侧轴的 stride 为 1，再从右向左依次乘后面的轴长度。
+
+#### NCHW 与 NHWC 的连续 stride
+
+先看二维图像。以下 stride 都以“元素个数”为单位，不是字节数。
+
+| 情况 | 逻辑 shape | 连续 stride | 元素偏移 |
+| --- | --- | --- | --- |
+| PyTorch 默认 NCHW | $(N,C,H,W)$ | $(CHW,HW,W,1)$ | $nCHW+cHW+hW+w$ |
+| PyTorch channels-last 内存格式 | 逻辑 shape 仍为 $(N,C,H,W)$ | $(HWC,1,WC,C)$ | $nHWC+hWC+wC+c$ |
+| Keras 默认 NHWC | $(N,H,W,C)$ | $(HWC,WC,C,1)$ | $nHWC+hWC+wC+c$ |
+| Keras channels-first | $(N,C,H,W)$ | 常见连续形式为 $(CHW,HW,W,1)$ | $nCHW+cHW+hW+w$ |
+
+表中的 Keras stride 描述常见的稠密连续张量。Keras 可以使用 TensorFlow、JAX 或 PyTorch 后端，具体后端还可能在执行前准备更适合设备的内部格式。
+
+> [!NOTE] PyTorch channels-last 不会把 shape 改成 NHWC
+> PyTorch 的四维图像仍用 `(N,C,H,W)` 访问，只有 stride 改为 Channel 最密集的顺序。例如 shape 为 `(10,3,16,16)` 时，channels-last stride 可以是 `(768,1,48,3)`。Keras 默认 NHWC 则连逻辑轴次序也写成 `(N,H,W,C)`。
+
+#### 用一个小图观察线性存储区
+
+令 $N=1,C=3,H=2,W=2$，暂时省略样本下标。用 $x_{c,h,w}$ 表示 Channel $c$、行 $h$、列 $w$ 的元素。
+
+NCHW 连续存储先放完整的 Channel 0，再放 Channel 1 和 Channel 2：
+
+$$
+\begin{aligned}
+[
+&x_{0,0,0},x_{0,0,1},x_{0,1,0},x_{0,1,1},\\
+&x_{1,0,0},x_{1,0,1},x_{1,1,0},x_{1,1,1},\\
+&x_{2,0,0},x_{2,0,1},x_{2,1,0},x_{2,1,1}
+].
+\end{aligned}
+$$
+
+同一 Channel 内左右相邻位置连续；同一个像素的相邻 Channel 相隔 $HW=4$ 个元素。
+
+NHWC 或 PyTorch channels-last 的物理顺序先放一个像素的全部 Channel，再放下一个像素：
+
+$$
+\begin{aligned}
+[
+&x_{0,0,0},x_{1,0,0},x_{2,0,0},\\
+&x_{0,0,1},x_{1,0,1},x_{2,0,1},\\
+&x_{0,1,0},x_{1,1,0},x_{2,1,0},\\
+&x_{0,1,1},x_{1,1,1},x_{2,1,1}
+].
+\end{aligned}
+$$
+
+此时同一个像素的 Channel 连续，相邻像素相隔 $C=3$ 个元素。
+
+> [!TIP] 问“谁连续”比只背缩写更有用
+> NCHW 连续格式中，宽度方向最密集；NHWC 或 channels-last 格式中，Channel 最密集。卷积核接下来要读取哪些元素，决定了哪种顺序更容易形成连续访问。
+
+#### 输出张量使用相同分析方法
+
+若卷积输出有 $C_{\mathrm{out}}$ 个 Channel：
+
+- PyTorch 默认输出逻辑 shape 常为 $(N,C_{\mathrm{out}},H_{\mathrm{out}},W_{\mathrm{out}})$；
+- Keras 默认输出逻辑 shape 常为 $(N,H_{\mathrm{out}},W_{\mathrm{out}},C_{\mathrm{out}})$。
+
+默认 NCHW 连续输出的 stride 为：
+
+$$
+(C_{\mathrm{out}}H_{\mathrm{out}}W_{\mathrm{out}},
+H_{\mathrm{out}}W_{\mathrm{out}},
+W_{\mathrm{out}},
+1).
+$$
+
+channels-last 物理输出的 stride 为：
+
+$$
+(H_{\mathrm{out}}W_{\mathrm{out}}C_{\mathrm{out}},
+1,
+W_{\mathrm{out}}C_{\mathrm{out}},
+C_{\mathrm{out}})
+$$
+
+这里仍按 PyTorch 的逻辑轴 `(N,C_{\mathrm{out}},H_{\mathrm{out}},W_{\mathrm{out}})` 书写。Keras NHWC 的同一物理顺序则写成 stride：
+
+$$
+(H_{\mathrm{out}}W_{\mathrm{out}}C_{\mathrm{out}},
+W_{\mathrm{out}}C_{\mathrm{out}},
+C_{\mathrm{out}},
+1).
+$$
+
+#### Permute、连续化与真正的数据搬运
+
+Permute 可以只改变 shape 与 stride，让新的下标次序读取原存储区，而不立即复制元素。这样的结果往往不是目标轴次序下的标准连续张量。后续算子若要求连续输入，才可能创建新存储区并按新次序写入。
+
+例如，把 NCHW 张量的逻辑轴调整成 NHWC，不表示内存立刻变成标准 NHWC 连续顺序。只有新 stride 已满足该连续格式，或执行了相应的连续化操作，才能把它当作连续 NHWC 缓冲区逐项读取。
+
+> [!WARNING] Reshape 能否只改 shape 取决于 stride
+> 连续张量的若干相邻轴通常可以直接合并。经过 Permute 的张量若 stride 不再满足合并条件，Reshape 可能需要复制数据。公式中的元素数虽然没有变化，实际内存读写成本却可能不同。
+
+#### 框架张量顺序与设备内部格式要分开
+
+本文后续所说的 NCHW、NHWC、OIHW 和 HWIO，首先描述框架可见的逻辑轴及常见连续顺序。CPU 或加速器库可能把输入、Kernel 或输出暂时打包成分块格式，让若干 Channel 一组存储，或者直接在寄存器和片上存储中重排。
+
+这些内部格式不改变 Layer 的数学公式，也不一定出现在模型文件中。判断模型接口时看框架可见 shape 与 stride；分析执行开销时，还要考虑后端是否增加了重排、打包和临时存储。
+
+> [!INFO] 进一步核对
+> PyTorch 的 [Channels Last Memory Format 教程](https://docs.pytorch.org/tutorials/intermediate/memory_format_tutorial.html) 说明了逻辑 NCHW shape 与 channels-last stride 可以同时存在；Keras [Conv2D 文档](https://keras.io/api/layers/convolution_layers/convolution2d/) 给出了 channels-last 和 channels-first 的输入输出轴次序。
 
 ---
 
@@ -3261,7 +3417,7 @@ Keras 的 `"valid"` 表示不补位置。Keras 的 `"same"` 会选择补入数�
 > [!TIP] “same”说的是输出尺寸规则
 > 它不表示两种框架在所有参数组合下都选择完全相同的左右补入方式。奇数个补入位置无法左右均分时，还要确认多出的一个位置放在哪一侧。
 
-### 6.6 卷积参数数目怎样计算
+### 6.6 参数数目与输入、Kernel、输出的内存排布
 
 普通 Conv1D 权重数为：
 
@@ -3296,6 +3452,401 @@ $$
 
 若不使用偏置，则参数数目是 1152。PyTorch 权重形状为 $(16,8,3,3)$。Keras 默认内部核形状通常为 $(3,3,8,16)$。轴次序不同，但元素总数与数学计算一致。
 
+#### Kernel 的轴次序与连续存储
+
+令：
+
+$$
+O=C_{\mathrm{out}},
+\qquad
+I_g=\frac{C_{\mathrm{in}}}{G},
+$$
+
+其中 $G$ 是 groups。普通卷积中 $G=1$，所以 $I_g=C_{\mathrm{in}}$。
+
+| 框架可见的 Kernel | 逻辑 shape | 常用简称 | 标准连续 stride | 内存中最先变化的下标 |
+| --- | --- | --- | --- | --- |
+| PyTorch `Conv2d.weight` | $(O,I_g,K_h,K_w)$ | OIHW | $(I_gK_hK_w,K_hK_w,K_w,1)$ | $s$ |
+| Keras `Conv2D.kernel` | $(K_h,K_w,I_g,O)$ | HWIO | $(K_wI_gO,I_gO,O,1)$ | $o$ |
+
+PyTorch 默认 OIHW 连续存储的元素偏移为：
+
+$$
+\operatorname{offset}_{\mathrm{PT}}
+=
+oI_gK_hK_w+cK_hK_w+rK_w+s.
+$$
+
+这里 $o$ 是输出 Channel，$c$ 是组内输入 Channel，$r,s$ 是 Kernel 的高、宽下标。固定 $o$ 后，这个输出 Channel 使用的全部 $I_gK_hK_w$ 个权重形成一段连续区域。
+
+Keras 默认 HWIO 连续存储的元素偏移为：
+
+$$
+\operatorname{offset}_{\mathrm{Keras}}
+=
+rK_wI_gO+sI_gO+cO+o.
+$$
+
+固定 Kernel 位置 $(r,s)$ 和输入 Channel $c$ 后，全部输出 Channel 权重连续存放。
+
+两个框架中同一个数学权重的下标关系为：
+
+$$
+K_{\mathrm{Keras}}[r,s,c,o]
+=
+W_{\mathrm{PT}}[o,c,r,s].
+$$
+
+groups 大于 1 时，$c$ 表示当前组内部的输入 Channel 编号，而不是整个输入张量中的全局 Channel 编号。两种普通卷积的 bias 都是一维向量：
+
+$$
+b\in\mathbb R^O.
+$$
+
+PyTorch 权重也可以采用 channels-last 内存格式。它的逻辑下标仍是 $(O,I_g,K_h,K_w)$，典型物理 stride 为：
+
+$$
+(I_gK_hK_w,1,K_wI_g,I_g).
+$$
+
+这时权重的物理顺序接近 OHWI：固定 $o,r,s$ 后，组内输入 Channel 最密集。它仍不是 Keras HWIO，因为输出 Channel $o$ 在两者中的位置不同。
+
+> [!IMPORTANT] `data_format` 通常不改变 Keras Kernel 的逻辑轴
+> Keras 输入可以是 NHWC 或 NCHW，但 `Conv2D.kernel` 仍通常按 $(K_h,K_w,I_g,O)$ 组织。`data_format` 主要决定输入与输出的 Channel轴位置，不应据此把 Kernel 也写成 OIHW。
+
+> [!NOTE] 长度为 1 的轴会让 stride 看起来不唯一
+> 若某个轴长度为 1，沿该轴不会真正访问“下一个元素”，所以不同 stride 数值可能表示同一线性顺序。$1\times1$ Kernel 的高、宽轴都属于这种情况。判断其物理次序时，应结合 memory format 与其他非单元素轴，而不是只比较这两个 stride 数字。
+
+#### 用 $2\times2$ Kernel 观察线性顺序
+
+令 $O=2,I_g=2,K_h=K_w=2$。
+
+PyTorch OIHW 的开头一段是：
+
+$$
+\begin{aligned}
+[
+&W_{0,0,0,0},W_{0,0,0,1},W_{0,0,1,0},W_{0,0,1,1},\\
+&W_{0,1,0,0},W_{0,1,0,1},W_{0,1,1,0},W_{0,1,1,1},\\
+&W_{1,0,0,0},\ldots
+].
+\end{aligned}
+$$
+
+可以看到，它先完整保存输出 Channel 0 的两个输入 Channel Kernel，再开始输出 Channel 1。
+
+Keras HWIO 的开头一段是：
+
+$$
+\begin{aligned}
+[
+&K_{0,0,0,0},K_{0,0,0,1},
+K_{0,0,1,0},K_{0,0,1,1},\\
+&K_{0,1,0,0},K_{0,1,0,1},
+K_{0,1,1,0},K_{0,1,1,1},\\
+&K_{1,0,0,0},\ldots
+].
+\end{aligned}
+$$
+
+它在每个空间位置和输入 Channel 下，先连续保存两个输出 Channel 权重。
+
+#### 一次普通 Conv2D 的三个地址公式
+
+固定一个输出元素，令其下标为 $(n,o,u,v)$。Kernel 内部下标为 $(i_g,r,s)$。输入中真正被读取的高、宽下标是：
+
+$$
+h_{\mathrm{in}}
+=
+us_h-p_h+rd_h,
+$$
+
+$$
+w_{\mathrm{in}}
+=
+vs_w-p_w+sd_w.
+$$
+
+若这两个下标位于输入范围之外，就按 padding 规则读取补入值。零填充位置不属于原输入存储区，所以没有可以代入的 $\operatorname{off}_X$；反射、复制或循环填充需要先按各自规则把坐标换算为有效输入坐标，再使用输入偏移公式。下面的 $\operatorname{off}_X$ 只描述有效输入坐标。
+
+若 groups 为 $G$，输出 Channel $o$ 属于第：
+
+$$
+g=
+\left\lfloor\frac{o}{O/G}\right\rfloor
+$$
+
+组，对应的全局输入 Channel 为：
+
+$$
+i=gI_g+i_g.
+$$
+
+对标准连续 PyTorch NCHW 输入、OIHW Kernel 和 NCHW 输出，三个元素偏移分别为：
+
+$$
+\operatorname{off}_X
+=
+nIHW+iHW+h_{\mathrm{in}}W+w_{\mathrm{in}},
+$$
+
+$$
+\operatorname{off}_W
+=
+oI_gK_hK_w+i_gK_hK_w+rK_w+s,
+$$
+
+$$
+\operatorname{off}_Y
+=
+nOH_{\mathrm{out}}W_{\mathrm{out}}
++oH_{\mathrm{out}}W_{\mathrm{out}}
++uW_{\mathrm{out}}+v.
+$$
+
+从这三式可以直接看出：
+
+- 输入宽度 $w_{\mathrm{in}}$ 每增加 1，地址增加 1；
+- Kernel 宽度下标 $s$ 每增加 1，权重地址增加 1；
+- 输出宽度下标 $v$ 每增加 1，同一输出 Channel 的写入地址增加 1；
+- 同一像素的相邻输入 Channel 相隔 $HW$ 个元素；
+- 同一输出位置的相邻输出 Channel 相隔 $H_{\mathrm{out}}W_{\mathrm{out}}$ 个元素。
+
+对默认 Keras NHWC 输入、HWIO Kernel 和 NHWC 输出，偏移变为：
+
+$$
+\operatorname{off}_X
+=
+nHWI+h_{\mathrm{in}}WI+w_{\mathrm{in}}I+i,
+$$
+
+$$
+\operatorname{off}_K
+=
+rK_wI_gO+sI_gO+i_gO+o,
+$$
+
+$$
+\operatorname{off}_Y
+=
+nH_{\mathrm{out}}W_{\mathrm{out}}O
++uW_{\mathrm{out}}O
++vO+o.
+$$
+
+此时：
+
+- 同一输入像素的相邻 Channel 地址相差 1；
+- 同一输出位置的相邻输出 Channel 地址相差 1；
+- Kernel 固定 $r,s,i_g$ 后，相邻输出 Channel 权重地址相差 1；
+- 空间上相邻输入像素的起始地址相差 $I$；
+- 空间上相邻输出位置的起始地址相差 $O$。
+
+> [!TIP] 先写偏移，再讨论哪种格式更快
+> “连续”必须说明固定了哪些下标。NCHW 让同一 Channel 的横向像素连续，NHWC 让同一像素的 Channel 连续。卷积程序通常同时计算多个输出位置和多个输出 Channel，并利用分块读取复用输入与 Kernel，不能只凭一个轴的 stride 判断全部性能。
+
+#### 用同一个 $2\times2$ 卷积比较输入与输出线性顺序
+
+设：
+
+$$
+N=1,\quad I=2,\quad O=2,\quad
+H=W=3,\quad K_h=K_w=2,
+$$
+
+stride 为 1，padding 为 0，因此：
+
+$$
+H_{\mathrm{out}}=W_{\mathrm{out}}=2.
+$$
+
+在 NCHW 连续输入中，省略样本轴后的线性存储区为：
+
+$$
+\begin{aligned}
+[
+&x_{0,0,0},x_{0,0,1},x_{0,0,2},
+x_{0,1,0},x_{0,1,1},x_{0,1,2},
+x_{0,2,0},x_{0,2,1},x_{0,2,2},\\
+&x_{1,0,0},x_{1,0,1},x_{1,0,2},
+x_{1,1,0},x_{1,1,1},x_{1,1,2},
+x_{1,2,0},x_{1,2,1},x_{1,2,2}
+].
+\end{aligned}
+$$
+
+左上窗口若按 $(i,r,s)$ 次序取数，得到：
+
+$$
+\begin{aligned}
+[
+&x_{0,0,0},x_{0,0,1},x_{0,1,0},x_{0,1,1},\\
+&x_{1,0,0},x_{1,0,1},x_{1,1,0},x_{1,1,1}
+].
+\end{aligned}
+$$
+
+每一行 Kernel 宽度内的数连续，但从输入第 0 行的窗口末尾走到第 1 行开头时，要跳过不属于窗口的 $x_{0,0,2}$。从输入 Channel 0 切换到 Channel 1 时也会跨过其余空间元素。PyTorch 中输出 Channel 0 的八个对应权重则在 OIHW 标准连续 Kernel 中形成一段连续区域。
+
+这里用 $y_{o,u,v}$ 表示输出。NCHW 输出线性顺序为：
+
+$$
+\begin{aligned}
+[
+&y_{0,0,0},y_{0,0,1},y_{0,1,0},y_{0,1,1},\\
+&y_{1,0,0},y_{1,0,1},y_{1,1,0},y_{1,1,1}
+].
+\end{aligned}
+$$
+
+它先完成一个输出 Channel 的整个 $2\times2$ 平面，再进入下一个输出 Channel。
+
+在 NHWC 连续输入中，用 $x_{h,w,i}$ 表示元素，线性存储区为：
+
+$$
+\begin{aligned}
+[
+&x_{0,0,0},x_{0,0,1},
+x_{0,1,0},x_{0,1,1},
+x_{0,2,0},x_{0,2,1},\\
+&x_{1,0,0},x_{1,0,1},
+x_{1,1,0},x_{1,1,1},
+x_{1,2,0},x_{1,2,1},\\
+&x_{2,0,0},x_{2,0,1},
+x_{2,1,0},x_{2,1,1},
+x_{2,2,0},x_{2,2,1}
+].
+\end{aligned}
+$$
+
+左上窗口若按 $(r,s,i)$ 次序取数，得到：
+
+$$
+\begin{aligned}
+[
+&x_{0,0,0},x_{0,0,1},
+x_{0,1,0},x_{0,1,1},\\
+&x_{1,0,0},x_{1,0,1},
+x_{1,1,0},x_{1,1,1}
+].
+\end{aligned}
+$$
+
+每个像素的两个 Channel 连续；从窗口第一行走到第二行时，要跳过输入第 0 行最右侧像素的两个 Channel。Keras HWIO Kernel 若观察成 $(K_hK_wI,O)$，每个窗口元素对应的两个输出 Channel 权重连续。
+
+这里用 $y_{u,v,o}$ 表示输出。NHWC 输出线性顺序为：
+
+$$
+\begin{aligned}
+[
+&y_{0,0,0},y_{0,0,1},
+y_{0,1,0},y_{0,1,1},\\
+&y_{1,0,0},y_{1,0,1},
+y_{1,1,0},y_{1,1,1}
+].
+\end{aligned}
+$$
+
+它先保存一个空间位置的全部输出 Channel，再进入下一个空间位置。
+
+> [!NOTE] 局部窗口通常不是输入中的一整段连续区域
+> 即使输入本身连续，$K_h<H$ 或 $K_w<W$ 时，窗口换行、换 Channel 或跨样本都可能出现地址跨度。显式 img2col 会把这些取数结果复制成规则矩阵；直接卷积程序则可以在分块循环中按 stride 读取，不一定创建完整的窗口矩阵。
+
+#### Kernel 展平时必须与窗口元素顺序一致
+
+普通卷积若采用 img2col，输入窗口和 Kernel 会沿同一个缩并维度排成矩阵。
+
+先看 $G=1$ 的普通卷积，并定义：
+
+$$
+P_{\mathrm{out}}
+=
+NH_{\mathrm{out}}W_{\mathrm{out}}.
+$$
+
+PyTorch OIHW 常按：
+
+$$
+q=(cK_h+r)K_w+s
+$$
+
+排列窗口元素。展平权重可写为：
+
+$$
+W_{\mathrm{mat}}\in\mathbb R^{O\times(I_gK_hK_w)}.
+$$
+
+一次矩阵乘使用：
+
+$$
+Y_{\mathrm{flat}}
+=
+X_{\mathrm{col}}W_{\mathrm{mat}}^T.
+$$
+
+Keras HWIO 更自然地按：
+
+$$
+q=(rK_w+s)I_g+c
+$$
+
+排列窗口元素，并把 Kernel 观察成：
+
+$$
+K_{\mathrm{mat}}
+\in
+\mathbb R^{(K_hK_wI_g)\times O}.
+$$
+
+矩阵乘写成：
+
+$$
+Y_{\mathrm{flat}}
+=
+X_{\mathrm{col}}K_{\mathrm{mat}}.
+$$
+
+两种写法的缩并顺序不同，只要输入窗口和 Kernel 使用相同的 $q$ 定义，最终卷积数值就相同。复制权重时不能只比较元素总数，还要调整 O、I、H、W 四个轴的次序。
+
+groups 大于 1 时不能把全部输出作为一次普通稠密矩阵乘法。令 $O_g=O/G$，第 $g$ 组应分别写成：
+
+$$
+X_{\mathrm{col},g}
+\in
+\mathbb R^{P_{\mathrm{out}}\times(I_gK_hK_w)},
+$$
+
+$$
+W_g
+\in
+\mathbb R^{O_g\times(I_gK_hK_w)},
+$$
+
+$$
+Y_g
+=
+X_{\mathrm{col},g}W_g^T.
+$$
+
+Keras HWIO 也采用同样的逐组思路。此时 $X_{\mathrm{col},g}$ 内部按 $(r,s,i_g)$ 排列，Kernel 更自然地保存转置方向的：
+
+$$
+K_g
+\in
+\mathbb R^{(K_hK_wI_g)\times O_g},
+$$
+
+因此写成：
+
+$$
+Y_g=X_{\mathrm{col},g}K_g.
+$$
+
+各组结果最后按输出 Channel 次序放回完整输出。
+
+> [!NOTE] PyTorch channels-last 仍保留 OIHW 的逻辑含义
+> 把卷积模块或权重改成 channels-last 内存格式，可以改变物理 stride，却不会把 `weight[o,c,r,s]` 的四个下标含义改成 Keras HWIO。设备库还可能为计算准备自己的 Kernel 打包格式。
+
 > [!TIP] 用形状相乘核对参数
 > 看到模型摘要中的参数数目时，可以把权重张量各维相乘，再加偏置数。若结果不同，应继续检查 groups、depth multiplier 或 Layer 是否还包含归一化参数。
 
@@ -3328,6 +3879,104 @@ K_hK_w.
 $$
 
 PyTorch `Conv1d/2d/3d` 和 Keras `Conv1D/2D/3D` 都可以通过 `groups` 指定分组数。轴排列仍分别遵循各自的默认方式。
+
+#### groups 下输入、Kernel 与输出怎样分段
+
+再定义每组输入与输出 Channel 数：
+
+$$
+I_g=\frac{C_{\mathrm{in}}}{G},
+\qquad
+O_g=\frac{C_{\mathrm{out}}}{G}.
+$$
+
+第 $g$ 组使用的全局 Channel 范围为：
+
+$$
+gI_g,\ldots,(g+1)I_g-1
+$$
+
+和：
+
+$$
+gO_g,\ldots,(g+1)O_g-1.
+$$
+
+PyTorch Kernel shape 为：
+
+$$
+(C_{\mathrm{out}},I_g,K_h,K_w).
+$$
+
+它没有单独的 $G$ 轴。第 $g$ 组占据输出轴上连续的 $O_g$ 行；每一行内部只保存该组的 $I_g$ 个输入 Channel 权重。因此，不能用 Kernel 的第二轴编号直接当作输入张量的全局 Channel 编号。
+
+Keras 普通分组 Conv2D Kernel shape 为：
+
+$$
+(K_h,K_w,I_g,C_{\mathrm{out}}).
+$$
+
+它同样没有显式 $G$ 轴。第 $g$ 组使用最后一轴中：
+
+$$
+gO_g:(g+1)O_g
+$$
+
+这一段输出权重，第三轴仍是组内输入 Channel。
+
+以 stride 1、padding 0 的 Pointwise 为例，先定义：
+
+$$
+P=NHW,
+\qquad
+S=HW.
+$$
+
+Keras 默认 NHWC 的第 $g$ 组可写成：
+
+$$
+X_g\in\mathbb R^{P\times I_g},
+\qquad
+K_g\in\mathbb R^{I_g\times O_g},
+$$
+
+$$
+Y_g=X_gK_g.
+$$
+
+全部 $Y_g$ 按输出 Channel 次序放回同一个 $(P,C_{\mathrm{out}})$ 结果。每个位置中的组内 Channel 是相邻元素，但位置 $p$ 到位置 $p+1$ 的同组起点仍跨过全部 $C_{\mathrm{in}}$ 个输入 Channel。后端可以使用带行跨度的读取，也可以把各组数据打包后再计算，不需要制作含有大量 0 的完整权重矩阵。
+
+对 PyTorch 标准 NCHW，固定样本 $n$ 与组 $g$：
+
+$$
+X_{n,g}\in\mathbb R^{I_g\times S},
+\qquad
+W_g\in\mathbb R^{O_g\times I_g},
+$$
+
+$$
+Y_{n,g}=W_gX_{n,g}
+\in\mathbb R^{O_g\times S}.
+$$
+
+同一组的输入 Channel 平面和输出 Channel 平面在标准连续 NCHW 中各自形成连续区段，因此这种逐组写法与物理存储顺序十分接近。
+
+若 stride 大于 1，应改用：
+
+$$
+P_{\mathrm{out}}
+=
+NH_{\mathrm{out}}W_{\mathrm{out}},
+\qquad
+S_{\mathrm{out}}
+=
+H_{\mathrm{out}}W_{\mathrm{out}}.
+$$
+
+此时需要从输入中按间隔选取空间位置，选取结果未必是无复制的稠密二维视图。padding 不为 0 时，还要处理输出外侧位置的补入值。分组仍然不需要保存跨组的 0 权重。
+
+> [!NOTE] 分组不是在完整权重中填 0
+> 数学上可以想象一个大型矩阵，并把跨组位置设为 0；框架通常不会真的保存这些 0。Kernel 只保存每个输出 Channel 所属组内的权重，这正是参数数目除以 $G$ 的原因。
 
 #### 手算：groups 改变哪些数会相加
 
@@ -3392,6 +4041,73 @@ P_W=C_{\mathrm{in}}M K_hK_w.
 $$
 
 若有 bias，再加 $C_{\mathrm{in}}M$。
+
+#### Depthwise Kernel 不是普通 HWIO
+
+令 $I=C_{\mathrm{in}}$，depth multiplier 为 $M$。PyTorch 用 groups 表达 Depthwise 时，权重逻辑 shape 为：
+
+$$
+(IM,1,K_h,K_w).
+$$
+
+第二轴长度为 1，因为每个输出 Channel 只读取所属组中的一个输入 Channel。常用输出 Channel 编号为：
+
+$$
+o=iM+m,
+$$
+
+其中 $i$ 是输入 Channel 编号，$m\in\{0,\ldots,M-1\}$ 是该输入 Channel 下的 multiplier 编号。标准连续 PyTorch 权重先保存 $o=0$ 的空间 Kernel，再保存 $o=1$。
+
+Keras `DepthwiseConv2D` 的 depthwise Kernel 逻辑 shape 为：
+
+$$
+(K_h,K_w,I,M).
+$$
+
+它不是普通 Conv2D 的 $(K_h,K_w,I,O)$：最后一轴只记录“每个输入 Channel 产生几个输出”。标准连续 stride 为：
+
+$$
+(K_wIM,IM,M,1).
+$$
+
+固定空间位置和输入 Channel 后，$M$ 个 multiplier 权重连续存放。Keras 默认 NHWC 输出的最后一轴通常也按 $o=iM+m$ 排列。
+
+##### $1\times1$ Depthwise 的内存例子
+
+令 $I=2,M=2$。Keras depthwise Kernel 的线性顺序为：
+
+$$
+[
+d_{0,0},d_{0,1},
+d_{1,0},d_{1,1}
+],
+$$
+
+其中 $d_{i,m}$ 表示输入 Channel $i$ 的第 $m$ 个 Kernel。一个 NHWC 像素：
+
+$$
+[x_0,x_1]
+$$
+
+会产生连续输出：
+
+$$
+[
+x_0d_{0,0},x_0d_{0,1},
+x_1d_{1,0},x_1d_{1,1}
+].
+$$
+
+PyTorch 等价权重的输出轴长度为 4，依次保存：
+
+$$
+o=0,\ 1,\ 2,\ 3.
+$$
+
+标准 NCHW 输出则先保存 $x_0d_{0,0}$ 的完整空间平面，再保存 $x_0d_{0,1}$、$x_1d_{1,0}$ 与 $x_1d_{1,1}$ 的空间平面。
+
+> [!INFO] 官方定义
+> Keras [DepthwiseConv2D 文档](https://keras.io/api/layers/convolution_layers/depthwise_convolution2d/) 说明每个输入 Channel 会分别使用 Kernel，并由 `depth_multiplier` 决定每个输入 Channel 产生的输出 Channel 数。
 
 #### 手算：两个 Channel 各算各的
 
@@ -3517,45 +4233,102 @@ $$
 
 #### 为什么 Pointwise 不需要 img2col：它原生就是矩阵乘法
 
-普通 $K_h\times K_w$ 卷积若使用 img2col 方式实现，需要先把每个局部窗口展开成一行。展开矩阵的形状通常可写成：
+普通 $K_h\times K_w$ 卷积若使用 img2col 方式实现，需要先把每个局部窗口展开成一行。令：
+
+$$
+P_{\mathrm{out}}
+=
+NH_{\mathrm{out}}W_{\mathrm{out}},
+\qquad
+I=C_{\mathrm{in}},
+\qquad
+O=C_{\mathrm{out}},
+$$
+
+则展开矩阵常写成：
 
 $$
 X_{\mathrm{col}}
 \in
 \mathbb R^{
-(NH_{\mathrm{out}}W_{\mathrm{out}})
+P_{\mathrm{out}}
 \times
-(C_{\mathrm{in}}K_hK_w)
+(IK_hK_w)
 }.
 $$
 
-当窗口互相重叠时，同一个输入元素会在 $X_{\mathrm{col}}$ 中出现多次。完成窗口展开后，才与展平的卷积核做矩阵乘法。
-
-Pointwise 卷积的空间核只有 $1\times1$。在 stride 为 1、空间尺寸保持不变的常见设置下，一个输出位置只读取同一位置的 $C_{\mathrm{in}}$ 个 Channel，不需要收集上下左右的数据。令：
+这个矩阵包含：
 
 $$
-P=NHW,
+P_{\mathrm{out}}IK_hK_w
 $$
 
-把 Batch维度和全部空间位置合并成 $P$ 行，每一行保存一个位置的 Channel 向量：
+个元素。窗口互相重叠时，同一个输入元素可能在不同的行中重复出现。随后，$X_{\mathrm{col}}$ 才与展开后的 Kernel 相乘。
+
+Pointwise 的 $K_h=K_w=1$。每个输出位置只读取同一位置的 $I$ 个 Channel，不收集上、下、左、右位置。若形式上仍写一个 $X_{\mathrm{col}}$，它的元素数会退化为：
+
+$$
+P_{\mathrm{out}}I.
+$$
+
+在最常见的 stride 1、padding 0 设置中，$P_{\mathrm{out}}=NHW$，这与输入本身的元素数相同。此时另建一个窗口矩阵只是在重复保存已有数据，没有产生新的空间组合。
+
+> [!IMPORTANT] 不经过 img2col，不表示只能使用某一种内存格式
+> NHWC 连续输入可以直接看成“位置数 $\times$ 输入 Channel 数”的矩阵；NCHW 连续输入可以按每个样本直接看成“输入 Channel 数 $\times$ 空间位置数”的矩阵。两种情况都能直接进入矩阵乘法，只是矩阵的左右次序不同。
+
+#### 三种常见输入格式怎样直接进入矩阵乘法
+
+为避免只看 shape 看不出实际顺序，下面同时写出输入、Kernel 和输出的自然矩阵形状。
+
+| 框架与内存格式 | 输入可直接观察成 | Kernel 去掉 $1\times1$ 轴后 | 矩阵乘法 | 结果可直接观察成 |
+| --- | --- | --- | --- | --- |
+| Keras 默认 NHWC 连续 | $X_{\mathrm{flat}}\in\mathbb R^{P\times I}$ | $K\in\mathbb R^{I\times O}$ | $X_{\mathrm{flat}}K$ | $Y_{\mathrm{flat}}\in\mathbb R^{P\times O}$ |
+| PyTorch 默认 NCHW 连续 | 每个样本 $X_n\in\mathbb R^{I\times S}$ | $W\in\mathbb R^{O\times I}$ | $WX_n$ | $Y_n\in\mathbb R^{O\times S}$ |
+| PyTorch channels-last | $X_{\mathrm{flat}}\in\mathbb R^{P\times I}$ | 逻辑形状 $W\in\mathbb R^{O\times I}$ | $X_{\mathrm{flat}}W^T$ | $Y_{\mathrm{flat}}\in\mathbb R^{P\times O}$ |
+
+其中：
+
+$$
+P=NHW,\qquad S=HW.
+$$
+
+$P$ 是一个 Batch 中的全部空间位置数，$S$ 是单个样本的空间位置数。表中的“可直接观察成”表示原连续存储顺序已经符合该二维矩阵的逐行顺序，不需要先制作含有局部窗口副本的大矩阵。
+
+#### 情况一：Keras 默认 NHWC 连续输入
+
+Keras 输入 shape 为：
+
+$$
+(N,H,W,I),
+$$
+
+标准连续 stride 为：
+
+$$
+(HWI,WI,I,1).
+$$
+
+最右侧的输入 Channel 连续，因此可以把前三个轴直接合并为 $P=NHW$：
 
 $$
 X_{\mathrm{flat}}
 \in
-\mathbb R^{P\times C_{\mathrm{in}}}.
+\mathbb R^{P\times I}.
 $$
 
-再把 Pointwise 卷积核去掉两个长度为 1 的空间轴，得到：
+Keras Pointwise Kernel 的逻辑 shape 为：
 
 $$
-K
-\in
-\mathbb R^{C_{\mathrm{in}}\times C_{\mathrm{out}}}.
+(1,1,I,O).
 $$
 
-Keras `Conv2D` 的核常保存为 $(1,1,C_{\mathrm{in}},C_{\mathrm{out}})$，去掉两个空间轴后正好得到 $K$。PyTorch `Conv2d` 的权重常保存为 $(C_{\mathrm{out}},C_{\mathrm{in}},1,1)$，去掉空间轴后为 $(C_{\mathrm{out}},C_{\mathrm{in}})$，在上面的行向量写法中使用其转置。
+去掉两个长度为 1 的轴后，Kernel 的连续顺序正好是：
 
-整张特征图的计算直接写成：
+$$
+K\in\mathbb R^{I\times O}.
+$$
+
+含 bias 的完整计算为：
 
 $$
 Y_{\mathrm{flat}}
@@ -3566,36 +4339,265 @@ $$
 
 其中：
 
-- $P=NHW$ 是一个 Batch 中位置的总数；
-- $X_{\mathrm{flat}}$ 的每一行是一个位置的 $C_{\mathrm{in}}$ 个输入 Channel；
-- $K$ 的每一列产生一个输出 Channel；
-- $\mathbf 1_P$ 是长度为 $P$、元素全为 1 的列向量，用于让同一个 bias 加到全部位置；
-- $Y_{\mathrm{flat}}$ 的形状为 $(P,C_{\mathrm{out}})$。
+- $X_{\mathrm{flat}}$ 的第 $p$ 行保存第 $p$ 个位置的全部输入 Channel；
+- $K$ 的第 $i$ 行保存输入 Channel $i$ 到全部输出 Channel 的权重；
+- $\mathbf 1_P$ 是长度为 $P$、元素全为 1 的列向量；
+- $b\in\mathbb R^O$，同一个 $b_o$ 会加到全部位置；
+- 输出 $Y_{\mathrm{flat}}$ 的 shape 为 $(P,O)$。
 
-矩阵乘法完成后，只需把 $P$ 拆回 $N,H,W$：
-
-$$
-(P,C_{\mathrm{out}})
-\rightarrow
-(N,H,W,C_{\mathrm{out}})
-$$
-
-或 PyTorch 常见的：
+$(P,O)$ 连续结果天然对应 NHWC 输出：
 
 $$
-(N,C_{\mathrm{out}},H,W).
+(N,H,W,O),
 $$
 
-因此，Pointwise 的核心计算从一开始就是二维矩阵乘法，不需要生成包含空间邻域的 img2col 中间张量。若通用卷积程序仍把 $1\times1$ 情况写成 img2col，那么得到的“列”只是各位置 Channel 向量的重新排列；显式保存这份中间数据没有必要。
+其连续 stride 为：
 
-> [!IMPORTANT] 数据排布调整不等于 img2col
-> Keras 默认 channels-last 时，每个位置的 Channel 通常连续存放，较容易直接观察成 $(P,C_{\mathrm{in}})$。PyTorch 常用 channels-first，底层程序可能需要重新排布或分块读取数据，以便矩阵乘单元高效工作；这个步骤没有提取 $K_h\times K_w$ 邻域，也不会像普通 img2col 那样复制重叠窗口。
+$$
+(HWO,WO,O,1).
+$$
 
-> [!NOTE] 框架可能选择专用卷积内核
-> 数学计算不要求 img2col。实际运行时，PyTorch 或 Keras 所用后端可以选择 GEMM、专用 $1\times1$ 卷积内核或带数据打包的实现。无论采用哪一种，核心乘加仍等价于 $X_{\mathrm{flat}}K$。
+##### NHWC 的具体线性存储例子
 
-> [!NOTE] 分组 Pointwise 是多次较小的矩阵乘法
-> 上述公式描述 `groups=1` 的普通 Pointwise。若设置 groups，每组只读取本组输入 Channel，可以看成各组分别执行较小矩阵乘法，再沿 Channel维度组合结果。
+令 $N=1,H=1,W=2,I=3,O=2$。用 $x^{(p)}_i$ 表示空间位置 $p$ 的输入 Channel $i$。输入线性存储区为：
+
+$$
+[
+x^{(0)}_0,x^{(0)}_1,x^{(0)}_2,
+x^{(1)}_0,x^{(1)}_1,x^{(1)}_2
+].
+$$
+
+可以直接按两行三列理解：
+
+$$
+X_{\mathrm{flat}}
+=
+\begin{bmatrix}
+x^{(0)}_0&x^{(0)}_1&x^{(0)}_2\\
+x^{(1)}_0&x^{(1)}_1&x^{(1)}_2
+\end{bmatrix}.
+$$
+
+Kernel 去掉 $1\times1$ 轴后的线性顺序为：
+
+$$
+[
+k_{0,0},k_{0,1},
+k_{1,0},k_{1,1},
+k_{2,0},k_{2,1}
+],
+$$
+
+也就是：
+
+$$
+K=
+\begin{bmatrix}
+k_{0,0}&k_{0,1}\\
+k_{1,0}&k_{1,1}\\
+k_{2,0}&k_{2,1}
+\end{bmatrix}.
+$$
+
+矩阵乘结果的线性顺序为：
+
+$$
+[
+y^{(0)}_0,y^{(0)}_1,
+y^{(1)}_0,y^{(1)}_1
+].
+$$
+
+它先保存位置 0 的两个输出 Channel，再保存位置 1 的两个输出 Channel，这正是连续 NHWC 输出的次序。
+
+#### 情况二：PyTorch 默认 NCHW 连续输入
+
+PyTorch 默认输入的逻辑 shape 与连续 stride 为：
+
+$$
+(N,I,H,W),
+$$
+
+$$
+(IHW,HW,W,1).
+$$
+
+令 $S=HW$。对固定样本 $n$，输入存储区先放完整的输入 Channel 0，再放 Channel 1，因此它天然就是：
+
+$$
+X_n\in\mathbb R^{I\times S}.
+$$
+
+PyTorch Pointwise 权重的逻辑 shape 为：
+
+$$
+(O,I,1,1).
+$$
+
+去掉两个空间轴后得到连续矩阵：
+
+$$
+W\in\mathbb R^{O\times I}.
+$$
+
+对每个样本直接计算：
+
+$$
+Y_n
+=
+WX_n+b\mathbf 1_S^T,
+$$
+
+其中 $b$ 是 $O\times1$ 的列向量，$\mathbf 1_S^T$ 是长度为 $S$ 的全 1 行向量。结果：
+
+$$
+Y_n\in\mathbb R^{O\times S}
+$$
+
+先连续保存输出 Channel 0 的全部空间位置，再保存输出 Channel 1。它可以直接解释为 PyTorch 标准连续输出：
+
+$$
+(O,H,W).
+$$
+
+多个样本可以使用 Batch 矩阵乘法，也可以由专用 $1\times1$ Kernel 逐块完成。
+
+##### NCHW 的具体线性存储例子
+
+仍令 $N=1,H=1,W=2,I=3,O=2$。用 $x^{(i)}_p$ 表示输入 Channel $i$ 的空间位置 $p$。输入线性存储区为：
+
+$$
+[
+x^{(0)}_0,x^{(0)}_1,
+x^{(1)}_0,x^{(1)}_1,
+x^{(2)}_0,x^{(2)}_1
+].
+$$
+
+它可以直接按三行两列理解：
+
+$$
+X_0
+=
+\begin{bmatrix}
+x^{(0)}_0&x^{(0)}_1\\
+x^{(1)}_0&x^{(1)}_1\\
+x^{(2)}_0&x^{(2)}_1
+\end{bmatrix}.
+$$
+
+PyTorch 权重的线性顺序为：
+
+$$
+[
+w_{0,0},w_{0,1},w_{0,2},
+w_{1,0},w_{1,1},w_{1,2}
+],
+$$
+
+也就是：
+
+$$
+W=
+\begin{bmatrix}
+w_{0,0}&w_{0,1}&w_{0,2}\\
+w_{1,0}&w_{1,1}&w_{1,2}
+\end{bmatrix}.
+$$
+
+结果线性存储区为：
+
+$$
+[
+y^{(0)}_0,y^{(0)}_1,
+y^{(1)}_0,y^{(1)}_1
+].
+$$
+
+这里先保存输出 Channel 0 的两个空间位置，再保存输出 Channel 1。它正好符合标准连续 NCHW，而不是先构造 $(P,I)$ 再把轴调回来。
+
+> [!IMPORTANT] $(P,O)$ 不能直接当作标准连续 NCHW
+> 连续的 $(P,O)$ 先变化输出 Channel，天然对应 NHWC 物理顺序。标准连续 NCHW 则先连续保存同一输出 Channel 的全部空间位置，天然对应 $(O,S)$。两者元素数相同，但不能仅靠修改 shape 把一种连续次序解释成另一种；通常还需要交换轴，必要时还会复制数据。
+
+#### 情况三：PyTorch channels-last
+
+PyTorch channels-last 的逻辑 shape 仍是：
+
+$$
+(N,I,H,W),
+$$
+
+但物理 stride 为：
+
+$$
+(HWI,1,WI,I).
+$$
+
+它的线性存储顺序与 NHWC 相同，因此输入可直接观察成：
+
+$$
+X_{\mathrm{flat}}\in\mathbb R^{P\times I}.
+$$
+
+这里说的是物理存储视角。PyTorch 张量接口中的逻辑轴仍为 $(N,I,H,W)$；不能在忽略 stride 的情况下直接调用普通 reshape 并假定最后一轴已经表示 $I$。后端会依据 channels-last stride 读取，或者先取得等价的 NHWI 轴观察方式。
+
+PyTorch 权重去掉空间轴后的逻辑形状仍为 $(O,I)$。矩阵乘法可以使用转置读取选项，直接计算：
+
+$$
+Y_{\mathrm{flat}}
+=
+X_{\mathrm{flat}}W^T.
+$$
+
+也可以由后端先把权重准备成适合矩阵单元读取的内部格式。连续的 $(P,O)$ 结果在 PyTorch 中可保留逻辑 shape：
+
+$$
+(N,O,H,W),
+$$
+
+同时使用 channels-last stride：
+
+$$
+(HWO,1,WO,O).
+$$
+
+> [!NOTE] 逻辑 NCHW 与物理 NHWC 可以同时成立
+> PyTorch channels-last 张量仍通过 `y[n,o,h,w]` 访问，但相邻内存元素优先改变 $o$。因此，看到逻辑 shape `(N,O,H,W)` 时，仍要查看 stride，不能据此认定输出是标准连续 NCHW。
+
+#### Pointwise 省掉了多少临时存储
+
+普通卷积的显式 img2col 缓冲区需要：
+
+$$
+P_{\mathrm{out}}IK_hK_w
+$$
+
+个元素。Pointwise 形式上只剩：
+
+$$
+P_{\mathrm{out}}I.
+$$
+
+stride 1、padding 0 时，这些元素就是原输入的全部元素，不必再复制一份。于是可以得到两种直接形式：
+
+$$
+\text{NHWC 或 channels-last：}\quad
+(P,I)(I,O)\rightarrow(P,O),
+$$
+
+$$
+\text{NCHW：}\quad
+(O,I)(I,S)\rightarrow(O,S).
+$$
+
+若 stride 大于 1，只需选择间隔位置；这些位置未必能直接合并成稠密二维视图，后端可以按跨度读取或先打包。若 padding 不为 0，输出外侧位置还可能读取补入值。若 groups 大于 1，则把输入和输出 Channel 分组，分别执行较小的矩阵乘法。$1\times1$ 的 dilation 不会扩大读取范围，因为唯一的空间权重没有相邻核元素可供拉开距离。
+
+> [!NOTE] 数据重排、Kernel 打包与 img2col 是三件不同的事
+> 数据重排改变元素的物理先后次序；Kernel 打包把权重整理成设备矩阵单元喜欢的分块格式；img2col 则为每个输出位置收集整个局部窗口。Pointwise 可能使用前两项，却不需要第三项所产生的空间窗口展开。
+
+> [!NOTE] 框架可以选择专用计算程序
+> 实际运行时，PyTorch 或 Keras 所用后端可以选择 GEMM、专用 $1\times1$ 卷积程序或带分块读取的实现。设备内部格式可能与框架可见的 NCHW、NHWC、OIHW、HWIO 不同，但核心乘加仍等价于上面的矩阵乘法。
 
 #### 手算：三个 Channel 变成两个 Channel
 
@@ -7001,7 +8003,7 @@ PyTorch 更常把激活写成下一个独立 Layer；Keras 常允许 `Dense` 或
 - PyTorch：`(8,16,H_out,W_out)`；
 - Keras：`(8,H_out,W_out,16)`。
 
-卷积的每个输出数值仍来自相同的局部乘加公式。只有存放次序发生变化。
+卷积的每个输出数值仍来自相同的局部乘加公式，但两个 shape 中的公共轴次序不同。若张量采用各自常见的连续格式，线性存储顺序也不同；实际物理顺序仍要由 stride 判断。PyTorch channels-last 甚至可以让逻辑 shape 保持 `(N,C,H,W)`，同时使用与 NHWC 相同的物理次序。输入、Kernel 与输出的完整偏移公式见 1.8 和 6.6。
 
 ### 13.4 RNN 输出规则需要单独核对
 
@@ -10212,11 +11214,109 @@ $$
 3\times2\times2\times2+3=27.
 $$
 
+#### 扩展：把 Pointwise 增加到两个空间位置
+
+假设 Depthwise 还产生了第二个位置：
+
+$$
+d^{(1)}=[20,60],
+$$
+
+第一个位置仍为：
+
+$$
+d^{(0)}=[10,50].
+$$
+
+Keras 默认 NHWC 的 Pointwise 输入线性存储区为：
+
+$$
+[10,50,\ 20,60].
+$$
+
+它可直接观察成：
+
+$$
+X_{\mathrm{NHWC}}
+=
+\begin{bmatrix}
+10&50\\
+20&60
+\end{bmatrix}.
+$$
+
+Keras Kernel 的 $(1,1)$ 轴去掉后就是前面的：
+
+$$
+P=
+\begin{bmatrix}
+1&0&1\\
+0&2&-1
+\end{bmatrix},
+$$
+
+线性权重顺序为：
+
+$$
+[1,0,1,\ 0,2,-1].
+$$
+
+直接计算 $X_{\mathrm{NHWC}}P+b$，连续 NHWC 输出为：
+
+$$
+[10,101,-40,\ 20,121,-40].
+$$
+
+它先放位置 0 的三个输出 Channel，再放位置 1。
+
+PyTorch 标准 NCHW 的相同输入线性顺序为：
+
+$$
+[10,20,\ 50,60],
+$$
+
+也就是：
+
+$$
+X_{\mathrm{NCHW}}
+=
+\begin{bmatrix}
+10&20\\
+50&60
+\end{bmatrix}.
+$$
+
+PyTorch Pointwise 权重保存为：
+
+$$
+W=P^T
+=
+\begin{bmatrix}
+1&0\\
+0&2\\
+1&-1
+\end{bmatrix},
+$$
+
+线性权重顺序为：
+
+$$
+[1,0,\ 0,2,\ 1,-1].
+$$
+
+直接计算 $WX_{\mathrm{NCHW}}+b\mathbf 1_2^T$，连续 NCHW 输出为：
+
+$$
+[10,20,\ 101,121,\ -40,-40].
+$$
+
+它先放输出 Channel 0 的两个位置，再放输出 Channel 1 和输出 Channel 2。两种输出包含完全相同的六个数，只是线性存储顺序不同。
+
 > [!WARNING] Depthwise 不等于每个输出都能读取全部输入 Channel
 > 它只在各自 Channel 内做空间乘加。真正组合 Channel 的是后面的 Pointwise 卷积。
 
 > [!CHECK] 最终自检
-> Depthwise 输出 Channel 数由输入 Channel 与 depth multiplier 决定；Pointwise 不改变高宽；17 个参数中没有重复计算中间 Feature。
+> Depthwise 输出 Channel 数由输入 Channel 与 depth multiplier 决定；Pointwise 不改变高宽；17 个参数中没有重复计算中间 Feature；NHWC 使用 $(P,I)(I,O)$，NCHW 使用 $(O,I)(I,S)$，二者都不需要 img2col。
 
 ---
 
