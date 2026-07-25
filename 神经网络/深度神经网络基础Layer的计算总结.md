@@ -127,7 +127,7 @@ PyTorch 图像计算通常采用 channels-first，也就是 Channel维度在空�
 | $x$ | Layer 的输入 |
 | $y$ | Layer 的输出或监督目标，具体含义由上下文说明 |
 | $W$ | 权重矩阵或卷积核 |
-| $b$ | 偏置 |
+| $b$ | 在仿射公式中通常表示 bias；在多输入计算或固定系数公式中会另行说明 |
 | $\mu$ | 均值 |
 | $\sigma^2$ 或 $v$ | 方差 |
 | $\epsilon$ | 防止分母过小的正数 |
@@ -137,6 +137,9 @@ PyTorch 图像计算通常采用 channels-first，也就是 Channel维度在空�
 | $\odot$ | 逐元素乘法 |
 | $\lVert x\rVert_p$ | $p$ 范数 |
 | $\lfloor a\rfloor$ | 不大于 $a$ 的最大整数 |
+
+> [!IMPORTANT] 本文怎样书写 bias 的形状
+> 若输出宽度为 $O$，常写 $b\in\mathbb R^O$，框架参数 shape 写成 `(O,)`；$b_o$ 只是其中第 $o$ 个标量，不表示 bias 只有一个数。若输出还有 Batch、序列或空间轴，这个 `(O,)` bias 会沿那些轴重复使用。后文每种带 bias 的 Layer 都会结合自己的输出轴再次说明具体 shape。
 
 > [!EXAMPLE] 逐元素乘法与矩阵乘法不能混淆
 > 若 $a=[1,2]$、$b=[3,4]$，逐元素乘法得到 $a\odot b=[3,8]$；向量内积得到 $a\cdot b=1\times3+2\times4=11$。门控 Layer 常用逐元素乘法，注意力分数和全连接常用矩阵乘法。
@@ -997,6 +1000,27 @@ $$
 - 求和发生在输入 Feature维度；
 - 每个输出位置使用一列系数。
 
+完整 bias 向量为：
+
+$$
+b=[b_0,b_1,\ldots,b_{O-1}]
+\in\mathbb R^O,
+$$
+
+所以 PyTorch `Linear.bias` 与 Keras `Dense.bias` 的 shape 都是 `(O,)`。输入若为：
+
+$$
+(A_0,\ldots,A_{m-1},I),
+$$
+
+可以在概念上把 bias 看成：
+
+$$
+(1,\ldots,1,O),
+$$
+
+再沿全部前导位置重复使用。实际只保存 $O$ 个数。
+
 输入形状为 `(...,I)`，输出形状为 `(...,O)`。省略号可以包含 Batch维度、Sequence Length 或其他前导维度。Linear 与 Dense 都只处理最后一个 Feature维度，不会自动组合不同 token。
 
 使用 bias 时，Parameter 数量为：
@@ -1027,6 +1051,8 @@ W=
 \qquad
 b=[0.5,-1].
 $$
+
+本例 $O=2$，所以 $b\in\mathbb R^2$，实际 shape 为 `(2,)`。
 
 第一个输出为：
 
@@ -1071,6 +1097,10 @@ $$
 7\times4+4=32.
 $$
 
+其中权重的二维计算形状为 $(7,4)$，bias shape 为 `(4,)`。Lazy 只延后确定输入宽度，不会让 bias 多出 Batch轴。
+
+PyTorch `LazyLinear` 在首次收到输入前，weight 和 bias 可能仍是尚未初始化的 Parameter；首次输入确定 $I$ 后，bias 才取得正常存储，但最终 shape 仍只由预先指定的 $O$ 决定。
+
 > [!WARNING] 第一次输入决定后续尺寸
 > 若本来希望 Feature 宽度为 7，却误把宽度 8 的输入作为第一次调用，Layer 会按 8 创建权重。后续宽度 7 的输入将无法使用同一组参数。正式训练前应先用正确形状完成一次前向检查。
 
@@ -1104,6 +1134,15 @@ $$
 - $W_o\in\mathbb{R}^{I_1\times I_2}$ 是第 $o$ 个输出使用的权重；
 - $O$ 是输出 Feature 数量；
 - 每一项都同时含有一个 $x_1$ 特征和一个 $x_2$ 特征。
+
+启用 bias 时：
+
+$$
+b=[b_0,\ldots,b_{O-1}]
+\in\mathbb R^O,
+$$
+
+框架参数 shape 为 `(O,)`。每个 $b_o$ 只加到输出 Feature $o$，并沿兼容的全部前导位置重复使用。下面只有一个输出的数字例子中 $O=1$，因此 `b=0.5` 实际是 shape `(1,)` 的向量所含的唯一标量。
 
 输入形状分别为 `(...,I1)` 与 `(...,I2)`，前导维度需要兼容，输出为 `(...,O)`。
 
@@ -1190,7 +1229,7 @@ $$
 V D.
 $$
 
-Embedding 通常不使用额外 bias。
+Embedding 通常不使用额外 bias，因此本 Layer 没有 bias shape；它只保存 shape 为 $(V,D)$ 的 Embedding 矩阵。
 
 设：
 
@@ -1326,7 +1365,7 @@ Einsum 字符串常用 `...i,ij->...j` 表达这件事：
 - `...` 表示任意前导维度原样保留；
 - $i$ 同时出现在输入与权重中，却不出现在输出中，因此沿 $i$ 求和；
 - $j$ 出现在权重和输出中，因此成为新的 Feature维度；
-- bias 若沿 $j$ 使用，则每个输出特征拥有一个偏置。
+- bias 若只沿 $j$ 使用，则每个输出特征拥有一个偏置，shape 为 `(O,)`。
 
 输入 `(...,I)`、权重 `(I,O)`，输出 `(...,O)`，Parameter 数量为：
 
@@ -1374,6 +1413,8 @@ $$
 
 这里 $h$ 同时保留在输入、权重和输出中，因此每个 Head 使用自己的权重；只有 $d$ 被求和。
 
+若这条 Head 公式同时为每个 Head、每个输出 Feature 保存独立 bias，则 bias shape 应为 `(H,O)`，元素写成 $b_{h,o}$；若所有 Head 共用同一个输出 bias，则 shape 为 `(O,)`。`EinsumDense` 的 bias shape 由所选 bias 轴决定，因此不能只写“有 bias”而省略轴。
+
 > [!NOTE] 重复出现但不保留的下标会被求和
 > 阅读 Einsum 时，先圈出输出右侧没有出现的重复字母，它们就是缩并维度。出现在输出中的字母决定输出轴次序。
 
@@ -1405,6 +1446,8 @@ y_{n,l,o}
 $$
 
 $b$ 只有 $O$ 个数，却供 $N\times L$ 个位置共同使用。它不是为每个样本、每个 token 分别创建偏置。
+
+实际 bias shape 是 `(O,)`；对当前三维输出，可在概念上看成 `(1,1,O)`。
 
 设一个 Batch 只有一个样本，包含两个 token：
 
@@ -1450,6 +1493,15 @@ $$
 $$
 X\in\mathbb{R}^{M\times I},
 \qquad
+b\in\mathbb R^O.
+$$
+
+把同一个 `(O,)` bias 沿 $M$ 个位置重复后，得到：
+
+$$
+B=\mathbf 1_Mb^T
+\in\mathbb R^{M\times O},
+\qquad
 Y=XW+B.
 $$
 
@@ -1477,6 +1529,8 @@ $$
 $$
 
 这里采用 $W$ 形状 `(I,O)` 的写法。第一条说明输出梯度按权重分回输入 Feature；第二条说明每个位置对共享权重的影响会相加；第三条说明 bias 梯度是全部位置输出梯度的总和。
+
+因此 $\partial L/\partial b$ 的 shape 仍为 `(O,)`，不会因为 $M$ 个位置共同使用 bias 而变成 `(M,O)`。
 
 最小例子：设单输入单输出：
 
@@ -2047,6 +2101,16 @@ a=xW_a+b_a,
 g=xW_g+b_g.
 $$
 
+若输入宽度为 $I$、门控内部宽度为 $D$，则：
+
+$$
+W_a,W_g\in\mathbb R^{I\times D},
+\qquad
+b_a,b_g\in\mathbb R^D.
+$$
+
+两组 bias 的 shape 都是 `(D,)`，分别沿输入的全部前导位置重复使用。
+
 SwiGLU 为：
 
 $$
@@ -2070,6 +2134,8 @@ $$
 $$
 DO+O.
 $$
+
+其中输出投影的权重 shape 为 $(D,O)$，输出 bias shape 为 `(O,)`。
 
 数值例子：设某个位置上：
 
@@ -2932,6 +2998,9 @@ $$
 - 没有可学习 Parameter；
 - 输入输出形状相同。
 
+> [!NOTE] 这里的 $b$ 不是 Layer bias
+> AlphaDropout 公式中的 $a,b$ 都是由丢弃概率和固定负值确定的标量系数，不是按输出 Feature 保存的可学习 bias，因此不存在 `(O,)` bias Parameter。
+
 若某个简化例子取 $\alpha'=-1.5$，输入 `[2,4]`，mask 为 `[1,0]`，在暂时忽略后续固定仿射调整时，中间结果是：
 
 $$
@@ -3126,6 +3195,15 @@ $$
 | $w_{o,c,r}$ | 第 $o$ 个输出 Channel 对第 $c$ 个输入 Channel 的第 $r$ 个权重 |
 | $b_o$ | 第 $o$ 个输出 Channel 的偏置 |
 
+完整卷积 bias 为：
+
+$$
+b=[b_0,\ldots,b_{C_{\mathrm{out}}-1}]
+\in\mathbb R^{C_{\mathrm{out}}},
+$$
+
+框架参数 shape 是 `(C_out,)`，不是 `(L_out,)`，也不是 `(C_out,L_out)`。PyTorch Conv1D 可在概念上把它看成 `(1,C_out,1)`；Keras 默认 channels-last 可看成 `(1,1,C_out)`。同一个 $b_o$ 会供所有样本和输出长度上的全部位置使用。
+
 索引 $ts-p+rd$ 表明一次计算读取哪些输入位置。若索引位于原输入之外，就按照 padding 设置取得补入值。
 
 > [!NOTE] 深度学习卷积通常直接做互相关
@@ -3145,7 +3223,7 @@ $$
 w_0=[1,2],\qquad w_1=[0.1,0.2],
 $$
 
-偏置为 $b=1$，stride 为 1，不使用 padding。第一个输出位置读取两个 Channel 的前两个数：
+这里只有一个输出 Channel，所以完整 bias shape 为 `(1,)`，其中唯一的标量是 $b_0=1$。stride 为 1，不使用 padding。第一个输出位置读取两个 Channel 的前两个数：
 
 $$
 \begin{aligned}
@@ -3173,7 +3251,7 @@ y_2
 =23.
 $$
 
-所以这个输出 Channel 为 $[11,17,23]$。若 `out_channels=8`，就有 8 组不同的权重和 8 个偏置，每组各自产生一个输出 Channel。
+所以这个输出 Channel 为 $[11,17,23]$。若 `out_channels=8`，bias shape 就是 `(8,)`；八个 $b_o$ 分别服务于八个输出 Channel，而每个 $b_o$ 又沿全部输出长度位置重复使用。
 
 > [!TIP] 阅读卷积时先固定一个输出数
 > 初学时不要一开始就试图想象整个四维或五维张量。先固定样本编号、输出 Channel 和输出位置，再列出这个数读取的输入 Channel 与局部位置。一个输出数看懂以后，其余位置只是重复相同规则。
@@ -3195,6 +3273,8 @@ X_{n,c,\,hs_h-p_h+rd_h,\,ws_w-p_w+qd_w}.
 $$
 
 $K_h,K_w$ 是卷积核高宽，$s_h,s_w$ 是两个方向的 stride，$p_h,p_w$ 是两个方向的 padding，$d_h,d_w$ 是两个方向的 dilation。三维卷积再增加深度轴 $D$ 及核位置 $K_d$，计算思路完全相同。
+
+Conv2D 的实际 bias shape 仍是 `(C_out,)`。PyTorch NCHW 输出中可在概念上写成 `(1,C_out,1,1)`，Keras 默认 NHWC 输出中可写成 `(1,1,1,C_out)`。Conv3D 也仍只保存 `(C_out,)`，对应的概念 shape 分别是 `(1,C_out,1,1,1)` 与 `(1,1,1,1,C_out)`。
 
 #### 手算：单 Channel 的 $2\times2$ 卷积
 
@@ -3439,6 +3519,12 @@ $$
 
 若使用偏置，还要为每个输出 Channel 加一个偏置，因此增加 $C_{\mathrm{out}}$ 个参数。
 
+因此普通 Conv1D、Conv2D 与 Conv3D 的 bias 参数 shape 都是：
+
+$$
+(C_{\mathrm{out}},).
+$$
+
 > [!NOTE] 参数数目与输入高宽通常无关
 > 同一个 Conv2D 可以处理 $32\times32$ 或 $256\times256$ 图像，只要输入 Channel 数符合要求，卷积核参数数目不变。图像变大主要增加乘加次数与中间特征存储，不会增加这层的卷积核数目。
 
@@ -3449,6 +3535,8 @@ $$
 $$
 P=16\times8\times3\times3+16=1168.
 $$
+
+其中 bias shape 为 `(16,)`，1168 中最后的 16 就来自这 16 个输出 Channel bias。
 
 若不使用偏置，则参数数目是 1152。PyTorch 权重形状为 $(16,8,3,3)$。Keras 默认内部核形状通常为 $(3,3,8,16)$。轴次序不同，但元素总数与数学计算一致。
 
@@ -3502,6 +3590,14 @@ groups 大于 1 时，$c$ 表示当前组内部的输入 Channel 编号，而不
 $$
 b\in\mathbb R^O.
 $$
+
+框架参数 shape 为 `(O,)`。groups 不会把它保存成 `(G,O_g)`；不过可以把连续的第 $g$ 段：
+
+$$
+b_g\in\mathbb R^{O_g}
+$$
+
+看作该组 $O_g$ 个输出 Channel 使用的 bias。
 
 PyTorch 权重也可以采用 channels-last 内存格式。它的逻辑下标仍是 $(O,I_g,K_h,K_w)$，典型物理 stride 为：
 
@@ -3880,6 +3976,8 @@ $$
 
 PyTorch `Conv1d/2d/3d` 和 Keras `Conv1D/2D/3D` 都可以通过 `groups` 指定分组数。轴排列仍分别遵循各自的默认方式。
 
+使用 bias 时，完整参数 shape 仍为 `(C_out,)`。第 $g$ 组只使用其中与本组输出 Channel 相符的连续 `(O_g,)` 段；bias 不含输入 Channel 轴和空间轴。
+
 #### groups 下输入、Kernel 与输出怎样分段
 
 再定义每组输入与输出 Channel 数：
@@ -3941,7 +4039,11 @@ K_g\in\mathbb R^{I_g\times O_g},
 $$
 
 $$
-Y_g=X_gK_g.
+Y_g
+=
+X_gK_g+\mathbf 1_Pb_g^T,
+\qquad
+b_g\in\mathbb R^{O_g}.
 $$
 
 全部 $Y_g$ 按输出 Channel 次序放回同一个 $(P,C_{\mathrm{out}})$ 结果。每个位置中的组内 Channel 是相邻元素，但位置 $p$ 到位置 $p+1$ 的同组起点仍跨过全部 $C_{\mathrm{in}}$ 个输入 Channel。后端可以使用带行跨度的读取，也可以把各组数据打包后再计算，不需要制作含有大量 0 的完整权重矩阵。
@@ -3955,9 +4057,13 @@ W_g\in\mathbb R^{O_g\times I_g},
 $$
 
 $$
-Y_{n,g}=W_gX_{n,g}
+Y_{n,g}
+=
+W_gX_{n,g}+b_g\mathbf 1_S^T
 \in\mathbb R^{O_g\times S}.
 $$
+
+这两个公式中的 $b_g$ 都是完整 `(C_out,)` bias 的一个 `(O_g,)` 连续段；矩阵写法会暂时把它观察成行向量或列向量，实际 Parameter 仍是一维。
 
 同一组的输入 Channel 平面和输出 Channel 平面在标准连续 NCHW 中各自形成连续区段，因此这种逐组写法与物理存储顺序十分接近。
 
@@ -4013,6 +4119,8 @@ $$
 | 4 | 2 | $16\times2\times9+16=304$ |
 | 8 | 1 | $16\times1\times9+16=160$ |
 
+四种设置的完整 bias shape 都是 `(16,)`。groups 改变 Kernel 中每个输出 Channel 保存多少输入权重，不改变 bias 长度。
+
 > [!WARNING] 分组会减少不同组之间的直接交流
 > 参数更少不等于功能完全相同。一个分组卷积内，不同组的输入不会共同参与同一个输出。后续常接 $1\times1$ 卷积或 ChannelShuffle，让不同组的信息重新组合。
 
@@ -4040,7 +4148,13 @@ $$
 P_W=C_{\mathrm{in}}M K_hK_w.
 $$
 
-若有 bias，再加 $C_{\mathrm{in}}M$。
+若有 bias，再加 $C_{\mathrm{in}}M$。完整 bias shape 为：
+
+$$
+(C_{\mathrm{in}}M,),
+$$
+
+也就是每个 Depthwise 输出 Channel 一个标量。它不是 `(C_in,)`，除非 depth multiplier 恰好为 1。
 
 #### Depthwise Kernel 不是普通 HWIO
 
@@ -4105,6 +4219,8 @@ o=0,\ 1,\ 2,\ 3.
 $$
 
 标准 NCHW 输出则先保存 $x_0d_{0,0}$ 的完整空间平面，再保存 $x_0d_{0,1}$、$x_1d_{1,0}$ 与 $x_1d_{1,1}$ 的空间平面。
+
+本例关闭 bias。若启用，完整 bias shape 为 `(4,)`，四个输出 Channel 各使用其中一个标量。
 
 > [!INFO] 官方定义
 > Keras [DepthwiseConv2D 文档](https://keras.io/api/layers/convolution_layers/depthwise_convolution2d/) 说明每个输入 Channel 会分别使用 Kernel，并由 `depth_multiplier` 决定每个输入 Channel 产生的输出 Channel 数。
@@ -4171,6 +4287,8 @@ C_{\mathrm{in}}K_hK_w
 +C_{\mathrm{in}}C_{\mathrm{out}}.
 $$
 
+Keras `SeparableConv2D` 启用 bias 时，最终只为 Pointwise 输出保存 shape 为 `(C_out,)` 的 bias。若在 PyTorch 中把 Depthwise 与 Pointwise 写成两个独立 Conv2D，并且两层都启用 bias，则 Depthwise bias shape 为 `(C_in M,)`，Pointwise bias shape 为 `(C_out,)`；这与只有最终一组 bias 的参数数目不同。
+
 普通卷积参数数目为：
 
 $$
@@ -4228,8 +4346,12 @@ $1\times1$ 卷积计算：
 $$
 y_{n,h,w}=Wx_{n,h,w}+b,
 \qquad
-W\in\mathbb R^{C_{\mathrm{out}}\times C_{\mathrm{in}}}.
+W\in\mathbb R^{C_{\mathrm{out}}\times C_{\mathrm{in}}},
+\qquad
+b\in\mathbb R^{C_{\mathrm{out}}}.
 $$
+
+因此 Pointwise 的实际 bias shape 是 `(C_out,)`，与普通卷积完全相同。
 
 #### 为什么 Pointwise 不需要 img2col：它原生就是矩阵乘法
 
@@ -4490,10 +4612,22 @@ $$
 $$
 Y_n
 =
-WX_n+b\mathbf 1_S^T,
+WX_n+b_{\mathrm{col}}\mathbf 1_S^T,
 $$
 
-其中 $b$ 是 $O\times1$ 的列向量，$\mathbf 1_S^T$ 是长度为 $S$ 的全 1 行向量。结果：
+其中实际保存的 bias 是：
+
+$$
+b\in\mathbb R^O,
+$$
+
+shape 为 `(O,)`。为了书写矩阵乘法，暂时把它观察成：
+
+$$
+b_{\mathrm{col}}\in\mathbb R^{O\times1}.
+$$
+
+$(O,1)$ 不是另一个 Parameter shape。$\mathbf 1_S^T$ 是长度为 $S$ 的全 1 行向量。结果：
 
 $$
 Y_n\in\mathbb R^{O\times S}
@@ -4591,8 +4725,13 @@ PyTorch 权重去掉空间轴后的逻辑形状仍为 $(O,I)$。矩阵乘法可�
 $$
 Y_{\mathrm{flat}}
 =
-X_{\mathrm{flat}}W^T.
+X_{\mathrm{flat}}W^T
++\mathbf 1_Pb^T,
+\qquad
+b\in\mathbb R^O.
 $$
+
+实际 bias shape 为 `(O,)`。按 $(P,O)$ 物理矩阵观察时，每一行加同一个 $b^T$；按 PyTorch 逻辑 NCHW 观察时，可把它看成 `(1,O,1,1)`。
 
 也可以由后端先把权重准备成适合矩阵单元读取的内部格式。连续的 $(P,O)$ 结果在 PyTorch 中可保留逻辑 shape：
 
@@ -4660,6 +4799,14 @@ $$
 $$
 w_1=[0,2,1],\quad b_1=-1.
 $$
+
+这里完整 bias 向量为：
+
+$$
+b=[b_0,b_1]=[1,-1],
+$$
+
+shape 为 `(2,)`。$b_0$ 只供输出 Channel 0 的全部空间位置使用，$b_1$ 只供输出 Channel 1 使用。
 
 输出为：
 
@@ -4886,7 +5033,7 @@ $$
 (1,O,1,1).
 $$
 
-两个长度为 1 的空间轴以及最前面的长度为 1 的轴会重复使用同一数值。实际参数 shape 仍是 $(O)$，通常不会真的复制成完整输出大小。
+两个长度为 1 的空间轴以及最前面的长度为 1 的轴会重复使用同一数值。实际参数 shape 仍是 `(O,)`，通常不会真的复制成完整输出大小。
 
 Keras 默认输出 shape 为：
 
@@ -4923,6 +5070,8 @@ $$
 $$
 b=[10,100,1000].
 $$
+
+因此 $b\in\mathbb R^3$，实际 shape 为 `(3,)`。
 
 卷积乘加结果的三个输出 Channel 平面分别为：
 
@@ -5008,6 +5157,8 @@ $$
 =896.
 $$
 
+其中第一层 bias shape 为 `(32,)`。
+
 PyTorch 输出：
 
 $$
@@ -5026,11 +5177,15 @@ $$
 32\times3\times3=288.
 $$
 
+本层关闭 bias，因此没有 bias 参数；若启用，其 shape 应为 `(32,)`。
+
 第三层是 $1\times1$ Pointwise 卷积，把 Channel 从 32 改成 64，使用 bias。参数数目：
 
 $$
 64\times32+64=2112.
 $$
+
+其中 Pointwise bias shape 为 `(64,)`。
 
 最终 PyTorch 形状是：
 
@@ -5064,6 +5219,9 @@ Keras Layer 通常在 `build` 阶段根据首次输入中由 `data_format` 指�
 
 > [!NOTE] 延后创建权重不会改变数学公式
 > 输入 Channel 一旦确定，权重形状、参数数目和普通卷积完全相同。Lazy 只省去构造时手工写入输入 Channel。
+
+> [!NOTE] Lazy Conv 的 bias 只由输出 Channel 数决定
+> 若启用 bias，初始化完成后的 shape 始终为 `(C_out,)`，不随首次输入得到的输入 Channel 数改变。PyTorch Lazy Conv 在首次输入前可能把 bias 保持为尚未初始化的 Parameter；首次输入后才建立正常存储。
 
 > [!WARNING] 首次输入会固定输入 Channel
 > 若一个 Lazy Conv2D 首次收到 5 个 Channel，它会创建适合 5 个输入 Channel 的核。之后再给 7 个 Channel，不能自动重新创建另一套权重。
@@ -5888,7 +6046,13 @@ C_{\mathrm{in}}
 K_hK_w.
 $$
 
-若使用 bias，再加 $C_{\mathrm{out}}$。
+若使用 bias，再加 $C_{\mathrm{out}}$，其参数 shape 为：
+
+$$
+(C_{\mathrm{out}},).
+$$
+
+它不采用转置卷积 Kernel 的 Channel 轴次序。PyTorch ConvTranspose2D 输出为 `(N,C_out,H_out,W_out)` 时，可在概念上把 bias 看成 `(1,C_out,1,1)`；Keras 默认输出为 `(N,H_out,W_out,C_out)` 时，可看成 `(1,1,1,C_out)`。每个输出 Channel 的一个标量供该 Channel 的全部输出位置使用。
 
 > [!WARNING] 不要按普通卷积轴次序手工复制转置卷积权重
 > 即使元素总数相同，输入与输出 Channel 所在轴也可能不同。读取权重文件时应先检查框架、Layer 类型和张量轴说明。
@@ -6451,6 +6615,8 @@ PyTorch channels-first 输入可把 Channel 轴拆成 $(G,C/G)$。Keras 默认 c
 | $W$ | 可学习权重矩阵 |
 | $b$ | 可学习偏置向量 |
 
+循环 Layer 中，一个门或一组状态预激活的 bias 通常有 $H$ 个数，shape 为 `(H,)`。对单个时间位置的 Batch 结果 `(N,H)`，可在概念上把它看成 `(1,H)`；对完整序列 `(N,L,H)`，可看成 `(1,1,H)`。实际 Parameter 不含 Batch轴和时间轴，同一层、同一方向的 bias 会供全部样本与全部时间位置使用；不同层、不同方向各自保存参数。
+
 常见的一个 Batch 输入采用 `(N,L,I)`，也就是 Batch维度在前、序列维度居中、Feature维度在后。PyTorch 设置 `batch_first=True` 后使用这一排列；Keras 的循环 Layer 默认也采用这一排列。
 
 | 计算对象 | 单向 RNN 或 GRU 形状 | 双向 RNN 或 GRU 形状 |
@@ -6490,6 +6656,22 @@ $$
 | $h_t$ | $(H)$ | 当前时间位置的新状态 |
 
 这里的矩阵乘法分别得到两个 $H$ 维向量，再逐元素相加。$\tanh$ 把每个元素压到 $(-1,1)$。
+
+> [!IMPORTANT] 两个公式项不代表两个框架都保存两组 bias
+> PyTorch `RNN` 通常为每一层、每个方向分别保存 `bias_ih` 与 `bias_hh`，二者 shape 都是 `(H,)`。Keras `SimpleRNN` 通常保存一组 shape 为 `(H,)` 的 bias，可把它理解为公式中两部分偏置合并后的结果。无论怎样保存，每个长度为 $H$ 的向量都沿 Batch维度和全部时间位置重复使用。
+
+对整个 Batch 的一个时间位置，PyTorch 风格可写成：
+
+$$
+A_t
+=
+X_tW_{ih}^T
++H_{t-1}W_{hh}^T
++\mathbf 1_Nb_{ih}^T
++\mathbf 1_Nb_{hh}^T,
+$$
+
+其中 $X_t$、$H_{t-1}$、$A_t$ 的 shape 分别为 $(N,I)$、$(N,H)$、$(N,H)$，而 $b_{ih},b_{hh}$ 的实际 shape 仍各为 `(H,)`。
 
 #### 数字例子：前一个状态怎样影响当前结果
 
@@ -6578,6 +6760,17 @@ $$
 - $n_t$ 是本位置准备写入的候选信息；
 - 所有门和状态的形状都是 $(H)$。
 
+六个拆开的 bias 均为长度 $H$ 的向量：
+
+$$
+b_{ir},b_{hr},b_{iz},b_{hz},b_{in},b_{hn}
+\in\mathbb R^H.
+$$
+
+公式中的每个 bias shape 都是 `(H,)`，分别加到相应门或候选状态的 $H$ 个 Feature，并沿 Batch维度和时间位置重复使用。
+
+PyTorch 通常把三个输入侧 bias 拼接成一个 shape 为 `(3H,)` 的 Parameter，再把三个状态侧 bias 拼接成另一个 `(3H,)` Parameter。Keras 默认 `reset_after=True` 时保存输入侧和状态侧两行，常见 bias shape 为 `(2,3H)`；`reset_after=False` 时通常是 `(3H,)`。这些是存储组织方式，拆开后每个门段仍有 $H$ 个数。
+
 > [!NOTE] 门不是人工指定的开关
 > 门值由当前输入、旧状态和可学习参数共同算出。训练会逐渐调整这些参数，使不同样本、不同时间位置得到不同门值。
 
@@ -6662,6 +6855,18 @@ $$
 | $c_{t-1}$ | 旧记忆状态 | 前一个位置保存的内部信息 |
 | $c_t$ | 新记忆状态 | 旧记忆与新内容合成后的结果 |
 | $h_t$ | 新隐藏状态 | 当前时间位置向外提供的结果 |
+
+八个拆开的 bias 都是长度 $H$ 的向量：
+
+$$
+\begin{aligned}
+b_{ii},b_{hi},b_{if},b_{hf},\\
+b_{ig},b_{hg},b_{io},b_{ho}
+\end{aligned}
+\in\mathbb R^H.
+$$
+
+每个 shape 都是 `(H,)`，并沿 Batch维度与全部时间位置重复使用。PyTorch 通常把四个输入侧门段拼成一个 `(4H,)` Parameter，再把四个状态侧门段拼成另一个 `(4H,)` Parameter。Keras `LSTM` 通常保存一组 `(4H,)` bias；`unit_forget_bias` 只改变其中遗忘门段的初始化数值，不改变 shape。
 
 #### 数字例子：一个记忆元素怎样更新
 
@@ -6804,9 +7009,9 @@ PyTorch 常用打包序列功能，让循环 Layer 只处理有效长度。Keras
 设 Query 序列长度为 $L_q$，Key 和 Value 序列长度为 $L_k$，Feature 宽度为 $E$：
 
 $$
-Q=X_qW_Q,\qquad
-K=X_kW_K,\qquad
-V=X_vW_V.
+Q=X_qW_Q+b_Q,\qquad
+K=X_kW_K+b_K,\qquad
+V=X_vW_V+b_V.
 $$
 
 | 符号 | 常见形状 | 含义 |
@@ -6815,9 +7020,13 @@ $$
 | $X_k$ | $(N,L_k,E)$ | 产生检索特征的输入 |
 | $X_v$ | $(N,L_k,E)$ | 产生被加权内容的输入 |
 | $W_Q,W_K,W_V$ | 与投影宽度相容 | 可学习投影参数 |
+| $b_Q,b_K$ | $(d_k)$ | Query 与 Key 投影 bias |
+| $b_V$ | $(d_v)$ | Value 投影 bias |
 | $Q$ | $(N,L_q,d_k)$ | Query |
 | $K$ | $(N,L_k,d_k)$ | Key |
 | $V$ | $(N,L_k,d_v)$ | Value |
+
+表中的三个 bias 实际 shape 分别为 `(d_k,)`、`(d_k,)`、`(d_v,)`。它们沿 Batch维度和各自序列位置重复使用：例如 $b_{Q,r}$ 只加到全部 Query 位置的第 $r$ 个投影 Feature。若 Layer 关闭投影 bias，可以把相应 $b$ 视为 0。
 
 Query 与 Key 用来计算“相关程度”，Value 提供真正汇总到输出中的内容。Key 和 Value 的序列长度相同，是因为每个 Key 位置都对应一个 Value 位置。
 
@@ -6962,11 +7171,15 @@ $$
 
 其中：
 
-- $W_q$ 与 $W_k$ 把 Query 和 Key 转成相同宽度；
-- $b_a$ 是偏置；
+- 令注意力中间宽度为 $A$；
+- $W_q\in\mathbb R^{A\times d_q}$ 与 $W_k\in\mathbb R^{A\times d_k}$，把 Query 和 Key 转成相同宽度；
+- $b_a\in\mathbb R^A$，实际 bias shape 为 `(A,)`；
+- $v_a\in\mathbb R^A$；
 - $v_a$ 把中间向量变成一个标量分数；
 - $e_{ij}$ 是未归一化分数；
 - $\alpha_{ij}$ 是最终权重。
+
+对完整中间张量 $(N,L_q,L_k,A)$，可以在概念上把 $b_a$ 看成 `(1,1,1,A)`。同一个长度为 $A$ 的 bias 供全部样本、全部 Query 位置和全部 Key 位置使用。下面的一维例子采用 $A=1$，所以 `b_a=0` 表示 shape 为 `(1,)` 的 bias 中唯一的数。
 
 #### 一维中间特征的数字例子
 
@@ -7010,7 +7223,7 @@ e_{ij}
 \sum_d\tanh(q_{i,d}+k_{j,d}),
 $$
 
-并可用可学习缩放参数调整分数。它不会在 Layer 内部自动创建上面一般公式中的 $W_q,W_k,v_a$。若输入宽度不同，或希望使用完整的投影形式，应先在 Layer 外用 Dense 把 Query 与 Key 调整到相同宽度。
+并可用可学习缩放参数调整分数。它不会在 Layer 内部自动创建上面一般公式中的 $W_q,W_k,b_a,v_a$。若输入宽度不同，或希望使用完整的投影形式，应先在 Layer 外用 Dense 把 Query 与 Key 调整到相同宽度。
 
 | 计算 | PyTorch 常见方式 | Keras 常见 Layer |
 | --- | --- | --- |
@@ -7038,8 +7251,22 @@ $$
 $$
 \operatorname{MHA}
 =\operatorname{Concat}
-(\operatorname{head}_1,\ldots,\operatorname{head}_h)W_O.
+(\operatorname{head}_1,\ldots,\operatorname{head}_h)W_O+b_O.
 $$
+
+若 Query/Key 每个 Head 宽度为 $d_k$，Value 每个 Head 宽度为 $d_v$，输出宽度为 $E_{\mathrm{out}}$，四个概念 bias 的 shape 为：
+
+$$
+b_Q,b_K:(hd_k,),
+\qquad
+b_V:(hd_v,),
+\qquad
+b_O:(E_{\mathrm{out}},).
+$$
+
+前三个 bias 分别沿 Batch维度和序列位置重复使用，$b_O$ 则加到每个输出位置的 $E_{\mathrm{out}}$ 个 Feature。
+
+PyTorch `MultiheadAttention` 在常见等宽设置中，Q、K、V 三组 bias 各含 $E$ 个数，常合并保存为 `in_proj_bias`，shape 为 `(3E,)`；输出投影 bias shape 为 `(E,)`。Keras `MultiHeadAttention` 内部保留 Head 轴时，Query 与 Key bias 常可观察为 `(h,d_k)`，Value bias 为 `(h,d_v)`，输出 bias 的最后部分由输出宽度决定。存储 shape 可以不同，bias 总元素数和每个输出 Feature 的作用不变。
 
 若 $N=2,L=5,E=12,h=3$，则 $d_h=4$：
 
@@ -7120,10 +7347,14 @@ $$
 
 - 输入与输出宽度为 $E$；
 - 中间宽度为 $F$，常大于 $E$；
-- $W_1$ 把 $E$ 维变成 $F$ 维；
+- 按上面的列向量写法，$W_1$ shape 为 $(F,E)$，把 $E$ 维变成 $F$ 维；
+- $b_1$ shape 为 `(F,)`；
 - $\phi$ 常为 ReLU 或 GELU；
-- $W_2$ 再把 $F$ 维变回 $E$ 维；
+- $W_2$ shape 为 $(E,F)$，把 $F$ 维变回 $E$ 维；
+- $b_2$ shape 为 `(E,)`；
 - 每个 token 独立使用同一组 FFN 参数。
+
+输入为 $(N,L,E)$ 时，可在概念上把 $b_1$ 看成 `(1,1,F)`，把 $b_2$ 看成 `(1,1,E)`。二者都沿 Batch维度和全部 token 位置重复使用。Keras `Dense` 的 Kernel 轴次序通常与这里的列向量写法相反，但两组 bias shape 仍分别是 `(F,)` 与 `(E,)`。
 
 若输入为 $(N,L,E)=(2,6,16)$，Head 数为 4，中间宽度 $F=64$：
 
@@ -7832,6 +8063,18 @@ $$
 e_t=v^\mathsf{T}\tanh(Wh_t+b).
 $$
 
+令注意力中间宽度为 $A$，则：
+
+$$
+W\in\mathbb R^{A\times48},
+\qquad
+b\in\mathbb R^A,
+\qquad
+v\in\mathbb R^A.
+$$
+
+实际 bias shape 为 `(A,)`。对完整中间结果 $(8,7,A)$，可在概念上把它看成 `(1,1,A)`，同一个 bias 供 8 个样本和每个样本的 7 个位置使用，而不是保存 56 份。若 $A=1$，bias shape 就是 `(1,)`。
+
 假设某样本五个有效位置的分数为：
 
 $$
@@ -7877,6 +8120,14 @@ $$
 $$
 (8,48)\rightarrow(8,3).
 $$
+
+分类 Linear 或 Dense 启用 bias 时，bias shape 为 `(3,)`：
+
+$$
+b_{\mathrm{cls}}=[b_{\mathrm{正面}},b_{\mathrm{负面}},b_{\mathrm{中性}}].
+$$
+
+它可在概念上看成 `(1,3)`，供 8 个样本重复使用。每个元素只加到同名类别的 logit。
 
 某个样本 logits 为：
 
@@ -7964,6 +8215,8 @@ $$
 (32,16)\rightarrow(32,1).
 $$
 
+若启用 bias，其 shape 为 `(1,)`。唯一的 bias 标量会加到 32 个样本各自的单值预测上，实际不会保存 32 份。
+
 目标下一小时温度形状也是 $(32,1)$。
 
 #### 一个样本的损失计算
@@ -8044,6 +8297,15 @@ $$
 | 目标编号 | $(4,4)$ |
 | 逐 token 损失 | $(4,4)$ |
 
+词表分类 Linear 或 Dense 启用 bias 时：
+
+$$
+b_{\mathrm{vocab}}
+\in\mathbb R^{500},
+$$
+
+实际 shape 为 `(500,)`。对 logits `(4,4,500)`，可在概念上把它看成 `(1,1,500)`；$b_{\mathrm{vocab},v}$ 会加到 4 个样本、4 个 token 位置的词表项 $v$，不会加到其他词表项。
+
 这里的 logits 表按 Keras 默认类别轴和任务直觉写成 `(N,L,V)`。若直接使用 PyTorch `CrossEntropyLoss`，应先调整为 `(N,V,L)`，或整理为 `(NL,V)`；目标也按上一章说明保持 `(N,L)` 或整理为 `(NL)`。
 
 位置 0 读取范围为位置 0；位置 1 可读取 0、1；位置 2 可读取 0、1、2；位置 3 可读取全部四个输入位置。
@@ -8117,6 +8379,8 @@ $$
 y=xW+b.
 $$
 
+若输出宽度为 $O$，则 $b\in\mathbb R^O$，实际 shape 为 `(O,)`。第 $o$ 个元素只加到输出 Feature $o$；输入含有多个前导位置时，同一个 bias 沿全部前导位置重复使用。
+
 PyTorch 更常把激活写成下一个独立 Layer；Keras 常允许 `Dense` 或 `Conv2D` 直接接收 `activation`。如果激活函数相同，两种写法在数学上等价。
 
 ### 13.2 权重矩阵的保存次序可能不同
@@ -8126,7 +8390,7 @@ PyTorch 更常把激活写成下一个独立 Layer；Keras 常允许 `Dense` 或
 - PyTorch `Linear` 常把权重保存为 $(O,I)$，公式写作 $xW^T+b$；
 - Keras `Dense` 常把 kernel 保存为 $(I,O)$，公式写作 $xW+b$。
 
-两者都为每个输出计算 $I$ 个输入的加权和。差异来自参数数组的轴次序，不是计算能力差异。
+两者都为每个输出计算 $I$ 个输入的加权和。两种框架的 bias shape 都是 `(O,)`，不会随权重是否转置而改变。差异来自权重参数的轴次序，不是计算能力差异。
 
 > [!EXAMPLE] 同一组权重的转置关系
 > 若 PyTorch 权重为 $\begin{bmatrix}1&2\\3&4\end{bmatrix}$，把参数交给使用 $(I,O)$ 次序的 Layer 时通常需要转置。仅复制数字而不检查形状，可能让输出含义变化。
@@ -8321,6 +8585,8 @@ $$
 | 多类别训练 | Cross Entropy | 正确类别的负对数概率 |
 | 回归训练 | MSE / MAE / Huber | 预测与目标的距离 |
 
+表中 Linear 或 Dense 的 $b$ 实际 shape 为 `(O,)`，其中 $O$ 是输出宽度。若速查公式只写 `xW+b`，也应先从 Layer 的输出 Feature 数确定 bias 长度。
+
 ---
 
 ## 17. 不写代码时怎样检查计算是否合理
@@ -8364,6 +8630,8 @@ $$
 
 这里对输入 Feature 下标 $i$ 求和，输出下标 $o$ 被保留。
 
+因此 Linear 或 Dense 的完整 bias 为 $b\in\mathbb R^O$，实际 shape 是 `(O,)`。$b_o$ 只服务于输出 Feature $o$，并沿所有前导位置重复使用。
+
 普通二维卷积：
 
 $$
@@ -8374,6 +8642,8 @@ x_{c,h+r,w+s}W_{o,c,r,s}+b_o.
 $$
 
 这里对输入通道 $c$ 和卷积核位置 $r,s$ 求和，输出通道 $o$ 与输出位置 $h,w$ 被保留。
+
+因此 Conv2D 的完整 bias 为 $b\in\mathbb R^{C_{\mathrm{out}}}$，实际 shape 是 `(C_out,)`。PyTorch 可在概念上看成 `(1,C_out,1,1)`，Keras 默认格式可看成 `(1,1,1,C_out)`；同一个 $b_o$ 供全部样本及全部输出高宽位置使用。
 
 注意力加权和：
 
@@ -8449,7 +8719,7 @@ $$
 | 无仿射参数的池化 | 0 |
 | ReLU / Sigmoid / Tanh | 0 |
 
-表中默认使用偏置；若关闭偏置，应删去最后的输出宽度或输出通道数。
+表中默认使用偏置。Linear 或 Dense 的 bias shape 是 `(O,)`；普通卷积和分组卷积的 bias shape 是 `(C_out,)`。若关闭偏置，应删去最后的输出宽度或输出通道数。
 
 > [!EXAMPLE] 参数数量与输出空间大小无关
 > `Conv2D` 的同一组卷积核会在所有空间位置重复使用。输入从 $32\times32$ 改成 $128\times128$ 时，输出元素和乘加次数会增多，但卷积核参数数量保持不变。
@@ -8558,6 +8828,8 @@ y=u^2,
 \qquad
 L=y.
 $$
+
+这是单输入、单输出的标量例子，所以 $w,b\in\mathbb R$，这里的 $b$ 只有一个标量。若把它实现成输出宽度 $O=1$ 的 Linear，框架 bias Parameter 通常显示为 shape `(1,)`。
 
 取：
 
@@ -8746,6 +9018,8 @@ W=
 b=1.
 $$
 
+因为 $O=1$，这里实际 bias shape 为 `(1,)`，公式中的 `b=1` 是该 Parameter 中唯一的元素。
+
 前向计算：
 
 $$
@@ -8794,8 +9068,19 @@ $$
 $$
 X\in\mathbb{R}^{M\times I},
 \qquad
+b\in\mathbb R^O.
+$$
+
+实际保存的 bias shape 是 `(O,)`。把它重复成每行相同的计算项，可记为：
+
+$$
+B=\mathbf 1_Mb^T
+\in\mathbb R^{M\times O},
+\qquad
 Y=XW+B.
 $$
+
+$B$ 只用于说明相加方式，不是另存一个 `(M,O)` Parameter。
 
 若：
 
@@ -8821,6 +9106,8 @@ $$
 > 上式按 Keras 常见的 `(I,O)` 书写。PyTorch `Linear.weight` 常保存为 `(O,I)`，所以显示出来的权重梯度也按 `(O,I)` 排列。数学关系相同，比较数值时要先统一轴次序。
 
 ### 18.4 Add、Multiply 与 Concatenate 的梯度
+
+本节中的 $a,b$ 是两个普通输入，不一定是 Layer bias。只有在“广播时共享的 $b$”例子中，$b$ 才扮演类似共享偏置的角色；其 shape 会在例子中单独说明。
 
 #### Add
 
@@ -9208,7 +9495,20 @@ $$
 
 二维卷积遵循相同思想：某个卷积核 Parameter 的梯度，要汇总它在全部样本、全部输出位置上与输入相乘产生的贡献；某个输入像素的梯度，要汇总所有覆盖它的卷积窗口贡献。
 
-若有 bias，每个输出 Channel 的 bias 梯度是该 Channel 所有输出位置上游梯度之和。
+若有 bias，完整参数为：
+
+$$
+b\in\mathbb R^{C_{\mathrm{out}}},
+$$
+
+shape 是 `(C_out,)`。PyTorch Conv1D 可在概念上把它看成 `(1,C_out,1)`；$b_o$ 在全部样本 $n$ 和全部输出长度位置 $t$ 上重复使用。因此：
+
+$$
+\frac{\partial L}{\partial b_o}
+=
+\sum_n\sum_t
+\frac{\partial L}{\partial y_{n,o,t}}.
+$$
 
 > [!TIP] 用“这个数在哪些窗口中出现”理解卷积反向
 > 权重被每个滑动窗口重复使用，所以权重梯度跨窗口相加；输入位置可能被多个窗口覆盖，所以输入梯度也跨相关窗口相加。
@@ -9597,7 +9897,10 @@ $$
 - $h_{t-1}$ 是前一位置隐藏状态；
 - $W_x$ 处理当前输入；
 - $W_h$ 处理前一隐藏状态；
+- $b\in\mathbb R^H$，实际 shape 为 `(H,)`，每个隐藏 Feature 一个 bias；
 - $\phi$ 常为 Tanh 或 ReLU。
+
+同一层、同一方向的 $b$ 会供全部样本和时间位置使用。PyTorch 基础 RNN 通常分开保存两个 `(H,)` bias，Keras `SimpleRNN` 通常保存一个 `(H,)` bias；当前简式把它们统一写成一个长度为 $H$ 的向量。
 
 某个 $h_t$ 的梯度通常来自两个方向：
 
@@ -10600,7 +10903,10 @@ $$
 - $o$ 是输出 Channel；
 - $c$ 是输入 Channel；
 - $t$ 是输出位置；
-- $r$ 是卷积核内部位置。
+- $r$ 是卷积核内部位置；
+- 完整 bias 为 $b\in\mathbb R^{C_{\mathrm{out}}}$，shape 是 `(C_out,)`。
+
+$b_o$ 供全部样本和全部输出长度位置使用。groups 只限制输入与输出 Channel 的连接，不改变完整 bias 长度；每个输出 Channel 仍有一个标量。
 
 固定一个输出位置后，上游梯度会乘相应权重分给所有参与的输入 Channel；权重梯度会把所有样本和输出位置中对应输入值乘上游梯度后求和。
 
