@@ -402,20 +402,20 @@ GRU 只有 $h_t$，不像 LSTM 还要保留 $c_t$；因此状态存储量较小�
 
 ### 3.1 算子总表
 
-| 优先级 | 算子或算子组 | Transformer 用途 | LSTM / GRU / RNN 用途 | 推荐执行单元 | 硬件建议 |
-| --- | --- | --- | --- | --- | --- |
-| P0 | GEMM / MatMul / Batched MatMul | QKV、投影、FFN、$QK^T$、$AV$ | LSTM 四门、GRU 三门、RNN 单次递推矩阵乘 | Matrix / Tensor Engine | 必须实现，最高优先级 |
-| P0 | bias、残差加、缩放、逐元素乘 | 线性层后处理、残差、注意力缩放 | 门控组合、候选状态、隐藏状态更新 | Vector ALU | 与主算子融合 |
-| P0 | ReduceSum、ReduceMax、ReduceMean | Softmax、LayerNorm、RMSNorm | 通常不在主递推路径中 | Vector Reduce Unit | 必须有归约树 |
-| P0 | Exp、Reciprocal、ReciprocalSqrt | Softmax、Norm | Sigmoid 和 Tanh 的内部近似可复用 Exp | Special Function Unit | 支持近似计算 |
-| P0 | Sigmoid、Tanh、GELU、SiLU | FFN 激活 | LSTM/GRU 使用 Sigmoid、Tanh；RNN 使用 Tanh 或 ReLU | Vector / Special Function Unit | 查表加多项式 |
-| P0 | DMA Copy、Strided Copy、Transpose | QKV 切分、KV Cache、布局转换 | 输入、权重、$h_t$ 和 $c_t$ 的搬运 | DMA / Layout Engine | 必须实现 |
-| P1 | Masked Softmax | 因果注意力、padding mask | 不常用 | Vector + Attention Pipeline | 作为 Softmax 扩展 |
-| P1 | RoPE | Decoder 的位置旋转 | 不常用 | Vector ALU | 适合向量单元 |
-| P1 | KV Cache Append / Gather | Decoder 生成 | 不适用 | DMA + SRAM 控制 | 重点优化访存 |
-| P1 | Fused Attention | 长序列 Encoder、Prefill | 不适用 | Attention Pipeline | 中后期加入 |
-| P2 | Embedding Gather | token 查表 | 词嵌入查表 | DMA / Vector Gather | 按产品需求决定 |
-| P2 | Top-k / Sampling | 输出 token 选择 | 不常用 | CPU / Vector | 首版以软件为主 |
+| 优先级 | 算子或算子组                          | Transformer 用途            | LSTM / GRU / RNN 用途                         | 推荐执行单元                         | 硬件建议          |
+| --- | ------------------------------- | ------------------------- | ------------------------------------------- | ------------------------------ | ------------- |
+| P0  | GEMM / MatMul / Batched MatMul  | QKV、投影、FFN、$QK^T$、$AV$    | LSTM 四门、GRU 三门、RNN 单次递推矩阵乘                  | Matrix / Tensor Engine         | 必须实现，最高优先级    |
+| P0  | bias、残差加、缩放、逐元素乘                | 线性层后处理、残差、注意力缩放           | 门控组合、候选状态、隐藏状态更新                            | Vector ALU                     | 与主算子融合        |
+| P0  | ReduceSum、ReduceMax、ReduceMean  | Softmax、LayerNorm、RMSNorm | 通常不在主递推路径中                                  | Vector Reduce Unit             | 必须有归约树        |
+| P0  | Exp、Reciprocal、ReciprocalSqrt   | Softmax、Norm              | Sigmoid 和 Tanh 的内部近似可复用 Exp                 | Special Function Unit          | 支持近似计算        |
+| P0  | Sigmoid、Tanh、GELU、SiLU          | FFN 激活                    | LSTM/GRU 使用 Sigmoid、Tanh；RNN 使用 Tanh 或 ReLU | Vector / Special Function Unit | 查表加多项式        |
+| P0  | DMA Copy、Strided Copy、Transpose | QKV 切分、KV Cache、布局转换      | 输入、权重、$h_t$ 和 $c_t$ 的搬运                     | DMA / Layout Engine            | 必须实现          |
+| P1  | Masked Softmax                  | 因果注意力、padding mask        | 不常用                                         | Vector + Attention Pipeline    | 作为 Softmax 扩展 |
+| P1  | RoPE                            | Decoder 的位置旋转             | 不常用                                         | Vector ALU                     | 适合向量单元        |
+| P1  | KV Cache Append / Gather        | Decoder 生成                | 不适用                                         | DMA + SRAM 控制                  | 重点优化访存        |
+| P1  | Fused Attention                 | 长序列 Encoder、Prefill       | 不适用                                         | Attention Pipeline             | 中后期加入         |
+| P2  | Embedding Gather                | token 查表                  | 词嵌入查表                                       | DMA / Vector Gather            | 按产品需求决定       |
+| P2  | Top-k / Sampling                | 输出 token 选择               | 不常用                                         | CPU / Vector                   | 首版以软件为主       |
 
 P0 表示首版必须具备，P1 表示主干可用后优先加入，P2 表示按产品需求选择。
 
@@ -429,14 +429,14 @@ $$
 
 这条式可以逐个元素阅读：
 
-| 符号 | 含义 |
-| --- | --- |
-| $A_{m,k}$ | 左矩阵 $A$ 的第 $m$ 行、第 $k$ 列元素 |
-| $W_{k,n}$ | 右矩阵 $W$ 的第 $k$ 行、第 $n$ 列元素 |
-| $C_{m,n}$ | 输出矩阵 $C$ 的第 $m$ 行、第 $n$ 列元素 |
-| $k$ | 被求和的公共维度编号；每一个 $k$ 都会产生一次乘法 |
-| $K_{\mathrm g}$ | 公共维度长度；也就是每个输出元素需要累加多少项 |
-| $b_n$ | 第 $n$ 个输出通道使用的 bias |
+| 符号              | 含义                          |
+| --------------- | --------------------------- |
+| $A_{m,k}$       | 左矩阵 $A$ 的第 $m$ 行、第 $k$ 列元素  |
+| $W_{k,n}$       | 右矩阵 $W$ 的第 $k$ 行、第 $n$ 列元素  |
+| $C_{m,n}$       | 输出矩阵 $C$ 的第 $m$ 行、第 $n$ 列元素 |
+| $k$             | 被求和的公共维度编号；每一个 $k$ 都会产生一次乘法 |
+| $K_{\mathrm g}$ | 公共维度长度；也就是每个输出元素需要累加多少项     |
+| $b_n$           | 第 $n$ 个输出通道使用的 bias         |
 
 例如 $A$ 形状为 $M_{\mathrm g}\times K_{\mathrm g}$、$W$ 形状为 $K_{\mathrm g}\times N_{\mathrm g}$ 时，输出 $C$ 形状为 $M_{\mathrm g}\times N_{\mathrm g}$。下标 $\mathrm g$ 表示 GEMM 维度，用来避免与 batch 大小 $B$、注意力掩码 $M_{\mathrm{mask}}$ 混淆。一个 $C_{m,n}$ 需要 $K_{\mathrm g}$ 次乘法和约 $K_{\mathrm g}$ 次加法；这正是 Matrix 阵列最擅长的重复计算。
 
