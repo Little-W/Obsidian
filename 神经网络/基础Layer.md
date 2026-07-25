@@ -55,14 +55,14 @@ with torch.inference_mode():
 
 下表给出全文目录。`DataParallel`、`Parameter`、`UninitializedParameter` 等属于并行执行或参数管理工具，不是对输入做特征变换的层，放在最后说明。`NLLLoss2d` 是 `NLLLoss` 的旧别名。
 
-| 类别 | 覆盖的模块 |
-| --- | --- |
-| 组织与形状 | `Module`、`Sequential`、`ModuleList`、`ModuleDict`、`ParameterList`、`ParameterDict`、`Identity`、`Flatten`、`Unflatten` |
-| 线性与激活 | `Linear`、`Bilinear`、所有逐元素激活、`GLU`、Softmax 家族 |
-| 正则化与归一化 | Dropout 家族、Batch/Instance/Group/Layer/Local Response Norm、`SyncBatchNorm` |
-| 卷积与空间运算 | Conv/ConvTranspose/LazyConv 家族、池化、反池化、填充、`Unfold`、`Fold`、像素重排、上采样、通道洗牌 |
-| 序列与注意力 | `Embedding`、`EmbeddingBag`、RNN/GRU/LSTM 及 Cell、Multi-Head Attention、Transformer 家族 |
-| 损失与度量 | 回归、分类、概率分布、排序、度量学习损失，以及 `CosineSimilarity`、`PairwiseDistance`、`AdaptiveLogSoftmaxWithLoss` |
+| 类别      | 覆盖的模块                                                                                                            |
+| ------- | ---------------------------------------------------------------------------------------------------------------- |
+| 组织与形状   | `Module`、`Sequential`、`ModuleList`、`ModuleDict`、`ParameterList`、`ParameterDict`、`Identity`、`Flatten`、`Unflatten` |
+| 线性与激活   | `Linear`、`Bilinear`、所有逐元素激活、`GLU`、Softmax 家族                                                                     |
+| 正则化与归一化 | Dropout 家族、Batch/Instance/Group/Layer/Local Response Norm、`SyncBatchNorm`                                        |
+| 卷积与空间运算 | Conv/ConvTranspose/LazyConv 家族、池化、反池化、填充、`Unfold`、`Fold`、像素重排、上采样、通道洗牌                                           |
+| 序列与注意力  | `Embedding`、`EmbeddingBag`、RNN/GRU/LSTM 及 Cell、Multi-Head Attention、Transformer 家族                               |
+| 损失与度量   | 回归、分类、概率分布、排序、度量学习损失，以及 `CosineSimilarity`、`PairwiseDistance`、`AdaptiveLogSoftmaxWithLoss`                       |
 
 ### 1.4 阅读复杂层的通用方法
 
@@ -74,6 +74,160 @@ with torch.inference_mode():
 4. **检查结果形状和数据去向**：有的层只改数值，有的层改尺寸，有的层会把局部块展开成列，有的层会把列累加回平面。
 
 本文在卷积、归一化、池化、`Unfold/Fold`、`EmbeddingBag`、LSTM、注意力和分类损失处补充了小型手算例子。它们都刻意使用小整数或两三个 token；理解过程后，再把同一规则扩展到真实形状即可。
+
+### 1.5 Parameter、buffer 与普通成员变量
+
+一个 `nn.Module` 不只保存计算函数，还会保存不同性质的数据。理解它们的区别，才能看懂参数更新、模型保存和设备切换。
+
+| 数据类型 | 典型例子 | 优化器是否更新 | 是否进入 `state_dict()` | 调用 `.to(device)` 是否跟随移动 |
+| --- | --- | --- | --- | --- |
+| `nn.Parameter` | Linear 的 `weight`、`bias` | 是 | 是 | 是 |
+| buffer | BatchNorm 的 `running_mean` | 否 | 默认是 | 是 |
+| 普通 Python 成员 | 层数、字符串配置 | 否 | 否 | 不适用 |
+| 未登记的普通张量成员 | 手工写的 `self.some_tensor` | 否 | 否 | 否 |
+
+`Parameter` 是需要通过梯度学习的张量。下面把一个 3 维向量登记成参数：
+
+```python
+class ScaleLayer(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.scale = nn.Parameter(torch.ones(3))
+
+    def forward(self, x):
+        return x * self.scale
+
+layer = ScaleLayer()
+x = torch.tensor([[1., 2., 3.]])
+loss = layer(x).sum()
+loss.backward()
+print(layer.scale.grad)  # tensor([1., 2., 3.])
+```
+
+梯度说明“损失对参数做微小改变时会怎样变化”。在这个例子中：
+
+$$
+\text{loss}=1\gamma_0+2\gamma_1+3\gamma_2,
+$$
+
+所以三个偏导数就是 $[1,2,3]$。
+
+> [!NOTE] `requires_grad=True` 与 `nn.Parameter` 不完全相同
+> 普通张量即使开启梯度，也不会自动出现在 `model.parameters()` 中。优化器通常从 `model.parameters()` 接收待更新对象，因此模型成员中的可学习张量应登记为 `nn.Parameter`。
+
+buffer 适合“需要随模型保存和移动，但不通过梯度学习”的数据：
+
+```python
+class RunningCounter(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.register_buffer("forward_count", torch.zeros((), dtype=torch.long))
+
+    def forward(self, x):
+        if self.training:
+            self.forward_count += 1
+        return x
+
+counter = RunningCounter()
+_ = counter(torch.randn(2, 3))
+print(counter.forward_count)            # tensor(1)
+print(counter.state_dict().keys())      # odict_keys(['forward_count'])
+```
+
+`register_buffer(..., persistent=False)` 可以让 buffer 跟随设备移动，却不写入 `state_dict()`，适合可随时重新生成的临时数据。
+
+> [!WARNING] 不要把需要跟随设备的张量只写成普通成员
+> 若在 `__init__` 中写 `self.table = torch.randn(...)`，调用 `model.cuda()` 时它不会自动移动。应根据用途把它登记为 Parameter 或 buffer。
+
+#### 1.5.1 `state_dict()` 里保存了什么
+
+`state_dict()` 是“名称到张量”的有序字典，包含已登记参数和持久 buffer：
+
+```python
+model = nn.Sequential(
+    nn.Linear(4, 3),
+    nn.BatchNorm1d(3),
+)
+
+for name, value in model.state_dict().items():
+    print(name, tuple(value.shape))
+```
+
+常见名称如下：
+
+```text
+0.weight
+0.bias
+1.weight
+1.bias
+1.running_mean
+1.running_var
+1.num_batches_tracked
+```
+
+名称中的数字来自 `Sequential` 中的模块位置。若使用带名字的 `OrderedDict` 或自定义成员名，名称会更易读。
+
+保存与加载通常写为：
+
+```python
+torch.save(model.state_dict(), "model.pt")
+
+restored = nn.Sequential(
+    nn.Linear(4, 3),
+    nn.BatchNorm1d(3),
+)
+restored.load_state_dict(torch.load("model.pt"))
+```
+
+> [!IMPORTANT] 先创建同样结构，再加载张量
+> `state_dict` 只保存张量和少量附带信息，不会替你重新定义 Python 类。加载端要先构造参数名称与形状相符的模型。
+
+#### 1.5.2 设备和数据类型必须相容
+
+层参数和输入通常要位于同一设备，并具有可参与同一运算的数据类型：
+
+```python
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model = nn.Linear(4, 2).to(device)
+x = torch.randn(3, 4, device=device)
+y = model(x)
+```
+
+若模型在 GPU、输入在 CPU，矩阵乘无法直接执行。常见做法是先确定 `device`，再让模型和每个小批都调用 `.to(device)`。
+
+浮点层还可以改变参数类型：
+
+```python
+model = nn.Linear(4, 2).double()
+x = torch.randn(3, 4, dtype=torch.float64)
+print(model(x).dtype)  # torch.float64
+```
+
+整数 token 编号是例外：Embedding 的输入通常保持 `torch.long`，输出则使用嵌入表的浮点类型。
+
+> [!TIP] 调试类型或设备错误先打印四项
+> 打印 `x.shape`、`x.dtype`、`x.device`，再打印下一层参数的 `dtype` 和 `device`。许多看似复杂的运行错误都能由这几项直接定位。
+
+#### 1.5.3 `train()` 会递归设置所有子模块
+
+调用顶层 `model.train()` 会把它和所有子模块的 `training` 设为 `True`；`model.eval()` 等价于 `model.train(False)`，也会递归处理。
+
+```python
+model = nn.Sequential(
+    nn.Linear(4, 4),
+    nn.Dropout(0.5),
+    nn.BatchNorm1d(4),
+)
+
+model.eval()
+for name, module in model.named_modules():
+    print(name or "<root>", module.training)
+```
+
+`named_modules()` 会列出顶层模块和全部已登记子模块；`named_parameters()` 只列可学习参数；`named_buffers()` 只列 buffer。
+
+> [!SUMMARY] 阅读一个层时再加三项检查
+> 除输入形状和输出形状外，还应检查：层是否含可学习参数，是否含运行数据，训练与评估是否执行不同规则。这三项会直接影响保存、加载和推理。
 
 ---
 
@@ -146,6 +300,154 @@ print(optional_norm(torch.tensor([1., 2.])))
 
 > [!NOTE] `Unflatten` 只恢复形状，不理解各维含义
 > 只要元素总数相等，它就能拆分维度，但不知道每一维代表通道、高还是宽。若尺寸顺序写错，代码仍可能执行，元素所代表的位置却已经不同。
+
+### 2.3 从 `__init__` 到 `forward`：自定义层的完整阅读方法
+
+自定义模块通常分成两个阶段：
+
+1. `__init__`：声明长期保存的子层、参数、buffer 和配置；
+2. `forward`：说明本次输入怎样经过这些对象得到输出。
+
+```python
+class ResidualMLP(nn.Module):
+    def __init__(self, width):
+        super().__init__()
+        self.fc1 = nn.Linear(width, width * 2)
+        self.act = nn.GELU()
+        self.fc2 = nn.Linear(width * 2, width)
+
+    def forward(self, x):
+        residual = x
+        x = self.fc1(x)
+        x = self.act(x)
+        x = self.fc2(x)
+        return x + residual
+```
+
+若输入是 `(N,L,width)`：
+
+| 步骤 | 形状 |
+| --- | --- |
+| 输入与 `residual` | `(N,L,width)` |
+| `fc1` 后 | `(N,L,2×width)` |
+| GELU 后 | 不变 |
+| `fc2` 后 | `(N,L,width)` |
+| 与 residual 相加 | `(N,L,width)` |
+
+最后一层必须回到 `width`，否则无法逐元素相加。
+
+> [!WARNING] 不要在 `forward` 中临时创建需要训练的 Linear
+> 每次前向都写 `nn.Linear(...)(x)` 会产生一套新参数，优化器也不会稳定地更新同一个对象。需要学习的子层应在 `__init__` 中创建并赋给成员变量。
+
+#### 2.3.1 为什么通常调用 `module(x)`，而不是 `module.forward(x)`
+
+`module(x)` 会进入 `nn.Module.__call__`，再调用 `forward`。这个外层过程还会处理前向钩子、混合精度等模块机制。直接调用 `forward` 会跳过其中一部分功能。
+
+```python
+layer = nn.Linear(4, 2)
+x = torch.randn(3, 4)
+y = layer(x)  # 推荐
+```
+
+编写自定义层时负责实现 `forward`；使用层时调用模块对象。
+
+#### 2.3.2 复用同一个模块与创建两个模块
+
+下面两种写法含义不同：
+
+```python
+shared = nn.Linear(4, 4)
+y_shared = shared(shared(x))
+
+first = nn.Linear(4, 4)
+second = nn.Linear(4, 4)
+y_separate = second(first(x))
+```
+
+第一种两次使用同一套 `weight` 和 `bias`；第二种有两套互不相同的参数。参数共享可以减少参数量，但只有模型设计明确要求时才应使用。
+
+> [!EXAMPLE] 怎样确认是否为同一个对象
+> 可比较 `id(module)`，也可检查 `named_parameters()` 中出现几套名称。共享参数在优化器里只应登记一次。
+
+#### 2.3.3 `Sequential`、`ModuleList` 与 `ModuleDict` 怎样选择
+
+| 需求 | 容器 |
+| --- | --- |
+| 输入依次经过每个子层 | `Sequential` |
+| 需要循环、跳层或按索引调用 | `ModuleList` |
+| 需要按名称选择分支 | `ModuleDict` |
+| 只保存若干可学习张量 | `ParameterList`、`ParameterDict` |
+
+多分支例子：
+
+```python
+class MultiTaskHead(nn.Module):
+    def __init__(self, width):
+        super().__init__()
+        self.heads = nn.ModuleDict({
+            "classify": nn.Linear(width, 5),
+            "score": nn.Linear(width, 1),
+        })
+
+    def forward(self, x):
+        return {
+            name: head(x)
+            for name, head in self.heads.items()
+        }
+
+heads = MultiTaskHead(8)
+result = heads(torch.randn(2, 8))
+print(result["classify"].shape, result["score"].shape)
+```
+
+`ModuleDict` 负责登记，并不会自动决定使用哪个分支；选择过程仍由 `forward` 编写。
+
+#### 2.3.4 `Flatten` 的起止维度要根据任务决定
+
+对图像 `(N,C,H,W)`：
+
+```python
+x = torch.randn(2, 3, 4, 5)
+
+print(nn.Flatten(1)(x).shape)     # (2, 60)
+print(nn.Flatten(2)(x).shape)     # (2, 3, 20)
+print(nn.Flatten(0, 1)(x).shape)  # (6, 4, 5)
+```
+
+- `Flatten(1)` 保留批维，把整张图变成每样本一个向量；
+- `Flatten(2)` 保留批和通道，只合并空间维；
+- `Flatten(0,1)` 连批与通道一起合并，通常只在明确需要时使用。
+
+> [!WARNING] 分类网络中不要误把批维合并
+> `nn.Flatten()` 的默认 `start_dim=1` 正适合常见图像分类。若写成 `Flatten(0)`，多个样本会合成一个长向量，后续层将失去样本分隔。
+
+#### 2.3.5 前向钩子可用于观察形状
+
+钩子适合调试，不必修改模块本身：
+
+```python
+def print_shape(module, inputs, output):
+    in_shape = tuple(inputs[0].shape)
+    out_shape = tuple(output.shape)
+    print(module.__class__.__name__, in_shape, "->", out_shape)
+
+model = nn.Sequential(
+    nn.Linear(4, 8),
+    nn.ReLU(),
+    nn.Linear(8, 2),
+)
+
+handles = [
+    module.register_forward_hook(print_shape)
+    for module in model
+]
+_ = model(torch.randn(3, 4))
+for handle in handles:
+    handle.remove()
+```
+
+> [!TIP] 钩子用完要移除
+> `register_forward_hook` 返回 handle。调试结束后调用 `handle.remove()`，避免重复登记后一次前向打印多遍，或长期保留不再需要的回调。
 
 ---
 
@@ -271,6 +573,190 @@ print(nn.LogSoftmax(dim=1)(logits).exp())   # 与 Softmax 相同
 ```
 
 分类训练中，若使用 `CrossEntropyLoss`，模型应输出未归一化的 `logits`，不要在模型末尾再加 `Softmax`。
+
+### 3.4 把常见激活函数放到同一组数字上比较
+
+只看公式时，初学者很容易觉得“这些函数似乎都差不多”。更直观的办法，是让同一组输入分别通过不同激活函数。下面取
+
+$$x=[-2,-1,0,1,2].$$
+
+结果保留四位小数：
+
+| $x$ | `ReLU` | `LeakyReLU(0.1)` | `Sigmoid` | `Tanh` | `GELU` | `SiLU` |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| $-2$ | $0$ | $-0.2$ | $0.1192$ | $-0.9640$ | $-0.0455$ | $-0.2384$ |
+| $-1$ | $0$ | $-0.1$ | $0.2689$ | $-0.7616$ | $-0.1587$ | $-0.2689$ |
+| $0$ | $0$ | $0$ | $0.5000$ | $0$ | $0$ | $0$ |
+| $1$ | $1$ | $1$ | $0.7311$ | $0.7616$ | $0.8413$ | $0.7311$ |
+| $2$ | $2$ | $2$ | $0.8808$ | $0.9640$ | $1.9545$ | $1.7616$ |
+
+这张表可以这样读：
+
+- `ReLU` 直接删去负值，正值原样保留；
+- `LeakyReLU` 不完全删去负值，而是把负值缩小；
+- `Sigmoid` 把任何实数压到 $(0,1)$，因此适合表示独立的二值概率；
+- `Tanh` 把数值压到 $(-1,1)$，并且以零为中心；
+- `GELU` 和 `SiLU` 都是平滑函数，小负值可能被保留，正值也不是简单截断。
+
+```python
+import torch
+from torch import nn
+
+x = torch.tensor([-2., -1., 0., 1., 2.])
+layers = [
+    nn.ReLU(),
+    nn.LeakyReLU(negative_slope=0.1),
+    nn.Sigmoid(),
+    nn.Tanh(),
+    nn.GELU(),
+    nn.SiLU(),
+]
+
+for layer in layers:
+    values = layer(x)
+    print(f"{layer.__class__.__name__:>12s}: {values.tolist()}")
+```
+
+> [!NOTE] 激活层通常不负责改变特征个数
+> 若输入形状是 `(4, 10, 32)`，逐元素激活后的形状仍是 `(4, 10, 32)`。它改变的是每个元素的数值。真正把最后一维从 32 改成 64 的通常是 `Linear(32,64)` 等含权重的层。
+
+#### 3.4.1 为什么还要关心导数
+
+训练时，自动求导需要把损失对输出的变化逐层传回参数。设激活函数为 $y=f(x)$，上一层收到的梯度会乘上 $f'(x)$。因此，函数值决定前向输出，导数决定反向信号能保留多少。
+
+ReLU 的导数可写为
+
+$$
+f'(x)=
+\begin{cases}
+0,&x<0,\\
+1,&x>0.
+\end{cases}
+$$
+
+在 $x=0$ 处不可微，PyTorch 选用一个约定值处理，不妨碍自动求导。对负输入，导数为零，这个位置暂时不会把梯度传给前面的计算。`LeakyReLU(a)` 在负半轴的导数是 $a$，例如 $a=0.1$ 时还能传回原信号的十分之一。
+
+Sigmoid 的导数是
+
+$$\sigma'(x)=\sigma(x)\bigl(1-\sigma(x)\bigr).$$
+
+它的最大值为 $0.25$，出现在 $x=0$。当 $x$ 很大或很小时，$\sigma(x)$ 接近 1 或 0，导数也接近 0。这个现象常称为激活饱和。Tanh 也有类似现象：
+
+$$\frac{\mathrm{d}}{\mathrm{d}x}\tanh(x)=1-\tanh^2(x).$$
+
+当输入绝对值很大时，Tanh 的导数变小。因此，在很深的前馈网络内部，通常不会把 Sigmoid 作为所有隐藏层的默认选择。它依然很适合二值输出、门控系数和需要限制到 $(0,1)$ 的中间值。
+
+```python
+import torch
+from torch import nn
+
+x = torch.tensor([-6., -2., 0., 2., 6.], requires_grad=True)
+y = nn.Sigmoid()(x)
+y.sum().backward()
+
+print("输出:", y.detach())
+print("导数:", x.grad)
+```
+
+> [!TIP] 不要只根据“新旧”选择激活函数
+> 图像卷积网络常用 ReLU 或 SiLU；Transformer 常用 GELU；循环单元内部需要 Sigmoid 和 Tanh 来构造门。最终选择还要结合模型结构、数值范围、算力预算与实验结果。
+
+#### 3.4.2 输出层是否需要激活函数
+
+输出层的写法由任务和损失函数共同决定：
+
+| 任务 | 模型最后一层通常输出 | 常配损失 |
+| --- | --- | --- |
+| 单标签多类别分类 | 任意实数 logits，不先做 Softmax | `CrossEntropyLoss` |
+| 二分类 | 一个任意实数 logit，不先做 Sigmoid | `BCEWithLogitsLoss` |
+| 多标签分类 | 每个标签一个 logit，不先做 Sigmoid | `BCEWithLogitsLoss` |
+| 无限制回归 | 任意实数 | `MSELoss`、`L1Loss` |
+| 要求预测为正数 | 可考虑 `Softplus` | 由任务定义 |
+
+`BCEWithLogitsLoss` 已把 Sigmoid 与二元交叉熵合在一个数值更稳定的计算中。若模型先手动做 Sigmoid，再把结果传给它，就等于重复处理。`CrossEntropyLoss` 同样接收 logits，并在内部完成所需的对数概率计算。
+
+> [!EXAMPLE] “logit” 是什么
+> 模型给出 `[-1.2, 2.0, 0.3]` 时，这三个数还不是概率，可以为负，也不要求总和为 1。对它们沿类别维做 Softmax 后，才得到总和为 1 的三个类别概率。训练阶段保留 logits 交给损失函数，展示预测时再求概率。
+
+#### 3.4.3 `inplace=True` 为什么要谨慎
+
+部分激活层接受 `inplace=True`，例如 `nn.ReLU(inplace=True)`。它会尽量直接改写输入张量所占的存储空间，有时能少保留一份中间结果，但也会使调试和自动求导更复杂。
+
+下面的写法会报错，因为叶子张量 `x` 需要梯度，却被原地修改：
+
+```python
+import torch
+from torch import nn
+
+x = torch.tensor([-1., 2.], requires_grad=True)
+relu = nn.ReLU(inplace=True)
+
+try:
+    y = relu(x)
+except RuntimeError as error:
+    print(type(error).__name__, error)
+```
+
+残差结构也常需要保留激活前的值。如果一个分支原地改写了共享张量，另一个分支读到的就不再是原值。初学阶段建议使用默认的 `inplace=False`；只有确认该张量之后不再被其他计算使用，并且内存分析确实显示值得调整时，再考虑原地操作。
+
+### 3.5 逐步计算 GLU 与数值稳定的 Softmax
+
+先看 GLU。假设 `dim=1`，输入为
+
+$$x=[2,-1,0,\ln 3].$$
+
+它被等分为
+
+$$a=[2,-1],\qquad b=[0,\ln 3].$$
+
+因为 $\sigma(0)=0.5$、$\sigma(\ln 3)=0.75$，所以
+
+$$
+\operatorname{GLU}(x)
+=a\odot\sigma(b)
+=[2,-1]\odot[0.5,0.75]
+=[1,-0.75].
+$$
+
+可以把 $a$ 理解为候选特征，把 $\sigma(b)$ 理解为位于 0 和 1 之间的开合程度。第二部分不是独立输出，而是调节第一部分保留多少。
+
+```python
+import math
+import torch
+from torch import nn
+
+x = torch.tensor([[2., -1., 0., math.log(3.)]])
+print(nn.GLU(dim=1)(x))  # tensor([[ 1.0000, -0.7500]])
+```
+
+再看 Softmax。对 logits $[1,2,0]$：
+
+$$
+e^1\approx2.718,\quad e^2\approx7.389,\quad e^0=1,
+$$
+
+$$
+\operatorname{Softmax}([1,2,0])
+\approx[0.2447,0.6652,0.0900].
+$$
+
+三个输出都为正，总和为 1，最大 logit 对应最大概率。若 logits 是 $[1001,1002,1000]$，直接计算指数可能超出浮点数可表示的范围。Softmax 对所有元素同时减去同一个数不改变结果，因此可先减去最大值 1002：
+
+$$[1001,1002,1000]-1002=[-1,0,-2].$$
+
+随后再计算指数，既得到相同概率，也避免巨大中间值。PyTorch 内部已经采用稳定算法，通常直接调用 `torch.softmax` 或 `nn.Softmax` 即可。
+
+```python
+import torch
+
+small = torch.tensor([[1., 2., 0.]])
+large = torch.tensor([[1001., 1002., 1000.]])
+print(torch.softmax(small, dim=1))
+print(torch.softmax(large, dim=1))  # 与上一行相同
+```
+
+> [!WARNING] Softmax 的每一个切片都必须有明确含义
+> 对 `(N,L,C)` 的分类输出，`dim=-1` 表示每个 token 在 `C` 个类别之间分配概率；`dim=1` 则表示每个类别在 `L` 个位置之间分配比例。这两种计算都能运行，但回答的是不同问题。
 
 ---
 
