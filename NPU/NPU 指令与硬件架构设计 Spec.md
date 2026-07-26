@@ -5407,12 +5407,12 @@ $$
 
 ### 18.1 上层模型编译器与低层汇编器
 
-软件工具分为两个清楚独立的阶段，不能把低层指令编码程序称为完整模型编译器：
+软件工具分为两个独立的阶段，即编译和汇编：
 
-| 阶段 | 参考程序 | 输入 | 主要工作 |
-| --- | --- | --- | --- |
-| 上层编译 | `NPU/compiler/npu_model_compiler.py` | 高层模型图 | 图检查、稳定拓扑排序、shape 推导、常量处理、算子拆分、张量布局、存储分配和任务依赖生成 |
-| 低层汇编 | `NPU/compiler/npu_assembler.py` | 规范化低层 JSON IR | Descriptor 编码、事件字段检查、CMD128 编码、二进制文件和摘要生成 |
+| 阶段   | 参考程序                                 | 输入            | 主要工作                                           |
+| ---- | ------------------------------------ | ------------- | ---------------------------------------------- |
+| 上层编译 | `NPU/compiler/npu_model_compiler.py` | 高层模型图         | 图检查、稳定拓扑排序、shape 推导、常量处理、算子拆分、张量布局、存储分配和任务依赖生成 |
+| 低层汇编 | `NPU/compiler/npu_assembler.py`      | 规范化低层 JSON IR | Descriptor 编码、事件字段检查、CMD128 编码、二进制文件和摘要生成      |
 
 高层模型图只描述下列内容：
 
@@ -5451,13 +5451,13 @@ opcode、Descriptor 字段、burst 参数、字节步长或显式 DMA/PACK/SPLIT
 本版本没有卷积执行单元，也没有卷积 opcode。高层 `Conv2D` 采用
 `im2col + GEMM`：
 
-1. 输入采用 NHWC，kernel 采用 `[KH,KW,C_{in},C_{out}]`；
+1. 输入采用 NHWC，kernel 采用 $[KH,KW,C_{in},C_{out}]$；
 2. 根据 stride、dilation 和 padding 推导输出高、宽；
 3. 需要补零时先用 DMA FILL 建立补零输入；
 4. 对每个 kernel 位置生成规则的 DMA COPY_ND，把输入窗口写入
-   `[N H_o W_o,\;KH KW C_{in}]` 的 `im2col` 张量；
+   $[N H_o W_o,\;KH KW C_{in}]$ 的 `im2col` 张量；
 5. 编译期把 kernel 整理成
-   `[KH KW C_{in},\;C_{out}]` 的 Matrix B tile 格式；
+   $[KH KW C_{in},\;C_{out}]$ 的 Matrix B tile 格式；
 6. Matrix GEMM 产生按 NHWC 线性次序保存的输出。
 
 首版 `Conv2D` 只接受 `groups=1`。不支持的 groups、dtype、padding 组合或
@@ -5526,6 +5526,56 @@ QUERY/WAIT/ACK/FENCE、缓存维护和小端写入。公共头中的函数声明
 一次 CMD128 的两个 beat 不能与另一条 CMD 交错。若低 word 已经发送，而高
 word 因平台错误无法发送，平台需要按第 7.4 节等待 CFE 超时或执行受控复位，
 不能直接把下一条 CMD 的低 word 当作当前命令的高 word。
+
+### 18.4 Transformer 端到端部署参考
+
+可执行参考程序位于 `NPU/examples/transformer_e2e`。输入文件
+`transformer_model.json` 是高层模型图，不含设备地址、任务编号、事件编号、
+执行单元、opcode、Descriptor 或 DMA 字段。模型使用 INT16，输入 shape 为
+`[4,8]`，由 4 个 token、8 个特征、2 个注意力头和 16 个 FFN 中间特征组成。
+高层图包含下列 8 个节点：
+
+1. `MultiHeadAttention`；
+2. 第一次残差 `Add`；
+3. 第一次 `LayerNorm`；
+4. FFN 扩展 `MatMul`；
+5. `GELU`；
+6. FFN 压缩 `MatMul`；
+7. 第二次残差 `Add`；
+8. 第二次 `LayerNorm`。
+
+当前参考编译器把这 8 个节点展开为 36 条 CMD128，其中包括输入、常量和输出
+DMA、Q/K/V 与输出投影、两次批矩阵乘、Head 数据整理、Softmax、两个 FFN
+矩阵乘、逐元素加法、GELU、LayerNorm 和必要的 `EVENT_JOIN`。测试把任务表
+提交上限设为 8，因此运行元数据给出 5 个提交组。
+
+C 测试程序只读取生成的 `.npu.h`：命令、Descriptor、常量、任务组和输入输出
+DDR binding 均来自编译结果。每个提交组按以下次序运行：
+
+```text
+submit 全部 CMD128
+    → wait 每个 command_id
+    → query 状态与进度
+    → ACK 释放任务项
+```
+
+最后一条 DMA 把 64B INT16 输出从 L1BUF 写到生成的 DDR 输出地址。测试程序
+另行使用宿主 `expf`、`erff` 和 `sqrtf` 计算参考结果，不读取 NPU 中间张量。
+当前测试结果为 32/32 个输出元素相同、最大绝对误差 0、4/4 个 token 的最大值
+位置相同。GCC、Clang 和 Clang ASan+UBSan 均执行成功。
+
+运行命令如下：
+
+```bash
+cd "/home/yusen/Obsidian Vault/NPU/examples/transformer_e2e"
+make clean
+make test
+make regress
+```
+
+`make check` 还会把上层编译生成的 `.npuasm.json` 单独交给
+`npu_assembler.py`，并逐字节比较两种方式产生的 CMD 与 Descriptor。该比较
+用于确认上层编译与独立汇编具有完全相同的编码结果。
 
 ---
 

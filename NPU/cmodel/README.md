@@ -1519,6 +1519,34 @@ zero point 和参考值执行 C 推理。因此：
 > 还需要为其补充模型建立函数、整数算子处理、fixture 生成、C 执行代码和数值
 > 检查。
 
+#### 10.5.5 通用高层编译器与 Transformer 部署
+
+上面的限制只针对 `tools/compile_keras_model.py`。真正负责高层模型图编译的
+程序是 `../compiler/npu_model_compiler.py`；低层编码程序是
+`../compiler/npu_assembler.py`。前者从张量和语义算子生成存储计划、任务依赖、
+DMA、Matrix、Vector 与 Complex 任务，后者把低层 JSON IR 编码为 CMD128 和
+Descriptor。
+
+可执行示例位于 `../examples/transformer_e2e`：
+
+```bash
+cd "/home/yusen/Obsidian Vault/NPU/examples/transformer_e2e"
+make clean
+make test
+```
+
+该示例从包含 8 个语义算子的 INT16 Transformer 高层图开始，生成 36 条
+CMD128，再由独立汇编步骤逐字节复查 CMD 和 Descriptor。C 程序使用生成的
+任务组、Descriptor、常量和输入输出 DDR 地址，调用分文件 C 驱动并在本
+C model 上执行。当前输出为 32/32 个元素与独立浮点参考相同，最大绝对误差
+为 0。
+
+完整的多编译器和内存检查运行方式为：
+
+```bash
+make regress
+```
+
 ## 11. 模型用途限制
 
 当前 MIF 与 System Slave 模型会生成并检查逐信号 AXI 波形；L1BUF 和

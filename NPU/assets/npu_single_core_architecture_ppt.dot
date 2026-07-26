@@ -1,0 +1,560 @@
+digraph NPU_SINGLE_CORE_PPT {
+  graph [
+    rankdir=TB,
+    newrank=true,
+    compound=true,
+    bgcolor="#F7FAFC",
+    pad="0.30",
+    margin="0.04",
+    nodesep="0.30",
+    ranksep="0.58",
+    splines=ortho,
+    outputorder=edgesfirst,
+    fontname="Microsoft YaHei",
+    fontsize=22,
+    fontcolor="#123B5D",
+    labelloc=t,
+    label="单核 NPU 初版架构（CMD128 / 64-bit 命令接口）"
+  ];
+
+  node [
+    shape=box,
+    style="rounded,filled",
+    margin="0.18,0.14",
+    fontname="Microsoft YaHei",
+    fontsize=11,
+    fontcolor="#17324D",
+    color="#94A3B8",
+    fillcolor="#FFFFFF",
+    penwidth=1.4
+  ];
+
+  edge [
+    fontname="Microsoft YaHei",
+    fontsize=10,
+    color="#2563EB",
+    arrowsize=0.74,
+    penwidth=1.7
+  ];
+
+  side_host [
+    fixedsize=true,
+    width=1.65,
+    height=1.78,
+    color="#334155",
+    fillcolor="#334155",
+    fontcolor="#FFFFFF",
+    penwidth=0,
+    label=<
+      <FONT FACE="Microsoft YaHei" COLOR="#FFFFFF" POINT-SIZE="13"><B>HOST</B></FONT>
+      <BR/>
+      <FONT FACE="Microsoft YaHei" COLOR="#FFFFFF" POINT-SIZE="12"><B>SOFTWARE</B></FONT>
+    >
+  ];
+
+  subgraph cluster_host {
+    label="";
+    color="#CBD5E1";
+    fillcolor="#EEF2F7";
+    style="rounded,filled";
+    penwidth=1.4;
+    margin=18;
+
+    app_runtime [
+      color="#64748B",
+      fillcolor="#FFFFFF",
+      label=<
+        <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="6">
+          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="13"><B>应用 / Runtime</B></FONT></TD></TR>
+          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">模型装载 · 缓冲区准备</FONT></TD></TR>
+          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">任务提交 · 结果读取</FONT></TD></TR>
+        </TABLE>
+      >
+    ];
+
+    c_driver [
+      color="#3B82F6",
+      fillcolor="#EAF3FF",
+      label=<
+        <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="6">
+          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="13"><B>NPU C 驱动</B></FONT></TD></TR>
+          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">Command · Descriptor · Device</FONT></TD></TR>
+          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">Runtime · Memory</FONT></TD></TR>
+        </TABLE>
+      >
+    ];
+
+    generic_host [
+      color="#2563EB",
+      fillcolor="#DBEAFE",
+      label=<
+        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="6" COLOR="#93C5FD">
+          <TR><TD BGCOLOR="#2563EB" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" COLOR="#FFFFFF" POINT-SIZE="12"><B>Generic Core / Host</B></FONT></TD></TR>
+          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="11"><B>Command Master / Source</B></FONT></TD></TR>
+          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">64-bit cmd_data · valid / ready</FONT></TD></TR>
+        </TABLE>
+      >
+    ];
+
+    gc_command_port [
+      shape=plain,
+      label=<
+        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="6" COLOR="#0891B2">
+          <TR><TD BGCOLOR="#0891B2" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" COLOR="#FFFFFF" POINT-SIZE="12"><B>NPU GC Command Port</B></FONT></TD></TR>
+          <TR><TD BGCOLOR="#CFFAFE" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="11"><B>Slave / Sink</B></FONT></TD></TR>
+          <TR><TD ALIGN="LEFT" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">beat 0：low　CMD[63:0]</FONT></TD></TR>
+          <TR><TD ALIGN="LEFT" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">beat 1：high　CMD[127:64]</FONT></TD></TR>
+          <TR><TD BGCOLOR="#ECFEFF" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10"><B>CMD128 = 2 × 64 bit</B></FONT></TD></TR>
+        </TABLE>
+      >
+    ];
+
+    { rank=same; app_runtime; c_driver; generic_host; gc_command_port; }
+
+    app_runtime -> c_driver [
+      color="#2563EB",
+      style=dashed
+    ];
+
+    c_driver -> generic_host [
+      color="#2563EB",
+      style=dashed
+    ];
+
+    generic_host -> gc_command_port [
+      color="#2563EB",
+      style=dashed,
+      penwidth=2.0
+    ];
+  }
+
+  { rank=same; side_host; app_runtime; c_driver; generic_host; gc_command_port; }
+  side_host -> app_runtime [style=invis, weight=80];
+
+  side_control [
+    fixedsize=true,
+    width=1.65,
+    height=1.94,
+    color="#1D4ED8",
+    fillcolor="#1D4ED8",
+    fontcolor="#FFFFFF",
+    penwidth=0,
+    label=<
+      <FONT FACE="Microsoft YaHei" COLOR="#FFFFFF" POINT-SIZE="12"><B>COMMAND</B></FONT>
+      <BR/>
+      <FONT FACE="Microsoft YaHei" COLOR="#FFFFFF" POINT-SIZE="11"><B>&amp; TASK</B></FONT>
+      <BR/>
+      <FONT FACE="Microsoft YaHei" COLOR="#FFFFFF" POINT-SIZE="12"><B>CONTROL</B></FONT>
+    >
+  ];
+
+  subgraph cluster_control {
+    label="";
+    color="#93C5FD";
+    fillcolor="#EFF6FF";
+    style="rounded,filled";
+    penwidth=1.4;
+    margin=18;
+
+    lsc [
+      color="#0F766E",
+      fillcolor="#CCFBF1",
+      label=<
+        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="6" COLOR="#2DD4BF">
+          <TR><TD BGCOLOR="#0F766E" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" COLOR="#FFFFFF" POINT-SIZE="12"><B>LSC / Register Port</B></FONT></TD></TR>
+          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="11"><B>AXI Slave</B></FONT></TD></TR>
+          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">配置访问 · 状态 · 中断</FONT></TD></TR>
+          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">性能计数 · 启动 / 停止</FONT></TD></TR>
+        </TABLE>
+      >
+    ];
+
+    scheduler [
+      color="#7C3AED",
+      fillcolor="#EDE9FE",
+      label=<
+        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="6" COLOR="#A78BFA">
+          <TR>
+            <TD BGCOLOR="#7C3AED" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" COLOR="#FFFFFF" POINT-SIZE="12"><B>Task Scheduler</B></FONT></TD>
+            <TD BGCOLOR="#7C3AED" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" COLOR="#FFFFFF" POINT-SIZE="12"><B>Event Table</B></FONT></TD>
+          </TR>
+          <TR>
+            <TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">就绪检查 · 冲突检测 · 发射</FONT></TD>
+            <TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">wait0 · wait1 · signal</FONT></TD>
+          </TR>
+          <TR>
+            <TD COLSPAN="2" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">DFU：读取并检查 Descriptor</FONT></TD>
+          </TR>
+          <TR>
+            <TD COLSPAN="2" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">顺序任务 · 栅栏 · 超时与错误状态</FONT></TD>
+          </TR>
+        </TABLE>
+      >
+    ];
+
+    cfe [
+      color="#2563EB",
+      fillcolor="#DBEAFE",
+      label=<
+        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="6" COLOR="#60A5FA">
+          <TR><TD BGCOLOR="#2563EB" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" COLOR="#FFFFFF" POINT-SIZE="13"><B>CFE</B></FONT></TD></TR>
+          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">接收 low / high 两拍并拼接 CMD128</FONT></TD></TR>
+          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">检查版本、次序与命令字段</FONT></TD></TR>
+          <TR><TD BGCOLOR="#EFF6FF" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10"><B>仅接收与解析命令</B></FONT></TD></TR>
+          <TR><TD BGCOLOR="#EFF6FF" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10"><B>不发起访存请求</B></FONT></TD></TR>
+        </TABLE>
+      >
+    ];
+
+    { rank=same; lsc; scheduler; cfe; }
+
+    lsc -> scheduler [style=invis, weight=15];
+
+    cfe -> scheduler [
+      color="#2563EB",
+      style=dashed,
+      dir=both,
+      arrowhead=normal,
+      arrowtail=normal,
+      penwidth=1.9
+    ];
+  }
+
+  { rank=same; side_control; lsc; scheduler; cfe; }
+  side_control -> lsc [style=invis, weight=80];
+
+  gc_command_port -> cfe [
+    color="#2563EB",
+    style=dashed,
+    penwidth=2.0,
+    weight=40
+  ];
+
+  generic_host -> lsc [
+    color="#0F766E",
+    style=dotted,
+    penwidth=1.8,
+    constraint=false
+  ];
+
+  side_execution [
+    fixedsize=true,
+    width=1.65,
+    height=2.64,
+    color="#6D28D9",
+    fillcolor="#6D28D9",
+    fontcolor="#FFFFFF",
+    penwidth=0,
+    label=<
+      <FONT FACE="Microsoft YaHei" COLOR="#FFFFFF" POINT-SIZE="12"><B>EXECUTION</B></FONT>
+      <BR/>
+      <FONT FACE="Microsoft YaHei" COLOR="#FFFFFF" POINT-SIZE="12"><B>UNITS</B></FONT>
+    >
+  ];
+
+  subgraph cluster_execution {
+    label="";
+    color="#C4B5FD";
+    fillcolor="#FAF7FF";
+    style="rounded,filled";
+    penwidth=1.4;
+    margin=18;
+
+    dma [
+      shape=plain,
+      label=<
+        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="6" COLOR="#14B8A6" WIDTH="174" HEIGHT="166" FIXEDSIZE="TRUE">
+          <TR><TD BGCOLOR="#0F766E" HEIGHT="34" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" COLOR="#FFFFFF" POINT-SIZE="12"><B>DMA Engine</B></FONT></TD></TR>
+          <TR><TD HEIGHT="44" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">线性 · 跨步 · 分块搬运</FONT></TD></TR>
+          <TR><TD HEIGHT="44" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">转置 · Pack · Split</FONT></TD></TR>
+          <TR><TD BGCOLOR="#CCFBF1" HEIGHT="44" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">DDR ⇄ L1 数据传送</FONT></TD></TR>
+        </TABLE>
+      >
+    ];
+
+    matrix [
+      shape=plain,
+      label=<
+        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="6" COLOR="#F59E0B" WIDTH="174" HEIGHT="166" FIXEDSIZE="TRUE">
+          <TR><TD BGCOLOR="#F59E0B" HEIGHT="34" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" COLOR="#422006" POINT-SIZE="12"><B>Matrix Engine</B></FONT></TD></TR>
+          <TR><TD BGCOLOR="#FEF3C7" HEIGHT="48" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10"><B>MAC_CTX</B><BR/>分块矩阵乘加</FONT></TD></TR>
+          <TR><TD BGCOLOR="#FEF3C7" HEIGHT="48" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10"><B>ACCUM_CTX</B><BR/>部分和 · bias · 定点缩放</FONT></TD></TR>
+          <TR><TD HEIGHT="36" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10"><B>两个阶段可重叠工作</B></FONT></TD></TR>
+        </TABLE>
+      >
+    ];
+
+    vector [
+      shape=plain,
+      label=<
+        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="6" COLOR="#FB7185" WIDTH="174" HEIGHT="166" FIXEDSIZE="TRUE">
+          <TR><TD BGCOLOR="#E11D48" HEIGHT="34" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" COLOR="#FFFFFF" POINT-SIZE="12"><B>Vector Engine</B></FONT></TD></TR>
+          <TR><TD HEIGHT="44" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">Add · Mul · Min / Max</FONT></TD></TR>
+          <TR><TD HEIGHT="44" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">Compare · Select · ReLU</FONT></TD></TR>
+          <TR><TD BGCOLOR="#FFE4E6" HEIGHT="44" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">Bias · 残差相加 · 门控</FONT></TD></TR>
+        </TABLE>
+      >
+    ];
+
+    complex [
+      shape=plain,
+      label=<
+        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="6" COLOR="#A78BFA" WIDTH="174" HEIGHT="166" FIXEDSIZE="TRUE">
+          <TR><TD BGCOLOR="#7C3AED" HEIGHT="34" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" COLOR="#FFFFFF" POINT-SIZE="12"><B>Complex Engine</B></FONT></TD></TR>
+          <TR><TD HEIGHT="44" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">Softmax · Norm · GELU</FONT></TD></TR>
+          <TR><TD HEIGHT="44" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">Sigmoid · Tanh</FONT></TD></TR>
+          <TR><TD BGCOLOR="#EDE9FE" HEIGHT="44" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10"><B>INT → FP32 → INT</B></FONT></TD></TR>
+        </TABLE>
+      >
+    ];
+
+    { rank=same; dma; matrix; vector; complex; }
+    dma -> matrix [style=invis, weight=20];
+    matrix -> vector [style=invis, weight=20];
+    vector -> complex [style=invis, weight=20];
+  }
+
+  { rank=same; side_execution; dma; matrix; vector; complex; }
+  side_execution -> dma [style=invis, weight=80];
+
+  scheduler -> dma [
+    color="#2563EB",
+    style=dashed,
+    dir=both,
+    arrowhead=normal,
+    arrowtail=normal
+  ];
+
+  scheduler -> matrix [
+    color="#2563EB",
+    style=dashed,
+    dir=both,
+    arrowhead=normal,
+    arrowtail=normal
+  ];
+
+  scheduler -> vector [
+    color="#2563EB",
+    style=dashed,
+    dir=both,
+    arrowhead=normal,
+    arrowtail=normal
+  ];
+
+  scheduler -> complex [
+    color="#2563EB",
+    style=dashed,
+    dir=both,
+    arrowhead=normal,
+    arrowtail=normal
+  ];
+
+  subgraph cluster_memory_side {
+    label="";
+    color="#15803D";
+    fillcolor="#15803D";
+    style="rounded,filled";
+    penwidth=0;
+    margin=12;
+
+    side_memory_top [
+      shape=box,
+      fixedsize=true,
+      width=1.36,
+      height=0.04,
+      style=invis,
+      label=""
+    ];
+
+    side_memory_label [
+      shape=box,
+      style=filled,
+      color="#15803D",
+      fillcolor="#15803D",
+      margin="0.08,0.08",
+      label=<
+        <FONT FACE="Microsoft YaHei" COLOR="#FFFFFF" POINT-SIZE="11"><B>ON-CHIP</B></FONT>
+        <BR/>
+        <FONT FACE="Microsoft YaHei" COLOR="#FFFFFF" POINT-SIZE="11"><B>STORAGE</B></FONT>
+        <BR/>
+        <FONT FACE="Microsoft YaHei" COLOR="#FFFFFF" POINT-SIZE="11"><B>&amp; EXTERNAL</B></FONT>
+        <BR/>
+        <FONT FACE="Microsoft YaHei" COLOR="#FFFFFF" POINT-SIZE="11"><B>MEMORY</B></FONT>
+      >
+    ];
+
+    side_memory_bottom [
+      shape=box,
+      fixedsize=true,
+      width=1.36,
+      height=0.04,
+      style=invis,
+      label=""
+    ];
+
+    side_memory_top -> side_memory_label [style=invis, weight=100];
+    side_memory_label -> side_memory_bottom [style=invis, weight=100];
+  }
+
+  subgraph cluster_memory {
+    label="";
+    color="#86EFAC";
+    fillcolor="#F0FDF4";
+    style="rounded,filled";
+    penwidth=1.4;
+    margin=18;
+
+    memory_left_pad [
+      shape=box,
+      fixedsize=true,
+      width=3.65,
+      height=0.04,
+      style=invis,
+      label=""
+    ];
+
+    memory_right_pad [
+      shape=box,
+      fixedsize=true,
+      width=3.65,
+      height=0.04,
+      style=invis,
+      label=""
+    ];
+
+    l1 [
+      shape=plain,
+      label=<
+        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="7" COLOR="#16A34A" WIDTH="760" HEIGHT="72" FIXEDSIZE="TRUE">
+          <TR>
+            <TD COLSPAN="5" BGCOLOR="#16A34A" VALIGN="MIDDLE">
+              <FONT FACE="Microsoft YaHei" COLOR="#FFFFFF" POINT-SIZE="13"><B>L1 Buffer：多 Bank 张量存储</B></FONT>
+            </TD>
+          </TR>
+          <TR>
+            <TD PORT="dma" BGCOLOR="#DCFCE7" WIDTH="152" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">DMA Port</FONT></TD>
+            <TD PORT="matrix" BGCOLOR="#DCFCE7" WIDTH="152" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">Matrix Port</FONT></TD>
+            <TD PORT="vector" BGCOLOR="#DCFCE7" WIDTH="152" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">Vector Port</FONT></TD>
+            <TD PORT="complex" BGCOLOR="#DCFCE7" WIDTH="152" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">Complex Port</FONT></TD>
+            <TD PORT="memory" BGCOLOR="#DCFCE7" WIDTH="152" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">Memory Port</FONT></TD>
+          </TR>
+        </TABLE>
+      >
+    ];
+
+    mif_tbu [
+      color="#0F766E",
+      fillcolor="#CCFBF1",
+      label=<
+        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="7" COLOR="#2DD4BF">
+          <TR><TD BGCOLOR="#0F766E" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" COLOR="#FFFFFF" POINT-SIZE="13"><B>MIF / TBU</B></FONT></TD></TR>
+          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="12"><B>AXI Master</B></FONT></TD></TR>
+          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">外部访存请求 · 地址检查</FONT></TD></TR>
+          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">请求排队 · Burst · 响应处理</FONT></TD></TR>
+        </TABLE>
+      >
+    ];
+
+    ddr [
+      color="#475569",
+      fillcolor="#E2E8F0",
+      label=<
+        <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="7">
+          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="13"><B>DDR / 系统内存</B></FONT></TD></TR>
+          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">Descriptor · 权重 · 输入输出张量</FONT></TD></TR>
+        </TABLE>
+      >
+    ];
+
+    { rank=same; memory_left_pad; mif_tbu; memory_right_pad; }
+    memory_left_pad -> mif_tbu [style=invis, weight=60];
+    mif_tbu -> memory_right_pad [style=invis, weight=60];
+
+    l1:s -> mif_tbu:n [
+      color="#7C3AED",
+      style=solid,
+      dir=both,
+      arrowhead=normal,
+      arrowtail=normal,
+      penwidth=2.4
+    ];
+
+    mif_tbu:s -> ddr:n [
+      color="#7C3AED",
+      style=solid,
+      dir=both,
+      arrowhead=normal,
+      arrowtail=normal,
+      penwidth=2.4
+    ];
+  }
+
+  { rank=same; side_memory_top; l1; }
+  { rank=same; side_memory_label; memory_left_pad; mif_tbu; memory_right_pad; }
+  { rank=same; side_memory_bottom; ddr; }
+  side_memory_top -> l1 [style=invis, weight=80];
+  side_memory_label -> memory_left_pad [style=invis, weight=80];
+  side_memory_bottom -> ddr [style=invis, weight=80];
+
+  dma:s -> l1:dma:n [
+    color="#7C3AED",
+    style=solid,
+    dir=both,
+    arrowhead=normal,
+    arrowtail=normal,
+    penwidth=2.2
+  ];
+
+  matrix:s -> l1:matrix:n [
+    color="#7C3AED",
+    style=solid,
+    dir=both,
+    arrowhead=normal,
+    arrowtail=normal,
+    penwidth=2.2
+  ];
+
+  vector:s -> l1:vector:n [
+    color="#7C3AED",
+    style=solid,
+    dir=both,
+    arrowhead=normal,
+    arrowtail=normal,
+    penwidth=2.2
+  ];
+
+  complex:s -> l1:complex:n [
+    color="#7C3AED",
+    style=solid,
+    dir=both,
+    arrowhead=normal,
+    arrowtail=normal,
+    penwidth=2.2
+  ];
+
+  legend [
+    shape=plain,
+    label=<
+      <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="7" COLOR="#CBD5E1">
+        <TR>
+          <TD BGCOLOR="#EFF6FF" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" COLOR="#2563EB" POINT-SIZE="10"><B>┄┄▶ 蓝色虚线</B></FONT></TD>
+          <TD ALIGN="LEFT" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">命令、任务控制与完成事件</FONT></TD>
+          <TD BGCOLOR="#ECFDF5" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" COLOR="#0F766E" POINT-SIZE="10"><B>┈┈▶ 青色点线</B></FONT></TD>
+          <TD ALIGN="LEFT" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">AXI 配置访问</FONT></TD>
+        </TR>
+        <TR>
+          <TD BGCOLOR="#F5F3FF" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" COLOR="#7C3AED" POINT-SIZE="10"><B>━━▶ 紫色实线</B></FONT></TD>
+          <TD ALIGN="LEFT" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">张量数据，双箭头表示可读可写</FONT></TD>
+          <TD COLSPAN="2" BGCOLOR="#F8FAFC" VALIGN="MIDDLE">
+            <FONT FACE="Microsoft YaHei" POINT-SIZE="10">INT4 / INT8 / INT16 输入与权重 · INT32 累加 · 复杂函数局部使用 FP32</FONT>
+          </TD>
+        </TR>
+      </TABLE>
+    >
+  ];
+
+  side_host -> side_control [style=invis, weight=100];
+  side_control -> side_execution [style=invis, weight=100];
+  side_execution -> side_memory_top [style=invis, weight=100];
+  ddr -> legend [style=invis, weight=30];
+}

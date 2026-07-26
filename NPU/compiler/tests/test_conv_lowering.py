@@ -292,6 +292,24 @@ class OperationTests(unittest.TestCase):
             sum(operation["opcode"] == "COPY_ND" for operation in operations),
             9,
         )
+        first_copy = operations[1]
+        self.assertEqual(
+            first_copy["descriptor"]["common"]["src0"]["addr"], 0x1008
+        )
+        self.assertEqual(
+            first_copy["descriptor"]["common"]["dst"]["addr"], 0x2024
+        )
+        self.assertEqual(
+            first_copy["descriptor"]["dma"]["shape"], [1, 1, 2, 2]
+        )
+        self.assertEqual(
+            first_copy["descriptor"]["dma"]["src_stride_bytes"],
+            [24, 16, 4, 0],
+        )
+        self.assertEqual(
+            first_copy["descriptor"]["dma"]["dst_stride_bytes"],
+            [72, 36, 18, 0],
+        )
         for previous, current in zip(operations, operations[1:]):
             self.assertEqual(current["depends_on"], [previous["name"]])
 

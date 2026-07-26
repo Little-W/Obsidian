@@ -128,3 +128,33 @@ Descriptor 的 `numeric_cfg`。INT16 输入和权重适合对数值误差较敏�
 
 驱动只负责字段生成和设备访问，不会自行改变权重数值。权重缩放参数应由模型
 编译器生成，并与运行时加载的权重文件保持一致。
+
+## Transformer 端到端调用
+
+`../examples/transformer_e2e` 展示如何把高层 Transformer 模型编译结果交给
+本驱动运行。示例不在 C 代码中填写内部 L1 地址、权重排列或任务编号，而是读取
+编译器生成的 C 头文件。
+
+```bash
+cd "/home/yusen/Obsidian Vault/NPU/examples/transformer_e2e"
+make clean
+make test
+```
+
+运行程序先把生成的 Descriptor、常量和输入放入 DDR，再按运行元数据给出的
+提交组调用：
+
+```text
+npu_drv_submit()
+    → npu_drv_wait_task()
+    → npu_drv_query_status() / npu_drv_query_raw()
+    → npu_drv_ack_task()
+```
+
+当前示例由 8 个高层节点生成 36 条 CMD128，每条命令都经过公开驱动 API 和
+C model。最终 32 个 INT16 输出与独立参考结果全部相同。使用 GCC、Clang 和
+ASan+UBSan 运行完整检查：
+
+```bash
+make regress
+```

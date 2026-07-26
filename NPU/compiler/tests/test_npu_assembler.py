@@ -11,17 +11,17 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location(
-    "npu_compile", ROOT / "npu_compile.py"
+    "npu_assembler", ROOT / "npu_assembler.py"
 )
 assert SPEC is not None and SPEC.loader is not None
-npu_compile = importlib.util.module_from_spec(SPEC)
-sys.modules[SPEC.name] = npu_compile
-SPEC.loader.exec_module(npu_compile)
+npu_assembler = importlib.util.module_from_spec(SPEC)
+sys.modules[SPEC.name] = npu_assembler
+SPEC.loader.exec_module(npu_assembler)
 
 
 class CommandTests(unittest.TestCase):
     def test_exact_cmd128_encoding(self) -> None:
-        encoded = npu_compile.encode_command128(
+        encoded = npu_assembler.encode_command128(
             descriptor_addr=0x123400,
             command_id=0x345,
             engine=2,
@@ -44,20 +44,20 @@ class CommandTests(unittest.TestCase):
         )
 
     def test_reserved_header_flags_are_rejected(self) -> None:
-        with self.assertRaises(npu_compile.CompileError):
-            npu_compile.encode_command128(
+        with self.assertRaises(npu_assembler.CompileError):
+            npu_assembler.encode_command128(
                 0x1000, 1, 1, 0x20, 0x400, 0xFFF, 0xFFF, 0xFFF
             )
 
 
-class CompilerTests(unittest.TestCase):
+class AssemblerTests(unittest.TestCase):
     def test_example_int16_and_dependency(self) -> None:
         document = json.loads(
             (ROOT / "examples" / "int16_regression.json").read_text(
                 encoding="utf-8"
             )
         )
-        operations, commands, descriptors = npu_compile.compile_document(
+        operations, commands, descriptors = npu_assembler.compile_document(
             document
         )
         self.assertEqual(len(operations), 2)
@@ -80,7 +80,7 @@ class CompilerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary)
             self.assertEqual(
-                npu_compile.main(
+                npu_assembler.main(
                     [
                         str(source),
                         "--output-dir",
@@ -96,7 +96,7 @@ class CompilerTests(unittest.TestCase):
                 if path.is_file()
             }
             self.assertEqual(
-                npu_compile.main(
+                npu_assembler.main(
                     [
                         str(source),
                         "--output-dir",
@@ -136,9 +136,9 @@ class CompilerTests(unittest.TestCase):
             ],
         }
         with self.assertRaisesRegex(
-            npu_compile.CompileError, "earlier operation"
+            npu_assembler.CompileError, "earlier operation"
         ):
-            npu_compile.compile_document(document)
+            npu_assembler.compile_document(document)
 
 
 if __name__ == "__main__":

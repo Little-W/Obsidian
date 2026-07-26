@@ -144,7 +144,11 @@ Conv2DPlan = Conv2DGeometry
 def _positive_shape(
     value: Sequence[int], count: int, location: str
 ) -> tuple[int, ...]:
-    if isinstance(value, (str, bytes)) or len(value) != count:
+    if (
+        not isinstance(value, Sequence)
+        or isinstance(value, (str, bytes))
+        or len(value) != count
+    ):
         raise ConvLoweringError(f"{location} must contain {count} integers")
     result: list[int] = []
     for index, item in enumerate(value):
@@ -314,6 +318,8 @@ def infer_conv2d(
 ) -> Conv2DPlan:
     """Upper-compiler API for a semantic Conv2D node."""
 
+    if attributes is not None and not isinstance(attributes, Mapping):
+        raise ConvLoweringError("Conv2D attributes must be an object")
     fields = {} if attributes is None else dict(attributes)
     known = {"strides", "dilations", "padding", "groups", "data_format"}
     unknown = sorted(set(fields) - known)
@@ -500,9 +506,15 @@ def _checked_placement(placement: TensorPlacement, location: str) -> None:
         raise ConvLoweringError(
             f"{location}.region_bytes must be positive"
         )
-    if placement.space.lower() not in {"l1", "ddr"}:
+    if (
+        not isinstance(placement.space, str)
+        or placement.space.lower() not in {"l1", "ddr"}
+    ):
         raise ConvLoweringError(f"{location}.space must be l1 or ddr")
-    if placement.dtype.lower() not in _DTYPE_BITS:
+    if (
+        not isinstance(placement.dtype, str)
+        or placement.dtype.lower() not in _DTYPE_BITS
+    ):
         raise ConvLoweringError(f"{location}.dtype is not supported")
 
 
@@ -511,6 +523,8 @@ def storage_bytes(elements: int, dtype: str) -> int:
 
     if isinstance(elements, bool) or not isinstance(elements, int) or elements < 0:
         raise ConvLoweringError("elements must be a nonnegative integer")
+    if not isinstance(dtype, str):
+        raise ConvLoweringError("dtype must be a string")
     normalized = dtype.lower()
     if normalized not in _DTYPE_BITS:
         raise ConvLoweringError(f"unsupported dtype {dtype!r}")
@@ -721,6 +735,8 @@ def emit_conv2d_operations(
 ) -> tuple[dict[str, Any], ...]:
     """Emit DMA im2col operations followed by a Matrix GEMM."""
 
+    _checked_placement(input_tensor, "input_tensor")
+    _checked_placement(im2col_tensor, "im2col_tensor")
     _checked_placement(tiled_kernel_tensor, "tiled_kernel_tensor")
     _checked_placement(output_tensor, "output_tensor")
     input_dtype = input_tensor.dtype.lower()

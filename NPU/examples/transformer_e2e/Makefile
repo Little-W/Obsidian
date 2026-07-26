@@ -2,13 +2,18 @@ CC ?= cc
 PYTHON ?= python3
 
 ROOT := ../..
+MODEL_COMPILER := $(ROOT)/compiler/npu_model_compiler.py
+MODEL_ARTIFACTS := $(ROOT)/compiler/model_artifacts.py
 ASSEMBLER := $(ROOT)/compiler/npu_assembler.py
+CONV_LOWERING := $(ROOT)/compiler/conv_lowering.py
 DRIVER_DIR := $(ROOT)/driver
 CMODEL_DIR := $(ROOT)/cmodel
 BUILD_DIR := build
 GENERATED_DIR := $(BUILD_DIR)/generated
-MODEL := transformer_block.json
-GENERATED_HEADER := $(GENERATED_DIR)/transformer_block.npu.h
+ASSEMBLY_CHECK_DIR := $(BUILD_DIR)/assembly-check
+MODEL := transformer_model.json
+GENERATED_HEADER := $(GENERATED_DIR)/transformer_model.npu.h
+LOW_IR := $(GENERATED_DIR)/transformer_model.npuasm.json
 DRIVER_LIB := $(DRIVER_DIR)/build/libnpu_driver.a
 CMODEL_LIB := $(CMODEL_DIR)/build/libnpu_cmodel.a
 RUNNER := $(BUILD_DIR)/transformer_runner
@@ -30,9 +35,14 @@ all: $(RUNNER)
 $(GENERATED_DIR):
 	mkdir -p $@
 
-$(GENERATED_HEADER): $(MODEL) $(ASSEMBLER) | $(GENERATED_DIR)
-	$(PYTHON) $(ASSEMBLER) $(MODEL) \
-		--output-dir $(GENERATED_DIR) --emit-c-header
+$(ASSEMBLY_CHECK_DIR):
+	mkdir -p $@
+
+$(GENERATED_HEADER): $(MODEL) $(MODEL_COMPILER) $(MODEL_ARTIFACTS) $(ASSEMBLER) \
+	$(CONV_LOWERING) | $(GENERATED_DIR)
+	$(PYTHON) $(MODEL_COMPILER) $(MODEL) \
+		--output-dir $(GENERATED_DIR) --emit-c-header \
+		--task-entries 8
 
 $(DRIVER_LIB):
 	$(MAKE) -C $(DRIVER_DIR) build/libnpu_driver.a
@@ -49,9 +59,16 @@ $(RUNNER): transformer_runner.c cmodel_driver_backend.c \
 
 compile: $(GENERATED_HEADER)
 
-check: $(GENERATED_HEADER)
-	$(PYTHON) $(ASSEMBLER) $(MODEL) \
-		--output-dir $(GENERATED_DIR) --emit-c-header --check
+check: $(GENERATED_HEADER) | $(ASSEMBLY_CHECK_DIR)
+	$(PYTHON) $(MODEL_COMPILER) $(MODEL) \
+		--output-dir $(GENERATED_DIR) --emit-c-header \
+		--task-entries 8 --check
+	$(PYTHON) $(ASSEMBLER) $(LOW_IR) \
+		--output-dir $(ASSEMBLY_CHECK_DIR)
+	cmp $(GENERATED_DIR)/transformer_model.cmd.bin \
+		$(ASSEMBLY_CHECK_DIR)/transformer_model.npuasm.cmd.bin
+	cmp $(GENERATED_DIR)/transformer_model.desc.bin \
+		$(ASSEMBLY_CHECK_DIR)/transformer_model.npuasm.desc.bin
 
 test: check $(RUNNER)
 	$(RUNNER)
