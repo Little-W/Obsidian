@@ -85,6 +85,10 @@ FRACTION_BITS = 5
 SCALE = 2.0**-FRACTION_BITS
 SEED = 20260726
 EPOCHS = 100
+Q5_AWARE_EPOCHS = 40
+Q5_PROJECTED_EPOCHS = 8
+ENCODER_NOISE_STDDEV = 0.09375
+FINAL_NORM_SCALE = 0.875
 CLASS_NAMES = ("light_on", "light_off", "fan_on", "fan_off")
 
 Sentence = tuple[str, ...]
@@ -440,6 +444,26 @@ def model_layers() -> dict[str, keras.layers.Layer]:
     }
 
 
+class TrainingQ5(keras.layers.Layer):
+    """Q5 fake quantization used only by the training graph."""
+
+    def call(self, inputs: tf.Tensor) -> tf.Tensor:
+        return tf.quantization.fake_quant_with_min_max_args(
+            inputs,
+            min=-128.0 * SCALE,
+            max=127.0 * SCALE,
+            num_bits=8,
+            narrow_range=False,
+        )
+
+
+def training_q5(
+    value: keras.KerasTensor,
+    name: str,
+) -> keras.KerasTensor:
+    return TrainingQ5(name=name)(value)
+
+
 def apply_network(
     layers: dict[str, keras.layers.Layer],
     words: keras.KerasTensor,
@@ -467,6 +491,86 @@ def apply_network(
     return encoder1, encoder2, logits
 
 
+def apply_q5_training_network(
+    layers: dict[str, keras.layers.Layer],
+    words: keras.KerasTensor,
+    positions: keras.KerasTensor,
+) -> keras.KerasTensor:
+    """Run shared standard layers with training-only Q5 activation noise."""
+
+    source = training_q5(
+        layers["input_add"]([words, positions]),
+        "training_q5_input_add",
+    )
+    attention1 = training_q5(
+        layers["attention1"](source, source),
+        "training_q5_attention1",
+    )
+    residual1 = training_q5(
+        layers["attention_add1"]([source, attention1]),
+        "training_q5_attention_add1",
+    )
+    normalized_attention1 = training_q5(
+        layers["attention_norm1"](residual1),
+        "training_q5_attention_norm1",
+    )
+    hidden1 = training_q5(
+        layers["expand1"](normalized_attention1),
+        "training_q5_expand1",
+    )
+    contracted1 = training_q5(
+        layers["contract1"](hidden1),
+        "training_q5_contract1",
+    )
+    encoder1 = training_q5(
+        layers["ffn_norm1"](
+            layers["ffn_add1"]([normalized_attention1, contracted1])
+        ),
+        "training_q5_encoder1",
+    )
+    encoder1_for_next = keras.layers.GaussianNoise(
+        ENCODER_NOISE_STDDEV,
+        seed=SEED + 1,
+        name="training_encoder1_noise",
+    )(encoder1)
+
+    attention2 = training_q5(
+        layers["attention2"](encoder1_for_next, encoder1_for_next),
+        "training_q5_attention2",
+    )
+    residual2 = training_q5(
+        layers["attention_add2"]([encoder1_for_next, attention2]),
+        "training_q5_attention_add2",
+    )
+    normalized_attention2 = training_q5(
+        layers["attention_norm2"](residual2),
+        "training_q5_attention_norm2",
+    )
+    hidden2 = training_q5(
+        layers["expand2"](normalized_attention2),
+        "training_q5_expand2",
+    )
+    contracted2 = training_q5(
+        layers["contract2"](hidden2),
+        "training_q5_contract2",
+    )
+    encoder2 = training_q5(
+        layers["ffn_norm2"](
+            layers["ffn_add2"]([normalized_attention2, contracted2])
+        ),
+        "training_q5_encoder2",
+    )
+    encoder2_for_classifier = keras.layers.GaussianNoise(
+        ENCODER_NOISE_STDDEV,
+        seed=SEED + 2,
+        name="training_encoder2_noise",
+    )(encoder2)
+    return training_q5(
+        layers["classifier"](encoder2_for_classifier),
+        "training_q5_logits",
+    )
+
+
 def training_model(
     layers: dict[str, keras.layers.Layer],
 ) -> keras.Model:
@@ -485,6 +589,43 @@ def training_model(
         logits,
         name="transformer_training_model",
     )
+
+
+def q5_training_model(
+    layers: dict[str, keras.layers.Layer],
+) -> keras.Model:
+    words = keras.Input(
+        shape=(TOKENS, WIDTH), dtype="float32", name="q5_training_words"
+    )
+    positions = keras.Input(
+        shape=(TOKENS, WIDTH),
+        dtype="float32",
+        name="q5_training_positions",
+    )
+    logits = apply_q5_training_network(layers, words, positions)
+    return keras.Model(
+        {
+            "q5_training_words": words,
+            "q5_training_positions": positions,
+        },
+        logits,
+        name="transformer_q5_training_model",
+    )
+
+
+def use_uniform_attention_scores(
+    layers: dict[str, keras.layers.Layer],
+) -> None:
+    """Keep Q and K at zero so every valid score row has uniform weights."""
+
+    for name in ("attention1", "attention2"):
+        attention = layers[name]
+        query_dense = attention.query_dense
+        key_dense = attention.key_dense
+        query_dense.kernel.assign(tf.zeros_like(query_dense.kernel))
+        key_dense.kernel.assign(tf.zeros_like(key_dense.kernel))
+        query_dense.trainable = False
+        key_dense.trainable = False
 
 
 def inference_model(
@@ -613,6 +754,47 @@ def weight_range(model: keras.Model) -> tuple[float, float]:
     return float(np.min(flat)), float(np.max(flat))
 
 
+def snap_model_weights_to_q5(model: keras.Model) -> dict[str, float | int]:
+    original = [
+        np.asarray(value, dtype=np.float32) for value in model.get_weights()
+    ]
+    snapped = [
+        fixed(value).astype(np.float32) * np.float32(SCALE)
+        for value in original
+    ]
+    changed = sum(
+        int(np.count_nonzero(before != after))
+        for before, after in zip(original, snapped, strict=True)
+    )
+    values = sum(int(value.size) for value in original)
+    largest_adjustment = max(
+        float(np.max(np.abs(before - after)))
+        for before, after in zip(original, snapped, strict=True)
+    )
+    model.set_weights(snapped)
+    return {
+        "values": values,
+        "changed_values": changed,
+        "largest_adjustment": largest_adjustment,
+    }
+
+
+def stabilize_final_encoder_scale(
+    layers: dict[str, keras.layers.Layer],
+) -> None:
+    """Reserve numerical headroom at the second encoder output."""
+
+    normalization = layers["ffn_norm2"]
+    scaled_gamma = (
+        fixed(
+            np.asarray(normalization.gamma, dtype=np.float32)
+            * np.float32(FINAL_NORM_SCALE)
+        ).astype(np.float32)
+        * np.float32(SCALE)
+    )
+    normalization.gamma.assign(scaled_gamma)
+
+
 def c_i8_array(name: str, values: np.ndarray) -> str:
     flat = np.asarray(values, dtype=np.int8).reshape(-1)
     rows = []
@@ -734,6 +916,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     layers = model_layers()
     trainer = training_model(layers)
+    use_uniform_attention_scores(layers)
     trainer.compile(
         optimizer=keras.optimizers.Adam(learning_rate=0.003),
         loss=keras.losses.MeanSquaredError(),
@@ -755,6 +938,40 @@ def main(argv: Sequence[str] | None = None) -> int:
         shuffle=True,
         verbose=0,
     )
+    q5_trainer = q5_training_model(layers)
+    q5_trainer.compile(
+        optimizer=keras.optimizers.Adam(learning_rate=0.001),
+        loss=keras.losses.MeanSquaredError(),
+        metrics=[keras.metrics.MeanSquaredError(name="mse")],
+    )
+    q5_train_inputs = {
+        "q5_training_words": train_words,
+        "q5_training_positions": train_positions,
+    }
+    q5_history = q5_trainer.fit(
+        q5_train_inputs,
+        train_target,
+        sample_weight=train_weights,
+        batch_size=16,
+        epochs=Q5_AWARE_EPOCHS,
+        shuffle=True,
+        verbose=0,
+    )
+    projection_stats: dict[str, float | int] = {}
+    for _ in range(Q5_PROJECTED_EPOCHS):
+        q5_trainer.fit(
+            q5_train_inputs,
+            train_target,
+            sample_weight=train_weights,
+            batch_size=16,
+            epochs=1,
+            shuffle=True,
+            verbose=0,
+        )
+        projection_stats = snap_model_weights_to_q5(q5_trainer)
+    projection_stats = snap_model_weights_to_q5(q5_trainer)
+    stabilize_final_encoder_scale(layers)
+    projection_stats = snap_model_weights_to_q5(q5_trainer)
     final_loss, final_mse = trainer.evaluate(
         train_inputs,
         train_target,
@@ -853,6 +1070,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         "model_sha256": hashlib.sha256(args.model.read_bytes()).hexdigest(),
         "seed": SEED,
         "epochs": EPOCHS,
+        "q5_aware_epochs": Q5_AWARE_EPOCHS,
+        "q5_projected_epochs": Q5_PROJECTED_EPOCHS,
+        "attention_score_mode": "uniform_zero_query_and_key",
+        "final_encoder_norm_scale": FINAL_NORM_SCALE,
         "input_shapes": [[1, TOKENS, WIDTH], [1, TOKENS, WIDTH]],
         "output_shapes": [
             [1, TOKENS, WIDTH],
@@ -883,6 +1104,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             "initial_mse": float(initial_mse),
             "history_first_loss": float(history.history["loss"][0]),
             "history_final_loss": float(history.history["loss"][-1]),
+            "q5_history_first_loss": float(
+                q5_history.history["loss"][0]
+            ),
+            "q5_history_final_loss": float(
+                q5_history.history["loss"][-1]
+            ),
+            "q5_projection": projection_stats,
+            "training_noise_stddev": ENCODER_NOISE_STDDEV,
             "final_loss": float(final_loss),
             "final_mse": float(final_mse),
             "held_out_loss": float(held_out_loss),
@@ -908,6 +1137,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         f"model={args.model} keras={keras.__version__} "
         f"tensorflow={tf.__version__} fit_samples={len(train_sentences)} "
         f"held_out_samples={len(test_sentences)} epochs={EPOCHS} "
+        f"q5_aware_epochs={Q5_AWARE_EPOCHS} "
+        f"q5_projected_epochs={Q5_PROJECTED_EPOCHS} "
         f"initial_loss={initial_loss:.7f} final_loss={final_loss:.7f} "
         f"train_accuracy={train_accuracy:.7f} "
         f"held_out_accuracy={test_accuracy:.7f}"

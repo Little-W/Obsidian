@@ -988,17 +988,30 @@ def matrix_constant_requirements(
                 operator.attributes.get("score_scale", 1.0),
                 f"operator {operator.name}.score_scale",
             )
-            _softmax_scale, score_weight_scale = attention_score_scale_plan(
+            heads = parse_int(
+                operator.attributes.get("num_heads"),
+                f"operator {operator.name}.num_heads",
+                1,
+            )
+            (
+                _softmax_scale,
+                query_weight_scale,
+                key_weight_scale,
+            ) = attention_score_scale_plan(
                 score_scale,
                 tensors[operator.inputs[0]].dtype,
                 f"operator {operator.name}.score_scale",
+                query_values=query.data,
+                key_values=key.data,
+                width=query.shape[0],
+                heads=heads,
+                query_dtype=query.dtype,
+                key_dtype=key.dtype,
             )
-            projection_weight_scale = (
-                None
-                if score_weight_scale is None
-                else math.sqrt(score_weight_scale)
-            )
-            for name, tensor in ((query_name, query), (key_name, key)):
+            for name, tensor, projection_weight_scale in (
+                (query_name, query, query_weight_scale),
+                (key_name, key, key_weight_scale),
+            ):
                 values = (
                     None
                     if projection_weight_scale is None
@@ -1511,7 +1524,14 @@ def attention_score_scale_plan(
     score_scale: float,
     dtype: str,
     location: str,
-) -> tuple[float, float | None]:
+    *,
+    query_values: Sequence[int] | None = None,
+    key_values: Sequence[int] | None = None,
+    width: int | None = None,
+    heads: int = 1,
+    query_dtype: str | None = None,
+    key_dtype: str | None = None,
+) -> tuple[float, float | None, float | None]:
     """Represent an attention score scale with inline power-of-two fields.
 
     A directly representable value needs no weight change.  Otherwise the
@@ -1532,7 +1552,7 @@ def attention_score_scale_plan(
             rel_tol=0.0,
             abs_tol=candidate * 1.0e-7,
         ):
-            return candidate, None
+            return candidate, None, None
     if dtype not in ("int4", "int8", "int16"):
         raise fail(
             location,
@@ -1547,7 +1567,90 @@ def attention_score_scale_plan(
             "cannot be represented by query-weight scaling and the inline "
             "SOFTMAX scale",
         )
-    return softmax_scale, weight_scale
+    symmetric_scale = math.sqrt(weight_scale)
+    if (
+        query_values is None
+        or key_values is None
+        or width is None
+    ):
+        return softmax_scale, symmetric_scale, symmetric_scale
+    if width <= 0 or heads <= 0 or width % heads:
+        raise fail(location, "attention width must be divisible by head count")
+    expected_values = width * width
+    if (
+        len(query_values) != expected_values
+        or len(key_values) != expected_values
+    ):
+        raise fail(location, "query and key weights must both be width × width")
+    query_kind = dtype if query_dtype is None else query_dtype
+    key_kind = dtype if key_dtype is None else key_dtype
+    best: tuple[tuple[float, int, float, float], float, float] | None = None
+    seen: set[tuple[tuple[int, ...], tuple[int, ...]]] = set()
+    for step in range(-64, 65):
+        ratio = math.pow(2.0, step / 256.0)
+        query_scale = symmetric_scale * ratio
+        key_scale = symmetric_scale / ratio
+        if query_scale > 1.0 or key_scale > 1.0:
+            continue
+        scaled_query = scale_integer_values(
+            query_values, query_scale, query_kind
+        )
+        scaled_key = scale_integer_values(
+            key_values, key_scale, key_kind
+        )
+        encoded_pair = (scaled_query, scaled_key)
+        if encoded_pair in seen:
+            continue
+        seen.add(encoded_pair)
+        squared_error = 0.0
+        squared_reference = 0.0
+        maximum_error = 0.0
+        head_width = width // heads
+        for head in range(heads):
+            head_start = head * head_width
+            head_end = head_start + head_width
+            for query_row in range(width):
+                query_base = query_row * width
+                for key_row in range(width):
+                    key_base = key_row * width
+                    original_dot = 0
+                    encoded_dot = 0
+                    for column in range(head_start, head_end):
+                        original_dot += (
+                            query_values[query_base + column]
+                            * key_values[key_base + column]
+                        )
+                        encoded_dot += (
+                            scaled_query[query_base + column]
+                            * scaled_key[key_base + column]
+                        )
+                    reference_dot = weight_scale * original_dot
+                    error = encoded_dot - reference_dot
+                    squared_error += error * error
+                    squared_reference += reference_dot * reference_dot
+                    maximum_error = max(maximum_error, abs(error))
+        normalized_error = squared_error / max(squared_reference, 1.0)
+        lost_nonzero = sum(
+            1
+            for original, encoded in zip(query_values, scaled_query)
+            if original != 0 and encoded == 0
+        ) + sum(
+            1
+            for original, encoded in zip(key_values, scaled_key)
+            if original != 0 and encoded == 0
+        )
+        score = (
+            normalized_error,
+            lost_nonzero,
+            maximum_error,
+            abs(step),
+        )
+        candidate = (score, query_scale, key_scale)
+        if best is None or candidate < best:
+            best = candidate
+    if best is None:
+        raise fail(location, "cannot choose query and key constant scales")
+    return softmax_scale, best[1], best[2]
 
 
 def scale_integer_values(
@@ -1889,7 +1992,11 @@ def lower_multi_head_attention(
         operator.attributes.get("score_scale", 1.0),
         f"operator {operator.name}.score_scale",
     )
-    softmax_input_scale, _query_weight_scale = attention_score_scale_plan(
+    (
+        softmax_input_scale,
+        _query_weight_scale,
+        _key_weight_scale,
+    ) = attention_score_scale_plan(
         requested_score_scale,
         dtype,
         f"operator {operator.name}.score_scale",

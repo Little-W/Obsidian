@@ -455,7 +455,7 @@ class EndToEndCompilerTests(unittest.TestCase):
         self.assertIn("attention_output_projection", names)
         self.assertTrue(any(name.startswith("__event_join_") for name in names))
 
-    def test_attention_non_power_of_two_score_scale_is_lowered_explicitly(
+    def test_attention_non_power_of_two_scale_is_folded_into_q_and_k(
         self,
     ) -> None:
         document = attention_model(width=16)
@@ -464,6 +464,9 @@ class EndToEndCompilerTests(unittest.TestCase):
             for row in range(16)
             for column in range(16)
         ]
+        document["constants"][1]["data"] = list(
+            document["constants"][0]["data"]
+        )
         attributes = document["operators"][0]["attributes"]
         attributes.update(
             {
@@ -487,13 +490,29 @@ class EndToEndCompilerTests(unittest.TestCase):
         softmax = operations["attention_softmax"]
         hardware_scale = softmax["fields"]["complex"]["src0_scale"]
         self.assertEqual(hardware_scale, 0.5)
-        weight_scale = attributes["score_scale"] / hardware_scale
-        self.assertAlmostEqual(weight_scale, 1.0 / math.sqrt(2.0))
-        expected_query = [
-            45 if row == column else 0
-            for row in range(16)
-            for column in range(16)
-        ]
+        _, query_scale, key_scale = compiler.attention_score_scale_plan(
+            attributes["score_scale"],
+            "int8",
+            "test.score_scale",
+            query_values=document["constants"][0]["data"],
+            key_values=document["constants"][1]["data"],
+            width=16,
+            heads=2,
+            query_dtype="int8",
+            key_dtype="int8",
+        )
+        self.assertIsNotNone(query_scale)
+        self.assertIsNotNone(key_scale)
+        self.assertAlmostEqual(
+            query_scale * key_scale,
+            attributes["score_scale"] / hardware_scale,
+        )
+        expected_query = compiler.scale_integer_values(
+            document["constants"][0]["data"], query_scale, "int8"
+        )
+        expected_key = compiler.scale_integer_values(
+            document["constants"][1]["data"], key_scale, "int8"
+        )
         packed_query = compiler.pack_matrix_b_values(
             expected_query,
             16,
@@ -510,6 +529,21 @@ class EndToEndCompilerTests(unittest.TestCase):
                 query_offset : query_offset + len(packed_query)
             ],
             packed_query,
+        )
+        packed_key = compiler.pack_matrix_b_values(
+            expected_key,
+            16,
+            16,
+            "int8",
+            compiler.TargetConfig(),
+        )
+        key = result.tensors["wk"]
+        key_offset = key.ddr_addr - result.runtime["constant_base_ddr"]
+        self.assertEqual(
+            result.constant_image[
+                key_offset : key_offset + len(packed_key)
+            ],
+            packed_key,
         )
 
     def test_conv2d_reaches_im2col_and_gemm_only(self) -> None:
@@ -773,6 +807,7 @@ class EndToEndCompilerTests(unittest.TestCase):
         self.assertGreater(max(rearm_batch_lengths), 1)
         self.assertLessEqual(len(result.runtime["batches"]), 45)
         self.assertEqual(result.low_ir["target"]["name"], "single-core-v2")
+        self.assertEqual(result.runtime["external_descriptor_bytes"], 0)
 
     def test_l1_storage_is_reused_after_last_consumer(self) -> None:
         document = {

@@ -45,7 +45,7 @@ Task Context，执行单元可以读取内部展开字段；这些内部字段�
 | IVE lane 数 | 8 |
 | CME FP32 lane 数 | 4 |
 | CME 私有暂存 | 4096 FP32 元素 |
-| Task 表项 | 32 |
+| Task 表项 | CModel 参考值 32；当前 RTL 默认值 16，可参数化 |
 | Event 表项 | 255，有效 ID 为 0..254 |
 | CFE FIFO 深度 | 8 |
 | DMA 最大 burst | 16 个 64 bit beat |
@@ -206,10 +206,11 @@ Generic Core 作为 AXI Master，NPU 作为 AXI Slave。接口包含标准
 AW/W/B、AR/R 五通道，`WDATA/RDATA=64 bit`，`WSTRB=8 bit`。支持区域：
 
 1. CSR：单 beat 读写，访问 LSC、控制、状态、性能计数和错误记录。
-2. CMD 固定地址：一次 V2 提交使用 `AWBURST=FIXED`、`AWLEN=1` 的两个
-   64 bit W beat；第一个 beat 是 CMD[63:0]，第二个是 CMD[127:64]。
+2. CMD 固定地址：使用 `AWBURST=FIXED`，一次 burst 接收 2、4、6、……
+   16 个 64 bit W beat，也就是 1～8 条 CMD128。每条命令先发送
+   CMD[63:0]，再发送 CMD[127:64]；`AWLEN` 分别为 1、3、5、……15。
 3. 命令接收响应 FIFO：CPU 读取 command_id、接收状态与可用 FIFO 项数。
-4. L1BUF 外部窗口：调试、权重装载、输入写入和输出读取；经 L1 Debug
+4. L1BUF 外部窗口：调试、权重装载、输入写入和输出读取；经 L1 Host
    端口进入正常 bank 仲裁。
 
 参考地址表：
@@ -217,15 +218,22 @@ AW/W/B、AR/R 五通道，`WDATA/RDATA=64 bit`，`WSTRB=8 bit`。支持区域：
 | 地址 | 访问对象 |
 | ---: | --- |
 | `0x00000000..0x0000ffff` | LSC/控制 CSR |
-| `0x00010000..0x0001ffff` | Debug CSR |
+| `0x00010000..0x0001ffff` | 预留的 CSR 地址段 |
 | `0x00020000` | CMD FIFO 固定地址 |
 | `0x00020008` | 命令接收响应 FIFO |
 | `0x00020010` | CMD FIFO 状态 |
-| `0x00100000..` | L1BUF 外部窗口 |
+| `0x00020020` | 控制参数 0 |
+| `0x00020028` | 控制参数 1 |
+| `0x00020030` | 启动 QUERY、WAIT 或 FENCE |
+| `0x00020038` | 控制状态 |
+| `0x00020040` | 控制结果 |
+| `0x00020048` | 取消正在等待的控制操作 |
+| `0x00100000..0x001fffff` | L1BUF 外部窗口 |
 
-CMD 地址不随 beat 增加。WSTRB 必须为 `0xff`，两个 beat 不得交换。第二拍
-超时、AW 属性错误、W beat 数错误或 FIFO 满时，AXI/命令响应报告错误且不得
-创建可执行任务。
+CMD 地址不随 beat 增加。WSTRB 必须为 `0xff`，同一条命令的低、高两个
+beat 不得交换。接收端只在整个 burst 完整通过检查后提交其中的命令。高
+beat 等待超时、AW 属性错误、W beat 数不是非零偶数或 FIFO 空间不足时，
+AXI/命令响应报告错误，且该 burst 不得创建可执行任务。
 
 ### 5.2 MIF AXI Master
 
@@ -413,8 +421,9 @@ waiter_count
 DEPENDENCY_FAILED，且不能启动执行单元。
 
 REARM 只有在旧事件已到 SUCCESS 或 ERROR 且 `waiter_count=0` 时才允许；
-它将 generation 加 1 并把状态改为 RESERVED。旧事件仍处于 RESERVED、
-存在等待者或 ID 为 0xff 时返回 BAD_DESC。
+它将 generation 加 1，并把新一代状态改为 FREE，之后的任务才可以把该
+Event ID 作为 signal。旧事件仍处于 RESERVED、存在等待者或 ID 为 0xff
+时返回 BAD_DESC。
 
 Event ID 数量小于模型任务总数时，编译器负责安排复用。REARM 必须放在隔离
 的任务组之间：主机等待前一组全部到终态，读取结果并 ACK，提交 REARM，
