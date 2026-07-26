@@ -1,5 +1,5 @@
 #include "cmodel_driver_backend.h"
-#include "transformer_model.npu.h"
+#include "transformer_model.h"
 
 #include <math.h>
 #include <stdint.h>
@@ -54,17 +54,6 @@ static int16_t get_i16(const uint8_t *memory, size_t address)
     return (int16_t)bits;
 }
 
-static uint64_t get_u64(const unsigned char *bytes)
-{
-    uint64_t value = 0u;
-    uint32_t byte;
-
-    for (byte = 0u; byte < 8u; byte++) {
-        value |= (uint64_t)bytes[byte] << (byte * 8u);
-    }
-    return value;
-}
-
 static int address_span_valid(uint64_t address, size_t bytes)
 {
     return address <= MODEL_DDR_BYTES &&
@@ -115,11 +104,8 @@ static int command_for_id(uint16_t command_id,
         return -1;
     }
     for (index = 0u; index < TRANSFORMER_MODEL_COMMAND_COUNT; index++) {
-        const unsigned char *wire =
-            &transformer_model_commands[index * NPU_DRV_CMD128_BYTES];
-
-        command->lo = get_u64(&wire[0]);
-        command->hi = get_u64(&wire[8]);
+        command->lo = transformer_model_commands[index].low;
+        command->hi = transformer_model_commands[index].high;
         if (npu_drv_cmd128_decode(command, fields) != NPU_DRV_OK) {
             return -1;
         }
@@ -155,17 +141,16 @@ static int initialize_device_images(void)
 
     if (TRANSFORMER_MODEL_INPUT_COUNT != 1u ||
         TRANSFORMER_MODEL_OUTPUT_COUNT != 1u ||
-        transformer_model_commands_bytes !=
-            (unsigned long)TRANSFORMER_MODEL_COMMAND_COUNT *
-                NPU_DRV_CMD128_BYTES) {
+        transformer_model_config.command_count !=
+            TRANSFORMER_MODEL_COMMAND_COUNT) {
         return -1;
     }
     if (!address_span_valid(
             TRANSFORMER_MODEL_DESCRIPTOR_BASE,
-            (size_t)transformer_model_descriptors_bytes) ||
+            (size_t)TRANSFORMER_MODEL_DESCRIPTOR_BYTES) ||
         !address_span_valid(
-            TRANSFORMER_MODEL_CONSTANT_BASE_DDR,
-            (size_t)transformer_model_constants_bytes)) {
+            TRANSFORMER_MODEL_WEIGHT_BASE_DDR,
+            (size_t)TRANSFORMER_MODEL_WEIGHT_BYTES)) {
         return -1;
     }
     input = &transformer_model_inputs[0];
@@ -183,11 +168,11 @@ static int initialize_device_images(void)
     (void)memcpy(
         &model_ddr[TRANSFORMER_MODEL_DESCRIPTOR_BASE],
         transformer_model_descriptors,
-        (size_t)transformer_model_descriptors_bytes);
+        (size_t)TRANSFORMER_MODEL_DESCRIPTOR_BYTES);
     (void)memcpy(
-        &model_ddr[TRANSFORMER_MODEL_CONSTANT_BASE_DDR],
-        transformer_model_constants,
-        (size_t)transformer_model_constants_bytes);
+        &model_ddr[TRANSFORMER_MODEL_WEIGHT_BASE_DDR],
+        transformer_model_weights,
+        (size_t)TRANSFORMER_MODEL_WEIGHT_BYTES);
     for (token = 0u; token < MODEL_TOKENS; token++) {
         for (feature = 0u; feature < MODEL_WIDTH; feature++) {
             put_i16(model_ddr,
@@ -208,11 +193,11 @@ static int sync_device_images(npu_driver_t *driver)
     if (npu_drv_sync_for_device(
             driver,
             &model_ddr[TRANSFORMER_MODEL_DESCRIPTOR_BASE],
-            (size_t)transformer_model_descriptors_bytes) != NPU_DRV_OK ||
+            (size_t)TRANSFORMER_MODEL_DESCRIPTOR_BYTES) != NPU_DRV_OK ||
         npu_drv_sync_for_device(
             driver,
-            &model_ddr[TRANSFORMER_MODEL_CONSTANT_BASE_DDR],
-            (size_t)transformer_model_constants_bytes) != NPU_DRV_OK ||
+            &model_ddr[TRANSFORMER_MODEL_WEIGHT_BASE_DDR],
+            (size_t)TRANSFORMER_MODEL_WEIGHT_BYTES) != NPU_DRV_OK ||
         npu_drv_sync_for_device(
             driver,
             &model_ddr[input->ddr_addr],
@@ -248,9 +233,9 @@ static int submit_command(npu_driver_t *driver,
     descriptor_bytes = descriptor_bytes_for_engine(fields.engine);
     if (descriptor_bytes == 0u ||
         descriptor_offset >
-            (uint64_t)transformer_model_descriptors_bytes ||
+            (uint64_t)TRANSFORMER_MODEL_DESCRIPTOR_BYTES ||
         descriptor_bytes >
-            (size_t)transformer_model_descriptors_bytes -
+            (size_t)TRANSFORMER_MODEL_DESCRIPTOR_BYTES -
                 (size_t)descriptor_offset ||
         !address_span_valid(fields.descriptor_addr, descriptor_bytes)) {
         return -1;
@@ -280,8 +265,10 @@ static int submit_command(npu_driver_t *driver,
 
 static int wait_query_batch(npu_driver_t *driver, uint32_t batch)
 {
-    uint16_t begin = transformer_model_batch_offsets[batch];
-    uint16_t end = transformer_model_batch_offsets[batch + 1u];
+    uint32_t begin =
+        transformer_model_command_batches[batch].command_id_offset;
+    uint32_t end =
+        begin + transformer_model_command_batches[batch].command_count;
     uint16_t index;
 
     for (index = begin; index < end; index++) {
@@ -345,14 +332,18 @@ static int run_batches(npu_driver_t *driver)
 {
     uint32_t batch;
 
-    if (transformer_model_batch_offsets[0] != 0u ||
-        transformer_model_batch_offsets[TRANSFORMER_MODEL_BATCH_COUNT] !=
+    if (transformer_model_command_batches[0].command_id_offset != 0u ||
+        TRANSFORMER_MODEL_BATCH_COMMAND_ID_COUNT !=
             TRANSFORMER_MODEL_COMMAND_COUNT) {
         return -1;
     }
-    for (batch = 0u; batch < TRANSFORMER_MODEL_BATCH_COUNT; batch++) {
-        uint16_t begin = transformer_model_batch_offsets[batch];
-        uint16_t end = transformer_model_batch_offsets[batch + 1u];
+    for (batch = 0u;
+         batch < TRANSFORMER_MODEL_COMMAND_BATCH_COUNT;
+         batch++) {
+        uint32_t begin =
+            transformer_model_command_batches[batch].command_id_offset;
+        uint32_t end =
+            begin + transformer_model_command_batches[batch].command_count;
         uint16_t index;
 
         printf("batch begin=%u index=%u commands=%u\n",
@@ -673,7 +664,7 @@ int main(void)
            "submitted_beats=%u responses=%u cycles=%llu "
            "cache_clean=%u cache_invalidate=%u\n",
            TRANSFORMER_MODEL_COMMAND_COUNT,
-           TRANSFORMER_MODEL_BATCH_COUNT,
+           TRANSFORMER_MODEL_COMMAND_BATCH_COUNT,
            (unsigned)model_backend.submitted_beats,
            (unsigned)model_backend.responses,
            (unsigned long long)model_backend.model.cycle,

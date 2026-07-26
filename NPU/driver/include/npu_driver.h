@@ -71,7 +71,11 @@ extern "C" {
 #define NPU_DRV_IRQ_ERROR UINT64_C(0x4)
 #define NPU_DRV_IRQ_ALL UINT64_C(0x7)
 
-/* Generic Core control requests supplied by a platform adapter. */
+/*
+ * Control requests issued by an external host CPU. On hardware, the platform
+ * adapter implements these operations with accesses to the NPU AXI Slave
+ * control window. A cycle-model adapter may provide an equivalent callback.
+ */
 #define NPU_DRV_CTL_WAIT UINT8_C(0x01)
 #define NPU_DRV_CTL_QUERY UINT8_C(0x02)
 #define NPU_DRV_CTL_FENCE UINT8_C(0x03)
@@ -165,9 +169,13 @@ typedef struct {
 } npu_drv_event_result_t;
 
 /*
- * Every callback returns zero on success. submit_beat must not return success
- * until its ready/valid transfer completes. The driver calls it first with
- * (lo, first=1, last=0), then with (hi, first=0, last=1).
+ * Every callback returns zero on success. The external host CPU is the AXI
+ * Master; NPU command, control-register, and L1BUF windows are AXI Slave
+ * targets. submit_beat represents a write to the command window and must not
+ * return success until the corresponding transfer completes. The driver calls
+ * it first with (lo, first=1, last=0), then with
+ * (hi, first=0, last=1). A cycle-model adapter may connect this callback
+ * directly to an equivalent ready/valid test port.
  */
 typedef struct {
     void *context;

@@ -7,6 +7,12 @@
 extern "C" {
 #endif
 
+/*
+ * Compatibility model for an external host-CPU test harness. It is not an NPU
+ * RTL block. Production software submits the same CMD128 and control requests
+ * by writing the NPU AXI Slave windows.
+ */
+
 #define NPU_ISSUE_CUSTOM0_OPCODE 0x0bu
 #define NPU_ISSUE_ILLEGAL_INSTRUCTION_CAUSE UINT64_C(2)
 

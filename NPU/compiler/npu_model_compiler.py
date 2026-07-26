@@ -26,6 +26,12 @@ if str(_HERE) not in sys.path:
 import npu_assembler
 import conv_lowering
 import model_artifacts
+from frontends import (
+    FrontendError,
+    detect_format,
+    load_framework_document,
+    options_from_namespace,
+)
 
 
 MODEL_SCHEMA_VERSION = 1
@@ -1065,14 +1071,20 @@ def prepare_constant_arena(
     for operator in operators:
         kind = operator.op_type.lower()
         if kind == "multiheadattention":
-            shifts.add(
-                parse_int(
-                    operator.attributes.get("value_shift", 2),
-                    f"operator {operator.name}.value_shift",
-                    0,
-                    31,
+            for field_name, default in (
+                ("projection_shift", 0),
+                ("score_shift", 0),
+                ("value_shift", 2),
+                ("output_shift", 0),
+            ):
+                shifts.add(
+                    parse_int(
+                        operator.attributes.get(field_name, default),
+                        f"operator {operator.name}.{field_name}",
+                        0,
+                        31,
+                    )
                 )
-            )
         elif kind in ("matmul", "linear", "conv2d"):
             shifts.add(
                 parse_int(
@@ -1530,21 +1542,41 @@ def lower_multi_head_attention(
         (tokens, width),
         dtype,
     )
-    identity = tensors[requant_by_shift[0]]
+    projection_shift = parse_int(
+        operator.attributes.get("projection_shift", 0),
+        f"operator {operator.name}.projection_shift",
+        0,
+        31,
+    )
+    score_shift = parse_int(
+        operator.attributes.get("score_shift", 0),
+        f"operator {operator.name}.score_shift",
+        0,
+        31,
+    )
     value_shift = parse_int(
         operator.attributes.get("value_shift", 2),
         f"operator {operator.name}.value_shift",
         0,
         31,
     )
+    output_shift = parse_int(
+        operator.attributes.get("output_shift", 0),
+        f"operator {operator.name}.output_shift",
+        0,
+        31,
+    )
+    projection_requant = tensors[requant_by_shift[projection_shift]]
+    score_requant = tensors[requant_by_shift[score_shift]]
     value_requant = tensors[requant_by_shift[value_shift]]
+    output_requant = tensors[requant_by_shift[output_shift]]
     tasks: list[VirtualTask] = [
         make_matrix_task(
             f"{operator.name}_q_projection",
             source,
             weight_q,
             q,
-            identity,
+            projection_requant,
             m=tokens,
             n=width,
             k=width,
@@ -1555,7 +1587,7 @@ def lower_multi_head_attention(
             source,
             weight_k,
             k,
-            identity,
+            projection_requant,
             m=tokens,
             n=width,
             k=width,
@@ -1566,7 +1598,7 @@ def lower_multi_head_attention(
             source,
             weight_v,
             v,
-            identity,
+            projection_requant,
             m=tokens,
             n=width,
             k=width,
@@ -1716,7 +1748,7 @@ def lower_multi_head_attention(
         q_heads,
         k_tiles,
         scores,
-        identity,
+        score_requant,
         m=tokens,
         n=tokens,
         k=head_width,
@@ -1849,7 +1881,7 @@ def lower_multi_head_attention(
         concatenated,
         weight_o,
         output,
-        identity,
+        output_requant,
         m=tokens,
         n=width,
         k=width,
@@ -2923,16 +2955,61 @@ def build_model_manifest(
 def output_artifacts(
     input_path: Path,
     target: TargetConfig,
-    emit_c_header: bool,
+    emit_raw: bool,
+    cli_options: argparse.Namespace | None = None,
 ) -> tuple[dict[str, bytes], CompilationResult]:
+    requested_format = (
+        "auto"
+        if cli_options is None
+        else str(cli_options.input_format)
+    )
+    model_format = detect_format(input_path, requested_format)
+    document_holder: dict[str, Mapping[str, Any]] = {}
+
+    if model_format == "json":
+        loader = load_json_document
+    else:
+        if cli_options is None:
+            raise ModelCompileError(
+                "framework model import requires frontend options"
+            )
+        frontend_options = options_from_namespace(cli_options)
+
+        def loader(path: Path) -> Mapping[str, Any]:
+            document = load_framework_document(path, frontend_options)
+            document_holder["document"] = document
+            return document
+
+    def compile_with_source_metadata(
+        document: Mapping[str, Any],
+        configuration: TargetConfig,
+        *,
+        source_name: str,
+    ) -> CompilationResult:
+        result = compile_model_document(
+            document, configuration, source_name=source_name
+        )
+        frontend = document.get("frontend")
+        if isinstance(frontend, dict):
+            result.runtime["frontend"] = dict(frontend)
+        return result
+
     files, result = model_artifacts.output_artifacts(
         input_path,
         target,
-        emit_c_header,
-        load_document=load_json_document,
-        compile_document=compile_model_document,
+        emit_raw,
+        load_document=loader,
+        compile_document=compile_with_source_metadata,
         max_rank=MAX_RANK,
     )
+    if emit_raw and "document" in document_holder:
+        files.pop(f"{input_path.stem}.manifest.json")
+        files[f"{input_path.stem}.model.json"] = canonical_json(
+            document_holder["document"]
+        )
+        files[f"{input_path.stem}.manifest.json"] = build_model_manifest(
+            input_path, result, files
+        )
     return files, result
 
 
@@ -2970,6 +3047,7 @@ if __name__ == "__main__":
         raise SystemExit(main())
     except (
         ModelCompileError,
+        FrontendError,
         npu_assembler.CompileError,
         conv_lowering.ConvLoweringError,
         OSError,

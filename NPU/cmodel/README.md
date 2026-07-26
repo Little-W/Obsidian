@@ -8,6 +8,14 @@
 
 模型张量只使用 INT4、INT8、INT16 和 INT32。FP32 只出现在 CME 的内部运算和只读参数中。
 
+> [!important] 硬件范围
+> Generic Core 是 NPU 外部的主控 CPU。真实 SoC 中，CPU 以 AXI Master
+> 身份访问 NPU 的 AXI Slave 命令窗口、控制寄存器和 L1BUF 外部窗口；
+> NPU 内部只有 MIF / TBU 使用 AXI Master 主动访问 DDR。代码中保留
+> `npu_issue_adapter_cycle`、`npu_gc_axi_cycle` 以及若干 `gc_*` 字段，
+> 仅用于兼容已有的系统联合仿真测试。它们表示 NPU 外部的 CPU 侧测试部件，
+> 不属于待实现的 NPU RTL。
+
 ## 1. 参考配置
 
 | 项目 | 数值 |
@@ -73,7 +81,7 @@ workspace 描述，不会清除哈希数组或访问记录。读写 entry 指针
 | `src/npu_wire.c` | 各字段的 little-endian 解码与严格检查 |
 | `include/src/npu_bus_trace.*` | 功能算子访问的 64-bit 读写记录，用于数据侧周期适配器 |
 | `include/src/npu_bus_replay_cycle.*` | 把访问记录转换为 L1BUF/MIF ready/valid 传输并等待响应 |
-| `include/src/npu_issue_adapter_cycle.*` | Generic Core DSA 指令检查、CMD 低高两拍提交、控制请求、写回与中断取消 |
+| `include/src/npu_issue_adapter_cycle.*` | 外部 CPU 侧兼容测试适配器；把旧测试请求转换成 CMD 低高两拍和控制请求，不属于 NPU RTL |
 | `include/src/npu_cfe_cycle.*` | CFE 模块级 ready/valid、两拍组装、格式检查和接收时序 |
 | `include/src/npu_ts_cycle.*` | TS、DFU、Descriptor SRAM、事件和三拍完成消息 |
 | `include/src/npu_engine_cycle.*` | 四类执行单元的任务、描述符和完成消息适配器 |
@@ -84,7 +92,7 @@ workspace 描述，不会清除哈希数组或访问记录。读写 entry 指针
 | `include/src/npu_tbu_cycle.*` | TBU 规则、访问权限、固定响应延迟和错误状态 |
 | `include/src/npu_mif_cycle.*` | 两个内部发起者、TBU、双 AXI Master 端口 |
 | `include/src/npu_mif_cdc_cycle.*` | Core/NoC 独立 tick 的请求、写数据和响应异步 FIFO |
-| `include/src/npu_axi_mem_target_cycle.*` | MIF 与 Generic Core 共用的 64-bit AXI4 存储目标周期模型 |
+| `include/src/npu_axi_mem_target_cycle.*` | MIF 与外部 CPU 测试部件可复用的 64-bit AXI4 存储目标周期模型 |
 | `include/src/npu_sys_slave_cycle.*` | 64-bit AXI4 Slave 与内部请求转换 |
 | `include/src/npu_lsc_cycle.*` | CSR、首错、中断、性能计数和受控复位 |
 | `include/src/npu_control_cycle.*` | CRG 复位同步、时钟控制和 WDT |
@@ -329,8 +337,10 @@ do {
 和 `cmd_last`。CFE 接收低 word 后进入等待高 word 的状态；参考配置在 32 个
 周期内没有收到合法高 word 时返回 `TIMEOUT`，并丢弃已经保存的低 word。
 
-Generic Core 的 `NPU_SUBMIT` 在 `rs1` 中携带低 word，在 `rs2` 中携带高
-word。Issue Adapter 先发 `rs1`，再发 `rs2`，最后等待 CFE 接收响应。
+真实主控 CPU 不使用这里的 `rs1/rs2` 接口。驱动先通过 AXI Slave 命令窗口
+写低 word，再写高 word，随后读取提交状态。为兼容已有测试，
+`npu_issue_adapter_cycle` 仍可从旧式 `rs1/rs2` 输入产生完全相同的两个
+CMD beat；该适配器属于测试环境，不是 NPU 内部模块。
 
 ## 6. 周期模型
 
@@ -342,7 +352,9 @@ word。Issue Adapter 先发 `rs1`，再发 `rs2`，最后等待 CFE 接收响应
 
 模块级周期模型已经包含：
 
-- Generic Core DSA Issue Adapter 的串行指令接口、128-bit `NPU_SUBMIT` 两拍发送和 `WAIT/QUERY/FENCE` 控制；
+- NPU AXI Slave、CFE、TS、执行单元、L1BUF、MIF/TBU、LSC、CRG 和 WDT；
+- 供旧回归使用的外部 CPU 侧适配器，可产生 CMD 两拍与
+  `WAIT/QUERY/FENCE` 请求；
 - CFE 与 TS 的 CMD、编号查询和暂停；
 - DFU 到 MIF 的描述符请求、Descriptor SRAM 四个读取端口；
 - TS 到四个 Engine 的任务接口和固定三拍完成消息；
@@ -352,26 +364,29 @@ word。Issue Adapter 先发 `rs1`，再发 `rs2`，最后等待 CFE 接收响应
 - MIF 两侧独立 tick、两级位置同步和双向异步 FIFO；
 - TBU 的命中、权限错误、固定延迟以及与 MIF 的组合运行；
 - System Slave、LSC、L1BUF 诊断桥、CRG 与 WDT；
-- System Slave、Generic Core AXI、CFE、TS、四个 Engine、L1BUF、
-  MIF/TBU、Core/NoC 异步 FIFO、LSC、CRG 和 WDT 的单核双时钟组合接口。
+- NPU 模块与外部 CPU 测试部件的双时钟系统联合仿真接口。
 
-### 6.1 Issue Adapter 停止接收新指令
+### 6.1 外部 CPU 兼容测试适配器
 
-`issue_quiesce_i` 只控制 Issue Adapter 能否从 `IDLE` 状态接收一条新指令。
+本小节只说明旧回归使用的 CPU 侧测试适配器，不定义 NPU 顶层端口。NPU
+硬件的正式入口是 AXI Slave 命令窗口。
+
+`issue_quiesce_i` 只控制测试适配器能否从 `IDLE` 状态接收一条新请求。
 该信号为 1 时，空闲适配器把 `issue_ready_o` 置为 0，因而新的
 `issue_valid_i` 不会完成握手。它不是取消信号，也不会中止已经接收的指令。
 
 例如，适配器已经接收一条 `NPU_SUBMIT`，并进入 `SUBMIT_LOW` 状态后，即使
 `issue_quiesce_i` 变为 1，它仍会依次发送 `rs1` 中的低 64 bit 和 `rs2`
-中的高 64 bit，等待 CFE 响应，再向 Generic Core 返回执行结果。已经进入控制请求或
+中的高 64 bit，等待 CFE 响应，再向外部 CPU 测试端返回执行结果。已经进入控制请求或
 Core 响应状态的 `WAIT`、`QUERY`、`FENCE` 也采用相同规则。需要取消允许取消
 的指令时，应使用 `cpu_cancel_i`，不能把 `issue_quiesce_i` 当作取消输入。
 如果 `issue_ready_o=0`，请求尚未被 Adapter 接收；此时同时给出
 `issue_valid_i` 与 `cpu_cancel_i` 不会产生取消事件。只有先前已经完成
 Issue 请求握手的 `WAIT` 或 `FENCE` 才能由该输入取消。
 
-单核顶层在 `stop_fetch_i`、`dvfs_prepare_req_i`、软复位请求、电源关闭请求或 LSC 内部
-`stop_fetch` 任一项有效时，把 `issue_quiesce_i` 置为 1。LSC 的普通空闲检查
+兼容联合仿真外壳在 `stop_fetch_i`、`dvfs_prepare_req_i`、软复位请求、
+电源关闭请求或 LSC 内部 `stop_fetch` 任一项有效时，把
+`issue_quiesce_i` 置为 1。LSC 的普通空闲检查
 和复位排空检查都包含 `issue_idle`：只有 Issue Adapter 回到 `IDLE`，LSC
 才会把单核视为空闲。这样，已经接收的 CMD 或控制请求可以先完成，
 电源关闭确认也不会在 Issue Adapter 仍有未完成指令时提前给出。
@@ -381,15 +396,19 @@ Issue 请求握手的 `WAIT` 或 `FENCE` 才能由该输入取消。
 `npu_single_core_cycle_core_inputs_t` 和
 `npu_single_core_cycle_core_outputs_t` 中新增的顶层控制信号含义如下：
 
+这些结构把 NPU 与外部 CPU 侧测试部件放在同一个联合仿真外壳中，因此包含
+部分只用于兼容测试的字段。RTL 的 NPU 顶层不包含 CPU 取指、CPU Cache 或
+自定义指令端口。
+
 | 信号 | 方向 | 含义 |
 | --- | --- | --- |
-| `stop_fetch_i` | 输入 | 外部要求停止接收新指令。它会阻止 Issue Adapter 接收下一条指令，但不会取消已经接收的指令。 |
+| `stop_fetch_i` | 输入 | 兼容测试字段；阻止外部 CPU 测试适配器接收下一条请求，但不会取消已经接收的请求 |
 | `scan_mode_i` | 输入 | 扫描测试模式。Core 与 NoC 两类输入结构都提供该字段；为 1 时，相应 tick 使用全开的模块时钟请求掩码，Core 侧同时保持 `clk_req_o=1`。 |
 | `clk_ack_i` | 输入 | SoC 时钟控制单元确认所请求的 Core 时钟已经可用。该输入用于保留顶层握手定义；周期模型的状态推进规则见下文。 |
-| `effective_stop_fetch_o` | 输出 | 外部 `stop_fetch_i`、LSC 内部 `stop_fetch` 与 `dvfs_prepare_req_i` 的逻辑或，表示单核当前实际采用的停止接收状态。 |
+| `effective_stop_fetch_o` | 输出 | 兼容测试字段；表示外部 CPU 测试适配器当前停止接收新请求 |
 | `clk_req_o` | 输出 | 请求 SoC 保持 Core 时钟可用。正常运行和扫描测试时为 1；完成电源关闭排空并给出确认后可以变为 0。 |
 | `soft_reset_done_o` | 输出 | 直接反映 LSC 的软复位完成状态。它不是内部复位脉冲。 |
-| `power_down_ack_o` | 输出 | 直接反映 LSC 的电源关闭确认；只有各单元以及 Issue Adapter 都满足空闲要求时才能置为 1。 |
+| `power_down_ack_o` | 输出 | 直接反映 LSC 的电源关闭确认；联合仿真外壳还会等待外部 CPU 测试适配器空闲 |
 | `wdt_reset_req_o` | 输出 | WDT 超时请求电平。超时保持期间，该输出保持为 1，直到 WDT 被复位、关闭、kick 或观察到 Core 进展。 |
 
 `clk_req_o/clk_ack_i` 是顶层与 SoC 时钟控制单元之间的调用约定。硬件中，
@@ -407,13 +426,13 @@ C model 不会自行产生时钟：调用一次
 不表示周期模型会在调用者没有调用 tick 时自行推进。
 
 `module_clk_active_o[7:0]` 表示八个本地 ICG 的实际 enable。
-`core_clk_gated_o` 和 `noc_clk_gated_o` 只是域级汇总观测值。LSC、Issue、
-System Slave、L1 Diagnostic Bridge、Generic Core AXI Adapter、WDT 和 CRG
-属于 Core 常开控制区，因此一次 Core tick 会更新这些模块，即使七个受控
-Core 模块的时钟请求均为 0。
+`core_clk_gated_o` 和 `noc_clk_gated_o` 只是域级汇总观测值。LSC、System
+Slave、L1 Diagnostic Bridge、WDT 和 CRG 属于 NPU Core 常开控制区。
+联合仿真外壳中的 CPU 侧测试适配器也随 Core tick 更新，但它不计入 NPU
+时钟门控模块。
 
-`dvfs_prepare_req_i=1` 时，Issue Adapter 和 Generic Core AXI Adapter 都停止
-接收新请求，已经接收的工作继续完成。CRG 直接读取当前模块状态，不使用上一拍
+`dvfs_prepare_req_i=1` 时，NPU AXI Slave 停止接收新任务；兼容联合仿真
+外壳也会暂停 CPU 侧测试适配器。已经接收的工作继续完成。CRG 直接读取当前模块状态，不使用上一拍
 保存的 LSC idle 值；只有当前单核空闲且两类 AXI 都没有未完成事务时，
 `dvfs_prepare_ack_o` 才为 1。请求撤销后，两个入口才重新给出 ready。
 System Slave 的受限制调试访问也使用当前状态；若同拍接收新 Issue 或缓存请求，
@@ -421,8 +440,9 @@ System Slave 的受限制调试访问也使用当前状态；若同拍接收新 
 
 ### 6.3 软复位、WDT 与性能计数的时序
 
-软复位不是只在 Core 域内完成。LSC 等待 Issue Adapter、CFE、TS、四个
-Engine、L1、MIF 和 Generic Core AXI 满足排空要求后，产生内部软复位脉冲。
+软复位不是只在 Core 域内完成。LSC 等待 AXI Slave、CFE、TS、四个
+Engine、L1 和 MIF 满足排空要求后，产生内部软复位脉冲。兼容联合仿真
+外壳还会等待外部 CPU 测试部件结束已接收的请求。
 单核顶层随后把复位请求传到 NoC 域；NoC 域复位 MIF 和内部 TBU，并返回
 MIF reset ack。该确认经过同步后回到 Core 域，LSC 才进入软复位确认状态并
 使 `soft_reset_done_o=1`。因此，在 NoC tick 没有继续推进，或 MIF reset ack
@@ -437,8 +457,9 @@ WDT 第一次从 0 变为 1 后，下一次 Core tick 向 LSC 提交一次
 
 顶层把真实推进事件送入 WDT：Issue 请求与返回握手、CFE 编号查询、描述符
 请求与返回、其他控制与数据接口握手、ME 的有效 MAC、IVE 的有效整数运算、
-CME 的 I2F/FP32/F2I 活动、Generic Core AXI 五个通道握手和缓存侧请求/返回
-握手均会清除计数。只保持 busy、valid 被 ready 暂停，或读取返回被客户端
+CME 的 I2F/FP32/F2I 活动以及 NPU AXI Slave 和 MIF 的有效握手均会清除
+计数。兼容联合仿真外壳还把外部 CPU 测试部件的有效握手计作系统推进。
+只保持 busy、valid 被 ready 暂停，或读取返回被客户端
 暂停接收，都不会被当作新推进。
 
 性能计数器 13 表示整数饱和次数，性能计数器 14 表示全 mask 行数。这两个
@@ -496,12 +517,13 @@ NoC 本地复位和 `npu_single_core_cycle_reset()` 表示目标也随复位清�
 
 ### 6.5 AXI 存储目标
 
-`npu_axi_mem_target_cycle` 为 MIF 和 Generic Core 独立 AXI Master 提供共用的
-64-bit 存储目标。参考配置允许读、写各 16 个未完成事务，支持 1～16 beat
+`npu_axi_mem_target_cycle` 是可复用的 64-bit AXI 存储目标。NPU 的 MIF
+AXI Master 使用它检查 DDR 访问；兼容测试也可把外部 CPU 的 AXI Master
+接到另一实例。参考配置允许读、写各 16 个未完成事务，支持 1～16 beat
 INCR burst、8-bit ID、逐字节 `WSTRB` 和不同 ID 之间的响应换序；同一 ID
 的事务保持请求次序。AR 握手后完整等待 20 个存储目标 tick，第一个 R beat
 才能出现；最后一个 W beat 握手后完整等待 12 个存储目标 tick，B response
-才能出现。MIF 目标随 NoC tick 推进，Generic Core 目标随 Core tick 推进。R 或 B
+才能出现。MIF 目标随 NoC tick 推进，外部 CPU 测试目标随 Core tick 推进。R 或 B
 被暂停接收时，ID、数据、response 和 `RLAST` 保持不变。
 
 该存储目标不分配内存，初始化时接收调用者提供的字节数组和 AXI 基地址。
@@ -1527,6 +1549,17 @@ zero point 和参考值执行 C 推理。因此：
 DMA、Matrix、Vector 与 Complex 任务，后者把低层 JSON IR 编码为 CMD128 和
 Descriptor。
 
+模型编译器的默认部署结果不是一组裸二进制文件，而是：
+
+- `<stem>_model.h`：C 类型、数组声明、设备地址和数量常量；
+- `<stem>_model.c`：C 配置、CMD128、Descriptor、权重和运行信息；
+- `<stem>.manifest.json`：文件摘要与编译信息。
+
+主机程序编译生成的 `.c` 文件并包含对应 `.h` 文件，即可取得提交所需的全部
+内容。裸 `.cmd.bin`、`.desc.bin`、`.const.bin`、`.runtime.json` 和低层
+JSON IR 只在显式传入 `--emit-raw` 时额外生成，用于分析编译结果或单独检查
+汇编器，不是默认部署输入。
+
 可执行示例位于 `../examples/transformer_e2e`：
 
 ```bash
@@ -1536,10 +1569,31 @@ make test
 ```
 
 该示例从包含 8 个语义算子的 INT16 Transformer 高层图开始，生成 36 条
-CMD128，再由独立汇编步骤逐字节复查 CMD 和 Descriptor。C 程序使用生成的
-任务组、Descriptor、常量和输入输出 DDR 地址，调用分文件 C 驱动并在本
+CMD128。`make check` 通过 `--emit-raw` 取得低层 JSON IR，再由独立汇编步骤
+逐字节复查 CMD 和 Descriptor。C 程序直接编译生成的 C 部署包，使用其中的
+任务组、Descriptor、权重和输入输出 DDR 地址，调用分文件 C 驱动并在本
 C model 上执行。当前输出为 32/32 个元素与独立浮点参考相同，最大绝对误差
 为 0。
+
+真实 Keras Transformer 示例位于
+[`../examples/keras_transformer_e2e`](../examples/keras_transformer_e2e/README.md)：
+
+```bash
+cd "/home/yusen/Obsidian Vault/NPU/examples/keras_transformer_e2e"
+make clean
+make test
+```
+
+该示例从 `.keras` 文件开始，默认生成 `keras_transformer_model.h`、
+`keras_transformer_model.c` 和 `keras_transformer.manifest.json`，再由外部
+主控 CPU 侧程序通过分文件 C 驱动提交任务。已测结果为 47 条 CMD128、6 个
+提交组、94 个 64-bit beat 和 47 条成功响应；32 个输出全部不超过 2 LSB
+误差，最大绝对误差为 2 LSB，4 个 token 的最大特征编号均与 Keras 结果相同。
+
+两套示例中的驱动调用都表示外部主控 CPU 主动操作 NPU。主控 CPU 是 AXI
+Master；NPU 的命令窗口、控制寄存器和 L1BUF 外部窗口是 AXI Slave 目标。
+Generic Core 不属于 NPU，C model 中的 CPU 侧测试部件也不应当被理解为 NPU
+内部硬件。
 
 完整的多编译器和内存检查运行方式为：
 
@@ -1554,18 +1608,19 @@ Descriptor SRAM 支持按 word 注入已修正或不可修正 ECC 状态。测�
 ready/valid 随机暂停、响应乱序、错误状态和复位。
 
 `npu_single_core_cycle_core_tick()` 和 `npu_single_core_cycle_noc_tick()` 已经
-提供单核双时钟组合接口。当前测试覆盖 System Slave 与 L1 诊断访问、Generic
-Core AXI 读取、CFE 接收、向量任务、Engine Data 的 MIF 读写、Core/NoC
+提供 NPU 与外部 CPU 测试部件的双时钟联合仿真接口。当前测试覆盖 NPU AXI
+Slave 与 L1BUF 外部窗口访问、外部 CPU AXI 读取、CFE 接收、向量任务、
+Engine Data 的 MIF 读写、Core/NoC
 异步 FIFO、内部 TBU 权限检查、MIF 错误同步、受控复位、CRG 和 WDT。另有
 `test_mif_tbu_cycle.c` 单独检查 TBU 地址转换、权限错误及 MIF 发出 AXI 请求
 的先后次序。`test_single_core_axi_target.c` 使用不同的 Core/NoC tick 节奏，
-把两个公开 AXI Master 分别接到真实存储目标，检查 Generic Core 单拍读取，
+把两个 AXI Master 测试端分别接到存储目标，检查外部 CPU 单拍读取，
 以及 Descriptor Fetch 经内部 TBU、MIF 和 8+16 beat AXI burst 取得 192B
 描述符后完成 Vector 任务。
 
-单核接口把 MIF 和 Generic Core 的 AXI Master 信号交给外部调用者。按照这项
-接口分层设计，`npu_axi_mem_target_cycle` 不作为单核的内部成员；测试环境可
-通过信号转换函数把两个 Master 分别接到独立存储目标，也可接入自定义 NoC 或
-DDR 模型。`npu_engine_cycle` 仍应视为“信号级控制接口加功能级数据执行”的
+联合仿真接口把 NPU MIF 和外部 CPU 测试部件的 AXI Master 信号交给调用者。
+`npu_axi_mem_target_cycle` 不作为 NPU 的内部成员；测试环境可把两个 Master
+分别接到独立存储目标，也可接入自定义 NoC 或 DDR 模型。
+`npu_engine_cycle` 仍应视为“信号级控制接口加功能级数据执行”的
 组合模型；需要观察逐 beat 数据请求时应使用 `npu_engine_data_cycle`，并结合
 L1BUF、MIF 和 AXI 存储目标判断各端口的周期行为。

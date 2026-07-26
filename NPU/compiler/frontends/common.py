@@ -232,9 +232,18 @@ class GraphBuilder:
         if not math.isfinite(target_scale) or target_scale <= 0.0:
             raise FrontendError("constant scale must be finite and positive")
         minimum, maximum = DTYPE_LIMITS[target_dtype]
-        rounded = np.rint(np.asarray(values, dtype=np.float64) / target_scale)
-        clipped = np.clip(rounded, minimum, maximum)
-        return clipped.astype(np.int64)
+        array = np.asarray(values, dtype=np.float64)
+        if not np.all(np.isfinite(array)):
+            raise FrontendError("constant contains NaN or infinity")
+        rounded = np.rint(array / target_scale)
+        if np.any(rounded < minimum) or np.any(rounded > maximum):
+            smallest = float(np.min(array))
+            largest = float(np.max(array))
+            raise FrontendError(
+                f"constant real-value range [{smallest}, {largest}] cannot "
+                f"be stored as {target_dtype} with scale {target_scale}"
+            )
+        return rounded.astype(np.int64)
 
     def add_constant(
         self,

@@ -13,19 +13,21 @@ extern "C" {
 #endif
 
 /*
- * Control/scheduling-side single-core composition:
+ * Control/scheduling-side NPU composition:
  *
- *   Generic Core CMD -> CFE -> TS -> four Engine Adapters
- *                              \-> Descriptor SRAM read ports
- *   Generic Core control -----> TS
- *   System CSR ----------------> LSC
- *   TS terminal notice --------> LSC
+ *   AXI Slave command window -> CFE -> TS -> four Engine Adapters
+ *                                      \-> Descriptor SRAM read ports
+ *   AXI Slave control window ---------> TS / LSC
+ *   TS terminal notice ---------------> LSC
  *
  * The four Engine Adapters share the supplied functional npu_model_t.
  * Their current execution model invokes one functional operator on the final
  * EXECUTE edge. L1 and DDR changes become visible together on that edge.
  * This composition intentionally does not invent per-beat Engine L1/MIF data
  * ports; those ports require a separate data-side cycle model.
+ *
+ * Historical gc_cmd/gc_ctl field names denote signals after the AXI Slave
+ * windows. They do not place a Generic Core inside the NPU.
  */
 
 typedef struct {

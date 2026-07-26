@@ -1,5 +1,5 @@
 CC ?= cc
-PYTHON ?= python3
+PYTHON ?= conda run -n tf_2_18 python
 
 ROOT := ../..
 MODEL_COMPILER := $(ROOT)/compiler/npu_model_compiler.py
@@ -12,7 +12,8 @@ BUILD_DIR := build
 GENERATED_DIR := $(BUILD_DIR)/generated
 ASSEMBLY_CHECK_DIR := $(BUILD_DIR)/assembly-check
 MODEL := transformer_model.json
-GENERATED_HEADER := $(GENERATED_DIR)/transformer_model.npu.h
+GENERATED_HEADER := $(GENERATED_DIR)/transformer_model.h
+GENERATED_SOURCE := $(GENERATED_DIR)/transformer_model.c
 LOW_IR := $(GENERATED_DIR)/transformer_model.npuasm.json
 DRIVER_LIB := $(DRIVER_DIR)/build/libnpu_driver.a
 CMODEL_LIB := $(CMODEL_DIR)/build/libnpu_cmodel.a
@@ -38,10 +39,11 @@ $(GENERATED_DIR):
 $(ASSEMBLY_CHECK_DIR):
 	mkdir -p $@
 
-$(GENERATED_HEADER): $(MODEL) $(MODEL_COMPILER) $(MODEL_ARTIFACTS) $(ASSEMBLER) \
+$(GENERATED_HEADER) $(GENERATED_SOURCE): $(MODEL) $(MODEL_COMPILER) \
+	$(MODEL_ARTIFACTS) $(ASSEMBLER) \
 	$(CONV_LOWERING) | $(GENERATED_DIR)
 	$(PYTHON) $(MODEL_COMPILER) $(MODEL) \
-		--output-dir $(GENERATED_DIR) --emit-c-header \
+		--output-dir $(GENERATED_DIR) --emit-raw \
 		--task-entries 8
 
 $(DRIVER_LIB):
@@ -52,16 +54,18 @@ $(CMODEL_LIB):
 
 $(RUNNER): transformer_runner.c cmodel_driver_backend.c \
 	cmodel_driver_backend.h $(GENERATED_HEADER) \
+	$(GENERATED_SOURCE) \
 	$(DRIVER_LIB) $(CMODEL_LIB)
 	$(CC) $(CPPFLAGS) $(CFLAGS) \
 		transformer_runner.c cmodel_driver_backend.c \
+		$(GENERATED_SOURCE) \
 		$(DRIVER_LIB) $(CMODEL_LIB) $(LDFLAGS) $(LDLIBS) -o $@
 
-compile: $(GENERATED_HEADER)
+compile: $(GENERATED_HEADER) $(GENERATED_SOURCE)
 
-check: $(GENERATED_HEADER) | $(ASSEMBLY_CHECK_DIR)
+check: $(GENERATED_HEADER) $(GENERATED_SOURCE) | $(ASSEMBLY_CHECK_DIR)
 	$(PYTHON) $(MODEL_COMPILER) $(MODEL) \
-		--output-dir $(GENERATED_DIR) --emit-c-header \
+		--output-dir $(GENERATED_DIR) --emit-raw \
 		--task-entries 8 --check
 	$(PYTHON) $(ASSEMBLER) $(LOW_IR) \
 		--output-dir $(ASSEMBLY_CHECK_DIR)

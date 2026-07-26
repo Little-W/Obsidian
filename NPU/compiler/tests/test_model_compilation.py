@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
+from dataclasses import replace
 from pathlib import Path
 
 
@@ -14,6 +16,7 @@ sys.path.insert(0, str(ROOT))
 
 import npu_assembler
 import npu_model_compiler as compiler
+import model_artifacts
 
 
 def add_model(dtype: str = "int16", columns: int = 4) -> dict:
@@ -260,7 +263,7 @@ class EndToEndCompilerTests(unittest.TestCase):
         self.assertEqual(commands, result.command_image)
         self.assertEqual(descriptors, result.descriptor_image)
 
-    def test_cli_artifacts_and_check(self) -> None:
+    def test_cli_emits_default_c_model_package_and_check(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary)
             source = base / "model.json"
@@ -272,22 +275,158 @@ class EndToEndCompilerTests(unittest.TestCase):
                 str(source),
                 "--output-dir",
                 str(output),
-                "--emit-c-header",
             ]
             self.assertEqual(compiler.main(arguments), 0)
             expected = {
+                "model_model.h",
+                "model_model.c",
+                "model.manifest.json",
+            }
+            self.assertEqual(
+                {path.name for path in output.iterdir()}, expected
+            )
+            header = (output / "model_model.h").read_text(encoding="ascii")
+            c_source = (output / "model_model.c").read_text(
+                encoding="ascii"
+            )
+            self.assertIn("model_model_config_t", header)
+            self.assertIn("model_model_commands", header)
+            self.assertIn("model_model_descriptors", header)
+            self.assertIn("model_model_weights", header)
+            self.assertIn("model_model_inputs", header)
+            self.assertIn("model_model_outputs", header)
+            self.assertIn("model_model_command_batches", header)
+            self.assertIn("NPU_MODEL_ALIGN(16)", c_source)
+            self.assertIn("NPU_MODEL_ALIGN(64)", c_source)
+            self.assertIn("NPU_MODEL_ALIGN(256)", c_source)
+
+            manifest = json.loads(
+                (output / "model.manifest.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            self.assertEqual(
+                manifest["deployment_format"], "c-model-package-v1"
+            )
+            self.assertEqual(
+                set(manifest["artifacts"]),
+                {"model_model.c", "model_model.h"},
+            )
+            self.assertEqual(compiler.main(arguments + ["--check"]), 0)
+
+            original = (output / "model_model.c").read_bytes()
+            (output / "model_model.c").write_bytes(original + b"\n")
+            with self.assertRaisesRegex(
+                compiler.ModelCompileError, "artifact differs"
+            ):
+                compiler.main(arguments + ["--check"])
+
+    def test_emit_raw_adds_debug_files(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            source = base / "model.json"
+            output = base / "out"
+            source.write_text(
+                json.dumps(add_model(), indent=2), encoding="utf-8"
+            )
+            arguments = [
+                str(source),
+                "--output-dir",
+                str(output),
+                "--emit-raw",
+            ]
+            self.assertEqual(compiler.main(arguments), 0)
+            expected = {
+                "model_model.h",
+                "model_model.c",
                 "model.npuasm.json",
                 "model.cmd.bin",
                 "model.desc.bin",
                 "model.const.bin",
                 "model.runtime.json",
                 "model.manifest.json",
-                "model.npu.h",
             }
             self.assertEqual(
                 {path.name for path in output.iterdir()}, expected
             )
+            manifest = json.loads(
+                (output / "model.manifest.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            self.assertEqual(
+                set(manifest["artifacts"]), expected - {"model.manifest.json"}
+            )
             self.assertEqual(compiler.main(arguments + ["--check"]), 0)
+
+    def test_generated_c_compiles_and_empty_weight_array_is_standard_c(
+        self,
+    ) -> None:
+        compiler_path = shutil.which("cc")
+        if compiler_path is None:
+            self.skipTest("C compiler is unavailable")
+        document = {
+            "schema_version": 1,
+            "model": {"name": "no_weights"},
+            "inputs": [
+                {"name": "x", "shape": [1, 8], "dtype": "int16"}
+            ],
+            "constants": [],
+            "operators": [
+                {
+                    "name": "reshape",
+                    "type": "Reshape",
+                    "inputs": ["x"],
+                    "outputs": ["y"],
+                    "attributes": {"shape": [2, 4]},
+                }
+            ],
+            "outputs": ["y"],
+        }
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            result = compiler.compile_model_document(
+                document, compiler.TargetConfig()
+            )
+            empty_result = replace(result, constant_image=b"")
+            header_path = base / "empty_model.h"
+            source_path = base / "empty_model.c"
+            header_path.write_bytes(
+                model_artifacts.build_model_c_header(
+                    "empty", empty_result
+                )
+            )
+            source_path.write_bytes(
+                model_artifacts.build_model_c_source(
+                    "empty", empty_result
+                )
+            )
+            header = header_path.read_text(encoding="ascii")
+            c_source = source_path.read_text(encoding="ascii")
+            self.assertIn("#define EMPTY_MODEL_WEIGHT_BYTES 0u", header)
+            self.assertIn(
+                "#define EMPTY_MODEL_WEIGHT_STORAGE_BYTES 1u", header
+            )
+            self.assertIn(
+                "empty_model_weights[EMPTY_MODEL_WEIGHT_STORAGE_BYTES]",
+                c_source,
+            )
+            subprocess.run(
+                [
+                    compiler_path,
+                    "-std=c11",
+                    "-Wall",
+                    "-Wextra",
+                    "-Werror",
+                    "-c",
+                    str(source_path),
+                    "-o",
+                    str(base / "empty_model.o"),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
 
     def test_cli_is_stable_across_python_hash_seeds(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -308,7 +447,6 @@ class EndToEndCompilerTests(unittest.TestCase):
                         str(source),
                         "--output-dir",
                         str(output),
-                        "--emit-c-header",
                     ],
                     check=True,
                     capture_output=True,

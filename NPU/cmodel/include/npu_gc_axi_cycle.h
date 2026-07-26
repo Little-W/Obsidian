@@ -9,6 +9,13 @@
 extern "C" {
 #endif
 
+/*
+ * External Generic Core AXI Master model retained for system co-simulation.
+ * This block belongs to the host-side test environment, not to the NPU.
+ * The NPU-facing host interface is the AXI Slave model in
+ * npu_sys_slave_cycle.h.
+ */
+
 #define NPU_GC_AXI_CLIENT_COUNT 2u
 #define NPU_GC_AXI_CLIENT_ICACHE 0u
 #define NPU_GC_AXI_CLIENT_DCACHE 1u

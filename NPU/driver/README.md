@@ -1,8 +1,13 @@
 # NPU C 软件驱动库
 
-该目录提供不依赖操作系统的 C11 驱动库。上层 Runtime 负责准备模型数据，
-平台适配层负责寄存器访问、Generic Core 指令请求和缓存维护，驱动库负责统一
-CMD128、Descriptor、提交、查询、等待和事件处理。
+该目录提供不依赖操作系统的 C11 驱动库。Generic Core 是 NPU 外部的主控
+CPU。上层 Runtime 负责准备模型数据，平台适配层负责从 CPU 侧发起 AXI
+访问和维护缓存，驱动库负责统一 CMD128、Descriptor、提交、查询、等待和
+事件处理。
+
+主控 CPU 是系统总线 Master，NPU 的命令窗口、控制寄存器和 L1BUF 外部访问
+窗口都是 AXI Slave 目标。主控软件通过 Runtime 函数主动调用本驱动；驱动
+不会等待 NPU 自行取走模型，也不会把 Generic Core 当作 NPU 内部模块。
 
 ## 文件
 
@@ -44,15 +49,22 @@ INT16 及其线性/分块打包配置、MMIO、提交、QUERY/WAIT/ACK/FENCE、�
 
 ## 平台适配接口
 
-`npu_drv_platform_ops_t` 不假定 Linux、裸机或某一种 Generic Core：
+`npu_drv_platform_ops_t` 不限定 Linux、裸机或某一种主控 CPU：
 
-- `mmio_read64/mmio_write64`：64-bit LSC 寄存器访问；
-- `submit_beat`：完成一拍 CMD ready/valid 传送；
+- `mmio_read64/mmio_write64`：由 CPU 发起 64-bit AXI 访问，读写 NPU
+  AXI Slave 地址区中的 LSC 寄存器；
+- `submit_beat`：写入 NPU AXI Slave 命令窗口；周期模型可用等价的
+  ready/valid 回调代替两次 MMIO 写；
 - `submit_response`：取得 CFE 接收结果；
-- `control_request`：执行 WAIT、QUERY 或 FENCE；
+- `control_request`：访问 AXI Slave 控制窗口，执行 WAIT、QUERY 或
+  FENCE；周期模型可直接提供等价回调；
 - `write_barrier/read_barrier`：设备内存次序控制；
 - `cache_clean/cache_invalidate`：非一致缓存系统的数据维护；
 - `relax`：轮询时给平台提供等待、让出 CPU 或低功耗提示。
+
+`submit_beat` 和 `control_request` 是为了让同一驱动同时适用于真实 MMIO
+平台与 C model 的平台抽象，不代表 NPU 顶层存在 CPU 自定义指令端口。真实
+SoC 适配层应把它们实现为对 NPU AXI Slave 命令窗口和控制窗口的读写。
 
 `npu_drv_submit()` 固定先调用：
 
@@ -64,6 +76,11 @@ submit_response(...)
 
 平台回调只有在对应 ready/valid 传送结束后才能返回 0。第二拍失败会使 CFE 留在
 等待高拍的状态，平台适配层此时应执行设备规定的恢复流程。
+
+L1BUF 的外部窗口也位于 NPU AXI Slave 地址区。主控软件可按芯片允许的地址
+范围准备输入、读取结果或执行调试访问；正常模型运行也可以把数据放在 DDR，
+再由 NPU 内部 DMA 与 MIF 主动搬运。NPU 主动访问 DDR 时使用自身的 AXI
+Master 端口，与面向 CPU 的 AXI Slave 端口职责不同。
 
 输入、权重和 Descriptor 交给设备前可调用 `npu_drv_sync_for_device()`；任务结束
 后，CPU 读取输出前调用 `npu_drv_sync_for_cpu()`。在一致缓存系统中，平台可把
@@ -127,13 +144,19 @@ Descriptor 的 `numeric_cfg`。INT16 输入和权重适合对数值误差较敏�
 参数、舍入模式和饱和模式写回 INT16。
 
 驱动只负责字段生成和设备访问，不会自行改变权重数值。权重缩放参数应由模型
-编译器生成，并与运行时加载的权重文件保持一致。
+编译器生成，并与运行时使用的生成 C 数组保持一致。
 
 ## Transformer 端到端调用
 
 `../examples/transformer_e2e` 展示如何把高层 Transformer 模型编译结果交给
 本驱动运行。示例不在 C 代码中填写内部 L1 地址、权重排列或任务编号，而是读取
-编译器生成的 C 头文件。
+编译器生成的 C 部署包。
+
+模型编译器默认输出 `<stem>_model.h`、`<stem>_model.c` 和
+`<stem>.manifest.json`。生成的 `.c` 文件包含 C 配置、CMD128、Descriptor、
+权重和运行信息，应用程序把它与驱动库一同编译。裸 `.cmd.bin`、
+`.desc.bin`、`.const.bin`、`.runtime.json` 和低层 JSON IR 仅在使用
+`--emit-raw` 时生成，用于检查，不是驱动的默认输入。
 
 ```bash
 cd "/home/yusen/Obsidian Vault/NPU/examples/transformer_e2e"
@@ -141,8 +164,8 @@ make clean
 make test
 ```
 
-运行程序先把生成的 Descriptor、常量和输入放入 DDR，再按运行元数据给出的
-提交组调用：
+运行程序先把 C 部署包中的 Descriptor、权重和输入放入 DDR，再按生成配置
+给出的提交组调用：
 
 ```text
 npu_drv_submit()
@@ -158,3 +181,22 @@ ASan+UBSan 运行完整检查：
 ```bash
 make regress
 ```
+
+[`../examples/keras_transformer_e2e`](../examples/keras_transformer_e2e/README.md)
+进一步展示从 `.keras` Transformer 到 C 部署包的完整流程：
+
+```bash
+cd "/home/yusen/Obsidian Vault/NPU/examples/keras_transformer_e2e"
+make clean
+make test
+```
+
+该测试生成 47 条 CMD128，分为 6 个提交组。外部主控 CPU 侧程序通过本驱动
+访问 NPU AXI Slave 命令窗口和控制寄存器，共发送 94 个 64-bit beat，并收到
+47 条成功响应。32 个输出全部不超过 2 LSB 误差，最大绝对误差为 2 LSB；
+4 个 token 的最大特征编号均与 Keras 结果相同。
+
+以上两个运行程序都位于 NPU 外部。Generic Core 是外部主控 CPU，作为 AXI
+Master 主动调用驱动函数；NPU 的命令窗口、控制寄存器和 L1BUF 外部窗口均为
+AXI Slave 目标。驱动不把 Generic Core 作为 NPU 内部执行单元，也不会等待
+NPU 主动取得主机上的模型包。

@@ -8,7 +8,7 @@
 | 文档状态 | 与单核 C model、模型编译器和 C 驱动同步的设计稿                                                              |
 | 版本   | V1.1                                                                                   |
 | 适用对象 | 架构、RTL、验证、编译器、Runtime、固件、SoC 集成                                                        |
-| 基准结构 | 1 个 NPU Core，包含 Generic Core、DSA Core、L1BUF、MIF、LSC、TBU、WDT 和 CRG                   |
+| 基准结构 | 1 个 NPU Core，包含 AXI Slave Front End、CFE、TS、执行单元、L1BUF、MIF、LSC、TBU、WDT 和 CRG；Generic Core 位于 NPU 外部 |
 | 参考文档 | [[NPU 设计 spec 总结]]、[[T100 NPU TOP Architecture Spec]]、[[面向Transformer和LSTM加速的NPU设计目标]] |
 
 ---
@@ -56,7 +56,7 @@
 本文覆盖：
 
 1. 单个 NPU Core 的顶层接口与内部连接；
-2. Generic Core 到 DSA Core 的任务提交接口；
+2. 外部 Generic Core 通过系统总线访问 NPU AXI Slave 的命令、控制寄存器和 L1BUF 窗口；
 3. TaskScheduler、DMA、Matrix、Vector、Statistics、SFU、L1BUF、MIF、TBU 和 LSC；
 4. 由两个 64-bit beat 组成的 128-bit 命令头，以及各类任务描述符；
 5. INT4、INT8、INT16、INT32 的 GEMM、BMM、逐元素运算、按维度统计、特殊函数和多维 DMA；
@@ -85,7 +85,7 @@ NPU 子系统必须满足以下要求：
 
 1. Matrix、Vector、Statistics、SFU 和 DMA 通过 L1BUF 交换张量；Matrix 与 Vector 不直接读取 DDR。
 2. TaskScheduler 只调度已经由编译器生成的有限长度任务，不解析完整模型图。
-3. 每条异步任务都具有命令编号和明确的成功或失败状态；完成事件可选，`signal_event=0xFFF` 时只保留可由 `NPU_QUERY` 读取的终态记录。
+3. 每条异步任务都具有命令编号和明确的成功或失败状态；完成事件可选，`signal_event=0xFFF` 时只保留可由 `npu_query_task()` 读取的终态记录。
 4. shape、stride、数据格式和尾部有效长度由描述符给出，同一套 RTL 可执行不同 Batch Size、序列长度、Head 数和 Feature 宽度。
 5. NPU Core 可独立启动、复位、改变工作频率和关闭电源。
 6. 首版任务只在一个 Core 内执行，不依赖其他 Core 的计算结果或片上存储。
@@ -93,6 +93,9 @@ NPU 子系统必须满足以下要求：
 8. 地址错误、描述符错误、数据格式不被接受、依赖任务失败和看门狗超时必须产生可读取的错误状态。
 9. DDR 和 L1BUF 中的模型张量只采用 INT4、INT8、INT16、INT32；FP32 可以作为只读 scale、$\epsilon$、函数系数或查找表元数据，也可以用于复杂数学函数的内部计算过程，但不能作为软件可见的模型张量格式。
 10. Matrix Engine 必须把乘累加阶段与部分和读取、相加和写回阶段设计成可独立推进的流水段；地址关系允许时，后一块矩阵乘可以与前一块的部分和处理同时工作。
+11. Generic Core 是 SoC 中的外部主控 CPU，不属于 NPU Core。它运行 C 驱动并以 AXI Master 身份主动提交任务。
+12. NPU 命令端口、LSC 控制寄存器端口和 L1BUF 外部访问窗口均通过 64-bit AXI Slave 接入系统总线。CFE 只接收并解析命令，不发起 AXI 请求。
+13. NPU 的 MIF / TBU 是独立 AXI Master，负责主动读取 Descriptor、权重和输入数据，并写回输出。
 
 ### 2.2 基准配置
 
@@ -134,7 +137,7 @@ NPU 子系统必须满足以下要求：
 > `L1_BYTES`、`L1_BANKS`、`MT`、`KT`、`NT` 和 `VLANES` 不得写死在指令编码中。软件通过只读功能寄存器取得这些数值，再选择 tile 和任务拆分方式。
 
 > [!note] C model 参考配置的作用
-> 表中的 C model 参考值用于当前软件模型、测试向量和简单周期模型。后续 RTL 可以通过只读功能寄存器公布不同物理值，但不得改变指令字段、描述符语义、整数结果或 ready/valid 规则。C model 分别由 Core tick 与 NoC tick 推进；常规回归默认按 `core_clk:noc_clk=1:1` 调用，也支持两者采用不同的整数 tick 节奏。DDR 读请求到首个返回 beat 的固定延迟为 20 个 NoC 存储目标 tick，连续返回时每个 NoC tick 最多一个 beat；写请求在最后一个数据 beat 握手后 12 个 NoC 存储目标 tick 返回响应。Generic Core 使用独立的 Core 存储目标，其延迟按 Core tick 计算。
+> 表中的 C model 参考值用于当前软件模型、测试向量和简单周期模型。后续 RTL 可以通过只读功能寄存器公布不同物理值，但不得改变指令字段、描述符语义、整数结果或 ready/valid 规则。C model 分别由 Core tick 与 NoC tick 推进；常规回归默认按 `core_clk:noc_clk=1:1` 调用，也支持两者采用不同的整数 tick 节奏。DDR 读请求到首个返回 beat 的固定延迟为 20 个 NoC 存储目标 tick，连续返回时每个 NoC tick 最多一个 beat；写请求在最后一个数据 beat 握手后 12 个 NoC 存储目标 tick 返回响应。外部 Generic Core 及系统 AXI 互连由 SoC 环境提供，不计入 NPU C model 的内部模块。
 
 > [!important] 64-bit 总线要求
 > 本文所有软件可见总线和模块间数据接口均以 64 bit 为一个 beat。一个 128-bit CMD 固定使用两个 beat，传送顺序为低 64 bit在前、高 64 bit在后；64B 描述符需要八个 beat。Matrix 阵列内部可并行计算多个乘法，但阵列内部 lane 信号不属于模块间总线。
@@ -339,16 +342,17 @@ P0 的整数重缩放表还必须满足：
 ```mermaid
 %%{init: {"flowchart": {"useMaxWidth": true, "nodeSpacing": 14, "rankSpacing": 20}, "themeVariables": {"fontSize": "11px"}}}%%
 flowchart TB
-    HOST["Host / MCU / SoC"]
+    GC["Generic Core / 外部主控 CPU<br/>AXI Master"]
+    SW["模型调用代码 + NPU C 驱动"]
     NOC["SYS_BUS / NOC"]
     DDR["DDR / System Memory"]
 
-    subgraph SUB["NPU_SUB"]
+    subgraph SUB["NPU 单核硬件"]
         direction TB
+        SSA0["NPU AXI Slave Front End"]
+        CMD0["CMD128 提交窗口"]
         LSC0["LSC / CRG / WDT"]
-        SSA0["System Slave Adapter"]
-        L1DBG0["L1BUF Diagnostic Bridge"]
-        GC0["Generic Core<br/>independent 64-bit AXI Master"]
+        L1WIN0["L1BUF 外部访问窗口"]
         CFE0["Command Front End"]
         TS0["TaskScheduler + DFU"]
         CALC0["Matrix + Integer Vector + Complex Math"]
@@ -356,31 +360,31 @@ flowchart TB
         L10["L1BUF Controller + SRAM"]
         MIF0["MIF + TBU"]
 
-        GC0 -->|"CMD128 / 2 beats"| CFE0 -->|"CMD128 / 2 beats"| TS0
+        SSA0 --> CMD0 -->|"CMD128 / 2 beats"| CFE0 -->|"完整 CMD128"| TS0
+        SSA0 --> LSC0
+        SSA0 --> L1WIN0 --> L10
         TS0 --> CALC0
         TS0 --> DMA0
         CALC0 <--> L10
         DMA0 <--> L10
         TS0 -->|"DFU read"| MIF0
         DMA0 <-->|"global data"| MIF0
-        SSA0 <--> LSC0
-        SSA0 <--> L1DBG0 <--> L10
         LSC0 --> TS0
     end
 
-    HOST <--> NOC
-    GC0 <-->|"m_axi_gc"| NOC
-    NOC <-->|"s_axi_sys"| SSA0
-    NOC <--> MIF0
+    SW --> GC
+    GC -->|"AXI Master"| NOC
+    NOC -->|"s_axi_npu：AXI Slave"| SSA0
+    MIF0 -->|"m_axi_mem：AXI Master"| NOC
     NOC <--> DDR
 ```
 
 系统连接必须遵守以下规则：
 
-- Generic Core 使用独立的 `m_axi_gc_*` 访问程序和通用数据；该接口不经过 DSA 的 MIF/TBU。
-- `m_axi_ddr` 只访问分配给当前 Core 的 DDR Channel。
-- `m_axi_ext` 可访问其他 DDR Channel、PCIe 或 MCU 空间。
-- `s_axi_sys` 先进入 System Slave Adapter，再访问 LSC、调试寄存器或经过授权的 L1BUF 诊断窗口。
+- Generic Core 位于 NPU 之外，由 SoC 集成并作为 AXI Master 运行 C 驱动。NPU 顶层只提供面向系统互连的 AXI Slave、存储侧 AXI Master、中断、时钟和复位接口，不接收 CPU 专用提交端口。
+- `s_axi_npu_*` 是 NPU 的 64-bit AXI Slave。它先进入 NPU AXI Slave Front End，再访问 CMD128 提交窗口、LSC 寄存器或 L1BUF 外部访问窗口。
+- L1BUF 外部窗口提供统一地址空间中的片上数据访问。访问权限、允许时刻和与执行单元的仲裁规则由第 5.3 节和第 10 节定义。
+- `m_axi_mem_*` 是 MIF / TBU 的 64-bit AXI Master，用于 NPU 主动访问 DDR。
 - DMA 是 DSA Core 访问全局内存的主要发起者。
 - Matrix、Vector、Statistics 和 SFU 的张量操作数均从当前 Core 的 L1BUF 读取。
 - TaskScheduler 内的 DFU 通过 MIF 和 TBU 读取描述符；TS 的其他部分不直接访问 MIF。
@@ -392,7 +396,8 @@ flowchart TB
 ```mermaid
 %%{init: {"flowchart": {"useMaxWidth": true, "nodeSpacing": 12, "rankSpacing": 18}, "themeVariables": {"fontSize": "11px"}}}%%
 flowchart TB
-    ISSUE["Generic Core<br/>DSA Issue Adapter"]
+    AXIS["NPU AXI Slave Front End"]
+    CMDW["CMD128 Submit Window"]
     CFE["CFE + Command FIFO"]
     TS["TaskScheduler<br/>Task Table + Event Table"]
     EVT["Event Table / Scoreboard"]
@@ -403,12 +408,12 @@ flowchart TB
     SRAM["Banked L1BUF SRAM"]
     MIF["MIF / TBU"]
     LSC["LSC / IRQ / PMU"]
-    SSA["System Slave Adapter"]
-    L1DBG["L1BUF Diagnostic Bridge"]
+    L1WIN["L1BUF External Window"]
     DONE["Completion Mux"]
 
-    ISSUE -->|"CMD128 / 2 beats"| CFE -->|"CMD128 / 2 beats"| TS
-    ISSUE -->|"WAIT / QUERY / FENCE"| TS
+    AXIS --> CMDW -->|"CMD128 / 2 beats"| CFE -->|"完整 CMD128"| TS
+    AXIS --> LSC
+    AXIS --> L1WIN --> ARB
     TS <--> EVT
     TS --> DFU
     DFU <--> MIF
@@ -417,8 +422,6 @@ flowchart TB
     ARB <--> SRAM
     ENGS <-->|"DMA only"| MIF
     ENGS --> DONE --> TS
-    SSA <--> LSC
-    SSA <--> L1DBG <--> ARB
     EVT --> LSC
     LSC --> TS
 ```
@@ -427,10 +430,9 @@ flowchart TB
 
 | 模块 | 输入 | 输出 | 主要动作 |
 | --- | --- | --- | --- |
-| DSA Issue Adapter | Generic Core 自定义指令和提交请求 | 128-bit CMD 的两个 64-bit beat、提交返回 | 保存 `rs1` 与 `rs2`，依次发送低、高两个 beat |
-| Generic Core AXI Adapter | Generic Core 取指和通用数据请求 | 独立 64-bit AXI4 Master | 直接连接 SYS_BUS/NOC，不使用 DSA MIF |
-| System Slave Adapter | `s_axi_sys_*` | LSC 寄存器请求、L1BUF 诊断请求 | 解析本地地址，执行访问权限和空闲状态检查 |
-| L1BUF Diagnostic Bridge | 统一诊断请求 | L1BUF Debug 读写端口 | 把单项请求分解为读请求/返回或写请求/数据/完成时序 |
+| NPU AXI Slave Front End | 外部 CPU 发起的 `s_axi_npu_*` 访问 | CMD beat、LSC 请求、L1BUF 外部窗口请求 | 解析本地地址并返回 AXI 响应 |
+| CMD128 Submit Window | 两次 64-bit AXI 写 | 带 `first/last` 的内部命令 beat、提交状态 | 先接收 low word，再接收 high word；禁止与另一条 CMD 交错 |
+| L1BUF External Window | AXI Slave Front End 发来的窗口请求 | L1BUF 外部客户端读写请求 | 提供外部 CPU 对允许片上区域的按地址访问 |
 | Command FIFO | 128-bit CMD | 排队后的完整 CMD | 吸收前端突发提交，维持提交顺序 |
 | Event Table / Scoreboard | CMD 中的依赖事件、各单元完成消息 | 可发射任务、事件状态、错误状态 | 检查依赖、保存任务状态、传播错误 |
 | Descriptor Fetch Unit | `desc_addr` 和读取请求 | 描述符缓存项 | 经 TBU/MIF 读取、校验并保存描述符 |
@@ -448,23 +450,23 @@ flowchart TB
 
 | 数据路径 | 发起模块 | 经过模块 | 目的模块 | 用途 |
 | --- | --- | --- | --- | --- |
-| 命令提交 | Generic Core | Issue Adapter、Command FIFO | TaskScheduler | 提交异步任务 |
-| Generic Core 取指 | Generic Core | 独立 `m_axi_gc_*`、NOC | DDR | 读取程序和通用数据 |
+| 命令提交 | 外部 Generic Core | 系统 AXI、NPU AXI Slave、CMD128 提交窗口、CFE | TaskScheduler | C 驱动主动提交异步任务 |
+| 控制与状态 | 外部 Generic Core | 系统 AXI、NPU AXI Slave | LSC | 配置设备、查询状态和清除中断 |
+| L1BUF 外部访问 | 外部 Generic Core | 系统 AXI、NPU AXI Slave、L1BUF 外部窗口 | L1BUF bank | 输入准备、结果读取或调试 |
 | 描述符读取 | Descriptor Fetch Unit | TBU、MIF、NOC | DDR | 读取任务参数 |
 | 激活/权重加载 | DMA | TBU、MIF、NOC、L1BUF Controller | L1BUF | 计算前预取 |
 | Matrix 读取 | Matrix Engine | L1BUF Controller | L1BUF bank | 读取 A、B、bias 和 residual |
 | Vector 读取 | Vector/Statistics/SFU | L1BUF Controller | L1BUF bank | 读取逐元素或行级输入 |
 | 结果写回 | Matrix/Vector/Statistics/SFU | L1BUF Controller | L1BUF bank | 保存片上结果 |
 | DDR 输出 | DMA | L1BUF Controller、TBU、MIF、NOC | DDR | 回写最终结果 |
-| 完成通知 | 各执行单元 | Event Table、LSC | Generic Core 或 MCU | 更新事件、产生中断 |
-| 系统配置访问 | Host / MCU | System Slave Adapter、L1BUF Diagnostic Bridge | LSC 或 L1BUF Debug 端口 | 配置、状态读取和空闲时诊断 |
+| 完成通知 | 各执行单元 | Event Table、LSC | 外部 Generic Core 或 MCU | 更新事件、产生中断 |
 
 ### 3.5 模块连接与位宽
 
 | 发送模块 | 接收模块 | 接口 | 数据位宽 | 控制方式 |
 | --- | --- | --- | ---: | --- |
-| Generic Core | CFE | CMD stream | 64 bit | ready/valid，两个 beat 组成完整 CMD |
-| Generic Core | SYS_BUS / NOC | 独立 AXI4 Master | 64 bit | 程序和通用数据访问 |
+| 外部 Generic Core | NPU AXI Slave Front End | AXI4 Slave | 64 bit | CPU 是 Master，NPU 是 Slave |
+| NPU AXI Slave Front End | CMD128 Submit Window / CFE | CMD stream | 64 bit | 两个 beat 组成完整 CMD |
 | CFE | TaskScheduler | CMD FIFO stream | 64 bit | 每个 CMD 依次发送低、高两个 beat，并携带 `first/last` |
 | TaskScheduler | DMA / ME / IVE / CME | task metadata | 64 bit | ready/valid |
 | DMA / ME / IVE / CME | TaskScheduler | done stream | 64 bit | ready/valid，固定三拍 |
@@ -473,13 +475,12 @@ flowchart TB
 | DMA | MIF/TBU | global memory data | 64 bit | request/response |
 | DMA / ME / IVE / CME | L1BUF Controller | L1 read/write | 每端口 64 bit | ready/valid |
 | MIF | DDR / System NoC | AXI4 Master | 64 bit | AW/W/B/AR/R |
-| Host / MCU | System Slave Adapter | AXI4 Slave | 64 bit | AW/W/B/AR/R |
-| System Slave Adapter | LSC | register | 64 bit | request/response |
-| System Slave Adapter | L1BUF Diagnostic Bridge | diagnostic | 64 bit | 单项 request/response |
-| L1BUF Diagnostic Bridge | L1BUF Controller | Debug read/write | 64 bit | 分离 ready/valid 通道 |
+| NPU AXI Slave Front End | LSC | register | 64 bit | request/response |
+| NPU AXI Slave Front End | L1BUF External Window | window request | 64 bit | 单项 request/response |
+| L1BUF External Window | L1BUF Controller | external read/write | 64 bit | 分离 ready/valid 通道 |
 
 64 bit 是单个端口、单个 beat 的数据宽度。Matrix 可设置多个独立 L1 读端口，每个端口仍为 64 bit；不能把多个端口拼成一个更宽的软件可见事务。
-`Generic Core→CFE` 和 `CFE→TaskScheduler` 都是 64-bit 物理接口，不是
+`NPU AXI Slave Front End→CFE` 和 `CFE→TaskScheduler` 都是 64-bit 物理接口，不是
 128-bit 物理总线。一个 CMD 使用两次 ready/valid 握手：第一拍携带低
 64 bit并设置 `first=1,last=0`，第二拍携带高 64 bit并设置
 `first=0,last=1`。发送端在任一拍暂停期间都必须保持 `data`、`first` 和
@@ -569,15 +570,13 @@ sequenceDiagram
 | `module_clk_active_o` | Output | 8 | `0xFF` | CRG 实际采用的模块时钟使能 |
 | `dvfs_prepare_req_i` | Input | 1 | 0 | SoC 请求改变计算时钟频率 |
 | `dvfs_prepare_ack_o` | Output | 1 | 0 | NPU 已停止接收新工作且满足改频条件 |
-| `stop_fetch_i` | Input | 1 | 1 | 为 1 时 Generic Core 不再取得新程序指令 |
-| `effective_stop_fetch_o` | Output | 1 | 1 | 外部停止、LSC 停止或改频准备的组合结果 |
+| `accept_new_cmd_o` | Output | 1 | 0 | NPU AXI Slave 当前允许接收新的 CMD128 |
 | `soft_reset_req_i` | Input | 1 | 0 | 请求受控软复位 |
 | `soft_reset_done_o` | Output | 1 | 0 | 排空请求并完成模块复位后置 1 |
 | `clk_req_o` | Output | 1 | 1 | NPU 仍需要 `core_clk_i` |
 | `clk_ack_i` | Input | 1 | 0 | SoC 时钟控制模块确认时钟可用 |
 | `power_down_req_i` | Input | 1 | 0 | 请求进入断电准备状态 |
 | `power_down_ack_o` | Output | 1 | 0 | NPU 已满足断电条件 |
-| `core_wfi_i` | Input | 1 | 0 | Generic Core 正在等待中断 |
 | `wdt_enable_i` | Input | 1 | 0 | 使能 Core 看门狗 |
 | `wdt_timeout_cycles_i` | Input | 32 | 0 | 无进展超时周期数；0 表示不计时 |
 | `wdt_kick_i` | Input | 1 | 0 | 软件或调度器喂狗脉冲 |
@@ -587,9 +586,9 @@ sequenceDiagram
 | `irq_error_o` | Output | 1 | 0 | 地址、协议、ECC 或描述符错误中断 |
 | `wdt_reset_req_o` | Output | 1 | 0 | 看门狗复位请求 |
 
-Generic Core 的有效停止信号为 `stop_fetch_i OR LSC.CORE_CONTROL.stop OR dvfs_prepare_req_i`。上电时外部 `stop_fetch_i` 保持 1；软件完成 LSC 配置后，先清除 LSC stop，再由 SoC 撤销外部 `stop_fetch_i`。
+`accept_new_cmd_o` 只有在复位已经释放、LSC `start=1`、`stop=0`、未进入改频或断电准备状态且命令接收资源可用时才能置 1。该信号可供集成验证使用；软件以 AXI 写响应和提交状态为准。
 
-`soft_reset_req_i/soft_reset_done_o` 与 `power_down_req_i/power_down_ack_o` 均采用四阶段电平握手，详细次序见第 15.8、15.9 节。`power_down_ack_o` 只能在 `core_idle_o=1`、DSA MIF 与 Generic Core 独立 AXI Master 均无 outstanding 请求、完成状态已经写入保持供电寄存器后置 1。
+`soft_reset_req_i/soft_reset_done_o` 与 `power_down_req_i/power_down_ack_o` 均采用四阶段电平握手，详细次序见第 15.8、15.9 节。`power_down_ack_o` 只能在 `core_idle_o=1`、NPU AXI Slave 没有未完成响应、MIF 没有 outstanding 请求且完成状态已经写入保持供电寄存器后置 1。
 
 `clk_req_o/clk_ack_i` 的功能模式时序固定如下：
 
@@ -602,17 +601,13 @@ Generic Core 的有效停止信号为 `stop_fetch_i OR LSC.CORE_CONTROL.stop OR 
 周期 C model 由调用者显式调用 `npu_single_core_cycle_core_tick()` 表示一个真实的
 `core_clk_i` 上升沿。因此 `clk_ack_i` 不会取消一次已经调用的 tick；调用者必须
 只在 SoC 实际提供计算时钟时调用该函数。C model 另行输出
-`effective_stop_fetch_o=stop_fetch_i OR stop_fetch_o OR dvfs_prepare_req_i`，供未包含 Generic Core 的
-测试环境判断是否还能提交新的 DSA 指令。
+`accept_new_cmd_o`，供测试环境判断 NPU AXI Slave 是否还能接收新的 CMD128。
 
 ### 5.2 64-bit AXI4 Master 接口
 
-单核提供两组 AXI4 Master：
+单核通过 MIF / TBU 提供一组 64-bit AXI4 Master：`m_axi_mem_*`。该接口由 NPU 主动读取 Descriptor、权重和输入数据，并写回输出。若 SoC 需要多个物理存储出口，应在系统互连或 MIF 内部路由处理；指令和 Descriptor 不因物理出口数量改变。
 
-- `m_axi_ddr_*`：访问分配给本 NPU 的 DDR 地址范围；
-- `m_axi_ext_*`：访问其他 DDR Channel、PCIe 或 MCU 共享存储。
-
-两组接口均使用下表信号。表中的前缀 `m_axi_*` 代表 `m_axi_ddr_*` 或 `m_axi_ext_*`。
+下表中的 `m_axi_*` 代表 `m_axi_mem_*`。
 
 | 信号 | 方向 | 位宽 | 说明 |
 | --- | --- | ---: | --- |
@@ -665,154 +660,15 @@ AXI 接口必须满足：
 7. `RRESP` 或 `BRESP` 不是 `OKAY` 时，DMA 停止生成新请求，接收完已经发出的事务后报告错误。
 8. MIF 必须保存第一个错误地址、AXI ID、response 和 `command_id`。
 
-#### 5.2.1 Generic Core 独立 AXI4 Master
+#### 5.2.1 外部 Generic Core 的接口归属
 
-Generic Core 通过 `m_axi_gc_*` 访问程序和通用数据。该接口直接连接 SYS_BUS/NOC，不进入 DSA MIF，也不使用 DSA TBU、DSA AXI ID 表或 DSA 性能计数器。
+Generic Core 是 SoC 中的外部 AXI Master，其取指、缓存、地址转换和 CPU 侧 AXI Adapter 均由 SoC 负责，不属于 `npu_core_top`。本 Spec 不定义 CPU 内部接口，也不为特定 CPU ISA 增加专用提交端口。
 
-`m_axi_gc_*` 复用第 5.2 节的 AW、W、B、AR、R 信号集合，数据宽度固定为 64 bit，物理地址宽度为 40 bit，AXI ID 宽度为 8 bit。信号名前缀由 `m_axi_*` 替换为 `m_axi_gc_*`。P0 使用方式如下：
-
-- `AWSIZE=ARSIZE=3`，每个满 beat 为 8B；
-- `AWBURST=ARBURST=INCR`；
-- Generic Core 的 I-cache 和 D-cache 在该 AXI Adapter 内仲裁；
-- 若 Generic Core IP 含有自己的地址转换模块，该转换必须在 `m_axi_gc_*` 之前完成；
-- 若 P0 不启用 Generic Core 地址转换，`PC_BASE` 和通用数据地址直接使用低 40 bit 物理地址，高位必须为 0；
-- `m_axi_gc_*` 的 outstanding 表与 DSA MIF 相互独立；
-- `core_idle_o` 和断电准备条件必须同时检查 Generic Core AXI outstanding 数量为 0。
-
-Generic Core AXI 访问权限由 SoC 的总线访问控制单元设置。DSA 的 `DDR_LOCAL_BASE`、`DDR_LOCAL_LIMIT` 和 TBU 配置不作用于 `m_axi_gc_*`。
-
-Generic Core IP 与 AXI Adapter 之间使用三组内部请求接口：I-cache 读、D-cache
-读和 D-cache 写。P0 的固定信号如下。表中的 `*_req_*`、`*_rsp_*` 均采用第
-4.2 节的 ready/valid 规则。
-
-| 信号 | 方向 | 位宽 | 说明 |
-| --- | --- | ---: | --- |
-| `ic_req_valid_i` | I-cache→Adapter | 1 | I-cache 读请求有效 |
-| `ic_req_ready_o` | Adapter→I-cache | 1 | Adapter 可接收 I-cache 读请求 |
-| `ic_req_addr_i` | I-cache→Adapter | 40 | 已完成地址转换的 8B 对齐物理地址 |
-| `ic_req_beats_i` | I-cache→Adapter | 8 | 完整请求的 64-bit beat 数减 1 |
-| `ic_req_tag_i` | I-cache→Adapter | 16 | I-cache 自行分配的请求编号 |
-| `ic_req_cache_i` | I-cache→Adapter | 4 | 送往 `ARCACHE` 的存储属性 |
-| `ic_req_prot_i` | I-cache→Adapter | 3 | 送往 `ARPROT` 的权限属性 |
-| `ic_req_qos_i` | I-cache→Adapter | 4 | P0 必须为 0 |
-| `ic_rsp_valid_o` | Adapter→I-cache | 1 | I-cache 读返回有效 |
-| `ic_rsp_ready_i` | I-cache→Adapter | 1 | I-cache 可接收读返回 |
-| `ic_rsp_data_o` | Adapter→I-cache | 64 | 读数据 |
-| `ic_rsp_tag_o` | Adapter→I-cache | 16 | 原请求编号 |
-| `ic_rsp_last_o` | Adapter→I-cache | 1 | 完整内部请求的最后一拍，不是拆分后子 burst 的最后一拍 |
-| `ic_rsp_status_o` | Adapter→I-cache | 8 | 第 4.3 节状态 |
-| `dc_rd_req_*`、`dc_rd_rsp_*` | D-cache↔Adapter | 同 I-cache 读接口 | D-cache 读请求和返回 |
-| `dc_wr_req_valid_i` | D-cache→Adapter | 1 | D-cache 写请求有效 |
-| `dc_wr_req_ready_o` | Adapter→D-cache | 1 | Adapter 可接收写请求 |
-| `dc_wr_req_addr_i` | D-cache→Adapter | 40 | 8B 对齐物理地址 |
-| `dc_wr_req_beats_i` | D-cache→Adapter | 8 | 完整请求的 64-bit beat 数减 1 |
-| `dc_wr_req_tag_i` | D-cache→Adapter | 16 | 写请求编号 |
-| `dc_wr_req_cache_i` | D-cache→Adapter | 4 | 送往 `AWCACHE` 的存储属性 |
-| `dc_wr_req_prot_i` | D-cache→Adapter | 3 | 送往 `AWPROT` 的权限属性 |
-| `dc_wr_req_qos_i` | D-cache→Adapter | 4 | P0 必须为 0 |
-| `dc_wr_data_valid_i` | D-cache→Adapter | 1 | 写数据有效 |
-| `dc_wr_data_ready_o` | Adapter→D-cache | 1 | Adapter 可接收写数据 |
-| `dc_wr_expected_tag_o` | Adapter→D-cache | 16 | 当前必须提交数据的写请求编号 |
-| `dc_wr_data_i` | D-cache→Adapter | 64 | 写数据 |
-| `dc_wr_strb_i` | D-cache→Adapter | 8 | 每字节写使能 |
-| `dc_wr_last_i` | D-cache→Adapter | 1 | 完整内部请求的最后一拍 |
-| `dc_wr_tag_i` | D-cache→Adapter | 16 | 当前写数据所属的请求编号 |
-| `dc_wr_rsp_valid_o` | Adapter→D-cache | 1 | 完整写请求已有最终状态 |
-| `dc_wr_rsp_ready_i` | D-cache→Adapter | 1 | D-cache 可接收写结果 |
-| `dc_wr_rsp_tag_o` | Adapter→D-cache | 16 | 原写请求编号 |
-| `dc_wr_rsp_status_o` | Adapter→D-cache | 8 | 第 4.3 节状态 |
-
-> [!note] 为什么写数据接口还要返回当前 tag
-> AXI4 的 W 通道没有 WID，多个写地址虽然可以同时存在，W beat 仍必须按
-> Adapter 规定的次序发送。`dc_wr_expected_tag_o` 明确指出当前 `ready` 对应
-> 哪一项写请求。D-cache 只有在自己的 `dc_wr_tag_i` 与它相等时才能完成
-> 写数据握手。
-
-P0 内部接口只发起 8B 对齐的 64-bit beat 请求，不提供 1B、2B 或 4B 的独立
-地址请求。D-cache 可以用 `dc_wr_strb_i` 只更新某个 64-bit word 中的部分字节。
-一个请求的最后一个有效字节必须位于 40-bit 物理地址范围内。`cache` 只使用
-低 4 bit，`prot` 只使用低 3 bit；保留位不为 0、`qos` 不为 0、地址未对齐
-或地址加总字节数溢出时，Adapter 不发 AXI 请求，直接返回 `BAD_DESC` 或
-`ADDR_FAULT`。
-
-P0 采用以下固定资源数：
-
-| 项目 | 数值 | 说明 |
-| --- | ---: | --- |
-| 读请求表 | 8 项 | I-cache 与 D-cache 读请求共用 |
-| 写请求表 | 4 项 | 仅供 D-cache 写 |
-| AXI 子 burst 最大长度 | 16 beat | 即 128B |
-| 读 AXI ID | `0x00～0x7F` | 循环寻找当前未占用 ID |
-| 写 AXI ID | `0x80～0xFF` | 与读 ID 分区，`0xFF` 是合法 ID |
-
-I-cache 与 D-cache 同时请求读表时：若至少有两项空闲，两者可在同一周期完成
-握手；只剩一项时采用轮流优先。每个已接收的完整请求按 4KiB 地址段和
-16-beat 上限拆成一个或多个 AXI 子 burst。内部读返回保持原 tag，只有完整
-请求的最终返回才令 `*_rsp_last_o=1`。不同 AXI ID 的读返回可以交错，不同
-内部请求的最终状态也不要求与提交次序相同。
-
-D-cache 写数据按 AW 完成握手的先后顺序提交。`dc_wr_req_beats_i+1` 是必须
-接收的数据拍数；`dc_wr_last_i` 只用于一致性检查，不能改变拍数。tag 不等于
-`dc_wr_expected_tag_o`，或 `last` 出现在错误拍号时，Adapter 记录协议错误并令
-该请求最终返回 `BUS_SLVERR`。发生提前 B 返回时，Adapter 继续接收并丢弃该
-完整请求尚余的数据，直到达到声明拍数，避免一个暂停中的 WVALID 无握手消失。
-
-同一读客户端不能在最终读返回握手前重复使用 tag，D-cache 也不能在最终写
-结果握手前重复使用写 tag。重复 tag 属于客户端协议错误；Adapter 会接收该
-请求并为被拒绝项产生 `BAD_DESC`，原请求继续处理。由于两项使用相同 tag，
-该行为只用于暴露设计错误，客户端不得依靠它恢复正常执行，检测到后应执行
-受控复位。
-
-AXI 返回检查规则如下：
-
-- `OKAY` 是成功；
-- `SLVERR`、`DECERR` 分别转成 `BUS_SLVERR`、`BUS_DECERR`；
-- P0 不发独占访问，因此 `EXOKAY` 记为协议错误并转成 `BUS_SLVERR`；
-- 不存在的 RID/BID 会被接收并丢弃，不得释放其他表项；
-- RLAST 提前或缺失均返回 `BUS_SLVERR`；若声明拍数已到但 RLAST 仍为 0，
-  Adapter 保留该 AXI ID 并继续接收、丢弃后续 R beat，直到收到真正的
-  RLAST；在此期间 `gc_axi_idle_o=0`；
-- B 在对应子 burst 的最后一个 W beat 之前到达时按提前 B 处理；
-- `first_error_axi_id_valid=1` 时 `first_error_axi_id` 才含有 AXI ID。
-  这样可以区分“尚未分配 ID”和合法的 `0xFF`。
-
-Generic Core AXI Adapter 的协议首错输出如下：
-
-| 信号 | 方向 | 位宽 | 说明 |
-| --- | --- | ---: | --- |
-| `external_error_clear_i` | Input | 1 | 清除 first error 和 protocol error |
-| `gc_axi_protocol_error_valid_o` | Output | 1 | 已保存一项协议错误 |
-| `gc_axi_protocol_error_kind_o` | Output | 8 | 下表定义的稳定子码 |
-| `gc_axi_protocol_error_addr_o` | Output | 40 | 能够确定的请求或 beat 物理地址 |
-| `gc_axi_protocol_error_client_o` | Output | 8 | `0=I-cache`、`1=D-cache`、`0xFF=未知` |
-| `gc_axi_protocol_error_tag_o` | Output | 16 | 能够确定时为内部 tag；未知 ID 时为零扩展后的 AXI ID |
-| `gc_axi_protocol_error_axi_id_o` | Output | 8 | 相关 AXI ID |
-| `gc_axi_protocol_error_axi_id_valid_o` | Output | 1 | AXI ID 字段是否有效 |
-
-`gc_axi_protocol_error_kind_o` 使用以下固定编码：
-
-| 编码 | 名称 | 保存的地址 |
-| ---: | --- | --- |
-| `0` | `NONE` | 0 |
-| `1` | `RID` | RID 能找到请求时为当前读 beat 或相关请求地址；未知 RID 为 0 |
-| `2` | `BID` | BID 能找到请求时为相关请求地址；未知 BID 为 0 |
-| `3` | `RLAST` | 当前读 beat 地址 |
-| `4` | `WLAST` | 当前写 beat 地址 |
-| `5` | `WTAG` | 当前写 beat 地址 |
-| `6` | `RRESP` | 当前读 beat 地址 |
-| `7` | `BRESP` | 当前写子 burst 起始地址 |
-| `8` | `DUPLICATE_TAG` | 被拒绝请求的输入地址 |
-
-`RID` 还包括写请求 ID 出现在 R 通道以及 AR 握手前收到 R；`BID` 还包括读请求 ID 出现在 B 通道、AW 握手前收到 B，以及最后一个 W beat 之前收到 B。只有无法找到任何请求表项的 RID 或 BID 才允许把地址写成 0。错误发生在已知请求、返回 beat、写数据 beat 或重复 tag 请求上时，Adapter 必须保存相应地址。`valid=1` 后，kind、地址、client、tag 和 AXI ID 保持不变。清除和新协议错误同拍发生时，新错误优先。
-
-`gc_axi_quiesce_i=1` 后停止接收新的 I-cache、D-cache 请求，已经接收的请求、
-AXI 返回和内部最终返回仍继续。`gc_axi_quiescent_o=1` 只有在请求表、地址保持
-项、W 保持项、B/R 输入缓冲、内部返回保持项和异常返回丢弃状态全部为空时
-成立。受控软复位必须先等待该条件，不能直接清除仍可能在 NoC 中返回的 ID。
+Generic Core 运行生成的 C 模型调用函数和通用 NPU C 驱动。它通过系统 AXI 互连访问第 5.3 节的 `s_axi_npu_*`，并接收 `irq_done_o`、`irq_exception_o` 和 `irq_error_o`。SoC 需要保证 CPU、NPU 和 DDR 的缓存一致性；若系统不提供硬件一致性，驱动必须在提交前清理 Descriptor、权重和输入数据对应的 CPU Cache，在读取结果前使输出对应的 CPU Cache 数据失效。
 
 ### 5.3 64-bit AXI4 Slave 接口
 
-`s_axi_sys_*` 接收 Host 或 MCU 的寄存器访问和经过授权的 L1BUF 诊断访问。地址宽度为 24 bit，数据宽度为 64 bit，信号组与标准 AXI4 一致。
+`s_axi_npu_*` 是 NPU 面向外部 Generic Core 或 MCU 的 64-bit AXI4 Slave。它接收 CMD128 提交、控制寄存器访问和 L1BUF 外部窗口访问。地址宽度为 24 bit，数据宽度为 64 bit，信号组与标准 AXI4 一致。外部 CPU 是 Master，NPU 是 Slave。
 
 | 信号 | 方向 | 位宽 | 说明 |
 | --- | --- | ---: | --- |
@@ -858,18 +714,19 @@ AXI 返回和内部最终返回仍继续。`gc_axi_quiescent_o=1` 只有在请�
 | --- | --- | --- | --- |
 | LSC CSR | `0x000000～0x00FFFF` | 32 或 64 bit | 支持读写、W1C 和只读属性 |
 | Debug / Performance | `0x010000～0x01FFFF` | 64 bit | 空闲或冻结后读取 |
-| L1BUF 诊断窗口 | `0x100000～0xFFFFFF` | 8、16、32 或 64 bit | 仅在 NPU 空闲且授权位为 1 时访问 |
+| CMD128 / 控制请求窗口 | `0x020000～0x02FFFF` | 64 bit | 提交 low/high word，并提供查询、等待、ACK 与提交状态寄存器 |
+| L1BUF 外部访问窗口 | `0x100000～0x1FFFFF` | 8、16、32 或 64 bit | 按 LADDR 访问 1 MiB L1BUF；由 L1BUF Controller 与内部客户端仲裁 |
 
-保留地址读 0、写无效。NPU 忙时访问受限制的调试寄存器，或在授权位为 0 时访问 L1BUF 诊断窗口，均返回 `SLVERR`。
+保留地址读 0、写无效。NPU 忙时访问受限制的调试寄存器返回 `SLVERR`。L1BUF 外部窗口可以在 NPU 运行期间完成总线级访问，但软件不得同时修改在途任务仍会读取或写入的 LADDR；驱动应先等待相关事件或执行任务栅栏。
 
-P0 不使用 `AWPROT/ARPROT` 判断发起方权限。特权级、安全域和设备访问许可由 SoC 总线访问控制单元检查；System Slave Adapter 仍需锁存 `AWPROT/ARPROT`，便于后续版本扩展和波形调试。L1BUF 诊断访问还必须通过本 NPU 内部的 `L1_DIAG_CONTROL.enable` 检查。
+P0 不使用 `AWPROT/ARPROT` 判断发起方权限。特权级、安全域和设备访问许可由 SoC 总线访问控制单元检查；NPU AXI Slave Front End 仍需锁存 `AWPROT/ARPROT`，便于后续版本扩展和波形调试。
 
-LSC CSR 只接受单 beat 事务，因此访问 `0x000000～0x01FFFF` 时 `AWLEN` 和 `ARLEN` 必须为 0。L1BUF 诊断窗口可接受 INCR burst，但单个 burst 不得跨越 4KiB 地址区段或 L1BUF 末地址。
+LSC CSR 与 CMD128 / 控制请求窗口只接受单 beat 事务，因此访问 `0x000000～0x02FFFF` 时 `AWLEN` 和 `ARLEN` 必须为 0。L1BUF 外部窗口可接受 INCR burst，但单个 burst 不得跨越 4KiB 地址区段或 L1BUF 末地址。
 
 P0 对窄访问和 burst 使用以下固定规则：
 
 - `AWSIZE/ARSIZE=0、1、2` 分别表示 1B、2B、4B，只允许单 beat，且访问不得跨越一个 8B word；
-- 多 beat 诊断访问必须满足 `AWSIZE=ARSIZE=3`，内部地址每个 beat 增加 8；
+- 多 beat L1BUF 窗口访问必须满足 `AWSIZE=ARSIZE=3`，内部地址每个 beat 增加 8；
 - 窄写把 AXI 地址向下对齐到 8B，并使用 `WSTRB` 选择实际字节；
 - 窄读同样读取对齐后的完整 64-bit word，再按照 AXI 地址低 3 bit 把所需字节放到规定的数据 lane；未选中的 `RDATA` lane 固定返回 0；
 - 不支持的 size、未对齐的 2B/4B 访问或窄 burst 返回 `SLVERR`，不产生内部请求。
@@ -877,9 +734,9 @@ P0 对窄访问和 burst 使用以下固定规则：
 > [!note] 为什么地址是 24 bit
 > 本地 slave 空间最大为 16MiB，因此保留低 24 bit 即可。SoC 给 NPU 分配的系统基地址需要 16MiB 对齐，MIF 在进入本地 slave 前去掉系统高位。
 
-#### 5.3.1 System Slave Adapter
+#### 5.3.1 NPU AXI Slave Front End
 
-System Slave Adapter 终止 `s_axi_sys_*`，并产生 LSC 寄存器请求或 L1BUF 诊断请求。P0 每个方向最多保留一个未完成事务。写通道必须先接收 AW，随后才对对应的 W 数据拉高 `s_axi_wready`；Adapter 固定接收 `AWLEN+1` 个 W beat，全部内部写完成后产生一次 B response。
+NPU AXI Slave Front End 终止 `s_axi_npu_*`，并产生 CMD 提交请求、LSC 寄存器请求或 L1BUF 外部窗口请求。P0 每个方向最多保留一个未完成事务。写通道必须先接收 AW，随后才对对应的 W 数据拉高 `s_axi_wready`；Front End 固定接收 `AWLEN+1` 个 W beat，全部内部写完成后产生一次 B response。
 
 Adapter 还接收以下控制输入：
 
@@ -887,68 +744,69 @@ Adapter 还接收以下控制输入：
 | --- | --- | ---: | --- |
 | `core_idle_i` | Input | 1 | 顶层 NPU 空闲状态 |
 | `debug_frozen_i` | Input | 1 | 性能计数器已经冻结，可稳定读取调试快照 |
-| `l1_diag_enable_i` | Input | 1 | LSC 对 L1BUF 诊断窗口的授权位 |
+| `l1_external_enable_i` | Input | 1 | LSC 对 L1BUF 外部窗口的总使能位 |
 
-Debug / Performance 读访问要求 `core_idle_i=1` 或 `debug_frozen_i=1`。对该区域的写访问只允许写文档明确标为可写的控制寄存器；其余写入按寄存器属性处理。L1BUF 诊断读写必须同时满足 `core_idle_i=1` 和 `l1_diag_enable_i=1`。
+Debug / Performance 读访问要求 `core_idle_i=1` 或 `debug_frozen_i=1`。对该区域的写访问只允许写文档明确标为可写的控制寄存器；其余写入按寄存器属性处理。L1BUF 外部访问要求 `l1_external_enable_i=1`；是否存在任务由驱动负责检查，硬件仍执行端口仲裁。
 
-`core_idle_i` 必须由本周期开始时的 Issue、CFE、TS、四个执行单元、L1BUF、MIF/CDC 和 Generic Core AXI 状态直接组合得到，不能使用上一周期保存的 `core_idle_o`。若本周期同时接收一条新 DSA 指令或一笔新的 I-cache/D-cache 请求，则本周期的受限制 Debug 与 L1BUF 诊断请求按忙状态检查，避免诊断访问与新工作在同一上升沿同时取得访问许可。
+`core_idle_i` 必须由本周期开始时的 AXI 命令接收状态、CFE、TS、四个执行单元、L1BUF 和 MIF/CDC 状态直接组合得到，不能使用上一周期保存的 `core_idle_o`。若本周期同时接收一条新 CMD128，则本周期受限制的 Debug 请求按忙状态检查。
 
 地址选择规则如下：
 
-| `s_axi_sys` 地址 | 内部目的 | 内部地址 |
+| `s_axi_npu` 地址 | 内部目的 | 内部地址 |
 | --- | --- | --- |
 | `0x000000～0x00FFFF` | LSC CSR | `reg_req_space=0`，`reg_req_addr=s_axi_addr[15:0]` |
 | `0x010000～0x01FFFF` | Debug / Performance | `reg_req_space=1`，`reg_req_addr=s_axi_addr[15:0]` |
-| `0x100000～0xFFFFFF` | L1BUF 诊断端口 | `laddr=s_axi_addr-0x100000` |
+| `0x020000～0x02FFFF` | CMD128 / 控制请求窗口 | `cmd_req_addr=s_axi_addr[15:0]` |
+| `0x100000～0x1FFFFF` | L1BUF 外部端口 | `laddr=s_axi_addr-0x100000` |
 
 `reg_req_space` 必须随寄存器请求一起锁存并保持到响应完成。没有该选择位时，`0x000000` 与 `0x010000` 会产生相同的 16-bit 内部地址，LSC 无法判断应访问普通 CSR 还是调试寄存器组。
 
-System Slave Adapter 到 LSC 的对应端口名为 `reg_req_space_o`，位宽为 1；它与第 15.2 节的 `reg_req_space_i` 直接连接，并与 `reg_req_valid`、地址、写数据和 strobe 在同一周期完成请求握手。对 1B、2B 或 4B 的寄存器访问，`reg_req_addr_o` 必须向下对齐到 8B；`reg_req_wdata_o` 和 `reg_req_wstrb_o` 保留 AXI 原始 lane 位置，LSC 按 strobe 更新对应字节。
+NPU AXI Slave Front End 到 LSC 的对应端口名为 `reg_req_space_o`，位宽为 1；它与第 15.2 节的 `reg_req_space_i` 直接连接，并与 `reg_req_valid`、地址、写数据和 strobe 在同一周期完成请求握手。对 1B、2B 或 4B 的寄存器访问，`reg_req_addr_o` 必须向下对齐到 8B；`reg_req_wdata_o` 和 `reg_req_wstrb_o` 保留 AXI 原始 lane 位置，LSC 按 strobe 更新对应字节。
 
-L1BUF 诊断窗口要求 `L1_BYTES<=0xF00000`。若具体芯片的 L1BUF 更大，必须使用窗口页选择寄存器，不能截断高地址位。
+L1BUF 外部窗口 P0 固定覆盖 1 MiB。若具体芯片的 L1BUF 更大，必须使用窗口页选择寄存器，不能截断高地址位。
 
-Adapter 到 L1BUF Controller 的诊断接口保持 64 bit：
+Front End 到 L1BUF Controller 的外部窗口接口保持 64 bit：
 
-| 信号 | Adapter 方向 | 位宽 | 说明 |
+| 信号 | Front End 方向 | 位宽 | 说明 |
 | --- | --- | ---: | --- |
-| `ssa_l1_req_valid_o` | Output | 1 | 诊断请求有效 |
-| `ssa_l1_req_ready_i` | Input | 1 | L1BUF Controller 可接收 |
-| `ssa_l1_req_write_o` | Output | 1 | 0 为读，1 为写 |
-| `ssa_l1_req_addr_o` | Output | 24 | L1BUF 字节地址 |
-| `ssa_l1_req_wdata_o` | Output | 64 | 写数据 |
-| `ssa_l1_req_wstrb_o` | Output | 8 | 写字节使能 |
-| `ssa_l1_rsp_valid_i` | Input | 1 | 读返回或写完成有效 |
-| `ssa_l1_rsp_ready_o` | Output | 1 | Adapter 可接收 |
-| `ssa_l1_rsp_rdata_i` | Input | 64 | 读数据 |
-| `ssa_l1_rsp_status_i` | Input | 3 | 正常、ECC 状态或访问失败 |
+| `axi_l1_req_valid_o` | Output | 1 | 外部窗口请求有效 |
+| `axi_l1_req_ready_i` | Input | 1 | 外部访问桥可接收 |
+| `axi_l1_req_write_o` | Output | 1 | 0 为读，1 为写 |
+| `axi_l1_req_addr_o` | Output | 24 | L1BUF 字节地址 |
+| `axi_l1_req_wdata_o` | Output | 64 | 写数据 |
+| `axi_l1_req_wstrb_o` | Output | 8 | 写字节使能 |
+| `axi_l1_rsp_valid_i` | Input | 1 | 读返回或写完成有效 |
+| `axi_l1_rsp_ready_o` | Output | 1 | Front End 可接收 |
+| `axi_l1_rsp_rdata_i` | Input | 64 | 读数据 |
+| `axi_l1_rsp_status_i` | Input | 3 | 正常、ECC 状态或访问失败 |
 
-NPU 非空闲或诊断授权位为 0 时，Adapter 不向 L1BUF 发请求，直接返回 `SLVERR`。
+外部窗口总使能位为 0 时，Front End 不向 L1BUF 发请求，直接返回 `SLVERR`。
 
-System Slave Adapter 的功能时序：
+NPU AXI Slave Front End 的功能时序：
 
 | 阶段 | 读事务 | 写事务 |
 | --- | --- | --- |
 | T0 | 接收 AR，锁存 ID、地址、长度和属性 | 接收 AW，锁存 ID、地址、长度和属性 |
-| T1 | 译码到 LSC 或 L1BUF 诊断端口 | 仅在 AW 已锁存后接收第一拍 W |
+| T1 | 译码到 CMD、LSC 或 L1BUF 外部端口 | 仅在 AW 已锁存后接收第一拍 W |
 | T2～ | 逐拍发内部 64-bit 请求并等待返回 | 逐拍发内部 64-bit 写请求，检查 beat 数和 WLAST |
 | Tend | 生成 RDATA/RRESP，末拍设置 RLAST | 全部内部写完成后生成一次 BRESP |
 
-L1BUF 诊断满宽 burst 在内部拆成单 beat `ssa_l1_req_*` 请求，内部地址每拍增加 8。窄访问只有一拍，内部请求地址向下对齐到 8B。任一内部请求失败时，Adapter 停止发出新的诊断请求，完成已经接受的内部请求后返回 `SLVERR`。
+L1BUF 外部窗口的满宽 burst 在内部拆成单 beat `axi_l1_req_*` 请求，内部地址每拍增加 8。窄访问只有一拍，内部请求地址向下对齐到 8B。任一内部请求失败时，Front End 停止发出新的窗口请求，完成已经接受的内部请求后返回 `SLVERR`。
 
 `WLAST` 的检查以 `AWLEN+1` 为准：若 `WLAST` 在较早 beat 置 1，或在最后一个预期 beat 仍为 0，Adapter 记录协议错误并最终返回 `SLVERR`。发现错误后不再产生新的内部写请求，但仍继续接收直到第 `AWLEN+1` 个 W beat，避免写通道永久停住；已经握手的内部请求必须等待响应。B response 的 ID 使用已锁存的 `AWID`。
 
-#### 5.3.2 L1BUF 诊断桥
+#### 5.3.2 L1BUF 外部访问桥
 
-System Slave Adapter 的 `ssa_l1_*` 是统一的单项请求/响应接口，而第 10 节
-L1BUF Debug client 使用分开的读请求、读返回、写请求、写数据和写完成接口。
-两者之间必须放置 L1BUF 诊断桥，不能把字段直接相连。
+NPU AXI Slave Front End 的 `axi_l1_*` 是统一的单项请求/响应接口，而第 10 节
+L1BUF external client 使用分开的读请求、读返回、写请求、写数据和写完成接口。
+两者之间必须放置 L1BUF 外部访问桥，不能把字段直接相连。
 
-诊断桥同时最多保存一项上游请求。读操作顺序为：
+外部访问桥同时最多保存一项上游请求。读操作顺序为：
 
 ```text
 上游请求握手
-→ L1 Debug 读请求握手
-→ L1 Debug 读返回握手
+→ L1 external 读请求握手
+→ L1 external 读返回握手
 → 上游响应握手
 ```
 
@@ -956,68 +814,70 @@ L1BUF Debug client 使用分开的读请求、读返回、写请求、写数据�
 
 ```text
 上游请求握手
-→ L1 Debug 写请求握手
-→ L1 Debug 写数据握手
-→ L1 Debug 写完成握手
+→ L1 external 写请求握手
+→ L1 external 写数据握手
+→ L1 external 写完成握手
 → 上游响应握手
 ```
 
 写请求和写数据是两个独立 ready/valid 通道，任一通道暂停时，另一通道已经
-完成的握手不得重复。诊断桥给每项下游请求分配内部 tag，并检查读返回或写
+完成的握手不得重复。外部访问桥给每项下游请求分配内部 tag，并检查读返回或写
 完成的 tag、`last` 和 status。tag 不符、读返回缺少 `last`、保留 status
 或上游地址没有按 8B 对齐时，桥返回
 `PORT_PROTOCOL_ERROR`；地址非法的上游请求不进入 L1BUF Controller。
 
-上游响应暂停期间，`ssa_l1_rsp_valid_i` 对应的 data 和 status 必须保持
+上游响应暂停期间，`axi_l1_rsp_valid_i` 对应的 data 和 status 必须保持
 不变。桥完成上游响应握手后才允许接收下一项请求。该串行结构不限制
-System Slave Adapter 接收 AXI burst；Adapter 仍按上一小节规定把 burst
-逐项送入诊断桥。
+NPU AXI Slave Front End 接收 AXI burst；Front End 仍按上一小节规定把 burst
+逐项送入外部访问桥。
 
-诊断桥还保存复位或上次清除后的第一项失败。该记录不是单周期脉冲，其模块级信号如下：
+外部访问桥还保存复位或上次清除后的第一项失败。该记录不是单周期脉冲，其模块级信号如下：
 
 | 信号 | 方向 | 位宽 | 说明 |
 | --- | --- | ---: | --- |
-| `external_error_clear_i` | Input | 1 | 清除已经保存的诊断失败 |
-| `sys_l1_diag_error_valid_o` | Output | 1 | 已保存一项失败 |
-| `sys_l1_diag_error_status_o` | Output | 8 | 转换后的统一任务 status |
-| `sys_l1_diag_error_addr_o` | Output | 24 | 原始诊断请求的 LADDR |
-| `sys_l1_diag_error_detail_o` | Output | 3 | L1BUF 本地 status；桥自身发现的格式错误使用 `PORT_PROTOCOL_ERROR` |
-| `sys_l1_diag_error_write_o` | Output | 1 | `0` 为读，`1` 为写 |
+| `external_error_clear_i` | Input | 1 | 清除已经保存的窗口访问失败 |
+| `sys_l1_external_error_valid_o` | Output | 1 | 已保存一项失败 |
+| `sys_l1_external_error_status_o` | Output | 8 | 转换后的统一任务 status |
+| `sys_l1_external_error_addr_o` | Output | 24 | 原始窗口请求的 LADDR |
+| `sys_l1_external_error_detail_o` | Output | 3 | L1BUF 本地 status；桥自身发现的格式错误使用 `PORT_PROTOCOL_ERROR` |
+| `sys_l1_external_error_write_o` | Output | 1 | `0` 为读，`1` 为写 |
 
 地址未按 8B 对齐、地址高位非 0、读返回 tag/last/status 非法，以及 L1BUF 返回 `ECC_UNCORRECTABLE`、`PORT_PROTOCOL_ERROR` 或 `ADDR_FAULT`，都可产生该记录。`ECC_CORRECTED` 仍作为成功响应返回，不产生失败记录。本地 status 按第 15.2.3 节转换成 8-bit status。`valid=1` 后，status、地址、detail 和读写方向保持不变，直到采样到 `external_error_clear_i=1`。清除和新失败发生在同一拍时，新失败直接写入记录。
 
-### 5.4 Generic Core 自定义指令
+### 5.4 C 驱动函数与 AXI 控制窗口
 
-首版定义四条软件可见控制指令：
+应用调用 C 模型包提供的模型函数，模型函数再调用通用 C 驱动；外部 Generic Core 通过标准 AXI Master 读写第 5.3 节的 NPU AXI Slave。该调用方式不依赖 CPU ISA。
 
-| 指令 | `rs1` | `rs2` | `rd` | 作用 |
-| --- | --- | --- | --- | --- |
-| `NPU_SUBMIT` | CMD 低 64 bit | CMD 高 64 bit | 接收状态 | 提交一条 128-bit 异步任务 |
-| `NPU_WAIT` | 事件引用 | 超时周期数 | 事件终态 | 等待事件成功或失败 |
-| `NPU_QUERY` | `command_id` | 查询类型 | 当前任务状态 | 不暂停地查询任务 |
-| `NPU_FENCE` | 执行单元 mask | 最大等待周期 | 完成状态 | 等待较早提交的指定任务结束 |
+首版提供四类软件函数：
 
-`NPU_SUBMIT` 把 `rs1` 与 `rs2` 合成一个 128-bit CMD。`rs1` 是
-`CMD[63:0]`，`rs2` 是 `CMD[127:64]`。Issue Adapter 先发送 `rs1`，
-再发送 `rs2`。这两次传送共用同一组 64-bit CMD beat 接口。
+| C API | 主要参数 | 返回内容 | 作用 |
+| --- | --- | --- | --- |
+| `npu_submit_cmd()` | CMD 低、高 64 bit | 接收状态 | 提交一条 128-bit 异步任务 |
+| `npu_wait_event()` | 事件引用、超时周期数 | 事件终态 | 等待事件成功或失败 |
+| `npu_query_task()` | `command_id`、查询 selector | 当前任务信息 | 查询状态、错误或进度，并可执行 ACK |
+| `npu_fence()` | 执行单元 mask、最大等待周期 | 完成状态 | 等待较早提交的指定任务结束 |
 
-控制指令寄存器字段：
+这些名称是 C 函数，不占用 CPU 指令编码。函数通过以下 64-bit 寄存器完成访问；表中 offset 相对于 `0x020000`：
 
-| 指令 | 字段定义 |
-| --- | --- |
-| `NPU_WAIT` | `rs1[11:0]` 为事件引用，`rs2[31:0]` 为最大等待周期；`rd[7:0]` 返回事件状态，`rd[19:8]` 返回生产者 `command_id` |
-| `NPU_QUERY` | `rs1[11:0]` 为 `command_id`，`rs2[2:0]` 为查询 selector；`rd` 按 selector 返回 |
-| `NPU_FENCE` | `rs1[3:0]` 依次选择 DMA、ME、IVE、CME；`rs2[31:0]` 为最大等待周期；`rd[7:0]` 返回状态 |
+| Offset | 名称 | 属性 | 说明 |
+| ---: | --- | --- | --- |
+| `0x0000` | `CMD_LOW` | WO | 写 `CMD[63:0]`，保存为待提交 low word |
+| `0x0008` | `CMD_HIGH` | WO | 写 `CMD[127:64]`；与已保存 low word 组成 CMD128 并提交给 CFE |
+| `0x0010` | `SUBMIT_STATUS` | RO | `busy`、`accepted`、`status`、`command_id` 和 low-word pending 状态 |
+| `0x0020` | `CTL_ARG0` | RW | WAIT 的事件引用、QUERY 的 `command_id` 或 FENCE 的 Engine mask |
+| `0x0028` | `CTL_ARG1` | RW | 超时周期数或 QUERY selector |
+| `0x0030` | `CTL_START` | WO | `0=WAIT`、`1=QUERY`、`2=FENCE`；写入后向 TS 发控制请求 |
+| `0x0038` | `CTL_STATUS` | RO | `busy`、`done` 和 8-bit 完成 status |
+| `0x0040` | `CTL_RESULT` | RO | 控制请求的 64-bit 结果 |
+| `0x0048` | `CTL_CANCEL` | WO | bit 0 写 1 仅取消正在等待的 WAIT/FENCE，不取消 NPU 任务 |
 
-等待周期为 0 时表示只查询一次，不暂停 Generic Core。等待超过给定周期时，控制指令返回 `TIMEOUT`，但不会自动取消被等待的 NPU 任务。
+驱动必须先写 `CMD_LOW`，再写 `CMD_HIGH`。第二次写入完成时，NPU AXI Slave 产生带 `first/last` 的两个内部 64-bit beat；若 low word 尚未写入、上一条提交仍忙或 CFE 拒绝接收，则 AXI 写可正常结束，但 `SUBMIT_STATUS` 返回明确错误，不能把 high word 单独当作命令。
 
-`NPU_WAIT` 和 `NPU_FENCE` 在控制请求握手当周期先检查一次目标状态；尚未满足时，从握手后的下一周期开始增加等待计数。CPU 中断取消等待只结束这条 Generic Core 指令，不修改任务表、Event Table 或任何 NPU 任务。
+等待周期为 0 表示只查询一次。等待超过给定周期时，控制请求返回 `TIMEOUT`，但不会自动取消被等待的 NPU 任务。目标在最后一个允许周期进入终态时，目标结果优先于 `TIMEOUT`。
 
-若最大等待周期为 $L>0$，控制请求允许经历 $L$ 个完整等待周期；第 $L$ 个周期结束后目标仍未满足，下一次状态更新返回 `TIMEOUT`。目标在第 $L$ 个周期进入终态时，目标结果优先于 TIMEOUT。最大等待周期为 0 时只执行握手当周期的状态检查。
+QUERY selector 定义：
 
-`NPU_QUERY` selector 定义：
-
-| Selector | 名称 | `rd[63:0]` |
+| Selector | 名称 | `CTL_RESULT[63:0]` |
 | ---: | --- | --- |
 | 0 | `STATUS` | `[3:0]` 任务状态，`[11:4]` 完成 status，`[23:12]` `command_id`，其余位写 0 |
 | 1 | `TAG_EVENT` | `[31:0]` `user_tag`，`[43:32]` `signal_event`，其余位写 0 |
@@ -1030,137 +890,78 @@ System Slave Adapter 接收 AXI burst；Adapter 仍按上一小节规定把 burs
 
 Selector 0～3、5 和 6 是只读查询，不修改任务状态。Selector 4 只有在任务已经进入终态时才能成功；TS 在 ACK 响应完成握手后释放任务表项和 `command_id`。ACK 不自动重新启用或清除 Event Table 项。
 
-四条指令占用 RV64 `custom-0` 空间，`opcode[6:0]=0001011`，`funct7[31:25]=0000000`：
+#### 5.4.1 AXI 控制窗口到 CFE / TS 的内部接口
 
-| 指令 | `funct3[14:12]` | `rs1` | `rs2` | `rd` |
-| --- | ---: | --- | --- | --- |
-| `NPU_SUBMIT` | `000` | CMD 低 64 bit | CMD 高 64 bit | 接收状态 |
-| `NPU_WAIT` | `001` | 事件引用 | 最大等待周期 | 事件终态 |
-| `NPU_QUERY` | `010` | `command_id` | 查询类型 | 当前状态 |
-| `NPU_FENCE` | `011` | Engine mask | 最大等待周期 | 完成状态 |
-
-其他 `funct3` 值保留。用户态是否允许执行由 Generic Core 的 DSA 权限 CSR 决定；权限不足、DSA 功能关闭或保留编码非零时产生非法指令异常。
-
-#### 5.4.1 控制指令物理接口
-
-DSA Issue Adapter 在 Generic Core 一侧使用一组串行指令请求与响应接口。下表方向以 DSA Issue Adapter 为参照：
+CMD128 提交窗口到 CFE 的端口如下：
 
 | 信号 | 方向 | 位宽 | 说明 |
 | --- | --- | ---: | --- |
-| `reset_n` | Input | 1 | 低电平复位；名称中的 `_n` 表示低电平有效，信号名保持为 `reset_n` |
-| `issue_quiesce_i` | Input | 1 | 为 1 时不接收新的 Generic Core DSA 指令；已经完成握手的指令继续执行到响应或取消 |
-| `issue_valid_i` | Input | 1 | Generic Core 提供一条待执行的 DSA 指令 |
-| `issue_ready_o` | Output | 1 | Adapter 可以接收新指令；与 `issue_valid_i` 同为 1 时完成请求握手 |
-| `issue_opcode_i` | Input | 7 | RISC-V `opcode[6:0]` |
-| `issue_funct3_i` | Input | 3 | RISC-V `funct3[2:0]` |
-| `issue_funct7_i` | Input | 7 | RISC-V `funct7[6:0]`，本节四条指令要求其值为 0 |
-| `issue_rs1_i` | Input | 64 | `rs1` 寄存器当前值 |
-| `issue_rs2_i` | Input | 64 | `rs2` 寄存器当前值 |
-| `issue_rd_i` | Input | 5 | 目的寄存器编号 |
-| `dsa_permission_i` | Input | 1 | 当前特权级具有 DSA 指令执行权限 |
-| `dsa_enable_i` | Input | 1 | DSA 指令功能已经启用 |
-| `cpu_cancel_i` | Input | 1 | CPU 已接受会打断当前 `WAIT` 或 `FENCE` 的中断 |
-| `issue_rsp_valid_o` | Output | 1 | 指令结果或异常信息有效 |
-| `issue_rsp_ready_i` | Input | 1 | Generic Core 可以接收指令结果 |
-| `issue_rsp_rd_o` | Output | 5 | 与本次请求对应的目的寄存器编号；异常有效时不得执行寄存器写回 |
-| `issue_rsp_data_o` | Output | 64 | 无异常时写入 `rd` 的结果 |
-| `issue_rsp_exception_o` | Output | 1 | 本次指令产生同步异常 |
-| `issue_rsp_cause_o` | Output | 64 | 异常原因；非法指令为 RISC-V cause 2，其余位为 0 |
-| `issue_canceled_o` | Output | 1 | 当前同步等待已由 CPU 中断结束的单周期指示，不产生 `rd` 写回 |
-| `issue_busy_o` | Output | 1 | Adapter 内有尚未结束的指令 |
+| `axi_cmd_valid_o` | Output | 1 | 当前 CMD beat 有效 |
+| `axi_cmd_ready_i` | Input | 1 | CFE 可以接收当前 beat |
+| `axi_cmd_data_o` | Output | 64 | 当前 CMD beat；先输出 `CMD_LOW`，再输出 `CMD_HIGH` |
+| `axi_cmd_first_o` | Output | 1 | 低 64 bit为 1，高 64 bit为 0 |
+| `axi_cmd_last_o` | Output | 1 | 低 64 bit为 0，高 64 bit为 1 |
+| `axi_cmd_rsp_valid_i` | Input | 1 | CFE 接收状态有效 |
+| `axi_cmd_rsp_ready_o` | Output | 1 | AXI 控制窗口可以接收 CFE 状态 |
+| `axi_cmd_rsp_data_i` | Input | 64 | CFE 返回并保存到 `SUBMIT_STATUS` 的状态 |
 
-`issue_opcode_i`、`issue_funct3_i`、`issue_funct7_i`、`rs1`、`rs2`、目的寄存器编号、权限信号和使能信号都在指令请求握手时采样。握手后，输入端改变这些值不得影响正在执行的指令。`NPU_SUBMIT` 必须同时保存已经采样的 `rs1` 与 `rs2`；权限或使能状态在一条指令执行期间发生改变时，也不追溯取消已经接收的指令。
-
-`NPU_SUBMIT` 使用第 7.2 节的 CMD 接口。下表仍以 DSA Issue Adapter 为参照，因此信号方向与第 7.2 节从 CFE 观察到的方向相反：
+WAIT、QUERY 和 FENCE 通过 AXI 控制窗口到 TaskScheduler 的独立端口传输：
 
 | 信号 | 方向 | 位宽 | 说明 |
 | --- | --- | ---: | --- |
-| `gc_cmd_valid_o` | Output | 1 | 当前 CMD beat 有效 |
-| `gc_cmd_ready_i` | Input | 1 | CFE 可以接收当前 beat |
-| `gc_cmd_data_o` | Output | 64 | 当前 CMD beat；先输出 `rs1`，再输出 `rs2` |
-| `gc_cmd_first_o` | Output | 1 | 低 64 bit为 1，高 64 bit为 0 |
-| `gc_cmd_last_o` | Output | 1 | 低 64 bit为 0，高 64 bit为 1 |
-| `gc_rsp_valid_i` | Input | 1 | CFE 接收状态有效 |
-| `gc_rsp_ready_o` | Output | 1 | Adapter 可以接收 CFE 状态 |
-| `gc_rsp_data_i` | Input | 64 | CFE 返回并最终写入 `rd` 的状态 |
+| `axi_ctl_valid_o` | Output | 1 | 控制请求有效 |
+| `axi_ctl_ready_i` | Input | 1 | TaskScheduler 可接收 |
+| `axi_ctl_op_o` | Output | 2 | `0=WAIT`、`1=QUERY`、`2=FENCE`、`3` 保留 |
+| `axi_ctl_arg0_o` | Output | 64 | `CTL_ARG0` 的稳定副本 |
+| `axi_ctl_arg1_o` | Output | 64 | `CTL_ARG1` 的稳定副本 |
+| `axi_ctl_cancel_o` | Output | 1 | 写 `CTL_CANCEL.bit0=1` 时取消已提交的 WAIT 或 FENCE |
+| `axi_ctl_rsp_valid_i` | Input | 1 | 控制响应有效 |
+| `axi_ctl_rsp_ready_o` | Output | 1 | AXI 控制窗口可接收 |
+| `axi_ctl_rsp_data_i` | Input | 64 | 保存到 `CTL_RESULT` 的结果 |
 
-`NPU_WAIT`、`NPU_QUERY` 和 `NPU_FENCE` 通过 DSA Issue Adapter 到 TaskScheduler 的独立控制端口传输：
+控制请求完成握手后，窗口设置 `CTL_STATUS.busy=1`，直到 TS 返回响应。写 `CTL_CANCEL.bit0=1` 只取消当前同步等待，不修改任务表、Event Table、任务执行状态或任务数据。QUERY 不接受取消。FENCE 在请求握手时记录当前全局 `submit_seq`，只等待编号不大于该快照且被 Engine mask 选中的任务。
 
-| 信号 | 方向 | 位宽 | 说明 |
-| --- | --- | ---: | --- |
-| `gc_ctl_valid_o` | Output | 1 | 控制请求有效 |
-| `gc_ctl_ready_i` | Input | 1 | TaskScheduler 可接收 |
-| `gc_ctl_op_o` | Output | 2 | `0=WAIT`、`1=QUERY`、`2=FENCE`、`3` 保留 |
-| `gc_ctl_rs1_o` | Output | 64 | 指令 `rs1` 原值 |
-| `gc_ctl_rs2_o` | Output | 64 | 指令 `rs2` 原值 |
-| `gc_ctl_cancel_o` | Output | 1 | CPU 接受中断时取消已经完成请求握手的 `WAIT` 或 `FENCE` |
-| `gc_ctl_rsp_valid_i` | Input | 1 | 控制响应有效 |
-| `gc_ctl_rsp_ready_o` | Output | 1 | Issue Adapter 可接收 |
-| `gc_ctl_rsp_data_i` | Input | 64 | 写回 `rd` 的结果 |
+#### 5.4.2 AXI 提交与控制时序
 
-控制请求握手后，Issue Adapter 保持该 RISC-V 指令未完成，直到收到控制响应；`WAIT` 和 `FENCE` 还可以由 CPU 已接受的中断结束。CPU 中断打断已经送入 TaskScheduler 的等待时，将 `gc_ctl_cancel_o` 拉高一个周期。该信号只取消本次同步等待，不修改任务表、Event Table、任务执行状态或任务产生的数据。`QUERY` 不接受这一取消请求。
-
-`NPU_FENCE` 在控制请求握手时记录当前全局 `submit_seq`，只等待编号不大于该快照且被 Engine mask 选中的任务。握手之后提交的新任务不延长本次等待时间。
-
-#### 5.4.2 DSA Issue Adapter 功能时序
-
-Adapter 同时最多保存一条 Generic Core 指令。只要当前指令尚未结束，`issue_ready_o` 保持为 0；当前指令的结果完成握手后，最早在下一周期接收另一条指令。Adapter 处于空闲状态但 `issue_quiesce_i=1` 时，`issue_ready_o=0`。停止请求不得撤销已经完成指令请求握手的 `SUBMIT`、`QUERY` 或其他控制指令；这些指令必须正常取得响应，或按本节规定由 CPU 取消。
-
-复位处理如下：
-
-1. `reset_n=0` 时清除内部指令、源操作数、目的寄存器编号和全部输出 valid；
-2. 复位期间 `issue_ready_o=0`，因此不接收指令，也不产生新异常；
-3. 复位释放后，如果 `dsa_enable_i=0`，此后完成握手的 DSA 指令返回非法指令异常。
-
-指令请求完成握手后，Adapter 按以下顺序检查：
-
-1. `issue_opcode_i` 必须为 `7'b0001011`；
-2. `issue_funct7_i` 必须为 0；
-3. `issue_funct3_i` 必须为 0、1、2 或 3；
-4. `dsa_enable_i` 和 `dsa_permission_i` 必须都为 1。
-
-任一项不满足时，不向 CFE 或 TaskScheduler 发送请求。Adapter 将 `issue_rsp_exception_o` 置 1，并在 `issue_rsp_cause_o` 中返回 2。此时 `issue_rsp_rd_o` 仍给出原指令的 `rd` 编号，便于 Generic Core 对照流水记录，但 Generic Core 不得写目的寄存器。
-
-合法 `NPU_SUBMIT` 的时序为：
+CMD128 提交时序为：
 
 ```text
-指令请求握手
-→ 发送低 beat：data=rs1，first=1，last=0
-→ 发送高 beat：data=rs2，first=0，last=1
+CPU AXI 写 CMD_LOW
+→ NPU 保存 CMD[63:0]，SUBMIT_STATUS.low_pending=1
+→ CPU 执行设备写屏障
+→ CPU AXI 写 CMD_HIGH
+→ 发送低 beat：data=CMD_LOW，first=1，last=0
+→ 发送高 beat：data=CMD_HIGH，first=0，last=1
 → 等待 CFE 响应
-→ 返回 issue_rsp_data_o 与 issue_rsp_rd_o
+→ 更新 SUBMIT_STATUS，CPU 读取 accepted/status
 ```
 
-任一 CMD beat 出现 `valid=1` 且 `ready=0` 时，`gc_cmd_data_o`、
-`gc_cmd_first_o` 和 `gc_cmd_last_o` 必须保持不变。低 beat 完成握手后才能
-转入高 beat；高 beat 完成握手后才能拉高 `gc_rsp_ready_o`。CFE 响应完成
-握手后，Adapter 保存完整 64-bit 状态；即使 Generic Core 暂时不接收，
-`issue_rsp_data_o`、`issue_rsp_rd_o` 和异常字段也必须保持不变。
+任一 CMD beat 出现 `valid=1` 且 `ready=0` 时，`axi_cmd_data_o`、
+`axi_cmd_first_o` 和 `axi_cmd_last_o` 必须保持不变。低 beat 完成握手后才能
+转入高 beat；CFE 响应返回前不能覆盖保存的 low/high word。软复位或断电准备
+期间不接受新的 `CMD_LOW`；已接受 low word 但尚未接受 high word时，状态中
+保留 `low_pending=1`，直到软件补写 high word、显式取消或受控复位。
 
-合法控制指令的时序为：
+WAIT、QUERY 或 FENCE 的控制时序为：
 
 ```text
-指令请求握手
-→ 发送 gc_ctl_op_o、rs1、rs2
+CPU 写 CTL_ARG0 与 CTL_ARG1
+→ CPU 执行设备写屏障
+→ CPU 写 CTL_START
+→ 发送 axi_ctl_op_o、axi_ctl_arg0_o、axi_ctl_arg1_o
 → 等待 TaskScheduler 响应
-→ 返回 issue_rsp_data_o 与 issue_rsp_rd_o
+→ 更新 CTL_STATUS 与 CTL_RESULT
+→ CPU 轮询 CTL_STATUS 或等待 NPU 中断
 ```
 
-控制请求暂停时，`gc_ctl_op_o`、`gc_ctl_rs1_o` 和 `gc_ctl_rs2_o` 必须保持不变。操作编码为 `WAIT=0`、`QUERY=1`、`FENCE=2`。超时计数、事件状态检查和 FENCE 的 `submit_seq` 快照由 TaskScheduler 完成，Adapter 不重复这些状态。
+控制请求暂停时，`axi_ctl_op_o`、`axi_ctl_arg0_o` 和 `axi_ctl_arg1_o` 必须保持不变。操作编码为 `WAIT=0`、`QUERY=1`、`FENCE=2`。超时计数、事件状态检查和 FENCE 的 `submit_seq` 快照由 TaskScheduler 完成，AXI 控制窗口不重复这些状态。
 
 `WAIT` 或 `FENCE` 的取消分为两种情况：
 
-- 控制请求尚未完成握手：Adapter 在本地结束当前指令，产生一个周期的 `issue_canceled_o`，不发送控制请求，也不拉高 `gc_ctl_cancel_o`；
-- 控制请求已经完成握手：Adapter 将 `gc_ctl_cancel_o` 和 `issue_canceled_o` 各拉高一个周期，结束当前 Generic Core 指令，不等待 `rd` 结果。
+- 控制请求尚未完成内部握手：窗口清除待发请求并设置 `CTL_STATUS.done=1`、`status=ABORTED`；
+- 控制请求已经完成内部握手：窗口把 `axi_ctl_cancel_o` 拉高一个周期，并等待 TS 返回最终控制响应。
 
-上述两种情况都要求 Generic Core 指令已经完成
-`issue_valid_i && issue_ready_o` 握手。Adapter 处于 `IDLE` 且
-`issue_ready_o=0` 时，输入端尚未把指令交给 Adapter；此时即使
-`issue_valid_i` 与 `cpu_cancel_i` 同时为 1，也不得产生
-`issue_canceled_o` 或 `gc_ctl_cancel_o`。输入端应保持指令字段，直到请求
-真正握手或由 Generic Core 自行撤销。
-
-如果 `gc_ctl_rsp_valid_i` 与 `cpu_cancel_i` 在同一周期同时为 1，已经到达的控制响应优先：Adapter 接收响应，不拉高 `gc_ctl_cancel_o`，并按正常响应写回 `rd`。`NPU_SUBMIT` 和 `NPU_QUERY` 不受 `cpu_cancel_i` 影响。
+如果 `axi_ctl_rsp_valid_i` 与 `CTL_CANCEL` 写入在同一周期到达，已经返回的响应优先，窗口保存正常响应，不产生取消脉冲。SUBMIT 和 QUERY 不受 `CTL_CANCEL` 影响。
 
 ---
 
@@ -1181,8 +982,9 @@ Adapter 同时最多保存一条 Generic Core 指令。只要当前指令尚未�
 
 ### 6.2 128-bit CMD 格式
 
-CMD 由低、高两个 64-bit word 组成。软件把低 word 放入 `rs1`，把高 word
-放入 `rs2`。CFE 和 TS 使用 `first/last` 标记确认两个 beat 的位置。
+CMD 由低、高两个 64-bit word 组成。驱动先通过 AXI 写 `CMD_LOW`，再写
+`CMD_HIGH`。NPU AXI Slave Front End 向 CFE 发送带 `first/last` 标记的两个
+64-bit beat。
 
 #### 6.2.1 低 64 bit：地址、编号和执行单元
 
@@ -1337,7 +1139,7 @@ P0 同时要求 `desc_bytes` 与描述符类型严格对应：
 | Control | `0x02` | `EVENT_REARM` | P0 | 无 | 为事件启用新 generation |
 | Control | `0x03` | `EVENT_JOIN` | P0 | 无 | 合并两个事件状态 |
 | Control | `0x04` | `GLOBAL_FENCE` | P0 | 无 | 等待接收该 CMD 前已经提交的任务结束 |
-| Control | `0x05` | `RESERVED` | — | 无 | P0 不接受；停止提交使用 LSC stop 与 `NPU_FENCE` |
+| Control | `0x05` | `RESERVED` | — | 无 | P0 不接受；停止提交使用 LSC stop 与 `npu_fence()` |
 | DMA | `0x20` | `DMA_COPY_1D` | P0 | INT4/8/16/32 | 连续搬运 |
 | DMA | `0x21` | `DMA_COPY_ND` | P0 | INT4/8/16/32 | 1～5 维 strided copy |
 | DMA | `0x22` | `DMA_FILL` | P0 | INT4/8/16/32 | 填充常量 |
@@ -1418,13 +1220,13 @@ CRC 计算范围为此前全部描述符字节。每种描述符的 `reserved` �
 
 ### 7.1 功能
 
-Command Front End（CFE）位于 Generic Core 与 TaskScheduler 之间，执行以下动作：
+Command Front End（CFE）位于 NPU AXI Slave 的 CMD128 提交窗口与 TaskScheduler 之间，执行以下动作：
 
-1. 接收 `NPU_SUBMIT` 产生的低、高两个 64-bit CMD beat；
+1. 接收 AXI 提交窗口产生的低、高两个 64-bit CMD beat；
 2. 检查两个 beat 的 `first/last` 次序，并在第二拍迟迟未到时产生超时；
 3. 组合并解析 128-bit CMD，检查 `header_version`、`engine`、`opcode`、事件编码、保留位和重复 `command_id`；
 4. 把合法 CMD 的两个 word 写入命令 FIFO；
-5. 向 Generic Core 返回“已接收”或“拒绝”状态；
+5. 向 AXI 提交窗口返回“已接收”或“拒绝”状态；
 6. 从 FIFO 依次向 TaskScheduler 发送低、高两个 beat。
 
 “已接收”只表示 CMD 已进入 FIFO，不表示执行完成。
@@ -1435,14 +1237,14 @@ Command Front End（CFE）位于 Generic Core 与 TaskScheduler 之间，执行�
 
 | 信号 | 方向 | 位宽 | 说明 |
 | --- | --- | ---: | --- |
-| `gc_cmd_valid_i` | Input | 1 | 当前 64-bit CMD beat 有效 |
-| `gc_cmd_ready_o` | Output | 1 | CFE 可接收当前 beat |
-| `gc_cmd_data_i` | Input | 64 | 当前 CMD beat |
-| `gc_cmd_first_i` | Input | 1 | 当前 beat 是低 64 bit |
-| `gc_cmd_last_i` | Input | 1 | 当前 beat 是高 64 bit |
-| `gc_rsp_valid_o` | Output | 1 | 接收响应有效 |
-| `gc_rsp_ready_i` | Input | 1 | Generic Core 可接收响应 |
-| `gc_rsp_data_o` | Output | 64 | `command_id`、接收状态和 FIFO 剩余项数 |
+| `axi_cmd_valid_i` | Input | 1 | 当前 64-bit CMD beat 有效 |
+| `axi_cmd_ready_o` | Output | 1 | CFE 可接收当前 beat |
+| `axi_cmd_data_i` | Input | 64 | 当前 CMD beat |
+| `axi_cmd_first_i` | Input | 1 | 当前 beat 是低 64 bit |
+| `axi_cmd_last_i` | Input | 1 | 当前 beat 是高 64 bit |
+| `axi_cmd_rsp_valid_o` | Output | 1 | 接收响应有效 |
+| `axi_cmd_rsp_ready_i` | Input | 1 | AXI 提交窗口可接收响应 |
+| `axi_cmd_rsp_data_o` | Output | 64 | `command_id`、接收状态和 FIFO 剩余项数 |
 | `ts_cmd_valid_o` | Output | 1 | 送往 TaskScheduler 的当前 CMD beat 有效 |
 | `ts_cmd_ready_i` | Input | 1 | TaskScheduler 可接收 |
 | `ts_cmd_data_o` | Output | 64 | 当前 CMD beat |
@@ -1458,7 +1260,7 @@ Command Front End（CFE）位于 Generic Core 与 TaskScheduler 之间，执行�
 | `cmd_accepted_o` | Output | 1 | 合法 CMD 写入 CFE FIFO 后产生一个周期脉冲 |
 
 `IDLE` 状态只接受 `first=1,last=0` 的低 beat。低 beat 握手后，CFE 保存
-`gc_cmd_data_i` 并进入 `WAIT_HI`。`WAIT_HI` 只接受
+`axi_cmd_data_i` 并进入 `WAIT_HI`。`WAIT_HI` 只接受
 `first=0,last=1` 的高 beat；第二拍握手后才拥有完整 CMD。若收到错误标记，
 CFE 返回 `BAD_DESC` 且不写 FIFO。
 
@@ -1470,8 +1272,9 @@ CFE 在 `CHECK` 通过后拉高 `cmd_id_lookup_valid_o`，并保持 `cmd_id_look
 
 `cmd_accepted_o` 只在 `ENQUEUE` 成功写入 FIFO 后产生一次脉冲。TS 暂停读取
 FIFO 时不得重复产生该脉冲；格式错误、重复编号和 FIFO 已满均不产生该脉冲。
-`cmd_accepted` 性能计数器只根据这个脉冲增加。Generic Core 收到
-`gc_rsp_data_o[11:0]` 为 `command_id`，`[19:12]` 为接收状态，`[27:20]` 为 CFE FIFO 剩余项数，`[63:28]` 写 0。
+`cmd_accepted` 性能计数器只根据这个脉冲增加。AXI 提交窗口把
+`axi_cmd_rsp_data_o[11:0]` 的 `command_id`、`[19:12]` 的接收状态和
+`[27:20]` 的 CFE FIFO 剩余项数保存到 `SUBMIT_STATUS`，`[63:28]` 写 0。
 
 ### 7.3 状态机
 
@@ -1490,19 +1293,19 @@ FIFO 时不得重复产生该脉冲；格式错误、重复编号和 FIFO 已满
 ```mermaid
 %%{init: {"sequence": {"useMaxWidth": true, "actorMargin": 14, "width": 82, "messageMargin": 10, "noteMargin": 6}, "themeVariables": {"fontSize": "11px"}}}%%
 sequenceDiagram
-    participant GC as Generic Core
+    participant AXIS as NPU AXI Slave CMD Window
     participant CFE
     participant TS as TaskScheduler
 
-    GC->>CFE: low64, first=1, last=0
-    CFE-->>GC: ready=1
-    GC->>CFE: high64, first=0, last=1
-    CFE-->>GC: ready=1
+    AXIS->>CFE: low64, first=1, last=0
+    CFE-->>AXIS: ready=1
+    AXIS->>CFE: high64, first=0, last=1
+    CFE-->>AXIS: ready=1
     CFE->>CFE: 组合 CMD 并检查固定字段
     CFE->>TS: 查询 command_id
     TS-->>CFE: busy / free
     CFE->>CFE: 写入 low64 + high64 FIFO
-    CFE-->>GC: ACCEPTED + command_id
+    CFE-->>AXIS: ACCEPTED + command_id
     CFE->>TS: low64, first=1, last=0
     TS-->>CFE: ready=1
     CFE->>TS: high64, first=0, last=1
@@ -1515,19 +1318,19 @@ TaskScheduler 暂停接收，当前输出 beat 保留在 CFE FIFO 读出端；
 `ts_cmd_first_o` 和 `ts_cmd_last_o` 必须保持不变。低 beat 未完成握手前不得
 输出高 beat；高 beat 完成握手后才能删除该 FIFO 项。
 
-### 7.5 Generic Core 集成要求
+### 7.5 外部 Generic Core 与驱动集成要求
 
-Generic Core 为 RV64 处理器。自定义指令适配器必须：
+Generic Core 可以是 RV64、Arm64 或其他具有 64-bit AXI Master 访问能力的主控 CPU，NPU 不依赖 CPU ISA。C 驱动必须：
 
-1. 在 `NPU_SUBMIT` 发射时同时读取 `rs1` 和 `rs2`，分别保存 CMD 的低、高 64 bit；
-2. 在 CFE 返回接收状态前保持该指令未完成；
-3. 把 CFE 响应写入 `rd`；
-4. 复位期间不接收指令；复位释放后，权限不足或 DSA 功能关闭时产生非法指令异常；
-5. 为 `NPU_WAIT` 和 `NPU_FENCE` 提供可被中断打断的等待状态。
+1. 先写 `CMD_LOW`，执行设备写屏障，再写 `CMD_HIGH`；
+2. 在提交下一条命令前读取或确认 `SUBMIT_STATUS`；
+3. 通过 `CTL_ARG0/1`、`CTL_START`、`CTL_STATUS` 和 `CTL_RESULT` 完成等待、查询、FENCE 和 ACK；
+4. 复位期间不访问命令窗口；NPU 返回不支持或设备停止状态时，把错误传给模型调用函数；
+5. 使用中断或轮询等待完成，并允许软件超时后写 `CTL_CANCEL` 结束同步等待。
 
-描述符位于可缓存内存时，软件在 `NPU_SUBMIT` 前必须执行 Store Release，并按 SoC 一致性规则把描述符和输入数据写到 NPU 可见的存储层级。NPU 写完输出后，软件在读取输出前执行 Load Acquire，并在非一致缓存系统中使对应 CPU cache line 失效。
+Descriptor 位于可缓存内存时，软件在提交前必须执行 Store Release，并按 SoC 一致性规则把 Descriptor 和输入数据写到 NPU 可见的存储层级。NPU 写完输出后，软件在读取输出前执行 Load Acquire，并在非一致缓存系统中使对应 CPU Cache 数据失效。
 
-`NPU_FENCE` 只保证 NPU 任务和 NPU 内存写入的先后次序，不自动执行 CPU cache clean 或 invalidate。
+`npu_fence()` 只保证 NPU 任务和 NPU 内存写入的先后次序，不自动执行 CPU Cache clean 或 invalidate。
 
 ---
 
@@ -1558,7 +1361,7 @@ P0 只定义一个全局提交序列，不定义多个软件 Queue。TS 在一�
 - `ORDERED=1` 的任务结束前，较大 `submit_seq` 的任务不得发射；
 - 等待关系使用 `submit_seq`，不能使用可能被软件复用的 `command_id` 比较先后。
 
-停止接收新 CMD 使用 LSC `CORE_CONTROL.stop`；软件随后执行 `NPU_FENCE` 等待已提交任务。P0 不提供异步 HALT opcode。
+停止接收新 CMD 使用 LSC `CORE_CONTROL.stop`；软件随后调用 `npu_fence()` 等待已提交任务。P0 不提供异步 HALT opcode。
 
 任务状态按下列次序变化：
 
@@ -1577,7 +1380,7 @@ FREE
 
 状态只能向右变化。进入终态后，该任务不得再次发射。
 
-终态任务表项继续保存 `status`、`user_tag`、`signal_event`、第一个错误地址、`progress`、`error_info` 和 `done_flags`，直到软件执行 `NPU_QUERY(selector=ACK)`。ACK 响应完成 `gc_ctl_rsp_valid_o && gc_ctl_rsp_ready_i` 握手后，TS 才释放任务表项和 `command_id`；此前 CFE 编号查询必须返回 busy。STATUS、TAG_EVENT、FAULT_ADDR、PROGRESS、ERROR_INFO、DONE_FLAGS、`NPU_WAIT` 和中断清除都不释放终态记录。描述符槽可在终态信息完整复制到任务表后提前释放。
+终态任务表项继续保存 `status`、`user_tag`、`signal_event`、第一个错误地址、`progress`、`error_info` 和 `done_flags`，直到软件调用 `npu_query_task(..., ACK)`。ACK 响应完成 `axi_ctl_rsp_valid_o && axi_ctl_rsp_ready_i` 握手后，TS 才释放任务表项和 `command_id`；此前 CFE 编号查询必须返回 busy。STATUS、TAG_EVENT、FAULT_ADDR、PROGRESS、ERROR_INFO、DONE_FLAGS、`npu_wait_event()` 和中断清除都不释放终态记录。描述符槽可在终态信息完整复制到任务表后提前释放。
 
 软件必须及时 ACK 已处理的终态记录；终态记录占满任务表时，TS 暂停接受新 CMD。受控软复位和外部 Core 复位会清除全部任务表项，无需逐项 ACK。
 
@@ -1611,25 +1414,25 @@ last 必须保持不变。CFE 已负责低、高两拍之间的超时；TS 仍�
 TS 产生一个周期的响应脉冲，CFE 必须无条件接收
 `cmd_id_busy_o`，不能对该响应施加暂停。
 
-#### 8.2.1 Generic Core 控制请求接口
+#### 8.2.1 AXI 控制窗口请求接口
 
-`NPU_WAIT`、`NPU_QUERY` 和 `NPU_FENCE` 使用下列 TS 端口：
+WAIT、QUERY 和 FENCE 使用下列 TS 端口：
 
 | 信号 | TS 方向 | 位宽 | 说明 |
 | --- | --- | ---: | --- |
-| `gc_ctl_valid_i` | Input | 1 | 控制请求有效 |
-| `gc_ctl_ready_o` | Output | 1 | TS 可接收 |
-| `gc_ctl_op_i` | Input | 2 | WAIT、QUERY 或 FENCE |
-| `gc_ctl_rs1_i` | Input | 64 | 自定义指令 `rs1` |
-| `gc_ctl_rs2_i` | Input | 64 | 自定义指令 `rs2` |
-| `gc_ctl_cancel_i` | Input | 1 | 取消当前控制等待 |
-| `gc_ctl_rsp_valid_o` | Output | 1 | 控制响应有效 |
-| `gc_ctl_rsp_ready_i` | Input | 1 | Generic Core 可接收 |
-| `gc_ctl_rsp_data_o` | Output | 64 | 自定义指令 `rd` 返回值 |
+| `axi_ctl_valid_i` | Input | 1 | 控制请求有效 |
+| `axi_ctl_ready_o` | Output | 1 | TS 可接收 |
+| `axi_ctl_op_i` | Input | 2 | WAIT、QUERY 或 FENCE |
+| `axi_ctl_arg0_i` | Input | 64 | `CTL_ARG0` 的稳定副本 |
+| `axi_ctl_arg1_i` | Input | 64 | `CTL_ARG1` 的稳定副本 |
+| `axi_ctl_cancel_i` | Input | 1 | 取消当前控制等待 |
+| `axi_ctl_rsp_valid_o` | Output | 1 | 控制响应有效 |
+| `axi_ctl_rsp_ready_i` | Input | 1 | AXI 控制窗口可接收 |
+| `axi_ctl_rsp_data_o` | Output | 64 | 写入 `CTL_RESULT` 的结果 |
 
-P0 同时最多保留一条未完成控制请求。`gc_ctl_valid_i=1` 且 `gc_ctl_ready_o=0` 时，请求字段必须保持不变；响应暂停时，`gc_ctl_rsp_data_o` 必须保持不变。
+P0 同时最多保留一条未完成控制请求。`axi_ctl_valid_i=1` 且 `axi_ctl_ready_o=0` 时，请求字段必须保持不变；响应暂停时，`axi_ctl_rsp_data_o` 必须保持不变。
 
-`gc_ctl_cancel_i` 只作用于已经握手但尚未响应的 WAIT 或 FENCE。TS 收到取消后释放控制请求状态，不修改任务表、Event Table 或全局提交序列；QUERY 在固定短延迟内返回，不接受取消。
+`axi_ctl_cancel_i` 只作用于已经握手但尚未响应的 WAIT 或 FENCE。TS 收到取消后释放控制请求状态，不修改任务表、Event Table 或全局提交序列；QUERY 在固定短延迟内返回，不接受取消。
 
 #### 8.2.2 公共 `op_flags` 位定义
 
@@ -4319,7 +4122,7 @@ LSC 保存：
 - 命令、任务和执行单元状态；
 - 中断状态、mask 和清除位；
 - 第一个错误命令、地址和错误码；
-- System Slave、L1BUF、MIF 和 Generic Core AXI Adapter 的非任务错误；
+- NPU AXI Slave、L1BUF 和 MIF 的非任务错误；
 - L1BUF 只读参数区的起点、末地址和锁定状态；
 - 性能计数器；
 - 时钟门控与断电准备状态。
@@ -4348,8 +4151,8 @@ LSC 最多保存一个未完成寄存器请求。T0 周期 `reg_req_valid_i && r
 
 | 信号 | 方向 | 位宽 | 说明 |
 | --- | --- | ---: | --- |
-| `issue_idle_i` | Input | 1 | DSA Issue Adapter 没有已经接收但尚未结束的指令 |
-| `cfe_quiesce_o` | Output | 1 | Issue Adapter 空闲后，停止 CFE 接收新的 128-bit CMD |
+| `cmd_window_idle_i` | Input | 1 | AXI CMD128 提交窗口没有待发 beat 或待返回提交状态 |
+| `cfe_quiesce_o` | Output | 1 | CMD128 提交窗口空闲后，停止 CFE 接收新的 CMD |
 | `cfe_idle_i` | Input | 1 | 当前命令寄存器和 FIFO 均为空 |
 | `ts_quiesce_o` | Output | 1 | TS 不再发射新任务 |
 | `ts_idle_i` | Input | 1 | 任务表、Control Queue 和待发队列均为空 |
@@ -4359,43 +4162,41 @@ LSC 最多保存一个未完成寄存器请求。T0 周期 `reg_req_valid_i && r
 | `l1_idle_i` | Input | 1 | L1BUF Controller 请求队列和写响应队列为空 |
 | `l1_write_idle_i` | Input | 1 | L1BUF 不存在待处理写请求；设置参数锁和内部复位时使用 |
 | `mif_idle_i` | Input | 1 | DSA MIF、TBU 和两侧异步 FIFO 均无未完成请求 |
-| `gc_axi_idle_i` | Input | 1 | Generic Core 独立 AXI Master 无未完成请求 |
-| `core_wfi_i` | Input | 1 | Generic Core 处于等待中断状态 |
+| `s_axi_idle_i` | Input | 1 | NPU AXI Slave 没有未完成读写事务或控制响应 |
 | `soft_reset_req_i` | Input | 1 | 外部受控软复位请求 |
 | `internal_soft_reset_done_i` | Input | 1 | 计算域内部复位和 NoC 域 MIF/TBU 复位均已完成 |
 | `soft_reset_done_o` | Output | 1 | 排空和内部复位完成；保持到请求撤销 |
 | `power_down_req_i` | Input | 1 | PMU 请求进入断电准备 |
 | `power_down_ack_o` | Output | 1 | 断电条件满足；保持到请求撤销 |
-| `stop_fetch_o` | Output | 1 | 停止 Generic Core 取指 |
+| `accept_new_cmd_o` | Output | 1 | 允许 AXI CMD128 提交窗口接收新命令 |
 | `single_step_pulse_o` | Output | 1 | 软件写 `SINGLE_STEP=1` 后产生一个周期脉冲 |
 | `internal_soft_reset_pulse_o` | Output | 1 | 排空完成后产生一个周期的内部同步复位脉冲 |
 | `core_idle_o` | Output | 1 | 下式给出的顶层空闲状态 |
 | `param_l1_base_o` | Output | 24 | 参数区起始 LADDR |
 | `param_l1_limit_o` | Output | 24 | 参数区末地址，不包含该地址 |
 | `param_lock_o` | Output | 1 | 参数区写保护已经启用 |
-| `l1_diag_enable_o` | Output | 1 | 送往 System Slave Adapter 的 L1BUF 诊断授权 |
+| `l1_external_enable_o` | Output | 1 | 送往 NPU AXI Slave Front End 的 L1BUF 外部窗口使能 |
 | `debug_frozen_o` | Output | 1 | 性能计数器冻结状态 |
 
 顶层空闲信号必须按下式产生：
 
 ```text
 core_idle_o =
-    issue_idle_i
+    cmd_window_idle_i
   & cfe_idle_i
   & ts_idle_i
   & (&eng_quiescent_i)
   & l1_idle_i
   & mif_idle_i
-  & gc_axi_idle_i;
+  & s_axi_idle_i;
 ```
 
 任何模块仍保持请求 `valid=1`、返回 FIFO 非空、内部流水有效或 outstanding 表项有效时，对应 idle/quiescent 信号不得置 1。
 
-LSC 收到 stop、软复位或断电准备请求后，先使 Issue Adapter 不再接收新指令。
-如果 Adapter 已经接收一条指令，则 `cfe_quiesce_o` 暂不置 1，使该指令能够把
-CMD 的低、高两个 beat 或控制请求送完并取得响应。`issue_idle_i=1` 后，
-`cfe_quiesce_o` 才能置 1。这样不会在 `SUBMIT_CMD`、`CONTROL_REQUEST`
-或 `CORE_RESPONSE` 状态中遗留一条无法结束的指令。
+LSC 收到 stop、软复位或断电准备请求后，先令 `accept_new_cmd_o=0`，使 AXI
+CMD128 提交窗口不再接收新命令。已经完成 AXI 写握手的 low/high word继续送往
+CFE 并取得提交状态。`cmd_window_idle_i=1` 后，`cfe_quiesce_o` 才能置 1，
+避免遗留半条 CMD 或无法返回的提交状态。
 
 ### 15.2.2 任务终态、中断与配置输出接口
 
@@ -4423,7 +4224,7 @@ TaskScheduler 只有在完整终态记录、Event Table 和性能统计都更新
 
 | 信号组 | 位宽 | 使用模块 |
 | --- | ---: | --- |
-| `pc_base_o`、`input_base_o`、`weight_base_o`、`work_base_o`、`output_base_o`、`kv_base_o` | 各 64 | Generic Core、描述符处理和地址生成单元 |
+| `input_base_o`、`weight_base_o`、`work_base_o`、`output_base_o`、`kv_base_o` | 各 64 | 描述符处理和地址生成单元 |
 | `ddr_local_base_o`、`ddr_local_limit_o` | 各 64 | MIF 物理出口选择 |
 | `tbu_stream_id_o`、`tbu_substream_id_o` | 各 16 | TBU 请求属性 |
 | `timeout_cycles_o[15:0]` | `16×32` | TaskScheduler 超时计数器 |
@@ -4432,16 +4233,14 @@ TaskScheduler 只有在完整终态记录、Event Table 和性能统计都更新
 
 ### 15.2.3 非任务错误输入与清除接口
 
-LSC 还接收六组格式一致的非任务错误记录。每组记录由 `valid`、`status`、`addr`、`detail`、`aux` 和可选的任务身份字段组成。组名前缀如下：
+LSC 还接收四组格式一致的非任务错误记录。每组记录由 `valid`、`status`、`addr`、`detail`、`aux` 和可选的任务身份字段组成。组名前缀如下：
 
 | 组名前缀 | 产生模块 | 记录内容 |
 | --- | --- | --- |
-| `sys_l1_diag_error` | System Slave Adapter / L1 Diagnostic Bridge | L1 诊断读写失败；`addr` 保存 LADDR，`detail` 保存 L1 端口 status，`aux.bit0` 保存读写方向 |
+| `sys_l1_external_error` | NPU AXI Slave Front End / L1 External Bridge | L1BUF 外部窗口读写失败；`addr` 保存 LADDR，`detail` 保存 L1 端口 status，`aux.bit0` 保存读写方向 |
 | `l1_ecc_error` | L1BUF Controller | 不可修正 ECC；`addr` 保存 LADDR，`detail` 保存客户端端口编号，`aux.bit0` 保存读写方向，`aux[7:1]` 保存 SRAM bank 编号 |
 | `mif_first_error` | MIF | MIF 保存的第一个非成功事务；`addr` 保存第一个虚拟地址，`detail` 保存 owner，`aux` 保存 AXI response |
 | `mif_protocol_error` | MIF | TBU、tag、写数据或 AXI 返回次序错误；地址按第 14.4 节保存；`detail` 保存协议错误子码，`aux` 保存 owner |
-| `gc_axi_first_error` | Generic Core AXI Adapter | I-cache 或 D-cache 的第一个非成功事务；`addr` 保存请求起始物理地址，`detail` 保存 client，`aux` 保存 AXI response |
-| `gc_axi_protocol_error` | Generic Core AXI Adapter | AXI ID、RLAST、WLAST、tag 或 response 编码错误；地址按第 5.2.1 节保存，只有未知 RID/BID 可写 0；`detail` 保存协议错误子码，`aux` 保存 client |
 
 每组的模块级信号如下，`prefix` 替换为上表中的组名前缀：
 
@@ -4456,15 +4255,15 @@ LSC 还接收六组格式一致的非任务错误记录。每组记录由 `valid
 | `prefix_command_id_i` | Input | 12 | `has_task_identity=1` 时保存真实任务编号 |
 | `prefix_engine_i` | Input | 4 | 能够确定时保存 CMD engine 的零扩展值，否则写 0 |
 | `prefix_opcode_i` | Input | 8 | 能够确定时保存任务内部 opcode，否则写 0 |
-| `external_error_clear_o` | Output | 1 | 软件写 `FAULT_CLEAR.bit0=1` 后产生一个周期脉冲，同时送往六组错误记录的保存模块 |
+| `external_error_clear_o` | Output | 1 | 软件写 `FAULT_CLEAR.bit0=1` 后产生一个周期脉冲，同时送往四组错误记录的保存模块 |
 
-`prefix_valid_i=1` 时，产生模块必须保持其余字段不变，直到采样到 `external_error_clear_o=1`。System Slave 的单次失败脉冲、L1BUF 的 ECC 脉冲必须先进入各自的首错保存寄存器，再送入 LSC。MIF 和 Generic Core AXI Adapter 已有的 first/protocol 状态也按相同规则保持。清除与新错误同时发生时采用置位优先：产生模块清除旧记录，但必须保留同周期的新记录。
+`prefix_valid_i=1` 时，产生模块必须保持其余字段不变，直到采样到 `external_error_clear_o=1`。NPU AXI Slave 的单次失败脉冲、L1BUF 的 ECC 脉冲必须先进入各自的首错保存寄存器，再送入 LSC。MIF 已有的 first/protocol 状态也按相同规则保持。清除与新错误同时发生时采用置位优先：产生模块清除旧记录，但必须保留同周期的新记录。
 
-能够确定任务编号的错误必须设置 `has_task_identity=1`，不能因为错误早于 TS 终态通知而丢失真实 `command_id`。MIF `first_error_task_id` 必须送入 `mif_first_error_command_id_i`，并设置 `mif_first_error_has_task_identity_i=1`。DMA 请求可同时给出 `engine=DMA`；DFU 或共享端口若不能仅根据错误记录确定 engine/opcode，对未知字段写 0。由执行单元端口产生的 L1BUF ECC 记录应携带该端口当前任务的身份。System Slave 诊断和 Generic Core I-cache/D-cache 请求不属于 DSA 任务，`has_task_identity` 固定为 0。
+能够确定任务编号的错误必须设置 `has_task_identity=1`，不能因为错误早于 TS 终态通知而丢失真实 `command_id`。MIF `first_error_task_id` 必须送入 `mif_first_error_command_id_i`，并设置 `mif_first_error_has_task_identity_i=1`。DMA 请求可同时给出 `engine=DMA`；DFU 或共享端口若不能仅根据错误记录确定 engine/opcode，对未知字段写 0。由执行单元端口产生的 L1BUF ECC 记录应携带该端口当前任务的身份。NPU AXI Slave 的外部窗口请求不属于 DSA 任务，`has_task_identity` 固定为 0。
 
 `prefix_status_i` 只接受 `0x01～0x0D`。收到 `SUCCESS`、`0x0E～0xFF` 或其他未定义值时，LSC 把 `FAULT_INFO.status` 安全改为 `BAD_DESC`，原始 8-bit 值仍保存在 `FAULT_DETAIL.error_info[7:0]`，便于定位接口问题。
 
-L1BUF 的 3-bit 本地 status 在进入 LSC 前必须转换成第 4.3 节的 8-bit status：`ECC_UNCORRECTABLE` 转成 `L1_ECC_UNCORRECTABLE`，`PORT_PROTOCOL_ERROR` 转成 `BAD_DESC`，`ADDR_FAULT` 保持为 `ADDR_FAULT`。MIF 和 Generic Core AXI 的协议错误使用 `BAD_DESC`。AXI `DECERR` 与 `SLVERR` 分别使用 `BUS_DECERR` 与 `BUS_SLVERR`。
+L1BUF 的 3-bit 本地 status 在进入 LSC 前必须转换成第 4.3 节的 8-bit status：`ECC_UNCORRECTABLE` 转成 `L1_ECC_UNCORRECTABLE`，`PORT_PROTOCOL_ERROR` 转成 `BAD_DESC`，`ADDR_FAULT` 保持为 `ADDR_FAULT`。MIF 与 NPU AXI Slave 的协议错误使用 `BAD_DESC`。AXI `DECERR` 与 `SLVERR` 分别使用 `BUS_DECERR` 与 `BUS_SLVERR`。
 
 LSC 只保存第一条错误。不同来源在同一个周期首次有效时，选择次序固定为：
 
@@ -4472,10 +4271,8 @@ LSC 只保存第一条错误。不同来源在同一个周期首次有效时，�
 2. `l1_ecc_error`；
 3. `mif_first_error`；
 4. `mif_protocol_error`；
-5. `gc_axi_first_error`；
-6. `gc_axi_protocol_error`；
-7. `sys_l1_diag_error`；
-8. WDT timeout。
+5. `sys_l1_external_error`；
+6. WDT timeout。
 
 任务终态为 `SUCCESS` 时不占用首错寄存器，后续来源继续参加当周期选择。任一
 非任务错误都会设置 `IRQ_STATUS.ERROR`，不受任务 CMD 中
@@ -4486,7 +4283,7 @@ LSC 只保存第一条错误。不同来源在同一个周期首次有效时，�
 | Bit | 字段 | 说明 |
 | ---: | --- | --- |
 | 31:28 | `stage` | 固定为 7，表示 LSC 外部模块错误 |
-| 27:24 | `source` | `1=SYS_L1_DIAG`、`2=L1_ECC`、`3=MIF_FIRST`、`4=MIF_PROTOCOL`、`5=GC_AXI_FIRST`、`6=GC_AXI_PROTOCOL`、`7=WDT` |
+| 27:24 | `source` | `1=SYS_L1_EXTERNAL`、`2=L1_ECC`、`3=MIF_FIRST`、`4=MIF_PROTOCOL`、`5=WDT` |
 | 23:16 | `detail` | 来源细节，定义见本节第一张表 |
 | 15:8 | `aux` | 来源辅助信息，定义见本节第一张表 |
 | 7:0 | `raw_status` | 输入的原始 status；WDT 固定为 `TIMEOUT` |
@@ -4506,7 +4303,7 @@ LSC 只保存第一条错误。不同来源在同一个周期首次有效时，�
 | `0x0030` | `CME_CONFIG` | RO | FP32 lane 数、函数和 `approx_mode` |
 | `0x0040` | `CORE_CONTROL` | RW | start、stop、soft reset、single step |
 | `0x0048` | `CORE_STATUS` | RO | idle、busy、wfi、error、power ready |
-| `0x0050` | `PC_BASE` | RW idle-only | Generic Core 程序起点 |
+| `0x0050` | `RESERVED` | — | 外部 Generic Core 的程序起点不属于 NPU 配置 |
 | `0x0058` | `INPUT_BASE` | RW idle-only | 输入区基地址 |
 | `0x0060` | `WEIGHT_BASE` | RW idle-only | 权重区基地址 |
 | `0x0068` | `WORK_BASE` | RW idle-only | 中间数据区基地址 |
@@ -4525,7 +4322,7 @@ LSC 只保存第一条错误。不同来源在同一个周期首次有效时，�
 | `0x00D8` | `PARAM_L1_LIMIT` | RW idle-only | L1BUF 参数区末地址，8B 对齐且不包含该地址 |
 | `0x00E0` | `PARAM_LOCK` | RW1S | bit 0 写 1 后锁定参数区，复位清 0 |
 | `0x00E8` | `RESET_REASON` | RO | 外部、软件或 WDT 复位原因 |
-| `0x00F0` | `L1_DIAG_CONTROL` | RW idle-only | bit 0 控制 L1BUF 诊断授权 |
+| `0x00F0` | `L1_EXTERNAL_CONTROL` | RW | bit 0 控制 L1BUF 外部访问窗口总使能 |
 | `0x00F8` | `FAULT_DETAIL` | RO | 第一个错误的 `error_info` 和 `done_flags` |
 | `0x0100+8*i` | `PERF_COUNTER[i]` | RO/W1C | `i=0～15`，64-bit 性能计数器 |
 | `0x0180` | `PERF_CONTROL` | RW | freeze 和 clear |
@@ -4632,7 +4429,7 @@ LSC 只保存第一条错误。不同来源在同一个周期首次有效时，�
 | ---: | --- | --- |
 | 0 | `IDLE` | `core_idle_o=1` |
 | 1 | `BUSY` | `core_idle_o=0` |
-| 2 | `WFI` | `core_wfi_i=1` |
+| 2 | `CMD_READY` | `accept_new_cmd_o=1` |
 | 3 | `ERROR` | `FAULT_*` 中存在有效记录 |
 | 4 | `POWER_READY` | core idle 且 stop=1 |
 | 5 | `SOFT_RESET_BUSY` | 受控软复位处于排空或完成保持阶段 |
@@ -4673,7 +4470,7 @@ LSC 只保存第一条错误。不同来源在同一个周期首次有效时，�
 
 `RESET_REASON` 为粘滞状态：bit 0 为外部复位，bit 1 为受控软复位，bit 2 为 WDT；一次受控软复位只增加 bit 1，不清除较早原因。外部复位后该寄存器为 `0x1`。
 
-`L1_DIAG_CONTROL.bit0=ENABLE`。该位只能在 core idle 时修改，复位和受控软复位均清 0。bit 63:1 必须写 0。
+`L1_EXTERNAL_CONTROL.bit0=ENABLE`。复位和受控软复位均清 0。清 0 只阻止接受新的外部窗口请求，已经握手的 AXI 请求仍必须返回最终响应。bit 63:1 必须写 0。
 
 `PERF_COUNTER[i]` 的顺序与第 19.6 节表格一致，`i=0` 对应 `core_active_cycles`，`i=15` 对应 `ecc_corrected_count`。写 1 清除对应 bit，写 0 保持；一次 64-bit 读返回完整计数值。`PERF_CONTROL.bit0=FREEZE`，写 1 停止计数、写 0 恢复；bit 1 为 `CLEAR` 脉冲，写 1 清除全部 16 个计数器，读回为 0。
 
@@ -4683,7 +4480,7 @@ LSC 只保存第一条错误。不同来源在同一个周期首次有效时，�
 全部提交字段都位于 128-bit CMD 中。按本节通用规则，保留地址读取为 0，
 写入返回 OKAY 且不改变状态。
 
-`PC_BASE`、`INPUT_BASE`、`WEIGHT_BASE`、`WORK_BASE`、`OUTPUT_BASE` 和 `KV_BASE` 使用低 48 bit，bit 63:48 必须为 0，并要求 8B 对齐。`TBU_STREAM_ID[15:0]` 保存 stream ID，`[31:16]` 保存 substream ID，bit 63:32 必须为 0。
+`INPUT_BASE`、`WEIGHT_BASE`、`WORK_BASE`、`OUTPUT_BASE` 和 `KV_BASE` 使用低 48 bit，bit 63:48 必须为 0，并要求 8B 对齐。`TBU_STREAM_ID[15:0]` 保存 stream ID，`[31:16]` 保存 substream ID，bit 63:32 必须为 0。
 
 `DDR_LOCAL_BASE` 与 `DDR_LOCAL_LIMIT` 使用低 40 bit并要求 8B 对齐。MIF 把 limit 解释为最后一个允许的 64-bit beat 起始地址：
 
@@ -4746,7 +4543,7 @@ DMA、ME、IVE、CME 与 L1BUF Controller。四个执行单元在发出任何源
 5. 更新性能计数器和第一个错误记录；
 6. 最后设置 `IRQ_STATUS`。
 
-Event Table 的 SUCCESS 或 ERROR 不得早于终态记录完成。这样 `NPU_WAIT` 观察到事件终态后，紧接着执行 `NPU_QUERY` 时一定能读到对应 `user_tag`、错误地址和 `progress`。
+Event Table 的 SUCCESS 或 ERROR 不得早于终态记录完成。这样 `npu_wait_event()` 观察到事件终态后，紧接着调用 `npu_query_task()` 时一定能读到对应 `user_tag`、错误地址和 `progress`。
 
 随后 LSC 根据 `IRQ_MASK` 产生 `irq_done_o`、`irq_exception_o` 或 `irq_error_o`。软件通过 W1C 清除中断位；清除中断不自动清除 `FAULT_*`。
 
@@ -4757,11 +4554,11 @@ Event Table 的 SUCCESS 或 ERROR 不得早于终态记录完成。这样 `NPU_W
 | `SUCCESS` 且任务 CMD 设置 `IRQ_ON_SUCCESS` | `irq_done_o` |
 | `NUMERIC_EXCEPTION`、任务 `TIMEOUT`，且任务 CMD 设置 `IRQ_ON_ERROR` | `irq_exception_o` |
 | `ILLEGAL_OPCODE`、`BAD_DESC`、`BAD_SHAPE`、`ADDR_FAULT`、`ADDR_OVERLAP`、`DTYPE_UNSUPPORTED`、AXI 错误、不可修正 ECC、`DEPENDENCY_FAILED`、`ABORTED`，且任务 CMD 设置 `IRQ_ON_ERROR` | `irq_error_o` |
-| System Slave/L1 诊断失败、L1BUF 不可修正 ECC、MIF first/protocol error、Generic Core AXI first/protocol error | `irq_error_o`，不检查任务 CMD 中的选项 |
+| NPU AXI Slave/L1BUF 外部窗口失败、L1BUF 不可修正 ECC、MIF first/protocol error | `irq_error_o`，不检查任务 CMD 中的选项 |
 | WDT timeout | `irq_error_o`，并按 WDT 配置产生 `wdt_reset_req_o` |
 
 任务失败时，无论 `IRQ_ON_ERROR` 是否设置，LSC 都要按先到先保存规则更新 `FAULT_*`；该标志只决定是否设置 `IRQ_STATUS.EXCEPTION/ERROR`。WDT 不属于 CMD，因此不受 `IRQ_ON_ERROR` 控制。
-第 15.2.3 节的六组非任务错误同样不受任务 CMD 中的选项控制。
+第 15.2.3 节的四组非任务错误同样不受任务 CMD 中的选项控制。
 
 `IRQ_STATUS` 的设置优先于同周期 W1C 清除。某位在同一周期既有新事件又被软件写 1 清除时，该位在周期结束后保持 1。
 
@@ -4778,7 +4575,7 @@ Event Table 的 SUCCESS 或 ERROR 不得早于终态记录完成。这样 `NPU_W
 | `dvfs_prepare_req_i` | Input | 1 | SoC 请求 NPU 为改变输入频率做准备 |
 | `dvfs_prepare_ack_o` | Output | 1 | NPU 空闲，可由 SoC 改变 `core_clk_i` 频率 |
 | `core_idle_i` | Input | 1 | 顶层当前空闲状态 |
-| `axi_idle_i` | Input | 1 | DSA MIF 与 Generic Core AXI 均无未完成事务 |
+| `axi_idle_i` | Input | 1 | NPU AXI Slave 与 MIF AXI Master 均无未完成事务 |
 | `module_clk_en_i` | Input | 8 | CFE、TS、DMA、ME、IVE、CME、L1、MIF 时钟开关 |
 | `module_idle_i` | Input | 8 | 与八个模块一一对应的空闲指示 |
 | `module_clk_active_o` | Output | 8 | 忙模块强制开启后实际采用的时钟使能 |
@@ -4791,11 +4588,11 @@ Event Table 的 SUCCESS 或 ERROR 不得早于终态记录完成。这样 `NPU_W
 
 改变频点前，SoC 拉高 `dvfs_prepare_req_i`。只有 `core_idle_o=1` 且 AXI outstanding 为 0 时，CRG 才拉高 `dvfs_prepare_ack_o`。SoC 随后暂停并改变 `core_clk_i`，待新频率稳定后撤销请求。首版只在 idle 时改变频点。
 
-`dvfs_prepare_req_i` 置 1 后，Issue Adapter 立即停止接收新 DSA 指令，Generic
-Core AXI Adapter 也停止接收新的 I-cache 和 D-cache 请求。已经接收的命令、
-缓存请求和 AXI 事务继续完成。只有这些状态全部为空时才能给出
-`dvfs_prepare_ack_o=1`。请求保持为 1 的整个期间都不得重新开放新请求；SoC
-撤销请求后，两个入口才恢复接收。
+`dvfs_prepare_req_i` 置 1 后，NPU AXI Slave Front End 立即停止接收新的
+CMD128，但已经接收的命令、控制请求和 AXI 事务继续完成。MIF 已发出的 AXI
+请求同样需要排空。只有 Slave 与 Master 两侧均为空时才能给出
+`dvfs_prepare_ack_o=1`。请求保持为 1 的整个期间不得重新开放命令提交；SoC
+撤销请求后才恢复接收。
 
 `module_clk_en_i[7:0]` 依次对应 CFE、TS、DMA、ME、IVE、CME、L1 和 MIF。任一模块的 idle/quiescent 为 0 时，CRG 必须忽略对该模块关闭时钟的请求。门控时钟单元只能在输入时钟低电平阶段改变使能状态。
 
@@ -4805,8 +4602,7 @@ Core AXI Adapter 也停止接收新的 I-cache 和 D-cache 请求。已经接收
 域级汇总观测信号，不能代替七路本地 ICG 输出；`noc_clk_gated_o` 同样是 MIF
 与 TBU 受控时钟的域级观测信号。
 
-CRG、LSC、Issue Adapter、System Slave Adapter、L1 Diagnostic Bridge、
-Generic Core AXI Adapter 和 WDT 属于 Core 常开控制区，只要 `clk_req_o` 已获
+CRG、LSC、NPU AXI Slave Front End、CMD128 提交窗口、L1BUF 外部访问桥和 WDT 属于 Core 常开控制区，只要 `clk_req_o` 已获
 确认并且 Core 时钟仍在运行，它们就在每个 Core 上升沿更新。这样即使 CFE、
 TS、四个执行单元和 L1 的请求时钟均关闭，软件仍能读取状态、重新开启模块或
 处理看门狗。MIF 与 TBU 使用 NoC 域的 bit 7 控制，不属于 Core 常开控制区。
@@ -4830,13 +4626,12 @@ CRG；因此 CRG 模块本身不需要单独的 scan 端口。`clk_req_o/clk_ack
 
 `wdt_core_progress_i` 只能在可观察到任务推进时置 1，不能简单地在 `core_busy=1` 时持续置 1。以下任一事件在本周期出现时都属于有效推进：
 
-- Issue 请求握手、Issue 返回握手、CFE、TS、执行单元、L1BUF 或 DSA MIF
-  的 ready/valid 握手；
+- NPU AXI Slave 接受 CMD/控制请求或返回响应，以及 CFE、TS、执行单元、
+  L1BUF 或 MIF 的 ready/valid 握手；
 - CFE 编号查询请求或返回握手，以及 Descriptor SRAM 请求或返回握手；
 - `me_mac_active_o`、`ive_alu_active_o`，或 CME 的 I2F、FP32、F2I 任一级正在处理有效元素；
-- Generic Core AXI Adapter 接收 I-cache/D-cache 请求或写数据；
-- Generic Core AXI 的 AR、R、AW、W、B 通道握手；
-- I-cache/D-cache 接收 Adapter 返回的数据或写完成状态；
+- NPU AXI Slave 的 AR、R、AW、W、B 通道握手；
+- MIF AXI Master 的 AR、R、AW、W、B 通道握手；
 - TS 形成任务终态。
 
 valid 保持但没有 ready 的等待周期不属于有效推进；同样，单纯处于 busy 状态也不能清除 WDT 计数。
@@ -4852,26 +4647,24 @@ LSC 的 `wdt_timeout_i` 是单周期事件，而 WDT 的 `wdt_timeout_o` 是保�
 ```mermaid
 %%{init: {"sequence": {"useMaxWidth": true, "actorMargin": 14, "width": 82, "messageMargin": 10, "noteMargin": 6}, "themeVariables": {"fontSize": "11px"}}}%%
 sequenceDiagram
-    participant MCU
+    participant CPU as External Generic Core
     participant CRG
     participant LSC
     participant NPU
 
-    MCU->>CRG: 打开电源与时钟
+    CPU->>CRG: 打开电源与时钟
     CRG->>NPU: reset_n=0
-    MCU->>CRG: 请求释放复位
+    CPU->>CRG: 请求释放复位
     CRG->>NPU: 同步释放 reset_n
-    NPU-->>LSC: idle=1, stop_fetch=1
-    MCU->>LSC: 配置基地址、TBU、超时和中断
-    MCU->>LSC: start=1
-    LSC->>NPU: internal stop=0
-    MCU->>NPU: stop_fetch_i=0
-    NPU->>NPU: Generic Core 开始取指
+    NPU-->>LSC: idle=1, accept_new_cmd=0
+    CPU->>LSC: 经 AXI Slave 配置基地址、TBU、超时和中断
+    CPU->>LSC: 经 AXI Slave 写 start=1
+    LSC->>NPU: internal stop=0, accept_new_cmd=1
 ```
 
-LSC 配置完成前 `stop_fetch` 必须保持 1。基地址、TBU、地址范围、超时类别和
-中断配置全部写完后，软件执行一次寄存器读回检查，再设置 `start`。事件和任务
-选项由模型编译器直接写入每条 128-bit CMD。
+LSC 配置完成前 `accept_new_cmd_o` 必须保持 0。基地址、TBU、地址范围、超时
+类别和中断配置全部写完后，外部 CPU 执行一次 AXI 寄存器读回检查，再设置
+`start`。事件和任务选项由模型编译器直接写入每条 128-bit CMD。
 
 ### 15.8 受控软复位时序
 
@@ -4879,23 +4672,23 @@ LSC 配置完成前 `stop_fetch` 必须保持 1。基地址、TBU、地址范围
 
 受控软复位按以下次序执行：
 
-1. LSC 停止 Generic Core 取指，并使 Issue Adapter 不再接收新指令。已经完成指令请求握手的指令继续送出 CMD 或控制请求；`WAIT`、`FENCE` 也可由 CPU 按第 5.4 节取消。
-2. `issue_idle_i=1` 后，LSC 置 `cfe_quiesce_o=1`；`ts_quiesce_o` 和 `eng_abort_o` 可以在请求进入时立即置位。
+1. LSC 令 `accept_new_cmd_o=0`，使 NPU AXI Slave 不再接收新的 CMD128。已经完成 AXI 写握手的 CMD 或控制请求继续送出；WAIT、FENCE 也可由外部 CPU 按第 5.4 节取消。
+2. `cmd_window_idle_i=1` 后，LSC 置 `cfe_quiesce_o=1`；`ts_quiesce_o` 和 `eng_abort_o` 可以在请求进入时立即置位。
 3. CFE 已经接受的完整 128-bit CMD 进入 FIFO；只收到低 beat 的未完成 CMD 被丢弃，此后不再接收下一条 CMD。
-4. CFE FIFO 中已经向 Generic Core 返回 `ACCEPTED` 的 CMD 继续送入 TS；TS 在复位模式下为它们建立 `ABORTED` 终态，不能使已接收编号无记录消失。
+4. CFE FIFO 中已经向 AXI 提交窗口返回 `ACCEPTED` 的 CMD 继续送入 TS；TS 在复位模式下为它们建立 `ABORTED` 终态，不能使已接收编号无记录消失。
 5. TS 将 `ACCEPTED`、`FETCH_DESC`、`CHECK_DESC`、`WAIT_EVENT` 和 `READY` 任务设为 `ABORTED`，并按正常规则更新它们的输出事件。
 6. TS 对 DMA、ME、IVE 和 CME 拉高 `eng_abort_o`。各单元停止生成新请求，等待仍可能返回的请求结束；对 RUNNING 任务发送 status 为 `ABORTED`、`done_flags.ABORT_DRAINED=1` 的完整三拍完成消息，然后拉高对应 `eng_quiescent_i`。
-7. Generic Core 独立 AXI Adapter 停止产生新请求；已有读写事务继续完成，直到 `gc_axi_idle_i=1`。
+7. NPU AXI Slave 不再接收新的外部窗口请求；已有读写事务继续完成，直到 `s_axi_idle_i=1`。
 8. NoC 域的 MIF/TBU、异步 FIFO 和 L1BUF Controller 继续工作，直到 `mif_idle_i=1`、`l1_idle_i=1`、`ts_quiescent_i=1` 且全部执行单元 quiescent。
 9. TaskScheduler 保存终态、第一个错误和复位原因。
-10. LSC 产生一个周期的 `internal_soft_reset_pulse_o`。计算域模块在该周期清除任务表、Event Table、CFE 半命令状态、内部流水有效位、`IRQ_STATUS`、`PARAM_LOCK`、`L1_DIAG_CONTROL.enable` 和 `PERF_CONTROL.FREEZE`，把全部 Event 表项恢复为 `FREE,generation=0`；start 清 0、stop 置 1。
+10. LSC 产生一个周期的 `internal_soft_reset_pulse_o`。计算域模块在该周期清除任务表、Event Table、CFE 半命令状态、内部流水有效位、`IRQ_STATUS`、`PARAM_LOCK`、`L1_EXTERNAL_CONTROL.enable` 和 `PERF_CONTROL.FREEZE`，把全部 Event 表项恢复为 `FREE,generation=0`；start 清 0、stop 置 1。
 11. 顶层把内部复位请求跨到 NoC 域。MIF 的 NoC 域复位不得早于 AXI outstanding 清零；MIF/TBU 完成复位后，把确认信号同步回计算域。
 12. 计算域复位已经执行且 NoC 确认已经返回时，顶层置 `internal_soft_reset_done_i=1`。LSC 随后拉高 `soft_reset_done_o`，并保持到 `soft_reset_req_i=0`。`internal_soft_reset_pulse_o` 与 `soft_reset_done_o` 不得在同一周期有效。
-13. 请求撤销后，LSC 撤销 abort、quiesce 和完成信号，系统回到停止取指的初始化状态。
+13. 请求撤销后，LSC 撤销 abort、quiesce 和完成信号，系统回到禁止新 CMD 的初始化状态。
 
 突然复位无法保证部分目的数据有效。软件在复位后必须重新加载受影响的输入、权重 tile 和状态。
 
-步骤 3～8 中形成的 ABORTED 终态只用于保证排空期间的事件传播和复位原因记录。步骤 10 清除任务表后，软件不能再用 `NPU_QUERY` 读取这些任务；查询旧 `command_id` 返回 NOT_FOUND。软件应在请求软复位前读取仍需保留的正常终态信息。
+步骤 3～8 中形成的 ABORTED 终态只用于保证排空期间的事件传播和复位原因记录。步骤 10 清除任务表后，软件不能再用 `npu_query_task()` 读取这些任务；查询旧 `command_id` 返回 NOT_FOUND。软件应在请求软复位前读取仍需保留的正常终态信息。
 
 受控软复位等待 `ts_quiescent_i`，不等待 `ts_idle_i`。原因是正常终态任务
 可以仍在任务表中等待软件 ACK，而软复位不要求逐项 ACK。
@@ -4903,11 +4696,11 @@ LSC 配置完成前 `stop_fetch` 必须保持 1。基地址、TBU、地址范围
 防止内部复位丢失首错和中断信息。正常 `core_idle_o` 与断电准备仍使用
 `ts_idle_i`。
 
-受控软复位保留全部只读功能寄存器、六组基地址、`DDR_LOCAL_BASE/LIMIT`、
+受控软复位保留全部只读功能寄存器、五组数据基地址、`DDR_LOCAL_BASE/LIMIT`、
 TBU ID、16 组 `TIMEOUT_CLASS`、参数区 base/limit、16 个硬件性能计数器、
 `FAULT_*` 和已有 `RESET_REASON`；随后在 `RESET_REASON` 中增加 software
 bit。保留参数区地址但清除 `PARAM_LOCK`，是为了让软件能够重新加载参数。
-外部 Core 复位使用第 15.10 节的上电复位值，不采用这组保留规则。
+NPU 外部复位使用第 15.10 节的上电复位值，不采用这组保留规则。
 
 若 SoC 在 AXI outstanding 非零时强制置位 `noc_rst_ni=0`，必须同时复位对应的 NOC 和目标设备，使旧 R/B 返回不会再到达 NPU。禁止只清除 NPU MIF outstanding 表而让系统总线继续返回旧事务。
 
@@ -4937,17 +4730,17 @@ sequenceDiagram
 
 `power_down_req_i` 与 `power_down_ack_o` 使用四阶段电平握手。断电准备不主动终止任务，而是停止接收新 CMD，并让全部已接受任务进入终态。若软件不希望等待长任务，应先执行受控软复位。
 
-请求进入的同一周期，Issue Adapter 必须停止接收新的 Generic Core 指令。
-已经接收的指令仍需完成：`SUBMIT` 必须送完 CMD 的低、高两个 beat 并取得 CFE 响应，
-控制指令必须取得 TS 响应或按允许的方式取消，写回响应也必须被 Generic Core
-接收。LSC 在 `issue_idle_i=0` 时不得拉高 `power_down_ack_o`，也不得用
-`cfe_quiesce_o` 阻止该条已接收指令完成。
+请求进入的同一周期，NPU AXI Slave 必须停止接收新的 CMD128。
+已经完成 AXI 写握手的提交仍需完成：CMD 的低、高两个内部 beat 必须送完并取得
+CFE 响应，控制请求必须取得 TS 响应或按允许的方式取消，AXI 读写响应也必须
+返回外部 CPU。LSC 在 `cmd_window_idle_i=0` 或 `s_axi_idle_i=0` 时不得拉高
+`power_down_ack_o`，也不得用 `cfe_quiesce_o` 阻止已接收提交完成。
 
 LSC 只有在以下条件全部满足时才能拉高 `power_down_ack_o`：
 
-1. `issue_idle_i=1` 且 `core_idle_o=1`；
-2. Generic Core 已停止取指；
-3. DSA MIF 和 Generic Core 独立 AXI Master 的 outstanding 数量均为 0；
+1. `cmd_window_idle_i=1` 且 `core_idle_o=1`；
+2. NPU AXI Slave 已停止接收新命令并返回全部已接收事务的响应；
+3. MIF AXI Master 的 outstanding 数量为 0；
 4. 所有完成状态、第一个错误和断电原因已经写入保持供电寄存器；
 5. 中断输出已经送到保持供电区域。
 
@@ -4955,13 +4748,13 @@ PMU 看到 `power_down_ack_o=1` 后，依次执行输出隔离、内部复位置
 
 PMU 撤销 `power_down_req_i` 后，LSC 撤销 `power_down_ack_o`。若请求在 ack 产生前撤销，LSC 继续完成已经开始的排空过程，但不进入断电确认状态。
 
-终态任务表项在软件 ACK 前仍使 `ts_idle_i=0`。因此正常断电前，软件必须读取需要的终态信息，并对所有已完成任务执行 `NPU_QUERY(selector=ACK)`；受控软复位可以直接清除这些记录。
+终态任务表项在软件 ACK 前仍使 `ts_idle_i=0`。因此正常断电前，软件必须读取需要的终态信息，并对所有已完成任务调用 `npu_query_task(..., ACK)`；受控软复位可以直接清除这些记录。
 
 ### 15.10 各模块复位状态
 
 | 模块 | 复位后的状态 |
 | --- | --- |
-| Generic Core | 停止取指，等待 `stop_fetch_i=0` 和 LSC start |
+| NPU AXI Slave Front End | 命令窗口、控制请求和 L1BUF 外部窗口均无未完成事务；新 CMD 等待 LSC start |
 | CFE | 低 beat 保存寄存器无效，128-bit CMD FIFO 空，`ready=0` 直到复位释放 |
 | TaskScheduler | 任务表 FREE，Event Table FREE，所有执行单元请求 valid 为 0 |
 | DFU | 无在途描述符请求，Descriptor SRAM 内容无效 |
@@ -4984,7 +4777,7 @@ L1BUF 在复位后不自动全区清零。任何任务读取一个 L1 地址前�
 
 | 阶段 | 模块 | 开始条件 | 完成条件 |
 | --- | --- | --- | --- |
-| 1. 提交 CMD | Generic Core / CFE | `rs1=CMD[63:0]`、`rs2=CMD[127:64]` 准备完成 | 低、高两个 beat 完成采样 |
+| 1. 提交 CMD | 外部 Generic Core / NPU AXI Slave / CFE | 驱动准备 `CMD_LOW=CMD[63:0]` 与 `CMD_HIGH=CMD[127:64]` | 两次 AXI 写完成且 CFE 接收低、高两个内部 beat |
 | 2. 接收 CMD | CFE | 两拍 CMD 完整 | 固定字段通过检查，完整 CMD 写入 FIFO |
 | 3. 读取描述符 | TS / DFU / MIF | 分配任务表项和描述符槽 | 描述符全部 64-bit beat 到达 |
 | 4. 检查描述符 | TS | 描述符完整 | 版本、地址、shape、stride、dtype 和 scale 合法 |
@@ -4993,7 +4786,7 @@ L1BUF 在复位后不自动全区清零。任何任务读取一个 L1 地址前�
 | 7. 执行 | Engine / L1BUF / MIF | 单元取得任务 | 结果全部产生并写入目的地址 |
 | 8. 排空 | Engine | 不再产生结果 | 所有 L1 和 AXI 完成响应返回 |
 | 9. 提交终态 | TS / Event Table | 收到完整 done | 先写完整终态记录，再更新任务和事件终态 |
-| 10. 通知软件 | LSC | 终态记录与事件已经可见 | `NPU_WAIT` 返回或中断置位 |
+| 10. 通知软件 | LSC | 终态记录与事件已经可见 | `npu_wait_event()` 返回或中断置位 |
 
 > [!important] 结果可见点
 > 执行单元内部得到最后一个计算结果不等于任务完成。只有最后一个目的写请求收到完成响应，任务才可以进入成功终态。
@@ -5257,7 +5050,7 @@ sequenceDiagram
 5. 依赖任务进入失败终态并继续传播；
 6. 事件等待者不能永久停住。
 
-System Slave/L1 诊断、L1BUF ECC、MIF 和 Generic Core AXI Adapter 也会把非任务错误送入 LSC。产生模块先锁存 `status`、第一个相关地址、来源细节和可用的任务身份，并保持 `valid=1`；LSC 设置 `IRQ_STATUS.ERROR`，按第 15.2.3 节格式保存首错。MIF first error 即使早于 TS 终态通知，也必须携带 `first_error_task_id`，使 `FAULT_CMD` 保留真实任务编号。软件读取 `FAULT_*` 后写 `FAULT_CLEAR`，LSC 再用 `external_error_clear_o` 清除各产生模块的旧记录。这个过程不依赖任务终态通知，因此未知 AXI ID、错误 RLAST、诊断窗口访问失败等无法归属到某条 CMD 的问题仍有稳定的诊断信息。
+NPU AXI Slave/L1BUF 外部窗口、L1BUF ECC 和 MIF 也会把非任务错误送入 LSC。产生模块先锁存 `status`、第一个相关地址、来源细节和可用的任务身份，并保持 `valid=1`；LSC 设置 `IRQ_STATUS.ERROR`，按第 15.2.3 节格式保存首错。MIF first error 即使早于 TS 终态通知，也必须携带 `first_error_task_id`，使 `FAULT_CMD` 保留真实任务编号。软件读取 `FAULT_*` 后写 `FAULT_CLEAR`，LSC 再用 `external_error_clear_o` 清除各产生模块的旧记录。这个过程不依赖任务终态通知，因此未知 AXI ID、错误 RLAST、外部窗口访问失败等无法归属到某条 CMD 的问题仍有稳定的诊断信息。
 
 ---
 
@@ -5411,8 +5204,9 @@ $$
 
 | 阶段   | 参考程序                                 | 输入            | 主要工作                                           |
 | ---- | ------------------------------------ | ------------- | ---------------------------------------------- |
-| 上层编译 | `NPU/compiler/npu_model_compiler.py` | 高层模型图         | 图检查、稳定拓扑排序、shape 推导、常量处理、算子拆分、张量布局、存储分配和任务依赖生成 |
-| 低层汇编 | `NPU/compiler/npu_assembler.py`      | 规范化低层 JSON IR | Descriptor 编码、事件字段检查、CMD128 编码、二进制文件和摘要生成      |
+| 上层编译 | `NPU/compiler/npu_model_compiler.py` | Keras、PyTorch、TFLite、ONNX 或高层 JSON 模型 | 前端导入、图检查、稳定拓扑排序、shape 推导、常量处理、算子拆分、张量布局、存储分配和任务依赖生成 |
+| 低层汇编 | `NPU/compiler/npu_assembler.py`      | 规范化低层 JSON IR | Descriptor 字节编码、事件字段检查和 CMD128 编码 |
+| C 模型包生成 | 编译器 C artifact 后端 | 已编码任务与常量 | 生成配置结构体、CMD128 数组、Descriptor 数组、权重数组和模型调用函数 |
 
 高层模型图只描述下列内容：
 
@@ -5441,8 +5235,10 @@ opcode、Descriptor 字段、burst 参数、字节步长或显式 DMA/PACK/SPLIT
 8. 根据实际数据关系生成任务依赖；三个以上前置任务使用 `EVENT_JOIN` 树，
    不能简单地把互不相关的分支全部串行化；
 9. 生成低层 JSON IR 文件 `.npuasm.json`，再调用低层汇编器；
-10. 生成运行元数据、常量镜像和文件摘要；
-11. `--check` 在内存中重新执行全部阶段并逐字节比较已有文件，不改写文件。
+10. 把 CMD128、Descriptor、权重、常量和运行配置写成 C 数组与配置结构体；
+11. 生成模型初始化、运行、输入输出访问和 CPU 协助函数调用代码；
+12. 生成检查清单与文件摘要；
+13. `--check` 在内存中重新执行全部阶段并逐字节比较已有文件，不改写文件。
 
 `MultiHeadAttention` 在高层图中是一个节点。编译器负责生成 Q/K/V 投影、
 按 Head 整理数据、K 转置、$QK^T$、Softmax、注意力乘 V、Head 合并和输出
@@ -5453,32 +5249,35 @@ opcode、Descriptor 字段、burst 参数、字节步长或显式 DMA/PACK/SPLIT
 
 1. 输入采用 NHWC，kernel 采用 $[KH,KW,C_{in},C_{out}]$；
 2. 根据 stride、dilation 和 padding 推导输出高、宽；
-3. 需要补零时先用 DMA FILL 建立补零输入；
-4. 对每个 kernel 位置生成规则的 DMA COPY_ND，把输入窗口写入
-   $[N H_o W_o,\;KH KW C_{in}]$ 的 `im2col` 张量；
+3. 编译器先判断当前 stride、dilation、padding 和 L1BUF 容量是否可由 DMA
+   描述符直接形成规则输入窗口；
+4. 规则情况生成 DMA FILL 与 COPY_ND 任务，把输入窗口写入
+   $[N H_o W_o,\;KH KW C_{in}]$ 的 `im2col` 张量；不规则情况在 C 模型包中
+   生成 CPU im2col 协助函数调用，再由 DMA 把展开结果送入 L1BUF；
 5. 编译期把 kernel 整理成
    $[KH KW C_{in},\;C_{out}]$ 的 Matrix B tile 格式；
 6. Matrix GEMM 产生按 NHWC 线性次序保存的输出。
 
-首版 `Conv2D` 只接受 `groups=1`。不支持的 groups、dtype、padding 组合或
-内存需求必须在编译期报错，不能生成不存在的硬件指令。
+首版硬件不提供 `CONV` opcode。模型编译器与生成的 C 调度代码负责把
+`Conv2D` 形成 padding、im2col、DMA、GEMM、bias 和输出整理步骤。首版
+`Conv2D` 只接受 `groups=1`；不支持的 groups、dtype 或内存需求必须在编译期
+报错，或调用已登记的 CPU 算子函数，不能生成不存在的硬件指令。
 
-完整编译结果至少包含：
+最终部署结果不是若干由应用自行装载的二进制文件，而是可直接参加工程编译的
+C 模型包。完整结果至少包含：
 
-| 文件后缀 | 内容 | 装载方 |
+| 文件后缀 | 内容 | 使用方 |
 | --- | --- | --- |
-| `.npuasm.json` | 自动生成的低层 JSON IR，可单独交给汇编器复查 | 汇编器 / 调试工具 |
-| `.cmd.bin` | 连续 CMD128；每项 16B，低 word 在前，高 word 在后 | Runtime / 驱动 |
-| `.desc.bin` | 64B 对齐的 Descriptor 连续区 | Runtime |
-| `.const.bin` | 已按设备存储形式整理的权重和参数 | Runtime |
-| `.runtime.json` | 输入输出 ABI、常量地址、任务批组和内存计划 | Runtime |
-| `.manifest.json` | 高层节点与低层任务的对应关系、文件摘要和目标信息 | Runtime / 测试程序 |
-| `.npu.h` | 命令、Descriptor、常量及运行元数据的 C 数组 | 裸机程序 / C 测试 |
+| `<model>_npu.h` | 模型配置类型、输入输出说明、数组声明、初始化和运行函数声明 | 应用与 C 驱动 |
+| `<model>_npu.c` | 配置结构体、CMD128 指令数组、Descriptor 数组、权重与常量数组、任务组和模型调用函数 | C/C++ 构建系统 |
+| `.npuasm.json` | 自动生成的低层 JSON IR，可单独交给汇编器复查 | 编译器检查与调试工具 |
+| `.manifest.json` | 高层节点与底层任务的对应关系、数组摘要、目标功能和 CPU 协助步骤 | 测试程序与检查工具 |
+| `.disasm.txt` | 可选的 CMD128 与 Descriptor 人类可读内容 | 评审与调试 |
 
-从高层模型一次完成编译所得的 CMD、Descriptor 和常量文件，必须与“先生成
-`.npuasm.json`，再单独调用 `npu_assembler.py`”所得结果逐字节一致。C 测试
-程序应从生成元数据读取命令数、任务编号、输入输出地址和常量位置，不允许在
-程序中再次手工排列权重或填写内部张量地址。
+`<model>_npu.c` 中 CMD、Descriptor 和常量数组的有效字节，必须与“先生成
+`.npuasm.json`，再单独调用 `npu_assembler.py`”所得内存内容逐字节一致。C
+测试程序应从生成配置结构体读取命令数、任务编号、输入输出地址和常量位置，
+不允许在程序中再次手工排列权重或填写内部张量地址。
 
 ### 18.2 C 驱动的职责和文件划分要求
 
@@ -5491,16 +5290,16 @@ C 驱动必须使用 C11，并且不得依赖某一种操作系统。公共头�
 
 | 文件 | 主要职责 | 不应承担的工作 |
 | --- | --- | --- |
-| `npu_driver_device.c` | 初始化回调、设置基地址和超时、中断、启动与停止 | 不生成模型算子 |
-| `npu_driver_command.c` | Event/CMD128 编解码、先发低 word、再发高 word、取得 CFE 响应 | 不读取模型权重 |
+| `npu_driver_device.c` | 初始化 AXI/MMIO 回调、设置 NPU Slave 基地址和超时、中断、启动与停止 | 不生成模型算子 |
+| `npu_driver_command.c` | Event/CMD128 编解码、写 `CMD_LOW/CMD_HIGH`、读取 `SUBMIT_STATUS` | 不读取模型权重 |
 | `npu_driver_runtime.c` | WAIT、QUERY、FENCE、轮询终态和 ACK | 不修改 Descriptor |
 | `npu_driver_descriptor.c` | 64B 对齐内存池、公共前缀及 DMA、Matrix 专有字段 | 不提交命令 |
-| `npu_driver_memory.c` | 小端字段写入、缓存维护和内存屏障 | 不解释算子语义 |
+| `npu_driver_memory.c` | 小端字段写入、L1BUF 外部窗口访问、缓存维护和内存屏障 | 不解释算子语义 |
 | `npu_driver_internal.h` | 仅供上述源文件共享的私有定义 | 不允许应用程序包含 |
 | `npu_driver.h` | 35 个稳定公共函数及其类型和常量 | 不包含私有头文件 |
 
 公共 API 需要保持平台无关。Linux 用户态、内核驱动、裸机固件和 C model
-测试后端都通过 `npu_drv_platform_ops_t` 提供实际访问函数。平台回调返回错误
+测试后端都通过 `npu_drv_platform_ops_t` 提供 64-bit AXI/MMIO 访问函数。平台回调返回错误
 时，驱动应停止当前调用并把错误返回给上层，不能继续发送剩余 beat。
 
 驱动回归至少使用 GCC 和 Clang，并分别启用 ASan 与 UBSan。测试需要覆盖四种
@@ -5512,20 +5311,22 @@ QUERY/WAIT/ACK/FENCE、缓存维护和小端写入。公共头中的函数声明
 
 一组模型任务的推荐软件次序如下：
 
-1. 读取清单并核对 CMD、Descriptor 和参数文件摘要；
-2. 分配设备内存，把模型输入、权重、参数和 `.desc.bin` 放到指定地址；
-3. 对非一致缓存执行 `cache_clean`，再执行设备写屏障；
-4. 对第 $i$ 条命令读取 `cmd[16i:16i+15]`；
-5. 通过 `submit_beat(low,first=1,last=0)` 发送低 word；
-6. 通过 `submit_beat(high,first=0,last=1)` 发送高 word；
-7. 读取 CFE 接收响应；只有 `ACCEPTED` 才能处理下一条命令；
-8. 使用 QUERY、WAIT 或中断等待任务终态；
-9. 对输出执行 `cache_invalidate`，再由 CPU 读取；
-10. 保存任务状态后执行 ACK，释放任务表项和 `command_id`。
+1. 应用包含 `<model>_npu.h`，并把 `<model>_npu.c` 与通用 C 驱动一起编译；
+2. 模型初始化函数读取生成的配置结构体，分配输入、输出和工作区；
+3. 初始化函数把生成的 Descriptor 数组、权重数组和常量数组放到配置指定的位置；
+4. 对非一致缓存执行 `cache_clean`，再执行设备写屏障；
+5. 模型运行函数按任务组读取生成的 CMD128 数组；
+6. `npu_submit_cmd()` 通过 NPU AXI Slave 先写 `CMD_LOW`，再写 `CMD_HIGH`；
+7. 驱动读取 `SUBMIT_STATUS`；只有 `ACCEPTED` 才处理下一条命令；
+8. 生成代码在需要时调用 CPU 协助函数，并通过事件保证其前后 NPU 任务的次序；
+9. 使用 QUERY、WAIT 或中断等待任务终态；
+10. 对输出执行 `cache_invalidate`，再由 CPU 读取；
+11. 保存任务状态后执行 ACK，释放任务表项和 `command_id`。
 
-一次 CMD128 的两个 beat 不能与另一条 CMD 交错。若低 word 已经发送，而高
-word 因平台错误无法发送，平台需要按第 7.4 节等待 CFE 超时或执行受控复位，
-不能直接把下一条 CMD 的低 word 当作当前命令的高 word。
+一次 CMD128 的两个内部 beat 不能与另一条 CMD 交错。若 `CMD_LOW` 已经写入，
+而 `CMD_HIGH` 因平台错误无法写入，驱动需要检查
+`SUBMIT_STATUS.low_pending`，随后补写 high word、等待超时或执行受控复位，
+不能把下一条 CMD 的 low word 覆盖到当前命令。
 
 ### 18.4 Transformer 端到端部署参考
 
@@ -5549,8 +5350,9 @@ DMA、Q/K/V 与输出投影、两次批矩阵乘、Head 数据整理、Softmax�
 矩阵乘、逐元素加法、GELU、LayerNorm 和必要的 `EVENT_JOIN`。测试把任务表
 提交上限设为 8，因此运行元数据给出 5 个提交组。
 
-C 测试程序只读取生成的 `.npu.h`：命令、Descriptor、常量、任务组和输入输出
-DDR binding 均来自编译结果。每个提交组按以下次序运行：
+C 测试程序包含生成的 `transformer_npu.h`，并链接 `transformer_npu.c`：
+命令、Descriptor、常量、权重、任务组和输入输出 DDR binding 均来自 C 模型
+包。每个提交组按以下次序运行：
 
 ```text
 submit 全部 CMD128
@@ -5574,8 +5376,9 @@ make regress
 ```
 
 `make check` 还会把上层编译生成的 `.npuasm.json` 单独交给
-`npu_assembler.py`，并逐字节比较两种方式产生的 CMD 与 Descriptor。该比较
-用于确认上层编译与独立汇编具有完全相同的编码结果。
+`npu_assembler.py`，并逐字节比较独立汇编结果与 `transformer_npu.c` 中的
+CMD、Descriptor 和权重有效字节。该比较用于确认上层编译与独立汇编具有完全
+相同的编码结果。
 
 ---
 
@@ -5680,7 +5483,7 @@ C model 的函数误差测试必须覆盖完整支持区间，不能只检查少
 
 验证环境应随机暂停：
 
-- Generic Core 到 CFE 的 CMD 低 beat和高 beat；
+- NPU AXI Slave CMD128 窗口到 CFE 的低 beat和高 beat；
 - CFE 到 TS；
 - DFU 到 MIF；
 - TS 到执行单元；
@@ -5806,7 +5609,7 @@ L1 ECC 数组及 workspace 数组。任意一组失败时返回 `BAD_DESC`，调
 | AXI 最大 burst | 16 beats | 每次最多 128B |
 | Task 表项数 | 32 | 终态 ACK 速度 |
 | Descriptor SRAM 槽数 | 32 | 与 Task 表项数相同 |
-| CFE FIFO 深度 | 8 CMD | Generic Core 连续提交 |
+| CFE FIFO 深度 | 8 CMD | 外部 CPU 经 NPU AXI Slave 连续提交 |
 | CMD 宽度与传送 | 128 bit | 64-bit 接口上的低、高两个 beat |
 | CFE 第二 beat 等待上限 | 32 cycles | 超时后丢弃半命令并返回 `TIMEOUT` |
 | Descriptor SRAM 读延迟 | 1 cycle | SRAM 实现 |
@@ -5824,17 +5627,17 @@ L1 ECC 数组及 workspace 数组。任意一组失败时返回 `BAD_DESC`，调
 
 ### 20.1 64-bit AXI4 存储目标参考时序
 
-C model 提供 `npu_axi_mem_target_cycle`，用于给 DSA MIF 和 Generic Core
-独立 AXI Master 连接一个可重复运行的存储目标。该模型只描述 AXI 目标设备
-的总线行为，不代替 MIF、TBU 或 Generic Core AXI Adapter。两类 Master
-分别使用以下信号转换函数：
+C model 提供 `npu_axi_mem_target_cycle`，用于给 NPU MIF 和验证环境中的
+外部主控 AXI Master 连接一个可重复运行的存储目标。该模型只描述 AXI 目标设备
+的总线行为，不代替 MIF、TBU、NPU AXI Slave 或 SoC 中的真实主控 CPU。以下
+`gc` 名称仅指测试环境里的外部主控模型，不表示 Generic Core 位于 NPU 内部：
 
 - `npu_axi_mem_master_from_mif()`：把 MIF Master 输出复制到共用 Master
   信号结构；
 - `npu_axi_mem_target_to_mif()`：把存储目标输出复制到 MIF 输入；
-- `npu_axi_mem_master_from_gc()`：把 Generic Core Master 输出复制到共用
+- `npu_axi_mem_master_from_gc()`：把外部主控测试模型的 Master 输出复制到共用
   Master 信号结构；
-- `npu_axi_mem_target_to_gc()`：把存储目标输出复制到 Generic Core 输入。
+- `npu_axi_mem_target_to_gc()`：把存储目标输出复制到外部主控测试模型输入。
 
 目标模型的固定能力如下：
 
@@ -5852,8 +5655,8 @@ C model 提供 `npu_axi_mem_target_cycle`，用于给 DSA MIF 和 Generic Core
 | 动态暂停 | 可分别禁止 AWREADY、WREADY、ARREADY，也可由 Master 暂停 R/B |
 | 内存所有权 | 存储数组由调用者分配并在模型整个使用期间保持有效 |
 
-本小节公式中的“周期”是对应存储目标的 `step` 次数。MIF 的 DDR/EXT
-目标随 NoC tick 推进，Generic Core 目标随 Core tick 推进。因此改变
+本小节公式中的“周期”是对应存储目标的 `step` 次数。MIF 的 DDR
+目标随 NoC tick 推进，外部主控测试目标随测试环境的 CPU tick 推进。因此改变
 Core 与 NoC 的调用比例不会改变单个目标按自身时钟计数的响应延迟。
 
 读延迟从 AR 握手所在周期之后开始计数。若 AR 在周期 $t_\text{AR}$ 完成握手，
@@ -5903,7 +5706,7 @@ W beat 已经完成握手，它们按当时的 `WSTRB` 保留写入结果。
 选择事务，并指定 `OKAY`、`EXOKAY`、`SLVERR` 或 `DECERR` 以及附加等待周期。
 多个不同 ID 的事务到期次序不同时，R 事务与 B response 均可按到期时间换序；
 同一 ID 的事务保持请求次序，同一读 burst 内部的 beat 也不换序。这样可以
-检查 MIF 和 Generic Core 是否按返回 ID 查找正确的未完成事务，而不是假定
+检查 MIF 和外部主控测试模型是否按返回 ID 查找正确的未完成事务，而不是假定
 响应与请求顺序相同。
 
 `npu_axi_mem_target_cycle_reset()` 清除已经接收但尚未完成的读写事务、R/B
@@ -5916,12 +5719,12 @@ burst、尾部 `WSTRB`、R/B 暂停时的信号稳定性、不同 ID 的响应�
 地址段错误、未对齐和越出存储地址范围、`WLAST` 错误、复位期间事务清除以及
 固定随机种子的 AW/W/B/AR/R 暂停组合。
 
-参考测试 `test_single_core_axi_target.c` 还把两个存储目标接到单核公开的
-AXI 信号上：Generic Core I-cache 完成真实单拍 DDR 读取；Descriptor Fetch
-经内部 TBU 把虚拟地址转换为物理地址，再由 MIF 发出 8-beat 与 16-beat 两个
-burst 读取一份 192B 描述符。该测试采用不相等的 Core/NoC tick 数，核对
-TBU 请求与响应次数、实际 AXI 地址、24 个 R beat、任务终态以及 L1BUF
-计算结果。
+参考测试 `test_single_core_axi_target.c` 把一个外部主控测试模型和 NPU MIF
+分别连接到存储目标。外部主控的单拍 DDR 读取只用于验证测试目标，不是
+`npu_core_top` 的端口；Descriptor Fetch 经 NPU 内部 TBU 把虚拟地址转换为
+物理地址，再由 MIF 发出 8-beat 与 16-beat 两个 burst 读取一份 192B
+Descriptor。该测试采用不相等的 Core/NoC tick 数，核对 TBU 请求与响应次数、
+实际 AXI 地址、24 个 R beat、任务终态以及 L1BUF 计算结果。
 
 `TIMEOUT_CLASS[0～15]` 的 C model 复位值如下。软件只能在 `core_idle_o=1` 时改写：
 
@@ -6286,4 +6089,4 @@ TFLite Interpreter 运行后的结果；$y_k^{\mathrm{Keras}}$ 是训练后 Kera
 SFU mode 0 的函数范围、误差和流水延迟已经固定在第 13.10.5 节。若后续加入新的 `approx_mode`，必须为每个模式增加独立的十六进制 FP32 系数表、操作次序、误差限制和流水周期数。
 
 > [!summary] 首版硬件实现范围
-> 单核首版由 64-bit AXI/MIF、64-bit L1BUF 客户端接口、Command Front End、TaskScheduler、DMA、Matrix、Integer Vector、Complex Math、L1BUF、TBU、LSC、CRG 和 WDT 组成。每条 128-bit CMD 在 64-bit 接口上使用低、高两个 beat；事件和任务选项直接位于 CMD。模型张量只采用 INT4、INT8、INT16、INT32；Matrix 使用 `MAC_CTX` 与 `ACCUM_CTX` 并行执行安全的乘累加和部分和处理，复杂函数在 CME 内部执行 `INT→FP32→INT`。软件通过描述符给出地址、shape、stride、scale 和 zero point，硬件按模块接口与功能时序完成任务。
+> Generic Core 是 NPU 外部的主控 CPU：它运行生成的模型函数和 C 驱动，并以 AXI Master 身份访问 NPU。单核 NPU 由 64-bit AXI Slave Front End、Command Front End、TaskScheduler、DMA、Matrix、Integer Vector、Complex Math、64-bit L1BUF 客户端接口、MIF/TBU AXI Master、LSC、CRG 和 WDT 组成。每条 128-bit CMD 经 AXI Slave 命令窗口按低、高两个 64-bit beat 提交；控制寄存器与 L1BUF 外部窗口也属于该 AXI Slave 地址空间。模型张量采用 INT4、INT8、INT16、INT32；Matrix 使用 `MAC_CTX` 与 `ACCUM_CTX` 同时处理乘累加和部分和，复杂函数在 CME 内部执行 `INT→FP32→INT`。模型编译器生成可参加 C/C++ 构建的配置结构体、CMD128 数组、Descriptor 数组、权重与常量数组和模型函数；`Conv2D` 由软件形成 im2col、DMA、GEMM、bias 与输出整理步骤，硬件不提供原生卷积指令。

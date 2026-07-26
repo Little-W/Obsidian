@@ -21,6 +21,13 @@ extern "C" {
 #endif
 
 /*
+ * System co-simulation wrapper. It combines the single NPU with optional
+ * external-host compatibility helpers. The issue and gc_axi members model
+ * host-side traffic for existing tests and are not part of the NPU RTL.
+ * system_axi is the NPU AXI Slave; MIF is the NPU AXI Master toward memory.
+ */
+
+/*
  * Module clock-enable bit positions. A busy module remains clocked even when
  * its requested bit is zero; npu_crg_cycle() implements that rule.
  */
@@ -72,8 +79,9 @@ typedef struct {
     npu_sys_slave_inputs_t system_axi;
 
     /*
+     * External-host compatibility helper used only by system co-simulation.
      * Only cache-side requests, response-ready inputs, and external AXI pins
-     * are consumed. reset_n and quiesce are driven internally.
+     * are consumed. reset_n and quiesce are driven by this wrapper.
      */
     npu_gc_axi_cycle_inputs_t gc_axi;
 

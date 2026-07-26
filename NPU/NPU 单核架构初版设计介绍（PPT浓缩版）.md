@@ -12,6 +12,8 @@
 
 - 面向 Transformer、RNN、LSTM、GRU 和回归模型的整数推理，兼顾自然语言处理与时序数据分析。
 - 首版采用单核结构：一个 Matrix Engine、一个 Integer Vector Engine、一个 Complex Math Engine 和一个 DMA / Layout Engine。
+- Generic Core 是 NPU 外部的主控 CPU，不计入 NPU 单核硬件。主控 CPU 运行模型调用代码与 C 驱动，以 AXI Master 身份主动访问系统总线。
+- NPU 对系统总线提供 64-bit AXI Slave 接口。该接口包含命令提交、控制寄存器和 L1BUF 外部访问窗口；CFE 只接收并解析命令，不发起 AXI 访问。
 - 模型输入、权重、中间张量和输出支持 `INT4`、`INT8`、`INT16`、`INT32`。其中 INT4/INT8 侧重吞吐与容量，INT16 为回归输入、权重和输出提供更细的数值间隔，INT32 用于矩阵累加、bias 和较大范围的中间结果。
 - 外部系统总线和模块间数据接口均以 64 bit 为一个 beat；一条 128-bit 命令分成低、高两个 beat 发送。
 - 通过事件、TaskScheduler 和分阶段 Matrix 流水提高执行单元利用率，使数据搬运、矩阵乘、部分和处理及复杂函数可以按数据依赖同时推进。
@@ -42,16 +44,24 @@
 图中用不同颜色区分命令控制、计算、片上存储和外部访问。主要数据路径为：
 
 ```text
-Generic Core → CFE → TaskScheduler / DFU → 执行单元
+外部 Generic Core（AXI Master）
+  → 系统 AXI 总线
+  → NPU AXI Slave
+  → CFE → TaskScheduler / DFU → 执行单元
 DDR ↔ MIF / TBU ↔ DMA ↔ L1BUF ↔ Matrix / Vector / Complex
 ```
 
-- Generic Core 通过自定义指令提交 CMD128，并使用 QUERY、WAIT、FENCE 和 ACK 管理任务。
-- Command Front End（CFE）接收两个 64-bit beat，检查次序、版本、操作码和命令编号，再把完整命令送入命令 FIFO。
+- Generic Core 位于 NPU 框外。模型调用函数通过 C 驱动准备配置、描述符、权重和 CMD128，再由 CPU 通过 AXI Master 写事务主动提交。
+- NPU AXI Slave 把地址访问分送到命令窗口、LSC 控制寄存器或 L1BUF 外部访问窗口。命令窗口每次接收一个 64-bit beat，一条 CMD128 使用低、高两个 beat。
+- Command Front End（CFE）接收来自 NPU AXI Slave 的两个命令 beat，检查次序、版本、操作码和命令编号，再把完整命令送入命令 FIFO。CFE 不具有 AXI Master 端口。
 - TaskScheduler（TS）维护任务表和事件表；Descriptor Fetch Unit（DFU）读取描述符并检查地址、shape、stride、dtype 与保留位。
 - 四个执行单元通过 L1BUF 交换张量；Matrix、Vector 和 Complex 不直接访问 DDR。
-- Memory Interface（MIF）和 TBU 负责 64-bit AXI 访问、地址检查及未完成请求管理。
-- LSC 提供寄存器、中断、性能计数和启动停止控制；CRG 与 WDT 分别负责时钟复位和超时监视。RTL 复位信号统一使用低有效 `reset_n`。
+- L1BUF 的计算端口供 DMA、Matrix、Vector 和 Complex 使用；外部 CPU 还可通过独立的 AXI Slave 地址窗口读写允许访问的片上区域。仲裁器必须保证外部访问与计算访问的数据一致性。
+- Memory Interface（MIF）和 TBU 是 NPU 的 AXI Master 访存出口，负责主动读取 Descriptor、权重和输入数据，或写回输出。
+- LSC 提供可由 AXI Slave 访问的寄存器、中断、性能计数和启动停止控制；CRG 与 WDT 分别负责时钟复位和超时监视。RTL 复位信号统一使用低有效 `reset_n`。
+
+> [!important] 主设备与从设备的方向
+> Generic Core 是系统总线主设备；NPU 命令端口、控制寄存器端口和 L1BUF 外部窗口都是系统总线从设备。只有 MIF / TBU 代表 NPU 主动访问 DDR。CFE 是 NPU 内部命令接收模块，不是总线主设备。
 
 ---
 
@@ -102,20 +112,22 @@ P1 预留 `DMA_GATHER_ND(0x28)`、`VROPE_I(0x83)` 和 `VRECIP_I(0x85)`。Complex
 
 | 模块 | 主要职责 |
 | --- | --- |
+| NPU AXI Slave Front End | 接收外部 CPU 的 64-bit AXI 访问；按地址选择命令窗口、LSC 寄存器或 L1BUF 外部窗口 |
+| Command Front End | 从命令窗口取得低、高两个 64-bit beat，拼接并检查 CMD128；不主动访问 DDR |
 | DMA / Layout Engine | DDR 与 L1BUF 双向搬运；完成多维复制、填充、转置、拼接和拆分 |
 | Matrix Engine | 执行 GEMM/BMM；支持 INT4、INT8、INT16 输入和权重，使用 INT32 累加并按需要写出 INT4/8/16/32 |
 | Integer Vector Engine | 执行逐元素整数运算，适合 residual、门控乘法、比较、选择和 ReLU |
 | Complex Math Engine | 完成激活、Softmax、LayerNorm、RMSNorm、统计与不同 scale 的相加 |
-| L1BUF Controller | 管理多 bank 片上 SRAM，为四个执行单元仲裁读写请求 |
-| MIF / TBU | 连接 64-bit AXI，处理 DDR 请求、地址检查、响应和错误 |
+| L1BUF Controller | 管理多 bank 片上 SRAM，为四个执行单元和外部访问窗口仲裁读写请求 |
+| MIF / TBU | 作为 64-bit AXI Master 连接系统总线，主动发出 DDR 请求并处理响应 |
 | CFE / TS / DFU | 接收命令、管理事件、读取描述符、选择可发射任务并收集完成状态 |
-| LSC / CRG / WDT | 提供寄存器与中断、时钟复位、性能计数和任务超时保护 |
+| LSC / CRG / WDT | 提供 AXI Slave 控制寄存器与中断、时钟复位、性能计数和任务超时保护 |
 
-L1BUF 是计算单元之间的数据交换中心。编译器负责安排输入、权重、临时张量和输出的位置；硬件按描述符给出的地址和 stride 访问，不解析模型文件，也不推测 Kernel 的排列方式。
+L1BUF 是计算单元之间的数据交换中心。编译器负责安排输入、权重、临时张量和输出的位置；硬件按描述符给出的地址和 stride 访问，不解析模型文件，也不推测 Kernel 的排列方式。外部 CPU 只在访问许可满足时使用 L1BUF 外部窗口；正常执行期间优先由 DMA 负责 DDR 与 L1BUF 之间的数据传送。
 
 ### 一条任务如何流过硬件
 
-驱动先写入 Descriptor 和输入数据，完成缓存清理与设备写屏障，再依次发送 CMD 的低、高 word。CFE 返回 `ACCEPTED` 后，TS 保存任务并等待两个前置事件。事件满足时，DFU 取得并检查 Descriptor，随后 TS 向目标执行单元发射任务。执行单元的最后一个写响应返回后，TS 才记录终态、更新完成事件并按命令选项产生中断。软件通过 QUERY、WAIT 或中断取得结果，读取输出后执行 ACK，释放任务表项和 `command_id`。
+模型调用函数先准备生成的配置结构体、Descriptor、权重和输入数据。驱动完成缓存维护与设备写屏障，再以 AXI 写事务依次发送 CMD 的低、高 word。CFE 返回 `ACCEPTED` 后，TS 保存任务并等待两个前置事件。事件满足时，DFU 取得并检查 Descriptor，随后 TS 向目标执行单元发射任务。执行单元的最后一个写响应返回后，TS 才记录终态、更新完成事件并按命令选项产生中断。软件通过驱动的查询、等待函数或中断取得结果，读取输出后调用 ACK 函数，释放任务表项和 `command_id`。
 
 ---
 
@@ -200,24 +212,35 @@ FP32 scale、$\epsilon$、函数系数和查找表属于只读元数据。FP32 �
 
 ---
 
-## 第 11 页：软件工具和 C 驱动
+## 第 11 页：模型编译结果与 C 驱动
 
 ```text
-高层模型图
+Keras / PyTorch / TFLite / ONNX 模型
   ↓ npu_model_compiler.py
-低层 JSON IR（.npuasm.json）
+高层图检查与算子拆分
+  ↓
+低层 JSON IR（编译过程中的中间表示）
   ↓ npu_assembler.py
-CMD128 + Descriptor + 常量镜像 + Runtime 元数据
-  ↓ NPU C 驱动
-硬件或 C model
+C 模型包（.c / .h）
+  ├─ 模型配置结构体
+  ├─ CMD128 指令数组
+  ├─ Descriptor 数组
+  ├─ 权重与常量数组
+  └─ 模型调用函数与 CPU 协助步骤
+  ↓ C 驱动
+外部 Generic Core 经系统 AXI 互连访问 NPU AXI Slave → NPU / C model
 ```
 
-- 上层编译器负责图检查、shape 推导、算子拆分、张量布局、L1/DDR 存储分配、Matrix-B tile 整理、事件依赖和任务调度；`MultiHeadAttention` 与 `Conv2D` 在这一阶段拆成底层任务。
-- 低层汇编器只读取已经确定硬件字段的低层 JSON IR，编码 CMD128 和各类 Descriptor，并生成二进制文件、清单与 C 头文件。
-- C 驱动分为 device、command、runtime、descriptor 和 memory 五个源文件，公共 API 不依赖特定操作系统。平台通过回调提供 MMIO、提交 beat、缓存维护和内存屏障。
-- Runtime 装载 `.const.bin` 与 `.desc.bin`，依次提交 `.cmd.bin`，等待任务终态，读取输出后 ACK 命令编号。
+- 上层编译器负责图检查、shape 推导、算子拆分、张量布局、L1/DDR 存储分配、Matrix-B tile 整理、事件依赖和任务调度；`MultiHeadAttention` 与 `Conv2D` 在这一阶段拆成可以执行的步骤。
+- 低层汇编器读取已经确定硬件字段的低层 JSON IR，编码 CMD128 与各类 Descriptor。它产生的字节内容随后写入 C 数组，不作为最终部署接口单独交给应用。
+- 编译器的最终部署产物是模型专用 `.c` 与 `.h`：配置结构体说明输入输出、工作区、数组长度和所需设备功能；指令数组保存 CMD128；Descriptor 数组保存任务参数；权重数组保存离线整理后的整数权重和常量。
+- C 模型包还提供模型初始化和运行函数。运行函数调用通用 C 驱动完成缓冲区准备、CMD128 提交、等待、查询、中断处理和 ACK；遇到不能由一条硬件指令直接表达的步骤时，由生成的 C 调度代码组合多条任务，或调用明确登记的 CPU 函数。
+- C 驱动分为 device、command、runtime、descriptor 和 memory 五个源文件，公共 API 不依赖特定操作系统。平台通过回调提供 64-bit AXI/MMIO 访问、缓存维护和内存屏障。
 
-主要产物包括 `.npuasm.json`、`.cmd.bin`、`.desc.bin`、`.const.bin`、`.runtime.json`、`.manifest.json` 和 `.npu.h`。从高层图直接生成的结果必须与“先生成低层 JSON IR、再单独汇编”的结果逐字节一致。
+> [!important] Conv2D 不是硬件原生指令
+> 首版没有 `CONV` opcode。编译器把 `Conv2D` 形成 `padding / im2col / DMA / GEMM / bias / 输出整理` 的任务序列，并把该序列固化到生成的 C 模型包。C 驱动按生成次序提交任务；若某种输入排列无法由当前 DMA 描述符直接处理，生成代码调用 CPU 的 im2col 协助函数，再把展开结果交给 Matrix Engine。
+
+主要部署文件是 `<model>_npu.c` 与 `<model>_npu.h`。低层 JSON IR、清单和反汇编文本可作为检查文件保留，但应用不需要在运行时解析模型文件，也不需要装载多个独立二进制镜像。
 
 ---
 
@@ -228,6 +251,7 @@ CMD128 + Descriptor + 常量镜像 + Runtime 元数据
 3. 加入 `MAC_CTX + ACCUM_CTX`，验证安全并行、部分和次序、最终事件时刻与性能计数。
 4. 完成 Vector 和 Complex，覆盖 residual、门控、激活、Softmax 与 Norm。
 5. 用 INT4/8/16/32 回归测试覆盖合法数据组合、溢出处理、不同 shape 和存储次序。
-6. 使用同一套上层编译器、低层汇编器和 C 驱动完成 Transformer、RNN、LSTM、GRU 与 `Conv2D(im2col)` 的端到端运行。
+6. 使用同一套上层编译器、低层汇编器和 C 驱动生成可直接编译的 C 模型包，完成 Transformer、RNN、LSTM、GRU 与 `Conv2D(im2col)` 的端到端运行。
+7. 验证外部 Generic Core 的 AXI Master 访问、NPU AXI Slave 命令提交、控制寄存器访问、L1BUF 外部窗口访问，以及 MIF / TBU 的 AXI Master DDR 请求。
 
 首版优先证明单核功能、指令语义、软件生成结果与硬件执行结果一致；后续再依据性能计数调整 Matrix tile、L1BUF bank 数、Complex lane 数和 DMA 未完成请求数。
