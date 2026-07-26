@@ -15,10 +15,10 @@
 - Generic Core 是 NPU 外部的主控 CPU，不计入 NPU 单核硬件。主控 CPU 运行模型调用代码与 C 驱动，以 AXI Master 身份主动访问系统总线。
 - NPU 对系统总线提供 64-bit AXI Slave 接口。该接口包含命令提交、控制寄存器和 L1BUF 外部访问窗口；CFE 只接收并解析命令，不发起 AXI 访问。
 - 模型输入、权重、中间张量和输出支持 `INT4`、`INT8`、`INT16`、`INT32`。其中 INT4/INT8 侧重吞吐与容量，INT16 为回归输入、权重和输出提供更细的数值间隔，INT32 用于矩阵累加、bias 和较大范围的中间结果。
-- 外部系统总线和模块间数据接口均以 64 bit 为一个 beat；一条 128-bit 命令分成低、高两个 beat 发送。
+- 外部系统总线和模块间数据接口均以 64 bit 为一个 beat；命令通过固定地址的 CMD FIFO 数据端口写入，一条 128-bit 命令按低、高两个 beat 连续发送。
 - 通过事件、TaskScheduler 和分阶段 Matrix 流水提高执行单元利用率，使数据搬运、矩阵乘、部分和处理及复杂函数可以按数据依赖同时推进。
 - 复杂函数采用 `INT → FP32 → INT`：FP32 只在 Complex Math Engine 内部出现，不作为软件可见的模型张量格式。
-- 首版没有卷积硬件单元，也没有卷积指令。`Conv2D` 由编译器展开为 `im2col + GEMM`，复用 DMA 和 Matrix Engine。
+- 首版没有卷积硬件单元，也没有卷积指令。当前支持的 NHWC、`groups=1` Conv2D 由编译器形成 `padding / im2col / DMA FILL / COPY_ND / GEMM / bias / 输出整理`，复用 DMA 和 Matrix Engine；不支持的属性在编译阶段报告错误。
 
 > [!note] P0 与 P1
 > P0 是单核首版必须实现并验证的功能；P1 是已经预留编码、可在后续版本启用的功能。软件必须先读取设备功能寄存器，不能向未启用的 P1 功能发出任务。
@@ -28,7 +28,7 @@
 | 项目 | 参考值 | 项目 | 参考值 |
 | --- | ---: | --- | ---: |
 | NPU Core | 1 | 在途任务 | 32 |
-| L1BUF | 1 MiB、16 bank | CMD FIFO | 8 项 |
+| L1BUF | 1 MiB、16 bank | CMD ingress FIFO | 8 条 CMD / 16 beat |
 | Matrix tile | `8×16×8` | Vector lane | 8 |
 | Complex FP32 lane | 4 | DMA 未完成请求 | 16 |
 | 外部地址 | 48-bit GVA、40-bit PA | 事件表 | 255 项 |
@@ -51,8 +51,8 @@
 DDR ↔ MIF / TBU ↔ DMA ↔ L1BUF ↔ Matrix / Vector / Complex
 ```
 
-- Generic Core 位于 NPU 框外。模型调用函数通过 C 驱动准备配置、描述符、权重和 CMD128，再由 CPU 通过 AXI Master 写事务主动提交。
-- NPU AXI Slave 把地址访问分送到命令窗口、LSC 控制寄存器或 L1BUF 外部访问窗口。命令窗口每次接收一个 64-bit beat，一条 CMD128 使用低、高两个 beat。
+- Generic Core 位于 NPU 框外。示例 runner 读取 C 模型包中的配置、描述符、权重和 CMD128，并通过 C 驱动准备缓冲区、提交命令；CPU 以 AXI Master 身份主动发起写事务。
+- NPU AXI Slave 把地址访问分送到固定地址 CMD FIFO 数据端口、LSC 控制寄存器或 L1BUF 外部访问桥。CPU 使用 `AWBURST=FIXED` 向 CMD FIFO 连续写入 2～16 个 64-bit beat；每条 CMD128 固定采用 low beat、high beat 的次序，同一 burst 可以依次携带 1～8 条完整命令。外部访问桥把 AXI Slave 的单项请求与 L1BUF 外部端口的读写通道相互转换。
 - Command Front End（CFE）接收来自 NPU AXI Slave 的两个命令 beat，检查次序、版本、操作码和命令编号，再把完整命令送入命令 FIFO。CFE 不具有 AXI Master 端口。
 - TaskScheduler（TS）维护任务表和事件表；Descriptor Fetch Unit（DFU）读取描述符并检查地址、shape、stride、dtype 与保留位。
 - 四个执行单元通过 L1BUF 交换张量；Matrix、Vector 和 Complex 不直接访问 DDR。
@@ -88,7 +88,12 @@ DDR ↔ MIF / TBU ↔ DMA ↔ L1BUF ↔ Matrix / Vector / Complex
 | `[119:108]` | `signal_event` | 任务进入终态时更新的事件 |
 | `[127:120]` | `header_version` | V1.1 写 `0x01` |
 
-低 word 使用 `first=1,last=0`，高 word 使用 `first=0,last=1`。两个 beat 不得与另一条命令交错；CFE 等待第二拍超时后拒绝本次提交。
+外部 CPU 不发送 `first/last` 标记。驱动把每条 CMD128 排成相邻的低、高
+word，并向固定地址 `CMD_FIFO_DATA` 发出 2～16 beat 的偶数长度 FIXED
+burst，一次可提交 1～8 条命令。Front End 先暂存完整 burst；只有 beat 数、
+`WSTRB` 和 `WLAST` 全部正确时，才把整个 burst 放入 ingress FIFO，否则
+整体拒绝。进入 NPU 内部后，Front End 再根据低、高 word 的位置产生
+`first/last` 信号。
 
 ---
 
@@ -112,13 +117,14 @@ P1 预留 `DMA_GATHER_ND(0x28)`、`VROPE_I(0x83)` 和 `VRECIP_I(0x85)`。Complex
 
 | 模块 | 主要职责 |
 | --- | --- |
-| NPU AXI Slave Front End | 接收外部 CPU 的 64-bit AXI 访问；按地址选择命令窗口、LSC 寄存器或 L1BUF 外部窗口 |
-| Command Front End | 从命令窗口取得低、高两个 64-bit beat，拼接并检查 CMD128；不主动访问 DDR |
+| NPU AXI Slave Front End | 接收外部 CPU 的 64-bit AXI 访问；固定地址 CMD FIFO 使用 FIXED burst，LSC 寄存器和 L1BUF 外部窗口保持各自的地址访问方式 |
+| Command Front End | 从 CMD FIFO 取得相邻的低、高两个 64-bit beat，拼接并检查 CMD128；不主动访问 DDR |
 | DMA / Layout Engine | DDR 与 L1BUF 双向搬运；完成多维复制、填充、转置、拼接和拆分 |
 | Matrix Engine | 执行 GEMM/BMM；支持 INT4、INT8、INT16 输入和权重，使用 INT32 累加并按需要写出 INT4/8/16/32 |
 | Integer Vector Engine | 执行逐元素整数运算，适合 residual、门控乘法、比较、选择和 ReLU |
 | Complex Math Engine | 完成激活、Softmax、LayerNorm、RMSNorm、统计与不同 scale 的相加 |
 | L1BUF Controller | 管理多 bank 片上 SRAM，为四个执行单元和外部访问窗口仲裁读写请求 |
+| L1BUF 外部访问桥 | 在 AXI Slave 窗口请求与 L1BUF 外部客户端读写通道之间转换请求和响应 |
 | MIF / TBU | 作为 64-bit AXI Master 连接系统总线，主动发出 DDR 请求并处理响应 |
 | CFE / TS / DFU | 接收命令、管理事件、读取描述符、选择可发射任务并收集完成状态 |
 | LSC / CRG / WDT | 提供 AXI Slave 控制寄存器与中断、时钟复位、性能计数和任务超时保护 |
@@ -127,7 +133,7 @@ L1BUF 是计算单元之间的数据交换中心。编译器负责安排输入�
 
 ### 一条任务如何流过硬件
 
-模型调用函数先准备生成的配置结构体、Descriptor、权重和输入数据。驱动完成缓存维护与设备写屏障，再以 AXI 写事务依次发送 CMD 的低、高 word。CFE 返回 `ACCEPTED` 后，TS 保存任务并等待两个前置事件。事件满足时，DFU 取得并检查 Descriptor，随后 TS 向目标执行单元发射任务。执行单元的最后一个写响应返回后，TS 才记录终态、更新完成事件并按命令选项产生中断。软件通过驱动的查询、等待函数或中断取得结果，读取输出后调用 ACK 函数，释放任务表项和 `command_id`。
+示例 runner 读取生成的配置结构体、Descriptor、权重、输入输出信息和命令分组，再调用通用 C 驱动。驱动完成缓存维护与设备写屏障，然后向固定地址 CMD FIFO 发起 `AWBURST=FIXED` 写事务，按 low word、high word 的次序连续发送命令 beat。CFE 返回 `ACCEPTED` 后，TS 保存任务并等待两个前置事件。事件满足时，DFU 取得并检查 Descriptor，随后 TS 向目标执行单元发射任务。执行单元的最后一个写响应返回后，TS 才记录终态、更新完成事件并按命令选项产生中断。runner 通过驱动的查询、等待接口或中断取得结果，读取输出后调用 ACK 接口，释放任务表项和 `command_id`。
 
 ---
 
@@ -226,7 +232,8 @@ C 模型包（.c / .h）
   ├─ CMD128 指令数组
   ├─ Descriptor 数组
   ├─ 权重与常量数组
-  └─ 模型调用函数与 CPU 协助步骤
+  ├─ 输入输出与操作信息
+  └─ 命令分组
   ↓ C 驱动
 外部 Generic Core 经系统 AXI 互连访问 NPU AXI Slave → NPU / C model
 ```
@@ -234,13 +241,13 @@ C 模型包（.c / .h）
 - 上层编译器负责图检查、shape 推导、算子拆分、张量布局、L1/DDR 存储分配、Matrix-B tile 整理、事件依赖和任务调度；`MultiHeadAttention` 与 `Conv2D` 在这一阶段拆成可以执行的步骤。
 - 低层汇编器读取已经确定硬件字段的低层 JSON IR，编码 CMD128 与各类 Descriptor。它产生的字节内容随后写入 C 数组，不作为最终部署接口单独交给应用。
 - 编译器的最终部署产物是模型专用 `.c` 与 `.h`：配置结构体说明输入输出、工作区、数组长度和所需设备功能；指令数组保存 CMD128；Descriptor 数组保存任务参数；权重数组保存离线整理后的整数权重和常量。
-- C 模型包还提供模型初始化和运行函数。运行函数调用通用 C 驱动完成缓冲区准备、CMD128 提交、等待、查询、中断处理和 ACK；遇到不能由一条硬件指令直接表达的步骤时，由生成的 C 调度代码组合多条任务，或调用明确登记的 CPU 函数。
+- 当前 C 模型包只提供配置结构体和静态数组，不生成模型初始化函数、模型运行函数或 CPU 辅助函数。示例 runner 读取配置、输入输出、操作信息和命令分组，再调用通用 C 驱动完成缓冲区准备、CMD128 提交、等待、查询、中断处理和 ACK。
 - C 驱动分为 device、command、runtime、descriptor 和 memory 五个源文件，公共 API 不依赖特定操作系统。平台通过回调提供 64-bit AXI/MMIO 访问、缓存维护和内存屏障。
 
 > [!important] Conv2D 不是硬件原生指令
-> 首版没有 `CONV` opcode。编译器把 `Conv2D` 形成 `padding / im2col / DMA / GEMM / bias / 输出整理` 的任务序列，并把该序列固化到生成的 C 模型包。C 驱动按生成次序提交任务；若某种输入排列无法由当前 DMA 描述符直接处理，生成代码调用 CPU 的 im2col 协助函数，再把展开结果交给 Matrix Engine。
+> 首版没有 `CONV` opcode。对于当前支持的 NHWC、`groups=1` Conv2D，编译器形成 `padding / im2col / DMA FILL / COPY_ND / GEMM / bias / 输出整理` 的低层操作，并把对应的 CMD128、Descriptor、操作信息和命令分组写入 C 模型包。不支持的数据格式、分组或属性在编译阶段报告错误，不生成 CPU im2col 函数。
 
-主要部署文件是 `<model>_npu.c` 与 `<model>_npu.h`。低层 JSON IR、清单和反汇编文本可作为检查文件保留，但应用不需要在运行时解析模型文件，也不需要装载多个独立二进制镜像。
+主要部署文件是 `<stem>_model.c` 与 `<stem>_model.h`。低层 JSON IR、清单和反汇编文本可作为检查文件保留，但应用不需要在运行时解析模型文件，也不需要装载多个独立二进制镜像。
 
 ---
 

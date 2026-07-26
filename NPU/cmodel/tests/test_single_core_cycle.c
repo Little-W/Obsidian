@@ -1365,6 +1365,137 @@ static int single_test_system_read(
     return 0;
 }
 
+static int single_test_system_read_value(
+    single_test_env_t *env,
+    uint32_t address,
+    uint8_t id,
+    uint64_t *value)
+{
+    npu_single_core_cycle_core_inputs_t inputs;
+    npu_single_core_cycle_core_outputs_t outputs;
+    npu_single_core_cycle_noc_outputs_t noc_outputs;
+    uint32_t cycle;
+    uint8_t accepted = 0u;
+
+    for (cycle = 0u; cycle < 64u; cycle++) {
+        single_test_core_inputs(env, &inputs);
+        inputs.system_axi.s_axi_arvalid = 1u;
+        inputs.system_axi.s_axi_arid = id;
+        inputs.system_axi.s_axi_araddr = address;
+        inputs.system_axi.s_axi_arlen = 0u;
+        inputs.system_axi.s_axi_arsize = 3u;
+        inputs.system_axi.s_axi_arburst =
+            NPU_SYS_AXI_BURST_INCR;
+        single_test_core_tick(env, &inputs, &outputs);
+        SINGLE_TEST_CALL(single_test_noc_tick(
+            env, &noc_outputs));
+        if (outputs.system_axi.s_axi_arready != 0u) {
+            accepted = 1u;
+            break;
+        }
+    }
+    TEST_CHECK(accepted != 0u);
+
+    for (cycle = 0u;
+         cycle < SINGLE_TEST_MAX_CYCLES; cycle++) {
+        single_test_core_inputs(env, &inputs);
+        single_test_core_tick(env, &inputs, &outputs);
+        SINGLE_TEST_CALL(single_test_noc_tick(
+            env, &noc_outputs));
+        if (outputs.system_axi.s_axi_rvalid != 0u) {
+            TEST_CHECK(outputs.system_axi.s_axi_rid == id);
+            TEST_CHECK(outputs.system_axi.s_axi_rresp ==
+                       NPU_SYS_AXI_RESP_OKAY);
+            TEST_CHECK(outputs.system_axi.s_axi_rlast != 0u);
+            *value = outputs.system_axi.s_axi_rdata;
+            break;
+        }
+    }
+    TEST_CHECK(outputs.system_axi.s_axi_rvalid != 0u);
+
+    single_test_core_inputs(env, &inputs);
+    inputs.system_axi.s_axi_rready = 1u;
+    single_test_core_tick(env, &inputs, &outputs);
+    TEST_CHECK(outputs.system_axi.s_axi_rvalid != 0u);
+    return 0;
+}
+
+static int single_test_system_cmd_burst(
+    single_test_env_t *env,
+    const uint64_t *beat,
+    uint8_t beat_count,
+    uint8_t id)
+{
+    npu_single_core_cycle_core_inputs_t inputs;
+    npu_single_core_cycle_core_outputs_t outputs;
+    npu_single_core_cycle_noc_outputs_t noc_outputs;
+    uint32_t cycle;
+    uint8_t index;
+    uint8_t accepted = 0u;
+
+    TEST_CHECK(beat != (const uint64_t *)0);
+    TEST_CHECK(beat_count >= 2u);
+    TEST_CHECK(beat_count <=
+               NPU_SYS_SLAVE_CMD_MAX_BURST_BEATS);
+    TEST_CHECK((beat_count & 1u) == 0u);
+
+    for (cycle = 0u; cycle < 64u; cycle++) {
+        single_test_core_inputs(env, &inputs);
+        inputs.system_axi.s_axi_awvalid = 1u;
+        inputs.system_axi.s_axi_awid = id;
+        inputs.system_axi.s_axi_awaddr =
+            NPU_SYS_SLAVE_CMD_FIFO_ADDR;
+        inputs.system_axi.s_axi_awlen =
+            (uint8_t)(beat_count - 1u);
+        inputs.system_axi.s_axi_awsize = 3u;
+        inputs.system_axi.s_axi_awburst =
+            NPU_SYS_AXI_BURST_FIXED;
+        single_test_core_tick(env, &inputs, &outputs);
+        SINGLE_TEST_CALL(single_test_noc_tick(
+            env, &noc_outputs));
+        if (outputs.system_axi.s_axi_awready != 0u) {
+            accepted = 1u;
+            break;
+        }
+    }
+    TEST_CHECK(accepted != 0u);
+
+    for (index = 0u; index < beat_count; index++) {
+        accepted = 0u;
+        for (cycle = 0u; cycle < 64u; cycle++) {
+            single_test_core_inputs(env, &inputs);
+            inputs.system_axi.s_axi_wvalid = 1u;
+            inputs.system_axi.s_axi_wdata = beat[index];
+            inputs.system_axi.s_axi_wstrb = 0xffu;
+            inputs.system_axi.s_axi_wlast =
+                (uint8_t)(index + 1u == beat_count);
+            single_test_core_tick(env, &inputs, &outputs);
+            SINGLE_TEST_CALL(single_test_noc_tick(
+                env, &noc_outputs));
+            if (outputs.system_axi.s_axi_wready != 0u) {
+                accepted = 1u;
+                break;
+            }
+        }
+        TEST_CHECK(accepted != 0u);
+    }
+
+    for (cycle = 0u; cycle < 128u; cycle++) {
+        single_test_core_inputs(env, &inputs);
+        inputs.system_axi.s_axi_bready = 1u;
+        single_test_core_tick(env, &inputs, &outputs);
+        SINGLE_TEST_CALL(single_test_noc_tick(
+            env, &noc_outputs));
+        if (outputs.system_axi.s_axi_bvalid != 0u) {
+            TEST_CHECK(outputs.system_axi.s_axi_bid == id);
+            TEST_CHECK(outputs.system_axi.s_axi_bresp ==
+                       NPU_SYS_AXI_RESP_OKAY);
+            return 0;
+        }
+    }
+    return __LINE__;
+}
+
 static int single_test_system_and_debug(single_test_env_t *env)
 {
     const uint64_t debug_data =
@@ -1399,6 +1530,128 @@ static int single_test_system_and_debug(single_test_env_t *env)
         NPU_LSC_CORE_CONTROL_START, 0x16u));
     TEST_CHECK(env->top.lsc.started != 0u);
     TEST_CHECK(env->top.lsc.stopped == 0u);
+    return 0;
+}
+
+static int single_test_axi_command_fifo(
+    single_test_env_t *env)
+{
+    const uint16_t command_id[2] = {
+        UINT16_C(0x4a0), UINT16_C(0x4a1)
+    };
+    uint64_t beat[4];
+    uint64_t response;
+    uint32_t index;
+
+    SINGLE_TEST_CALL(single_test_wait_idle(env));
+    SINGLE_TEST_CALL(single_test_system_write(
+        env, NPU_LSC_REG_DDR_LOCAL_LIMIT,
+        UINT64_C(0x00000000000ffff8), 0x6eu));
+    SINGLE_TEST_CALL(single_test_system_write(
+        env, NPU_LSC_REG_TBU_STREAM_ID,
+        UINT64_C(0x56781234), 0x6fu));
+    SINGLE_TEST_CALL(single_test_system_write(
+        env, NPU_LSC_REG_CORE_CONTROL,
+        NPU_LSC_CORE_CONTROL_START, 0x70u));
+    single_test_make_command(
+        command_id[0], &beat[0], &beat[1]);
+    single_test_make_command(
+        command_id[1], &beat[2], &beat[3]);
+
+    SINGLE_TEST_CALL(single_test_system_cmd_burst(
+        env, beat, 4u, 0x71u));
+    for (index = 0u; index < 2u; index++) {
+        SINGLE_TEST_CALL(single_test_system_read_value(
+            env, NPU_SYS_SLAVE_CMD_RSP_FIFO_ADDR,
+            (uint8_t)(0x72u + index), &response));
+        TEST_CHECK((response & UINT64_C(0x0fff)) ==
+                   command_id[index]);
+        TEST_CHECK(
+            ((response >> 12u) & UINT64_C(0xff)) ==
+            NPU_STATUS_SUCCESS);
+    }
+    TEST_CHECK(env->top.system_axi.cmd_rsp_fifo_count == 0u);
+    TEST_CHECK(
+        npu_sys_slave_cmd_idle(&env->top.system_axi) != 0u);
+    TEST_CHECK(env->top.cmd_source ==
+               NPU_SINGLE_CORE_CMD_SOURCE_NONE);
+    env->top.system_axi.cmd_protocol_error_sticky = 1u;
+    SINGLE_TEST_CALL(single_test_system_write(
+        env, NPU_LSC_REG_FAULT_CLEAR, 1u, 0x74u));
+    TEST_CHECK(
+        env->top.system_axi.cmd_protocol_error_sticky == 0u);
+    return 0;
+}
+
+static int single_test_soft_reset_discards_axi_half(
+    single_test_env_t *env)
+{
+    npu_single_core_cycle_core_inputs_t inputs;
+    npu_single_core_cycle_core_outputs_t outputs;
+    npu_single_core_cycle_noc_outputs_t noc_outputs;
+    uint32_t cycle;
+    uint8_t accepted = 0u;
+    uint8_t cleared = 0u;
+
+    SINGLE_TEST_CALL(single_test_wait_idle(env));
+    for (cycle = 0u; cycle < 64u; cycle++) {
+        single_test_core_inputs(env, &inputs);
+        inputs.system_axi.s_axi_awvalid = 1u;
+        inputs.system_axi.s_axi_awid = 0x78u;
+        inputs.system_axi.s_axi_awaddr =
+            NPU_SYS_SLAVE_CMD_FIFO_ADDR;
+        inputs.system_axi.s_axi_awlen = 1u;
+        inputs.system_axi.s_axi_awsize = 3u;
+        inputs.system_axi.s_axi_awburst =
+            NPU_SYS_AXI_BURST_FIXED;
+        single_test_core_tick(env, &inputs, &outputs);
+        SINGLE_TEST_CALL(single_test_noc_tick(
+            env, &noc_outputs));
+        if (outputs.system_axi.s_axi_awready != 0u) {
+            accepted = 1u;
+            break;
+        }
+    }
+    TEST_CHECK(accepted != 0u);
+
+    accepted = 0u;
+    for (cycle = 0u; cycle < 64u; cycle++) {
+        single_test_core_inputs(env, &inputs);
+        inputs.system_axi.s_axi_wvalid = 1u;
+        inputs.system_axi.s_axi_wdata =
+            UINT64_C(0x0123456789abcdef);
+        inputs.system_axi.s_axi_wstrb = 0xffu;
+        inputs.system_axi.s_axi_wlast = 0u;
+        single_test_core_tick(env, &inputs, &outputs);
+        SINGLE_TEST_CALL(single_test_noc_tick(
+            env, &noc_outputs));
+        if (outputs.system_axi.s_axi_wready != 0u) {
+            accepted = 1u;
+            break;
+        }
+    }
+    TEST_CHECK(accepted != 0u);
+    TEST_CHECK(
+        env->top.system_axi.write.cmd_half_pending != 0u);
+
+    for (cycle = 0u; cycle < 512u; cycle++) {
+        single_test_core_inputs(env, &inputs);
+        inputs.soft_reset_req_i = 1u;
+        single_test_core_tick(env, &inputs, &outputs);
+        SINGLE_TEST_CALL(single_test_noc_tick(
+            env, &noc_outputs));
+        if (env->top.system_axi.write.cmd_half_pending == 0u &&
+            env->top.system_axi.write.active == 0u) {
+            cleared = 1u;
+            break;
+        }
+    }
+    TEST_CHECK(cleared != 0u);
+    TEST_CHECK(env->top.system_axi.cmd_fifo_count == 0u);
+    TEST_CHECK(env->top.system_axi.cmd_rsp_fifo_count == 0u);
+    TEST_CHECK(env->top.system_axi.bvalid == 0u);
+    TEST_CHECK(env->top.cmd_source ==
+               NPU_SINGLE_CORE_CMD_SOURCE_NONE);
     return 0;
 }
 
@@ -4616,6 +4869,15 @@ int test_single_core_cycle(void)
     SINGLE_TEST_CALL(single_test_env_init(env));
     SINGLE_TEST_CALL(single_test_reset_release(env));
     SINGLE_TEST_CALL(single_test_current_idle_access(env));
+
+    SINGLE_TEST_CALL(single_test_env_init(env));
+    SINGLE_TEST_CALL(single_test_reset_release(env));
+    SINGLE_TEST_CALL(single_test_axi_command_fifo(env));
+
+    SINGLE_TEST_CALL(single_test_env_init(env));
+    SINGLE_TEST_CALL(single_test_reset_release(env));
+    SINGLE_TEST_CALL(
+        single_test_soft_reset_discards_axi_half(env));
 
     SINGLE_TEST_CALL(single_test_env_init(env));
     SINGLE_TEST_CALL(single_test_reset_release(env));

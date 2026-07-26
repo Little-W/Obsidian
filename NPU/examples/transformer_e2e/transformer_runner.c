@@ -207,60 +207,134 @@ static int sync_device_images(npu_driver_t *driver)
     return 0;
 }
 
-static int submit_command(npu_driver_t *driver,
-                          uint32_t batch,
-                          uint16_t command_id)
+static int submit_command_batch(npu_driver_t *driver,
+                                uint32_t batch,
+                                uint32_t begin,
+                                uint32_t end)
 {
-    const transformer_model_operation_t *operation =
-        operation_for_command(command_id);
-    npu_drv_cmd128_t command;
-    npu_drv_cmd_fields_t fields;
-    npu_drv_submit_result_t result;
-    uint64_t descriptor_offset;
-    size_t descriptor_bytes;
-    char wait0[24];
-    char wait1[24];
-    char signal[24];
+    const transformer_model_operation_t
+        *operations[NPU_DRV_CMD_FIFO_MAX_BURST_COMMANDS];
+    npu_drv_cmd128_t
+        commands[NPU_DRV_CMD_FIFO_MAX_BURST_COMMANDS];
+    npu_drv_cmd_fields_t
+        fields[NPU_DRV_CMD_FIFO_MAX_BURST_COMMANDS];
+    npu_drv_submit_result_t
+        results[NPU_DRV_CMD_FIFO_MAX_BURST_COMMANDS];
+    npu_drv_submit_batch_result_t summary;
+    size_t command_count;
+    size_t local_index;
     int rc;
 
-    if (operation == (const transformer_model_operation_t *)0 ||
-        command_for_id(command_id, &command, &fields) != 0 ||
-        fields.descriptor_addr < TRANSFORMER_MODEL_DESCRIPTOR_BASE) {
+    if (end < begin ||
+        end > TRANSFORMER_MODEL_BATCH_COMMAND_ID_COUNT) {
         return -1;
     }
-    descriptor_offset =
-        fields.descriptor_addr - TRANSFORMER_MODEL_DESCRIPTOR_BASE;
-    descriptor_bytes = descriptor_bytes_for_engine(fields.engine);
-    if (descriptor_bytes == 0u ||
-        descriptor_offset >
-            (uint64_t)TRANSFORMER_MODEL_DESCRIPTOR_BYTES ||
-        descriptor_bytes >
-            (size_t)TRANSFORMER_MODEL_DESCRIPTOR_BYTES -
-                (size_t)descriptor_offset ||
-        !address_span_valid(fields.descriptor_addr, descriptor_bytes)) {
+    command_count = (size_t)(end - begin);
+    if (command_count == 0u ||
+        command_count > NPU_DRV_CMD_FIFO_MAX_BURST_COMMANDS) {
         return -1;
     }
-    rc = npu_drv_submit(
+    for (local_index = 0u;
+         local_index < command_count;
+         local_index++) {
+        uint16_t command_id =
+            transformer_model_batch_command_ids[
+                begin + (uint32_t)local_index];
+        uint64_t descriptor_offset;
+        size_t descriptor_bytes;
+
+        operations[local_index] =
+            operation_for_command(command_id);
+        if (operations[local_index] ==
+                (const transformer_model_operation_t *)0 ||
+            command_for_id(
+                command_id,
+                &commands[local_index],
+                &fields[local_index]) != 0 ||
+            fields[local_index].descriptor_addr <
+                TRANSFORMER_MODEL_DESCRIPTOR_BASE) {
+            return -1;
+        }
+        descriptor_offset =
+            fields[local_index].descriptor_addr -
+            TRANSFORMER_MODEL_DESCRIPTOR_BASE;
+        descriptor_bytes = descriptor_bytes_for_engine(
+            fields[local_index].engine);
+        if (descriptor_bytes == 0u ||
+            descriptor_offset >
+                (uint64_t)TRANSFORMER_MODEL_DESCRIPTOR_BYTES ||
+            descriptor_bytes >
+                (size_t)TRANSFORMER_MODEL_DESCRIPTOR_BYTES -
+                    (size_t)descriptor_offset ||
+            !address_span_valid(
+                fields[local_index].descriptor_addr,
+                descriptor_bytes)) {
+            return -1;
+        }
+    }
+
+    rc = npu_drv_submit_batch(
         driver,
-        &command,
-        &model_ddr[fields.descriptor_addr],
-        descriptor_bytes,
-        &result);
-    event_text(fields.wait_event[0], wait0, sizeof(wait0));
-    event_text(fields.wait_event[1], wait1, sizeof(wait1));
-    event_text(fields.signal_event, signal, sizeof(signal));
-    printf("submit batch=%u op=%s node=%s command_id=%u "
-           "wait=[%s,%s] signal=%s accepted_status=%u rc=%d\n",
+        commands,
+        command_count,
+        (const void *)0,
+        0u,
+        results,
+        &summary);
+    printf("submit burst batch=%u commands=%u beats=%u "
+           "burst_completed=%u responses=%u "
+           "first_failed_index=%lld rc=%d\n",
            (unsigned)batch,
-           operation->name,
-           operation->high_level_node,
-           (unsigned)fields.command_id,
-           wait0,
-           wait1,
-           signal,
-           (unsigned)result.status,
+           (unsigned)command_count,
+           (unsigned)(command_count * NPU_DRV_CMD128_BEATS),
+           (unsigned)summary.burst_completed,
+           (unsigned)summary.responses_received,
+           summary.first_failed_index == NPU_DRV_NO_FAILED_COMMAND
+               ? -1LL
+               : (long long)summary.first_failed_index,
            rc);
-    return rc == NPU_DRV_OK && result.status == 0u ? 0 : -1;
+    for (local_index = 0u;
+         local_index < command_count;
+         local_index++) {
+        char wait0[24];
+        char wait1[24];
+        char signal[24];
+
+        event_text(
+            fields[local_index].wait_event[0],
+            wait0,
+            sizeof(wait0));
+        event_text(
+            fields[local_index].wait_event[1],
+            wait1,
+            sizeof(wait1));
+        event_text(
+            fields[local_index].signal_event,
+            signal,
+            sizeof(signal));
+        printf("submit batch=%u index=%u op=%s node=%s "
+               "command_id=%u wait=[%s,%s] signal=%s "
+               "accepted_id=%u accepted_status=%u fifo_free=%u\n",
+               (unsigned)batch,
+               (unsigned)local_index,
+               operations[local_index]->name,
+               operations[local_index]->high_level_node,
+               (unsigned)fields[local_index].command_id,
+               wait0,
+               wait1,
+               signal,
+               (unsigned)results[local_index].command_id,
+               (unsigned)results[local_index].status,
+               (unsigned)results[local_index].fifo_free);
+    }
+    if (rc != NPU_DRV_OK ||
+        summary.burst_completed == 0u ||
+        summary.responses_received != command_count ||
+        summary.first_failed_index !=
+            NPU_DRV_NO_FAILED_COMMAND) {
+        return -1;
+    }
+    return 0;
 }
 
 static int wait_query_batch(npu_driver_t *driver, uint32_t batch)
@@ -344,19 +418,14 @@ static int run_batches(npu_driver_t *driver)
             transformer_model_command_batches[batch].command_id_offset;
         uint32_t end =
             begin + transformer_model_command_batches[batch].command_count;
-        uint16_t index;
 
         printf("batch begin=%u index=%u commands=%u\n",
                (unsigned)batch,
                (unsigned)begin,
                (unsigned)(end - begin));
-        for (index = begin; index < end; index++) {
-            if (submit_command(
-                    driver,
-                    batch,
-                    transformer_model_batch_command_ids[index]) != 0) {
-                return -1;
-            }
+        if (submit_command_batch(
+                driver, batch, begin, end) != 0) {
+            return -1;
         }
         if (wait_query_batch(driver, batch) != 0) {
             return -1;
@@ -658,13 +727,25 @@ int main(void)
     CHECK(run_batches(&driver));
     CHECK(npu_drv_fence(&driver, 1000000u, &fence_result));
     CHECK(check_output(&driver));
+    CHECK(model_backend.submitted_bursts ==
+                  TRANSFORMER_MODEL_COMMAND_BATCH_COUNT &&
+              model_backend.submitted_beats ==
+                  TRANSFORMER_MODEL_COMMAND_COUNT *
+                      NPU_DRV_CMD128_BEATS &&
+              model_backend.responses ==
+                  TRANSFORMER_MODEL_COMMAND_COUNT &&
+              model_backend.pending_response_count == 0u
+          ? 0
+          : -1);
 
     printf("PASS model=int16_transformer_encoder high_ops=8 "
            "commands=%u cmd_bits=128 batches=%u "
-           "submitted_beats=%u responses=%u cycles=%llu "
+           "submitted_bursts=%u submitted_beats=%u "
+           "responses=%u cycles=%llu "
            "cache_clean=%u cache_invalidate=%u\n",
            TRANSFORMER_MODEL_COMMAND_COUNT,
            TRANSFORMER_MODEL_COMMAND_BATCH_COUNT,
+           (unsigned)model_backend.submitted_bursts,
            (unsigned)model_backend.submitted_beats,
            (unsigned)model_backend.responses,
            (unsigned long long)model_backend.model.cycle,

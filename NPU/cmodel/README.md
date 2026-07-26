@@ -10,11 +10,11 @@
 
 > [!important] 硬件范围
 > Generic Core 是 NPU 外部的主控 CPU。真实 SoC 中，CPU 以 AXI Master
-> 身份访问 NPU 的 AXI Slave 命令窗口、控制寄存器和 L1BUF 外部窗口；
+> 身份访问 NPU 的 AXI Slave 固定命令 FIFO、控制寄存器和 L1BUF 外部窗口；
 > NPU 内部只有 MIF / TBU 使用 AXI Master 主动访问 DDR。代码中保留
 > `npu_issue_adapter_cycle`、`npu_gc_axi_cycle` 以及若干 `gc_*` 字段，
 > 仅用于兼容已有的系统联合仿真测试。它们表示 NPU 外部的 CPU 侧测试部件，
-> 不属于待实现的 NPU RTL。
+> 不属于待实现的 NPU RTL，也不是实际主控可绕过 AXI 使用的硬件端口。
 
 ## 1. 参考配置
 
@@ -93,7 +93,7 @@ workspace 描述，不会清除哈希数组或访问记录。读写 entry 指针
 | `include/src/npu_mif_cycle.*` | 两个内部发起者、TBU、双 AXI Master 端口 |
 | `include/src/npu_mif_cdc_cycle.*` | Core/NoC 独立 tick 的请求、写数据和响应异步 FIFO |
 | `include/src/npu_axi_mem_target_cycle.*` | MIF 与外部 CPU 测试部件可复用的 64-bit AXI4 存储目标周期模型 |
-| `include/src/npu_sys_slave_cycle.*` | 64-bit AXI4 Slave 与内部请求转换 |
+| `include/src/npu_sys_slave_cycle.*` | 64-bit AXI4 Slave、固定命令 FIFO、命令响应 FIFO 与内部请求转换 |
 | `include/src/npu_lsc_cycle.*` | CSR、首错、中断、性能计数和受控复位 |
 | `include/src/npu_control_cycle.*` | CRG 复位同步、时钟控制和 WDT |
 | `include/src/npu_single_core_cycle.*` | Core/NoC 双时钟单核组合接口 |
@@ -120,7 +120,7 @@ workspace 描述，不会清除哈希数组或访问记录。读写 entry 指针
 | `make keras-fixture` | 重新训练 MLP 和四个序列网络，并改写两份 `tests/generated/*.h` | 是 |
 | `make keras-e2e` | 先重新生成全部 fixture，再构建并运行全部主测试 | 是 |
 | `make sanitize` | 在 `build-sanitize` 中使用 AddressSanitizer 和 UndefinedBehaviorSanitizer 构建并运行主测试 | 否 |
-| `make clean` | 删除当前 `BUILD_DIR` 中由 Makefile 列出的对象、静态库和可执行文件；不删除目录、模型导出文件或 fixture | 否 |
+| `make clean` | 删除 `BUILD_DIR` 与 `SAN_BUILD_DIR`；不改写模型导出文件或 fixture | 否 |
 
 > [!note] 四种整数类型的组合回归
 > `test_dtype_regression` 检查 4 组张量存储、16 组 DMA 源/目的类型、64 组
@@ -166,9 +166,8 @@ make model-compile-check MODEL=gru
 
 > [!note] 生成文件与清理范围
 > `make keras-fixture` 会改写仓库中的两个 fixture 头文件，不是只在构建目录中
-> 生成临时文件。`make sanitize` 结束后保留 `build-sanitize`。如果要求工作
-> 目录中完全不保留构建目录，需要明确删除这些目录；`make clean` 本身只删除
-> 它已知的构建文件。
+> 生成临时文件。`make sanitize` 结束后保留 `build-sanitize`，统一运行
+> `make clean` 会删除普通构建目录与 Sanitizer 构建目录。
 
 默认编译参数包含：
 
@@ -337,10 +336,25 @@ do {
 和 `cmd_last`。CFE 接收低 word 后进入等待高 word 的状态；参考配置在 32 个
 周期内没有收到合法高 word 时返回 `TIMEOUT`，并丢弃已经保存的低 word。
 
-真实主控 CPU 不使用这里的 `rs1/rs2` 接口。驱动先通过 AXI Slave 命令窗口
-写低 word，再写高 word，随后读取提交状态。为兼容已有测试，
-`npu_issue_adapter_cycle` 仍可从旧式 `rs1/rs2` 输入产生完全相同的两个
-CMD beat；该适配器属于测试环境，不是 NPU 内部模块。
+真实主控 CPU 不使用这里的 `rs1/rs2` 接口。正式部署入口是 NPU 的 64-bit
+AXI Slave 固定命令 FIFO：
+
+- `0x020000` 是唯一的命令数据地址。AW 通道使用
+  `AWSIZE=3`、`AWBURST=FIXED`，一个 burst 包含 2～16 个偶数 beat；
+- W 通道按“低 64 bit、高 64 bit”组成一条 CMD128，所有 beat 均要求
+  `WSTRB=0xff`，`WLAST` 只在 burst 最后一拍有效；
+- Slave 在 AW 握手前为整个 burst 保留入口空间。W 数据先放入事务暂存区，
+  最后一拍检查通过后才把该 burst 的全部 CMD128 一次放入入口 FIFO；
+- `BRESP` 只报告 AXI 格式与整 burst 接收结果。每条命令的 CFE 结果进入
+  `0x020008` 响应 FIFO，软件每完成一次 64-bit 读取就取走一项；
+- `0x020010` 返回入口可用 beat 数、响应项数、半条命令状态、两个满状态和
+  协议错误保持位。响应 FIFO 暂时为空时，已经接收的 AR 会等待新结果，
+  不会返回伪造数据。协议错误保持位在 Core reset、内部 soft reset 或
+  LSC `FAULT_CLEAR.bit0` 清错脉冲到来时清零。
+
+`npu_issue_adapter_cycle` 仍可从旧式 `rs1/rs2` 输入产生相同的两个 CMD
+beat，但它只供模块级回归注入使用。它不是 NPU 顶层硬件端口，真实 CPU
+不能用该接口绕过 AXI Slave。
 
 ## 6. 周期模型
 
@@ -369,7 +383,8 @@ CMD beat；该适配器属于测试环境，不是 NPU 内部模块。
 ### 6.1 外部 CPU 兼容测试适配器
 
 本小节只说明旧回归使用的 CPU 侧测试适配器，不定义 NPU 顶层端口。NPU
-硬件的正式入口是 AXI Slave 命令窗口。
+硬件的正式部署入口是 `0x020000` AXI Slave 固定命令 FIFO。这里的
+`issue/rs1/rs2` 字段只用于模块级回归注入，不能作为 SoC 集成端口。
 
 `issue_quiesce_i` 只控制测试适配器能否从 `IDLE` 状态接收一条新请求。
 该信号为 1 时，空闲适配器把 `issue_ready_o` 置为 0，因而新的
@@ -1591,7 +1606,7 @@ make test
 误差，最大绝对误差为 2 LSB，4 个 token 的最大特征编号均与 Keras 结果相同。
 
 两套示例中的驱动调用都表示外部主控 CPU 主动操作 NPU。主控 CPU 是 AXI
-Master；NPU 的命令窗口、控制寄存器和 L1BUF 外部窗口是 AXI Slave 目标。
+Master；NPU 的固定地址命令 FIFO、控制寄存器和 L1BUF 外部窗口是 AXI Slave 目标。
 Generic Core 不属于 NPU，C model 中的 CPU 侧测试部件也不应当被理解为 NPU
 内部硬件。
 

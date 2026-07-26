@@ -50,6 +50,12 @@ typedef enum {
     NPU_SINGLE_CORE_TBU_INTERNAL = 1
 } npu_single_core_tbu_mode_t;
 
+typedef enum {
+    NPU_SINGLE_CORE_CMD_SOURCE_NONE = 0,
+    NPU_SINGLE_CORE_CMD_SOURCE_ISSUE = 1,
+    NPU_SINGLE_CORE_CMD_SOURCE_AXI = 2
+} npu_single_core_cmd_source_t;
+
 typedef struct {
     uint8_t core_rst_ni;
     uint8_t noc_rst_ni;
@@ -183,6 +189,7 @@ typedef struct {
     npu_wire_limits_t wire_limits;
 
     npu_issue_adapter_cycle_t issue;
+    uint8_t cmd_source;
     npu_cfe_cycle_t cfe;
     npu_ts_cycle_t ts;
     npu_engine_data_cycle_t engine[NPU_TS_ENGINE_COUNT];

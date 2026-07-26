@@ -11,6 +11,23 @@ extern "C" {
 #define NPU_SYS_SLAVE_CSR_LIMIT 0x00010000u
 #define NPU_SYS_SLAVE_DEBUG_BASE 0x00010000u
 #define NPU_SYS_SLAVE_DEBUG_LIMIT 0x00020000u
+#define NPU_SYS_SLAVE_CMD_FIFO_ADDR 0x00020000u
+#define NPU_SYS_SLAVE_CMD_RSP_FIFO_ADDR 0x00020008u
+#define NPU_SYS_SLAVE_CMD_FIFO_STATUS_ADDR 0x00020010u
+#define NPU_SYS_SLAVE_CMD_FIFO_DEPTH 8u
+#define NPU_SYS_SLAVE_CMD_RSP_FIFO_DEPTH 8u
+#define NPU_SYS_SLAVE_CMD_MAX_BURST_BEATS \
+    (NPU_SYS_SLAVE_CMD_FIFO_DEPTH * 2u)
+#define NPU_SYS_SLAVE_CMD_STATUS_FREE_BEATS_SHIFT 0u
+#define NPU_SYS_SLAVE_CMD_STATUS_RSP_COUNT_SHIFT 8u
+#define NPU_SYS_SLAVE_CMD_STATUS_HALF_PENDING \
+    (UINT64_C(1) << 16u)
+#define NPU_SYS_SLAVE_CMD_STATUS_INGRESS_FULL \
+    (UINT64_C(1) << 17u)
+#define NPU_SYS_SLAVE_CMD_STATUS_RSP_FULL \
+    (UINT64_C(1) << 18u)
+#define NPU_SYS_SLAVE_CMD_STATUS_PROTOCOL_ERROR \
+    (UINT64_C(1) << 19u)
 #define NPU_SYS_SLAVE_L1_BASE 0x00100000u
 #define NPU_SYS_SLAVE_L1_WINDOW_BYTES 0x00f00000u
 #define NPU_SYS_SLAVE_DEFAULT_L1_BYTES (1024u * 1024u)
@@ -43,7 +60,10 @@ typedef enum {
     NPU_SYS_TARGET_REG = 1,
     NPU_SYS_TARGET_L1 = 2,
     NPU_SYS_TARGET_RESERVED = 3,
-    NPU_SYS_TARGET_ERROR = 4
+    NPU_SYS_TARGET_CMD_FIFO = 4,
+    NPU_SYS_TARGET_CMD_RSP_FIFO = 5,
+    NPU_SYS_TARGET_CMD_FIFO_STATUS = 6,
+    NPU_SYS_TARGET_ERROR = 7
 } npu_sys_slave_target_t;
 
 typedef enum {
@@ -98,6 +118,11 @@ typedef struct {
     uint8_t ssa_l1_rsp_valid_i;
     uint64_t ssa_l1_rsp_rdata_i;
     uint8_t ssa_l1_rsp_status_i;
+
+    uint8_t cmd_ready_i;
+    uint8_t cmd_rsp_valid_i;
+    uint64_t cmd_rsp_data_i;
+    uint8_t cmd_error_clear_i;
 } npu_sys_slave_inputs_t;
 
 typedef struct {
@@ -129,9 +154,20 @@ typedef struct {
     uint8_t ssa_l1_req_wstrb_o;
     uint8_t ssa_l1_rsp_ready_o;
 
+    uint8_t cmd_valid_o;
+    uint64_t cmd_data_o;
+    uint8_t cmd_first_o;
+    uint8_t cmd_last_o;
+    uint8_t cmd_rsp_ready_o;
+
     uint8_t idle;
     uint64_t cycle;
 } npu_sys_slave_outputs_t;
+
+typedef struct {
+    uint64_t low;
+    uint64_t high;
+} npu_sys_slave_cmd_entry_t;
 
 typedef struct {
     uint8_t valid;
@@ -166,6 +202,13 @@ typedef struct {
     uint64_t beat_data;
     uint8_t beat_strb;
     uint8_t beat_last;
+
+    uint8_t cmd_reserved;
+    uint8_t cmd_stage_count;
+    uint8_t cmd_half_pending;
+    uint64_t cmd_half_data;
+    npu_sys_slave_cmd_entry_t
+        cmd_stage[NPU_SYS_SLAVE_CMD_FIFO_DEPTH];
 } npu_sys_slave_write_state_t;
 
 typedef struct {
@@ -183,6 +226,7 @@ typedef struct {
     uint8_t reg_space;
     uint8_t error;
     uint8_t decode_wait;
+    uint8_t cmd_rsp_pop;
     uint16_t total_beats;
     uint16_t next_beat;
 } npu_sys_slave_read_state_t;
@@ -208,6 +252,23 @@ typedef struct {
     uint64_t rdata;
     uint8_t rresp;
     uint8_t rlast;
+
+    npu_sys_slave_cmd_entry_t
+        cmd_fifo[NPU_SYS_SLAVE_CMD_FIFO_DEPTH];
+    uint8_t cmd_fifo_read_index;
+    uint8_t cmd_fifo_write_index;
+    uint8_t cmd_fifo_count;
+    uint8_t cmd_output_beat;
+    uint8_t cmd_wait_response;
+
+    uint64_t
+        cmd_rsp_fifo[NPU_SYS_SLAVE_CMD_RSP_FIFO_DEPTH];
+    uint8_t cmd_rsp_fifo_read_index;
+    uint8_t cmd_rsp_fifo_write_index;
+    uint8_t cmd_rsp_fifo_count;
+
+    uint8_t cmd_overflow_sticky;
+    uint8_t cmd_protocol_error_sticky;
 } npu_sys_slave_cycle_t;
 
 /*
@@ -233,6 +294,13 @@ void npu_sys_slave_cycle_step(npu_sys_slave_cycle_t *adapter,
                               npu_sys_slave_outputs_t *outputs);
 
 uint8_t npu_sys_slave_cycle_idle(
+    const npu_sys_slave_cycle_t *adapter);
+
+/*
+ * Completed responses waiting for software do not keep this command-side
+ * idle indication low.
+ */
+uint8_t npu_sys_slave_cmd_idle(
     const npu_sys_slave_cycle_t *adapter);
 
 #ifdef __cplusplus

@@ -108,52 +108,128 @@ int npu_drv_cmd128_decode(const npu_drv_cmd128_t *command,
     return NPU_DRV_OK;
 }
 
+static void npu_drv_submit_result_decode(
+    uint64_t response,
+    npu_drv_submit_result_t *result)
+{
+    result->raw = response;
+    result->command_id = (uint16_t)(response & 0x0fffu);
+    result->status = (uint8_t)((response >> 12u) & 0xffu);
+    result->fifo_free = (uint8_t)((response >> 20u) & 0xffu);
+}
+
+int npu_drv_submit_batch(
+    npu_driver_t *driver,
+    const npu_drv_cmd128_t *commands,
+    size_t command_count,
+    const void *descriptor_cpu_address,
+    size_t descriptor_bytes,
+    npu_drv_submit_result_t *results,
+    npu_drv_submit_batch_result_t *batch_result)
+{
+    uint64_t beats[NPU_DRV_CMD_FIFO_MAX_BURST_BEATS];
+    uint16_t expected_command_ids[
+        NPU_DRV_CMD_FIFO_MAX_BURST_COMMANDS];
+    npu_drv_cmd_fields_t fields;
+    size_t index;
+    int saw_device_error = 0;
+    int saw_protocol_error = 0;
+
+    if (driver == (npu_driver_t *)0 ||
+        commands == (const npu_drv_cmd128_t *)0 ||
+        results == (npu_drv_submit_result_t *)0 ||
+        batch_result == (npu_drv_submit_batch_result_t *)0 ||
+        command_count == 0u ||
+        (descriptor_bytes != 0u &&
+         descriptor_cpu_address == (const void *)0)) {
+        return NPU_DRV_EINVAL;
+    }
+    if (command_count > NPU_DRV_CMD_FIFO_MAX_BURST_COMMANDS) {
+        return NPU_DRV_ERANGE;
+    }
+    memset(results, 0, command_count * sizeof(*results));
+    memset(batch_result, 0, sizeof(*batch_result));
+    batch_result->first_failed_index =
+        NPU_DRV_NO_FAILED_COMMAND;
+    if (driver->ops.submit_fixed_burst == (void *)0 ||
+        driver->ops.submit_response == (void *)0) {
+        return NPU_DRV_ENOTSUP;
+    }
+    for (index = 0u; index < command_count; index++) {
+        if (npu_drv_cmd128_decode(&commands[index], &fields) !=
+            NPU_DRV_OK) {
+            return NPU_DRV_EINVAL;
+        }
+        expected_command_ids[index] = fields.command_id;
+        beats[index * NPU_DRV_CMD128_BEATS] = commands[index].lo;
+        beats[index * NPU_DRV_CMD128_BEATS + 1u] =
+            commands[index].hi;
+    }
+
+    if (npu_drv_sync_for_device(
+            driver, descriptor_cpu_address, descriptor_bytes) !=
+        NPU_DRV_OK) {
+        return NPU_DRV_EINVAL;
+    }
+    if (driver->ops.submit_fixed_burst(
+            driver->ops.context,
+            NPU_DRV_CMD_FIFO_DATA,
+            beats,
+            command_count * NPU_DRV_CMD128_BEATS) != 0) {
+        batch_result->first_failed_index = 0u;
+        return NPU_DRV_EIO;
+    }
+    batch_result->burst_completed = 1u;
+
+    for (index = 0u; index < command_count; index++) {
+        uint64_t response;
+
+        if (driver->ops.submit_response(
+                driver->ops.context, &response) != 0) {
+            if (batch_result->first_failed_index ==
+                NPU_DRV_NO_FAILED_COMMAND) {
+                batch_result->first_failed_index = index;
+            }
+            return NPU_DRV_EIO;
+        }
+        npu_drv_submit_result_decode(response, &results[index]);
+        batch_result->responses_received++;
+        if (results[index].command_id !=
+            expected_command_ids[index]) {
+            saw_protocol_error = 1;
+            if (batch_result->first_failed_index ==
+                NPU_DRV_NO_FAILED_COMMAND) {
+                batch_result->first_failed_index = index;
+            }
+        } else if (results[index].status != 0u) {
+            saw_device_error = 1;
+            if (batch_result->first_failed_index ==
+                NPU_DRV_NO_FAILED_COMMAND) {
+                batch_result->first_failed_index = index;
+            }
+        }
+    }
+
+    if (saw_protocol_error != 0) {
+        return NPU_DRV_EIO;
+    }
+    return saw_device_error == 0 ? NPU_DRV_OK : NPU_DRV_EDEVICE;
+}
+
 int npu_drv_submit(npu_driver_t *driver,
                    const npu_drv_cmd128_t *command,
                    const void *descriptor_cpu_address,
                    size_t descriptor_bytes,
                    npu_drv_submit_result_t *result)
 {
-    npu_drv_cmd_fields_t fields;
-    uint64_t response;
-    int callback_result;
+    npu_drv_submit_batch_result_t batch_result;
 
-    if (driver == (npu_driver_t *)0 ||
-        command == (const npu_drv_cmd128_t *)0 ||
-        result == (npu_drv_submit_result_t *)0 ||
-        npu_drv_cmd128_decode(command, &fields) != NPU_DRV_OK ||
-        (descriptor_bytes != 0u &&
-         descriptor_cpu_address == (const void *)0)) {
-        return NPU_DRV_EINVAL;
-    }
-    if (driver->ops.submit_beat == (void *)0 ||
-        driver->ops.submit_response == (void *)0) {
-        return NPU_DRV_ENOTSUP;
-    }
-    memset(result, 0, sizeof(*result));
-    (void)npu_drv_sync_for_device(
-        driver, descriptor_cpu_address, descriptor_bytes);
-    callback_result = driver->ops.submit_beat(
-        driver->ops.context, command->lo, 1u, 0u);
-    if (callback_result != 0) {
-        return NPU_DRV_EIO;
-    }
-    callback_result = driver->ops.submit_beat(
-        driver->ops.context, command->hi, 0u, 1u);
-    if (callback_result != 0) {
-        return NPU_DRV_EIO;
-    }
-    callback_result = driver->ops.submit_response(
-        driver->ops.context, &response);
-    if (callback_result != 0) {
-        return NPU_DRV_EIO;
-    }
-    result->raw = response;
-    result->command_id = (uint16_t)(response & 0x0fffu);
-    result->status = (uint8_t)((response >> 12u) & 0xffu);
-    result->fifo_free = (uint8_t)((response >> 20u) & 0xffu);
-    if (result->command_id != fields.command_id) {
-        return NPU_DRV_EIO;
-    }
-    return result->status == 0u ? NPU_DRV_OK : NPU_DRV_EDEVICE;
+    return npu_drv_submit_batch(
+        driver,
+        command,
+        1u,
+        descriptor_cpu_address,
+        descriptor_bytes,
+        result,
+        &batch_result);
 }

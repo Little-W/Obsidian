@@ -11,34 +11,76 @@ static void backend_idle_inputs(npu_host_inputs_t *inputs)
     inputs->noc_reset_n = 1u;
 }
 
-static int backend_submit_beat(void *context,
-                               uint64_t value,
-                               uint8_t first,
-                               uint8_t last)
+static int backend_queue_response(
+    transformer_cmodel_backend_t *backend,
+    uint64_t response)
+{
+    size_t tail;
+
+    if (backend->pending_response_count >=
+        NPU_DRV_CMD_FIFO_MAX_BURST_COMMANDS) {
+        return -1;
+    }
+    tail = (backend->pending_response_head +
+            backend->pending_response_count) %
+           NPU_DRV_CMD_FIFO_MAX_BURST_COMMANDS;
+    backend->pending_response[tail] = response;
+    backend->pending_response_count++;
+    return 0;
+}
+
+static int backend_submit_fixed_burst(void *context,
+                                      uint32_t fifo_offset,
+                                      const uint64_t *beats,
+                                      size_t beat_count)
 {
     transformer_cmodel_backend_t *backend =
         (transformer_cmodel_backend_t *)context;
     npu_host_inputs_t inputs;
     npu_host_outputs_t outputs;
+    size_t index;
     uint32_t cycle;
 
     if (backend == (transformer_cmodel_backend_t *)0 ||
-        ((first != 0u) == (last != 0u))) {
+        beats == (const uint64_t *)0 ||
+        fifo_offset != NPU_DRV_CMD_FIFO_DATA ||
+        beat_count < NPU_DRV_CMD_FIFO_MIN_BURST_BEATS ||
+        beat_count > NPU_DRV_CMD_FIFO_MAX_BURST_BEATS ||
+        (beat_count & 1u) != 0u ||
+        backend->pending_response_count >
+            NPU_DRV_CMD_FIFO_MAX_BURST_COMMANDS ||
+        beat_count / NPU_DRV_CMD128_BEATS >
+            NPU_DRV_CMD_FIFO_MAX_BURST_COMMANDS -
+                backend->pending_response_count) {
         return -1;
     }
-    for (cycle = 0u; cycle < BACKEND_HANDSHAKE_LIMIT; cycle++) {
-        backend_idle_inputs(&inputs);
-        inputs.cmd_valid = 1u;
-        inputs.cmd_data = value;
-        inputs.cmd_first = first;
-        inputs.cmd_last = last;
-        npu_model_cycle_io(&backend->model, &inputs, &outputs);
-        if (outputs.cmd_ready != 0u) {
-            backend->submitted_beats++;
-            return 0;
+    for (index = 0u; index < beat_count; index++) {
+        for (cycle = 0u; cycle < BACKEND_HANDSHAKE_LIMIT; cycle++) {
+            backend_idle_inputs(&inputs);
+            inputs.cmd_rsp_ready = 1u;
+            inputs.cmd_valid = 1u;
+            inputs.cmd_data = beats[index];
+            inputs.cmd_first =
+                (uint8_t)((index & 1u) == 0u);
+            inputs.cmd_last =
+                (uint8_t)((index & 1u) != 0u);
+            npu_model_cycle_io(&backend->model, &inputs, &outputs);
+            if (outputs.cmd_rsp_valid != 0u &&
+                backend_queue_response(
+                    backend, outputs.cmd_rsp_data) != 0) {
+                return -1;
+            }
+            if (outputs.cmd_ready != 0u) {
+                backend->submitted_beats++;
+                break;
+            }
+        }
+        if (cycle == BACKEND_HANDSHAKE_LIMIT) {
+            return -1;
         }
     }
-    return -1;
+    backend->submitted_bursts++;
+    return 0;
 }
 
 static int backend_submit_response(void *context, uint64_t *value)
@@ -53,14 +95,22 @@ static int backend_submit_response(void *context, uint64_t *value)
         value == (uint64_t *)0) {
         return -1;
     }
+    if (backend->pending_response_count != 0u) {
+        *value =
+            backend->pending_response[backend->pending_response_head];
+        backend->pending_response_head =
+            (backend->pending_response_head + 1u) %
+            NPU_DRV_CMD_FIFO_MAX_BURST_COMMANDS;
+        backend->pending_response_count--;
+        backend->responses++;
+        return 0;
+    }
     for (cycle = 0u; cycle < BACKEND_HANDSHAKE_LIMIT; cycle++) {
         backend_idle_inputs(&inputs);
+        inputs.cmd_rsp_ready = 1u;
         npu_model_cycle_io(&backend->model, &inputs, &outputs);
         if (outputs.cmd_rsp_valid != 0u) {
             *value = outputs.cmd_rsp_data;
-            backend_idle_inputs(&inputs);
-            inputs.cmd_rsp_ready = 1u;
-            npu_model_cycle_io(&backend->model, &inputs, &outputs);
             backend->responses++;
             return 0;
         }
@@ -264,7 +314,7 @@ transformer_cmodel_backend_operations(transformer_cmodel_backend_t *backend)
 
     (void)memset(&operations, 0, sizeof(operations));
     operations.context = backend;
-    operations.submit_beat = backend_submit_beat;
+    operations.submit_fixed_burst = backend_submit_fixed_burst;
     operations.submit_response = backend_submit_response;
     operations.control_request = backend_control_request;
     operations.cache_clean = backend_cache_clean;

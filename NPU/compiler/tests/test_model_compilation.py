@@ -182,7 +182,7 @@ class EndToEndCompilerTests(unittest.TestCase):
             load["descriptor"]["dma"]["src_stride_bytes"], [3, 0]
         )
 
-    def test_more_than_task_table_entries_produces_batches(self) -> None:
+    def test_command_batches_fit_fixed_fifo_bursts(self) -> None:
         operators = []
         previous = "x"
         for index in range(40):
@@ -204,11 +204,73 @@ class EndToEndCompilerTests(unittest.TestCase):
             "operators": operators,
             "outputs": [previous],
         }
-        result = compiler.compile_model_document(
-            document, compiler.TargetConfig(task_entries=32)
-        )
+        results = {}
+        for task_entries in (1, 7, 8, 9, 32):
+            with self.subTest(task_entries=task_entries):
+                result = compiler.compile_model_document(
+                    document,
+                    compiler.TargetConfig(
+                        task_entries=task_entries
+                    ),
+                )
+                results[task_entries] = result
+                batches = result.runtime["batches"]
+                limit = min(task_entries, 8)
+                self.assertTrue(batches)
+                self.assertLessEqual(
+                    max(len(batch) for batch in batches), limit
+                )
+                self.assertEqual(
+                    sum(len(batch) for batch in batches),
+                    result.runtime["command_count"],
+                )
+                self.assertEqual(
+                    [item for batch in batches for item in batch],
+                    list(range(result.runtime["command_count"])),
+                )
+
+        result = results[32]
         self.assertGreater(result.runtime["command_count"], 32)
-        self.assertEqual([len(batch) for batch in result.runtime["batches"]], [32, 11])
+        self.assertEqual(
+            [len(batch) for batch in result.runtime["batches"]],
+            [8, 8, 8, 8, 8, 3],
+        )
+        self.assertEqual(
+            result.runtime["command_fifo_max_burst_commands"], 8
+        )
+
+        source = model_artifacts.build_model_c_source(
+            "long_chain", result
+        ).decode("ascii")
+        offset = 0
+        for batch in result.runtime["batches"]:
+            self.assertIn(
+                f"    {{{offset}u, {len(batch)}u}},", source
+            )
+            offset += len(batch)
+
+        with tempfile.TemporaryDirectory() as temporary:
+            source_path = Path(temporary) / "long_chain.json"
+            source_path.write_text(
+                json.dumps(document), encoding="utf-8"
+            )
+            manifest = json.loads(
+                model_artifacts.build_model_manifest(
+                    source_path,
+                    result,
+                    {"long_chain_model.c": source.encode("ascii")},
+                ).decode("utf-8")
+            )
+        self.assertEqual(
+            manifest["command_batches"], result.runtime["batches"]
+        )
+        self.assertLessEqual(
+            max(
+                len(batch)
+                for batch in manifest["command_batches"]
+            ),
+            8,
+        )
 
     def test_l1_storage_is_reused_after_last_consumer(self) -> None:
         document = {

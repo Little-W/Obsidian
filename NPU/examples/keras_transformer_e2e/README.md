@@ -63,7 +63,8 @@ INT16 期望值。
 
 1. 把 C 模型包内的 Descriptor 与权重复制到 CModel DDR；
 2. 根据生成的输入信息写入 32 个 INT16 输入元素；
-3. 按生成的提交组调用 `npu_drv_submit()`；
+3. 按生成的提交组调用 `npu_drv_submit_batch()`；每组 1～8 条 CMD128，
+   对固定地址命令 FIFO 发出 2～16 beat 的 AXI FIXED burst；
 4. 调用 `npu_drv_wait_task()`、`npu_drv_query_status()` 和
    `npu_drv_ack_task()`管理每条任务；
 5. 从生成的输出地址读取 32 个 INT16 结果；
@@ -137,8 +138,15 @@ metrics exact=... exact_ratio=...
 ## 已验证结果
 
 在 `tf_2_18` 环境执行 `make clean && make test` 后，编译器生成 47 条
-CMD128，分为 6 个提交组。驱动向 CModel 发送 94 个 64-bit beat，并收到
-47 条成功响应。逐 token 结果如下：
+CMD128，分为 6 个提交组。驱动使用 6 次固定地址 FIXED burst 向 CModel
+发送 94 个 64-bit beat，并从命令响应 FIFO 收到 47 条成功响应。逐 token
+结果如下：
+
+> [!note] 两类测试各自检查什么
+> 本例的功能 backend 通过驱动平台回调执行与 FIXED burst 等价的批量提交，
+> 用于检查低、高 word 次序、分组、响应处理和模型数值结果；它不实例化 AXI
+> 信号级状态机。真实 `AW/W/B`、`AR/R` 握手、整体提交、错误 burst 丢弃和
+> 反压由 CModel 的 `test_sys_slave_cycle` 与 `test_single_core_cycle` 检查。
 
 ```text
 token 0

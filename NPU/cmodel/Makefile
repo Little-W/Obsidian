@@ -97,5 +97,4 @@ sanitize:
 		$(SAN_BUILD_DIR)/test_npu_cmodel
 
 clean:
-	rm -f $(OBJ) $(LIB) $(TEST_BIN) $(WIRE_E2E_BIN) \
-		$(MODEL_INFER_BIN)
+	rm -rf $(BUILD_DIR) $(SAN_BUILD_DIR)

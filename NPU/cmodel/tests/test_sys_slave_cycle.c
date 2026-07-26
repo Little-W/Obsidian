@@ -48,12 +48,14 @@ static int sys_test_init(npu_sys_slave_cycle_t *adapter)
     return 0;
 }
 
-static int sys_test_begin_write(
+static int sys_test_begin_write_burst(
     npu_sys_slave_cycle_t *adapter,
     uint32_t addr,
     uint8_t len,
     uint8_t size,
-    uint8_t id)
+    uint8_t burst,
+    uint8_t id,
+    uint8_t expect_ready)
 {
     npu_sys_slave_inputs_t inputs;
     npu_sys_slave_outputs_t outputs;
@@ -64,12 +66,25 @@ static int sys_test_begin_write(
     inputs.s_axi_awaddr = addr;
     inputs.s_axi_awlen = len;
     inputs.s_axi_awsize = size;
-    inputs.s_axi_awburst =
-        (uint8_t)NPU_SYS_AXI_BURST_INCR;
+    inputs.s_axi_awburst = burst;
     npu_sys_slave_cycle_step(adapter, &inputs, &outputs);
-    SYS_TEST_CHECK(outputs.s_axi_awready != 0u);
+    SYS_TEST_CHECK(
+        (outputs.s_axi_awready != 0u) ==
+        (expect_ready != 0u));
     SYS_TEST_CHECK(outputs.s_axi_wready == 0u);
     return 0;
+}
+
+static int sys_test_begin_write(
+    npu_sys_slave_cycle_t *adapter,
+    uint32_t addr,
+    uint8_t len,
+    uint8_t size,
+    uint8_t id)
+{
+    return sys_test_begin_write_burst(
+        adapter, addr, len, size,
+        (uint8_t)NPU_SYS_AXI_BURST_INCR, id, 1u);
 }
 
 static int sys_test_begin_read(
@@ -1208,6 +1223,616 @@ static int sys_test_write_protocol_errors(void)
     return 0;
 }
 
+static int sys_test_cmd_fixed_burst_and_responses(void)
+{
+    const uint64_t low[2] = {
+        UINT64_C(0x0123456789abcdef),
+        UINT64_C(0x1111222233334444)
+    };
+    const uint64_t high[2] = {
+        UINT64_C(0xfedcba9876543210),
+        UINT64_C(0xaaaabbbbccccdddd)
+    };
+    const uint64_t response[2] = {
+        UINT64_C(0x0000000000712001),
+        UINT64_C(0x0000000000623002)
+    };
+    npu_sys_slave_cycle_t adapter;
+    npu_sys_slave_inputs_t inputs;
+    npu_sys_slave_outputs_t outputs;
+    uint64_t status;
+    uint32_t index;
+    int rc;
+
+    rc = sys_test_init(&adapter);
+    if (rc != 0) {
+        return rc;
+    }
+    rc = sys_test_begin_write_burst(
+        &adapter, NPU_SYS_SLAVE_CMD_FIFO_ADDR,
+        3u, 3u, (uint8_t)NPU_SYS_AXI_BURST_FIXED,
+        0xd1u, 1u);
+    if (rc != 0) {
+        return rc;
+    }
+    SYS_TEST_CHECK(adapter.write.cmd_reserved == 2u);
+    SYS_TEST_CHECK(npu_sys_slave_cmd_idle(&adapter) == 0u);
+
+    rc = sys_test_send_write_beat(
+        &adapter, low[0], 0xffu, 0u);
+    if (rc != 0) {
+        return rc;
+    }
+    SYS_TEST_CHECK(adapter.cmd_fifo_count == 0u);
+    SYS_TEST_CHECK(adapter.write.cmd_half_pending != 0u);
+
+    rc = sys_test_begin_read(
+        &adapter, NPU_SYS_SLAVE_CMD_FIFO_STATUS_ADDR,
+        0u, 3u, 0xd2u, 1u, 0u, 1u);
+    if (rc != 0) {
+        return rc;
+    }
+    sys_test_inputs_default(&inputs);
+    npu_sys_slave_cycle_step(&adapter, &inputs, &outputs);
+    sys_test_inputs_default(&inputs);
+    npu_sys_slave_cycle_step(&adapter, &inputs, &outputs);
+    SYS_TEST_CHECK(outputs.s_axi_rvalid != 0u);
+    status = outputs.s_axi_rdata;
+    SYS_TEST_CHECK(
+        (status & UINT64_C(0xff)) == 12u);
+    SYS_TEST_CHECK(
+        (status & NPU_SYS_SLAVE_CMD_STATUS_HALF_PENDING) !=
+        0u);
+    inputs.s_axi_rready = 1u;
+    npu_sys_slave_cycle_step(&adapter, &inputs, &outputs);
+
+    rc = sys_test_send_write_beat(
+        &adapter, high[0], 0xffu, 0u);
+    if (rc != 0) {
+        return rc;
+    }
+    rc = sys_test_send_write_beat(
+        &adapter, low[1], 0xffu, 0u);
+    if (rc != 0) {
+        return rc;
+    }
+    SYS_TEST_CHECK(adapter.cmd_fifo_count == 0u);
+    rc = sys_test_send_write_beat(
+        &adapter, high[1], 0xffu, 1u);
+    if (rc != 0) {
+        return rc;
+    }
+    SYS_TEST_CHECK(adapter.cmd_fifo_count == 2u);
+    SYS_TEST_CHECK(adapter.write.cmd_half_pending == 0u);
+
+    sys_test_inputs_default(&inputs);
+    npu_sys_slave_cycle_step(&adapter, &inputs, &outputs);
+    SYS_TEST_CHECK(outputs.s_axi_bvalid != 0u);
+    SYS_TEST_CHECK(outputs.s_axi_bid == 0xd1u);
+    SYS_TEST_CHECK(outputs.s_axi_bresp ==
+                   NPU_SYS_AXI_RESP_OKAY);
+    SYS_TEST_CHECK(outputs.cmd_valid_o != 0u);
+    SYS_TEST_CHECK(outputs.cmd_data_o == low[0]);
+    SYS_TEST_CHECK(outputs.cmd_first_o != 0u);
+    SYS_TEST_CHECK(outputs.cmd_last_o == 0u);
+
+    sys_test_inputs_default(&inputs);
+    inputs.s_axi_bready = 1u;
+    npu_sys_slave_cycle_step(&adapter, &inputs, &outputs);
+    SYS_TEST_CHECK(outputs.cmd_data_o == low[0]);
+
+    for (index = 0u; index < 2u; index++) {
+        sys_test_inputs_default(&inputs);
+        inputs.cmd_ready_i = 1u;
+        npu_sys_slave_cycle_step(
+            &adapter, &inputs, &outputs);
+        SYS_TEST_CHECK(outputs.cmd_valid_o != 0u);
+        SYS_TEST_CHECK(outputs.cmd_data_o == low[index]);
+        SYS_TEST_CHECK(outputs.cmd_first_o != 0u);
+        SYS_TEST_CHECK(outputs.cmd_last_o == 0u);
+
+        sys_test_inputs_default(&inputs);
+        inputs.cmd_ready_i = 1u;
+        npu_sys_slave_cycle_step(
+            &adapter, &inputs, &outputs);
+        SYS_TEST_CHECK(outputs.cmd_valid_o != 0u);
+        SYS_TEST_CHECK(outputs.cmd_data_o == high[index]);
+        SYS_TEST_CHECK(outputs.cmd_first_o == 0u);
+        SYS_TEST_CHECK(outputs.cmd_last_o != 0u);
+
+        sys_test_inputs_default(&inputs);
+        inputs.cmd_rsp_valid_i = 1u;
+        inputs.cmd_rsp_data_i = response[index];
+        npu_sys_slave_cycle_step(
+            &adapter, &inputs, &outputs);
+        SYS_TEST_CHECK(outputs.cmd_rsp_ready_o != 0u);
+    }
+    SYS_TEST_CHECK(adapter.cmd_fifo_count == 0u);
+    SYS_TEST_CHECK(adapter.cmd_rsp_fifo_count == 2u);
+    SYS_TEST_CHECK(npu_sys_slave_cmd_idle(&adapter) != 0u);
+
+    for (index = 0u; index < 2u; index++) {
+        rc = sys_test_begin_read(
+            &adapter, NPU_SYS_SLAVE_CMD_RSP_FIFO_ADDR,
+            0u, 3u, (uint8_t)(0xd3u + index),
+            1u, 0u, 1u);
+        if (rc != 0) {
+            return rc;
+        }
+        sys_test_inputs_default(&inputs);
+        npu_sys_slave_cycle_step(
+            &adapter, &inputs, &outputs);
+        sys_test_inputs_default(&inputs);
+        npu_sys_slave_cycle_step(
+            &adapter, &inputs, &outputs);
+        SYS_TEST_CHECK(outputs.s_axi_rvalid != 0u);
+        SYS_TEST_CHECK(outputs.s_axi_rdata ==
+                       response[index]);
+        SYS_TEST_CHECK(adapter.cmd_rsp_fifo_count ==
+                       (uint8_t)(2u - index));
+        inputs.s_axi_rready = 1u;
+        npu_sys_slave_cycle_step(
+            &adapter, &inputs, &outputs);
+        SYS_TEST_CHECK(adapter.cmd_rsp_fifo_count ==
+                       (uint8_t)(1u - index));
+    }
+    return 0;
+}
+
+static int sys_test_cmd_response_empty_read_waits(void)
+{
+    const uint64_t low =
+        UINT64_C(0x0123000000004567);
+    const uint64_t high =
+        UINT64_C(0x89abcdef01234567);
+    const uint64_t response =
+        UINT64_C(0x0000000000812456);
+    npu_sys_slave_cycle_t adapter;
+    npu_sys_slave_inputs_t inputs;
+    npu_sys_slave_outputs_t outputs;
+    uint32_t cycle;
+    int rc;
+
+    rc = sys_test_init(&adapter);
+    if (rc != 0) {
+        return rc;
+    }
+    rc = sys_test_begin_read(
+        &adapter, NPU_SYS_SLAVE_CMD_RSP_FIFO_ADDR,
+        0u, 3u, 0xe0u, 1u, 0u, 1u);
+    if (rc != 0) {
+        return rc;
+    }
+    for (cycle = 0u; cycle < 3u; cycle++) {
+        sys_test_inputs_default(&inputs);
+        npu_sys_slave_cycle_step(
+            &adapter, &inputs, &outputs);
+        SYS_TEST_CHECK(outputs.s_axi_rvalid == 0u);
+    }
+
+    rc = sys_test_begin_write_burst(
+        &adapter, NPU_SYS_SLAVE_CMD_FIFO_ADDR,
+        1u, 3u, (uint8_t)NPU_SYS_AXI_BURST_FIXED,
+        0xe1u, 1u);
+    if (rc != 0) {
+        return rc;
+    }
+    rc = sys_test_send_write_beat(
+        &adapter, low, 0xffu, 0u);
+    if (rc != 0) {
+        return rc;
+    }
+    rc = sys_test_send_write_beat(
+        &adapter, high, 0xffu, 1u);
+    if (rc != 0) {
+        return rc;
+    }
+    sys_test_inputs_default(&inputs);
+    inputs.cmd_ready_i = 1u;
+    npu_sys_slave_cycle_step(&adapter, &inputs, &outputs);
+    SYS_TEST_CHECK(outputs.cmd_data_o == low);
+    sys_test_inputs_default(&inputs);
+    inputs.cmd_ready_i = 1u;
+    npu_sys_slave_cycle_step(&adapter, &inputs, &outputs);
+    SYS_TEST_CHECK(outputs.cmd_data_o == high);
+    sys_test_inputs_default(&inputs);
+    inputs.cmd_rsp_valid_i = 1u;
+    inputs.cmd_rsp_data_i = response;
+    npu_sys_slave_cycle_step(&adapter, &inputs, &outputs);
+    SYS_TEST_CHECK(outputs.cmd_rsp_ready_o != 0u);
+
+    sys_test_inputs_default(&inputs);
+    npu_sys_slave_cycle_step(&adapter, &inputs, &outputs);
+    SYS_TEST_CHECK(outputs.s_axi_rvalid != 0u);
+    SYS_TEST_CHECK(outputs.s_axi_rdata == response);
+    SYS_TEST_CHECK(adapter.cmd_rsp_fifo_count == 1u);
+    inputs.s_axi_rready = 1u;
+    npu_sys_slave_cycle_step(&adapter, &inputs, &outputs);
+    SYS_TEST_CHECK(adapter.cmd_rsp_fifo_count == 0u);
+    return 0;
+}
+
+static int sys_test_cmd_capacity_and_response_full(void)
+{
+    npu_sys_slave_cycle_t adapter;
+    npu_sys_slave_inputs_t inputs;
+    npu_sys_slave_outputs_t outputs;
+    uint32_t beat;
+    uint32_t command;
+    uint64_t status;
+    int rc;
+
+    rc = sys_test_init(&adapter);
+    if (rc != 0) {
+        return rc;
+    }
+    rc = sys_test_begin_write_burst(
+        &adapter, NPU_SYS_SLAVE_CMD_FIFO_ADDR,
+        15u, 3u, (uint8_t)NPU_SYS_AXI_BURST_FIXED,
+        0xe2u, 1u);
+    if (rc != 0) {
+        return rc;
+    }
+    for (beat = 0u;
+         beat < NPU_SYS_SLAVE_CMD_MAX_BURST_BEATS;
+         beat++) {
+        rc = sys_test_send_write_beat(
+            &adapter, UINT64_C(0x1000) + beat,
+            0xffu,
+            (uint8_t)(
+                beat + 1u ==
+                NPU_SYS_SLAVE_CMD_MAX_BURST_BEATS));
+        if (rc != 0) {
+            return rc;
+        }
+    }
+    SYS_TEST_CHECK(adapter.cmd_fifo_count ==
+                   NPU_SYS_SLAVE_CMD_FIFO_DEPTH);
+    sys_test_inputs_default(&inputs);
+    npu_sys_slave_cycle_step(&adapter, &inputs, &outputs);
+    SYS_TEST_CHECK(outputs.s_axi_bvalid != 0u);
+    SYS_TEST_CHECK(outputs.s_axi_bresp ==
+                   NPU_SYS_AXI_RESP_OKAY);
+    inputs.s_axi_bready = 1u;
+    npu_sys_slave_cycle_step(&adapter, &inputs, &outputs);
+    rc = sys_test_begin_write_burst(
+        &adapter, NPU_SYS_SLAVE_CMD_FIFO_ADDR,
+        1u, 3u, (uint8_t)NPU_SYS_AXI_BURST_FIXED,
+        0xe3u, 0u);
+    if (rc != 0) {
+        return rc;
+    }
+
+    rc = sys_test_begin_read(
+        &adapter, NPU_SYS_SLAVE_CMD_FIFO_STATUS_ADDR,
+        0u, 3u, 0xe4u, 1u, 0u, 1u);
+    if (rc != 0) {
+        return rc;
+    }
+    sys_test_inputs_default(&inputs);
+    npu_sys_slave_cycle_step(&adapter, &inputs, &outputs);
+    sys_test_inputs_default(&inputs);
+    npu_sys_slave_cycle_step(&adapter, &inputs, &outputs);
+    SYS_TEST_CHECK(outputs.s_axi_rvalid != 0u);
+    status = outputs.s_axi_rdata;
+    SYS_TEST_CHECK((status & UINT64_C(0xff)) == 0u);
+    SYS_TEST_CHECK(
+        (status & NPU_SYS_SLAVE_CMD_STATUS_INGRESS_FULL) !=
+        0u);
+    inputs.s_axi_rready = 1u;
+    npu_sys_slave_cycle_step(&adapter, &inputs, &outputs);
+
+    for (command = 0u;
+         command < NPU_SYS_SLAVE_CMD_RSP_FIFO_DEPTH;
+         command++) {
+        sys_test_inputs_default(&inputs);
+        inputs.cmd_ready_i = 1u;
+        npu_sys_slave_cycle_step(
+            &adapter, &inputs, &outputs);
+        SYS_TEST_CHECK(outputs.cmd_valid_o != 0u);
+        SYS_TEST_CHECK(outputs.cmd_first_o != 0u);
+        sys_test_inputs_default(&inputs);
+        inputs.cmd_ready_i = 1u;
+        npu_sys_slave_cycle_step(
+            &adapter, &inputs, &outputs);
+        SYS_TEST_CHECK(outputs.cmd_valid_o != 0u);
+        SYS_TEST_CHECK(outputs.cmd_last_o != 0u);
+        sys_test_inputs_default(&inputs);
+        inputs.cmd_rsp_valid_i = 1u;
+        inputs.cmd_rsp_data_i =
+            UINT64_C(0xa000) + command;
+        npu_sys_slave_cycle_step(
+            &adapter, &inputs, &outputs);
+        SYS_TEST_CHECK(outputs.cmd_rsp_ready_o != 0u);
+    }
+    SYS_TEST_CHECK(adapter.cmd_rsp_fifo_count ==
+                   NPU_SYS_SLAVE_CMD_RSP_FIFO_DEPTH);
+    SYS_TEST_CHECK(adapter.cmd_fifo_count == 0u);
+    SYS_TEST_CHECK(npu_sys_slave_cmd_idle(&adapter) != 0u);
+
+    rc = sys_test_begin_read(
+        &adapter, NPU_SYS_SLAVE_CMD_FIFO_STATUS_ADDR,
+        0u, 3u, 0xe5u, 1u, 0u, 1u);
+    if (rc != 0) {
+        return rc;
+    }
+    sys_test_inputs_default(&inputs);
+    npu_sys_slave_cycle_step(&adapter, &inputs, &outputs);
+    sys_test_inputs_default(&inputs);
+    npu_sys_slave_cycle_step(&adapter, &inputs, &outputs);
+    SYS_TEST_CHECK(outputs.s_axi_rvalid != 0u);
+    status = outputs.s_axi_rdata;
+    SYS_TEST_CHECK(
+        ((status >> 8u) & UINT64_C(0xff)) ==
+        NPU_SYS_SLAVE_CMD_RSP_FIFO_DEPTH);
+    SYS_TEST_CHECK(
+        (status & NPU_SYS_SLAVE_CMD_STATUS_RSP_FULL) !=
+        0u);
+    SYS_TEST_CHECK((status >> 20u) == 0u);
+    inputs.s_axi_rready = 1u;
+    npu_sys_slave_cycle_step(&adapter, &inputs, &outputs);
+
+    rc = sys_test_begin_write_burst(
+        &adapter, NPU_SYS_SLAVE_CMD_FIFO_ADDR,
+        1u, 3u, (uint8_t)NPU_SYS_AXI_BURST_FIXED,
+        0xe6u, 1u);
+    if (rc != 0) {
+        return rc;
+    }
+    rc = sys_test_send_write_beat(
+        &adapter, UINT64_C(0x9000), 0xffu, 0u);
+    if (rc != 0) {
+        return rc;
+    }
+    rc = sys_test_send_write_beat(
+        &adapter, UINT64_C(0x9001), 0xffu, 1u);
+    if (rc != 0) {
+        return rc;
+    }
+    sys_test_inputs_default(&inputs);
+    npu_sys_slave_cycle_step(&adapter, &inputs, &outputs);
+    SYS_TEST_CHECK(outputs.s_axi_bvalid != 0u);
+    SYS_TEST_CHECK(outputs.cmd_valid_o == 0u);
+    SYS_TEST_CHECK(outputs.cmd_rsp_ready_o == 0u);
+    SYS_TEST_CHECK(adapter.cmd_fifo_count == 1u);
+
+    inputs.s_axi_bready = 1u;
+    npu_sys_slave_cycle_step(&adapter, &inputs, &outputs);
+    rc = sys_test_begin_read(
+        &adapter, NPU_SYS_SLAVE_CMD_RSP_FIFO_ADDR,
+        0u, 3u, 0xe7u, 1u, 0u, 1u);
+    if (rc != 0) {
+        return rc;
+    }
+    sys_test_inputs_default(&inputs);
+    npu_sys_slave_cycle_step(&adapter, &inputs, &outputs);
+    sys_test_inputs_default(&inputs);
+    npu_sys_slave_cycle_step(&adapter, &inputs, &outputs);
+    SYS_TEST_CHECK(outputs.s_axi_rvalid != 0u);
+    inputs.s_axi_rready = 1u;
+    npu_sys_slave_cycle_step(&adapter, &inputs, &outputs);
+    sys_test_inputs_default(&inputs);
+    npu_sys_slave_cycle_step(&adapter, &inputs, &outputs);
+    SYS_TEST_CHECK(outputs.cmd_valid_o != 0u);
+    SYS_TEST_CHECK(outputs.cmd_data_o ==
+                   UINT64_C(0x9000));
+    return 0;
+}
+
+static int sys_test_cmd_protocol_errors_are_atomic(void)
+{
+    npu_sys_slave_cycle_t adapter;
+    npu_sys_slave_inputs_t inputs;
+    npu_sys_slave_outputs_t outputs;
+    uint32_t beat;
+    int rc;
+
+    rc = sys_test_init(&adapter);
+    if (rc != 0) {
+        return rc;
+    }
+    rc = sys_test_begin_write_burst(
+        &adapter, NPU_SYS_SLAVE_CMD_FIFO_ADDR,
+        3u, 3u, (uint8_t)NPU_SYS_AXI_BURST_FIXED,
+        0xf0u, 1u);
+    if (rc != 0) {
+        return rc;
+    }
+    for (beat = 0u; beat < 4u; beat++) {
+        rc = sys_test_send_write_beat(
+            &adapter, UINT64_C(0x2000) + beat,
+            beat == 2u ? 0xfeu : 0xffu,
+            beat == 3u ? 1u : 0u);
+        if (rc != 0) {
+            return rc;
+        }
+    }
+    SYS_TEST_CHECK(adapter.cmd_fifo_count == 0u);
+    SYS_TEST_CHECK(adapter.write.cmd_half_pending == 0u);
+    sys_test_inputs_default(&inputs);
+    npu_sys_slave_cycle_step(&adapter, &inputs, &outputs);
+    SYS_TEST_CHECK(outputs.s_axi_bvalid != 0u);
+    SYS_TEST_CHECK(outputs.s_axi_bresp ==
+                   NPU_SYS_AXI_RESP_SLVERR);
+    SYS_TEST_CHECK(adapter.cmd_protocol_error_sticky != 0u);
+
+    sys_test_inputs_default(&inputs);
+    inputs.s_axi_bready = 1u;
+    npu_sys_slave_cycle_step(&adapter, &inputs, &outputs);
+    rc = sys_test_begin_write_burst(
+        &adapter, NPU_SYS_SLAVE_CMD_FIFO_ADDR,
+        1u, 3u, (uint8_t)NPU_SYS_AXI_BURST_FIXED,
+        0xf1u, 1u);
+    if (rc != 0) {
+        return rc;
+    }
+    rc = sys_test_send_write_beat(
+        &adapter, UINT64_C(0x3000), 0xffu, 1u);
+    if (rc != 0) {
+        return rc;
+    }
+    rc = sys_test_send_write_beat(
+        &adapter, UINT64_C(0x3001), 0xffu, 1u);
+    if (rc != 0) {
+        return rc;
+    }
+    SYS_TEST_CHECK(adapter.cmd_fifo_count == 0u);
+    sys_test_inputs_default(&inputs);
+    npu_sys_slave_cycle_step(&adapter, &inputs, &outputs);
+    SYS_TEST_CHECK(outputs.s_axi_bresp ==
+                   NPU_SYS_AXI_RESP_SLVERR);
+
+    rc = sys_test_init(&adapter);
+    if (rc != 0) {
+        return rc;
+    }
+    rc = sys_test_begin_write_burst(
+        &adapter, NPU_SYS_SLAVE_CMD_FIFO_ADDR,
+        2u, 3u, (uint8_t)NPU_SYS_AXI_BURST_FIXED,
+        0xf2u, 1u);
+    if (rc != 0) {
+        return rc;
+    }
+    for (beat = 0u; beat < 3u; beat++) {
+        rc = sys_test_send_write_beat(
+            &adapter, UINT64_C(0x4000) + beat,
+            0xffu, beat == 2u ? 1u : 0u);
+        if (rc != 0) {
+            return rc;
+        }
+    }
+    sys_test_inputs_default(&inputs);
+    npu_sys_slave_cycle_step(&adapter, &inputs, &outputs);
+    SYS_TEST_CHECK(outputs.s_axi_bresp ==
+                   NPU_SYS_AXI_RESP_SLVERR);
+    SYS_TEST_CHECK(adapter.cmd_fifo_count == 0u);
+    SYS_TEST_CHECK(adapter.write.cmd_half_pending == 0u);
+
+    rc = sys_test_init(&adapter);
+    if (rc != 0) {
+        return rc;
+    }
+    rc = sys_test_begin_write_burst(
+        &adapter, NPU_SYS_SLAVE_CMD_FIFO_ADDR,
+        1u, 3u, (uint8_t)NPU_SYS_AXI_BURST_INCR,
+        0xf3u, 1u);
+    if (rc != 0) {
+        return rc;
+    }
+    rc = sys_test_send_write_beat(
+        &adapter, UINT64_C(0x5000), 0xffu, 0u);
+    if (rc != 0) {
+        return rc;
+    }
+    rc = sys_test_send_write_beat(
+        &adapter, UINT64_C(0x5001), 0xffu, 1u);
+    if (rc != 0) {
+        return rc;
+    }
+    sys_test_inputs_default(&inputs);
+    npu_sys_slave_cycle_step(&adapter, &inputs, &outputs);
+    SYS_TEST_CHECK(outputs.s_axi_bresp ==
+                   NPU_SYS_AXI_RESP_SLVERR);
+    SYS_TEST_CHECK(adapter.cmd_fifo_count == 0u);
+
+    rc = sys_test_init(&adapter);
+    if (rc != 0) {
+        return rc;
+    }
+    rc = sys_test_begin_write_burst(
+        &adapter, NPU_SYS_SLAVE_CMD_FIFO_ADDR,
+        1u, 2u, (uint8_t)NPU_SYS_AXI_BURST_FIXED,
+        0xf4u, 1u);
+    if (rc != 0) {
+        return rc;
+    }
+    rc = sys_test_send_write_beat(
+        &adapter, UINT64_C(0x6000), 0xffu, 0u);
+    if (rc != 0) {
+        return rc;
+    }
+    rc = sys_test_send_write_beat(
+        &adapter, UINT64_C(0x6001), 0xffu, 1u);
+    if (rc != 0) {
+        return rc;
+    }
+    sys_test_inputs_default(&inputs);
+    npu_sys_slave_cycle_step(&adapter, &inputs, &outputs);
+    SYS_TEST_CHECK(outputs.s_axi_bresp ==
+                   NPU_SYS_AXI_RESP_SLVERR);
+
+    rc = sys_test_init(&adapter);
+    if (rc != 0) {
+        return rc;
+    }
+    rc = sys_test_begin_write_burst(
+        &adapter, NPU_SYS_SLAVE_CMD_FIFO_ADDR,
+        17u, 3u, (uint8_t)NPU_SYS_AXI_BURST_FIXED,
+        0xf5u, 1u);
+    if (rc != 0) {
+        return rc;
+    }
+    for (beat = 0u; beat < 18u; beat++) {
+        rc = sys_test_send_write_beat(
+            &adapter, UINT64_C(0x7000) + beat,
+            0xffu, beat == 17u ? 1u : 0u);
+        if (rc != 0) {
+            return rc;
+        }
+    }
+    sys_test_inputs_default(&inputs);
+    npu_sys_slave_cycle_step(&adapter, &inputs, &outputs);
+    SYS_TEST_CHECK(outputs.s_axi_bresp ==
+                   NPU_SYS_AXI_RESP_SLVERR);
+    SYS_TEST_CHECK(adapter.cmd_fifo_count == 0u);
+    SYS_TEST_CHECK(adapter.cmd_protocol_error_sticky != 0u);
+    sys_test_inputs_default(&inputs);
+    inputs.cmd_error_clear_i = 1u;
+    npu_sys_slave_cycle_step(&adapter, &inputs, &outputs);
+    SYS_TEST_CHECK(adapter.cmd_protocol_error_sticky == 0u);
+    return 0;
+}
+
+static int sys_test_cmd_reset_discards_half(void)
+{
+    npu_sys_slave_cycle_t adapter;
+    npu_sys_slave_inputs_t inputs;
+    npu_sys_slave_outputs_t outputs;
+    int rc;
+
+    rc = sys_test_init(&adapter);
+    if (rc != 0) {
+        return rc;
+    }
+    rc = sys_test_begin_write_burst(
+        &adapter, NPU_SYS_SLAVE_CMD_FIFO_ADDR,
+        1u, 3u, (uint8_t)NPU_SYS_AXI_BURST_FIXED,
+        0xf6u, 1u);
+    if (rc != 0) {
+        return rc;
+    }
+    rc = sys_test_send_write_beat(
+        &adapter, UINT64_C(0x6000), 0xffu, 0u);
+    if (rc != 0) {
+        return rc;
+    }
+    SYS_TEST_CHECK(adapter.write.cmd_half_pending != 0u);
+
+    sys_test_inputs_default(&inputs);
+    inputs.core_reset_n = 0u;
+    inputs.s_axi_wvalid = 1u;
+    inputs.s_axi_wlast = 1u;
+    inputs.s_axi_wstrb = 0xffu;
+    npu_sys_slave_cycle_step(&adapter, &inputs, &outputs);
+    SYS_TEST_CHECK(outputs.s_axi_wready == 0u);
+    SYS_TEST_CHECK(adapter.write.cmd_half_pending == 0u);
+    SYS_TEST_CHECK(adapter.cmd_fifo_count == 0u);
+    SYS_TEST_CHECK(adapter.cmd_rsp_fifo_count == 0u);
+    SYS_TEST_CHECK(adapter.cmd_protocol_error_sticky == 0u);
+    SYS_TEST_CHECK(npu_sys_slave_cmd_idle(&adapter) != 0u);
+    return 0;
+}
+
 static int sys_test_reset_aborts_transactions(void)
 {
     npu_sys_slave_cycle_t adapter;
@@ -1300,6 +1925,26 @@ int test_sys_slave_cycle(void)
         return rc;
     }
     rc = sys_test_write_protocol_errors();
+    if (rc != 0) {
+        return rc;
+    }
+    rc = sys_test_cmd_fixed_burst_and_responses();
+    if (rc != 0) {
+        return rc;
+    }
+    rc = sys_test_cmd_response_empty_read_waits();
+    if (rc != 0) {
+        return rc;
+    }
+    rc = sys_test_cmd_capacity_and_response_full();
+    if (rc != 0) {
+        return rc;
+    }
+    rc = sys_test_cmd_protocol_errors_are_atomic();
+    if (rc != 0) {
+        return rc;
+    }
+    rc = sys_test_cmd_reset_discards_half();
     if (rc != 0) {
         return rc;
     }

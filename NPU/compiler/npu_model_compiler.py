@@ -43,6 +43,7 @@ DTYPE_LIMITS = {
     "int32": (-(1 << 31), (1 << 31) - 1),
 }
 MAX_RANK = 5
+CMD_FIFO_MAX_BURST_COMMANDS = 8
 
 
 class ModelCompileError(ValueError):
@@ -2787,14 +2788,17 @@ def runtime_metadata(
         }
         for tensor in values
     ]
+    command_batch_limit = min(
+        target.task_entries, CMD_FIFO_MAX_BURST_COMMANDS
+    )
     batches = [
         [
             operation.command_id
             for operation in assembled[
-                start : start + target.task_entries
+                start : start + command_batch_limit
             ]
         ]
-        for start in range(0, len(assembled), target.task_entries)
+        for start in range(0, len(assembled), command_batch_limit)
     ]
     return {
         "runtime_version": 1,
@@ -2811,6 +2815,7 @@ def runtime_metadata(
         "constant_bytes": len(constant_image),
         "constant_sha256": sha256_bytes(constant_image),
         "task_entries": target.task_entries,
+        "command_fifo_max_burst_commands": CMD_FIFO_MAX_BURST_COMMANDS,
         "batches": batches,
         "inputs": bindings(inputs),
         "outputs": bindings([tensors[name] for name in outputs]),

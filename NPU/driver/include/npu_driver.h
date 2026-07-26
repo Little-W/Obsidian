@@ -9,10 +9,24 @@ extern "C" {
 #endif
 
 #define NPU_DRV_CMD128_BYTES 16u
+#define NPU_DRV_CMD128_BEATS 2u
 #define NPU_DRV_CMD_HEADER_VERSION 1u
 #define NPU_DRV_EVENT_NONE UINT16_C(0x0fff)
 #define NPU_DRV_MAX_COMMAND_ID UINT16_C(0x0fff)
 #define NPU_DRV_FULL_WSTRB UINT8_C(0xff)
+
+/*
+ * Offsets are relative to the NPU AXI Slave base address. CMD FIFO writes use
+ * AWSIZE=3, AWBURST=FIXED and WSTRB=0xff. AWADDR remains
+ * NPU_DRV_CMD_FIFO_DATA for every beat in the burst.
+ */
+#define NPU_DRV_CMD_FIFO_DATA UINT32_C(0x020000)
+#define NPU_DRV_CMD_RSP_FIFO UINT32_C(0x020008)
+#define NPU_DRV_CMD_FIFO_STATUS UINT32_C(0x020010)
+#define NPU_DRV_CMD_FIFO_MIN_BURST_BEATS 2u
+#define NPU_DRV_CMD_FIFO_MAX_BURST_BEATS 16u
+#define NPU_DRV_CMD_FIFO_MAX_BURST_COMMANDS 8u
+#define NPU_DRV_NO_FAILED_COMMAND SIZE_MAX
 
 #define NPU_DRV_CONTROL_DESC_BYTES 64u
 #define NPU_DRV_DMA_DESC_BYTES 256u
@@ -156,6 +170,18 @@ typedef struct {
 } npu_drv_submit_result_t;
 
 typedef struct {
+    /* Number of responses copied to the caller's results array. */
+    size_t responses_received;
+    /*
+     * First device failure, response mismatch, or unconfirmed command.
+     * Equals NPU_DRV_NO_FAILED_COMMAND when every command succeeds.
+     */
+    size_t first_failed_index;
+    /* One means the AXI write response reported a successful burst. */
+    uint8_t burst_completed;
+} npu_drv_submit_batch_result_t;
+
+typedef struct {
     uint8_t state;
     uint8_t status;
     uint16_t command_id;
@@ -169,13 +195,16 @@ typedef struct {
 } npu_drv_event_result_t;
 
 /*
- * Every callback returns zero on success. The external host CPU is the AXI
- * Master; NPU command, control-register, and L1BUF windows are AXI Slave
- * targets. submit_beat represents a write to the command window and must not
- * return success until the corresponding transfer completes. The driver calls
- * it first with (lo, first=1, last=0), then with
- * (hi, first=0, last=1). A cycle-model adapter may connect this callback
- * directly to an equivalent ready/valid test port.
+ * Every int-returning callback returns zero on success. The external host CPU
+ * is the AXI Master; NPU command, control-register, and L1BUF windows are AXI
+ * Slave targets. submit_fixed_burst writes 2..16 64-bit beats to one fixed
+ * FIFO address. The beat count is even, and each adjacent pair is one CMD128
+ * in low-word then high-word order. The callback must hold each W beat until
+ * its ready/valid transfer completes, assert WLAST only on the final beat,
+ * wait for the write response, and return zero only for a successful
+ * response. submit_response reads and removes one entry from
+ * NPU_DRV_CMD_RSP_FIFO. A cycle-model adapter may implement equivalent
+ * behavior on a test port.
  */
 typedef struct {
     void *context;
@@ -184,10 +213,10 @@ typedef struct {
                         uint32_t offset,
                         uint64_t value,
                         uint8_t strobe);
-    int (*submit_beat)(void *context,
-                       uint64_t value,
-                       uint8_t first,
-                       uint8_t last);
+    int (*submit_fixed_burst)(void *context,
+                              uint32_t fifo_offset,
+                              const uint64_t *beats,
+                              size_t beat_count);
     int (*submit_response)(void *context, uint64_t *value);
     int (*control_request)(void *context,
                            uint8_t operation,
@@ -331,6 +360,14 @@ int npu_drv_submit(npu_driver_t *driver,
                    const void *descriptor_cpu_address,
                    size_t descriptor_bytes,
                    npu_drv_submit_result_t *result);
+int npu_drv_submit_batch(
+    npu_driver_t *driver,
+    const npu_drv_cmd128_t *commands,
+    size_t command_count,
+    const void *descriptor_cpu_address,
+    size_t descriptor_bytes,
+    npu_drv_submit_result_t *results,
+    npu_drv_submit_batch_result_t *batch_result);
 int npu_drv_query_raw(npu_driver_t *driver,
                       uint16_t command_id,
                       uint8_t selector,

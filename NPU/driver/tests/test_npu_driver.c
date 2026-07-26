@@ -14,10 +14,18 @@
 
 typedef struct {
     uint64_t registers[128];
-    uint64_t beats[2];
-    uint8_t first[2];
-    uint8_t last[2];
-    uint32_t beat_count;
+    uint64_t beats[NPU_DRV_CMD_FIFO_MAX_BURST_BEATS];
+    uint8_t response_status[NPU_DRV_CMD_FIFO_MAX_BURST_COMMANDS];
+    uint16_t response_command_id[
+        NPU_DRV_CMD_FIFO_MAX_BURST_COMMANDS];
+    uint8_t response_command_id_override[
+        NPU_DRV_CMD_FIFO_MAX_BURST_COMMANDS];
+    size_t beat_count;
+    size_t response_index;
+    size_t response_failure_index;
+    uint32_t fifo_offset;
+    uint32_t fixed_burst_count;
+    int fixed_burst_result;
     uint32_t query_count;
     uint32_t cache_clean_count;
     uint32_t cache_invalidate_count;
@@ -53,32 +61,62 @@ static int fake_write64(void *context,
     return 0;
 }
 
-static int fake_submit_beat(void *context,
-                            uint64_t value,
-                            uint8_t first,
-                            uint8_t last)
+static int fake_submit_fixed_burst(void *context,
+                                   uint32_t fifo_offset,
+                                   const uint64_t *beats,
+                                   size_t beat_count)
 {
     fake_platform_t *fake = (fake_platform_t *)context;
-    if (fake->beat_count >= 2u) {
+    size_t index;
+
+    if (fake == (fake_platform_t *)0 ||
+        beats == (const uint64_t *)0 ||
+        fifo_offset != NPU_DRV_CMD_FIFO_DATA ||
+        beat_count < NPU_DRV_CMD_FIFO_MIN_BURST_BEATS ||
+        beat_count > NPU_DRV_CMD_FIFO_MAX_BURST_BEATS ||
+        (beat_count & 1u) != 0u) {
         return -1;
     }
-    fake->beats[fake->beat_count] = value;
-    fake->first[fake->beat_count] = first;
-    fake->last[fake->beat_count] = last;
-    fake->beat_count++;
-    return 0;
+    fake->fifo_offset = fifo_offset;
+    fake->beat_count = beat_count;
+    fake->response_index = 0u;
+    fake->fixed_burst_count++;
+    for (index = 0u; index < beat_count; index++) {
+        fake->beats[index] = beats[index];
+    }
+    return fake->fixed_burst_result;
 }
 
 static int fake_submit_response(void *context, uint64_t *value)
 {
     fake_platform_t *fake = (fake_platform_t *)context;
     uint16_t command_id;
-    if (fake->beat_count != 2u) {
+    size_t command_count;
+    size_t index;
+
+    if (fake == (fake_platform_t *)0 ||
+        value == (uint64_t *)0 ||
+        (fake->beat_count & 1u) != 0u) {
         return -1;
     }
-    command_id =
-        (uint16_t)((fake->beats[0] >> 48u) & 0x0fffu);
-    *value = command_id | (UINT64_C(7) << 20u);
+    command_count = fake->beat_count / NPU_DRV_CMD128_BEATS;
+    index = fake->response_index;
+    if (index >= command_count ||
+        index == fake->response_failure_index) {
+        return -1;
+    }
+    command_id = fake->response_command_id_override[index] != 0u
+                     ? fake->response_command_id[index]
+                     : (uint16_t)((fake->beats[
+                           index * NPU_DRV_CMD128_BEATS] >>
+                           48u) &
+                          0x0fffu);
+    *value = (uint64_t)command_id |
+             ((uint64_t)fake->response_status[index] << 12u) |
+             ((uint64_t)(NPU_DRV_CMD_FIFO_MAX_BURST_COMMANDS -
+                         command_count)
+              << 20u);
+    fake->response_index++;
     return 0;
 }
 
@@ -155,6 +193,12 @@ static void fake_relax(void *context)
     ((fake_platform_t *)context)->relax_count++;
 }
 
+static void fake_platform_reset(fake_platform_t *fake)
+{
+    memset(fake, 0, sizeof(*fake));
+    fake->response_failure_index = SIZE_MAX;
+}
+
 static npu_drv_platform_ops_t fake_operations(fake_platform_t *fake)
 {
     npu_drv_platform_ops_t operations;
@@ -162,7 +206,7 @@ static npu_drv_platform_ops_t fake_operations(fake_platform_t *fake)
     operations.context = fake;
     operations.mmio_read64 = fake_read64;
     operations.mmio_write64 = fake_write64;
-    operations.submit_beat = fake_submit_beat;
+    operations.submit_fixed_burst = fake_submit_fixed_burst;
     operations.submit_response = fake_submit_response;
     operations.control_request = fake_control;
     operations.write_barrier = fake_write_barrier;
@@ -375,6 +419,196 @@ static int test_little_endian_writes(void)
     return 0;
 }
 
+static int make_test_command(npu_drv_cmd128_t *command,
+                             uint16_t command_id,
+                             uint64_t descriptor_addr)
+{
+    npu_drv_cmd_fields_t fields;
+
+    memset(&fields, 0, sizeof(fields));
+    fields.descriptor_addr = descriptor_addr;
+    fields.command_id = command_id;
+    fields.engine = NPU_DRV_ENGINE_DMA;
+    fields.opcode = 0x20u;
+    fields.wait_event[0].id = 255u;
+    fields.wait_event[0].generation = 15u;
+    fields.wait_event[1] = fields.wait_event[0];
+    fields.signal_event = fields.wait_event[0];
+    return npu_drv_cmd128_encode(&fields, command);
+}
+
+static int test_fixed_burst_batch(void)
+{
+    _Alignas(64) uint8_t descriptors[1024];
+    npu_drv_cmd128_t commands[
+        NPU_DRV_CMD_FIFO_MAX_BURST_COMMANDS + 1u];
+    npu_drv_submit_result_t results[
+        NPU_DRV_CMD_FIFO_MAX_BURST_COMMANDS];
+    npu_drv_submit_batch_result_t batch_result;
+    fake_platform_t fake;
+    npu_drv_platform_ops_t operations;
+    npu_driver_t driver;
+    size_t index;
+
+    memset(descriptors, 0, sizeof(descriptors));
+    for (index = 0u;
+         index < NPU_DRV_CMD_FIFO_MAX_BURST_COMMANDS + 1u;
+         index++) {
+        CHECK(make_test_command(
+                  &commands[index],
+                  (uint16_t)(0x100u + index),
+                  UINT64_C(0x200000) + index * 64u) ==
+              NPU_DRV_OK);
+    }
+
+    fake_platform_reset(&fake);
+    operations = fake_operations(&fake);
+    CHECK(npu_drv_init(&driver, &operations) == NPU_DRV_OK);
+    CHECK(npu_drv_submit_batch(
+              &driver,
+              commands,
+              3u,
+              descriptors,
+              sizeof(descriptors),
+              results,
+              &batch_result) == NPU_DRV_OK);
+    CHECK(fake.fixed_burst_count == 1u);
+    CHECK(fake.fifo_offset == NPU_DRV_CMD_FIFO_DATA);
+    CHECK(fake.beat_count == 6u);
+    for (index = 0u; index < 3u; index++) {
+        CHECK(fake.beats[index * 2u] == commands[index].lo);
+        CHECK(fake.beats[index * 2u + 1u] == commands[index].hi);
+        CHECK(results[index].command_id ==
+              (uint16_t)(0x100u + index));
+        CHECK(results[index].status == 0u);
+        CHECK(results[index].fifo_free == 5u);
+    }
+    CHECK(fake.response_index == 3u);
+    CHECK(fake.cache_clean_count == 1u);
+    CHECK(fake.write_barrier_count == 1u);
+    CHECK(batch_result.burst_completed == 1u);
+    CHECK(batch_result.responses_received == 3u);
+    CHECK(batch_result.first_failed_index ==
+          NPU_DRV_NO_FAILED_COMMAND);
+
+    fake_platform_reset(&fake);
+    fake.response_status[1] = 9u;
+    fake.response_status[2] = 3u;
+    operations = fake_operations(&fake);
+    CHECK(npu_drv_init(&driver, &operations) == NPU_DRV_OK);
+    CHECK(npu_drv_submit_batch(
+              &driver,
+              commands,
+              3u,
+              (const void *)0,
+              0u,
+              results,
+              &batch_result) == NPU_DRV_EDEVICE);
+    CHECK(fake.response_index == 3u);
+    CHECK(batch_result.burst_completed == 1u);
+    CHECK(batch_result.responses_received == 3u);
+    CHECK(batch_result.first_failed_index == 1u);
+    CHECK(results[1].status == 9u);
+    CHECK(results[2].status == 3u);
+
+    fake_platform_reset(&fake);
+    fake.response_command_id_override[1] = 1u;
+    fake.response_command_id[1] = 0x777u;
+    operations = fake_operations(&fake);
+    CHECK(npu_drv_init(&driver, &operations) == NPU_DRV_OK);
+    CHECK(npu_drv_submit_batch(
+              &driver,
+              commands,
+              3u,
+              (const void *)0,
+              0u,
+              results,
+              &batch_result) == NPU_DRV_EIO);
+    CHECK(fake.response_index == 3u);
+    CHECK(batch_result.responses_received == 3u);
+    CHECK(batch_result.first_failed_index == 1u);
+    CHECK(results[1].command_id == 0x777u);
+
+    fake_platform_reset(&fake);
+    fake.response_failure_index = 1u;
+    operations = fake_operations(&fake);
+    CHECK(npu_drv_init(&driver, &operations) == NPU_DRV_OK);
+    CHECK(npu_drv_submit_batch(
+              &driver,
+              commands,
+              3u,
+              (const void *)0,
+              0u,
+              results,
+              &batch_result) == NPU_DRV_EIO);
+    CHECK(batch_result.burst_completed == 1u);
+    CHECK(batch_result.responses_received == 1u);
+    CHECK(batch_result.first_failed_index == 1u);
+
+    fake_platform_reset(&fake);
+    fake.fixed_burst_result = -1;
+    operations = fake_operations(&fake);
+    CHECK(npu_drv_init(&driver, &operations) == NPU_DRV_OK);
+    CHECK(npu_drv_submit_batch(
+              &driver,
+              commands,
+              3u,
+              (const void *)0,
+              0u,
+              results,
+              &batch_result) == NPU_DRV_EIO);
+    CHECK(batch_result.burst_completed == 0u);
+    CHECK(batch_result.responses_received == 0u);
+    CHECK(batch_result.first_failed_index == 0u);
+
+    fake_platform_reset(&fake);
+    operations = fake_operations(&fake);
+    CHECK(npu_drv_init(&driver, &operations) == NPU_DRV_OK);
+    CHECK(npu_drv_submit_batch(
+              &driver,
+              commands,
+              NPU_DRV_CMD_FIFO_MAX_BURST_COMMANDS,
+              (const void *)0,
+              0u,
+              results,
+              &batch_result) == NPU_DRV_OK);
+    CHECK(fake.beat_count == NPU_DRV_CMD_FIFO_MAX_BURST_BEATS);
+    CHECK(fake.response_index ==
+          NPU_DRV_CMD_FIFO_MAX_BURST_COMMANDS);
+
+    CHECK(npu_drv_submit_batch(
+              &driver,
+              commands,
+              NPU_DRV_CMD_FIFO_MAX_BURST_COMMANDS + 1u,
+              (const void *)0,
+              0u,
+              results,
+              &batch_result) == NPU_DRV_ERANGE);
+    CHECK(npu_drv_submit_batch(
+              &driver,
+              commands,
+              0u,
+              (const void *)0,
+              0u,
+              results,
+              &batch_result) == NPU_DRV_EINVAL);
+
+    commands[1].hi |= UINT64_C(1) << 18u;
+    fake_platform_reset(&fake);
+    operations = fake_operations(&fake);
+    CHECK(npu_drv_init(&driver, &operations) == NPU_DRV_OK);
+    CHECK(npu_drv_submit_batch(
+              &driver,
+              commands,
+              3u,
+              (const void *)0,
+              0u,
+              results,
+              &batch_result) == NPU_DRV_EINVAL);
+    CHECK(fake.fixed_burst_count == 0u);
+    return 0;
+}
+
 static int test_driver(void)
 {
     _Alignas(64) uint8_t descriptor[256];
@@ -389,7 +623,7 @@ static int test_driver(void)
     npu_drv_event_t event;
     uint64_t raw;
 
-    memset(&fake, 0, sizeof(fake));
+    fake_platform_reset(&fake);
     operations = fake_operations(&fake);
     CHECK(npu_drv_init(&driver, &operations) == NPU_DRV_OK);
     CHECK(npu_drv_set_timeout(&driver, 3u, 1000u) == NPU_DRV_OK);
@@ -426,11 +660,12 @@ static int test_driver(void)
     CHECK(npu_drv_submit(
               &driver, &command, descriptor, sizeof(descriptor), &submit) ==
           NPU_DRV_OK);
+    CHECK(fake.fixed_burst_count == 1u);
+    CHECK(fake.fifo_offset == NPU_DRV_CMD_FIFO_DATA);
     CHECK(fake.beat_count == 2u);
-    CHECK(fake.beats[0] == command.lo && fake.first[0] == 1u &&
-          fake.last[0] == 0u);
-    CHECK(fake.beats[1] == command.hi && fake.first[1] == 0u &&
-          fake.last[1] == 1u);
+    CHECK(fake.beats[0] == command.lo);
+    CHECK(fake.beats[1] == command.hi);
+    CHECK(fake.response_index == 1u);
     CHECK(fake.cache_clean_count == 1u);
     CHECK(fake.write_barrier_count == 1u);
     CHECK(submit.command_id == fields.command_id);
@@ -475,6 +710,7 @@ int main(void)
     CHECK(test_descriptor() == 0);
     CHECK(test_data_type_configurations() == 0);
     CHECK(test_little_endian_writes() == 0);
+    CHECK(test_fixed_burst_batch() == 0);
     CHECK(test_driver() == 0);
     puts("npu_driver tests: PASS");
     return 0;

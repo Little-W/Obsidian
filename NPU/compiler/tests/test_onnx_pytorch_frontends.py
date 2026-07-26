@@ -148,6 +148,8 @@ class PytorchFrontendTests(unittest.TestCase):
                         "--trust-model",
                         "--pytorch-format",
                         "torchscript",
+                        "--input-shape",
+                        "0=1,3",
                         "--model-dtype",
                         "int16",
                         "--fraction-bits",

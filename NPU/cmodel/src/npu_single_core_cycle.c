@@ -373,6 +373,9 @@ static uint8_t single_core_idle_state(
 {
     return (uint8_t)(
         npu_issue_adapter_cycle_idle(&top->issue) != 0u &&
+        npu_sys_slave_cmd_idle(&top->system_axi) != 0u &&
+        top->cmd_source ==
+            (uint8_t)NPU_SINGLE_CORE_CMD_SOURCE_NONE &&
         npu_cfe_cycle_idle(&top->cfe) != 0u &&
         npu_ts_cycle_idle(&top->ts) != 0 &&
         single_engine_mask_quiescent(top->engine) == 0x0fu &&
@@ -441,9 +444,11 @@ static void single_crg_edge(
 
 static void single_build_issue_inputs(
     const npu_single_core_cycle_core_inputs_t *external,
-    const npu_cfe_cycle_outputs_t *cfe,
     const npu_ts_cycle_outputs_t *ts,
     uint8_t issue_quiesce,
+    uint8_t cmd_ready,
+    uint8_t cmd_rsp_valid,
+    uint64_t cmd_rsp_data,
     uint8_t reset_n,
     npu_issue_adapter_cycle_inputs_t *inputs)
 {
@@ -461,11 +466,9 @@ static void single_build_issue_inputs(
     inputs->dsa_enable_i = external->dsa_enable_i;
     inputs->cpu_cancel_i = external->cpu_cancel_i;
     inputs->issue_rsp_ready_i = external->issue_rsp_ready_i;
-    if (cfe != (const npu_cfe_cycle_outputs_t *)0) {
-        inputs->gc_cmd_ready_i = cfe->gc_cmd_ready_o;
-        inputs->gc_rsp_valid_i = cfe->gc_rsp_valid_o;
-        inputs->gc_rsp_data_i = cfe->gc_rsp_data_o;
-    }
+    inputs->gc_cmd_ready_i = cmd_ready;
+    inputs->gc_rsp_valid_i = cmd_rsp_valid;
+    inputs->gc_rsp_data_i = cmd_rsp_data;
     if (ts != (const npu_ts_cycle_outputs_t *)0) {
         inputs->gc_ctl_ready_i = ts->ctl.ready;
         inputs->gc_ctl_rsp_valid_i = ts->ctl.rsp_valid;
@@ -474,9 +477,14 @@ static void single_build_issue_inputs(
 }
 
 static void single_build_cfe_inputs(
-    const npu_issue_adapter_cycle_outputs_t *issue,
     const npu_ts_cycle_outputs_t *ts,
     const npu_lsc_cycle_outputs_t *lsc,
+    uint8_t cmd_valid,
+    uint64_t cmd_data,
+    uint8_t cmd_first,
+    uint8_t cmd_last,
+    uint8_t cmd_rsp_ready,
+    uint8_t source_busy,
     uint8_t reset_n,
     npu_cfe_cycle_inputs_t *inputs)
 {
@@ -484,12 +492,12 @@ static void single_build_cfe_inputs(
     inputs->reset_n = reset_n;
     inputs->cfe_quiesce_i =
         (uint8_t)(lsc->cfe_quiesce != 0u &&
-                  issue->issue_busy_o == 0u);
-    inputs->gc_cmd_valid_i = issue->gc_cmd_valid_o;
-    inputs->gc_cmd_data_i = issue->gc_cmd_data_o;
-    inputs->gc_cmd_first_i = issue->gc_cmd_first_o;
-    inputs->gc_cmd_last_i = issue->gc_cmd_last_o;
-    inputs->gc_rsp_ready_i = issue->gc_rsp_ready_o;
+                  source_busy == 0u);
+    inputs->gc_cmd_valid_i = cmd_valid;
+    inputs->gc_cmd_data_i = cmd_data;
+    inputs->gc_cmd_first_i = cmd_first;
+    inputs->gc_cmd_last_i = cmd_last;
+    inputs->gc_rsp_ready_i = cmd_rsp_ready;
     inputs->ts_cmd_ready_i = ts->cfe.ready;
     inputs->cmd_id_lookup_ready_i = ts->cfe.lookup_ready;
     inputs->cmd_id_lookup_rsp_valid_i =
@@ -855,6 +863,9 @@ static void single_build_system_inputs(
     const npu_lsc_cycle_outputs_t *lsc,
     const npu_l1_diag_bridge_outputs_t *diag,
     uint8_t access_idle,
+    uint8_t cmd_ready,
+    uint8_t cmd_rsp_valid,
+    uint64_t cmd_rsp_data,
     uint8_t reset_n,
     npu_sys_slave_inputs_t *inputs)
 {
@@ -875,6 +886,114 @@ static void single_build_system_inputs(
     inputs->ssa_l1_rsp_valid_i = diag->rsp_valid_o;
     inputs->ssa_l1_rsp_rdata_i = diag->rsp_rdata_o;
     inputs->ssa_l1_rsp_status_i = diag->rsp_status_o;
+    inputs->cmd_ready_i = cmd_ready;
+    inputs->cmd_rsp_valid_i = cmd_rsp_valid;
+    inputs->cmd_rsp_data_i = cmd_rsp_data;
+    inputs->cmd_error_clear_i =
+        lsc->external_error_clear_o;
+}
+
+typedef struct {
+    uint8_t source;
+
+    uint8_t cfe_valid;
+    uint64_t cfe_data;
+    uint8_t cfe_first;
+    uint8_t cfe_last;
+    uint8_t cfe_rsp_ready;
+    uint8_t source_busy;
+
+    uint8_t issue_ready;
+    uint8_t issue_rsp_valid;
+    uint64_t issue_rsp_data;
+
+    uint8_t axi_ready;
+    uint8_t axi_rsp_valid;
+    uint64_t axi_rsp_data;
+} npu_single_core_cmd_route_t;
+
+static void single_route_command(
+    const npu_single_core_cycle_t *top,
+    const npu_issue_adapter_cycle_outputs_t *issue,
+    const npu_sys_slave_outputs_t *system,
+    const npu_cfe_cycle_outputs_t *cfe,
+    npu_single_core_cmd_route_t *route)
+{
+    uint8_t source = top->cmd_source;
+
+    (void)memset(route, 0, sizeof(*route));
+    if (source ==
+        (uint8_t)NPU_SINGLE_CORE_CMD_SOURCE_NONE) {
+        if (system->cmd_valid_o != 0u ||
+            system->cmd_rsp_ready_o != 0u) {
+            source =
+                (uint8_t)NPU_SINGLE_CORE_CMD_SOURCE_AXI;
+        } else if (issue->gc_cmd_valid_o != 0u ||
+                   issue->gc_rsp_ready_o != 0u) {
+            source =
+                (uint8_t)NPU_SINGLE_CORE_CMD_SOURCE_ISSUE;
+        }
+    }
+    route->source = source;
+
+    if (source ==
+        (uint8_t)NPU_SINGLE_CORE_CMD_SOURCE_AXI) {
+        route->cfe_valid = system->cmd_valid_o;
+        route->cfe_data = system->cmd_data_o;
+        route->cfe_first = system->cmd_first_o;
+        route->cfe_last = system->cmd_last_o;
+        route->cfe_rsp_ready = system->cmd_rsp_ready_o;
+        route->source_busy =
+            (uint8_t)(npu_sys_slave_cmd_idle(
+                          &top->system_axi) == 0u);
+        route->axi_ready = cfe->gc_cmd_ready_o;
+        route->axi_rsp_valid = cfe->gc_rsp_valid_o;
+        route->axi_rsp_data = cfe->gc_rsp_data_o;
+    } else if (
+        source ==
+        (uint8_t)NPU_SINGLE_CORE_CMD_SOURCE_ISSUE) {
+        route->cfe_valid = issue->gc_cmd_valid_o;
+        route->cfe_data = issue->gc_cmd_data_o;
+        route->cfe_first = issue->gc_cmd_first_o;
+        route->cfe_last = issue->gc_cmd_last_o;
+        route->cfe_rsp_ready = issue->gc_rsp_ready_o;
+        route->source_busy = issue->issue_busy_o;
+        route->issue_ready = cfe->gc_cmd_ready_o;
+        route->issue_rsp_valid = cfe->gc_rsp_valid_o;
+        route->issue_rsp_data = cfe->gc_rsp_data_o;
+    }
+}
+
+static void single_update_command_source(
+    npu_single_core_cycle_t *top,
+    const npu_single_core_cmd_route_t *route,
+    const npu_cfe_cycle_outputs_t *cfe,
+    uint8_t reset_n)
+{
+    uint8_t command_handshake;
+    uint8_t response_handshake;
+
+    if (reset_n == 0u) {
+        top->cmd_source =
+            (uint8_t)NPU_SINGLE_CORE_CMD_SOURCE_NONE;
+        return;
+    }
+    command_handshake =
+        (uint8_t)(route->cfe_valid != 0u &&
+                  cfe->gc_cmd_ready_o != 0u);
+    response_handshake =
+        (uint8_t)(route->cfe_rsp_ready != 0u &&
+                  cfe->gc_rsp_valid_o != 0u);
+
+    if (top->cmd_source ==
+            (uint8_t)NPU_SINGLE_CORE_CMD_SOURCE_NONE &&
+        command_handshake != 0u) {
+        top->cmd_source = route->source;
+    }
+    if (response_handshake != 0u) {
+        top->cmd_source =
+            (uint8_t)NPU_SINGLE_CORE_CMD_SOURCE_NONE;
+    }
 }
 
 static uint8_t single_system_access_idle(
@@ -902,6 +1021,7 @@ static uint8_t single_task_progress(
     const npu_single_core_cycle_t *top,
     const npu_single_core_cycle_core_inputs_t *external,
     const npu_issue_adapter_cycle_outputs_t *issue,
+    const npu_single_core_cmd_route_t *cmd_route,
     const npu_cfe_cycle_outputs_t *cfe,
     const npu_ts_cycle_outputs_t *ts,
     const npu_engine_data_cycle_outputs_t
@@ -918,10 +1038,10 @@ static uint8_t single_task_progress(
          issue->issue_ready_o != 0u) ||
         (issue->issue_rsp_valid_o != 0u &&
          external->issue_rsp_ready_i != 0u) ||
-        (issue->gc_cmd_valid_o != 0u &&
+        (cmd_route->cfe_valid != 0u &&
          cfe->gc_cmd_ready_o != 0u) ||
         (cfe->gc_rsp_valid_o != 0u &&
-         issue->gc_rsp_ready_o != 0u) ||
+         cmd_route->cfe_rsp_ready != 0u) ||
         (issue->gc_ctl_valid_o != 0u &&
          ts->ctl.ready != 0u) ||
         (ts->ctl.rsp_valid != 0u &&
@@ -2178,6 +2298,8 @@ void npu_single_core_cycle_reset(
     single_clear_stale_transport(top);
     single_clear_stale_gc_transport(top);
     npu_issue_adapter_cycle_reset(&top->issue);
+    top->cmd_source =
+        (uint8_t)NPU_SINGLE_CORE_CMD_SOURCE_NONE;
     npu_cfe_cycle_reset(&top->cfe);
     npu_ts_cycle_reset(&top->ts);
     top->ts.wire_limits = top->wire_limits;
@@ -2276,6 +2398,7 @@ void npu_single_core_cycle_core_tick(
     npu_lsc_cycle_outputs_t lsc_outputs;
     npu_gc_axi_cycle_inputs_t gc_axi_inputs;
     npu_gc_axi_cycle_outputs_t gc_axi_outputs;
+    npu_single_core_cmd_route_t cmd_route;
     npu_crg_outputs_t crg_outputs;
     npu_wdt_inputs_t wdt_inputs;
     npu_wdt_outputs_t wdt_outputs;
@@ -2385,6 +2508,7 @@ void npu_single_core_cycle_core_tick(
     (void)memset(&diag_outputs, 0, sizeof(diag_outputs));
     (void)memset(&system_outputs, 0,
                  sizeof(system_outputs));
+    (void)memset(&cmd_route, 0, sizeof(cmd_route));
     issue_quiesce =
         (uint8_t)(external->stop_fetch_i != 0u ||
                   external->dvfs_prepare_req_i != 0u ||
@@ -2392,20 +2516,39 @@ void npu_single_core_cycle_core_tick(
                   external->power_down_req_i != 0u ||
                   lsc_outputs.stop_fetch != 0u);
 
+    single_build_system_inputs(
+        external, &lsc_outputs, &diag_outputs,
+        single_core_idle_state(top), 0u, 0u, 0u,
+        module_reset_n, &system_inputs);
+    single_eval_system(
+        &top->system_axi, &system_inputs, &system_outputs);
+
     /*
      * Resolve control-side ready/valid signals from copies of pre-edge
      * module state. Three passes cover Issue->CFE->TS and TS->Engine->TS.
      * No copied evaluation writes memory or advances functional operators.
      */
     for (iteration = 0u; iteration < 3u; iteration++) {
+        single_route_command(
+            top, &issue_outputs, &system_outputs,
+            &cfe_outputs, &cmd_route);
         single_build_issue_inputs(
-            external, &cfe_outputs, &ts_outputs,
-            issue_quiesce,
+            external, &ts_outputs, issue_quiesce,
+            cmd_route.issue_ready,
+            cmd_route.issue_rsp_valid,
+            cmd_route.issue_rsp_data,
             module_reset_n, &issue_inputs);
         single_eval_issue(
             &top->issue, &issue_inputs, &issue_outputs);
+        single_route_command(
+            top, &issue_outputs, &system_outputs,
+            &cfe_outputs, &cmd_route);
         single_build_cfe_inputs(
-            &issue_outputs, &ts_outputs, &lsc_outputs,
+            &ts_outputs, &lsc_outputs,
+            cmd_route.cfe_valid, cmd_route.cfe_data,
+            cmd_route.cfe_first, cmd_route.cfe_last,
+            cmd_route.cfe_rsp_ready,
+            cmd_route.source_busy,
             module_reset_n, &cfe_inputs);
         single_eval_cfe(
             &top->cfe, &cfe_inputs, &cfe_outputs);
@@ -2413,6 +2556,19 @@ void npu_single_core_cycle_core_tick(
             single_gate_cfe_outputs(
                 &top->cfe, &cfe_outputs);
         }
+        single_route_command(
+            top, &issue_outputs, &system_outputs,
+            &cfe_outputs, &cmd_route);
+        single_build_system_inputs(
+            external, &lsc_outputs, &diag_outputs,
+            single_core_idle_state(top),
+            cmd_route.axi_ready,
+            cmd_route.axi_rsp_valid,
+            cmd_route.axi_rsp_data,
+            module_reset_n, &system_inputs);
+        single_eval_system(
+            &top->system_axi, &system_inputs,
+            &system_outputs);
         single_build_ts_inputs(
             &issue_outputs, &cfe_outputs,
             engine_outputs, &cdc_outputs, &lsc_outputs,
@@ -2477,7 +2633,9 @@ void npu_single_core_cycle_core_tick(
         &top->l1_diag, &diag_inputs, &diag_outputs);
     single_build_system_inputs(
         external, &lsc_outputs, &diag_outputs,
-        access_idle, module_reset_n,
+        access_idle, cmd_route.axi_ready,
+        cmd_route.axi_rsp_valid,
+        cmd_route.axi_rsp_data, module_reset_n,
         &system_inputs);
     single_eval_system(
         &top->system_axi, &system_inputs, &system_outputs);
@@ -2557,8 +2715,15 @@ void npu_single_core_cycle_core_tick(
             single_gate_ts_outputs(
                 &top->ts, &ts_outputs);
         }
+        single_route_command(
+            top, &issue_outputs, &system_outputs,
+            &cfe_outputs, &cmd_route);
         single_build_cfe_inputs(
-            &issue_outputs, &ts_outputs, &lsc_outputs,
+            &ts_outputs, &lsc_outputs,
+            cmd_route.cfe_valid, cmd_route.cfe_data,
+            cmd_route.cfe_first, cmd_route.cfe_last,
+            cmd_route.cfe_rsp_ready,
+            cmd_route.source_busy,
             module_reset_n, &cfe_inputs);
         single_eval_cfe(
             &top->cfe, &cfe_inputs, &cfe_outputs);
@@ -2566,12 +2731,29 @@ void npu_single_core_cycle_core_tick(
             single_gate_cfe_outputs(
                 &top->cfe, &cfe_outputs);
         }
+        single_route_command(
+            top, &issue_outputs, &system_outputs,
+            &cfe_outputs, &cmd_route);
         single_build_issue_inputs(
-            external, &cfe_outputs, &ts_outputs,
-            issue_quiesce,
+            external, &ts_outputs, issue_quiesce,
+            cmd_route.issue_ready,
+            cmd_route.issue_rsp_valid,
+            cmd_route.issue_rsp_data,
             module_reset_n, &issue_inputs);
         single_eval_issue(
             &top->issue, &issue_inputs, &issue_outputs);
+        single_route_command(
+            top, &issue_outputs, &system_outputs,
+            &cfe_outputs, &cmd_route);
+        single_build_system_inputs(
+            external, &lsc_outputs, &diag_outputs,
+            access_idle, cmd_route.axi_ready,
+            cmd_route.axi_rsp_valid,
+            cmd_route.axi_rsp_data, module_reset_n,
+            &system_inputs);
+        single_eval_system(
+            &top->system_axi, &system_inputs,
+            &system_outputs);
     }
 
     single_eval_gc_axi(
@@ -2584,7 +2766,9 @@ void npu_single_core_cycle_core_tick(
 
     single_build_system_inputs(
         external, &lsc_outputs, &diag_outputs,
-        access_idle, module_reset_n,
+        access_idle, cmd_route.axi_ready,
+        cmd_route.axi_rsp_valid,
+        cmd_route.axi_rsp_data, module_reset_n,
         &system_inputs);
     single_eval_system(
         &top->system_axi, &system_inputs, &system_outputs);
@@ -2602,7 +2786,8 @@ void npu_single_core_cycle_core_tick(
         &top->lsc, &lsc_inputs, &lsc_outputs);
 
     progress = single_task_progress(
-        top, external, &issue_outputs, &cfe_outputs, &ts_outputs,
+        top, external, &issue_outputs, &cmd_route,
+        &cfe_outputs, &ts_outputs,
         engine_outputs, &diag_outputs, &l1_outputs,
         &cdc_outputs, &gc_axi_inputs, &gc_axi_outputs);
     (void)memset(&wdt_inputs, 0, sizeof(wdt_inputs));
@@ -2618,6 +2803,8 @@ void npu_single_core_cycle_core_tick(
      * committed above because their pre-edge pins were needed to finalize
      * the connected requesters.
      */
+    single_update_command_source(
+        top, &cmd_route, &cfe_outputs, module_reset_n);
     npu_issue_adapter_cycle_step(
         &top->issue, &issue_inputs, &ignored_issue);
     if (module_reset_n == 0u || cfe_clock != 0u) {

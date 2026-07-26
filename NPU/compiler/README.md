@@ -279,6 +279,7 @@ CMD128 数组按 16 字节对齐，Descriptor 按 64 字节对齐，权重按 25
 
 ```c
 #include "model_model.h"
+#include "npu_driver.h"
 
 const model_model_config_t *model = &model_model_config;
 
@@ -293,10 +294,24 @@ npu_write_tensor(&model->inputs[0], input_data);
 for (uint32_t group = 0; group < model->command_batch_count; ++group) {
     const model_model_command_batch_t *batch =
         &model->command_batches[group];
+    npu_drv_cmd128_t
+        commands[NPU_DRV_CMD_FIFO_MAX_BURST_COMMANDS];
+    npu_drv_submit_result_t
+        results[NPU_DRV_CMD_FIFO_MAX_BURST_COMMANDS];
+    npu_drv_submit_batch_result_t batch_result;
+
     for (uint32_t i = 0; i < batch->command_count; ++i) {
         uint16_t command_id =
             model->batch_command_ids[batch->command_id_offset + i];
-        npu_submit_cmd128(&model->commands[command_id]);
+        commands[i].lo = model->commands[command_id].lo;
+        commands[i].hi = model->commands[command_id].hi;
+    }
+    if (npu_drv_submit_batch(
+            &driver, commands, batch->command_count,
+            model->descriptors, model->descriptor_bytes,
+            results, &batch_result) != NPU_DRV_OK) {
+        handle_submit_error(&batch_result, results);
+        break;
     }
     npu_wait_group();
 }
@@ -307,6 +322,11 @@ npu_read_tensor(&model->outputs[0], output_data);
 主控 CPU 发起这些驱动调用。NPU 的命令接收端和控制寄存器是总线从设备接口；
 需要读取 DDR 时，NPU 的内存访问单元再作为总线主设备发起请求。C 模型包保存
 部署所需的静态数据，驱动负责实际的寄存器访问和数据传输。
+
+编译器保证每个 `command_batch` 最多包含 8 条 CMD128。驱动把它们排成
+`low0, high0, low1, high1, ...`，向固定地址 `0x020000` 发出 2～16 beat
+的 AXI FIXED burst。burst 的写响应成功后，驱动还要从 `0x020008` 逐项读取
+命令接收响应；只检查 AXI 写响应不足以确认每条 CMD 已被 CFE 接受。
 
 ## 8. 运行命令
 
@@ -348,6 +368,7 @@ conda run -n tf_2_18 python npu_model_compiler.py model.torchscript \
   --output-dir build/torch-model \
   --trust-model \
   --pytorch-format torchscript \
+  --input-shape 0=1,3 \
   --model-dtype int16 \
   --fraction-bits 8
 ```
@@ -416,9 +437,9 @@ make test
 
 该命令依次完成高层编译、低层独立汇编结果比较、C 模型包与驱动构建，以及
 C model 推理。
-当前模型由 8 个高层节点生成 36 条 CMD128，并按 8 条任务一组拆成 5 个提交组。
-C 程序对每条命令执行 submit、wait、query 和 ACK，最后从生成的 DDR 输出
-binding 读取 4×8 个 INT16 结果。
+当前模型由 8 个高层节点生成 36 条 CMD128，并按最多 8 条任务一组拆成 5 个
+提交组。C 程序对每个组执行一次 `npu_drv_submit_batch()`，再按任务执行
+wait、query 和 ACK，最后从生成的 DDR 输出 binding 读取 4×8 个 INT16 结果。
 
 独立浮点参考程序计算相同的多头注意力、GELU 和 LayerNorm。当前结果为 32/32
 个输出元素相同，最大绝对误差为 0，4 个 token 的最大值位置均相同。运行

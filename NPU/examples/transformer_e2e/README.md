@@ -18,7 +18,7 @@ Descriptor、DMA、PACK 或字节步长。上层编译器负责 shape 推导、�
 
 > [!important] 主控 CPU 与 NPU 的关系
 > Generic Core 是 NPU 外部的主控 CPU，不是 NPU 内部模块。主控 CPU 作为
-> AXI Master，主动调用驱动函数访问 NPU 的 AXI Slave 命令窗口、控制寄存器
+> AXI Master，主动调用驱动函数访问 NPU AXI Slave 的固定地址命令 FIFO、控制寄存器
 > 和 L1BUF 外部窗口。NPU 内部的 MIF / TBU 另有 AXI Master 端口，用于主动
 > 访问 DDR。这两类端口的用途不同。
 
@@ -76,8 +76,9 @@ Descriptor、DMA、PACK 或字节步长。上层编译器负责 shape 推导、�
 Descriptor。应用部署只需编译 `transformer_model.c` 并包含
 `transformer_model.h`，不需要读取这些裸文件。
 
-示例把每个提交组限制为 8 条命令，以验证多组提交。该值小于硬件任务表容量，
-不会改变计算结果。
+示例把每个提交组限制为 8 条命令。这样一组最多形成 16 个 64-bit beat，
+恰好符合命令 FIFO 的 FIXED burst 最大长度；该值也小于硬件任务表容量，不会
+改变计算结果。
 
 ## C 运行程序做了什么
 
@@ -93,7 +94,8 @@ C 包中的：
 运行程序将生成的 Descriptor 与权重放入 cmodel DDR，把测试输入写到生成的
 输入地址，然后按提交组执行以下步骤：
 
-1. 调用公开 `npu_drv_submit()` 提交组内全部 CMD128；
+1. 把组内 1～8 条 CMD128 排成低、高 word 相邻的数组，再调用公开
+   `npu_drv_submit_batch()` 发出一次 2～16 beat 的固定地址 FIXED burst；
 2. 调用 `npu_drv_wait_task()` 等待任务结束；
 3. 调用 `npu_drv_query_status()` 和 `npu_drv_query_raw()` 读取状态与进度；
 4. 调用 `npu_drv_ack_task()` 释放任务项；
@@ -112,8 +114,15 @@ LayerNorm。它逐项比较 32 个 INT16 输出，同时显示每个 token 的�
 | 2 | `[0,0,0,0,0,4,0,0]` | `[1,0,1,0,0,8,0,0]` | 5 |
 | 3 | `[0,0,0,0,0,0,0,4]` | `[1,0,1,0,0,0,0,8]` | 7 |
 
-当前模型生成 36 条 CMD128，分为 5 个提交组。运行时发送 72 个 64-bit beat，
-36 条任务全部返回成功。GCC、Clang、ASan+UBSan 均已完成验证。
+当前模型生成 36 条 CMD128，分为 5 个提交组。运行时使用 5 次固定地址 FIXED
+burst 发送 72 个 64-bit beat，并从命令响应 FIFO 取得 36 条成功响应。
+GCC、Clang、ASan+UBSan 均已完成验证。
+
+> [!note] 两类测试各自检查什么
+> 本例的功能 backend 通过驱动平台回调执行与 FIXED burst 等价的批量提交，
+> 用于检查低、高 word 次序、分组、响应处理和模型数值结果；它不实例化 AXI
+> 信号级状态机。真实 `AW/W/B`、`AR/R` 握手、整体提交、错误 burst 丢弃和
+> 反压由 CModel 的 `test_sys_slave_cycle` 与 `test_single_core_cycle` 检查。
 
 ## Keras Transformer 示例
 

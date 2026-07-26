@@ -80,8 +80,11 @@ int main(void)
         return 1;
     }
 
-    printf("CMD low : 0x%016" PRIx64 " first=1 last=0\n", command.lo);
-    printf("CMD high: 0x%016" PRIx64 " first=0 last=1\n", command.hi);
+    printf("CMD FIFO offset: 0x%06" PRIx32
+           " AWBURST=FIXED beats=2\n",
+           NPU_DRV_CMD_FIFO_DATA);
+    printf("beat[0] CMD low : 0x%016" PRIx64 "\n", command.lo);
+    printf("beat[1] CMD high: 0x%016" PRIx64 " WLAST=1\n", command.hi);
     printf("Descriptor device address: 0x%012" PRIx64 "\n",
            allocation.device_address);
     return 0;
