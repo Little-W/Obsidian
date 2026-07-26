@@ -170,6 +170,12 @@ def parse_float(value: Any, location: str) -> float:
     return result
 
 
+def float_bits(value: float) -> int:
+    """Return the IEEE-754 binary32 encoding used by device Descriptors."""
+
+    return struct.unpack("<I", struct.pack("<f", float(value)))[0]
+
+
 def align_up(value: int, alignment: int) -> int:
     if alignment <= 0 or alignment & (alignment - 1):
         raise ValueError("alignment must be a positive power of two")
@@ -539,16 +545,40 @@ def infer_graph(
             left, right = inputs
             if left.dtype != right.dtype:
                 raise fail(location, "Add inputs must use the same dtype")
+
+            def is_feature_shape(
+                candidate: tuple[int, ...],
+                full: tuple[int, ...],
+            ) -> bool:
+                return (
+                    len(full) >= 2
+                    and candidate != full
+                    and candidate[-1] == full[-1]
+                    and product(candidate) == full[-1]
+                )
+
             if left.shape == right.shape:
                 shape = left.shape
             elif product(left.shape) == 1:
                 shape = right.shape
             elif product(right.shape) == 1:
                 shape = left.shape
+            elif is_feature_shape(left.shape, right.shape):
+                shape = right.shape
+            elif is_feature_shape(right.shape, left.shape):
+                shape = left.shape
             else:
-                raise fail(location, "Add supports equal shapes or one scalar")
+                raise fail(
+                    location,
+                    "Add supports equal shapes, one scalar, or a feature "
+                    "vector matching the last dimension",
+                )
             output_dtype = left.dtype
             output_shapes = [shape]
+        elif kind in ("relu", "sigmoid", "tanh", "silu"):
+            require_count(operator, 1)
+            output_dtype = inputs[0].dtype
+            output_shapes = [inputs[0].shape]
         elif kind in ("softmax", "gelu"):
             require_count(operator, 1)
             source = inputs[0]
@@ -1985,11 +2015,25 @@ def lower_simple_operator(
     if kind == "add":
         left, right = sources
         scalar: int | None = None
+        feature = False
         if product(left.shape) == 1 and left.data is not None:
             scalar = left.data[0]
             left, right = right, left
         elif product(right.shape) == 1 and right.data is not None:
             scalar = right.data[0]
+        elif (
+            left.shape != destination.shape
+            and left.shape[-1] == destination.shape[-1]
+            and product(left.shape) == destination.shape[-1]
+        ):
+            left, right = right, left
+            feature = True
+        elif (
+            right.shape != destination.shape
+            and right.shape[-1] == destination.shape[-1]
+            and product(right.shape) == destination.shape[-1]
+        ):
+            feature = True
         rows, length = vector_dimensions(destination.shape)
         element_stride = 0 if destination.dtype == "int4" else element_bytes(
             destination.dtype
@@ -2019,13 +2063,35 @@ def lower_simple_operator(
             vector.update(
                 {
                     "src1_elem_stride_bytes": element_stride,
-                    "src1_row_stride_bytes": row_stride,
+                    "src1_row_stride_bytes": (
+                        logical_tensor_bytes(
+                            (destination.shape[-1],), destination.dtype
+                        )
+                        if feature
+                        else row_stride
+                    ),
                 }
             )
+            if feature:
+                vector["broadcast1"] = "feature"
             reads.append(right.name)
         else:
             vector["src1_from_scalar0"] = True
             vector["scalar0"] = scalar
+        if "scale" in operator.attributes:
+            scale = parse_float(
+                operator.attributes["scale"],
+                f"operator {operator.name}.scale",
+            )
+            if scale <= 0.0:
+                raise fail(
+                    f"operator {operator.name}.scale",
+                    "must be positive",
+                )
+            bits = float_bits(scale)
+            vector["src0_scale_bits"] = bits
+            vector["src1_scale_bits"] = bits
+            vector["dst_scale_bits"] = bits
         return [
             VirtualTask(
                 name=operator.name,
@@ -2038,13 +2104,73 @@ def lower_simple_operator(
             )
         ]
 
-    if kind in ("softmax", "gelu", "layernorm"):
+    if kind == "relu":
+        source = sources[0]
+        rows, length = vector_dimensions(source.shape)
+        element_stride = 0 if source.dtype == "int4" else element_bytes(
+            source.dtype
+        )
+        row_stride = logical_tensor_bytes((length,), source.dtype)
+        vector: dict[str, Any] = {
+            "rows": rows,
+            "length": length,
+            "valid_length": length,
+            "src0_elem_stride_bytes": element_stride,
+            "src0_row_stride_bytes": row_stride,
+            "dst_elem_stride_bytes": element_stride,
+            "dst_row_stride_bytes": row_stride,
+            "src2_scale_bits": 0,
+        }
+        if "scale" in operator.attributes:
+            scale = parse_float(
+                operator.attributes["scale"],
+                f"operator {operator.name}.scale",
+            )
+            if scale <= 0.0:
+                raise fail(
+                    f"operator {operator.name}.scale",
+                    "must be positive",
+                )
+            bits = float_bits(scale)
+            vector["src0_scale_bits"] = bits
+            vector["dst_scale_bits"] = bits
+        return [
+            VirtualTask(
+                name=operator.name,
+                engine="vector",
+                opcode="RELU",
+                reads=(source.name,),
+                writes=(destination.name,),
+                descriptor={
+                    "common": {
+                        "src0": source.name,
+                        "dst": destination.name,
+                        "saturate_enable": True,
+                        "scale_mode": "per_tensor",
+                    },
+                    "vector": vector,
+                },
+                high_level_node=operator.name,
+            )
+        ]
+
+    if kind in (
+        "softmax",
+        "gelu",
+        "sigmoid",
+        "tanh",
+        "silu",
+        "layernorm",
+    ):
         source = sources[0]
         rows, length = vector_dimensions(source.shape)
         row_stride = logical_tensor_bytes((length,), source.dtype)
         function = {
             "softmax": "softmax",
             "gelu": "gelu",
+            "sigmoid": "sigmoid",
+            "tanh": "tanh",
+            "silu": "silu",
             "layernorm": "layernorm",
         }[kind]
         common: dict[str, Any] = {

@@ -65,9 +65,9 @@ digraph NPU_SINGLE_CORE_PPT {
       fillcolor="#FFFFFF",
       label=<
         <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="6">
-          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="13"><B>应用 / Runtime</B></FONT></TD></TR>
-          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">模型装载 · 缓冲区准备</FONT></TD></TR>
-          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">任务提交 · 结果读取</FONT></TD></TR>
+          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="13"><B>模型编译器</B></FONT></TD></TR>
+          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">计算图解析 · 算子拆分 · 调度</FONT></TD></TR>
+          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">生成低层 JSON IR 并调用汇编器</FONT></TD></TR>
         </TABLE>
       >
     ];
@@ -76,10 +76,10 @@ digraph NPU_SINGLE_CORE_PPT {
       color="#3B82F6",
       fillcolor="#EAF3FF",
       label=<
-        <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="6">
-          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="13"><B>NPU C 驱动</B></FONT></TD></TR>
-          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">Command · Descriptor · Device</FONT></TD></TR>
-          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">Runtime · Memory</FONT></TD></TR>
+        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="6" COLOR="#93C5FD">
+          <TR><TD BGCOLOR="#3B82F6" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" COLOR="#FFFFFF" POINT-SIZE="13"><B>C 模型包（.c / .h）</B></FONT></TD></TR>
+          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">配置结构体 · CMD128 指令数组</FONT></TD></TR>
+          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">Descriptor 数组 · 权重与常量数组</FONT></TD></TR>
         </TABLE>
       >
     ];
@@ -89,9 +89,9 @@ digraph NPU_SINGLE_CORE_PPT {
       fillcolor="#DBEAFE",
       label=<
         <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="6" COLOR="#93C5FD">
-          <TR><TD BGCOLOR="#2563EB" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" COLOR="#FFFFFF" POINT-SIZE="12"><B>Generic Core / Host</B></FONT></TD></TR>
-          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="11"><B>Command Master / Source</B></FONT></TD></TR>
-          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">64-bit cmd_data · valid / ready</FONT></TD></TR>
+          <TR><TD BGCOLOR="#2563EB" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" COLOR="#FFFFFF" POINT-SIZE="12"><B>C 驱动 / Host 软件</B></FONT></TD></TR>
+          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">驱动函数 · Runtime · 缓冲区管理</FONT></TD></TR>
+          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">Conv2D：im2col + GEMM 任务调度</FONT></TD></TR>
         </TABLE>
       >
     ];
@@ -100,11 +100,10 @@ digraph NPU_SINGLE_CORE_PPT {
       shape=plain,
       label=<
         <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="6" COLOR="#0891B2">
-          <TR><TD BGCOLOR="#0891B2" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" COLOR="#FFFFFF" POINT-SIZE="12"><B>NPU GC Command Port</B></FONT></TD></TR>
-          <TR><TD BGCOLOR="#CFFAFE" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="11"><B>Slave / Sink</B></FONT></TD></TR>
-          <TR><TD ALIGN="LEFT" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">beat 0：low　CMD[63:0]</FONT></TD></TR>
-          <TR><TD ALIGN="LEFT" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">beat 1：high　CMD[127:64]</FONT></TD></TR>
-          <TR><TD BGCOLOR="#ECFEFF" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10"><B>CMD128 = 2 × 64 bit</B></FONT></TD></TR>
+          <TR><TD BGCOLOR="#0891B2" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" COLOR="#FFFFFF" POINT-SIZE="12"><B>Generic Core / Host CPU</B></FONT></TD></TR>
+          <TR><TD BGCOLOR="#CFFAFE" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="12"><B>AXI Master</B></FONT></TD></TR>
+          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">位于 NPU 外部</FONT></TD></TR>
+          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="10">执行驱动函数并主动发起访问</FONT></TD></TR>
         </TABLE>
       >
     ];
@@ -130,6 +129,19 @@ digraph NPU_SINGLE_CORE_PPT {
 
   { rank=same; side_host; app_runtime; c_driver; generic_host; gc_command_port; }
   side_host -> app_runtime [style=invis, weight=80];
+
+  subgraph cluster_npu {
+    label="NPU 单核硬件";
+    labelloc=t;
+    labeljust=l;
+    fontname="Microsoft YaHei";
+    fontsize=15;
+    fontcolor="#1E3A5F";
+    color="#5B7FA3";
+    fillcolor="#F8FBFF";
+    style="rounded,filled";
+    penwidth=2.0;
+    margin=16;
 
   side_control [
     fixedsize=true,
