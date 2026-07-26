@@ -43,7 +43,7 @@ except ImportError:
 )
 class KerasTFLiteFrontendTests(unittest.TestCase):
     def options(self) -> FrontendOptions:
-        return FrontendOptions(dtype="int16", fraction_bits=8, batch_size=1)
+        return FrontendOptions(dtype="int8", fraction_bits=6, batch_size=1)
 
     def dense_model(self):
         source = keras.Input(batch_size=1, shape=(4,), name="features")
@@ -78,9 +78,9 @@ class KerasTFLiteFrontendTests(unittest.TestCase):
                         "--output-dir",
                         str(output),
                         "--model-dtype",
-                        "int16",
+                        "int8",
                         "--fraction-bits",
-                        "8",
+                        "6",
                     ]
                 ),
                 0,
@@ -113,9 +113,9 @@ class KerasTFLiteFrontendTests(unittest.TestCase):
                         "--output-dir",
                         str(output),
                         "--model-dtype",
-                        "int16",
+                        "int8",
                         "--fraction-bits",
-                        "8",
+                        "6",
                     ]
                 ),
                 0,
@@ -262,13 +262,13 @@ class KerasTFLiteFrontendTests(unittest.TestCase):
             if item["type"] == "MultiHeadAttention"
         )
         self.assertEqual(attention_node["attributes"]["num_heads"], 2)
-        self.assertEqual(attention_node["attributes"]["projection_shift"], 8)
-        self.assertEqual(attention_node["attributes"]["score_shift"], 8)
-        self.assertEqual(attention_node["attributes"]["value_shift"], 8)
-        self.assertEqual(attention_node["attributes"]["output_shift"], 8)
+        self.assertEqual(attention_node["attributes"]["projection_shift"], 6)
+        self.assertEqual(attention_node["attributes"]["score_shift"], 6)
+        self.assertEqual(attention_node["attributes"]["value_shift"], 6)
+        self.assertEqual(attention_node["attributes"]["output_shift"], 6)
         self.assertAlmostEqual(
             attention_node["attributes"]["score_scale"],
-            1.0 / (256.0 * 2.0),
+            1.0 / (64.0 * 2.0),
         )
         result = compiler.compile_model_document(
             document,
@@ -316,8 +316,8 @@ class KerasTFLiteFrontendTests(unittest.TestCase):
         with self.assertRaisesRegex(FrontendError, "cannot be stored"):
             _check_fixed_range(
                 np.asarray([1000.0], dtype=np.float32),
-                dtype="int16",
-                scale=1.0 / 256.0,
+                dtype="int8",
+                scale=1.0 / 64.0,
                 location="test constant",
             )
 

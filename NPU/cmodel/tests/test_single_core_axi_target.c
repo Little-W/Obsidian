@@ -536,7 +536,7 @@ static void scat_noc_tick(
     npu_axi_mem_target_cycle_eval(
         &env->mif_target, &target_inputs, &target_preview);
     npu_axi_mem_target_to_mif(
-        &inputs.axi[NPU_MIF_AXI_DDR],
+        &inputs.axi,
         &target_preview.target);
 
     npu_single_core_cycle_noc_tick(
@@ -545,7 +545,7 @@ static void scat_noc_tick(
     target_inputs.reset_n = outputs->noc_reset_n;
     npu_axi_mem_master_from_mif(
         &target_inputs.master,
-        &outputs->mif.axi[NPU_MIF_AXI_DDR]);
+        &outputs->mif.axi);
     npu_axi_mem_target_cycle_step(
         &env->mif_target, &target_inputs, &target_outputs);
 
@@ -682,7 +682,7 @@ static void scat_noc_tick(
         }
     }
     env->last_mif_master =
-        outputs->mif.axi[NPU_MIF_AXI_DDR];
+        outputs->mif.axi;
     env->mif_target_reset_n = outputs->noc_reset_n;
     env->noc_ticks++;
 }
@@ -731,10 +731,9 @@ static int scat_env_init(scat_env_t *env)
     limits.gaddr_limit = SCAT_DDR_BYTES;
     npu_lsc_cycle_config_reference(&lsc_config);
     npu_mif_cycle_config_default(&mif_config);
-    mif_config.ddr_enable = 1u;
-    mif_config.ddr_base = 0u;
-    mif_config.ddr_limit = SCAT_DDR_BYTES - 8u;
-    mif_config.ext_enable = 0u;
+    mif_config.system_addr_enable = 1u;
+    mif_config.system_addr_base = 0u;
+    mif_config.system_addr_limit = SCAT_DDR_BYTES - 8u;
     mif_config.bypass_enable = 0u;
 
     TEST_CHECK_STATUS(
@@ -1633,7 +1632,6 @@ static int scat_mif_reset_stale_read_wait_rlast(
     (void)memset(old_axi, 0, sizeof(*old_axi));
     old_axi->valid = 1u;
     old_axi->addr_sent = 1u;
-    old_axi->port = NPU_MIF_AXI_DDR;
     old_axi->axi_id = old_id;
     old_axi->req_slot = 0u;
     old_axi->beats = 1u;
@@ -1647,39 +1645,39 @@ static int scat_mif_reset_stale_read_wait_rlast(
             &env->top, &noc_inputs, &noc_outputs);
         env->noc_ticks++;
         if (env->top.stale_axi_read_beats
-                [NPU_MIF_AXI_DDR][old_id] != 0u) {
+                [old_id] != 0u) {
             captured = 1u;
             break;
         }
     }
     TEST_CHECK(captured != 0u);
     TEST_CHECK(env->top.stale_axi_read_beats
-                   [NPU_MIF_AXI_DDR][old_id] == 1u);
+                   [old_id] == 1u);
     TEST_CHECK(env->top.stale_axi_read_wait_rlast
-                   [NPU_MIF_AXI_DDR][old_id] == 0u);
+                   [old_id] == 0u);
     TEST_CHECK(npu_mif_cycle_is_idle(&env->top.mif) != 0u);
     TEST_CHECK(env->top.mif_idle_source_noc == 0u);
 
     scat_noc_inputs(env, &noc_inputs);
-    noc_inputs.axi[NPU_MIF_AXI_DDR].rvalid = 1u;
-    noc_inputs.axi[NPU_MIF_AXI_DDR].rid = old_id;
-    noc_inputs.axi[NPU_MIF_AXI_DDR].rdata =
+    noc_inputs.axi.rvalid = 1u;
+    noc_inputs.axi.rid = old_id;
+    noc_inputs.axi.rdata =
         UINT64_C(0xdeadbeefbad0c0de);
-    noc_inputs.axi[NPU_MIF_AXI_DDR].rresp =
+    noc_inputs.axi.rresp =
         NPU_MIF_AXI_RESP_OKAY;
-    noc_inputs.axi[NPU_MIF_AXI_DDR].rlast = 0u;
+    noc_inputs.axi.rlast = 0u;
     npu_single_core_cycle_noc_tick(
         &env->top, &noc_inputs, &noc_outputs);
     env->noc_ticks++;
     TEST_CHECK(
-        noc_outputs.mif.axi[NPU_MIF_AXI_DDR].rready != 0u);
+        noc_outputs.mif.axi.rready != 0u);
     TEST_CHECK(
         noc_outputs.mif.owner[NPU_MIF_OWNER_DFU].rsp_valid ==
         0u);
     TEST_CHECK(env->top.stale_axi_read_beats
-                   [NPU_MIF_AXI_DDR][old_id] == 0u);
+                   [old_id] == 0u);
     TEST_CHECK(env->top.stale_axi_read_wait_rlast
-                   [NPU_MIF_AXI_DDR][old_id] != 0u);
+                   [old_id] != 0u);
     TEST_CHECK(env->top.stale_axi_read_drop_count == 1u);
 
     scat_noc_inputs(env, &noc_inputs);
@@ -1687,27 +1685,27 @@ static int scat_mif_reset_stale_read_wait_rlast(
         &env->top, &noc_inputs, &noc_outputs);
     env->noc_ticks++;
     TEST_CHECK(env->top.stale_axi_read_wait_rlast
-                   [NPU_MIF_AXI_DDR][old_id] != 0u);
+                   [old_id] != 0u);
     TEST_CHECK(env->top.mif_idle_source_noc == 0u);
 
     scat_noc_inputs(env, &noc_inputs);
-    noc_inputs.axi[NPU_MIF_AXI_DDR].rvalid = 1u;
-    noc_inputs.axi[NPU_MIF_AXI_DDR].rid = old_id;
-    noc_inputs.axi[NPU_MIF_AXI_DDR].rdata =
+    noc_inputs.axi.rvalid = 1u;
+    noc_inputs.axi.rid = old_id;
+    noc_inputs.axi.rdata =
         UINT64_C(0x0123456789abcdef);
-    noc_inputs.axi[NPU_MIF_AXI_DDR].rresp =
+    noc_inputs.axi.rresp =
         NPU_MIF_AXI_RESP_OKAY;
-    noc_inputs.axi[NPU_MIF_AXI_DDR].rlast = 1u;
+    noc_inputs.axi.rlast = 1u;
     npu_single_core_cycle_noc_tick(
         &env->top, &noc_inputs, &noc_outputs);
     env->noc_ticks++;
     TEST_CHECK(
-        noc_outputs.mif.axi[NPU_MIF_AXI_DDR].rready != 0u);
+        noc_outputs.mif.axi.rready != 0u);
     TEST_CHECK(
         noc_outputs.mif.owner[NPU_MIF_OWNER_DFU].rsp_valid ==
         0u);
     TEST_CHECK(env->top.stale_axi_read_wait_rlast
-                   [NPU_MIF_AXI_DDR][old_id] == 0u);
+                   [old_id] == 0u);
     TEST_CHECK(env->top.stale_axi_read_drop_count == 2u);
     TEST_CHECK(env->top.mif.protocol_error_valid == 0u);
     TEST_CHECK(env->top.mif.first_error_valid == 0u);
@@ -1749,7 +1747,6 @@ static int scat_mif_reset_stale_write_drain(
     old_axi->valid = 1u;
     old_axi->addr_sent = 1u;
     old_axi->write = 1u;
-    old_axi->port = NPU_MIF_AXI_DDR;
     old_axi->axi_id = old_id;
     old_axi->req_slot = 0u;
     old_axi->beats = 3u;
@@ -1774,11 +1771,8 @@ static int scat_mif_reset_stale_write_drain(
     }
     TEST_CHECK(captured != 0u);
     TEST_CHECK(env->top.stale_axi_write_pending
-                   [NPU_MIF_AXI_DDR][old_id] != 0u);
+                   [old_id] != 0u);
     TEST_CHECK(env->top.stale_axi_write_drain_count == 1u);
-    TEST_CHECK(
-        env->top.stale_axi_write_drain[0].port ==
-        NPU_MIF_AXI_DDR);
     TEST_CHECK(
         env->top.stale_axi_write_drain[0].axi_id == old_id);
     TEST_CHECK(
@@ -1787,19 +1781,19 @@ static int scat_mif_reset_stale_write_drain(
 
     for (beat = 0u; beat < 2u; beat++) {
         scat_noc_inputs(env, &noc_inputs);
-        noc_inputs.axi[NPU_MIF_AXI_DDR].wready = 1u;
+        noc_inputs.axi.wready = 1u;
         npu_single_core_cycle_noc_tick(
             &env->top, &noc_inputs, &noc_outputs);
         env->noc_ticks++;
         TEST_CHECK(
-            noc_outputs.mif.axi[NPU_MIF_AXI_DDR].wvalid !=
+            noc_outputs.mif.axi.wvalid !=
             0u);
         TEST_CHECK(
-            noc_outputs.mif.axi[NPU_MIF_AXI_DDR].wdata == 0u);
+            noc_outputs.mif.axi.wdata == 0u);
         TEST_CHECK(
-            noc_outputs.mif.axi[NPU_MIF_AXI_DDR].wstrb == 0u);
+            noc_outputs.mif.axi.wstrb == 0u);
         TEST_CHECK(
-            noc_outputs.mif.axi[NPU_MIF_AXI_DDR].wlast ==
+            noc_outputs.mif.axi.wlast ==
             expected_wlast[beat]);
     }
     TEST_CHECK(env->top.stale_axi_write_drain_count == 0u);
@@ -1807,20 +1801,20 @@ static int scat_mif_reset_stale_write_drain(
     TEST_CHECK(env->top.mif_idle_source_noc == 0u);
 
     scat_noc_inputs(env, &noc_inputs);
-    noc_inputs.axi[NPU_MIF_AXI_DDR].bvalid = 1u;
-    noc_inputs.axi[NPU_MIF_AXI_DDR].bid = old_id;
-    noc_inputs.axi[NPU_MIF_AXI_DDR].bresp =
+    noc_inputs.axi.bvalid = 1u;
+    noc_inputs.axi.bid = old_id;
+    noc_inputs.axi.bresp =
         NPU_MIF_AXI_RESP_OKAY;
     npu_single_core_cycle_noc_tick(
         &env->top, &noc_inputs, &noc_outputs);
     env->noc_ticks++;
     TEST_CHECK(
-        noc_outputs.mif.axi[NPU_MIF_AXI_DDR].bready != 0u);
+        noc_outputs.mif.axi.bready != 0u);
     TEST_CHECK(
         noc_outputs.mif.owner[NPU_MIF_OWNER_DMA].rsp_valid ==
         0u);
     TEST_CHECK(env->top.stale_axi_write_pending
-                   [NPU_MIF_AXI_DDR][old_id] == 0u);
+                   [old_id] == 0u);
     TEST_CHECK(env->top.stale_axi_write_drop_count == 1u);
     TEST_CHECK(env->top.mif.protocol_error_valid == 0u);
     TEST_CHECK(env->top.mif.first_error_valid == 0u);
@@ -1840,7 +1834,7 @@ int test_single_core_axi_target(void)
     SCAT_CALL(scat_env_init(env));
     SCAT_CALL(scat_release_reset(env));
     SCAT_CALL(scat_system_write(
-        env, NPU_LSC_REG_DDR_LOCAL_LIMIT,
+        env, NPU_LSC_REG_M_AXI_ADDR_LIMIT,
         UINT64_C(0x00000000000ffff8), 0x61u));
     SCAT_CALL(scat_system_write(
         env, NPU_LSC_REG_TBU_STREAM_ID,

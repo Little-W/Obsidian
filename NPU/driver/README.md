@@ -43,9 +43,9 @@ make regress
 `include/npu_driver.h` 并链接该静态库即可。
 
 `make regress` 分别用 GCC 和 Clang 运行普通测试，并分别用两种编译器运行
-ASan+UBSan 测试。回归覆盖 CMD128、Descriptor 池和编码、INT4/INT8/INT32/
-INT16 及其线性/分块打包配置、固定地址 FIXED burst、单条与批量提交、
-部分命令失败、QUERY/WAIT/ACK/FENCE、缓存同步和小端写入。单独的目标为
+ASan+UBSan 测试。回归覆盖 CMD128、Descriptor 池和编码、INT4、INT8、INT16、
+INT32 及其线性或分块存储格式、固定地址 FIXED burst、单条与批量提交、部分
+命令失败、QUERY/WAIT/ACK/FENCE、缓存同步和小端写入。单独的目标为
 `test-gcc`、`test-clang`、
 `test-sanitize-gcc` 和 `test-sanitize-clang`。
 
@@ -59,7 +59,8 @@ INT16 及其线性/分块打包配置、固定地址 FIXED burst、单条与批�
   64-bit AXI FIXED burst；
 - `submit_response`：从响应 FIFO 取得一条 CFE 接收结果；
 - `control_request`：访问 AXI Slave 控制窗口，执行 WAIT、QUERY 或
-  FENCE；周期模型可直接提供等价回调；
+  FENCE；周期模型可直接提供等价回调。FENCE 的 `rs1` 是低 4 位有效的
+  Engine mask，`rs2` 是最大等待周期数；
 - `write_barrier/read_barrier`：设备内存次序控制；
 - `cache_clean/cache_invalidate`：非一致缓存系统的数据维护；
 - `relax`：轮询时给平台提供等待、让出 CPU 或低功耗提示。
@@ -67,6 +68,9 @@ INT16 及其线性/分块打包配置、固定地址 FIXED burst、单条与批�
 `submit_fixed_burst` 和 `control_request` 是为了让同一驱动同时适用于真实 MMIO
 平台与 C model 的平台抽象，不代表 NPU 顶层存在 CPU 自定义指令端口。真实
 SoC 适配层应把它们实现为对 NPU AXI Slave 固定地址命令 FIFO 和控制寄存器区的读写。
+
+`npu_drv_fence_mask()` 可选择 DMA、Matrix、Vector 和 Complex Engine；
+`npu_drv_fence()` 是便捷接口，默认等待这四个执行单元。
 
 两个 Transformer runner 的 CModel backend 以一次
 `submit_fixed_burst` 回调表示一次完整 burst，并检查固定地址、beat 数和
@@ -201,33 +205,29 @@ npu_drv_ack_task(&driver, command_id);
 `wait_task` 的第三个参数是最大轮询次数，不是硬件周期数。若希望由硬件等待事件，
 使用 `npu_drv_wait_event()` 并填写 `max_cycles`。
 
-## INT16 说明
+## 数据格式说明
 
-`NPU_DRV_DTYPE_INT16` 的编码值为 3。驱动会把四个张量数据类型写入
-Descriptor 的 `numeric_cfg`。INT16 输入和权重适合对数值误差较敏感的回归
-模型；偏置和乘加中间值仍建议使用 INT32 或更宽的内部保存形式，最后再按缩放
-参数、舍入模式和饱和模式写回 INT16。
+Descriptor 的 dtype 子字段编码为 `0=INT4`、`1=INT8`、`2=INT32`、
+`3=INT16`。驱动会把四个张量数据类型写入 Descriptor 的 `numeric_cfg`。
+INT16 输入和权重适合需要较细数值间隔的模型；偏置和乘加中间值仍使用 INT32
+或更宽的内部保存形式，最终按缩放参数、舍入模式和饱和模式写回目标 dtype。
+Sigmoid、Tanh、GELU、Softmax 和 Norm 等复杂函数在硬件内部按
+`INT → FP32 → INT` 处理，FP32 不能作为驱动提交的模型张量 dtype。
 
 驱动只负责字段生成和设备访问，不会自行改变权重数值。权重缩放参数应由模型
 编译器生成，并与运行时使用的生成 C 数组保持一致。
 
-## Transformer 端到端调用
+## 模型端到端调用
 
-`../examples/transformer_e2e` 展示如何把高层 Transformer 模型编译结果交给
-本驱动运行。示例不在 C 代码中填写内部 L1 地址、权重排列或任务编号，而是读取
-编译器生成的 C 部署包。
+[`../cmodel/examples`](../cmodel/examples/README.md) 展示如何把 RNN、GRU、
+LSTM 和 CNN 的编译结果交给本驱动运行。示例不在 C 代码中填写内部 L1 地址、
+权重排列或任务编号，而是读取编译器生成的 C 部署包。
 
 模型编译器默认输出 `<stem>_model.h`、`<stem>_model.c` 和
 `<stem>.manifest.json`。生成的 `.c` 文件包含 C 配置、CMD128、Descriptor、
 权重和运行信息，应用程序把它与驱动库一同编译。裸 `.cmd.bin`、
 `.desc.bin`、`.const.bin`、`.runtime.json` 和低层 JSON IR 仅在使用
 `--emit-raw` 时生成，用于检查，不是驱动的默认输入。
-
-```bash
-cd "/home/yusen/Obsidian Vault/NPU/examples/transformer_e2e"
-make clean
-make test
-```
 
 运行程序先把 C 部署包中的 Descriptor、权重和输入放入 DDR，再按生成配置
 给出的提交组调用：
@@ -240,30 +240,22 @@ npu_drv_submit_batch(每组 1～8 条 CMD128)
     → npu_drv_ack_task()
 ```
 
-当前示例由 8 个高层节点生成 36 条 CMD128，分为 5 组，运行时发送 5 个
-FIXED burst、72 个 64-bit beat，并取得 36 条响应。每条命令都经过公开驱动
-API 和 C model。最终 32 个 INT16 输出与独立参考结果全部相同。使用 GCC、
-Clang 和 ASan+UBSan 运行完整检查：
+四个示例的模型张量使用 INT8，Matrix 累加与 bias 使用 INT32。单独运行其中
+一个模型：
 
 ```bash
-make regress
+make -C "/home/yusen/Obsidian Vault/NPU/cmodel/examples/rnn" test
 ```
 
-[`../examples/keras_transformer_e2e`](../examples/keras_transformer_e2e/README.md)
-进一步展示从 `.keras` Transformer 到 C 部署包的完整流程：
+一次运行全部四个模型：
 
 ```bash
-cd "/home/yusen/Obsidian Vault/NPU/examples/keras_transformer_e2e"
+cd "/home/yusen/Obsidian Vault/NPU/cmodel/examples"
 make clean
 make test
 ```
 
-该测试生成 47 条 CMD128，分为 6 个提交组，运行时发送 6 个 FIXED burst。
-外部主控 CPU 侧程序通过本驱动访问 NPU AXI Slave 固定地址命令 FIFO 和控制寄存器，
-共发送 94 个 64-bit beat，并收到 47 条成功响应。32 个输出全部不超过 2 LSB
-误差，最大绝对误差为 2 LSB；4 个 token 的最大特征编号均与 Keras 结果相同。
-
-以上两个运行程序都位于 NPU 外部。Generic Core 是外部主控 CPU，作为 AXI
+这些运行程序都位于 NPU 外部。Generic Core 是外部主控 CPU，作为 AXI
 Master 主动调用驱动函数；NPU 的固定地址命令 FIFO、控制寄存器和 L1BUF 外部窗口均为
 AXI Slave 目标。驱动不把 Generic Core 作为 NPU 内部执行单元，也不会等待
 NPU 主动取得主机上的模型包。

@@ -19,7 +19,7 @@ sys.modules[SPEC.name] = npu_model_compiler
 SPEC.loader.exec_module(npu_model_compiler)
 
 
-def base_graph(dtype: str = "int16") -> dict:
+def base_graph(dtype: str = "int8") -> dict:
     return {
         "schema_version": 1,
         "model": {"name": "validation_graph"},
@@ -92,8 +92,8 @@ class ModelGraphValidationTests(unittest.TestCase):
             },
         ]
         graph["tensors"] = [
-            {"name": "first_value", "shape": [2, 4], "dtype": "int16"},
-            {"name": "second_value", "shape": [2, 4], "dtype": "int16"},
+            {"name": "first_value", "shape": [2, 4], "dtype": "int8"},
+            {"name": "second_value", "shape": [2, 4], "dtype": "int8"},
         ]
         graph["outputs"] = ["first_value"]
         with self.assertRaisesRegex(
@@ -149,7 +149,7 @@ class ModelGraphValidationTests(unittest.TestCase):
         address: int,
         *,
         kind: str = "intermediate",
-        dtype: str = "int16",
+        dtype: str = "int8",
         storage_bytes: int | None = None,
     ):
         return npu_model_compiler.TensorInfo(
@@ -298,10 +298,10 @@ class ModelGraphValidationTests(unittest.TestCase):
             "scalar": npu_model_compiler.TensorInfo(
                 name="scalar",
                 shape=(1,),
-                dtype="int16",
+                dtype="int8",
                 kind="constant",
                 data=(2,),
-                storage_bytes=2,
+                storage_bytes=1,
                 l1_addr=0x1100,
             ),
             "output": self.tensor("output", (2, 4), 0x1200),

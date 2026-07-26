@@ -1,0 +1,477 @@
+module tb_memory_smoke;
+  import npu_rtl_pkg::*;
+
+  logic clk;
+  logic reset_n;
+
+  logic [1:0] l1_req_valid;
+  logic [1:0] l1_req_ready;
+  logic [1:0] l1_req_write;
+  logic [39:0] l1_req_addr;
+  logic [127:0] l1_req_wdata;
+  logic [15:0] l1_req_wstrb;
+  logic [1:0] l1_rsp_valid;
+  logic [1:0] l1_rsp_ready;
+  logic [127:0] l1_rsp_rdata;
+  logic [5:0] l1_rsp_status;
+  logic l1_idle;
+
+  logic tbu_enable;
+  logic tbu_allow_read;
+  logic tbu_allow_write;
+  logic tbu_req_valid;
+  logic tbu_req_ready;
+  logic tbu_req_write;
+  logic [47:0] tbu_req_addr;
+  logic tbu_rsp_valid;
+  logic [47:0] tbu_rsp_addr;
+  logic [2:0] tbu_rsp_status;
+  logic tbu_direct_idle;
+
+  logic mif_req_valid;
+  logic mif_req_ready;
+  logic mif_req_write;
+  logic [47:0] mif_req_addr;
+  logic [63:0] mif_req_wdata;
+  logic [7:0] mif_req_wstrb;
+  logic mif_rsp_valid;
+  logic [63:0] mif_rsp_rdata;
+  logic [2:0] mif_rsp_status;
+  logic mif_tbu_req_valid;
+  logic mif_tbu_req_ready;
+  logic mif_tbu_req_write;
+  logic [47:0] mif_tbu_req_addr;
+  logic [15:0] mif_tbu_req_stream_id;
+  logic [15:0] mif_tbu_req_substream_id;
+  logic mif_tbu_rsp_valid;
+  logic mif_tbu_rsp_ready;
+  logic [47:0] mif_tbu_rsp_addr;
+  logic [2:0] mif_tbu_rsp_status;
+  logic tbu_mif_idle;
+
+  logic [7:0] axi_awid;
+  logic [39:0] axi_awaddr;
+  logic [7:0] axi_awlen;
+  logic [2:0] axi_awsize;
+  logic [1:0] axi_awburst;
+  logic axi_awlock;
+  logic [3:0] axi_awcache;
+  logic [2:0] axi_awprot;
+  logic [3:0] axi_awqos;
+  logic axi_awvalid;
+  logic axi_awready;
+  logic [63:0] axi_wdata;
+  logic [7:0] axi_wstrb;
+  logic axi_wlast;
+  logic axi_wvalid;
+  logic axi_wready;
+  logic [7:0] axi_bid;
+  logic [1:0] axi_bresp;
+  logic axi_bvalid;
+  logic axi_bready;
+  logic [7:0] axi_arid;
+  logic [39:0] axi_araddr;
+  logic [7:0] axi_arlen;
+  logic [2:0] axi_arsize;
+  logic [1:0] axi_arburst;
+  logic axi_arlock;
+  logic [3:0] axi_arcache;
+  logic [2:0] axi_arprot;
+  logic [3:0] axi_arqos;
+  logic axi_arvalid;
+  logic axi_arready;
+  logic [7:0] axi_rid;
+  logic [63:0] axi_rdata;
+  logic [1:0] axi_rresp;
+  logic axi_rlast;
+  logic axi_rvalid;
+  logic axi_rready;
+  logic mif_error_valid;
+  logic [47:0] mif_error_addr;
+  logic [2:0] mif_error_status;
+  logic mif_idle;
+  logic aw_seen_q;
+  logic w_seen_q;
+  logic [1:0] next_read_response;
+  int unsigned read_count;
+  int unsigned write_count;
+
+  always #5 clk = ~clk;
+
+  npu_l1buf #(
+    .CLIENTS(2),
+    .L1_BYTES(256),
+    .BANKS(4)
+  ) u_l1 (
+    .clk_i(clk),
+    .reset_n(reset_n),
+    .req_valid_i(l1_req_valid),
+    .req_ready_o(l1_req_ready),
+    .req_write_i(l1_req_write),
+    .req_addr_i(l1_req_addr),
+    .req_wdata_i(l1_req_wdata),
+    .req_wstrb_i(l1_req_wstrb),
+    .rsp_valid_o(l1_rsp_valid),
+    .rsp_ready_i(l1_rsp_ready),
+    .rsp_rdata_o(l1_rsp_rdata),
+    .rsp_status_o(l1_rsp_status),
+    .l1_idle_o(l1_idle)
+  );
+
+  npu_tbu u_tbu_direct (
+    .clk_i(clk),
+    .reset_n(reset_n),
+    .enable_i(tbu_enable),
+    .allowed_stream_id_i(16'h0011),
+    .allowed_substream_id_i(16'h0022),
+    .allow_read_i(tbu_allow_read),
+    .allow_write_i(tbu_allow_write),
+    .allowed_base_i(48'h1000),
+    .allowed_limit_i(48'h1ff8),
+    .req_valid_i(tbu_req_valid),
+    .req_ready_o(tbu_req_ready),
+    .req_write_i(tbu_req_write),
+    .req_addr_i(tbu_req_addr),
+    .req_stream_id_i(16'h0011),
+    .req_substream_id_i(16'h0022),
+    .rsp_valid_o(tbu_rsp_valid),
+    .rsp_ready_i(1'b1),
+    .rsp_addr_o(tbu_rsp_addr),
+    .rsp_status_o(tbu_rsp_status),
+    .tbu_idle_o(tbu_direct_idle)
+  );
+
+  npu_tbu u_tbu_mif (
+    .clk_i(clk),
+    .reset_n(reset_n),
+    .enable_i(1'b1),
+    .allowed_stream_id_i(16'h0033),
+    .allowed_substream_id_i(16'h0044),
+    .allow_read_i(1'b1),
+    .allow_write_i(1'b1),
+    .allowed_base_i(48'h0000),
+    .allowed_limit_i(48'h0000_ffff_fff8),
+    .req_valid_i(mif_tbu_req_valid),
+    .req_ready_o(mif_tbu_req_ready),
+    .req_write_i(mif_tbu_req_write),
+    .req_addr_i(mif_tbu_req_addr),
+    .req_stream_id_i(mif_tbu_req_stream_id),
+    .req_substream_id_i(mif_tbu_req_substream_id),
+    .rsp_valid_o(mif_tbu_rsp_valid),
+    .rsp_ready_i(mif_tbu_rsp_ready),
+    .rsp_addr_o(mif_tbu_rsp_addr),
+    .rsp_status_o(mif_tbu_rsp_status),
+    .tbu_idle_o(tbu_mif_idle)
+  );
+
+  npu_axi_mif_master u_mif (
+    .clk_i(clk),
+    .reset_n(reset_n),
+    .req_valid_i(mif_req_valid),
+    .req_ready_o(mif_req_ready),
+    .req_write_i(mif_req_write),
+    .req_addr_i(mif_req_addr),
+    .req_wdata_i(mif_req_wdata),
+    .req_wstrb_i(mif_req_wstrb),
+    .rsp_valid_o(mif_rsp_valid),
+    .rsp_ready_i(1'b1),
+    .rsp_rdata_o(mif_rsp_rdata),
+    .rsp_status_o(mif_rsp_status),
+    .stream_id_i(16'h0033),
+    .substream_id_i(16'h0044),
+    .tbu_req_valid_o(mif_tbu_req_valid),
+    .tbu_req_ready_i(mif_tbu_req_ready),
+    .tbu_req_write_o(mif_tbu_req_write),
+    .tbu_req_addr_o(mif_tbu_req_addr),
+    .tbu_req_stream_id_o(mif_tbu_req_stream_id),
+    .tbu_req_substream_id_o(mif_tbu_req_substream_id),
+    .tbu_rsp_valid_i(mif_tbu_rsp_valid),
+    .tbu_rsp_ready_o(mif_tbu_rsp_ready),
+    .tbu_rsp_addr_i(mif_tbu_rsp_addr),
+    .tbu_rsp_status_i(mif_tbu_rsp_status),
+    .m_axi_awid_o(axi_awid),
+    .m_axi_awaddr_o(axi_awaddr),
+    .m_axi_awlen_o(axi_awlen),
+    .m_axi_awsize_o(axi_awsize),
+    .m_axi_awburst_o(axi_awburst),
+    .m_axi_awlock_o(axi_awlock),
+    .m_axi_awcache_o(axi_awcache),
+    .m_axi_awprot_o(axi_awprot),
+    .m_axi_awqos_o(axi_awqos),
+    .m_axi_awvalid_o(axi_awvalid),
+    .m_axi_awready_i(axi_awready),
+    .m_axi_wdata_o(axi_wdata),
+    .m_axi_wstrb_o(axi_wstrb),
+    .m_axi_wlast_o(axi_wlast),
+    .m_axi_wvalid_o(axi_wvalid),
+    .m_axi_wready_i(axi_wready),
+    .m_axi_bid_i(axi_bid),
+    .m_axi_bresp_i(axi_bresp),
+    .m_axi_bvalid_i(axi_bvalid),
+    .m_axi_bready_o(axi_bready),
+    .m_axi_arid_o(axi_arid),
+    .m_axi_araddr_o(axi_araddr),
+    .m_axi_arlen_o(axi_arlen),
+    .m_axi_arsize_o(axi_arsize),
+    .m_axi_arburst_o(axi_arburst),
+    .m_axi_arlock_o(axi_arlock),
+    .m_axi_arcache_o(axi_arcache),
+    .m_axi_arprot_o(axi_arprot),
+    .m_axi_arqos_o(axi_arqos),
+    .m_axi_arvalid_o(axi_arvalid),
+    .m_axi_arready_i(axi_arready),
+    .m_axi_rid_i(axi_rid),
+    .m_axi_rdata_i(axi_rdata),
+    .m_axi_rresp_i(axi_rresp),
+    .m_axi_rlast_i(axi_rlast),
+    .m_axi_rvalid_i(axi_rvalid),
+    .m_axi_rready_o(axi_rready),
+    .error_clear_i(1'b0),
+    .error_valid_o(mif_error_valid),
+    .error_addr_o(mif_error_addr),
+    .error_status_o(mif_error_status),
+    .mif_idle_o(mif_idle)
+  );
+
+  always_ff @(posedge clk or negedge reset_n) begin
+    if (!reset_n) begin
+      axi_awready <= 1'b1;
+      axi_wready  <= 1'b1;
+      axi_bvalid  <= 1'b0;
+      axi_bid     <= 8'd0;
+      axi_bresp   <= 2'b00;
+      axi_arready <= 1'b1;
+      axi_rvalid  <= 1'b0;
+      axi_rid     <= 8'd0;
+      axi_rdata   <= 64'hcafe_f00d_1234_5678;
+      axi_rresp   <= 2'b00;
+      axi_rlast   <= 1'b1;
+      aw_seen_q   <= 1'b0;
+      w_seen_q    <= 1'b0;
+      read_count  <= 0;
+      write_count <= 0;
+    end else begin
+      if (axi_awvalid && axi_awready) begin
+        if ((axi_awid != 8'd0) || (axi_awaddr != 40'h1008)
+            || (axi_awlen != 8'd0) || (axi_awsize != 3'd3)
+            || (axi_awburst != 2'b01) || axi_awlock
+            || (axi_awcache != 4'b0011) || (axi_awprot != 3'b000)
+            || (axi_awqos != 4'd0)) begin
+          $fatal(1, "MIF AXI write-address fields are incorrect");
+        end
+        aw_seen_q <= 1'b1;
+      end
+      if (axi_wvalid && axi_wready) begin
+        if (!axi_wlast) begin
+          $fatal(1, "MIF AXI write data did not assert WLAST");
+        end
+        w_seen_q <= 1'b1;
+      end
+      if (!axi_bvalid && (aw_seen_q || (axi_awvalid && axi_awready))
+          && (w_seen_q || (axi_wvalid && axi_wready))) begin
+        axi_bvalid <= 1'b1;
+        axi_bid    <= axi_awid;
+        axi_bresp  <= 2'b00;
+      end else if (axi_bvalid && axi_bready) begin
+        axi_bvalid  <= 1'b0;
+        aw_seen_q   <= 1'b0;
+        w_seen_q    <= 1'b0;
+        write_count <= write_count + 1;
+      end
+
+      if (!axi_rvalid && axi_arvalid && axi_arready) begin
+        if ((axi_arid != 8'd0)
+            || !((axi_araddr == 40'h1000)
+                 || (axi_araddr == 40'h1010))
+            || (axi_arlen != 8'd0) || (axi_arsize != 3'd3)
+            || (axi_arburst != 2'b01) || axi_arlock
+            || (axi_arcache != 4'b0011) || (axi_arprot != 3'b000)
+            || (axi_arqos != 4'd0)) begin
+          $fatal(1, "MIF AXI read-address fields are incorrect");
+        end
+        axi_rvalid <= 1'b1;
+        axi_rid    <= axi_arid;
+        axi_rdata  <= 64'hcafe_f00d_1234_5678 ^ {24'd0, axi_araddr};
+        axi_rresp  <= next_read_response;
+        axi_rlast  <= 1'b1;
+      end else if (axi_rvalid && axi_rready) begin
+        axi_rvalid <= 1'b0;
+        read_count <= read_count + 1;
+      end
+    end
+  end
+
+  task automatic l1_access(
+    input int unsigned client,
+    input logic write_access,
+    input logic [19:0] address,
+    input logic [63:0] data,
+    input logic [7:0] strobe
+  );
+    begin
+      @(negedge clk);
+      l1_req_write[client] = write_access;
+      l1_req_addr[client*20 +: 20] = address;
+      l1_req_wdata[client*64 +: 64] = data;
+      l1_req_wstrb[client*8 +: 8] = strobe;
+      l1_req_valid[client] = 1'b1;
+      while (!l1_req_ready[client]) @(negedge clk);
+      @(posedge clk);
+      @(negedge clk);
+      l1_req_valid[client] = 1'b0;
+      wait (l1_rsp_valid[client]);
+    end
+  endtask
+
+  task automatic tbu_access(
+    input logic write_access,
+    input logic [47:0] address
+  );
+    begin
+      @(negedge clk);
+      tbu_req_write = write_access;
+      tbu_req_addr  = address;
+      tbu_req_valid = 1'b1;
+      if (!tbu_req_ready) begin
+        $fatal(1, "TBU was not ready for a serialized request");
+      end
+      @(posedge clk);
+      @(negedge clk);
+      tbu_req_valid = 1'b0;
+      wait (tbu_rsp_valid);
+    end
+  endtask
+
+  task automatic mif_access(
+    input logic write_access,
+    input logic [47:0] address,
+    input logic [63:0] data
+  );
+    begin
+      @(negedge clk);
+      mif_req_write = write_access;
+      mif_req_addr  = address;
+      mif_req_wdata = data;
+      mif_req_wstrb = 8'hff;
+      mif_req_valid = 1'b1;
+      while (!mif_req_ready) @(negedge clk);
+      @(posedge clk);
+      @(negedge clk);
+      mif_req_valid = 1'b0;
+      wait (mif_rsp_valid);
+    end
+  endtask
+
+  initial begin
+    clk              = 1'b0;
+    reset_n          = 1'b0;
+    l1_req_valid     = 2'b00;
+    l1_req_write     = 2'b00;
+    l1_req_addr      = '0;
+    l1_req_wdata     = '0;
+    l1_req_wstrb     = '0;
+    l1_rsp_ready     = 2'b11;
+    tbu_enable       = 1'b1;
+    tbu_allow_read   = 1'b1;
+    tbu_allow_write  = 1'b1;
+    tbu_req_valid    = 1'b0;
+    tbu_req_write    = 1'b0;
+    tbu_req_addr     = 48'd0;
+    mif_req_valid    = 1'b0;
+    mif_req_write    = 1'b0;
+    mif_req_addr     = 48'd0;
+    mif_req_wdata    = 64'd0;
+    mif_req_wstrb    = 8'd0;
+    next_read_response = 2'b00;
+    repeat (4) @(posedge clk);
+    reset_n = 1'b1;
+    repeat (2) @(posedge clk);
+
+    l1_access(0, 1'b1, 20'h00010, 64'h1122_3344_5566_7788, 8'hff);
+    if (l1_rsp_status[2:0] != NPU_L1_OK) begin
+      $fatal(1, "L1 full write failed");
+    end
+    @(posedge clk);
+    l1_access(1, 1'b0, 20'h00010, 64'd0, 8'd0);
+    if ((l1_rsp_status[5:3] != NPU_L1_OK)
+        || (l1_rsp_rdata[127:64] != 64'h1122_3344_5566_7788)) begin
+      $fatal(1, "L1 readback mismatch");
+    end
+    @(posedge clk);
+    l1_access(0, 1'b1, 20'h00010, 64'haaaa_bbbb_cccc_dddd, 8'h0f);
+    @(posedge clk);
+    l1_access(1, 1'b0, 20'h00010, 64'd0, 8'd0);
+    if (l1_rsp_rdata[127:64] != 64'h1122_3344_cccc_dddd) begin
+      $fatal(1, "L1 byte strobes were not applied");
+    end
+    @(posedge clk);
+    l1_access(0, 1'b0, 20'h00011, 64'd0, 8'd0);
+    if (l1_rsp_status[2:0] != NPU_L1_PROTOCOL_ERROR) begin
+      $fatal(1, "L1 accepted a misaligned request");
+    end
+    @(posedge clk);
+
+    tbu_access(1'b0, 48'h1000);
+    if ((tbu_rsp_status != NPU_MEM_OK) || (tbu_rsp_addr != 48'h1000)) begin
+      $fatal(1, "TBU identity read failed");
+    end
+    @(posedge clk);
+    tbu_allow_write = 1'b0;
+    tbu_access(1'b1, 48'h1008);
+    if (tbu_rsp_status != NPU_MEM_PERM) begin
+      $fatal(1, "TBU did not reject a denied write");
+    end
+    @(posedge clk);
+    tbu_allow_write = 1'b1;
+    tbu_access(1'b0, 48'h2000);
+    if (tbu_rsp_status != NPU_MEM_ADDR) begin
+      $fatal(1, "TBU did not reject an address outside its range");
+    end
+    @(posedge clk);
+
+    mif_access(1'b0, 48'h1000, 64'd0);
+    if ((mif_rsp_status != NPU_MEM_OK)
+        || (mif_rsp_rdata !=
+            (64'hcafe_f00d_1234_5678 ^ 64'h0000_0000_0000_1000))) begin
+      $fatal(1, "MIF AXI read failed");
+    end
+    @(posedge clk);
+    mif_access(1'b1, 48'h1008, 64'hdead_beef_0123_4567);
+    if ((mif_rsp_status != NPU_MEM_OK)
+        || (axi_wdata != 64'hdead_beef_0123_4567)
+        || (axi_wstrb != 8'hff)) begin
+      $fatal(1, "MIF AXI write failed");
+    end
+    @(posedge clk);
+    next_read_response = 2'b11;
+    mif_access(1'b0, 48'h1010, 64'd0);
+    if (mif_rsp_status != NPU_MEM_DECERR) begin
+      $fatal(1, "MIF did not report AXI DECERR");
+    end
+
+    @(posedge clk);
+    @(negedge clk);
+    if ((read_count != 2) || (write_count != 1)) begin
+      $fatal(1, "AXI target transaction counts do not match");
+    end
+    if (!mif_error_valid || (mif_error_addr != 48'h1010)
+        || (mif_error_status != NPU_MEM_DECERR)) begin
+      $fatal(1, "MIF sticky error metadata is incorrect");
+    end
+    if (!l1_idle || !tbu_direct_idle || !tbu_mif_idle || !mif_idle) begin
+      $fatal(1, "memory modules did not return to idle");
+    end
+
+    $display(
+      "PASS: L1BUF, TBU and AXI MIF signature=%0b",
+      ^l1_rsp_rdata[63:0]
+    );
+    $finish;
+  end
+
+  initial begin
+    #100000;
+    $fatal(1, "memory smoke test timeout");
+  end
+
+endmodule

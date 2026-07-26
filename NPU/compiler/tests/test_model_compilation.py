@@ -17,9 +17,10 @@ sys.path.insert(0, str(ROOT))
 import npu_assembler
 import npu_model_compiler as compiler
 import model_artifacts
+from frontends import options_from_namespace
 
 
-def add_model(dtype: str = "int16", columns: int = 4) -> dict:
+def add_model(dtype: str = "int8", columns: int = 4) -> dict:
     return {
         "schema_version": 1,
         "model": {"name": f"add_{dtype}"},
@@ -59,7 +60,7 @@ def attention_model(tokens: int = 4, width: int = 8) -> dict:
         {
             "name": name,
             "shape": [width, width],
-            "dtype": "int16",
+            "dtype": "int8",
             "data": identity(width),
         }
         for name in ("wq", "wk", "wv", "wo")
@@ -68,7 +69,7 @@ def attention_model(tokens: int = 4, width: int = 8) -> dict:
         "schema_version": 1,
         "model": {"name": "attention"},
         "inputs": [
-            {"name": "x", "shape": [tokens, width], "dtype": "int16"}
+            {"name": "x", "shape": [tokens, width], "dtype": "int8"}
         ],
         "constants": constants,
         "operators": [
@@ -84,7 +85,91 @@ def attention_model(tokens: int = 4, width: int = 8) -> dict:
     }
 
 
+def int16_matmul_model() -> dict:
+    return {
+        "schema_version": 1,
+        "model": {"name": "int16_matmul"},
+        "inputs": [
+            {"name": "x", "shape": [1, 2], "dtype": "int16"}
+        ],
+        "constants": [
+            {
+                "name": "weight",
+                "shape": [2, 1],
+                "dtype": "int16",
+                "data": [-32768, 0x1234],
+            }
+        ],
+        "operators": [
+            {
+                "name": "projection",
+                "type": "MatMul",
+                "inputs": ["x", "weight"],
+                "outputs": ["y"],
+            }
+        ],
+        "outputs": ["y"],
+    }
+
+
 class EndToEndCompilerTests(unittest.TestCase):
+    def test_int16_cli_frontend_and_artifact_encoding(self) -> None:
+        arguments = model_artifacts.parse_args(
+            [
+                "model.onnx",
+                "--output-dir",
+                "out",
+                "--model-dtype",
+                "int16",
+                "--fraction-bits",
+                "8",
+            ]
+        )
+        options = options_from_namespace(arguments)
+        self.assertEqual(options.dtype, "int16")
+        self.assertEqual(options.fraction_bits, 8)
+        self.assertEqual(options.scale, 1.0 / 256.0)
+
+        result = compiler.compile_model_document(
+            int16_matmul_model(), compiler.TargetConfig()
+        )
+        self.assertEqual(
+            compiler.pack_integer_values(
+                [-32768, -1, 0, 32767], "int16"
+            ),
+            b"\x00\x80\xff\xff\x00\x00\xff\x7f",
+        )
+        self.assertEqual(result.tensors["x"].storage_bytes, 4)
+        self.assertEqual(result.tensors["y"].storage_bytes, 2)
+        weight = result.tensors["weight"]
+        weight_offset = (
+            weight.ddr_addr - result.runtime["constant_base_ddr"]
+        )
+        self.assertEqual(
+            result.constant_image[weight_offset : weight_offset + 2],
+            b"\x00\x80",
+        )
+        self.assertEqual(
+            result.constant_image[weight_offset + 16 : weight_offset + 18],
+            b"\x34\x12",
+        )
+        projection = next(
+            item
+            for item in result.assembled_operations
+            if item.name == "projection"
+        )
+        numeric = int.from_bytes(projection.descriptor[0x38:0x3C], "little")
+        self.assertEqual(numeric & 0x3, 3)
+        self.assertEqual((numeric >> 2) & 0x3, 3)
+        self.assertEqual((numeric >> 6) & 0x3, 3)
+        self.assertEqual(projection.descriptor[0x90], 5)
+        self.assertEqual(projection.descriptor[0x91], 6)
+        self.assertEqual(projection.descriptor[0x92], 5)
+        package = model_artifacts.build_model_c_source(
+            "int16_matmul", result
+        ).decode("ascii")
+        self.assertIn("4u, 3u", package)
+
     def test_high_level_add_reaches_cmd128(self) -> None:
         result = compiler.compile_model_document(
             add_model(), compiler.TargetConfig()
@@ -132,13 +217,13 @@ class EndToEndCompilerTests(unittest.TestCase):
             "schema_version": 1,
             "model": {"name": "conv"},
             "inputs": [
-                {"name": "x", "shape": [1, 3, 3, 2], "dtype": "int16"}
+                {"name": "x", "shape": [1, 3, 3, 2], "dtype": "int8"}
             ],
             "constants": [
                 {
                     "name": "kernel",
                     "shape": [2, 2, 2, 3],
-                    "dtype": "int16",
+                    "dtype": "int8",
                     "data": [1] * 24,
                 }
             ],
@@ -162,6 +247,37 @@ class EndToEndCompilerTests(unittest.TestCase):
         self.assertIn("COPY_ND", opcodes)
         self.assertIn("GEMM", opcodes)
         self.assertFalse(any("CONV" in opcode.upper() for opcode in opcodes))
+
+    def test_relu_marks_unused_vector_scales_as_zero(self) -> None:
+        document = {
+            "schema_version": 1,
+            "model": {"name": "relu"},
+            "inputs": [
+                {"name": "x", "shape": [2, 4], "dtype": "int8"}
+            ],
+            "constants": [],
+            "operators": [
+                {
+                    "name": "relu",
+                    "type": "ReLU",
+                    "inputs": ["x"],
+                    "outputs": ["y"],
+                    "attributes": {"scale": 0.03125},
+                }
+            ],
+            "outputs": ["y"],
+        }
+        result = compiler.compile_model_document(
+            document, compiler.TargetConfig()
+        )
+        operation = next(
+            item
+            for item in result.low_ir["operations"]
+            if item["name"] == "relu"
+        )
+        vector = operation["descriptor"]["vector"]
+        self.assertEqual(vector["src1_scale_bits"], 0)
+        self.assertEqual(vector["src2_scale_bits"], 0)
 
     def test_int4_odd_rows_keep_per_row_padding(self) -> None:
         result = compiler.compile_model_document(
@@ -199,7 +315,7 @@ class EndToEndCompilerTests(unittest.TestCase):
         document = {
             "schema_version": 1,
             "model": {"name": "long_chain"},
-            "inputs": [{"name": "x", "shape": [1, 8], "dtype": "int16"}],
+            "inputs": [{"name": "x", "shape": [1, 8], "dtype": "int8"}],
             "constants": [],
             "operators": operators,
             "outputs": [previous],
@@ -276,7 +392,7 @@ class EndToEndCompilerTests(unittest.TestCase):
         document = {
             "schema_version": 1,
             "model": {"name": "reuse"},
-            "inputs": [{"name": "x", "shape": [1, 8], "dtype": "int16"}],
+            "inputs": [{"name": "x", "shape": [1, 8], "dtype": "int8"}],
             "constants": [],
             "operators": [
                 {
@@ -431,7 +547,7 @@ class EndToEndCompilerTests(unittest.TestCase):
             "schema_version": 1,
             "model": {"name": "no_weights"},
             "inputs": [
-                {"name": "x", "shape": [1, 8], "dtype": "int16"}
+                {"name": "x", "shape": [1, 8], "dtype": "int8"}
             ],
             "constants": [],
             "operators": [

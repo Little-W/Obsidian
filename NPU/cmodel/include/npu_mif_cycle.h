@@ -10,7 +10,6 @@ extern "C" {
 #endif
 
 #define NPU_MIF_OWNER_COUNT 2u
-#define NPU_MIF_AXI_PORT_COUNT 2u
 #define NPU_MIF_MAX_REQUESTS 16u
 #define NPU_MIF_MAX_AXI_OUTSTANDING 16u
 #define NPU_MIF_MAX_TBU_OUTSTANDING 8u
@@ -34,11 +33,6 @@ typedef enum {
     NPU_MIF_OWNER_DFU = 0,
     NPU_MIF_OWNER_DMA = 1
 } npu_mif_owner_t;
-
-typedef enum {
-    NPU_MIF_AXI_DDR = 0,
-    NPU_MIF_AXI_EXT = 1
-} npu_mif_axi_port_t;
 
 typedef enum {
     NPU_MIF_AXI_RESP_OKAY = 0,
@@ -178,12 +172,9 @@ typedef struct {
      * configuration at the end of the cycle.
      */
     uint8_t config_valid;
-    uint8_t ddr_enable;
-    uint64_t ddr_base;
-    uint64_t ddr_limit;
-    uint8_t ext_enable;
-    uint64_t ext_base;
-    uint64_t ext_limit;
+    uint8_t system_addr_enable;
+    uint64_t system_addr_base;
+    uint64_t system_addr_limit;
     uint8_t bypass_enable;
     uint64_t bypass_base;
     uint64_t bypass_limit;
@@ -192,13 +183,13 @@ typedef struct {
 
     npu_mif_owner_inputs_t owner[NPU_MIF_OWNER_COUNT];
     npu_mif_tbu_inputs_t tbu;
-    npu_mif_axi_inputs_t axi[NPU_MIF_AXI_PORT_COUNT];
+    npu_mif_axi_inputs_t axi;
 } npu_mif_cycle_inputs_t;
 
 typedef struct {
     npu_mif_owner_outputs_t owner[NPU_MIF_OWNER_COUNT];
     npu_mif_tbu_outputs_t tbu;
-    npu_mif_axi_outputs_t axi[NPU_MIF_AXI_PORT_COUNT];
+    npu_mif_axi_outputs_t axi;
 
     uint8_t mif_idle;
     uint16_t rd_outstanding;
@@ -230,17 +221,13 @@ typedef struct {
 } npu_mif_cycle_outputs_t;
 
 typedef struct {
-    uint8_t ddr_enable;
-    uint64_t ddr_base;
+    uint8_t system_addr_enable;
+    uint64_t system_addr_base;
     /*
      * Each limit is the aligned start address of the final legal 64-bit
      * beat. Thus a one-beat region has base equal to limit.
      */
-    uint64_t ddr_limit;
-
-    uint8_t ext_enable;
-    uint64_t ext_base;
-    uint64_t ext_limit;
+    uint64_t system_addr_limit;
 
     uint8_t bypass_enable;
     uint64_t bypass_base;
@@ -285,7 +272,7 @@ typedef struct {
     uint16_t write_beats_accepted;
 
     /*
-     * Address regions and TBU identifiers are sampled with the owner
+     * The system address range and TBU identifiers are sampled with the owner
      * request. Later configuration writes cannot alter this transaction.
      */
     npu_mif_cycle_config_t request_config;
@@ -295,7 +282,6 @@ typedef struct {
     uint8_t valid;
     uint8_t addr_sent;
     uint8_t write;
-    uint8_t port;
     uint8_t axi_id;
     uint8_t req_slot;
     uint8_t w_done;
@@ -351,7 +337,7 @@ typedef struct {
 } npu_mif_w_input_t;
 
 /*
- * One entry per AXI port decouples BREADY/RREADY from the incoming valid,
+ * One entry per AXI response channel decouples BREADY/RREADY from the incoming valid,
  * identifier, and payload. A captured entry remains unchanged until the
  * response checker either consumes it or explicitly discards malformed
  * traffic.
@@ -379,13 +365,11 @@ typedef struct {
     npu_mif_response_hold_t rsp_hold[NPU_MIF_OWNER_COUNT];
     npu_mif_w_input_t w_input;
     npu_mif_w_hold_t w_hold;
-    npu_mif_axi_b_entry_t
-        b_entry[NPU_MIF_AXI_PORT_COUNT];
-    npu_mif_axi_r_entry_t
-        r_entry[NPU_MIF_AXI_PORT_COUNT];
+    npu_mif_axi_b_entry_t b_entry;
+    npu_mif_axi_r_entry_t r_entry;
 
-    uint8_t aw_hold[NPU_MIF_AXI_PORT_COUNT];
-    uint8_t ar_hold[NPU_MIF_AXI_PORT_COUNT];
+    uint8_t aw_hold;
+    uint8_t ar_hold;
     uint8_t write_fifo[NPU_MIF_MAX_AXI_OUTSTANDING];
     uint8_t write_fifo_head;
     uint8_t write_fifo_tail;
@@ -394,7 +378,6 @@ typedef struct {
     uint8_t next_axi_id;
     uint8_t request_rr_owner;
     uint8_t schedule_rr;
-    uint8_t r_entry_rr_port;
     uint8_t tbu_count;
 
     uint8_t first_error_valid;

@@ -767,7 +767,7 @@ def emit_conv2d_operations(
         "src1": _inline_tensor(tiled_kernel_tensor),
         "dst": _inline_tensor(output_tensor),
         "round_mode": "nearest_even",
-        "saturate_enable": True,
+        "saturate_enable": output_dtype != "int32",
     }
     matrix: dict[str, Any] = {
         "m": rows,

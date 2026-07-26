@@ -665,24 +665,55 @@ def encode_matrix(
     a_dtype = numeric_cfg & 0x3
     b_dtype = (numeric_cfg >> 2) & 0x3
     c_dtype = (numeric_cfg >> 6) & 0x3
+    # The C language reference model uses distinct layout codes for INT16:
+    # 5 for a linear tensor and 6 for a KT-by-NT tiled Matrix-B tensor.
     linear_pack = {0: 1, 1: 0, 2: 4, 3: 5}
     tiled_pack = {0: 3, 1: 2, 2: 4, 3: 6}
+    a_pack = parse_int(
+        fields.get("a_pack_format", linear_pack[a_dtype]),
+        f"{location}.a_pack_format",
+        0,
+        0xFF,
+    )
+    b_pack = parse_int(
+        fields.get("b_pack_format", tiled_pack[b_dtype]),
+        f"{location}.b_pack_format",
+        0,
+        0xFF,
+    )
+    c_pack = parse_int(
+        fields.get("c_pack_format", linear_pack[c_dtype]),
+        f"{location}.c_pack_format",
+        0,
+        0xFF,
+    )
+    for name, value, expected, dtype_code in (
+        ("a_pack_format", a_pack, linear_pack[a_dtype], a_dtype),
+        ("b_pack_format", b_pack, tiled_pack[b_dtype], b_dtype),
+        ("c_pack_format", c_pack, linear_pack[c_dtype], c_dtype),
+    ):
+        if value != expected:
+            raise fail(
+                f"{location}.{name}",
+                f"pack-format code {value} does not match dtype code "
+                f"{dtype_code}",
+            )
     put_u8(
         data,
         0x90,
-        fields.get("a_pack_format", linear_pack[a_dtype]),
+        a_pack,
         f"{location}.a_pack_format",
     )
     put_u8(
         data,
         0x91,
-        fields.get("b_pack_format", tiled_pack[b_dtype]),
+        b_pack,
         f"{location}.b_pack_format",
     )
     put_u8(
         data,
         0x92,
-        fields.get("c_pack_format", linear_pack[c_dtype]),
+        c_pack,
         f"{location}.c_pack_format",
     )
     put_u8(

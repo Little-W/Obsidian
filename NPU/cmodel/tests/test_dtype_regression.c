@@ -9,6 +9,7 @@
 #define DTYPE_TEST_L1_BYTES NPU_REF_L1_BYTES
 #define DTYPE_TEST_DDR_BYTES (256u * 1024u)
 #define DTYPE_TEST_LENGTH 5u
+#define DTYPE_TEST_TYPE_COUNT 4u
 
 static uint8_t dtype_test_l1[DTYPE_TEST_L1_BYTES];
 static uint8_t dtype_test_ddr[DTYPE_TEST_DDR_BYTES];
@@ -168,9 +169,9 @@ static void dtype_test_source_values(npu_dtype_t dtype,
         values[4] = 127;
     } else if (dtype == NPU_DTYPE_INT16) {
         values[0] = INT16_MIN;
-        values[1] = -129;
+        values[1] = -257;
         values[2] = 0;
-        values[3] = 128;
+        values[3] = 258;
         values[4] = INT16_MAX;
     } else {
         values[0] = -100000;
@@ -236,8 +237,8 @@ static int dtype_test_dma_all_pairs(void)
     uint32_t element;
     int line;
 
-    for (src_index = 0u; src_index < 4u; src_index++) {
-        for (dst_index = 0u; dst_index < 4u; dst_index++) {
+    for (src_index = 0u; src_index < DTYPE_TEST_TYPE_COUNT; src_index++) {
+        for (dst_index = 0u; dst_index < DTYPE_TEST_TYPE_COUNT; dst_index++) {
             npu_dtype_t src_dtype = dtype_test_types[src_index];
             npu_dtype_t dst_dtype = dtype_test_types[dst_index];
             uint32_t src_bits = dtype_test_bits(src_dtype);
@@ -336,9 +337,9 @@ static int dtype_test_matrix_all_combinations(void)
     b_elements =
         (uint32_t)dtype_test_config.kt *
         (uint32_t)dtype_test_config.nt;
-    for (a_index = 0u; a_index < 4u; a_index++) {
-        for (b_index = 0u; b_index < 4u; b_index++) {
-            for (c_index = 0u; c_index < 4u; c_index++) {
+    for (a_index = 0u; a_index < DTYPE_TEST_TYPE_COUNT; a_index++) {
+        for (b_index = 0u; b_index < DTYPE_TEST_TYPE_COUNT; b_index++) {
+            for (c_index = 0u; c_index < DTYPE_TEST_TYPE_COUNT; c_index++) {
                 npu_dtype_t a_dtype =
                     dtype_test_types[a_index];
                 npu_dtype_t b_dtype =
@@ -503,7 +504,7 @@ static int dtype_test_vector_supported_combinations(void)
     npu_vector_desc_t desc;
     int line;
 
-    for (type_index = 0u; type_index < 4u; type_index++) {
+    for (type_index = 0u; type_index < DTYPE_TEST_TYPE_COUNT; type_index++) {
         npu_dtype_t dtype = dtype_test_types[type_index];
 
         for (opcode_index = 0u;
@@ -557,8 +558,8 @@ static int dtype_test_vector_supported_combinations(void)
         }
     }
 
-    for (a_index = 0u; a_index < 4u; a_index++) {
-        for (b_index = 0u; b_index < 4u; b_index++) {
+    for (a_index = 0u; a_index < DTYPE_TEST_TYPE_COUNT; a_index++) {
+        for (b_index = 0u; b_index < DTYPE_TEST_TYPE_COUNT; b_index++) {
             npu_dtype_t a_dtype =
                 dtype_test_types[a_index];
             npu_dtype_t b_dtype =
@@ -606,8 +607,8 @@ static int dtype_test_complex_all_pairs(void)
     uint64_t progress;
     int32_t output;
 
-    for (src_index = 0u; src_index < 4u; src_index++) {
-        for (dst_index = 0u; dst_index < 4u; dst_index++) {
+    for (src_index = 0u; src_index < DTYPE_TEST_TYPE_COUNT; src_index++) {
+        for (dst_index = 0u; dst_index < DTYPE_TEST_TYPE_COUNT; dst_index++) {
             TEST_CHECK(dtype_test_reset() == 0);
             (void)memset(&desc, 0, sizeof(desc));
             desc.rows = 1u;

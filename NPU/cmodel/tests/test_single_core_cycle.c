@@ -528,7 +528,7 @@ static void single_test_server_drive(
     }
 
     if (server->read.active == 0u) {
-        inputs->axi[NPU_MIF_AXI_DDR].arready =
+        inputs->axi.arready =
             (uint8_t)(server->axi_ar_stalls != 0u &&
                       (random_value & 0x18u) != 0u);
     } else if (server->read.delay != 0u) {
@@ -542,17 +542,17 @@ static void single_test_server_drive(
                         (size_t)server->read.beat *
                             NPU_REF_BUS_BYTES;
 
-        inputs->axi[NPU_MIF_AXI_DDR].rvalid = 1u;
-        inputs->axi[NPU_MIF_AXI_DDR].rid =
+        inputs->axi.rvalid = 1u;
+        inputs->axi.rid =
             server->read.id;
         if (offset + NPU_REF_BUS_BYTES <=
             sizeof(env->ddr)) {
-            inputs->axi[NPU_MIF_AXI_DDR].rdata =
+            inputs->axi.rdata =
                 single_test_get_u64(env->ddr, offset);
         }
-        inputs->axi[NPU_MIF_AXI_DDR].rresp =
+        inputs->axi.rresp =
             NPU_MIF_AXI_RESP_OKAY;
-        inputs->axi[NPU_MIF_AXI_DDR].rlast =
+        inputs->axi.rlast =
             (uint8_t)(server->read.beat + 1u ==
                       server->read.beats);
     }
@@ -566,7 +566,7 @@ static int single_test_server_observe(
     single_test_noc_server_t *server = &env->noc_server;
     const npu_mif_tbu_outputs_t *tbu = &outputs->mif.tbu;
     const npu_mif_axi_outputs_t *axi =
-        &outputs->mif.axi[NPU_MIF_AXI_DDR];
+        &outputs->mif.axi;
 
     if (outputs->cdc.owner[NPU_MIF_OWNER_DFU].req_valid != 0u) {
         server->cdc_request_cycles++;
@@ -639,8 +639,6 @@ static int single_test_server_observe(
         }
     }
 
-    TEST_CHECK(outputs->mif.axi[NPU_MIF_AXI_EXT].arvalid == 0u);
-    TEST_CHECK(outputs->mif.axi[NPU_MIF_AXI_EXT].awvalid == 0u);
     TEST_CHECK(axi->awvalid == 0u);
     TEST_CHECK(axi->wvalid == 0u);
     if (server->ar_hold != 0u) {
@@ -650,7 +648,7 @@ static int single_test_server_observe(
         TEST_CHECK(axi->arlen == server->ar_hold_len);
     }
     if (axi->arvalid != 0u &&
-        inputs->axi[NPU_MIF_AXI_DDR].arready == 0u) {
+        inputs->axi.arready == 0u) {
         server->axi_ar_stalls++;
         if (server->ar_hold == 0u) {
             server->ar_hold = 1u;
@@ -660,7 +658,7 @@ static int single_test_server_observe(
         }
     }
     if (axi->arvalid != 0u &&
-        inputs->axi[NPU_MIF_AXI_DDR].arready != 0u) {
+        inputs->axi.arready != 0u) {
         TEST_CHECK(server->read.active == 0u);
         TEST_CHECK(axi->arsize == 3u);
         TEST_CHECK(axi->arburst == 1u);
@@ -678,7 +676,7 @@ static int single_test_server_observe(
         server->axi_reads++;
         server->ar_hold = 0u;
     }
-    if (inputs->axi[NPU_MIF_AXI_DDR].rvalid != 0u &&
+    if (inputs->axi.rvalid != 0u &&
         axi->rready != 0u) {
         TEST_CHECK(server->read.active != 0u);
         server->axi_read_beats++;
@@ -782,10 +780,9 @@ static int single_test_env_init_mode(
     limits.gaddr_limit = SINGLE_TEST_DDR_BYTES;
     npu_lsc_cycle_config_reference(&lsc_config);
     npu_mif_cycle_config_default(&mif_config);
-    mif_config.ddr_enable = 1u;
-    mif_config.ddr_base = 0u;
-    mif_config.ddr_limit = SINGLE_TEST_DDR_BYTES - 8u;
-    mif_config.ext_enable = 0u;
+    mif_config.system_addr_enable = 1u;
+    mif_config.system_addr_base = 0u;
+    mif_config.system_addr_limit = SINGLE_TEST_DDR_BYTES - 8u;
     mif_config.bypass_enable = 0u;
 
     TEST_CHECK_STATUS(
@@ -963,7 +960,7 @@ static int single_test_capability_consistency(
     TEST_CHECK(env->top.core_cycle == preserved_cycle);
     lsc.vector_config ^= UINT64_C(1);
 
-    mif.ddr_enable = 2u;
+    mif.system_addr_enable = 2u;
     TEST_CHECK_STATUS(
         npu_single_core_cycle_init(
             &env->top, &env->functional,
@@ -973,7 +970,7 @@ static int single_test_capability_consistency(
             NPU_SINGLE_CORE_TBU_EXTERNAL),
         NPU_STATUS_BAD_DESC);
     TEST_CHECK(env->top.core_cycle == preserved_cycle);
-    mif.ddr_enable = 1u;
+    mif.system_addr_enable = 1u;
 
     lsc.timeout_reset[3]++;
     TEST_CHECK_STATUS(
@@ -1503,7 +1500,7 @@ static int single_test_system_and_debug(single_test_env_t *env)
 
     SINGLE_TEST_CALL(single_test_wait_idle(env));
     SINGLE_TEST_CALL(single_test_system_write(
-        env, NPU_LSC_REG_DDR_LOCAL_LIMIT,
+        env, NPU_LSC_REG_M_AXI_ADDR_LIMIT,
         UINT64_C(0x00000000000ffff8), 0x11u));
     SINGLE_TEST_CALL(single_test_system_write(
         env, NPU_LSC_REG_TBU_STREAM_ID,
@@ -1545,7 +1542,7 @@ static int single_test_axi_command_fifo(
 
     SINGLE_TEST_CALL(single_test_wait_idle(env));
     SINGLE_TEST_CALL(single_test_system_write(
-        env, NPU_LSC_REG_DDR_LOCAL_LIMIT,
+        env, NPU_LSC_REG_M_AXI_ADDR_LIMIT,
         UINT64_C(0x00000000000ffff8), 0x6eu));
     SINGLE_TEST_CALL(single_test_system_write(
         env, NPU_LSC_REG_TBU_STREAM_ID,
@@ -3030,7 +3027,7 @@ static int single_test_soft_reset_cross_domain(
 
     SINGLE_TEST_CALL(single_test_wait_idle(env));
     SINGLE_TEST_CALL(single_test_system_write_core_only(
-        env, NPU_LSC_REG_DDR_LOCAL_LIMIT,
+        env, NPU_LSC_REG_M_AXI_ADDR_LIMIT,
         ddr_limit, 0x51u));
     SINGLE_TEST_CALL(single_test_system_write_core_only(
         env, NPU_LSC_REG_TBU_STREAM_ID,
@@ -3064,12 +3061,11 @@ static int single_test_soft_reset_cross_domain(
     env->top.mif.next_axi_id = 0x5au;
     env->top.mif.request_rr_owner = 1u;
     env->top.mif.schedule_rr = 7u;
-    env->top.mif.r_entry_rr_port = 1u;
     env->top.mif.tbu_hold.tag = 0x4a2u;
     env->top.mif.rsp_hold[0].tag = 0x4a3u;
     env->top.mif.w_hold.out_slot = 3u;
-    env->top.mif.b_entry[0].id = 0x2au;
-    env->top.mif.r_entry[0].id = 0x2bu;
+    env->top.mif.b_entry.id = 0x2au;
+    env->top.mif.r_entry.id = 0x2bu;
     env->top.wdt.count = 7u;
     env->top.wdt.timeout = 0u;
     old_toggle = env->top.mif_soft_reset_toggle_core;
@@ -3101,7 +3097,7 @@ static int single_test_soft_reset_cross_domain(
     TEST_CHECK(env->top.lsc.fault_addr == saved_fault_addr);
     TEST_CHECK(env->top.lsc.fault_error_info ==
                saved_fault_info);
-    TEST_CHECK(env->top.lsc.ddr_local_limit == ddr_limit);
+    TEST_CHECK(env->top.lsc.m_axi_addr_limit == ddr_limit);
     TEST_CHECK(
         ((uint64_t)env->top.lsc.tbu_substream_id << 16u |
          env->top.lsc.tbu_stream_id) == tbu_ids);
@@ -3135,13 +3131,13 @@ static int single_test_soft_reset_cross_domain(
     TEST_CHECK(env->top.mif.next_axi_id == 0u);
     TEST_CHECK(env->top.mif.request_rr_owner == 0u);
     TEST_CHECK(env->top.mif.schedule_rr == 0u);
-    TEST_CHECK(env->top.mif.r_entry_rr_port == 0u);
     TEST_CHECK(env->top.mif.tbu_hold.tag == 0u);
     TEST_CHECK(env->top.mif.rsp_hold[0].tag == 0u);
     TEST_CHECK(env->top.mif.w_hold.out_slot == 0u);
-    TEST_CHECK(env->top.mif.b_entry[0].id == 0u);
-    TEST_CHECK(env->top.mif.r_entry[0].id == 0u);
-    TEST_CHECK(env->top.mif.config.ddr_limit == ddr_limit);
+    TEST_CHECK(env->top.mif.b_entry.id == 0u);
+    TEST_CHECK(env->top.mif.r_entry.id == 0u);
+    TEST_CHECK(
+        env->top.mif.config.system_addr_limit == ddr_limit);
     TEST_CHECK(
         ((uint64_t)env->top.mif.config.tbu_substream_id << 16u |
          env->top.mif.config.tbu_stream_id) == tbu_ids);
@@ -3182,7 +3178,7 @@ static int single_test_soft_reset_cross_domain(
     TEST_CHECK(env->top.lsc.fault_addr == saved_fault_addr);
     TEST_CHECK(env->top.lsc.fault_error_info ==
                saved_fault_info);
-    TEST_CHECK(env->top.lsc.ddr_local_limit == ddr_limit);
+    TEST_CHECK(env->top.lsc.m_axi_addr_limit == ddr_limit);
     TEST_CHECK(
         ((uint64_t)env->top.lsc.tbu_substream_id << 16u |
          env->top.lsc.tbu_stream_id) == tbu_ids);
@@ -3836,7 +3832,7 @@ static int single_test_start_descriptor_task(
 {
     SINGLE_TEST_CALL(single_test_wait_idle(env));
     SINGLE_TEST_CALL(single_test_system_write(
-        env, NPU_LSC_REG_DDR_LOCAL_LIMIT,
+        env, NPU_LSC_REG_M_AXI_ADDR_LIMIT,
         UINT64_C(0x00000000000ffff8), 0x61u));
     SINGLE_TEST_CALL(single_test_system_write(
         env, NPU_LSC_REG_TBU_STREAM_ID,
@@ -3919,7 +3915,7 @@ static int single_test_start_engine_task(
 {
     SINGLE_TEST_CALL(single_test_wait_idle(env));
     SINGLE_TEST_CALL(single_test_system_write(
-        env, NPU_LSC_REG_DDR_LOCAL_LIMIT,
+        env, NPU_LSC_REG_M_AXI_ADDR_LIMIT,
         UINT64_C(0x00000000000ffff8), 0x64u));
     SINGLE_TEST_CALL(single_test_system_write(
         env, NPU_LSC_REG_TBU_STREAM_ID,
@@ -3955,7 +3951,7 @@ static int single_test_internal_tbu_permission(
                 env, &noc_outputs));
             TEST_CHECK(
                 noc_outputs.mif
-                    .axi[NPU_MIF_AXI_DDR].arvalid == 0u);
+                    .axi.arvalid == 0u);
         }
         if (core_outputs.ts.terminal_valid != 0u) {
             TEST_CHECK(core_outputs.ts.terminal_task_id ==
@@ -4800,8 +4796,8 @@ static int single_test_reset_flush(single_test_env_t *env)
 static int single_test_explicit_reset_clears_stale(
     single_test_env_t *env)
 {
-    env->top.stale_axi_read_beats[0][0x21u] = 3u;
-    env->top.stale_axi_write_pending[1][0x22u] = 1u;
+    env->top.stale_axi_read_beats[0x21u] = 3u;
+    env->top.stale_axi_write_pending[0x22u] = 1u;
     env->top.stale_tbu_tag[0] = 0x123u;
     env->top.stale_tbu_tag_valid[0] = 1u;
     env->top.stale_axi_read_drop_count = 4u;
@@ -4810,9 +4806,9 @@ static int single_test_explicit_reset_clears_stale(
 
     npu_single_core_cycle_reset(&env->top);
     TEST_CHECK(
-        env->top.stale_axi_read_beats[0][0x21u] == 0u);
+        env->top.stale_axi_read_beats[0x21u] == 0u);
     TEST_CHECK(
-        env->top.stale_axi_write_pending[1][0x22u] == 0u);
+        env->top.stale_axi_write_pending[0x22u] == 0u);
     TEST_CHECK(env->top.stale_tbu_tag_valid[0] == 0u);
     TEST_CHECK(env->top.stale_axi_read_drop_count == 0u);
     TEST_CHECK(env->top.stale_axi_write_drop_count == 0u);
@@ -4828,17 +4824,17 @@ static int single_test_noc_reset_clears_stale(
     npu_single_core_cycle_noc_outputs_t outputs;
 
     SINGLE_TEST_CALL(single_test_wait_idle(env));
-    env->top.stale_axi_read_beats[0][0x31u] = 1u;
-    env->top.stale_axi_write_pending[0][0x32u] = 1u;
+    env->top.stale_axi_read_beats[0x31u] = 1u;
+    env->top.stale_axi_write_pending[0x32u] = 1u;
     env->top.stale_tbu_tag[0] = 0x321u;
     env->top.stale_tbu_tag_valid[0] = 1u;
     env->noc_rst_ni = 0u;
     SINGLE_TEST_CALL(single_test_noc_tick(env, &outputs));
     TEST_CHECK(outputs.noc_reset_n == 0u);
     TEST_CHECK(
-        env->top.stale_axi_read_beats[0][0x31u] == 0u);
+        env->top.stale_axi_read_beats[0x31u] == 0u);
     TEST_CHECK(
-        env->top.stale_axi_write_pending[0][0x32u] == 0u);
+        env->top.stale_axi_write_pending[0x32u] == 0u);
     TEST_CHECK(env->top.stale_tbu_tag_valid[0] == 0u);
     return 0;
 }

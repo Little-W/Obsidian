@@ -11,7 +11,8 @@
 > [!important] 硬件范围
 > Generic Core 是 NPU 外部的主控 CPU。真实 SoC 中，CPU 以 AXI Master
 > 身份访问 NPU 的 AXI Slave 固定命令 FIFO、控制寄存器和 L1BUF 外部窗口；
-> NPU 内部只有 MIF / TBU 使用 AXI Master 主动访问 DDR。代码中保留
+> MIF 通过 AXI Master 接入系统总线，DDR 是系统总线上的存储目标，由 SoC
+> 地址译码选择。MIF 不提供 DDR 专用端口，也不提供另一组外部存储端口。代码中保留
 > `npu_issue_adapter_cycle`、`npu_gc_axi_cycle` 以及若干 `gc_*` 字段，
 > 仅用于兼容已有的系统联合仿真测试。它们表示 NPU 外部的 CPU 侧测试部件，
 > 不属于待实现的 NPU RTL，也不是实际主控可绕过 AXI 使用的硬件端口。
@@ -35,8 +36,8 @@
 | DMA 未完成请求数 | 16 |
 | MIF 未完成事务总数 | 16 |
 | DMA 最大 burst | 16 个 64-bit beat |
-| DDR 读首拍参考延迟 | 20 个 NoC 存储目标 tick |
-| DDR 写响应参考延迟 | 12 个 NoC 存储目标 tick |
+| 系统存储读首拍参考延迟 | 20 个 NoC 存储目标 tick |
+| 系统存储写响应参考延迟 | 12 个 NoC 存储目标 tick |
 | CMD 宽度 | 128 bit |
 | CMD 物理接口 | 64 bit，先传低 64 bit，再传高 64 bit |
 | CFE 第二拍等待上限 | 32 cycles |
@@ -52,10 +53,10 @@ Matrix、IVE、CME 和 timeout 相关字段；不一致时返回 `BAD_DESC`，�
 修改 `MT/KT/NT` 等参数时，需要同步修改功能配置、线格式限制和 LSC 只读
 功能字段。
 
-检查内容还包括：`gaddr_limit` 不得大于功能模型实际提供的 DDR 字节数，
+检查内容还包括：`gaddr_limit` 不得大于功能模型实际提供的系统存储字节数，
 `isa_feature` 不得设置当前周期模型尚未支持的功能位，LSC 各只读组合字段的
 保留位必须为零。调用者没有提供 `npu_wire_limits_t` 时，组合模型会把参考
-`gaddr_limit` 缩小为实际 DDR 数组字节数。
+`gaddr_limit` 缩小为实际系统存储数组字节数。
 
 完整单核组合在改动 `top`、L1 ECC 数组或访问记录数组前，会先检查四组
 `npu_engine_data_workspace_t`。`npu_engine_data_workspace_valid()` 只读取
@@ -90,7 +91,7 @@ workspace 描述，不会清除哈希数组或访问记录。读写 entry 指针
 | `include/src/npu_l1_cycle.*` | 13 个读端口、5 个写端口、bank 仲裁和 ECC 注错 |
 | `include/src/npu_l1_diag_bridge.*` | System Slave 诊断请求到 L1 Debug 端口的桥 |
 | `include/src/npu_tbu_cycle.*` | TBU 规则、访问权限、固定响应延迟和错误状态 |
-| `include/src/npu_mif_cycle.*` | 两个内部发起者、TBU、双 AXI Master 端口 |
+| `include/src/npu_mif_cycle.*` | 两个内部发起者、TBU、系统总线 AXI Master 接口 |
 | `include/src/npu_mif_cdc_cycle.*` | Core/NoC 独立 tick 的请求、写数据和响应异步 FIFO |
 | `include/src/npu_axi_mem_target_cycle.*` | MIF 与外部 CPU 测试部件可复用的 64-bit AXI4 存储目标周期模型 |
 | `include/src/npu_sys_slave_cycle.*` | 64-bit AXI4 Slave、固定命令 FIFO、命令响应 FIFO 与内部请求转换 |
@@ -123,10 +124,11 @@ workspace 描述，不会清除哈希数组或访问记录。读写 entry 指针
 | `make clean` | 删除 `BUILD_DIR` 与 `SAN_BUILD_DIR`；不改写模型导出文件或 fixture | 否 |
 
 > [!note] 四种整数类型的组合回归
-> `test_dtype_regression` 检查 4 组张量存储、16 组 DMA 源/目的类型、64 组
-> Matrix A/B/C 类型、42 组 Vector 类型和 16 组 Complex 源/目的类型。
-> Matrix 的 64 组中有 16 组属于当前支持集合，其余组合必须准确返回
-> `DTYPE_UNSUPPORTED`。该测试明确包含 INT4、INT8、INT16 和 INT32。
+> 数据格式测试检查 4 组张量存储、16 组 DMA 源/目的类型、64 组 Matrix A/B/C
+> 类型、42 组 Vector 类型和 16 组 Complex 源/目的类型。Matrix 输入支持
+> INT4×INT4、INT8×INT8、INT8×INT4 和 INT16×INT16；每种输入可写 INT4、
+> INT8、INT16 或 INT32，共 16 组有效配置。其余组合必须准确返回
+> `DTYPE_UNSUPPORTED`。
 
 最常用的纯 C 检查顺序是：
 
@@ -164,6 +166,41 @@ make model-compile MODEL=gru
 make model-compile-check MODEL=gru
 ```
 
+### 3.1 通用模型编译器加 C 驱动的独立示例
+
+[`examples/README.md`](examples/README.md) 另行提供四个从 Keras 训练到
+CModel 推理的独立示例。它们调用 `compiler/npu_model_compiler.py` 生成
+C 配置、CMD128、Descriptor、权重和输入输出信息，再由 C 驱动通过固定地址
+命令 FIFO 提交。四个示例的模型张量只使用 INT8，矩阵累加使用 INT32；
+复杂函数和 GRU/LSTM 的软件状态更新可以暂时使用 FP32。
+
+| 示例 | 应用目标 | 单独运行 |
+| --- | --- | --- |
+| RNN | 设备遥测序列状态估计 | `make -C examples/rnn test` |
+| GRU | 带更新门和重置门的设备遥测序列状态估计 | `make -C examples/gru test` |
+| LSTM | 带单元状态的设备遥测序列状态估计 | `make -C examples/lstm test` |
+| CNN | 6×6 灰度图划痕方向分类 | `make -C examples/cnn test` |
+
+一次运行四个示例：
+
+```bash
+cd "/home/yusen/Obsidian Vault/NPU/cmodel/examples"
+make clean
+make test
+```
+
+每个程序都会逐样本打印详细输入、Keras 参考结果、CModel 结果、误差或分类
+正确率，以及命令组数、64-bit beat 数、响应数和周期数。CNN 的 `.keras`
+模型直接进入编译器；Conv2D 会被拆成 im2col 的 DMA 操作和 GEMM。RNN、
+GRU、LSTM 会从训练后的 Keras 权重生成单时刻高层 JSON 模型，再交给同一
+编译器。
+
+清理四个示例的生成目录：
+
+```bash
+make -C examples clean
+```
+
 > [!note] 生成文件与清理范围
 > `make keras-fixture` 会改写仓库中的两个 fixture 头文件，不是只在构建目录中
 > 生成临时文件。`make sanitize` 结束后保留 `build-sanitize`，统一运行
@@ -185,7 +222,9 @@ make model-compile-check MODEL=gru
 
 ### 4.1 存储数组和张量地址
 
-初始化时由调用者提供 L1BUF 和 DDR 字节数组。模型不调用 `malloc`、`calloc` 或 `realloc`，也不取得这些数组的所有权。
+初始化时由调用者提供 L1BUF 和系统存储字节数组。当前公开结构中的
+`ddr` 字段保存该系统存储数组，名称不表示 MIF 存在 DDR 专用接口。模型不调用
+`malloc`、`calloc` 或 `realloc`，也不取得这些数组的所有权。
 
 ```c
 npu_config_t config;
@@ -211,11 +250,9 @@ INT4 的偶数号元素位于低 4 bit，奇数号元素位于高 4 bit。模型
 - `batch_stride_bytes` 是相邻 Batch 起点的字节间隔；
 - INT4 连续元素使用 `start_nibble` 选择起始半字节。
 
-### 4.2 INT16 的存储和算子支持
+### 4.2 支持的数据格式
 
-INT16 的数值范围是 $[-32768,32767]$。地址 $a$ 保存低 8 bit，地址 $a+1$
-保存高 8 bit；读取后先按 16 bit 有符号数解释，再扩展到算子内部宽度。写回
-INT16 时先按 Descriptor 指定的舍入和溢出模式处理，再保存两个字节。
+dtype 编码固定为 `0=INT4`、`1=INT8`、`2=INT32`、`3=INT16`。
 
 四种整数 dtype 的主要支持情况如下：
 
@@ -224,12 +261,12 @@ INT16 时先按 Descriptor 指定的舍入和溢出模式处理，再保存两�
 | DMA | INT4、INT8、INT16、INT32 的 16 组源/目的组合 |
 | Matrix 输入 | INT4×INT4、INT8×INT8、INT8×INT4、INT16×INT16 |
 | Matrix 输出 | 上述每种输入可写 INT4、INT8、INT16 或 INT32，共 16 组有效配置 |
-| Vector | 按各 opcode 的输入数和广播规则检查，共 42 组有效类型配置 |
+| Vector | 按各 opcode 的输入数和广播规则检查合法组合 |
 | Complex | 四种整数输入可分别写为四种整数输出；FP32 只用于函数内部 |
 
-Matrix bias 和 `ACCUM_FROM_SRC2` 的旧部分和使用 INT32。INT16 乘法结果也先
-累加到 INT32 或更宽的内部临时值，最终按整数重缩放参数写回目标 dtype。模型
-不允许把 FP32 作为普通输入、权重、中间张量或输出的 dtype。
+Matrix bias 和 `ACCUM_FROM_SRC2` 的旧部分和使用 INT32。INT4、INT8 或 INT16
+乘法结果先累加到 INT32 或更宽的内部临时值，最终按整数重缩放参数写回目标 dtype。
+模型不允许把 FP32 作为普通输入、权重、中间张量或输出的 dtype。
 
 ## 5. 128-bit CMD、两拍传送与描述符
 
@@ -295,7 +332,7 @@ npu_cmd_encode(&cmd, &low_beat, &high_beat);
 status = npu_model_submit_wire(&model, low_beat, high_beat);
 ```
 
-该函数先解码完整 CMD，再从 DDR 字节数组的 `desc_addr` 读取当前执行单元规定
+该函数先解码完整 CMD，再从系统存储字节数组的 `desc_addr` 读取当前执行单元规定
 的描述符长度，随后逐字段检查描述符并建立任务。
 
 ### 5.3 64-bit ready/valid 接口上的两拍时序
@@ -339,7 +376,7 @@ do {
 真实主控 CPU 不使用这里的 `rs1/rs2` 接口。正式部署入口是 NPU 的 64-bit
 AXI Slave 固定命令 FIFO：
 
-- `0x020000` 是唯一的命令数据地址。AW 通道使用
+- 命令数据写入地址为 `0x020000`。AW 通道使用
   `AWSIZE=3`、`AWBURST=FIXED`，一个 burst 包含 2～16 个偶数 beat；
 - W 通道按“低 64 bit、高 64 bit”组成一条 CMD128，所有 beat 均要求
   `WSTRB=0xff`，`WLAST` 只在 burst 最后一拍有效；
@@ -374,7 +411,7 @@ beat，但它只供模块级回归注入使用。它不是 NPU 顶层硬件端�
 - TS 到四个 Engine 的任务接口和固定三拍完成消息；
 - CFE、TS、四个 Engine Adapter 与 LSC 的单次提交组合接口；
 - L1BUF 全部参考读写端口、bank 仲裁、写字节使能和 ECC 状态；
-- MIF 的 TBU、页拆分、双 AXI Master 和乱序返回；
+- MIF 的 TBU、页拆分、AXI Master 访问和按 AXI ID 返回；
 - MIF 两侧独立 tick、两级位置同步和双向异步 FIFO；
 - TBU 的命中、权限错误、固定延迟以及与 MIF 的组合运行；
 - System Slave、LSC、L1BUF 诊断桥、CRG 与 WDT；
@@ -533,8 +570,14 @@ NoC 本地复位和 `npu_single_core_cycle_reset()` 表示目标也随复位清�
 ### 6.5 AXI 存储目标
 
 `npu_axi_mem_target_cycle` 是可复用的 64-bit AXI 存储目标。NPU 的 MIF
-AXI Master 使用它检查 DDR 访问；兼容测试也可把外部 CPU 的 AXI Master
-接到另一实例。参考配置允许读、写各 16 个未完成事务，支持 1～16 beat
+AXI Master 使用它检查系统存储访问；兼容测试也可把外部 CPU 的 AXI Master
+接到另一实例。`npu_mif_cycle_inputs_t::axi` 和
+`npu_mif_cycle_outputs_t::axi` 表示 MIF 的 AXI Master 接口。配置字段
+`system_addr_enable`、`system_addr_base` 和 `system_addr_limit` 定义允许
+发出的物理地址范围，范围内的请求均从 `axi` 发出。DDR 模型应作为系统总线
+的存储目标连接，目标选择由总线地址译码完成。
+
+参考配置允许读、写各 16 个未完成事务，支持 1～16 beat
 INCR burst、8-bit ID、逐字节 `WSTRB` 和不同 ID 之间的响应换序；同一 ID
 的事务保持请求次序。AR 握手后完整等待 20 个存储目标 tick，第一个 R beat
 才能出现；最后一个 W beat 握手后完整等待 12 个存储目标 tick，B response
@@ -556,7 +599,7 @@ DMA、ME、IVE、CME 可以并行。一个任务的参考周期包括：
 - 描述符 64-bit beat 数；
 - 固定字段检查；
 - 输入与输出 64-bit beat 数；
-- L1 或 DDR 参考延迟；
+- L1 或系统存储参考延迟；
 - tile、lane 或 CME 函数流水周期；
 - 最后一次写响应等待。
 
@@ -656,8 +699,8 @@ Matrix 任务因此可以在前一条任务写回期间读取 A/B 并执行乘�
 
 调度器按存储区和半开地址区段检查前一任务与候选任务。活动后段的写区段若与
 候选 A/B、bias、旧部分和或整数重缩放表的读区段相交，候选 MAC 暂停。候选
-任务未来的写区段与活动任务读区段或写区段相交时，可以先执行候选 MAC；单一
-后段槽会保证候选写回晚于活动任务完成。无法可靠计算地址跨度时采用保守暂停。
+任务未来的写区段与活动任务读区段或写区段相交时，可以先执行候选 MAC；后段
+槽的占用规则会保证候选写回晚于活动任务完成。无法可靠计算地址跨度时采用保守暂停。
 
 事件等待、`ORDERED` 和 Fence 的限制仍先于 Matrix 发射。超时从任务
 `start_cycle` 连续计数，任务位于任一阶段或等待后段槽时都不会停止计时。
@@ -1575,37 +1618,18 @@ Descriptor。
 JSON IR 只在显式传入 `--emit-raw` 时额外生成，用于分析编译结果或单独检查
 汇编器，不是默认部署输入。
 
-可执行示例位于 `../examples/transformer_e2e`：
+当前采用 INT8 的可执行入口位于
+[`examples`](examples/README.md)，包含 RNN、GRU、LSTM 和 CNN 四个独立
+模型。每个示例都由 Keras 模型开始，调用通用高层编译器生成 C 配置、CMD128、
+Descriptor、权重和输入输出信息，再由分文件 C 驱动提交到本 CModel。
 
 ```bash
-cd "/home/yusen/Obsidian Vault/NPU/examples/transformer_e2e"
+cd "/home/yusen/Obsidian Vault/NPU/cmodel/examples"
 make clean
 make test
 ```
 
-该示例从包含 8 个语义算子的 INT16 Transformer 高层图开始，生成 36 条
-CMD128。`make check` 通过 `--emit-raw` 取得低层 JSON IR，再由独立汇编步骤
-逐字节复查 CMD 和 Descriptor。C 程序直接编译生成的 C 部署包，使用其中的
-任务组、Descriptor、权重和输入输出 DDR 地址，调用分文件 C 驱动并在本
-C model 上执行。当前输出为 32/32 个元素与独立浮点参考相同，最大绝对误差
-为 0。
-
-真实 Keras Transformer 示例位于
-[`../examples/keras_transformer_e2e`](../examples/keras_transformer_e2e/README.md)：
-
-```bash
-cd "/home/yusen/Obsidian Vault/NPU/examples/keras_transformer_e2e"
-make clean
-make test
-```
-
-该示例从 `.keras` 文件开始，默认生成 `keras_transformer_model.h`、
-`keras_transformer_model.c` 和 `keras_transformer.manifest.json`，再由外部
-主控 CPU 侧程序通过分文件 C 驱动提交任务。已测结果为 47 条 CMD128、6 个
-提交组、94 个 64-bit beat 和 47 条成功响应；32 个输出全部不超过 2 LSB
-误差，最大绝对误差为 2 LSB，4 个 token 的最大特征编号均与 Keras 结果相同。
-
-两套示例中的驱动调用都表示外部主控 CPU 主动操作 NPU。主控 CPU 是 AXI
+这些示例中的驱动调用都表示外部主控 CPU 主动操作 NPU。主控 CPU 是 AXI
 Master；NPU 的固定地址命令 FIFO、控制寄存器和 L1BUF 外部窗口是 AXI Slave 目标。
 Generic Core 不属于 NPU，C model 中的 CPU 侧测试部件也不应当被理解为 NPU
 内部硬件。
@@ -1629,13 +1653,13 @@ Engine Data 的 MIF 读写、Core/NoC
 异步 FIFO、内部 TBU 权限检查、MIF 错误同步、受控复位、CRG 和 WDT。另有
 `test_mif_tbu_cycle.c` 单独检查 TBU 地址转换、权限错误及 MIF 发出 AXI 请求
 的先后次序。`test_single_core_axi_target.c` 使用不同的 Core/NoC tick 节奏，
-把两个 AXI Master 测试端分别接到存储目标，检查外部 CPU 单拍读取，
+把外部 CPU 测试部件和 MIF 的 AXI Master 接到测试环境，检查外部 CPU 单拍读取，
 以及 Descriptor Fetch 经内部 TBU、MIF 和 8+16 beat AXI burst 取得 192B
 描述符后完成 Vector 任务。
 
 联合仿真接口把 NPU MIF 和外部 CPU 测试部件的 AXI Master 信号交给调用者。
-`npu_axi_mem_target_cycle` 不作为 NPU 的内部成员；测试环境可把两个 Master
-分别接到独立存储目标，也可接入自定义 NoC 或 DDR 模型。
+`npu_axi_mem_target_cycle` 不作为 NPU 的内部成员；测试环境可在系统总线模型
+中连接这些 Master 与存储目标，也可接入自定义 NoC 模型。
 `npu_engine_cycle` 仍应视为“信号级控制接口加功能级数据执行”的
 组合模型；需要观察逐 beat 数据请求时应使用 `npu_engine_data_cycle`，并结合
 L1BUF、MIF 和 AXI 存储目标判断各端口的周期行为。

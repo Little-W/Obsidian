@@ -69,7 +69,7 @@ class OnnxFrontendTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / "classifier.onnx"
             self._write_model(path)
-            options = FrontendOptions(dtype="int16", fraction_bits=8)
+            options = FrontendOptions(dtype="int8", fraction_bits=6)
             document = load_framework_document(path, options)
             result = compiler.compile_model_document(
                 document,
@@ -88,6 +88,50 @@ class OnnxFrontendTests(unittest.TestCase):
                         "--output-dir",
                         str(output),
                         "--model-dtype",
+                        "int8",
+                        "--fraction-bits",
+                        "6",
+                    ]
+                ),
+                0,
+            )
+            self.assertTrue((output / "classifier_model.h").is_file())
+            self.assertTrue((output / "classifier_model.c").is_file())
+            self.assertTrue((output / "classifier.manifest.json").is_file())
+
+    def test_real_onnx_int16_compiles_to_cmodel_layout(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "classifier.onnx"
+            self._write_model(path)
+            options = FrontendOptions(dtype="int16", fraction_bits=8)
+            document = load_framework_document(path, options)
+            self.assertEqual(document["inputs"][0]["dtype"], "int16")
+            self.assertTrue(
+                all(item["dtype"] == "int16" for item in document["constants"])
+            )
+            result = compiler.compile_model_document(
+                document,
+                compiler.TargetConfig(),
+                source_name=path.name,
+            )
+            matrix = next(
+                item
+                for item in result.assembled_operations
+                if item.engine == "matrix"
+            )
+            numeric = int.from_bytes(matrix.descriptor[0x38:0x3C], "little")
+            self.assertEqual(numeric & 0x3, 3)
+            self.assertEqual((numeric >> 2) & 0x3, 3)
+            self.assertEqual(matrix.descriptor[0x90], 5)
+            self.assertEqual(matrix.descriptor[0x91], 6)
+            output = Path(temp) / "onnx-int16-c-package"
+            self.assertEqual(
+                compiler.main(
+                    [
+                        str(path),
+                        "--output-dir",
+                        str(output),
+                        "--model-dtype",
                         "int16",
                         "--fraction-bits",
                         "8",
@@ -97,7 +141,6 @@ class OnnxFrontendTests(unittest.TestCase):
             )
             self.assertTrue((output / "classifier_model.h").is_file())
             self.assertTrue((output / "classifier_model.c").is_file())
-            self.assertTrue((output / "classifier.manifest.json").is_file())
 
 
 class PytorchFrontendTests(unittest.TestCase):
@@ -122,8 +165,8 @@ class PytorchFrontendTests(unittest.TestCase):
             path = Path(temp) / "classifier.torchscript"
             torch.jit.save(traced, str(path))
             options = FrontendOptions(
-                dtype="int16",
-                fraction_bits=8,
+                dtype="int8",
+                fraction_bits=6,
                 trust_model=True,
                 input_shapes={"0": (1, 3)},
             )
@@ -151,9 +194,9 @@ class PytorchFrontendTests(unittest.TestCase):
                         "--input-shape",
                         "0=1,3",
                         "--model-dtype",
-                        "int16",
+                        "int8",
                         "--fraction-bits",
-                        "8",
+                        "6",
                     ]
                 ),
                 0,

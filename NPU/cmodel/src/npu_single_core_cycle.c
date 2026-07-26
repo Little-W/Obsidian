@@ -277,20 +277,17 @@ static void single_gate_mif_outputs(
 static uint8_t single_stale_mif_transport_idle(
     const npu_single_core_cycle_t *top)
 {
-    uint32_t port;
     uint32_t id;
     uint32_t index;
 
     if (top->stale_axi_write_drain_count != 0u) {
         return 0u;
     }
-    for (port = 0u; port < NPU_MIF_AXI_PORT_COUNT; port++) {
-        for (id = 0u; id < NPU_SINGLE_CORE_AXI_ID_COUNT; id++) {
-            if (top->stale_axi_read_beats[port][id] != 0u ||
-                top->stale_axi_read_wait_rlast[port][id] != 0u ||
-                top->stale_axi_write_pending[port][id] != 0u) {
-                return 0u;
-            }
+    for (id = 0u; id < NPU_SINGLE_CORE_AXI_ID_COUNT; id++) {
+        if (top->stale_axi_read_beats[id] != 0u ||
+            top->stale_axi_read_wait_rlast[id] != 0u ||
+            top->stale_axi_write_pending[id] != 0u) {
+            return 0u;
         }
     }
     for (index = 0u;
@@ -1469,10 +1466,12 @@ static void single_update_mif_core_config(
     const npu_lsc_cycle_outputs_t *lsc)
 {
     top->mif_config_core = top->mif_soc_config;
-    top->mif_config_core.ddr_enable =
-        lsc->ddr_local_base <= lsc->ddr_local_limit ? 1u : 0u;
-    top->mif_config_core.ddr_base = lsc->ddr_local_base;
-    top->mif_config_core.ddr_limit = lsc->ddr_local_limit;
+    top->mif_config_core.system_addr_enable =
+        lsc->m_axi_addr_base <= lsc->m_axi_addr_limit ? 1u : 0u;
+    top->mif_config_core.system_addr_base =
+        lsc->m_axi_addr_base;
+    top->mif_config_core.system_addr_limit =
+        lsc->m_axi_addr_limit;
     top->mif_config_core.tbu_stream_id =
         lsc->tbu_stream_id;
     top->mif_config_core.tbu_substream_id =
@@ -1563,24 +1562,20 @@ static void single_remove_stale_tbu_tag(
 
 static uint8_t single_mif_read_buffered(
     const npu_mif_cycle_t *mif,
-    uint8_t port,
     uint8_t id)
 {
-    return port < NPU_MIF_AXI_PORT_COUNT &&
-                   mif->r_entry[port].valid != 0u &&
-                   mif->r_entry[port].id == id
+    return mif->r_entry.valid != 0u &&
+                   mif->r_entry.id == id
                ? 1u
                : 0u;
 }
 
 static uint8_t single_mif_write_buffered(
     const npu_mif_cycle_t *mif,
-    uint8_t port,
     uint8_t id)
 {
-    return port < NPU_MIF_AXI_PORT_COUNT &&
-                   mif->b_entry[port].valid != 0u &&
-                   mif->b_entry[port].id == id
+    return mif->b_entry.valid != 0u &&
+                   mif->b_entry.id == id
                ? 1u
                : 0u;
 }
@@ -1590,7 +1585,6 @@ static void single_stale_write_push(
         queue[NPU_SINGLE_CORE_STALE_WRITE_DEPTH],
     uint16_t *tail,
     uint16_t *count,
-    uint8_t port,
     uint8_t axi_id,
     uint16_t beats)
 {
@@ -1601,7 +1595,6 @@ static void single_stale_write_push(
         return;
     }
     entry = &queue[*tail];
-    entry->port = port;
     entry->axi_id = axi_id;
     entry->beats_remaining = beats;
     *tail = (uint16_t)(
@@ -1652,15 +1645,12 @@ static void single_capture_stale_transport(
          index++) {
         const npu_mif_axi_entry_t *entry =
             &top->mif.axi_entries[index];
-        uint8_t port;
         uint8_t id;
 
         if (entry->valid == 0u ||
-            entry->addr_sent == 0u ||
-            entry->port >= NPU_MIF_AXI_PORT_COUNT) {
+            entry->addr_sent == 0u) {
             continue;
         }
-        port = entry->port;
         id = entry->axi_id;
         if (entry->write == 0u) {
             uint16_t remaining =
@@ -1672,37 +1662,37 @@ static void single_capture_stale_transport(
 
             if (remaining != 0u &&
                 single_mif_read_buffered(
-                    &top->mif, port, id) != 0u) {
+                    &top->mif, id) != 0u) {
                 const npu_mif_axi_r_entry_t *buffered =
-                    &top->mif.r_entry[port];
+                    &top->mif.r_entry;
 
                 if (buffered->last != 0u) {
                     remaining = 0u;
                 } else {
                     remaining--;
                     if (remaining == 0u) {
-                        top->stale_axi_read_wait_rlast[port][id] =
+                        top->stale_axi_read_wait_rlast[id] =
                             1u;
                     }
                 }
             }
             retained =
                 (uint16_t)
-                    top->stale_axi_read_beats[port][id] +
+                    top->stale_axi_read_beats[id] +
                 remaining;
-            top->stale_axi_read_beats[port][id] =
+            top->stale_axi_read_beats[id] =
                 retained > UINT8_MAX
                     ? UINT8_MAX
                     : (uint8_t)retained;
         } else if (single_mif_write_buffered(
-                       &top->mif, port, id) == 0u) {
+                       &top->mif, id) == 0u) {
             /*
              * An accepted AW cannot be cancelled by AXI. Keep its ID
              * unavailable even when reset interrupts the W stream before
              * its last beat. If the target eventually emits B, the top-level
              * gate accepts and discards it.
              */
-            top->stale_axi_write_pending[port][id] = 1u;
+            top->stale_axi_write_pending[id] = 1u;
         }
     }
 
@@ -1722,8 +1712,7 @@ static void single_capture_stale_transport(
         if (entry->valid == 0u ||
             entry->write == 0u ||
             entry->addr_sent == 0u ||
-            entry->w_done != 0u ||
-            entry->port >= NPU_MIF_AXI_PORT_COUNT) {
+            entry->w_done != 0u) {
             continue;
         }
         remaining =
@@ -1735,7 +1724,7 @@ static void single_capture_stale_transport(
             top->stale_axi_write_drain,
             &top->stale_axi_write_drain_tail,
             &top->stale_axi_write_drain_count,
-            entry->port, entry->axi_id, remaining);
+            entry->axi_id, remaining);
     }
 }
 
@@ -1884,7 +1873,7 @@ static void single_capture_stale_gc_transport(
             top->stale_gc_axi_write_drain,
             &top->stale_gc_axi_write_drain_tail,
             &top->stale_gc_axi_write_drain_count,
-            0u, entry->axi_id, remaining);
+            entry->axi_id, remaining);
     }
 }
 
@@ -1913,12 +1902,11 @@ static void single_clear_stale_gc_transport(
 
 static uint8_t single_axi_id_stale(
     const npu_single_core_cycle_t *top,
-    uint8_t port,
     uint8_t id)
 {
-    return top->stale_axi_read_beats[port][id] != 0u ||
-                   top->stale_axi_read_wait_rlast[port][id] != 0u ||
-                   top->stale_axi_write_pending[port][id] != 0u
+    return top->stale_axi_read_beats[id] != 0u ||
+                   top->stale_axi_read_wait_rlast[id] != 0u ||
+                   top->stale_axi_write_pending[id] != 0u
                ? 1u
                : 0u;
 }
@@ -1941,15 +1929,14 @@ static uint8_t single_axi_id_active(
 }
 
 /*
- * MIF can create at most one AR and one AW hold per AXI port in one tick.
- * Selecting four consecutive clean IDs therefore prevents its sequential
+ * MIF can create at most one AR and one AW hold in one tick.
+ * Selecting two consecutive clean IDs therefore prevents its sequential
  * allocator from crossing an identifier retained by pre-reset traffic.
  */
 static uint8_t single_prepare_clean_axi_ids(
     npu_single_core_cycle_t *top)
 {
-    const uint16_t needed =
-        (uint16_t)(NPU_MIF_AXI_PORT_COUNT * 2u);
+    const uint16_t needed = 2u;
     uint16_t offset;
 
     for (offset = 0u;
@@ -1964,22 +1951,12 @@ static uint8_t single_prepare_clean_axi_ids(
         for (item = 0u; item < needed; item++) {
             uint8_t id =
                 (uint8_t)((uint16_t)start + item);
-            uint8_t port;
-
             if (single_axi_id_active(top, id) != 0u) {
                 clean = 0u;
                 break;
             }
-            for (port = 0u;
-                 port < NPU_MIF_AXI_PORT_COUNT;
-                 port++) {
-                if (single_axi_id_stale(
-                        top, port, id) != 0u) {
-                    clean = 0u;
-                    break;
-                }
-            }
-            if (clean == 0u) {
+            if (single_axi_id_stale(top, id) != 0u) {
+                clean = 0u;
                 break;
             }
         }
@@ -2971,30 +2948,25 @@ static void single_build_mif_inputs(
     uint8_t reset_n,
     npu_mif_cycle_inputs_t *inputs)
 {
-    uint32_t port;
+    uint32_t owner;
 
     (void)memset(inputs, 0, sizeof(*inputs));
     inputs->reset_n = reset_n;
     inputs->error_clear = error_clear;
     inputs->config_valid = 1u;
-    inputs->ddr_enable = config->ddr_enable;
-    inputs->ddr_base = config->ddr_base;
-    inputs->ddr_limit = config->ddr_limit;
-    inputs->ext_enable = config->ext_enable;
-    inputs->ext_base = config->ext_base;
-    inputs->ext_limit = config->ext_limit;
+    inputs->system_addr_enable = config->system_addr_enable;
+    inputs->system_addr_base = config->system_addr_base;
+    inputs->system_addr_limit = config->system_addr_limit;
     inputs->bypass_enable = config->bypass_enable;
     inputs->bypass_base = config->bypass_base;
     inputs->bypass_limit = config->bypass_limit;
     inputs->tbu_stream_id = config->tbu_stream_id;
     inputs->tbu_substream_id = config->tbu_substream_id;
-    for (port = 0u; port < NPU_MIF_OWNER_COUNT; port++) {
-        inputs->owner[port] = cdc->owner[port];
+    for (owner = 0u; owner < NPU_MIF_OWNER_COUNT; owner++) {
+        inputs->owner[owner] = cdc->owner[owner];
     }
     inputs->tbu = *tbu;
-    for (port = 0u; port < NPU_MIF_AXI_PORT_COUNT; port++) {
-        inputs->axi[port] = external->axi[port];
-    }
+    inputs->axi = external->axi;
 }
 
 static void single_build_internal_tbu_inputs(
@@ -3043,39 +3015,27 @@ static void single_filter_stale_noc_inputs(
     const npu_single_core_cycle_t *top,
     const npu_single_core_cycle_noc_inputs_t *external,
     npu_single_core_cycle_noc_inputs_t *filtered,
-    uint8_t stale_read[NPU_MIF_AXI_PORT_COUNT],
-    uint8_t stale_write[NPU_MIF_AXI_PORT_COUNT],
+    uint8_t *stale_read,
+    uint8_t *stale_write,
     uint8_t *stale_tbu)
 {
-    uint8_t port;
+    const npu_mif_axi_inputs_t *axi = &external->axi;
 
     *filtered = *external;
-    (void)memset(stale_read, 0,
-                 NPU_MIF_AXI_PORT_COUNT *
-                     sizeof(stale_read[0]));
-    (void)memset(stale_write, 0,
-                 NPU_MIF_AXI_PORT_COUNT *
-                     sizeof(stale_write[0]));
+    *stale_read = 0u;
+    *stale_write = 0u;
     *stale_tbu = 0u;
 
-    for (port = 0u; port < NPU_MIF_AXI_PORT_COUNT;
-         port++) {
-        const npu_mif_axi_inputs_t *axi =
-            &external->axi[port];
-
-        if (axi->rvalid != 0u &&
-            (top->stale_axi_read_beats[port][axi->rid] != 0u ||
-             top->stale_axi_read_wait_rlast[port][axi->rid] !=
-                 0u)) {
-            filtered->axi[port].rvalid = 0u;
-            stale_read[port] = 1u;
-        }
-        if (axi->bvalid != 0u &&
-            top->stale_axi_write_pending[port][axi->bid] !=
-                0u) {
-            filtered->axi[port].bvalid = 0u;
-            stale_write[port] = 1u;
-        }
+    if (axi->rvalid != 0u &&
+        (top->stale_axi_read_beats[axi->rid] != 0u ||
+         top->stale_axi_read_wait_rlast[axi->rid] != 0u)) {
+        filtered->axi.rvalid = 0u;
+        *stale_read = 1u;
+    }
+    if (axi->bvalid != 0u &&
+        top->stale_axi_write_pending[axi->bid] != 0u) {
+        filtered->axi.bvalid = 0u;
+        *stale_write = 1u;
     }
 
     if (top->tbu_mode == NPU_SINGLE_CORE_TBU_EXTERNAL &&
@@ -3099,10 +3059,7 @@ static void single_apply_stale_mif_write_drain(
     }
     drain = &top->stale_axi_write_drain[
         top->stale_axi_write_drain_head];
-    if (drain->port >= NPU_MIF_AXI_PORT_COUNT) {
-        return;
-    }
-    axi = &mif->axi[drain->port];
+    axi = &mif->axi;
     axi->wdata = 0u;
     axi->wstrb = 0u;
     axi->wlast =
@@ -3140,23 +3097,19 @@ static uint8_t single_gate_stale_tbu_requests(
 }
 
 static void single_apply_noc_response_gates(
-    const uint8_t stale_read[NPU_MIF_AXI_PORT_COUNT],
-    const uint8_t stale_write[NPU_MIF_AXI_PORT_COUNT],
+    uint8_t stale_read,
+    uint8_t stale_write,
     uint8_t stale_tbu,
     uint8_t blocked_owner_mask,
     npu_mif_cycle_outputs_t *mif)
 {
-    uint8_t port;
     uint8_t owner;
 
-    for (port = 0u; port < NPU_MIF_AXI_PORT_COUNT;
-         port++) {
-        if (stale_read[port] != 0u) {
-            mif->axi[port].rready = 1u;
-        }
-        if (stale_write[port] != 0u) {
-            mif->axi[port].bready = 1u;
-        }
+    if (stale_read != 0u) {
+        mif->axi.rready = 1u;
+    }
+    if (stale_write != 0u) {
+        mif->axi.bready = 1u;
     }
     if (stale_tbu != 0u) {
         mif->tbu.rsp_ready = 1u;
@@ -3173,41 +3126,34 @@ static void single_consume_stale_noc_responses(
     npu_single_core_cycle_t *top,
     const npu_single_core_cycle_noc_inputs_t *external,
     const npu_mif_cycle_outputs_t *mif,
-    const uint8_t stale_read[NPU_MIF_AXI_PORT_COUNT],
-    const uint8_t stale_write[NPU_MIF_AXI_PORT_COUNT],
+    uint8_t stale_read,
+    uint8_t stale_write,
     uint8_t stale_tbu)
 {
-    uint8_t port;
+    const npu_mif_axi_inputs_t *axi = &external->axi;
 
-    for (port = 0u; port < NPU_MIF_AXI_PORT_COUNT;
-         port++) {
-        const npu_mif_axi_inputs_t *axi =
-            &external->axi[port];
-
-        if (stale_read[port] != 0u &&
-            axi->rvalid != 0u &&
-            mif->axi[port].rready != 0u) {
-            single_consume_stale_read(
-                &top->stale_axi_read_beats[port][axi->rid],
-                &top->stale_axi_read_wait_rlast[port][axi->rid],
-                axi->rlast);
-            top->stale_axi_read_drop_count++;
-        }
-        if (stale_write[port] != 0u &&
-            axi->bvalid != 0u &&
-            mif->axi[port].bready != 0u) {
-            top->stale_axi_write_pending[port][axi->bid] = 0u;
-            top->stale_axi_write_drop_count++;
-        }
+    if (stale_read != 0u &&
+        axi->rvalid != 0u &&
+        mif->axi.rready != 0u) {
+        single_consume_stale_read(
+            &top->stale_axi_read_beats[axi->rid],
+            &top->stale_axi_read_wait_rlast[axi->rid],
+            axi->rlast);
+        top->stale_axi_read_drop_count++;
+    }
+    if (stale_write != 0u &&
+        axi->bvalid != 0u &&
+        mif->axi.bready != 0u) {
+        top->stale_axi_write_pending[axi->bid] = 0u;
+        top->stale_axi_write_drop_count++;
     }
     if (top->stale_axi_write_drain_count != 0u) {
         npu_single_core_stale_write_t *drain =
             &top->stale_axi_write_drain[
                 top->stale_axi_write_drain_head];
 
-        if (drain->port < NPU_MIF_AXI_PORT_COUNT &&
-            mif->axi[drain->port].wvalid != 0u &&
-            external->axi[drain->port].wready != 0u) {
+        if (mif->axi.wvalid != 0u &&
+            external->axi.wready != 0u) {
             if (drain->beats_remaining != 0u) {
                 drain->beats_remaining--;
                 top->stale_axi_w_drain_count++;
@@ -3256,8 +3202,8 @@ void npu_single_core_cycle_noc_tick(
     uint8_t mif_run_clock;
     uint8_t allow_new_requests;
     uint8_t blocked_owner_mask;
-    uint8_t stale_read[NPU_MIF_AXI_PORT_COUNT];
-    uint8_t stale_write[NPU_MIF_AXI_PORT_COUNT];
+    uint8_t stale_read;
+    uint8_t stale_write;
     uint8_t stale_tbu;
     uint8_t requested_module_clocks;
     uint32_t iteration;
@@ -3303,8 +3249,8 @@ void npu_single_core_cycle_noc_tick(
         single_capture_stale_transport(top);
     }
     single_filter_stale_noc_inputs(
-        top, external, &filtered_external, stale_read,
-        stale_write, &stale_tbu);
+        top, external, &filtered_external, &stale_read,
+        &stale_write, &stale_tbu);
     mif_reset_n =
         (uint8_t)(reset_n != 0u &&
                   soft_reset_event == 0u &&

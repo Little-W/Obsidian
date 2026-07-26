@@ -28,8 +28,8 @@ class FrontendOptions:
     """Options shared by all framework importers."""
 
     input_format: str = "auto"
-    dtype: str = "int16"
-    fraction_bits: int = 8
+    dtype: str = "int8"
+    fraction_bits: int = 6
     batch_size: int = 1
     input_shapes: Mapping[str, tuple[int, ...]] = field(default_factory=dict)
     trust_model: bool = False

@@ -509,18 +509,18 @@ int test_lsc_cycle(void)
     lsc_set_idle(&inputs, 1u);
 
     TEST_CHECK(lsc_write(&model, &inputs, &outputs, 0u,
-                         NPU_LSC_REG_DDR_LOCAL_LIMIT,
+                         NPU_LSC_REG_M_AXI_ADDR_LIMIT,
                          UINT64_C(0x4000),
                          0xffu) == NPU_LSC_REG_OKAY);
     TEST_CHECK(lsc_write(&model, &inputs, &outputs, 0u,
-                         NPU_LSC_REG_DDR_LOCAL_BASE,
+                         NPU_LSC_REG_M_AXI_ADDR_BASE,
                          UINT64_C(0x1000),
                          0xffu) == NPU_LSC_REG_OKAY);
     TEST_CHECK(lsc_write(&model, &inputs, &outputs, 0u,
-                         NPU_LSC_REG_DDR_LOCAL_BASE,
+                         NPU_LSC_REG_M_AXI_ADDR_BASE,
                          UINT64_C(0x5000),
                          0xffu) == NPU_LSC_REG_SLVERR);
-    TEST_CHECK(model.ddr_local_base == UINT64_C(0x1000));
+    TEST_CHECK(model.m_axi_addr_base == UINT64_C(0x1000));
 
     TEST_CHECK(lsc_write(&model, &inputs, &outputs, 0u,
                          NPU_LSC_REG_PARAM_L1_LIMIT,

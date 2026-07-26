@@ -232,10 +232,10 @@ static uint64_t npu_lsc_read_register(
         return model->output_base;
     case NPU_LSC_REG_KV_BASE:
         return model->kv_base;
-    case NPU_LSC_REG_DDR_LOCAL_BASE:
-        return model->ddr_local_base;
-    case NPU_LSC_REG_DDR_LOCAL_LIMIT:
-        return model->ddr_local_limit;
+    case NPU_LSC_REG_M_AXI_ADDR_BASE:
+        return model->m_axi_addr_base;
+    case NPU_LSC_REG_M_AXI_ADDR_LIMIT:
+        return model->m_axi_addr_limit;
     case NPU_LSC_REG_TBU_STREAM_ID:
         return (uint64_t)model->tbu_stream_id |
                ((uint64_t)model->tbu_substream_id << 16u);
@@ -465,29 +465,29 @@ static uint8_t npu_lsc_write_register(
     case NPU_LSC_REG_KV_BASE:
         return npu_lsc_write_base(&model->kv_base, data, strobe,
                                   core_idle, 0u);
-    case NPU_LSC_REG_DDR_LOCAL_BASE:
+    case NPU_LSC_REG_M_AXI_ADDR_BASE:
         if (core_idle == 0u) {
             return NPU_LSC_REG_SLVERR;
         }
-        merged = npu_lsc_merge_write(model->ddr_local_base,
+        merged = npu_lsc_merge_write(model->m_axi_addr_base,
                                      data, strobe);
         if (npu_lsc_address_is_pa(merged) == 0u ||
-            merged > model->ddr_local_limit) {
+            merged > model->m_axi_addr_limit) {
             return NPU_LSC_REG_SLVERR;
         }
-        model->ddr_local_base = merged;
+        model->m_axi_addr_base = merged;
         return NPU_LSC_REG_OKAY;
-    case NPU_LSC_REG_DDR_LOCAL_LIMIT:
+    case NPU_LSC_REG_M_AXI_ADDR_LIMIT:
         if (core_idle == 0u) {
             return NPU_LSC_REG_SLVERR;
         }
-        merged = npu_lsc_merge_write(model->ddr_local_limit,
+        merged = npu_lsc_merge_write(model->m_axi_addr_limit,
                                      data, strobe);
         if (npu_lsc_address_is_pa(merged) == 0u ||
-            merged < model->ddr_local_base) {
+            merged < model->m_axi_addr_base) {
             return NPU_LSC_REG_SLVERR;
         }
-        model->ddr_local_limit = merged;
+        model->m_axi_addr_limit = merged;
         return NPU_LSC_REG_OKAY;
     case NPU_LSC_REG_TBU_STREAM_ID:
         if (core_idle == 0u) {
@@ -858,8 +858,8 @@ static void npu_lsc_fill_outputs(
     outputs->work_base = model->work_base;
     outputs->output_base = model->output_base;
     outputs->kv_base = model->kv_base;
-    outputs->ddr_local_base = model->ddr_local_base;
-    outputs->ddr_local_limit = model->ddr_local_limit;
+    outputs->m_axi_addr_base = model->m_axi_addr_base;
+    outputs->m_axi_addr_limit = model->m_axi_addr_limit;
     outputs->tbu_stream_id = model->tbu_stream_id;
     outputs->tbu_substream_id = model->tbu_substream_id;
     for (index = 0u; index < NPU_LSC_TIMEOUT_CLASS_COUNT; index++) {

@@ -1,0 +1,682 @@
+module npu_vector_engine (
+  input  logic          clk_i,
+  input  logic          reset_n,
+
+  input  logic          task_valid_i,
+  output logic          task_ready_o,
+  input  logic [7:0]    opcode_i,
+  input  logic [11:0]   command_id_i,
+  input  logic [2047:0] desc_i,
+
+  output logic          done_valid_o,
+  input  logic          done_ready_i,
+  output logic [7:0]    done_status_o,
+  output logic [47:0]   done_fault_addr_o,
+  output logic [63:0]   done_progress_o,
+
+  output logic          l1_req_valid_o,
+  input  logic          l1_req_ready_i,
+  output logic          l1_req_write_o,
+  output logic [19:0]   l1_req_addr_o,
+  output logic [63:0]   l1_req_wdata_o,
+  output logic [7:0]    l1_req_wstrb_o,
+  input  logic          l1_rsp_valid_i,
+  output logic          l1_rsp_ready_o,
+  input  logic [63:0]   l1_rsp_rdata_i,
+  input  logic [2:0]    l1_rsp_status_i
+);
+
+  import npu_engine_pkg::*;
+
+  typedef enum logic [4:0] {
+    ST_IDLE,
+    ST_CHECK,
+    ST_MASK_REQ,
+    ST_MASK_RSP,
+    ST_SRC0_REQ,
+    ST_SRC0_RSP,
+    ST_SRC1_REQ,
+    ST_SRC1_RSP,
+    ST_SRC2_REQ,
+    ST_SRC2_RSP,
+    ST_KEEP_REQ,
+    ST_KEEP_RSP,
+    ST_EXEC,
+    ST_RMW_REQ,
+    ST_RMW_RSP,
+    ST_WRITE_REQ,
+    ST_WRITE_RSP,
+    ST_DONE
+  } state_t;
+
+  state_t state_q;
+  logic [2047:0] desc_q;
+  logic [7:0] opcode_q;
+  logic [31:0] row_q;
+  logic [31:0] col_q;
+  logic signed [63:0] src0_value_q;
+  logic signed [63:0] src1_value_q;
+  logic signed [63:0] src2_value_q;
+  logic signed [63:0] result_q;
+  logic [63:0] rmw_beat_q;
+  logic mask_value_q;
+  logic [7:0] status_q;
+  logic [47:0] fault_addr_q;
+  logic [63:0] progress_q;
+
+  wire [7:0] desc_version = desc_q[7:0];
+  wire [7:0] desc_type = desc_q[15:8];
+  wire [15:0] desc_bytes = desc_q[31:16];
+  wire [63:0] src0_base = desc_q[64 +: 64];
+  wire [63:0] src1_base = desc_q[128 +: 64];
+  wire [63:0] src2_base = desc_q[192 +: 64];
+  wire [63:0] dst_base = desc_q[256 +: 64];
+  wire [63:0] mask_base = desc_q[320 +: 64];
+  wire [31:0] numeric_cfg = desc_q[448 +: 32];
+  wire [1:0] src0_dtype = numeric_cfg[1:0];
+  wire [1:0] src1_dtype = numeric_cfg[3:2];
+  wire [1:0] src2_dtype = numeric_cfg[5:4];
+  wire [1:0] dst_dtype = numeric_cfg[7:6];
+  wire unused_numeric_cfg = ^numeric_cfg[16:10];
+  wire unused_command_id = ^command_id_i;
+  wire unused_result_upper = ^result_q[63:32];
+  wire unused_desc_fields = ^{
+    desc_q[2047:1216],
+    desc_q[1151:1024],
+    desc_q[511:480],
+    desc_q[447:384],
+    desc_q[63:32]
+  };
+
+  wire [31:0] rows = desc_q[16'h40 * 8 +: 32];
+  wire [31:0] length = desc_q[16'h44 * 8 +: 32];
+  wire [31:0] valid_length = desc_q[16'h48 * 8 +: 32];
+  wire [31:0] vector_flags = desc_q[16'h4c * 8 +: 32];
+  wire [31:0] src0_elem_stride = desc_q[16'h50 * 8 +: 32];
+  wire [31:0] src0_row_stride = desc_q[16'h54 * 8 +: 32];
+  wire [31:0] src1_elem_stride = desc_q[16'h58 * 8 +: 32];
+  wire [31:0] src1_row_stride = desc_q[16'h5c * 8 +: 32];
+  wire [31:0] src2_elem_stride = desc_q[16'h60 * 8 +: 32];
+  wire [31:0] src2_row_stride = desc_q[16'h64 * 8 +: 32];
+  wire [31:0] dst_elem_stride = desc_q[16'h68 * 8 +: 32];
+  wire [31:0] dst_row_stride = desc_q[16'h6c * 8 +: 32];
+  wire signed [31:0] scalar0 = desc_q[16'h70 * 8 +: 32];
+  wire signed [31:0] scalar1 = desc_q[16'h74 * 8 +: 32];
+  wire [7:0] broadcast_mode = desc_q[16'h78 * 8 +: 8];
+  wire [7:0] compare_mode = desc_q[16'h79 * 8 +: 8];
+  wire [7:0] overflow_mode = desc_q[16'h7a * 8 +: 8];
+  wire [7:0] mask_mode = desc_q[16'h7b * 8 +: 8];
+  wire src0_nibble = desc_q[16'h7c * 8];
+  wire src1_nibble = desc_q[16'h7d * 8];
+  wire dst_nibble = desc_q[16'h7e * 8];
+  wire src2_nibble = desc_q[16'h7f * 8];
+  wire [31:0] mask_elem_stride = desc_q[16'h90 * 8 +: 32];
+  wire [31:0] mask_row_stride = desc_q[16'h94 * 8 +: 32];
+
+  wire mask_enable = vector_flags[0];
+  wire mask_false_keep_dst = vector_flags[1];
+  wire src1_from_scalar0 = vector_flags[2];
+  wire src2_from_scalar1 = vector_flags[3];
+
+  function automatic logic [63:0] tensor_addr(
+    input logic [63:0] base,
+    input logic [31:0] row,
+    input logic [31:0] col,
+    input logic [31:0] elem_stride,
+    input logic [31:0] row_stride,
+    input logic [1:0] bcast,
+    input logic [1:0] dtype,
+    input logic start_nibble
+  );
+    logic [63:0] row_offset;
+    logic [63:0] col_offset;
+    begin
+      row_offset = 64'd0;
+      col_offset = 64'd0;
+      case (bcast)
+        2'd0: begin
+          row_offset = row * row_stride;
+          if (dtype == NPU_DTYPE_INT4)
+            col_offset = ({32'd0, col} + {63'd0, start_nibble}) >> 1;
+          else
+            col_offset = col * elem_stride;
+        end
+        2'd1: begin
+          row_offset = 64'd0;
+          col_offset = 64'd0;
+        end
+        2'd2: begin
+          row_offset = row * row_stride;
+          col_offset = 64'd0;
+        end
+        default: begin
+          row_offset = 64'd0;
+          if (dtype == NPU_DTYPE_INT4)
+            col_offset = ({32'd0, col} + {63'd0, start_nibble}) >> 1;
+          else
+            col_offset = col * elem_stride;
+        end
+      endcase
+      return base + row_offset + col_offset;
+    end
+  endfunction
+
+  function automatic logic tensor_nibble(
+    input logic col_odd,
+    input logic [1:0] bcast,
+    input logic [1:0] dtype,
+    input logic start_nibble
+  );
+    begin
+      if (dtype != NPU_DTYPE_INT4)
+        return 1'b0;
+      case (bcast)
+        2'd0,
+        2'd3: return col_odd ^ start_nibble;
+        default: return start_nibble;
+      endcase
+    end
+  endfunction
+
+  wire [63:0] src0_addr = tensor_addr(
+    src0_base, row_q, col_q, src0_elem_stride, src0_row_stride,
+    broadcast_mode[1:0], src0_dtype, src0_nibble
+  );
+  wire [63:0] src1_addr = tensor_addr(
+    src1_base, row_q, col_q, src1_elem_stride, src1_row_stride,
+    broadcast_mode[3:2], src1_dtype, src1_nibble
+  );
+  wire [63:0] src2_addr = tensor_addr(
+    src2_base, row_q, col_q, src2_elem_stride, src2_row_stride,
+    broadcast_mode[5:4], src2_dtype, src2_nibble
+  );
+  wire [63:0] dst_addr = tensor_addr(
+    dst_base, row_q, col_q, dst_elem_stride, dst_row_stride,
+    2'd0, dst_dtype, dst_nibble
+  );
+  /*
+   * The descriptor accepts 64-bit fields, while this core reports a 48-bit
+   * architectural fault address.  The validated L1 bases make these high
+   * arithmetic bits intentionally outside the implemented address space.
+   */
+  wire unused_address_upper = ^{
+    src0_addr[63:48],
+    src1_addr[63:48],
+    src2_addr[63:48],
+    dst_addr[63:48]
+  };
+  wire [47:0] mask_addr =
+    mask_base[47:0] +
+    ({16'd0, row_q} * {16'd0, mask_row_stride}) +
+    ({16'd0, col_q} * {16'd0, mask_elem_stride});
+
+  wire src0_high_nibble = tensor_nibble(
+    col_q[0], broadcast_mode[1:0], src0_dtype, src0_nibble
+  );
+  wire src1_high_nibble = tensor_nibble(
+    col_q[0], broadcast_mode[3:2], src1_dtype, src1_nibble
+  );
+  wire src2_high_nibble = tensor_nibble(
+    col_q[0], broadcast_mode[5:4], src2_dtype, src2_nibble
+  );
+  wire dst_high_nibble = tensor_nibble(
+    col_q[0], 2'd0, dst_dtype, dst_nibble
+  );
+
+  function automatic logic opcode_uses_src1(input logic [7:0] opcode);
+    case (opcode)
+      NPU_VECTOR_ADD,
+      NPU_VECTOR_SUB,
+      NPU_VECTOR_MUL,
+      NPU_VECTOR_MAX,
+      NPU_VECTOR_MIN,
+      NPU_VECTOR_CMP,
+      NPU_VECTOR_SELECT,
+      NPU_VECTOR_FMA: return 1'b1;
+      default: return 1'b0;
+    endcase
+  endfunction
+
+  function automatic logic opcode_uses_src2(input logic [7:0] opcode);
+    return opcode == NPU_VECTOR_FMA;
+  endfunction
+
+  function automatic logic opcode_known(input logic [7:0] opcode);
+    return opcode >= NPU_VECTOR_ADD && opcode <= NPU_VECTOR_RELU;
+  endfunction
+
+  function automatic logic element_crosses_beat(
+    input logic [2:0] byte_lane,
+    input logic [1:0] dtype
+  );
+    return ((dtype == NPU_DTYPE_INT32) && (byte_lane > 3'd4)) ||
+           ((dtype == NPU_DTYPE_INT16) && (byte_lane > 3'd6));
+  endfunction
+
+  task automatic fail_task(
+    input logic [7:0] fail_status,
+    input logic [47:0] fail_addr
+  );
+    begin
+      status_q <= fail_status;
+      fault_addr_q <= fail_addr;
+      state_q <= ST_DONE;
+    end
+  endtask
+
+  always_comb begin
+    task_ready_o = (state_q == ST_IDLE);
+    done_valid_o = (state_q == ST_DONE);
+    done_status_o = status_q;
+    done_fault_addr_o = fault_addr_q;
+    done_progress_o = progress_q;
+
+    l1_req_valid_o = 1'b0;
+    l1_req_write_o = 1'b0;
+    l1_req_addr_o = 20'd0;
+    l1_req_wdata_o = 64'd0;
+    l1_req_wstrb_o = 8'd0;
+    l1_rsp_ready_o = 1'b0;
+
+    case (state_q)
+      ST_MASK_REQ: begin
+        l1_req_valid_o = 1'b1;
+        l1_req_addr_o = {mask_addr[19:3], 3'b000};
+      end
+      ST_SRC0_REQ: begin
+        l1_req_valid_o = 1'b1;
+        l1_req_addr_o = {src0_addr[19:3], 3'b000};
+      end
+      ST_SRC1_REQ: begin
+        l1_req_valid_o = 1'b1;
+        l1_req_addr_o = {src1_addr[19:3], 3'b000};
+      end
+      ST_SRC2_REQ: begin
+        l1_req_valid_o = 1'b1;
+        l1_req_addr_o = {src2_addr[19:3], 3'b000};
+      end
+      ST_KEEP_REQ,
+      ST_RMW_REQ: begin
+        l1_req_valid_o = 1'b1;
+        l1_req_addr_o = {dst_addr[19:3], 3'b000};
+      end
+      ST_WRITE_REQ: begin
+        l1_req_valid_o = 1'b1;
+        l1_req_write_o = 1'b1;
+        l1_req_addr_o = {dst_addr[19:3], 3'b000};
+        l1_req_wdata_o = store_element_data(
+          rmw_beat_q, result_q[31:0], dst_addr[2:0],
+          dst_high_nibble, dst_dtype
+        );
+        l1_req_wstrb_o = store_element_strb(dst_addr[2:0], dst_dtype);
+      end
+      ST_MASK_RSP,
+      ST_SRC0_RSP,
+      ST_SRC1_RSP,
+      ST_SRC2_RSP,
+      ST_KEEP_RSP,
+      ST_RMW_RSP,
+      ST_WRITE_RSP: l1_rsp_ready_o = 1'b1;
+      default: begin end
+    endcase
+  end
+
+  always_ff @(posedge clk_i or negedge reset_n) begin
+    logic signed [63:0] arithmetic_result;
+    logic compare_result;
+    logic overflow;
+    if (!reset_n) begin
+      state_q <= ST_IDLE;
+      desc_q <= '0;
+      opcode_q <= '0;
+      row_q <= '0;
+      col_q <= '0;
+      src0_value_q <= '0;
+      src1_value_q <= '0;
+      src2_value_q <= '0;
+      result_q <= '0;
+      rmw_beat_q <= '0;
+      mask_value_q <= 1'b1;
+      status_q <= NPU_STATUS_SUCCESS;
+      fault_addr_q <= '0;
+      progress_q <= 64'd0;
+    end else begin
+      case (state_q)
+        ST_IDLE: begin
+          status_q <= NPU_STATUS_SUCCESS;
+          fault_addr_q <= 48'd0;
+          progress_q <= 64'd0;
+          if (task_valid_i) begin
+            desc_q <= desc_i;
+            opcode_q <= opcode_i;
+            state_q <= ST_CHECK;
+          end
+        end
+
+        ST_CHECK: begin
+          if (!opcode_known(opcode_q))
+            fail_task(NPU_STATUS_ILLEGAL_OPCODE, 48'd0);
+          else if (desc_version != 8'h01 || desc_type != 8'h03 ||
+                   desc_bytes != 16'd192)
+            fail_task(NPU_STATUS_BAD_DESC, 48'd0);
+          else if (!dtype_valid(src0_dtype) || !dtype_valid(src1_dtype) ||
+                   !dtype_valid(src2_dtype) || !dtype_valid(dst_dtype) ||
+                   numeric_cfg[9:8] != 2'd0 ||
+                   numeric_cfg[31:17] != 15'd0)
+            fail_task(NPU_STATUS_BAD_DESC, 48'd0);
+          else if (vector_flags[31:4] != 28'd0 ||
+                   broadcast_mode[7:6] != 2'd0 ||
+                   compare_mode > 8'd5 || overflow_mode > 8'd2 ||
+                   mask_mode > 8'd1 ||
+                   desc_q[16'h7c * 8 + 7 -: 7] != 7'd0 ||
+                   desc_q[16'h7d * 8 + 7 -: 7] != 7'd0 ||
+                   desc_q[16'h7e * 8 + 7 -: 7] != 7'd0 ||
+                   desc_q[16'h7f * 8 + 7 -: 7] != 7'd0)
+            fail_task(NPU_STATUS_BAD_DESC, 48'd0);
+          else if ((rows == 0 || length == 0) &&
+                   valid_length != 0)
+            fail_task(NPU_STATUS_BAD_SHAPE, 48'd0);
+          else if (rows != 0 && length != 0 &&
+                   (valid_length == 0 || valid_length > length))
+            fail_task(NPU_STATUS_BAD_SHAPE, 48'd0);
+          else if (dst_nibble != 1'b0)
+            fail_task(NPU_STATUS_BAD_DESC, dst_base[47:0]);
+          else if (src0_base[63:20] != 0 || dst_base[63:20] != 0 ||
+                   (opcode_uses_src1(opcode_q) && !src1_from_scalar0 &&
+                    src1_base[63:20] != 0) ||
+                   (opcode_uses_src2(opcode_q) && !src2_from_scalar1 &&
+                    src2_base[63:20] != 0) ||
+                   (mask_enable && mask_base[63:20] != 0))
+            fail_task(NPU_STATUS_ADDR_FAULT, 48'd0);
+          else if ((mask_enable && mask_mode != 8'd1) ||
+                   (!mask_enable && mask_mode != 8'd0) ||
+                   (mask_enable &&
+                    (mask_elem_stride != 32'd1 ||
+                     (rows > 1 && mask_row_stride == 0))))
+            fail_task(NPU_STATUS_BAD_DESC, 48'd0);
+          else if ((opcode_q == NPU_VECTOR_ADD ||
+                    opcode_q == NPU_VECTOR_SUB ||
+                    opcode_q == NPU_VECTOR_MAX ||
+                    opcode_q == NPU_VECTOR_MIN ||
+                    opcode_q == NPU_VECTOR_SELECT) &&
+                   (src0_dtype != src1_dtype || dst_dtype != src0_dtype))
+            fail_task(NPU_STATUS_DTYPE_UNSUPPORTED, 48'd0);
+          else if (opcode_q == NPU_VECTOR_CMP &&
+                   (src0_dtype != src1_dtype ||
+                    dst_dtype != NPU_DTYPE_INT8))
+            fail_task(NPU_STATUS_DTYPE_UNSUPPORTED, 48'd0);
+          else if ((opcode_q == NPU_VECTOR_MUL ||
+                    opcode_q == NPU_VECTOR_FMA) &&
+                   ((src0_dtype == NPU_DTYPE_INT32) ||
+                    (src1_dtype == NPU_DTYPE_INT32) ||
+                    dst_dtype != NPU_DTYPE_INT32 ||
+                    (opcode_q == NPU_VECTOR_FMA &&
+                     src2_dtype != NPU_DTYPE_INT32)))
+            fail_task(NPU_STATUS_DTYPE_UNSUPPORTED, 48'd0);
+          else if ((opcode_q == NPU_VECTOR_CLAMP ||
+                    opcode_q == NPU_VECTOR_RELU) &&
+                   dst_dtype != src0_dtype)
+            fail_task(NPU_STATUS_DTYPE_UNSUPPORTED, 48'd0);
+          else if (opcode_q == NPU_VECTOR_CLAMP && scalar0 > scalar1)
+            fail_task(NPU_STATUS_BAD_DESC, 48'd0);
+          else if (rows == 0 || length == 0) begin
+            status_q <= NPU_STATUS_SUCCESS;
+            state_q <= ST_DONE;
+          end else begin
+            row_q <= 32'd0;
+            col_q <= 32'd0;
+            mask_value_q <= 1'b1;
+            state_q <= mask_enable ? ST_MASK_REQ : ST_SRC0_REQ;
+          end
+        end
+
+        ST_MASK_REQ:
+          if (l1_req_ready_i)
+            state_q <= ST_MASK_RSP;
+
+        ST_MASK_RSP:
+          if (l1_rsp_valid_i) begin
+            if (l1_rsp_status_i != 0)
+              fail_task(memory_status_to_task(l1_rsp_status_i),
+                        mask_addr[47:0]);
+            else begin
+              mask_value_q <=
+                l1_rsp_rdata_i[mask_addr[2:0] * 8 +: 8] != 8'd0;
+              if (opcode_q == NPU_VECTOR_SELECT)
+                state_q <= ST_SRC0_REQ;
+              else if (l1_rsp_rdata_i[
+                         mask_addr[2:0] * 8 +: 8
+                       ] == 8'd0) begin
+                if (mask_false_keep_dst)
+                  state_q <= ST_KEEP_REQ;
+                else begin
+                  result_q <= 64'sd0;
+                  rmw_beat_q <= 64'd0;
+                  state_q <= (dst_dtype == NPU_DTYPE_INT4 &&
+                              dst_high_nibble) ? ST_RMW_REQ : ST_WRITE_REQ;
+                end
+              end else
+                state_q <= ST_SRC0_REQ;
+            end
+          end
+
+        ST_SRC0_REQ:
+          if (element_crosses_beat(src0_addr[2:0], src0_dtype))
+            fail_task(NPU_STATUS_ADDR_FAULT, src0_addr[47:0]);
+          else if (l1_req_ready_i)
+            state_q <= ST_SRC0_RSP;
+
+        ST_SRC0_RSP:
+          if (l1_rsp_valid_i) begin
+            if (l1_rsp_status_i != 0)
+              fail_task(memory_status_to_task(l1_rsp_status_i),
+                        src0_addr[47:0]);
+            else begin
+              src0_value_q <= load_element(
+                l1_rsp_rdata_i, src0_addr[2:0], src0_high_nibble, src0_dtype
+              );
+              if (opcode_uses_src1(opcode_q)) begin
+                if (src1_from_scalar0) begin
+                  src1_value_q <= {{32{scalar0[31]}}, scalar0};
+                  if (opcode_uses_src2(opcode_q)) begin
+                    if (src2_from_scalar1) begin
+                      src2_value_q <= {{32{scalar1[31]}}, scalar1};
+                      state_q <= ST_EXEC;
+                    end else
+                      state_q <= ST_SRC2_REQ;
+                  end else
+                    state_q <= ST_EXEC;
+                end else
+                  state_q <= ST_SRC1_REQ;
+              end else
+                state_q <= ST_EXEC;
+            end
+          end
+
+        ST_SRC1_REQ:
+          if (element_crosses_beat(src1_addr[2:0], src1_dtype))
+            fail_task(NPU_STATUS_ADDR_FAULT, src1_addr[47:0]);
+          else if (l1_req_ready_i)
+            state_q <= ST_SRC1_RSP;
+
+        ST_SRC1_RSP:
+          if (l1_rsp_valid_i) begin
+            if (l1_rsp_status_i != 0)
+              fail_task(memory_status_to_task(l1_rsp_status_i),
+                        src1_addr[47:0]);
+            else begin
+              src1_value_q <= load_element(
+                l1_rsp_rdata_i, src1_addr[2:0], src1_high_nibble, src1_dtype
+              );
+              if (opcode_uses_src2(opcode_q)) begin
+                if (src2_from_scalar1) begin
+                  src2_value_q <= {{32{scalar1[31]}}, scalar1};
+                  state_q <= ST_EXEC;
+                end else
+                  state_q <= ST_SRC2_REQ;
+              end else
+                state_q <= ST_EXEC;
+            end
+          end
+
+        ST_SRC2_REQ:
+          if (element_crosses_beat(src2_addr[2:0], src2_dtype))
+            fail_task(NPU_STATUS_ADDR_FAULT, src2_addr[47:0]);
+          else if (l1_req_ready_i)
+            state_q <= ST_SRC2_RSP;
+
+        ST_SRC2_RSP:
+          if (l1_rsp_valid_i) begin
+            if (l1_rsp_status_i != 0)
+              fail_task(memory_status_to_task(l1_rsp_status_i),
+                        src2_addr[47:0]);
+            else begin
+              src2_value_q <= load_element(
+                l1_rsp_rdata_i, src2_addr[2:0], src2_high_nibble, src2_dtype
+              );
+              state_q <= ST_EXEC;
+            end
+          end
+
+        ST_KEEP_REQ:
+          if (element_crosses_beat(dst_addr[2:0], dst_dtype))
+            fail_task(NPU_STATUS_ADDR_FAULT, dst_addr[47:0]);
+          else if (l1_req_ready_i)
+            state_q <= ST_KEEP_RSP;
+
+        ST_KEEP_RSP:
+          if (l1_rsp_valid_i) begin
+            if (l1_rsp_status_i != 0)
+              fail_task(memory_status_to_task(l1_rsp_status_i),
+                        dst_addr[47:0]);
+            else begin
+              result_q <= load_element(
+                l1_rsp_rdata_i, dst_addr[2:0], dst_high_nibble, dst_dtype
+              );
+              rmw_beat_q <= l1_rsp_rdata_i;
+              state_q <= ST_WRITE_REQ;
+            end
+          end
+
+        ST_EXEC: begin
+          arithmetic_result = 64'sd0;
+          compare_result = 1'b0;
+          case (opcode_q)
+            NPU_VECTOR_ADD:
+              arithmetic_result = src0_value_q + src1_value_q;
+            NPU_VECTOR_SUB:
+              arithmetic_result = src0_value_q - src1_value_q;
+            NPU_VECTOR_MUL:
+              arithmetic_result = src0_value_q * src1_value_q;
+            NPU_VECTOR_FMA:
+              arithmetic_result =
+                src0_value_q * src1_value_q + src2_value_q;
+            NPU_VECTOR_MAX:
+              arithmetic_result =
+                src0_value_q > src1_value_q ? src0_value_q : src1_value_q;
+            NPU_VECTOR_MIN:
+              arithmetic_result =
+                src0_value_q < src1_value_q ? src0_value_q : src1_value_q;
+            NPU_VECTOR_CMP: begin
+              case (compare_mode)
+                8'd0: compare_result = src0_value_q == src1_value_q;
+                8'd1: compare_result = src0_value_q != src1_value_q;
+                8'd2: compare_result = src0_value_q < src1_value_q;
+                8'd3: compare_result = src0_value_q <= src1_value_q;
+                8'd4: compare_result = src0_value_q > src1_value_q;
+                default: compare_result = src0_value_q >= src1_value_q;
+              endcase
+              arithmetic_result = compare_result ? 64'sd1 : 64'sd0;
+            end
+            NPU_VECTOR_SELECT:
+              arithmetic_result =
+                mask_value_q ? src1_value_q : src0_value_q;
+            NPU_VECTOR_CLAMP:
+              if (src0_value_q <
+                  $signed({{32{scalar0[31]}}, scalar0}))
+                arithmetic_result =
+                  $signed({{32{scalar0[31]}}, scalar0});
+              else if (src0_value_q >
+                       $signed({{32{scalar1[31]}}, scalar1}))
+                arithmetic_result =
+                  $signed({{32{scalar1[31]}}, scalar1});
+              else
+                arithmetic_result = src0_value_q;
+            default:
+              arithmetic_result =
+                src0_value_q < 0 ? 64'sd0 : src0_value_q;
+          endcase
+
+          overflow = arithmetic_result < dtype_min(dst_dtype) ||
+                     arithmetic_result > dtype_max(dst_dtype);
+          if (overflow && overflow_mode == 8'd1)
+            fail_task(NPU_STATUS_NUMERIC_EXCEPTION, dst_addr[47:0]);
+          else begin
+            if (overflow_mode == 8'd2)
+              result_q <= wrap_to_dtype(
+                arithmetic_result[31:0], dst_dtype
+              );
+            else
+              result_q <= clip_to_dtype(arithmetic_result, dst_dtype);
+            rmw_beat_q <= 64'd0;
+            if (element_crosses_beat(dst_addr[2:0], dst_dtype))
+              fail_task(NPU_STATUS_ADDR_FAULT, dst_addr[47:0]);
+            else
+              state_q <= (dst_dtype == NPU_DTYPE_INT4 &&
+                          dst_high_nibble) ? ST_RMW_REQ : ST_WRITE_REQ;
+          end
+        end
+
+        ST_RMW_REQ:
+          if (l1_req_ready_i)
+            state_q <= ST_RMW_RSP;
+
+        ST_RMW_RSP:
+          if (l1_rsp_valid_i) begin
+            if (l1_rsp_status_i != 0)
+              fail_task(memory_status_to_task(l1_rsp_status_i),
+                        dst_addr[47:0]);
+            else begin
+              rmw_beat_q <= l1_rsp_rdata_i;
+              state_q <= ST_WRITE_REQ;
+            end
+          end
+
+        ST_WRITE_REQ:
+          if (l1_req_ready_i)
+            state_q <= ST_WRITE_RSP;
+
+        ST_WRITE_RSP:
+          if (l1_rsp_valid_i) begin
+            if (l1_rsp_status_i != 0)
+              fail_task(memory_status_to_task(l1_rsp_status_i),
+                        dst_addr[47:0]);
+            else begin
+              progress_q <= progress_q + 1;
+              if (col_q + 1 <
+                     ((row_q + 1 == rows) ? valid_length : length)) begin
+                col_q <= col_q + 1;
+                mask_value_q <= 1'b1;
+                state_q <= mask_enable ? ST_MASK_REQ : ST_SRC0_REQ;
+              end else if (row_q + 1 < rows) begin
+                row_q <= row_q + 1;
+                col_q <= 32'd0;
+                mask_value_q <= 1'b1;
+                state_q <= mask_enable ? ST_MASK_REQ : ST_SRC0_REQ;
+              end else begin
+                status_q <= NPU_STATUS_SUCCESS;
+                state_q <= ST_DONE;
+              end
+            end
+          end
+
+        ST_DONE:
+          if (done_ready_i)
+            state_q <= ST_IDLE;
+
+        default: state_q <= ST_IDLE;
+      endcase
+    end
+  end
+
+endmodule

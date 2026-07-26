@@ -25,8 +25,8 @@ extern "C" {
 #define NPU_LSC_REG_WORK_BASE UINT16_C(0x0068)
 #define NPU_LSC_REG_OUTPUT_BASE UINT16_C(0x0070)
 #define NPU_LSC_REG_KV_BASE UINT16_C(0x0078)
-#define NPU_LSC_REG_DDR_LOCAL_BASE UINT16_C(0x0080)
-#define NPU_LSC_REG_DDR_LOCAL_LIMIT UINT16_C(0x0088)
+#define NPU_LSC_REG_M_AXI_ADDR_BASE UINT16_C(0x0080)
+#define NPU_LSC_REG_M_AXI_ADDR_LIMIT UINT16_C(0x0088)
 #define NPU_LSC_REG_TBU_STREAM_ID UINT16_C(0x0090)
 #define NPU_LSC_REG_IRQ_STATUS UINT16_C(0x00a0)
 #define NPU_LSC_REG_IRQ_MASK UINT16_C(0x00a8)
@@ -260,8 +260,8 @@ typedef struct {
     uint64_t work_base;
     uint64_t output_base;
     uint64_t kv_base;
-    uint64_t ddr_local_base;
-    uint64_t ddr_local_limit;
+    uint64_t m_axi_addr_base;
+    uint64_t m_axi_addr_limit;
     uint16_t tbu_stream_id;
     uint16_t tbu_substream_id;
     uint32_t timeout_cycles[NPU_LSC_TIMEOUT_CLASS_COUNT];
@@ -290,8 +290,8 @@ typedef struct {
     uint64_t work_base;
     uint64_t output_base;
     uint64_t kv_base;
-    uint64_t ddr_local_base;
-    uint64_t ddr_local_limit;
+    uint64_t m_axi_addr_base;
+    uint64_t m_axi_addr_limit;
     uint16_t tbu_stream_id;
     uint16_t tbu_substream_id;
 

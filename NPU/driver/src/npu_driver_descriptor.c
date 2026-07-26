@@ -258,6 +258,9 @@ int npu_drv_desc_matrix_encode(void *descriptor,
         descriptor_bytes != NPU_DRV_MATRIX_DESC_BYTES ||
         fields->batch_count == 0u ||
         (fields->flags & 0xffffff00u) != 0u ||
+        fields->a_pack_format > NPU_DRV_PACK_TILED_INT16 ||
+        fields->b_pack_format > NPU_DRV_PACK_TILED_INT16 ||
+        fields->c_pack_format > NPU_DRV_PACK_TILED_INT16 ||
         fields->overflow_mode > 2u ||
         fields->activation_mode > 1u ||
         fields->requant_mode > 2u ||

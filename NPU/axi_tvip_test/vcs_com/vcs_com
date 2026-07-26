@@ -8,8 +8,10 @@
 +define+UVM_DISABLE_AUTO_ITEM_RECORDING
 +define+VCS
 -kdb
-+vcs+lic+wait -notice +nospecify +notimingcheck
--CFLAGS "-std=c99" -DVCS -pcmakeprof -debug_acc+all+dmptf+pp -debug_region+cell+encrypt
++vcs+lic+wait
+-notice
+-debug_acc+all+dmptf+pp
+-debug_region+cell+encrypt
 -l vlogan.log
 
 +incdir+/home/yusen/synopsys_2024/vcs/W-2024.09-SP1/etc/uvm-1.2/src
@@ -23,12 +25,9 @@
 -full64
 -lca
 -debug_access+all
--top myip
--Mupdate
--pcmakeprof
--partcomp
--fastpartcomp=j4
--l vcs_elb.log
+-top npu_axi_cmd_fifo_slave
+-top npu_single_core_top
+-l vcs_rtl_elb.log
 -CFLAGS -DVCS +plusarg_save
 
 [VCS_TEST_ELAB]
@@ -36,9 +35,6 @@
 -lca
 -debug_access+all
 -top axi_tvip_tb
--Mupdate
--pcmakeprof
--partcomp /home/yusen/synopsys_2024/vcs/W-2024.09-SP1/etc/uvm-1.2/dpi/uvm_dpi.cc
--fastpartcomp=j4
--l vcs_elb.log
+/home/yusen/synopsys_2024/vcs/W-2024.09-SP1/etc/uvm-1.2/dpi/uvm_dpi.cc
+-l vcs_test_elb.log
 -CFLAGS -DVCS +plusarg_save

@@ -51,9 +51,9 @@ class CommandTests(unittest.TestCase):
 
 
 class AssemblerTests(unittest.TestCase):
-    def test_example_int16_and_dependency(self) -> None:
+    def test_example_int8_and_dependency(self) -> None:
         document = json.loads(
-            (ROOT / "examples" / "int16_regression.json").read_text(
+            (ROOT / "examples" / "int8_regression.json").read_text(
                 encoding="utf-8"
             )
         )
@@ -69,50 +69,76 @@ class AssemblerTests(unittest.TestCase):
         self.assertEqual(operations[1].wait_events, (0, 0xFFF))
         dma_numeric = struct.unpack_from("<I", descriptors, 0x38)[0]
         matrix_numeric = struct.unpack_from("<I", descriptors, 0x100 + 0x38)[0]
+        self.assertEqual(dma_numeric & 0x3, 1)
+        self.assertEqual((dma_numeric >> 6) & 0x3, 1)
+        self.assertEqual(matrix_numeric & 0x3, 1)
+        self.assertEqual((matrix_numeric >> 2) & 0x3, 1)
+        self.assertEqual((matrix_numeric >> 6) & 0x3, 1)
+
+    def test_example_int16_uses_cmodel_dtype_and_pack_codes(self) -> None:
+        document = json.loads(
+            (ROOT / "examples" / "int16_regression.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        operations, commands, descriptors = npu_assembler.compile_document(
+            document
+        )
+        self.assertEqual(len(operations), 2)
+        self.assertEqual(len(commands), 32)
+        self.assertEqual(len(descriptors), 512)
+        dma_numeric = struct.unpack_from("<I", descriptors, 0x38)[0]
+        matrix_numeric = struct.unpack_from(
+            "<I", descriptors, 0x100 + 0x38
+        )[0]
         self.assertEqual(dma_numeric & 0x3, 3)
         self.assertEqual((dma_numeric >> 6) & 0x3, 3)
         self.assertEqual(matrix_numeric & 0x3, 3)
         self.assertEqual((matrix_numeric >> 2) & 0x3, 3)
         self.assertEqual((matrix_numeric >> 6) & 0x3, 3)
+        self.assertEqual(descriptors[0x100 + 0x90], 5)
+        self.assertEqual(descriptors[0x100 + 0x91], 6)
+        self.assertEqual(descriptors[0x100 + 0x92], 5)
 
     def test_artifacts_and_check_are_deterministic(self) -> None:
-        source = ROOT / "examples" / "int16_regression.json"
-        with tempfile.TemporaryDirectory() as temporary:
-            output = Path(temporary)
-            self.assertEqual(
-                npu_assembler.main(
-                    [
-                        str(source),
-                        "--output-dir",
-                        str(output),
-                        "--emit-c-header",
-                    ]
-                ),
-                0,
-            )
-            before = {
-                path.name: path.read_bytes()
-                for path in output.iterdir()
-                if path.is_file()
-            }
-            self.assertEqual(
-                npu_assembler.main(
-                    [
-                        str(source),
-                        "--output-dir",
-                        str(output),
-                        "--emit-c-header",
-                        "--check",
-                    ]
-                ),
-                0,
-            )
-            after = {
-                path.name: path.read_bytes()
-                for path in output.iterdir()
-                if path.is_file()
-            }
-            self.assertEqual(before, after)
+        for source_name in ("int8_regression.json", "int16_regression.json"):
+            with self.subTest(source=source_name), tempfile.TemporaryDirectory() as temporary:
+                source = ROOT / "examples" / source_name
+                output = Path(temporary)
+                self.assertEqual(
+                    npu_assembler.main(
+                        [
+                            str(source),
+                            "--output-dir",
+                            str(output),
+                            "--emit-c-header",
+                        ]
+                    ),
+                    0,
+                )
+                before = {
+                    path.name: path.read_bytes()
+                    for path in output.iterdir()
+                    if path.is_file()
+                }
+                self.assertEqual(
+                    npu_assembler.main(
+                        [
+                            str(source),
+                            "--output-dir",
+                            str(output),
+                            "--emit-c-header",
+                            "--check",
+                        ]
+                    ),
+                    0,
+                )
+                after = {
+                    path.name: path.read_bytes()
+                    for path in output.iterdir()
+                    if path.is_file()
+                }
+                self.assertEqual(before, after)
 
     def test_forward_dependency_is_rejected(self) -> None:
         document = {
@@ -139,6 +165,37 @@ class AssemblerTests(unittest.TestCase):
             npu_assembler.CompileError, "earlier operation"
         ):
             npu_assembler.compile_document(document)
+
+    def test_unknown_dtype_name_is_rejected(self) -> None:
+        document = json.loads(
+            (ROOT / "examples" / "int8_regression.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        document["tensors"]["input_ddr"]["dtype"] = "int64"
+        with self.assertRaisesRegex(
+            npu_assembler.CompileError, "unsupported value"
+        ):
+            npu_assembler.compile_document(document)
+
+    def test_matrix_pack_code_must_match_dtype(self) -> None:
+        for source_name, code in (
+            ("int8_regression.json", 5),
+            ("int16_regression.json", 7),
+        ):
+            with self.subTest(code=code):
+                document = json.loads(
+                    (ROOT / "examples" / source_name).read_text(
+                        encoding="utf-8"
+                    )
+                )
+                document["operations"][1]["descriptor"]["matrix"][
+                    "a_pack_format"
+                ] = code
+                with self.assertRaisesRegex(
+                    npu_assembler.CompileError, "does not match dtype"
+                ):
+                    npu_assembler.compile_document(document)
 
 
 if __name__ == "__main__":

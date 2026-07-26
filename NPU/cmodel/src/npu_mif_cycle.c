@@ -29,12 +29,9 @@ static npu_mif_cycle_config_t mif_effective_config(
     npu_mif_cycle_config_t config = model->config;
 
     if (inputs->config_valid != 0u) {
-        config.ddr_enable = inputs->ddr_enable;
-        config.ddr_base = inputs->ddr_base;
-        config.ddr_limit = inputs->ddr_limit;
-        config.ext_enable = inputs->ext_enable;
-        config.ext_base = inputs->ext_base;
-        config.ext_limit = inputs->ext_limit;
+        config.system_addr_enable = inputs->system_addr_enable;
+        config.system_addr_base = inputs->system_addr_base;
+        config.system_addr_limit = inputs->system_addr_limit;
         config.bypass_enable = inputs->bypass_enable;
         config.bypass_base = inputs->bypass_base;
         config.bypass_limit = inputs->bypass_limit;
@@ -47,26 +44,18 @@ static npu_mif_cycle_config_t mif_effective_config(
 uint8_t npu_mif_cycle_config_valid(
     const npu_mif_cycle_config_t *config)
 {
-    uint8_t ddr_ext_overlap;
-
     if (config == NULL ||
-        config->ddr_enable > 1u ||
-        config->ext_enable > 1u ||
+        config->system_addr_enable > 1u ||
         config->bypass_enable > 1u ||
-        (config->ddr_base & ~NPU_MIF_PA_MASK) != 0u ||
-        (config->ddr_limit & ~NPU_MIF_PA_MASK) != 0u ||
-        (config->ext_base & ~NPU_MIF_PA_MASK) != 0u ||
-        (config->ext_limit & ~NPU_MIF_PA_MASK) != 0u ||
+        (config->system_addr_base & ~NPU_MIF_PA_MASK) != 0u ||
+        (config->system_addr_limit & ~NPU_MIF_PA_MASK) != 0u ||
         (config->bypass_base & ~NPU_MIF_PA_MASK) != 0u ||
         (config->bypass_limit & ~NPU_MIF_PA_MASK) != 0u ||
-        ((config->ddr_base | config->ddr_limit |
-          config->ext_base | config->ext_limit |
+        ((config->system_addr_base | config->system_addr_limit |
           config->bypass_base | config->bypass_limit) &
          UINT64_C(7)) != 0u ||
-        (config->ddr_enable != 0u &&
-         config->ddr_base > config->ddr_limit) ||
-        (config->ext_enable != 0u &&
-         config->ext_base > config->ext_limit) ||
+        (config->system_addr_enable != 0u &&
+         config->system_addr_base > config->system_addr_limit) ||
         (config->bypass_enable != 0u &&
          config->bypass_base > config->bypass_limit) ||
         config->axi_cache_device > 0x0fu ||
@@ -74,13 +63,7 @@ uint8_t npu_mif_cycle_config_valid(
         config->axi_cache_normal_cacheable > 0x0fu) {
         return 0u;
     }
-
-    ddr_ext_overlap =
-        config->ddr_enable != 0u &&
-        config->ext_enable != 0u &&
-        config->ddr_base <= config->ext_limit &&
-        config->ext_base <= config->ddr_limit;
-    return ddr_ext_overlap == 0u ? 1u : 0u;
+    return 1u;
 }
 
 static uint8_t mif_request_tag_active(const npu_mif_cycle_t *model,
@@ -171,7 +154,6 @@ static uint8_t mif_allocate_axi_id(npu_mif_cycle_t *model,
 
 static uint8_t mif_find_axi_id_entry(
     const npu_mif_cycle_t *model,
-    uint8_t port,
     uint8_t axi_id)
 {
     uint8_t index;
@@ -181,26 +163,7 @@ static uint8_t mif_find_axi_id_entry(
         const npu_mif_axi_entry_t *entry =
             &model->axi_entries[index];
         if (entry->valid != 0u &&
-            entry->port == port &&
             entry->axi_id == axi_id) {
-            return index;
-        }
-    }
-    return NPU_MIF_INVALID_SLOT;
-}
-
-static uint8_t mif_find_axi_id_any_port(
-    const npu_mif_cycle_t *model,
-    uint8_t axi_id)
-{
-    uint8_t index;
-
-    for (index = 0u; index < NPU_MIF_MAX_AXI_OUTSTANDING;
-         index++) {
-        const npu_mif_axi_entry_t *entry =
-            &model->axi_entries[index];
-
-        if (entry->valid != 0u && entry->axi_id == axi_id) {
             return index;
         }
     }
@@ -392,20 +355,16 @@ static uint8_t mif_axi_request_identity(
 static void mif_mark_axi_protocol_error(
     npu_mif_cycle_t *model,
     uint8_t kind,
-    uint8_t port,
     uint8_t axi_id,
     uint64_t addr)
 {
     uint8_t out_slot =
-        mif_find_axi_id_entry(model, port, axi_id);
+        mif_find_axi_id_entry(model, axi_id);
     uint8_t owner = NPU_MIF_INVALID_OWNER;
     uint16_t tag = axi_id;
     uint8_t has_task_identity = 0u;
     uint16_t task_id = 0u;
 
-    if (out_slot == NPU_MIF_INVALID_SLOT) {
-        out_slot = mif_find_axi_id_any_port(model, axi_id);
-    }
     if (mif_axi_request_identity(model, out_slot,
                                  &owner, &tag) != 0u) {
         const npu_mif_axi_entry_t *entry =
@@ -445,11 +404,10 @@ static void mif_fail_request(npu_mif_cycle_t *model,
     request->phase = NPU_MIF_REQ_RESPONSE_PENDING;
 }
 
-static uint8_t mif_select_port(
-                               const npu_mif_cycle_config_t *config,
-                               uint64_t paddr,
-                               uint8_t *port,
-                               uint16_t *region_beats)
+static uint8_t mif_system_region_beats(
+    const npu_mif_cycle_config_t *config,
+    uint64_t paddr,
+    uint16_t *region_beats)
 {
     uint64_t bytes;
 
@@ -458,23 +416,11 @@ static uint8_t mif_select_port(
         return 0u;
     }
 
-    if (config->ddr_enable != 0u &&
-        paddr >= config->ddr_base &&
-        paddr <= config->ddr_limit) {
-        bytes = config->ddr_limit - paddr + UINT64_C(8);
-        *port = NPU_MIF_AXI_DDR;
-        *region_beats =
-            bytes / UINT64_C(8) > UINT16_MAX
-                ? UINT16_MAX
-                : (uint16_t)(bytes / UINT64_C(8));
-        return 1u;
-    }
-
-    if (config->ext_enable != 0u &&
-        paddr >= config->ext_base &&
-        paddr <= config->ext_limit) {
-        bytes = config->ext_limit - paddr + UINT64_C(8);
-        *port = NPU_MIF_AXI_EXT;
+    if (config->system_addr_enable != 0u &&
+        paddr >= config->system_addr_base &&
+        paddr <= config->system_addr_limit) {
+        bytes =
+            config->system_addr_limit - paddr + UINT64_C(8);
         *region_beats =
             bytes / UINT64_C(8) > UINT16_MAX
                 ? UINT16_MAX
@@ -773,7 +719,6 @@ static void mif_schedule_axi(npu_mif_cycle_t *model)
         uint16_t region_beats;
         uint16_t physical_page_beats;
         uint16_t burst_beats;
-        uint8_t port;
         uint8_t out_slot;
         uint8_t axi_id;
         uint8_t *address_hold;
@@ -784,9 +729,10 @@ static void mif_schedule_axi(npu_mif_cycle_t *model)
             continue;
         }
 
-        if (mif_select_port(&request->request_config,
-                            request->next_paddr,
-                            &port, &region_beats) == 0u) {
+        if (mif_system_region_beats(
+                &request->request_config,
+                request->next_paddr,
+                &region_beats) == 0u) {
             mif_fail_request(model, request_slot,
                              NPU_STATUS_ADDR_FAULT,
                              request->next_vaddr,
@@ -797,8 +743,8 @@ static void mif_schedule_axi(npu_mif_cycle_t *model)
         }
 
         address_hold = request->write != 0u
-                           ? &model->aw_hold[port]
-                           : &model->ar_hold[port];
+                           ? &model->aw_hold
+                           : &model->ar_hold;
         if (*address_hold != NPU_MIF_INVALID_SLOT) {
             continue;
         }
@@ -835,7 +781,6 @@ static void mif_schedule_axi(npu_mif_cycle_t *model)
         (void)memset(entry, 0, sizeof(*entry));
         entry->valid = 1u;
         entry->write = request->write;
-        entry->port = port;
         entry->axi_id = axi_id;
         entry->req_slot = request_slot;
         entry->beats = burst_beats;
@@ -941,13 +886,11 @@ uint8_t npu_mif_cycle_is_idle(const npu_mif_cycle_t *model)
             return 0u;
         }
     }
-    for (index = 0u; index < NPU_MIF_AXI_PORT_COUNT; index++) {
-        if (model->aw_hold[index] != NPU_MIF_INVALID_SLOT ||
-            model->ar_hold[index] != NPU_MIF_INVALID_SLOT ||
-            model->b_entry[index].valid != 0u ||
-            model->r_entry[index].valid != 0u) {
-            return 0u;
-        }
+    if (model->aw_hold != NPU_MIF_INVALID_SLOT ||
+        model->ar_hold != NPU_MIF_INVALID_SLOT ||
+        model->b_entry.valid != 0u ||
+        model->r_entry.valid != 0u) {
+        return 0u;
     }
     for (index = 0u; index < NPU_MIF_MAX_REQUESTS; index++) {
         if (model->requests[index].valid != 0u) {
@@ -1066,11 +1009,10 @@ static void mif_fill_tbu_outputs(
 
 static void mif_fill_axi_address(
     const npu_mif_cycle_t *model,
-    uint8_t port,
     npu_mif_cycle_outputs_t *outputs)
 {
-    npu_mif_axi_outputs_t *axi = &outputs->axi[port];
-    uint8_t out_slot = model->aw_hold[port];
+    npu_mif_axi_outputs_t *axi = &outputs->axi;
+    uint8_t out_slot = model->aw_hold;
 
     if (out_slot != NPU_MIF_INVALID_SLOT) {
         const npu_mif_axi_entry_t *entry =
@@ -1091,7 +1033,7 @@ static void mif_fill_axi_address(
         axi->awvalid = 1u;
     }
 
-    out_slot = model->ar_hold[port];
+    out_slot = model->ar_hold;
     if (out_slot != NPU_MIF_INVALID_SLOT) {
         const npu_mif_axi_entry_t *entry =
             &model->axi_entries[out_slot];
@@ -1116,38 +1058,23 @@ static void mif_fill_axi_ready(
     const npu_mif_cycle_t *model,
     npu_mif_cycle_outputs_t *outputs)
 {
-    uint8_t port;
-
-    for (port = 0u; port < NPU_MIF_AXI_PORT_COUNT; port++) {
-        npu_mif_axi_outputs_t *axi_out =
-            &outputs->axi[port];
-
-        axi_out->bready =
-            model->b_entry[port].valid == 0u ? 1u : 0u;
-        axi_out->rready =
-            model->r_entry[port].valid == 0u ? 1u : 0u;
-    }
+    outputs->axi.bready =
+        model->b_entry.valid == 0u ? 1u : 0u;
+    outputs->axi.rready =
+        model->r_entry.valid == 0u ? 1u : 0u;
 }
 
 static void mif_fill_outputs(
     const npu_mif_cycle_t *model,
     npu_mif_cycle_outputs_t *outputs)
 {
-    uint8_t port;
-
     (void)memset(outputs, 0, sizeof(*outputs));
     mif_fill_owner_outputs(model, outputs);
     mif_fill_tbu_outputs(model, outputs);
-
-    for (port = 0u; port < NPU_MIF_AXI_PORT_COUNT; port++) {
-        mif_fill_axi_address(model, port, outputs);
-    }
+    mif_fill_axi_address(model, outputs);
 
     if (model->w_hold.valid != 0u) {
-        const npu_mif_axi_entry_t *entry =
-            &model->axi_entries[model->w_hold.out_slot];
-        npu_mif_axi_outputs_t *axi =
-            &outputs->axi[entry->port];
+        npu_mif_axi_outputs_t *axi = &outputs->axi;
         axi->wvalid = 1u;
         axi->wdata = model->w_hold.data;
         axi->wstrb = model->w_hold.strb;
@@ -1225,31 +1152,23 @@ static void mif_capture_axi_responses(
     const npu_mif_cycle_inputs_t *inputs,
     const npu_mif_cycle_outputs_t *outputs)
 {
-    uint8_t port;
+    const npu_mif_axi_inputs_t *axi_in = &inputs->axi;
 
-    for (port = 0u; port < NPU_MIF_AXI_PORT_COUNT; port++) {
-        const npu_mif_axi_inputs_t *axi_in =
-            &inputs->axi[port];
+    if (axi_in->bvalid != 0u &&
+        outputs->axi.bready != 0u) {
+        model->b_entry.valid = 1u;
+        model->b_entry.id = axi_in->bid;
+        model->b_entry.resp = axi_in->bresp;
+    }
 
-        if (axi_in->bvalid != 0u &&
-            outputs->axi[port].bready != 0u) {
-            npu_mif_axi_b_entry_t *entry =
-                &model->b_entry[port];
-            entry->valid = 1u;
-            entry->id = axi_in->bid;
-            entry->resp = axi_in->bresp;
-        }
-
-        if (axi_in->rvalid != 0u &&
-            outputs->axi[port].rready != 0u) {
-            npu_mif_axi_r_entry_t *entry =
-                &model->r_entry[port];
-            entry->valid = 1u;
-            entry->id = axi_in->rid;
-            entry->data = axi_in->rdata;
-            entry->resp = axi_in->rresp;
-            entry->last = axi_in->rlast != 0u ? 1u : 0u;
-        }
+    if (axi_in->rvalid != 0u &&
+        outputs->axi.rready != 0u) {
+        model->r_entry.valid = 1u;
+        model->r_entry.id = axi_in->rid;
+        model->r_entry.data = axi_in->rdata;
+        model->r_entry.resp = axi_in->rresp;
+        model->r_entry.last =
+            axi_in->rlast != 0u ? 1u : 0u;
     }
 }
 
@@ -1279,16 +1198,7 @@ static void mif_process_r_entries(
     npu_mif_cycle_t *model,
     const npu_mif_cycle_inputs_t *inputs)
 {
-    uint8_t owner_claimed[NPU_MIF_OWNER_COUNT] = {0u, 0u};
-    uint8_t offset;
-
-    for (offset = 0u; offset < NPU_MIF_AXI_PORT_COUNT;
-         offset++) {
-        uint8_t port =
-            (uint8_t)((model->r_entry_rr_port + offset) %
-                      NPU_MIF_AXI_PORT_COUNT);
-        npu_mif_axi_r_entry_t *r_entry =
-            &model->r_entry[port];
+        npu_mif_axi_r_entry_t *r_entry = &model->r_entry;
         uint8_t out_slot;
         npu_mif_axi_entry_t *entry;
         npu_mif_request_entry_t *request;
@@ -1305,17 +1215,17 @@ static void mif_process_r_entries(
         uint64_t beat_paddr;
 
         if (r_entry->valid == 0u) {
-            continue;
+            return;
         }
 
         out_slot =
-            mif_find_axi_id_entry(model, port, r_entry->id);
+            mif_find_axi_id_entry(model, r_entry->id);
         if (out_slot == NPU_MIF_INVALID_SLOT) {
             mif_mark_axi_protocol_error(
                 model, NPU_MIF_PROTOCOL_AXI_RID,
-                port, r_entry->id, 0u);
+                r_entry->id, 0u);
             (void)memset(r_entry, 0, sizeof(*r_entry));
-            continue;
+            return;
         }
 
         entry = &model->axi_entries[out_slot];
@@ -1327,23 +1237,22 @@ static void mif_process_r_entries(
         if (entry->write != 0u || entry->addr_sent == 0u) {
             mif_mark_axi_protocol_error(
                 model, NPU_MIF_PROTOCOL_AXI_RID,
-                port, r_entry->id, entry->vaddr);
+                r_entry->id, entry->vaddr);
             (void)memset(r_entry, 0, sizeof(*r_entry));
-            continue;
+            return;
         }
         if (mif_checked_axi_request(model, out_slot,
                                     &request) == 0u) {
             mif_mark_axi_protocol_error(
                 model, NPU_MIF_PROTOCOL_AXI_ENTRY,
-                port, r_entry->id, entry->vaddr);
+                r_entry->id, entry->vaddr);
             (void)memset(r_entry, 0, sizeof(*r_entry));
-            continue;
+            return;
         }
 
         owner = request->owner;
-        if (owner_claimed[owner] != 0u ||
-            mif_response_capacity(model, inputs, owner) == 0u) {
-            continue;
+        if (mif_response_capacity(model, inputs, owner) == 0u) {
+            return;
         }
 
         hold = &model->rsp_hold[owner];
@@ -1363,7 +1272,7 @@ static void mif_process_r_entries(
         if (r_entry->resp > NPU_MIF_AXI_RESP_DECERR) {
             mif_mark_axi_protocol_error(
                 model, NPU_MIF_PROTOCOL_AXI_RRESP,
-                port, r_entry->id, beat_vaddr);
+                r_entry->id, beat_vaddr);
         }
         if (r_entry->resp != NPU_MIF_AXI_RESP_OKAY &&
             request->status == NPU_STATUS_SUCCESS) {
@@ -1435,11 +1344,6 @@ static void mif_process_r_entries(
         }
 
         (void)memset(r_entry, 0, sizeof(*r_entry));
-        owner_claimed[owner] = 1u;
-        model->r_entry_rr_port =
-            (uint8_t)((port + 1u) %
-                      NPU_MIF_AXI_PORT_COUNT);
-    }
 }
 
 static uint8_t mif_fail_early_write_response(
@@ -1482,9 +1386,8 @@ static uint8_t mif_fail_early_write_response(
                      sizeof(model->w_input));
     }
     mif_write_fifo_remove(model, out_slot);
-    if (entry.port < NPU_MIF_AXI_PORT_COUNT &&
-        model->aw_hold[entry.port] == out_slot) {
-        model->aw_hold[entry.port] = NPU_MIF_INVALID_SLOT;
+    if (model->aw_hold == out_slot) {
+        model->aw_hold = NPU_MIF_INVALID_SLOT;
     }
     mif_clear_axi_entry(model, out_slot);
     request->phase = NPU_MIF_REQ_RESPONSE_PENDING;
@@ -1493,28 +1396,24 @@ static uint8_t mif_fail_early_write_response(
 
 static uint8_t mif_process_b_entries(npu_mif_cycle_t *model)
 {
-    uint8_t port;
     uint8_t block_owner_write_accept = 0u;
-
-    for (port = 0u; port < NPU_MIF_AXI_PORT_COUNT; port++) {
-        npu_mif_axi_b_entry_t *b_entry =
-            &model->b_entry[port];
+        npu_mif_axi_b_entry_t *b_entry = &model->b_entry;
         uint8_t out_slot;
         npu_mif_axi_entry_t entry;
         npu_mif_request_entry_t *request;
 
         if (b_entry->valid == 0u) {
-            continue;
+            return 0u;
         }
 
         out_slot =
-            mif_find_axi_id_entry(model, port, b_entry->id);
+            mif_find_axi_id_entry(model, b_entry->id);
         if (out_slot == NPU_MIF_INVALID_SLOT) {
             mif_mark_axi_protocol_error(
                 model, NPU_MIF_PROTOCOL_AXI_BID,
-                port, b_entry->id, 0u);
+                b_entry->id, 0u);
             (void)memset(b_entry, 0, sizeof(*b_entry));
-            continue;
+            return 0u;
         }
 
         entry = model->axi_entries[out_slot];
@@ -1527,30 +1426,30 @@ static uint8_t mif_process_b_entries(npu_mif_cycle_t *model)
         if (entry.write == 0u || entry.addr_sent == 0u) {
             mif_mark_axi_protocol_error(
                 model, NPU_MIF_PROTOCOL_AXI_BID,
-                port, b_entry->id, entry.vaddr);
+                b_entry->id, entry.vaddr);
             (void)memset(b_entry, 0, sizeof(*b_entry));
-            continue;
+            return 0u;
         }
         if (mif_checked_axi_request(model, out_slot,
                                     &request) == 0u) {
             mif_mark_axi_protocol_error(
                 model, NPU_MIF_PROTOCOL_AXI_ENTRY,
-                port, b_entry->id, entry.vaddr);
+                b_entry->id, entry.vaddr);
             (void)memset(b_entry, 0, sizeof(*b_entry));
-            continue;
+            return 0u;
         }
         if (entry.w_done == 0u) {
             block_owner_write_accept |=
                 mif_fail_early_write_response(
                     model, out_slot, b_entry->resp);
             (void)memset(b_entry, 0, sizeof(*b_entry));
-            continue;
+            return block_owner_write_accept;
         }
 
         if (b_entry->resp > NPU_MIF_AXI_RESP_DECERR) {
             mif_mark_axi_protocol_error(
                 model, NPU_MIF_PROTOCOL_AXI_BRESP,
-                port, b_entry->id, entry.vaddr);
+                b_entry->id, entry.vaddr);
         }
         if (b_entry->resp != NPU_MIF_AXI_RESP_OKAY &&
             request->status == NPU_STATUS_SUCCESS) {
@@ -1574,7 +1473,6 @@ static uint8_t mif_process_b_entries(npu_mif_cycle_t *model)
             }
         }
         (void)memset(b_entry, 0, sizeof(*b_entry));
-    }
     return block_owner_write_accept;
 }
 
@@ -1583,23 +1481,19 @@ static void mif_process_axi_addresses(
     const npu_mif_cycle_inputs_t *inputs,
     const npu_mif_cycle_outputs_t *outputs)
 {
-    uint8_t port;
+    if (outputs->axi.awvalid != 0u &&
+        inputs->axi.awready != 0u) {
+        uint8_t out_slot = model->aw_hold;
+        model->axi_entries[out_slot].addr_sent = 1u;
+        mif_write_fifo_push(model, out_slot);
+        model->aw_hold = NPU_MIF_INVALID_SLOT;
+    }
 
-    for (port = 0u; port < NPU_MIF_AXI_PORT_COUNT; port++) {
-        if (outputs->axi[port].awvalid != 0u &&
-            inputs->axi[port].awready != 0u) {
-            uint8_t out_slot = model->aw_hold[port];
-            model->axi_entries[out_slot].addr_sent = 1u;
-            mif_write_fifo_push(model, out_slot);
-            model->aw_hold[port] = NPU_MIF_INVALID_SLOT;
-        }
-
-        if (outputs->axi[port].arvalid != 0u &&
-            inputs->axi[port].arready != 0u) {
-            uint8_t out_slot = model->ar_hold[port];
-            model->axi_entries[out_slot].addr_sent = 1u;
-            model->ar_hold[port] = NPU_MIF_INVALID_SLOT;
-        }
+    if (outputs->axi.arvalid != 0u &&
+        inputs->axi.arready != 0u) {
+        uint8_t out_slot = model->ar_hold;
+        model->axi_entries[out_slot].addr_sent = 1u;
+        model->ar_hold = NPU_MIF_INVALID_SLOT;
     }
 }
 
@@ -1608,16 +1502,12 @@ static void mif_process_axi_write_data(
     const npu_mif_cycle_inputs_t *inputs,
     const npu_mif_cycle_outputs_t *outputs)
 {
-    uint8_t port;
-
     if (model->w_hold.valid == 0u) {
         return;
     }
 
-    port =
-        model->axi_entries[model->w_hold.out_slot].port;
-    if (outputs->axi[port].wvalid != 0u &&
-        inputs->axi[port].wready != 0u) {
+    if (outputs->axi.wvalid != 0u &&
+        inputs->axi.wready != 0u) {
         uint8_t out_slot = model->w_hold.out_slot;
         npu_mif_axi_entry_t *entry =
             &model->axi_entries[out_slot];
@@ -1864,9 +1754,9 @@ void npu_mif_cycle_config_default(npu_mif_cycle_config_t *config)
     }
 
     (void)memset(config, 0, sizeof(*config));
-    config->ddr_enable = 1u;
-    config->ddr_base = 0u;
-    config->ddr_limit =
+    config->system_addr_enable = 1u;
+    config->system_addr_base = 0u;
+    config->system_addr_limit =
         NPU_MIF_PA_MASK & ~UINT64_C(7);
     config->axi_cache_device = 0u;
     config->axi_cache_normal_noncache = 2u;
@@ -1876,8 +1766,6 @@ void npu_mif_cycle_config_default(npu_mif_cycle_config_t *config)
 void npu_mif_cycle_reset(npu_mif_cycle_t *model)
 {
     npu_mif_cycle_config_t config;
-    uint8_t index;
-
     if (model == NULL) {
         return;
     }
@@ -1886,10 +1774,8 @@ void npu_mif_cycle_reset(npu_mif_cycle_t *model)
     (void)memset(model, 0, sizeof(*model));
     model->config = config;
     mif_clear_diagnostics(model);
-    for (index = 0u; index < NPU_MIF_AXI_PORT_COUNT; index++) {
-        model->aw_hold[index] = NPU_MIF_INVALID_SLOT;
-        model->ar_hold[index] = NPU_MIF_INVALID_SLOT;
-    }
+    model->aw_hold = NPU_MIF_INVALID_SLOT;
+    model->ar_hold = NPU_MIF_INVALID_SLOT;
 }
 
 int npu_mif_cycle_init(npu_mif_cycle_t *model,

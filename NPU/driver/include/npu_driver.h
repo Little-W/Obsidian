@@ -93,6 +93,11 @@ extern "C" {
 #define NPU_DRV_CTL_WAIT UINT8_C(0x01)
 #define NPU_DRV_CTL_QUERY UINT8_C(0x02)
 #define NPU_DRV_CTL_FENCE UINT8_C(0x03)
+#define NPU_DRV_FENCE_DMA UINT8_C(0x01)
+#define NPU_DRV_FENCE_MATRIX UINT8_C(0x02)
+#define NPU_DRV_FENCE_VECTOR UINT8_C(0x04)
+#define NPU_DRV_FENCE_COMPLEX UINT8_C(0x08)
+#define NPU_DRV_FENCE_ALL_ENGINES UINT8_C(0x0f)
 #define NPU_DRV_QUERY_STATUS UINT8_C(0)
 #define NPU_DRV_QUERY_TAG_EVENT UINT8_C(1)
 #define NPU_DRV_QUERY_FAULT_ADDR UINT8_C(2)
@@ -384,6 +389,10 @@ int npu_drv_wait_event(npu_driver_t *driver,
                        npu_drv_event_t event,
                        uint32_t max_cycles,
                        npu_drv_event_result_t *result);
+int npu_drv_fence_mask(npu_driver_t *driver,
+                       uint8_t engine_mask,
+                       uint32_t max_cycles,
+                       uint64_t *raw);
 int npu_drv_fence(npu_driver_t *driver, uint32_t max_cycles, uint64_t *raw);
 
 int npu_drv_desc_pool_init(npu_drv_desc_pool_t *pool,

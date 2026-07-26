@@ -398,6 +398,48 @@ static void data_test_matrix_descriptor(uint8_t *descriptor)
     descriptor[0xa6u] = 8u;
 }
 
+static void data_test_matrix_int8_span_descriptor(
+    uint8_t *descriptor)
+{
+    uint32_t numeric = data_test_numeric_full(
+        NPU_DTYPE_INT8, NPU_DTYPE_INT8,
+        NPU_DTYPE_INT4, NPU_DTYPE_INT32,
+        NPU_ROUND_NEAREST_EVEN, 0u, NPU_SCALE_NONE,
+        0u);
+
+    (void)memset(
+        descriptor, 0, NPU_WIRE_MATRIX_DESC_BYTES);
+    descriptor[0x00u] = NPU_WIRE_DEFAULT_DESC_VERSION;
+    descriptor[0x01u] = NPU_ENGINE_MATRIX;
+    data_test_put_u16(
+        descriptor, 0x02u, NPU_WIRE_MATRIX_DESC_BYTES);
+    data_test_put_u64(
+        descriptor, 0x08u, DATA_TEST_MATRIX_A);
+    data_test_put_u64(
+        descriptor, 0x10u, DATA_TEST_MATRIX_B);
+    data_test_put_u64(
+        descriptor, 0x20u, DATA_TEST_MATRIX_DST);
+    data_test_put_u32(descriptor, 0x38u, numeric);
+    data_test_put_u32(descriptor, 0x3cu, 0x4930384du);
+    data_test_put_u32(descriptor, 0x40u, 1u);
+    data_test_put_u32(descriptor, 0x44u, 8u);
+    data_test_put_u32(descriptor, 0x48u, 16u);
+    data_test_put_u32(descriptor, 0x4cu, 1u);
+    data_test_put_u32(descriptor, 0x50u, 1u);
+    data_test_put_u32(descriptor, 0x54u, 8u);
+    data_test_put_u32(descriptor, 0x58u, 16u);
+    data_test_put_u32(
+        descriptor, 0x5cu, UINT32_C(1) << 7u);
+    data_test_put_u32(descriptor, 0x60u, 16u);
+    data_test_put_u32(descriptor, 0x68u, 32u);
+    descriptor[0x90u] = 0u;
+    descriptor[0x91u] = 2u;
+    descriptor[0x92u] = 4u;
+    descriptor[0x93u] = 0u;
+    descriptor[0x94u] = NPU_OVERFLOW_SATURATE;
+    descriptor[0xa6u] = 8u;
+}
+
 static void data_test_matrix_int16_descriptor(
     uint8_t *descriptor)
 {
@@ -1337,6 +1379,92 @@ static int data_test_vector_replay(void)
     return 0;
 }
 
+static int data_test_vector_int8_strided_geometry(void)
+{
+    uint8_t descriptor[NPU_WIRE_VECTOR_DESC_BYTES];
+    npu_model_t functional;
+    npu_engine_data_cycle_t model;
+    npu_engine_data_cycle_outputs_t outputs;
+    data_test_desc_server_t server;
+    data_test_l1_t l1;
+    uint64_t done[3] = {0u, 0u, 0u};
+    uint32_t read_requests;
+    uint32_t port0_words = 0u;
+    uint32_t port1_words = 0u;
+    uint32_t index;
+    int line;
+
+    (void)memset(data_test_l1, 0, sizeof(data_test_l1));
+    (void)memset(data_test_ddr, 0, sizeof(data_test_ddr));
+    (void)memset(&server, 0, sizeof(server));
+    (void)memset(&l1, 0, sizeof(l1));
+    data_test_vector_descriptor(descriptor);
+    data_test_put_u32(
+        descriptor, 0x38u,
+        data_test_numeric(
+            NPU_DTYPE_INT8, NPU_DTYPE_INT8,
+            NPU_DTYPE_INT4, NPU_DTYPE_INT8));
+    data_test_put_u32(descriptor, 0x44u, 5u);
+    data_test_put_u32(descriptor, 0x48u, 5u);
+    data_test_put_u32(descriptor, 0x50u, 2u);
+    data_test_put_u32(descriptor, 0x54u, 10u);
+    data_test_put_u32(descriptor, 0x58u, 2u);
+    data_test_put_u32(descriptor, 0x5cu, 10u);
+    data_test_put_u32(descriptor, 0x68u, 2u);
+    data_test_put_u32(descriptor, 0x6cu, 10u);
+    for (index = 0u; index < 5u; index++) {
+        data_test_l1[DATA_TEST_SRC0 + index * 2u] =
+            (uint8_t)(index + 1u);
+        data_test_l1[DATA_TEST_SRC1 + index * 2u] =
+            (uint8_t)(10u * (index + 1u));
+    }
+
+    TEST_CHECK(data_test_init_wrapper(
+        &model, &functional, NPU_ENGINE_VECTOR));
+    line = data_test_reach_replay(
+        &model, descriptor,
+        data_test_metadata(0x160u, NPU_VECTOR_ADD),
+        &server, &outputs);
+    if (line != 0) {
+        return line;
+    }
+    TEST_CHECK(model.compute_lanes == 8u);
+    TEST_CHECK(model.compute_groups == 1u);
+    TEST_CHECK(model.compute_full_lane_mask == 0xffu);
+    TEST_CHECK(model.compute_tail_lane_mask == 0x1fu);
+    TEST_CHECK(model.trace.read_count == 4u);
+    TEST_CHECK(model.trace.write_count == 2u);
+    for (index = 0u; index < model.trace.read_count; index++) {
+        if (data_test_read_entries[index].port == 0u) {
+            port0_words++;
+        } else if (data_test_read_entries[index].port == 1u) {
+            port1_words++;
+        }
+    }
+    TEST_CHECK(port0_words == 2u);
+    TEST_CHECK(port1_words == 2u);
+
+    line = data_test_finish_l1_replay(
+        &model, &l1, done, &read_requests);
+    if (line != 0) {
+        return line;
+    }
+    /*
+     * Each source occupies two adjacent 64-bit words.  The replay
+     * interface combines those words into one two-beat L1 request per
+     * read port, so four captured words become two requests.
+     */
+    TEST_CHECK(read_requests == 2u);
+    TEST_CHECK(((done[0] >> 12u) & 0xffu) ==
+               NPU_STATUS_SUCCESS);
+    TEST_CHECK(done[2] == 5u);
+    for (index = 0u; index < 5u; index++) {
+        TEST_CHECK(data_test_l1[DATA_TEST_DST + index * 2u] ==
+                   (uint8_t)(11u * (index + 1u)));
+    }
+    return 0;
+}
+
 static int data_test_vector_int16_geometry(void)
 {
     uint8_t descriptor[NPU_WIRE_VECTOR_DESC_BYTES];
@@ -1411,11 +1539,6 @@ static int data_test_vector_int16_geometry(void)
     if (line != 0) {
         return line;
     }
-    /*
-     * Each source occupies two adjacent 64-bit words.  The replay
-     * interface combines those words into one two-beat L1 request per
-     * read port, so four captured words become two requests.
-     */
     TEST_CHECK(read_requests == 2u);
     TEST_CHECK(((done[0] >> 12u) & 0xffu) ==
                NPU_STATUS_SUCCESS);
@@ -1429,6 +1552,77 @@ static int data_test_vector_int16_geometry(void)
 
         TEST_CHECK(value ==
                    (uint16_t)(11u * (index + 1u)));
+    }
+    return 0;
+}
+
+static int data_test_matrix_int8_b_span(void)
+{
+    uint8_t descriptor[NPU_WIRE_MATRIX_DESC_BYTES];
+    npu_model_t functional;
+    npu_engine_data_cycle_t model;
+    npu_engine_data_cycle_outputs_t outputs;
+    data_test_desc_server_t server;
+    data_test_l1_t l1;
+    uint64_t done[3] = {0u, 0u, 0u};
+    uint32_t read_requests;
+    uint32_t b_words = 0u;
+    uint8_t b_last_word_seen = 0u;
+    uint32_t index;
+    int line;
+
+    (void)memset(data_test_l1, 0, sizeof(data_test_l1));
+    (void)memset(data_test_ddr, 0, sizeof(data_test_ddr));
+    (void)memset(&server, 0, sizeof(server));
+    (void)memset(&l1, 0, sizeof(l1));
+    data_test_matrix_int8_span_descriptor(descriptor);
+    for (index = 0u; index < 16u; index++) {
+        data_test_l1[DATA_TEST_MATRIX_A + index] = 1u;
+    }
+    for (index = 0u;
+         index < NPU_REF_KT * NPU_REF_NT;
+         index++) {
+        data_test_l1[DATA_TEST_MATRIX_B + index] = 1u;
+    }
+
+    TEST_CHECK(data_test_init_wrapper(
+        &model, &functional, NPU_ENGINE_MATRIX));
+    line = data_test_reach_replay(
+        &model, descriptor,
+        data_test_metadata(0x161u, NPU_MATRIX_GEMM),
+        &server, &outputs);
+    if (line != 0) {
+        return line;
+    }
+    TEST_CHECK(model.compute_groups == 1u);
+    TEST_CHECK(model.trace.read_count == 18u);
+    TEST_CHECK(model.trace.write_count == 4u);
+    for (index = 0u; index < model.trace.read_count; index++) {
+        if (data_test_read_entries[index].port == 1u) {
+            b_words++;
+            if (data_test_read_entries[index].addr ==
+                DATA_TEST_MATRIX_B + 120u) {
+                b_last_word_seen = 1u;
+            }
+        }
+    }
+    TEST_CHECK(b_words == 16u);
+    TEST_CHECK(b_last_word_seen != 0u);
+
+    line = data_test_finish_l1_replay(
+        &model, &l1, done, &read_requests);
+    if (line != 0) {
+        return line;
+    }
+    TEST_CHECK(read_requests != 0u);
+    TEST_CHECK(((done[0] >> 12u) & 0xffu) ==
+               NPU_STATUS_SUCCESS);
+    TEST_CHECK(done[2] == 8u);
+    for (index = 0u; index < 4u; index++) {
+        TEST_CHECK(data_test_get_u64(
+                       data_test_l1,
+                       DATA_TEST_MATRIX_DST + index * 8u) ==
+                   UINT64_C(0x0000001000000010));
     }
     return 0;
 }
@@ -3863,6 +4057,10 @@ int test_engine_data_cycle(void)
     if (line != 0) {
         return line;
     }
+    line = data_test_vector_int8_strided_geometry();
+    if (line != 0) {
+        return line;
+    }
     line = data_test_vector_int16_geometry();
     if (line != 0) {
         return line;
@@ -3876,6 +4074,10 @@ int test_engine_data_cycle(void)
         return line;
     }
     line = data_test_matrix_replay();
+    if (line != 0) {
+        return line;
+    }
+    line = data_test_matrix_int8_b_span();
     if (line != 0) {
         return line;
     }

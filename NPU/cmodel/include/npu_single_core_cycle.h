@@ -139,7 +139,7 @@ typedef struct {
 
     /* Consumed only when tbu_mode is EXTERNAL. */
     npu_mif_tbu_inputs_t tbu;
-    npu_mif_axi_inputs_t axi[NPU_MIF_AXI_PORT_COUNT];
+    npu_mif_axi_inputs_t axi;
 } npu_single_core_cycle_noc_inputs_t;
 
 typedef struct {
@@ -179,7 +179,6 @@ typedef struct {
 } npu_single_core_mif_diag_t;
 
 typedef struct {
-    uint8_t port;
     uint8_t axi_id;
     uint16_t beats_remaining;
 } npu_single_core_stale_write_t;
@@ -264,12 +263,9 @@ typedef struct {
      * Their identifiers remain unavailable to new MIF transactions until
      * those old responses are accepted and discarded at the top-level gate.
      */
-    uint8_t stale_axi_read_beats
-        [NPU_MIF_AXI_PORT_COUNT][NPU_SINGLE_CORE_AXI_ID_COUNT];
-    uint8_t stale_axi_read_wait_rlast
-        [NPU_MIF_AXI_PORT_COUNT][NPU_SINGLE_CORE_AXI_ID_COUNT];
-    uint8_t stale_axi_write_pending
-        [NPU_MIF_AXI_PORT_COUNT][NPU_SINGLE_CORE_AXI_ID_COUNT];
+    uint8_t stale_axi_read_beats[NPU_SINGLE_CORE_AXI_ID_COUNT];
+    uint8_t stale_axi_read_wait_rlast[NPU_SINGLE_CORE_AXI_ID_COUNT];
+    uint8_t stale_axi_write_pending[NPU_SINGLE_CORE_AXI_ID_COUNT];
     npu_single_core_stale_write_t
         stale_axi_write_drain[NPU_SINGLE_CORE_STALE_WRITE_DEPTH];
     uint16_t stale_axi_write_drain_head;
@@ -311,8 +307,8 @@ typedef struct {
 /*
  * The functional model and L1 controller must use the same 1 MiB byte array.
  * The caller also owns the ECC array and all four trace workspaces.
- * mif_soc_config supplies the fixed shared-memory and bypass regions. LSC
- * subsequently supplies the local-DDR region and TBU identifiers.
+ * mif_soc_config supplies the fixed system address and bypass ranges. LSC
+ * subsequently supplies the system address range and TBU identifiers.
  *
  * tbu_mode is selected at initialization and is immutable for the lifetime
  * of this object. External mode consumes noc_inputs.tbu. Internal mode
@@ -323,8 +319,8 @@ typedef struct {
  * or workspace storage is changed. A workspace validation failure returns
  * NPU_STATUS_BAD_DESC and preserves every caller-owned object. The complete
  * MIF SoC configuration is checked at the same point, including enable
- * encodings, aligned 40-bit region endpoints, region ordering, DDR/EXT
- * overlap, and AXI cache fields.
+ * encodings, aligned 40-bit range endpoints, range ordering, and AXI cache
+ * fields.
  */
 npu_status_t npu_single_core_cycle_init(
     npu_single_core_cycle_t *top,

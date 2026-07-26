@@ -248,6 +248,9 @@ class OperationTests(unittest.TestCase):
         self.assertEqual(
             operations[-1]["descriptor"]["matrix"]["k"], 8
         )
+        self.assertFalse(
+            operations[-1]["descriptor"]["common"]["saturate_enable"]
+        )
 
         document = {
             "schema_version": 1,
@@ -338,6 +341,53 @@ class OperationTests(unittest.TestCase):
                 for opcode_name in opcodes
             )
         )
+
+    def test_int16_lowering_uses_two_byte_strides_and_matrix_layout(self) -> None:
+        geometry = conv.infer_conv2d(
+            [1, 2, 2, 2], [1, 1, 2, 2], {"padding": "VALID"}
+        )
+        operations = conv.emit_conv2d_operations(
+            "int16_conv",
+            geometry,
+            self.placement("input", 0x1000, 16, "int16"),
+            self.placement("im2col", 0x2000, 16, "int16"),
+            self.placement("kernel", 0x3000, 256, "int16"),
+            self.placement("output", 0x4000, 16, "int16"),
+            requant_tensor=self.placement("requant", 0x5000, 8, "int32"),
+        )
+        self.assertEqual(
+            operations[0]["descriptor"]["dma"]["src_stride_bytes"],
+            [16, 8, 4, 0],
+        )
+        self.assertEqual(
+            operations[-1]["descriptor"]["matrix"]["lda_bytes"], 4
+        )
+        self.assertEqual(
+            operations[-1]["descriptor"]["matrix"]["ldc_bytes"], 4
+        )
+        self.assertTrue(
+            operations[-1]["descriptor"]["common"]["saturate_enable"]
+        )
+        document = {
+            "schema_version": 1,
+            "target": {
+                "command_format": "cmd128-v1",
+                "descriptor_base": 0x100000,
+                "mt": 8,
+                "kt": 16,
+                "nt": 8,
+            },
+            "tensors": {},
+            "operations": list(operations),
+        }
+        _compiled, _commands, descriptors = assembler.compile_document(document)
+        numeric = int.from_bytes(descriptors[0x100 + 0x38 : 0x100 + 0x3C], "little")
+        self.assertEqual(numeric & 0x3, 3)
+        self.assertEqual((numeric >> 2) & 0x3, 3)
+        self.assertEqual((numeric >> 6) & 0x3, 3)
+        self.assertEqual(descriptors[0x100 + 0x90], 5)
+        self.assertEqual(descriptors[0x100 + 0x91], 6)
+        self.assertEqual(descriptors[0x100 + 0x92], 5)
 
 
 class FailureTests(unittest.TestCase):

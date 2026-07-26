@@ -543,13 +543,13 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--model-dtype",
         choices=("int4", "int8", "int16"),
-        default="int16",
+        default="int8",
         help="integer tensor type used for imported framework models",
     )
     parser.add_argument(
         "--fraction-bits",
         type=int,
-        default=8,
+        default=6,
         help="fractional bits used for imported framework tensors",
     )
     parser.add_argument(

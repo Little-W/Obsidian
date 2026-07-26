@@ -67,7 +67,7 @@ Descriptor、权重以及运行元数据。主控程序把这两个文件和 NPU
 这些内容均由模型编译器生成。这样，模型作者可以围绕张量和模型算子编写文件，
 而不需要手工维护地址和任务编号。
 
-当前整数类型包括 INT4、INT8、INT16 和 INT32。常量的 `data` 使用普通行主序，
+模型张量支持 INT4、INT8、INT16 和 INT32。常量的 `data` 使用普通行主序，
 Matrix 权重无需由用户提前整理。
 
 ## 2. 直接读取 Keras、PyTorch、TFLite 与 ONNX
@@ -94,8 +94,11 @@ integer = round(real_value / 2^(-fraction_bits))
 ```
 
 把参数编码成 `--model-dtype` 指定的 INT4、INT8 或 INT16，并检查每个数是否
-能由目标整数类型保存。默认配置是 INT16、8 个小数位，对应 scale 为
-`2^-8 = 1/256`。超出整数范围、NaN 或无穷值都会得到明确错误，不会静默截断。
+能由目标整数类型保存。建议默认使用 INT8；小数位数由模型的数值范围确定。
+例如设置 6 个小数位时，scale 为 `2^-6 = 1/64`。INT16 可使用
+`--model-dtype int16 --fraction-bits 8`，对应 scale `1/256`。超出整数范围、
+NaN 或无穷值都会得到明确错误，不会静默截断。INT32 用于 Matrix 累加、bias
+及需要较大数值范围的中间张量，不作为框架 FP32 参数的直接编码目标。
 
 当前框架前端采用“明确支持集合”：
 
@@ -369,8 +372,8 @@ conda run -n tf_2_18 python npu_model_compiler.py model.torchscript \
   --trust-model \
   --pytorch-format torchscript \
   --input-shape 0=1,3 \
-  --model-dtype int16 \
-  --fraction-bits 8
+  --model-dtype int8 \
+  --fraction-bits 6
 ```
 
 同时生成调试文件：
@@ -420,31 +423,13 @@ conda run -n tf_2_18 python -m unittest discover -s tests -v
 - `high[55:44]`：完成事件；
 - `high[63:56]`：格式版本。
 
-低层示例 `examples/int16_regression.json` 展示 INT16 输入搬运和 INT16 权重
-GEMM。它用于汇编器字段测试，不是高层模型示例。
+dtype 子字段的有效编码为 `0=INT4`、`1=INT8`、`2=INT32`、`3=INT16`。
+INT16 按小端序保存；Matrix 的 INT16 线性布局使用 pack code 5，
+KT×NT 的 Matrix-B tile 布局使用 pack code 6。汇编器会检查这两个 layout
+code 是否与张量 dtype 一致。
 
 ## 10. Transformer 端到端测试
 
-`../examples/transformer_e2e/transformer_model.json` 给出一个完整的 INT16
-Transformer Encoder。高层图包括多头注意力、两次残差加法、两次
-LayerNorm，以及带 GELU 的两层 FFN。它不填写设备地址、事件或低层指令。
-
-```bash
-cd "/home/yusen/Obsidian Vault/NPU/examples/transformer_e2e"
-make clean
-make test
-```
-
-该命令依次完成高层编译、低层独立汇编结果比较、C 模型包与驱动构建，以及
-C model 推理。
-当前模型由 8 个高层节点生成 36 条 CMD128，并按最多 8 条任务一组拆成 5 个
-提交组。C 程序对每个组执行一次 `npu_drv_submit_batch()`，再按任务执行
-wait、query 和 ACK，最后从生成的 DDR 输出 binding 读取 4×8 个 INT16 结果。
-
-独立浮点参考程序计算相同的多头注意力、GELU 和 LayerNorm。当前结果为 32/32
-个输出元素相同，最大绝对误差为 0，4 个 token 的最大值位置均相同。运行
-GCC、Clang 和 ASan+UBSan 的完整测试：
-
-```bash
-make regress
-```
+`examples/int16_regression.json` 用于检查 INT16 的 DMA、GEMM、dtype code 与
+Matrix pack code。`../cmodel/examples/transformer` 是独立的 INT8 端到端示例；
+它采用 INT8，不影响编译器对 INT16 的支持。

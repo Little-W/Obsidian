@@ -126,13 +126,16 @@ int npu_drv_wait_event(npu_driver_t *driver,
     return NPU_DRV_OK;
 }
 
-int npu_drv_fence(npu_driver_t *driver,
-                  uint32_t max_cycles,
-                  uint64_t *raw)
+int npu_drv_fence_mask(npu_driver_t *driver,
+                       uint8_t engine_mask,
+                       uint32_t max_cycles,
+                       uint64_t *raw)
 {
     int callback_result;
 
-    if (driver == (npu_driver_t *)0 || raw == (uint64_t *)0) {
+    if (driver == (npu_driver_t *)0 ||
+        raw == (uint64_t *)0 ||
+        (engine_mask & (uint8_t)~NPU_DRV_FENCE_ALL_ENGINES) != 0u) {
         return NPU_DRV_EINVAL;
     }
     if (driver->ops.control_request == (void *)0) {
@@ -141,8 +144,8 @@ int npu_drv_fence(npu_driver_t *driver,
     callback_result = driver->ops.control_request(
         driver->ops.context,
         NPU_DRV_CTL_FENCE,
+        engine_mask,
         max_cycles,
-        0u,
         raw);
     if (callback_result != 0) {
         return NPU_DRV_EIO;
@@ -151,4 +154,12 @@ int npu_drv_fence(npu_driver_t *driver,
         driver->ops.read_barrier(driver->ops.context);
     }
     return NPU_DRV_OK;
+}
+
+int npu_drv_fence(npu_driver_t *driver,
+                  uint32_t max_cycles,
+                  uint64_t *raw)
+{
+    return npu_drv_fence_mask(
+        driver, NPU_DRV_FENCE_ALL_ENGINES, max_cycles, raw);
 }

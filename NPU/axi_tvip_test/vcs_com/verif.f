@@ -10,5 +10,8 @@
 /home/yusen/opt/axi_tvip_test/vendor/tvip-axi/tvip-common/src/tvip_common_pkg.sv
 /home/yusen/opt/axi_tvip_test/vendor/tvip-axi/src/tvip_axi_pkg.sv
 /home/yusen/opt/axi_tvip_test/vendor/tvip-axi/src/tvip_axi_if.sv
+/home/yusen/opt/axi_tvip_test/tb/npu_cmd_backend_if.sv
+/home/yusen/opt/axi_tvip_test/tb/npu_single_core_system_if.sv
+/home/yusen/opt/axi_tvip_test/tb/npu_axi_system_memory_model.sv
 /home/yusen/opt/axi_tvip_test/tb/axi_tvip_myip_wrapper.sv
 /home/yusen/opt/axi_tvip_test/tb/axi_tvip_tb.sv

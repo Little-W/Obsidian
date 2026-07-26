@@ -1340,7 +1340,7 @@ def make_matrix_task(
         "src1": weight.name,
         "dst": destination.name,
         "round_mode": "nearest_even",
-        "saturate_enable": True,
+        "saturate_enable": destination.dtype != "int32",
     }
     matrix: dict[str, Any] = {
         "m": m,
@@ -2152,6 +2152,7 @@ def lower_simple_operator(
             "src0_row_stride_bytes": row_stride,
             "dst_elem_stride_bytes": element_stride,
             "dst_row_stride_bytes": row_stride,
+            "src1_scale_bits": 0,
             "src2_scale_bits": 0,
         }
         if "scale" in operator.attributes:

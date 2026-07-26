@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import tempfile
 from pathlib import Path
 from typing import Any, Sequence
@@ -150,18 +151,22 @@ def load_pytorch(path: Path, options: FrontendOptions) -> dict[str, Any]:
     try:
         with tempfile.TemporaryDirectory(prefix="npu_torch_onnx_") as temp:
             onnx_path = Path(temp) / "model.onnx"
+            export_options = {
+                "export_params": True,
+                "opset_version": 17,
+                "do_constant_folding": True,
+                "input_names": input_names,
+                "output_names": output_names,
+                "dynamic_axes": None,
+            }
+            if "dynamo" in inspect.signature(torch.onnx.export).parameters:
+                export_options["dynamo"] = False
             with torch.no_grad():
                 torch.onnx.export(
                     module,
                     dummy_inputs if len(dummy_inputs) != 1 else dummy_inputs[0],
                     str(onnx_path),
-                    export_params=True,
-                    opset_version=17,
-                    do_constant_folding=True,
-                    input_names=input_names,
-                    output_names=output_names,
-                    dynamic_axes=None,
-                    dynamo=False,
+                    **export_options,
                 )
             model = onnx.load(str(onnx_path), load_external_data=True)
     except Exception as error:

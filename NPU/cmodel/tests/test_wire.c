@@ -486,6 +486,21 @@ static int wire_test_matrix(const npu_wire_limits_t *limits)
     TEST_CHECK(meta.matrix_last_tile_valid_n == 3u);
     TEST_CHECK(meta.matrix_b_pack_format == 2u);
 
+    desc_wire[0x90u] = 5u;
+    TEST_CHECK_STATUS(npu_wire_decode_task(
+                          cmd_wire, sizeof(cmd_wire),
+                          desc_wire, sizeof(desc_wire),
+                          limits, &request, &meta),
+                      NPU_STATUS_BAD_DESC);
+    desc_wire[0x90u] = 0u;
+    desc_wire[0x91u] = 6u;
+    TEST_CHECK_STATUS(npu_wire_decode_task(
+                          cmd_wire, sizeof(cmd_wire),
+                          desc_wire, sizeof(desc_wire),
+                          limits, &request, &meta),
+                      NPU_STATUS_BAD_DESC);
+    desc_wire[0x91u] = 2u;
+
     wire_put_u32(desc_wire, 0x50u, 1u);
     TEST_CHECK_STATUS(npu_wire_decode_task(
                           cmd_wire, sizeof(cmd_wire),

@@ -32,6 +32,9 @@ typedef struct {
     uint32_t write_barrier_count;
     uint32_t read_barrier_count;
     uint32_t relax_count;
+    uint8_t last_control_operation;
+    uint64_t last_control_rs1;
+    uint64_t last_control_rs2;
 } fake_platform_t;
 
 static int fake_read64(void *context,
@@ -129,7 +132,10 @@ static int fake_control(void *context,
     fake_platform_t *fake = (fake_platform_t *)context;
     uint16_t command_id;
     uint8_t state;
-    (void)rs2;
+
+    fake->last_control_operation = operation;
+    fake->last_control_rs1 = rs1;
+    fake->last_control_rs2 = rs2;
 
     if (operation == NPU_DRV_CTL_QUERY) {
         command_id = (uint16_t)rs1;
@@ -383,6 +389,11 @@ static int test_data_type_configurations(void)
     }
 
     common.src0_dtype = (npu_drv_dtype_t)4;
+    CHECK(npu_drv_desc_matrix_encode(
+              descriptor, sizeof(descriptor), &common, &matrix) ==
+          NPU_DRV_EINVAL);
+    common.src0_dtype = NPU_DRV_DTYPE_INT8;
+    matrix.a_pack_format = UINT8_C(7);
     CHECK(npu_drv_desc_matrix_encode(
               descriptor, sizeof(descriptor), &common, &matrix) ==
           NPU_DRV_EINVAL);
@@ -686,10 +697,23 @@ static int test_driver(void)
     CHECK(event_result.producer_command_id == 0x321u);
     CHECK(npu_drv_fence(&driver, 100u, &raw) == NPU_DRV_OK);
     CHECK(raw == 0u);
+    CHECK(fake.last_control_operation == NPU_DRV_CTL_FENCE);
+    CHECK(fake.last_control_rs1 == NPU_DRV_FENCE_ALL_ENGINES);
+    CHECK(fake.last_control_rs2 == 100u);
+    CHECK(npu_drv_fence_mask(
+              &driver,
+              NPU_DRV_FENCE_MATRIX | NPU_DRV_FENCE_VECTOR,
+              77u,
+              &raw) == NPU_DRV_OK);
+    CHECK(fake.last_control_rs1 ==
+          (NPU_DRV_FENCE_MATRIX | NPU_DRV_FENCE_VECTOR));
+    CHECK(fake.last_control_rs2 == 77u);
+    CHECK(npu_drv_fence_mask(
+              &driver, UINT8_C(0x80), 1u, &raw) == NPU_DRV_EINVAL);
     CHECK(npu_drv_sync_for_cpu(
               &driver, descriptor, sizeof(descriptor)) == NPU_DRV_OK);
     CHECK(fake.cache_invalidate_count == 1u);
-    CHECK(fake.read_barrier_count == 4u);
+    CHECK(fake.read_barrier_count == 5u);
     CHECK(npu_drv_stop(&driver) == NPU_DRV_OK);
     CHECK(fake.registers[NPU_DRV_REG_CORE_CONTROL / 8u] ==
           NPU_DRV_CORE_STOP);

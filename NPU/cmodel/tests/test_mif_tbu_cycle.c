@@ -22,10 +22,9 @@ static void mif_tbu_test_init(mif_tbu_test_env_t *env)
 
     (void)memset(env, 0, sizeof(*env));
     npu_mif_cycle_config_default(&config);
-    config.ddr_enable = 1u;
-    config.ddr_base = 0u;
-    config.ddr_limit = UINT64_C(0xffff8);
-    config.ext_enable = 0u;
+    config.system_addr_enable = 1u;
+    config.system_addr_base = 0u;
+    config.system_addr_limit = UINT64_C(0xffff8);
     config.bypass_enable = 0u;
     config.tbu_stream_id = 0x31u;
     config.tbu_substream_id = 0x42u;
@@ -143,20 +142,20 @@ static int mif_tbu_test_translated_read(void)
             saw_tbu_request = 1u;
         }
         if (env.mif_outputs
-                .axi[NPU_MIF_AXI_DDR]
+                .axi
                 .arvalid != 0u) {
             TEST_CHECK(saw_tbu_request != 0u);
             TEST_CHECK(
                 env.mif_outputs
-                    .axi[NPU_MIF_AXI_DDR]
+                    .axi
                     .araddr == UINT64_C(0x80128));
             TEST_CHECK(
                 env.mif_outputs
-                    .axi[NPU_MIF_AXI_DDR]
+                    .axi
                     .arlen == 0u);
             axi_id =
                 env.mif_outputs
-                    .axi[NPU_MIF_AXI_DDR]
+                    .axi
                     .arid;
             saw_ar = 1u;
             break;
@@ -164,23 +163,23 @@ static int mif_tbu_test_translated_read(void)
     }
     TEST_CHECK(saw_ar != 0u);
 
-    env.mif_inputs.axi[NPU_MIF_AXI_DDR].arready = 1u;
+    env.mif_inputs.axi.arready = 1u;
     mif_tbu_test_tick(&env);
     TEST_CHECK(
-        env.mif_outputs.axi[NPU_MIF_AXI_DDR].arvalid != 0u);
-    env.mif_inputs.axi[NPU_MIF_AXI_DDR].arready = 0u;
+        env.mif_outputs.axi.arvalid != 0u);
+    env.mif_inputs.axi.arready = 0u;
 
-    env.mif_inputs.axi[NPU_MIF_AXI_DDR].rvalid = 1u;
-    env.mif_inputs.axi[NPU_MIF_AXI_DDR].rid = axi_id;
-    env.mif_inputs.axi[NPU_MIF_AXI_DDR].rdata =
+    env.mif_inputs.axi.rvalid = 1u;
+    env.mif_inputs.axi.rid = axi_id;
+    env.mif_inputs.axi.rdata =
         UINT64_C(0x1122334455667788);
-    env.mif_inputs.axi[NPU_MIF_AXI_DDR].rresp =
+    env.mif_inputs.axi.rresp =
         NPU_MIF_AXI_RESP_OKAY;
-    env.mif_inputs.axi[NPU_MIF_AXI_DDR].rlast = 1u;
+    env.mif_inputs.axi.rlast = 1u;
     mif_tbu_test_tick(&env);
     TEST_CHECK(
-        env.mif_outputs.axi[NPU_MIF_AXI_DDR].rready != 0u);
-    env.mif_inputs.axi[NPU_MIF_AXI_DDR].rvalid = 0u;
+        env.mif_outputs.axi.rready != 0u);
+    env.mif_inputs.axi.rvalid = 0u;
 
     for (cycle = 0u; cycle < 8u; cycle++) {
         mif_tbu_test_tick(&env);
@@ -239,10 +238,7 @@ static int mif_tbu_test_permission_error(void)
          cycle++) {
         mif_tbu_test_tick(&env);
         if (env.mif_outputs
-                    .axi[NPU_MIF_AXI_DDR]
-                    .arvalid != 0u ||
-            env.mif_outputs
-                    .axi[NPU_MIF_AXI_EXT]
+                    .axi
                     .arvalid != 0u) {
             saw_axi = 1u;
         }

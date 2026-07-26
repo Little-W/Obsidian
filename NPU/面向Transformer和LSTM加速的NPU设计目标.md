@@ -3,7 +3,7 @@
 > [!ABSTRACT] 文档目的
 > 本文定义一款推理型 NPU 对 Transformer、LSTM、GRU 和普通 RNN 的算子、存储、调度、精度及软件接口要求。设计以 Matrix、Vector/Statistics/SFU、DMA、片上 SRAM（下文记为 L1BUF）和任务调度单元为基础，不为每种模型复制一套计算阵列。Statistics 表示沿指定维度求和、求最大值或求平均值。
 
-> [!SUMMARY] 首版设计结论
+> [!SUMMARY] 第一版设计结论
 >
 > | 项目 | 结论 |
 > |---|---|
@@ -11,7 +11,7 @@
 > | 非矩阵计算 | Vector/Statistics/SFU 执行 Norm、Softmax、激活、残差和循环状态更新 |
 > | 数据移动 | DMA 按 shape 与 stride 搬运 tile；L1BUF 保存活跃 tile、循环状态和在线 Softmax 统计量 |
 > | 调度 | 硬件执行短且固定的事件依赖；编译器与 Runtime 决定分块、融合、门顺序和缓存地址 |
-> | 首版重点 | 完成 P0 基础指令、Batch Size 为 1 时的小矩阵调度、非整 tile 处理和明确的异常语义 |
+> | 第一版重点 | 完成 P0 基础指令、Batch Size 为 1 时的小矩阵调度、非整 tile 处理和明确的异常语义 |
 > | 暂不配置专用大模块 | tokenizer、采样、复杂搜索、页表管理和任务专用后处理继续由 CPU 或 Runtime 执行 |
 
 ## 1. 需求范围与设计约束
@@ -26,11 +26,11 @@
 | GRU / BiGRU | 语音、传感器时序、轻量序列模型 | 三个门；只有一个隐藏状态 | 三门矩阵乘、Sigmoid/Tanh、状态更新 |
 | RNN / BiRNN | 极轻量时序模型、教学或旧模型兼容 | 一次递推矩阵乘加一个激活 | 小矩阵 GEMM、激活函数、隐藏状态驻留 |
 
-本文聚焦推理。反向传播、优化器更新、梯度通信和随机失活不属于首版 NPU 的必备范围。
+本文聚焦推理。反向传播、优化器更新、梯度通信和随机失活不属于第一版 NPU 的必备范围。
 
 ### 1.2 可验证的设计目标
 
-| 目标 | 首版要求 | 验证方式 |
+| 目标 | 第一版要求 | 验证方式 |
 |---|---|---|
 | 算子完备 | 四类目标模型都能分解为 GEMM/BMM、Vector、Statistics、SFU 与 DMA 任务 | 使用第 11.2 节形状运行完整 Block 或完整循环层 |
 | 小任务效率 | Batch Size 为 1、Decoder 单 token 和小隐藏宽度循环层不因命令启动而长期空转 | 记录发射周期、Matrix 空闲周期和每时间步延迟 |
@@ -41,7 +41,7 @@
 
 吞吐、时延、利用率和误差的具体记录方式见第 11 章。这里先定义“必须能做什么”，避免只用峰值 TOPS 描述设计目标。
 
-### 1.3 首版软硬件分工
+### 1.3 第一版软硬件分工
 
 | 决策对象  | 软件动作                             | 硬件动作                 |
 | ----- | -------------------------------- | -------------------- |
@@ -53,7 +53,7 @@
 
 第 7 章给出逐项职责表，第 9 章给出相应指令和描述符。
 
-### 1.4 不纳入首版专用硬件的功能
+### 1.4 不纳入第一版专用硬件的功能
 
 以下工作分支多、调用频率低，或需要复杂策略选择，宜由 CPU、固件或 Runtime 处理：
 
@@ -64,7 +64,7 @@
 - 投影 LSTM 与 peephole LSTM 的专用状态机；这两类变体由基础 GEMM/Vector 任务分解，首阶段不做完整网络验收；
 - 少量出现的任务专用后处理。
 
-NPU 可提供比较、选择、局部排序和 DMA 基础操作供软件调用，但首版不为这些工作配置大面积专用电路。
+NPU 可提供比较、选择、局部排序和 DMA 基础操作供软件调用，但第一版不为这些工作配置大面积专用电路。
 
 ### 1.5 公式读法、函数和符号速查
 
@@ -465,7 +465,7 @@ GRU 只有 $h_t$，不像 LSTM 还要保留 $c_t$；因此状态存储量较小�
 
 P0、P1、P2 的定义、选择方法和具体示例见第 9.1 节。下表按照该分级列出各类算子的实现次序、用途和执行单元。
 
-| 优先度 | 算子或算子组                          | Transformer 用途            | LSTM / GRU / RNN 用途                         | 执行单元                         | 首版要求          |
+| 优先度 | 算子或算子组                          | Transformer 用途            | LSTM / GRU / RNN 用途                         | 执行单元                         | 第一版要求          |
 | --- | ------------------------------- | ------------------------- | ------------------------------------------- | ------------------------------ | ------------- |
 | P0  | GEMM / MatMul / Batched MatMul  | QKV、投影、FFN、$QK^{\mathsf T}$、$AV$    | LSTM 四门、GRU 三门、RNN 单次递推矩阵乘                  | Matrix / Tensor Engine         | 必须实现，最高优先度    |
 | P0  | bias、残差加、缩放、逐元素乘                | 线性层后处理、残差、注意力缩放           | 门控组合、候选状态、隐藏状态更新                            | Vector ALU                     | 与主算子融合        |
@@ -478,7 +478,7 @@ P0、P1、P2 的定义、选择方法和具体示例见第 9.1 节。下表按�
 | P1  | KV Cache Gather 宏任务           | Decoder 生成                | 不适用                                         | DMA + SRAM 控制                  | P0 用 `DMA_COPY_ND` 追加和分块读取 |
 | P1  | Fused Attention                 | 长序列 Encoder、Prefill       | 不适用                                         | Attention Pipeline             | 中后期加入         |
 | P2  | Embedding Gather                | token 查表                  | 词嵌入查表                                       | DMA / Vector Gather            | 按产品需求决定       |
-| P2  | Top-k / Sampling                | 输出 token 选择               | 不常用                                         | CPU / Vector                   | 首版以软件为主       |
+| P2  | Top-k / Sampling                | 输出 token 选择               | 不常用                                         | CPU / Vector                   | 第一版以软件为主       |
 
 ### 3.2 GEMM、Batched MatMul 与线性层
 
@@ -509,7 +509,8 @@ Matrix 单元应执行：
 - bias 融合；
 - 可选残差相加、激活和输出写回；
 - 非整 tile 尺寸的掩码处理；
-- P0 的 FP16/BF16 输入与 FP32 累加，以及 P1 的 INT8 输入与 INT32 累加。
+- P0 的 INT4/INT8 输入与 INT32 累加；复杂函数只在专用单元内部临时使用
+  FP32，写回前转成整数。
 
 对 Transformer，把 QKV 三次线性层合并为一次：
 
@@ -559,7 +560,7 @@ Vector/Statistics/SFU 按以下步骤执行这两类算子：
 4. 与乘 $\gamma$、加 $\beta$ 融合；
 5. 输入、统计量与输出在最后一个消费者完成前保存在片上 SRAM。
 
-首版不单设 LayerNorm 阵列；Vector 单元应增加求和、求最大值的吞吐和片上读写带宽。
+第一版不单设 LayerNorm 阵列；Vector 单元应增加求和、求最大值的吞吐和片上读写带宽。
 
 ### 3.4 Softmax 与 Masked Softmax
 
@@ -704,7 +705,7 @@ flowchart TD
 | 硬件项 | 设计要求 | 直接用途 |
 | --- | --- | --- |
 | Tile GEMM | 接受可配置 $M_t\times K_t\times N_t$ tile | 执行 FFN、QKV、LSTM/GRU/RNN 递推 |
-| 多格式乘累加 | P0：FP16/BF16 输入、FP32 累加；P1：INT8 输入、INT32 累加 | 按描述符选择数据路径 |
+| 多格式乘累加 | P0：INT4/INT8 输入、INT32 累加 | 按描述符选择整数数据路径 |
 | 权重复用 | 同一权重 tile 服务多个 token 或 Batch 样本 | 减少外部读取 |
 | 输入复用 | 激活 tile 在多个输出通道上复用 | 提高 SRAM 利用率 |
 | 转置访问 | 接受逻辑转置视图或 DMA 预处理后的数据 | 执行 $QK^{\mathsf T}$ |
@@ -999,13 +1000,16 @@ $h_t$ 和 $c_t$ 在下一时间步立刻使用。状态保存顺序如下：
 
 当完整状态能放入 L1BUF 时，只在序列块切换、上下文切换或任务结束时写回 DDR。若状态大于 L1BUF 状态区，则完整状态保存在共享 L2/SLC；没有该层级时只能保存在 DDR。Matrix 按输出 Feature 分块计算，每个状态块在本时间步最后一次读取完成前留在 L1BUF，随后写回其上一级存储。性能模型必须计入这种逐时间步状态搬运，不能假定分块后仍可让全部状态常驻 L1BUF。
 
-权重是否能驻留必须按字节计算。标准 FP16 LSTM 的融合权重占：
+权重是否能驻留必须按字节计算。INT8 LSTM 的融合权重占：
 
 $$
-(I+H)\times4H\times2\ \text{bytes}.
+(I+H)\times4H\ \text{bytes}.
 $$
 
-当 $I=H=1024$ 时，该权重为 $16\ \text{MiB}$，通常大于单核 L1BUF。此时编译器按 $K$、$N$ tile 分块，DMA 在当前 tile 计算期间预取下一 tile；若芯片有共享 L2/SLC，则把完整层权重保存在该层级，不能在设计说明中默认全部权重常驻 L1BUF。
+当 $I=H=1024$ 时，该权重为 $8\ \text{MiB}$，通常大于单核 L1BUF。此时
+编译器按 $K$、$N$ tile 分块，DMA 在当前 tile 计算期间预取下一 tile；若
+芯片有共享 L2/SLC，则把完整层权重保存在该层级，不能在设计说明中默认全部
+权重常驻 L1BUF。
 
 ### 6.3 时间维调度
 
@@ -1159,7 +1163,7 @@ P1 `RECURRENT_DESC` 若未列出 `proj_size`、投影权重地址和 peephole �
 | KV Cache 地址管理 | 分配块表和容量 | 按地址与 stride 读写 | NPU 不解析页管理策略 |
 | KV Cache 数据搬运 | 下发描述符 | DMA 预取、追加和回写 | 块大小由软件给出 |
 | mask 生成 | 生成参数或显式 mask | 读取 mask 或按位置比较 | 因果 mask 可由 Query/Key 位置比较得到 |
-| Top-k、Top-p、采样 | 执行完整算法 | 可执行比较、选择和局部排序 | 首版不设置专用模块 |
+| Top-k、Top-p、采样 | 执行完整算法 | 可执行比较、选择和局部排序 | 第一版不设置专用模块 |
 | tokenizer | 执行文本编码和解码 | 无操作 | 字符串与词表控制分支多 |
 | 性能计数与异常 | 读取并分析 | 写入计数器、状态寄存器或中断 | 定位空闲周期、地址错误和超时 |
 
@@ -1175,13 +1179,13 @@ P1 `RECURRENT_DESC` 若未列出 `proj_size`、投影权重地址和 peephole �
 
 | 数据类型 | 用途 | 设计原因 |
 | --- | --- | --- |
-| FP16 | 激活、权重、常规推理 | 硬件成熟，带宽和存储开销较低 |
-| BF16 | 大模型激活与权重 | 指数范围较大，溢出风险较低 |
-| FP32 | 长向量求和、Softmax 分母、Norm 统计量 | 减少长向量累加误差 |
-| INT8 | 经误差测试后可采用的 GEMM | 相同元素数下，操作数存储量是 FP16/BF16 的一半；实际吞吐由 INT8 lane 数决定 |
-| INT32 | INT8 GEMM 累加 | 避免乘累加过早截断 |
+| INT4 | 压缩后的权重或激活 | 每字节保存两个元素，降低存储和传输量 |
+| INT8 | 常规激活、权重和状态 | 数据处理简单，适合作为第一版主要格式 |
+| INT32 | GEMM/BMM 累加、bias 和部分和 | 避免乘累加过早截断 |
+| FP32 | 仅用于 Complex Math Engine 内部的激活函数、Softmax 和 Norm 临时值 | 通过 `INT→FP32→INT` 完成复杂公式，不能作为软件可见张量格式 |
 
-P0 数据路径采用 FP16/BF16 输入和 FP32 累加；INT8 输入与 INT32 累加列入 P1。
+P0 Matrix 数据路径采用 INT4/INT8 输入和 INT32 累加。Complex Math Engine
+接收整数张量，在内部转为 FP32，完成函数计算后再写回 INT4、INT8 或 INT32。
 
 ### 8.2 特殊函数近似
 
@@ -1199,8 +1203,9 @@ Exp、倒数、倒数平方根、Sigmoid 和 Tanh 可采用：
 
 ### 8.3 累加精度
 
-- GEMM：FP16/BF16 乘法结果在 FP32 中累加；INT8 乘法结果在 INT32 中累加。
-- LayerNorm/RMSNorm：平方和与均值使用 FP32 累加。
+- GEMM/BMM：INT4 或 INT8 乘法结果在 INT32 中累加。
+- LayerNorm/RMSNorm：整数输入在 Complex Math Engine 内转为 FP32，平方和与
+  均值使用内部 FP32 临时值。
 - Softmax：最大值、分母和倒数使用 FP32 或等效精度。
 - LSTM：$c_t$ 在长序列上可能积累误差，状态更新应避免过早截断。
 - GRU、RNN：$h_t$ 会沿时间步反复使用，状态保存和激活结果也应避免过早截断。
@@ -1213,20 +1218,22 @@ Exp、倒数、倒数平方根、Sigmoid 和 Tanh 可采用：
 
 ### 9.1 功能与指令的优先度分级
 
-本文按照功能对首版正确性、执行时间和数据搬运量的影响，将 NPU 功能分为 P0、P1、P2 三个优先度等级。`P` 来自 Priority，后面的数字越小，实现次序越靠前。分级时主要考虑三点：首版是否依靠该功能得到正确结果、能否使用已有基础指令得到相同结果，以及该功能是否只服务特定模型或部署场景。这个分级只用于安排本文 NPU 的功能实现次序，与 PyTorch、Keras 的算子分类、数据精度、计算难度和性能分数无关。
+本文按照功能对第一版正确性、执行时间和数据搬运量的影响，将 NPU 功能分为 P0、P1、P2 三个优先度等级。`P` 来自 Priority，后面的数字越小，实现次序越靠前。分级时主要考虑三点：第一版是否依靠该功能得到正确结果、能否使用已有基础指令得到相同结果，以及该功能是否只服务特定模型或部署场景。这个分级只用于安排本文 NPU 的功能实现次序，与 PyTorch、Keras 的算子分类、数据精度、计算难度和性能分数无关。
 
 | 优先度等级 | 在本文中的含义 | 必须满足的条件 | 缺少该等级时会发生什么 |
 | --- | --- | --- | --- |
-| P0 | 首版基础功能 | 只使用 P0 指令，就能从模型输入计算出正确输出，并通过第 11 章的正确性测试 | 任一必需 P0 功能缺失，首版目标就没有完成 |
+| P0 | 第一版基础功能 | 只使用 P0 指令，就能从模型输入计算出正确输出，并通过第 11 章的正确性测试 | 任一必需 P0 功能缺失，第一版目标就没有完成 |
 | P1 | P0 完成后加入的组合任务、专用流水或附加数据格式 | 对同一模型计算，必须存在 P0 基础指令序列；P1 用于减少任务数量、DDR 字节数或固定启动周期 | 模型仍能使用 P0 基础指令序列运行，但命令数、访存量或时延可能增加 |
-| P2 | 由具体部署场景决定的功能 | 只有目标模型、应用或产品规格明确要求时才加入 | 对本文规定的首版模型没有影响 |
+| P2 | 由具体部署场景决定的功能 | 只有目标模型、应用或产品规格明确要求时才加入 | 对本文规定的第一版模型没有影响 |
 
 > [!important] P0 不是“临时能跑的版本”
-> P0 仍需定义完整的数值语义、bias shape、数据格式、异常状态、非整 tile 处理和测试要求。P1 也不是永远可有可无：如果某个产品把 INT8、Paged KV Cache 或特定宏任务写入首版要求，该项目就应把对应功能提升为 P0。
+> P0 仍需定义完整的数值语义、bias shape、数据格式、异常状态、非整 tile
+> 处理和测试要求。P1 也不是永远可有可无：如果某个产品把 Paged KV Cache
+> 或特定宏任务写入第一版要求，该项目就应把对应功能提升为 P0。
 
 确定一项功能的优先度时，应依次回答下面三个问题：
 
-1. 缺少它时，本文规定的首版模型是否无法得到正确输出？如果是，列为 P0。
+1. 缺少它时，本文规定的第一版模型是否无法得到正确输出？如果是，列为 P0。
 2. P0 基础指令能否得到相同结果，而新增功能主要减少命令、数据搬运或执行周期？如果是，通常列为 P1。
 3. 它是否只服务某类模型或某个部署场景？如果是，通常列为 P2。
 
@@ -1244,7 +1251,7 @@ Exp、倒数、倒数平方根、Sigmoid 和 Tanh 可采用：
 
 ### 9.2 指令执行模型
 
-首版采用“**命令头 + 固定尺寸描述符**”的队列接口，不暴露可变长微码。其抽象形式为：
+第一版采用“**命令头 + 固定尺寸描述符**”的队列接口，不暴露可变长微码。其抽象形式为：
 
 $$
 \operatorname{CMD}=
@@ -1258,7 +1265,7 @@ $$
 > [!note] 指令粒度
 > 指令的工作量应至少覆盖一个 tile、一个向量段或一组 DMA 行，而不是一个标量元素。例如一次 `GEMM` 覆盖一个 $M_t\times K_t$ 乘 $K_t\times N_t$ tile；一次 `VADD` 覆盖连续或 strided 的 $L$ 个元素。这样才能摊薄命令译码、事件和地址生成的固定成本，尤其对 Decoder 与循环层的小任务很重要。
 
-首版硬件不提供“Transformer 指令”“LSTM 指令”或“GRU 指令”。这些模型层由下表中的通用任务组合。只有当第 11.4 节的记录表明某组合减少了命令周期或 DDR 字节数，并且面积与功耗增量处于项目限制内时，才增加可选宏指令。
+第一版硬件不提供“Transformer 指令”“LSTM 指令”或“GRU 指令”。这些模型层由下表中的通用任务组合。只有当第 11.4 节的记录表明某组合减少了命令周期或 DDR 字节数，并且面积与功耗增量处于项目限制内时，才增加可选宏指令。
 
 ### 9.3 地址空间、寄存器和数据对象
 
@@ -1271,7 +1278,10 @@ $$
 | 事件表（EVENT） | 每项至少含完成位与错误位 | 编译器建立跨单元依赖 | DMA–Matrix–Vector 流水 |
 | 状态槽（STATE） | L1BUF 中固定或可分配的持久区域 | 保存 $h_t$、$c_t$、在线 Softmax 统计量 | RNN/GRU/LSTM、Attention |
 
-数据描述符应带有 `dtype`、`elem_bytes`、`layout`、`base_addr`、`shape` 和 `stride`。整数张量若使用 scale 与 zero point，也应在描述符中显式给出；带尾块的 tile 还需记录有效元素范围。地址计算必须以字节为单位定义，避免 FP16、BF16、INT8 共用同一描述符时产生歧义。
+数据描述符应带有 `dtype`、`elem_bytes`、`layout`、`base_addr`、`shape` 和
+`stride`。整数张量若使用 scale 与 zero point，也应在描述符中显式给出；
+带尾块的 tile 还需记录有效元素范围。地址计算必须以字节为单位定义，使
+INT4、INT8 和 INT32 使用同一描述符时仍能得到一致的地址。
 
 ### 9.4 公共字段、完成语义和精度控制
 
@@ -1299,7 +1309,10 @@ $$
 
 且 $A$ 对 L1BUF 或全局内存的写入在 $B$ 读取前可见。若 $A$ 失败，$B$ 不读取操作数，而是以 `DEPENDENCY_FAILED` 结束并把上游错误编号写入状态区。事件只有在所有等待者退出后才能换用新的 `event_generation`。从命令入队到事件进入终态期间，软件不得修改描述符、地址表、scale 数组和常量表。
 
-P0 精度模式包含 `FP16_ACC_FP32`、`BF16_ACC_FP32` 和 `FP32`；其中 `FP32` 是 Vector/Statistics/SFU 与 Matrix 累加器的 P0 格式，不要求 P0 Matrix 执行 FP32×FP32 乘法。Matrix FP32 乘法若列入 P1，Runtime 必须先读取 `MATRIX_FEATURE_BITS`。P1 还增加 `INT8_ACC_INT32`。设输入整数为 $x_q$、权重整数为 $w_q$，则 INT32 累加值为：
+P0 Matrix 精度模式包含 `INT4_ACC_INT32`、`INT8_ACC_INT32` 和
+`INT8_INT4_ACC_INT32`。Complex Math Engine 的 FP32 只用于单元内部临时值，
+不允许 Matrix 执行 FP32 乘法，也不允许软件把 FP32 张量提交给 NPU。设输入
+整数为 $x_q$、权重整数为 $w_q$，则 INT32 累加值为：
 
 $$
 a_{m,n}
@@ -1327,7 +1340,9 @@ b_{\mathrm{acc},n}
 \right).
 $$
 
-P1 `GEMM_DESC` 必须给出输入、权重、输出的 scale/zero-point 地址、数组长度、作用轴和非对称 zero point 开关。P0 描述符为这些字段预留版本位，因此加入 INT8 时不改变命令头尺寸。
+P0 `GEMM_DESC` 必须给出输入、权重、输出的 scale/zero-point 地址、数组长度、
+作用轴和非对称 zero point 开关。未启用的字段必须写 0；实现不接受的非对称
+zero point 组合必须返回明确错误，不能静默忽略。
 
 ### 9.5 DMA 与布局转换指令
 
@@ -1340,7 +1355,7 @@ DMA 不只是连续复制器，它还向 Matrix 与 Vector 提供 tile。P0/P1 �
 | `DMA_TRANSPOSE_2D` | P0 | LADDR/GADDR $\to$ LADDR/GADDR | rows、cols、两个 leading stride、tile 尺寸 | 实际搬动元素的二维转置；$K^{\mathsf T}$ 也可由 Matrix 转置位读取 |
 | `DMA_PACK` / `DMA_SPLIT` | P0 | 多段 $\leftrightarrow$ 单段 | 段数、每段 base/offset/size/stride | QKV 拼接/切分、四门或三门输出分段 |
 | `DMA_BROADCAST` | P1 | 标量/向量 $\to$ LADDR | 重复维、重复次数 | 只有下游必须读取展开后的连续张量时才物理复制 |
-| `DMA_GATHER_ND` | P1 | GADDR $\to$ LADDR | 块表地址、索引、块大小 | paged KV Cache、Embedding；首版可由多个 `DMA_COPY_ND` 替代 |
+| `DMA_GATHER_ND` | P1 | GADDR $\to$ LADDR | 块表地址、索引、块大小 | paged KV Cache、Embedding；第一版可由多个 `DMA_COPY_ND` 替代 |
 | `DMA_FILL` | P0 | 常量 $\to$ LADDR | 常量值、shape、dtype | 清零累加器、初始化 mask 或状态 |
 
 对秩为 $R$ 的 `DMA_COPY_ND`，令索引向量为 $\mathbf i=(i_0,\ldots,i_{R-1})$，则其语义应为：
@@ -1656,7 +1671,7 @@ RNN 的 Vector 阶段只有一个激活；GRU 需要按 $r_t,z_t,n_t,h_t$ 的顺
 11. 每条 P0 指令对随机 shape、stride、非整 tile、有效长度、地址对齐和格式转换的参考比对；
 12. `DMA_COPY_ND`、transpose、pack/split、参数重复读取和 KV 块搬运的索引与地址换算测试；源与目的重叠时应在写入前返回 `ADDR_OVERLAP`；
 13. 事件失败传播、事件代次复用、描述符存活期、L1BUF 双缓冲和 bank 冲突的压力测试；
-14. P1 INT8 每输出通道 scale、非对称 zero point、INT32 bias 尺度和输出裁剪测试；
+14. INT8 每输出通道 scale、非对称 zero point、INT32 bias 尺度和输出裁剪测试；
 15. 空 K/V 块、全 mask 行、NaN/Inf、描述符版本不匹配、非法 opcode、越界地址和 dtype 不被接受的状态测试。
 
 ### 11.4 必须填写的数值目标
@@ -1696,7 +1711,8 @@ $$
 ### 第一阶段：P0 基础任务
 
 - DMA：`DMA_LOAD`/`DMA_STORE`/`DMA_COPY_ND`/`DMA_FILL`、双缓冲、基础转置与 QKV 切分；
-- Matrix：FP16/BF16 `GEMM`/`BMM`、FP32 累加、bias/scale/residual/ReLU Epilogue、非整 tile 的 `valid_m/valid_n/valid_k`；
+- Matrix：INT4/INT8 `GEMM`/`BMM`、INT32 累加、bias/scale/residual/ReLU
+  Epilogue、非整 tile 的 `valid_m/valid_n/valid_k`；
 - Vector：`VADD`、`VSUB`、`VMUL`、`VFMA`、`VBIAS`、`VCMP`、`VSEL`、`VREDUCE_*`、`VEXP`、`VRECIP`、`VRSQRT`、Sigmoid、Tanh、GELU、SiLU、ReLU；
 - 控制：`EVENT_WAIT`/`EVENT_SIGNAL`、`BARRIER`、`STATE_LOAD`/`STATE_STORE`、失败传播与事件代次；
 - Runtime：命令/描述符队列、事件依赖、L1BUF bank 规划、基础内存规划与错误回报；
