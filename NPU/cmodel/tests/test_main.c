@@ -84,6 +84,7 @@ int main(void)
         {"scheduler", test_scheduler},
         {"frontend", test_frontend},
         {"wire", test_wire},
+        {"inline", test_inline},
         {"wire_e2e", test_wire_e2e},
         {"control_cycle", test_control_cycle},
         {"cfe_cycle", test_cfe_cycle},

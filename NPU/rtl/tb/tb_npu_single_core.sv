@@ -140,6 +140,7 @@ module tb_npu_single_core;
     logic dependency_check_enable_q;
     logic protocol_checks_enable;
     logic cfe_expect_high_q;
+    logic [5:0] cfe_low_word_low_q;
     logic [31:0] cfe_low_word_count_q;
     logic [31:0] cfe_high_word_count_q;
     logic [31:0] desc_read_count_q;
@@ -276,6 +277,7 @@ module tb_npu_single_core;
             matrix_pack7_l1_handshakes_q <= 32'd0;
             matrix_dependency_done_q <= 1'b0;
             cfe_expect_high_q <= 1'b0;
+            cfe_low_word_low_q <= 6'd0;
             cfe_low_word_count_q <= 32'd0;
             cfe_high_word_count_q <= 32'd0;
             desc_read_count_q <= 32'd0;
@@ -316,17 +318,21 @@ module tb_npu_single_core;
                     if (!dut.cmd_first || dut.cmd_last) begin
                         $fatal(1, "CFE low word markers are incorrect");
                     end
-                    if (dut.cmd_data[5:0] != 6'd0) begin
-                        $fatal(1, "CFE low word descriptor alignment is wrong");
-                    end
+                    cfe_low_word_low_q <= dut.cmd_data[5:0];
                     cfe_low_word_count_q <= cfe_low_word_count_q + 1'b1;
                     cfe_expect_high_q <= 1'b1;
                 end else begin
                     if (dut.cmd_first || !dut.cmd_last) begin
                         $fatal(1, "CFE high word markers are incorrect");
                     end
-                    if (dut.cmd_data[63:56] != 8'h01) begin
-                        $fatal(1, "CFE high word version is incorrect");
+                    if (dut.cmd_data[63]) begin
+                        if ((dut.cmd_data[62:58] == 5'd28) ||
+                            (dut.cmd_data[62:58] == 5'd30)) begin
+                            $fatal(1, "CFE V2 compact opcode is invalid");
+                        end
+                    end else if ((dut.cmd_data[63:56] != 8'h01) ||
+                                 (cfe_low_word_low_q != 6'd0)) begin
+                        $fatal(1, "CFE V1 header is incorrect");
                     end
                     cfe_high_word_count_q <= cfe_high_word_count_q + 1'b1;
                     cfe_expect_high_q <= 1'b0;
@@ -511,6 +517,28 @@ module tb_npu_single_core;
         high_word[55:44] = signal_event;
         high_word[63:56] = 8'h01;
         return {high_word, low_word};
+    endfunction
+
+    function automatic logic [127:0] make_v2_command(
+        input logic [4:0] compact_opcode,
+        input logic [9:0] command_id,
+        input logic [1:0] dtype,
+        input logic [79:0] payload,
+        input logic [7:0] wait0,
+        input logic [7:0] wait1,
+        input logic [7:0] signal_event
+    );
+        logic [127:0] command;
+        command = 128'd0;
+        command[127] = 1'b1;
+        command[126:122] = compact_opcode;
+        command[121:112] = command_id;
+        command[111:104] = wait0;
+        command[103:96] = wait1;
+        command[95:88] = signal_event;
+        command[81:80] = dtype;
+        command[79:0] = payload;
+        return command;
     endfunction
 
     task automatic axi_write_single(
@@ -721,6 +749,7 @@ module tb_npu_single_core;
         logic [31:0] vector_l1_before_int16;
         logic [31:0] desc_reads_after_dependency;
         logic [63:0] control_status;
+        logic [79:0] v2_payload;
 
         core_clk_i = 1'b0;
         reset_n = 1'b0;
@@ -889,10 +918,13 @@ module tb_npu_single_core;
         put_u64(dma_desc, 16'h98, 64'd8);
         put_u64(dma_desc, 16'ha0, 64'd8);
         store_descriptor(64'h1200, dma_desc, 256);
-        command_words[0] = make_command(
-            48'h1200, 12'h103, NPU_ENGINE_DMA,
-            NPU_OPCODE_DMA_COPY_1D,
-            NPU_EVENT_NONE, NPU_EVENT_NONE, NPU_EVENT_NONE
+        v2_payload = {
+            28'h800_3000, 28'h000_0900, 20'd8,
+            NPU_DTYPE_INT8, 1'b0, 1'b0
+        };
+        command_words[0] = make_v2_command(
+            5'd5, 10'h103, NPU_DTYPE_INT8, v2_payload,
+            8'hff, 8'hff, 8'hff
         );
         axi_submit_commands(1);
         read_command_response(12'h103, NPU_STATUS_SUCCESS);
@@ -929,10 +961,13 @@ module tb_npu_single_core;
               (system_b_handshakes_q == 32'd0),
               "system writes occurred before the L1-to-system DMA");
         system_dma_write_check_q = 1'b1;
-        command_words[0] = make_command(
-            48'h1800, 12'h109, NPU_ENGINE_DMA,
-            NPU_OPCODE_DMA_COPY_1D,
-            NPU_EVENT_NONE, NPU_EVENT_NONE, 12'h002
+        v2_payload = {
+            28'h000_0d00, 28'h800_3100, 20'd8,
+            NPU_DTYPE_INT8, 1'b0, 1'b0
+        };
+        command_words[0] = make_v2_command(
+            5'd5, 10'h109, NPU_DTYPE_INT8, v2_payload,
+            8'hff, 8'hff, 8'h02
         );
         axi_submit_commands(1);
         read_command_response(12'h109, NPU_STATUS_SUCCESS);
@@ -981,10 +1016,14 @@ module tb_npu_single_core;
         put_u32(complex_desc, 16'h78, 32'h3f80_0000);
         put_u32(complex_desc, 16'h7c, 32'h3f80_0000);
         store_descriptor(64'h1300, complex_desc, 256);
-        command_words[0] = make_command(
-            48'h1300, 12'h104, NPU_ENGINE_COMPLEX,
-            NPU_OPCODE_VACT_I,
-            NPU_EVENT_NONE, NPU_EVENT_NONE, NPU_EVENT_NONE
+        v2_payload = {
+            16'h0070, 16'h0000, 16'h0080,
+            5'd0, 8'd3,
+            2'd1, 4'd0, 4'd0, NPU_DTYPE_INT8, 2'd0, 5'd0
+        };
+        command_words[0] = make_v2_command(
+            5'd25, 10'h104, NPU_DTYPE_INT8, v2_payload,
+            8'hff, 8'hff, 8'hff
         );
         axi_submit_commands(1);
         read_command_response(12'h104, NPU_STATUS_SUCCESS);
@@ -1023,10 +1062,13 @@ module tb_npu_single_core;
         put_u32(int16_vector_desc, 16'h6c, 32'd8);
         store_descriptor(64'h1400, int16_vector_desc, 192);
         vector_l1_before_int16 = vector_l1_handshakes_q;
-        command_words[0] = make_command(
-            48'h1400, 12'h105, NPU_ENGINE_VECTOR,
-            NPU_OPCODE_VADD_I,
-            NPU_EVENT_NONE, NPU_EVENT_NONE, NPU_EVENT_NONE
+        v2_payload = {
+            16'h00a0, 16'h00a1, 16'h0000, 16'h00a2,
+            5'd0, 5'd3, 2'd0, 2'd0, 2'd0
+        };
+        command_words[0] = make_v2_command(
+            5'd15, 10'h105, NPU_DTYPE_INT16, v2_payload,
+            8'hff, 8'hff, 8'hff
         );
         axi_submit_commands(1);
         read_command_response(12'h105, NPU_STATUS_SUCCESS);
@@ -1076,7 +1118,7 @@ module tb_npu_single_core;
                 64'h0b00,
                 index == 0 ? 64'h0b20 : 64'h0b40,
                 64'd0,
-                index == 0 ? 64'h0c00 : 64'h0c20,
+                index == 0 ? 64'h0c00 : 64'h0c40,
                 32'h0000_00af
             );
             put_u32(matrix_desc, 16'h40, 32'd2);
@@ -1101,12 +1143,24 @@ module tb_npu_single_core;
                 64'h1500 + index * 64'h100,
                 matrix_desc, 256
             );
-            command_words[index] = make_command(
-                48'(64'h1500 + index * 64'h100),
-                12'(12'h106 + index), NPU_ENGINE_MATRIX,
-                NPU_OPCODE_GEMM,
-                NPU_EVENT_NONE, NPU_EVENT_NONE, NPU_EVENT_NONE
-            );
+            if (index == 0) begin
+                command_words[index] = make_command(
+                    48'(64'h1500 + index * 64'h100),
+                    12'(12'h106 + index), NPU_ENGINE_MATRIX,
+                    NPU_OPCODE_GEMM,
+                    NPU_EVENT_NONE, NPU_EVENT_NONE, NPU_EVENT_NONE
+                );
+            end else begin
+                v2_payload = {
+                    14'h02c, 14'h02d, 14'h031, 12'd0,
+                    6'd1, 6'd1, 6'd2,
+                    1'b0, NPU_DTYPE_INT16, 5'd1
+                };
+                command_words[index] = make_v2_command(
+                    5'd11, 10'h107, NPU_DTYPE_INT16, v2_payload,
+                    8'hff, 8'hff, 8'hff
+                );
+            end
         end
 
         // Pack code 7 is reserved and must fail before any Matrix L1 access.
@@ -1161,16 +1215,13 @@ module tb_npu_single_core;
         l1_read_word(20'h00c08, read_data);
         check(read_data == 64'h0000_000d_0000_0006,
               "linear INT16 Matrix result row one is incorrect");
-        l1_read_word(20'h00c20, read_data);
-        check(read_data == 64'h0000_000d_0000_0002,
-              "tiled INT16 Matrix result row zero is incorrect");
-        l1_read_word(20'h00c28, read_data);
-        check(read_data == 64'h0000_000d_0000_0006,
-              "tiled INT16 Matrix result row one is incorrect");
+        l1_read_word(20'h00c40, read_data);
+        check(read_data == 64'h0007_0003_0007_0001,
+              "tiled INT16 Matrix inline output scaling result is incorrect");
         check(matrix_pack5_l1_handshakes_q != 32'd0,
               "linear INT16 Matrix task did not access L1");
-        check(matrix_pack6_l1_handshakes_q != 32'd0,
-              "tiled INT16 Matrix task did not access L1");
+        check(matrix_pack6_l1_handshakes_q == 32'd28,
+              "inline Matrix output scaling issued an unexpected L1 request");
         check(matrix_pack7_l1_handshakes_q == 32'd0,
               "reserved Matrix pack issued an L1 request");
 
@@ -1180,10 +1231,10 @@ module tb_npu_single_core;
             desc_read_count_q, system_bus_read_handshakes,
             system_bus_write_handshakes
         );
-        check(desc_read_count_q == 32'd272,
+        check(desc_read_count_q == 32'd120,
               "descriptor read count is incorrect");
-        check(system_bus_read_handshakes == 32'd280,
-              "system-bus read count does not include 272 descriptor and 8 DMA reads");
+        check(system_bus_read_handshakes == 32'd128,
+              "system-bus read count does not include 120 descriptor and 8 DMA reads");
         check(system_bus_write_handshakes == 32'd8,
               "system-bus write count does not include eight DMA writes");
         check(!system_bus_protocol_error,

@@ -94,13 +94,13 @@ int npu_drv_wait_event(npu_driver_t *driver,
                        uint32_t max_cycles,
                        npu_drv_event_result_t *result)
 {
-    uint16_t packed;
+    uint8_t packed;
     uint64_t raw;
     int callback_result;
 
     if (driver == (npu_driver_t *)0 ||
         result == (npu_drv_event_result_t *)0 ||
-        npu_drv_event_pack(event, &packed) != NPU_DRV_OK ||
+        npu_drv_event_encode(event, &packed) != NPU_DRV_OK ||
         packed == NPU_DRV_EVENT_NONE) {
         return NPU_DRV_EINVAL;
     }

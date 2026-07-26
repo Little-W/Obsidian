@@ -1,261 +1,280 @@
-# NPU C 软件驱动库
+# NPU C 驱动库
 
-该目录提供不依赖操作系统的 C11 驱动库。Generic Core 是 NPU 外部的主控
-CPU。上层 Runtime 负责准备模型数据，平台适配层负责从 CPU 侧发起 AXI
-访问和维护缓存，驱动库负责统一 CMD128、Descriptor、提交、查询、等待和
-事件处理。
+本目录提供单核 NPU 的 C11 驱动。主控 CPU 作为 AXI Master，通过 NPU 的 AXI Slave 寄存器窗口配置设备，并把 CMD128 写入固定地址的命令 FIFO。NPU 发起 AXI Master 请求访问系统内存。
 
-主控 CPU 是系统总线 Master，NPU 的固定地址命令 FIFO、控制寄存器和 L1BUF 外部访问
-窗口都是 AXI Slave 目标。主控软件通过 Runtime 函数主动调用本驱动；驱动
-不会等待 NPU 自行取走模型，也不会把 Generic Core 当作 NPU 内部模块。
+CMD128 inline V2 已把执行参数放入指令本身。驱动不再分配、填写、同步或提交外部 Descriptor。
 
-## 文件
+## 1. 文件划分
 
-| 文件 | 说明 |
+| 文件 | 作用 |
 |---|---|
-| `include/npu_driver.h` | 稳定的公共 API、寄存器地址、CMD128 和 Descriptor 类型 |
-| `src/npu_driver_command.c` | Event/CMD128 编解码和固定地址 FIFO 提交 |
-| `src/npu_driver_descriptor.c` | Descriptor 公共/DMA/Matrix 编码和 Descriptor 池 |
-| `src/npu_driver_device.c` | 驱动初始化、MMIO、Core、IRQ 和故障控制 |
-| `src/npu_driver_runtime.c` | QUERY、WAIT、轮询、ACK 和 FENCE |
-| `src/npu_driver_memory.c` | 缓存同步、内存屏障和小端字段写入 |
-| `src/npu_driver_internal.h` | 仅供上述实现共享的私有定义，不属于公共 API |
-| `tests/test_npu_driver.c` | 无设备依赖的假平台测试 |
-| `examples/build_int16_gemm.c` | 创建 INT16 GEMM Descriptor 和 CMD128 |
-| `Makefile` | 静态库、测试和示例构建 |
+| `include/npu_driver.h` | 公共类型、寄存器、指令字段和函数声明 |
+| `src/npu_driver_command.c` | 80-bit payload、CMD128 编解码和 FIFO 提交 |
+| `src/npu_driver_device.c` | 初始化、寄存器、启动、停止、中断和故障处理 |
+| `src/npu_driver_memory.c` | 权重、输入和输出的 cache 同步 |
+| `src/npu_driver_runtime.c` | 查询、等待、确认任务和 engine fence |
 
-实现按职责分为独立编译单元，静态库中不会再链接旧的单文件实现。
-应用只需包含 `npu_driver.h`，原有高层 `npu_drv_submit()` 调用仍可使用；平台
-适配层需要实现新的 `submit_fixed_burst` 回调。应用不应包含
-`src/npu_driver_internal.h`。
+## 2. 指令提交接口
 
-## 构建与测试
-
-```bash
-cd "/home/yusen/Obsidian Vault/NPU/driver"
-make clean
-make test
-make example
-make regress
-```
-
-输出静态库为 `build/libnpu_driver.a`。应用程序包含
-`include/npu_driver.h` 并链接该静态库即可。
-
-`make regress` 分别用 GCC 和 Clang 运行普通测试，并分别用两种编译器运行
-ASan+UBSan 测试。回归覆盖 CMD128、Descriptor 池和编码、INT4、INT8、INT16、
-INT32 及其线性或分块存储格式、固定地址 FIXED burst、单条与批量提交、部分
-命令失败、QUERY/WAIT/ACK/FENCE、缓存同步和小端写入。单独的目标为
-`test-gcc`、`test-clang`、
-`test-sanitize-gcc` 和 `test-sanitize-clang`。
-
-## 平台适配接口
-
-`npu_drv_platform_ops_t` 不限定 Linux、裸机或某一种主控 CPU：
-
-- `mmio_read64/mmio_write64`：由 CPU 发起 64-bit AXI 访问，读写 NPU
-  AXI Slave 地址区中的 LSC 寄存器；
-- `submit_fixed_burst`：向 NPU AXI Slave 的固定 CMD FIFO 地址发送一个
-  64-bit AXI FIXED burst；
-- `submit_response`：从响应 FIFO 取得一条 CFE 接收结果；
-- `control_request`：访问 AXI Slave 控制窗口，执行 WAIT、QUERY 或
-  FENCE；周期模型可直接提供等价回调。FENCE 的 `rs1` 是低 4 位有效的
-  Engine mask，`rs2` 是最大等待周期数；
-- `write_barrier/read_barrier`：设备内存次序控制；
-- `cache_clean/cache_invalidate`：非一致缓存系统的数据维护；
-- `relax`：轮询时给平台提供等待、让出 CPU 或低功耗提示。
-
-`submit_fixed_burst` 和 `control_request` 是为了让同一驱动同时适用于真实 MMIO
-平台与 C model 的平台抽象，不代表 NPU 顶层存在 CPU 自定义指令端口。真实
-SoC 适配层应把它们实现为对 NPU AXI Slave 固定地址命令 FIFO 和控制寄存器区的读写。
-
-`npu_drv_fence_mask()` 可选择 DMA、Matrix、Vector 和 Complex Engine；
-`npu_drv_fence()` 是便捷接口，默认等待这四个执行单元。
-
-两个 Transformer runner 的 CModel backend 以一次
-`submit_fixed_burst` 回调表示一次完整 burst，并检查固定地址、beat 数和
-`lo、hi` 次序；它随后把内部命令 beat 交给功能模型。该 backend 不实例化
-`npu_sys_slave_cycle` 的 AW/W/B 与 AR/R 状态机。真实 AXI 通道的地址保持、
-反压、`WLAST`、`BRESP`、响应 FIFO 读取和错误响应由 CModel 的
-`test_sys_slave_cycle` 与 `test_single_core_cycle` 分别检查。两类测试组合后，
-分别覆盖模型部署结果和 AXI Slave 周期行为。
-
-命令区使用以下相对于 NPU AXI Slave 起点的完整 offset：
-
-| offset | 名称 | 方向 | 含义 |
-|---:|---|---|---|
-| `0x020000` | `CMD_FIFO_DATA` | 写 | 固定地址命令数据端口 |
-| `0x020008` | `CMD_RSP_FIFO` | 读 | 每次读取取出一条 CFE 接收结果 |
-| `0x020010` | `CMD_FIFO_STATUS` | 读 | 命令与响应 FIFO 状态 |
-
-一次命令写事务必须满足：
-
-- `AWADDR=CMD_FIFO_DATA`，全部 beat 使用同一个地址；
-- `AWSIZE=3`，每个 beat 为 8 字节；
-- `AWBURST=FIXED`，`WSTRB=0xff`；
-- beat 数只能是 `2、4、6、…、16`，即一次提交 `1～8` 条 CMD128；
-- `AWLEN=beat_count-1`，因此合法值为 `1、3、5、…、15`；
-- 每条 CMD128 固定按 `lo、hi` 次序占用相邻两个 beat；
-- `WLAST` 只随 burst 的最后一个 beat 发送。
-
-硬件响应 FIFO 至少保存 8 条结果。从空状态开始时，它能保存一个 16-beat
-burst 的全部命令响应；若其中已有旧响应，CFE 在 FIFO 满时暂停，直到主控
-读走至少一项。`BRESP` 只取决于 burst 是否整体进入 ingress FIFO，不等待
-CFE 逐条检查命令。
-
-`submit_fixed_burst` 必须处理 AXI 写数据通道的反压：当 `WREADY=0` 时保持
-`WVALID`、`WDATA`、`WSTRB` 和 `WLAST` 不变；全部 beat 完成传送后等待
-`BRESP`，只有 `OKAY` 才返回 0。驱动不会把两条命令交错，也不会在同一次
-burst 中留下半条 CMD128。`BRESP=OKAY` 只说明总线事务已经接收，不代表每条
-命令都通过 CFE 检查；每条命令是否接收成功以 `CMD_RSP_FIFO` 的对应结果为准。
-
-`npu_drv_submit()` 是单条接口，内部发送一个 2-beat FIXED burst，随后读取一条
-响应。`npu_drv_submit_batch()` 在一次 burst 中发送 `1～8` 条命令，再按提交
-次序读取相同数量的响应：
+单条指令：
 
 ```c
-npu_drv_submit_result_t result[4];
+npu_drv_submit_result_t result;
+int rc = npu_drv_submit(&driver, &command, &result);
+```
+
+批量指令：
+
+```c
+npu_drv_submit_result_t results[8];
 npu_drv_submit_batch_result_t summary;
 
 int rc = npu_drv_submit_batch(
     &driver,
-    command,
-    4,
-    descriptor_region,
-    descriptor_region_bytes,
-    result,
+    commands,
+    command_count,
+    results,
     &summary);
 ```
 
-`descriptor_region` 与 `descriptor_region_bytes` 表示提交前要执行缓存清理的连续
-区域；上层已经完成缓存处理时可传入 `NULL, 0`。
+一次批量提交包含 1～8 条 CMD128，对应 2～16 个 64-bit beat。平台回调必须满足：
 
-返回规则如下：
+- `AWADDR` 保持为 `NPU_DRV_CMD_FIFO_DATA`；
+- `AWBURST=FIXED`；
+- `AWSIZE=3`；
+- 每条指令先写 low word，再写 high word；
+- 只在本次 burst 的最后一个 beat 置 `WLAST`；
+- 每个 beat 保持有效，直到 ready/valid 传输完成；
+- 等待并检查 AXI 写响应。
 
-- 参数错误或命令编码无效时不发起 AXI 写；
-- 命令数超过 8 时返回 `NPU_DRV_ERANGE`；
-- AXI FIXED burst 失败时返回 `NPU_DRV_EIO`，
-  `summary.burst_completed=0`。此时设备可能已经收到部分 beat，软件必须先执行
-  平台规定的复位或 FIFO 恢复步骤，不能直接重发；
-- burst 成功后，若某条响应的 `status` 非零，驱动仍会读完本次 burst 的其余
-  响应，最后返回 `NPU_DRV_EDEVICE`；
-- 响应中的 `command_id` 与提交次序不符时，驱动也会尽量读完其余响应，最后
-  返回 `NPU_DRV_EIO`；
-- 读取响应本身失败时立即返回 `NPU_DRV_EIO`。此时
-  `summary.responses_received` 表示已经取得的响应数，恢复后才能继续提交；
-- `summary.first_failed_index` 指向第一条失败命令；全部成功时等于
-  `NPU_DRV_NO_FAILED_COMMAND`。每条详细状态都保存在 `result[]`。
+驱动在发送命令前调用 `write_barrier`，但不会清理 Descriptor cache。权重和输入仍需在 CPU 修改后调用 `npu_drv_sync_for_device()`；输出由 NPU 写回后，CPU 读取前调用 `npu_drv_sync_for_cpu()`。
 
-L1BUF 的外部窗口也位于 NPU AXI Slave 地址区。主控软件可按芯片允许的地址
-范围准备输入、读取结果或执行调试访问；正常模型运行也可以把数据放在 DDR，
-再由 NPU 内部 DMA 与 MIF 主动搬运。NPU 主动访问 DDR 时使用自身的 AXI
-Master 端口，与面向 CPU 的 AXI Slave 端口职责不同。
+## 3. CMD128 字段
 
-输入、权重和 Descriptor 交给设备前可调用 `npu_drv_sync_for_device()`；任务结束
-后，CPU 读取输出前调用 `npu_drv_sync_for_cpu()`。在一致缓存系统中，平台可把
-缓存回调留空，但仍应提供适合本平台的内存次序函数。
-
-## 常用调用次序
+`npu_drv_cmd_fields_t` 包含：
 
 ```c
-npu_drv_platform_ops_t ops = platform_operations();
-npu_driver_t driver;
-npu_drv_init(&driver, &ops);
-
-npu_drv_set_base(&driver, NPU_DRV_REG_INPUT_BASE, input_base);
-npu_drv_set_base(&driver, NPU_DRV_REG_WEIGHT_BASE, weight_base);
-npu_drv_set_timeout(&driver, 1, 100000);
-npu_drv_irq_enable(&driver, NPU_DRV_IRQ_DONE | NPU_DRV_IRQ_ERROR);
-npu_drv_start(&driver);
+typedef struct {
+    npu_drv_payload80_t payload;
+    uint16_t command_id;
+    npu_drv_compact_opcode_t compact_opcode;
+    npu_drv_dtype_t dtype;
+    uint8_t timeout_class;
+    uint8_t header_flags;
+    npu_drv_event_t wait_event[2];
+    npu_drv_event_t signal_event;
+} npu_drv_cmd_fields_t;
 ```
 
-然后建立 Descriptor：
+公共 bit 分配为：
+
+| bit | C 字段 |
+|---:|---|
+| 127 | 编码函数固定写 1 |
+| 126:122 | `compact_opcode` |
+| 121:112 | `command_id` |
+| 111:104 | `wait_event[0].id` |
+| 103:96 | `wait_event[1].id` |
+| 95:88 | `signal_event.id` |
+| 87:84 | `header_flags` |
+| 83:82 | `timeout_class` |
+| 81:80 | `dtype` |
+| 79:0 | `payload` |
+
+header flag 宏如下：
 
 ```c
-_Alignas(64) unsigned char memory[4096];
-npu_drv_desc_pool_t pool;
-npu_drv_desc_allocation_t allocation;
-
-npu_drv_desc_pool_init(&pool, memory, descriptor_device_base, sizeof(memory));
-npu_drv_desc_alloc(&pool, NPU_DRV_DESC_MATRIX, &allocation);
-npu_drv_desc_matrix_encode(
-    allocation.cpu_address, allocation.bytes, &common, &matrix);
+NPU_DRV_HEADER_IRQ_SUCCESS
+NPU_DRV_HEADER_IRQ_ERROR
+NPU_DRV_HEADER_STRICT_NUMERIC
+NPU_DRV_HEADER_ORDERED
 ```
 
-Descriptor 池同时保存 CPU 地址和设备地址。每次分配按照 64B 对齐，并根据类型
-返回 64B、192B 或 256B。`npu_drv_desc_common_encode()` 写入公共 64B 前缀；
-DMA 和 Matrix 具有专用编码函数。Vector、Complex 或后续字段可使用
-`npu_drv_desc_write_u8/u16/u32/u64()` 写入，它们采用小端字节序并检查写入范围。
+`npu_drv_cmd128_encode()` 检查 command ID、操作码、数据类型、超时组、事件 ID 和 signal/wait 冲突。`npu_drv_cmd128_decode()` 进行反向检查，并允许 0～31 的完整 5-bit 操作码范围。
 
-提交与等待：
+## 4. 事件
+
+V2 事件字段只有 ID：
 
 ```c
-npu_drv_submit_result_t accepted;
-npu_drv_task_status_t terminal;
-
-npu_drv_submit(
-    &driver, &command, allocation.cpu_address, allocation.bytes, &accepted);
-npu_drv_wait_task(&driver, command_id, 100000, &terminal);
-if (terminal.status == 0) {
-    /* output is ready */
-}
-npu_drv_ack_task(&driver, command_id);
+npu_drv_event_t event = {.id = 7u};
 ```
 
-`wait_task` 的第三个参数是最大轮询次数，不是硬件周期数。若希望由硬件等待事件，
-使用 `npu_drv_wait_event()` 并填写 `max_cycles`。
+`0x00～0xFE` 是有效 ID，`NPU_DRV_EVENT_NONE` 等于 `0xFF`。
 
-## 数据格式说明
+`EVENT_REARM` 的待重置 ID 放在 `signal_event.id` 中，两个 wait event 都使用 `NPU_DRV_EVENT_NONE`。generation 由 Event Table 在 NPU 内部记录并更新，软件不把 generation 写进指令。
 
-Descriptor 的 dtype 子字段编码为 `0=INT4`、`1=INT8`、`2=INT32`、
-`3=INT16`。驱动会把四个张量数据类型写入 Descriptor 的 `numeric_cfg`。
-INT16 输入和权重适合需要较细数值间隔的模型；偏置和乘加中间值仍使用 INT32
-或更宽的内部保存形式，最终按缩放参数、舍入模式和饱和模式写回目标 dtype。
-Sigmoid、Tanh、GELU、Softmax 和 Norm 等复杂函数在硬件内部按
-`INT → FP32 → INT` 处理，FP32 不能作为驱动提交的模型张量 dtype。
+## 5. payload 辅助函数
 
-驱动只负责字段生成和设备访问，不会自行改变权重数值。权重缩放参数应由模型
-编译器生成，并与运行时使用的生成 C 数组保持一致。
+### 5.1 写入位段
 
-## 模型端到端调用
+```c
+npu_drv_payload80_t payload = {0u, 0u};
 
-[`../cmodel/examples`](../cmodel/examples/README.md) 展示如何把 RNN、GRU、
-LSTM 和 CNN 的编译结果交给本驱动运行。示例不在 C 代码中填写内部 L1 地址、
-权重排列或任务编号，而是读取编译器生成的 C 部署包。
+int rc = npu_drv_payload_field_set(
+    &payload,
+    66u,   /* lsb */
+    14u,   /* width */
+    a_ref);
+```
 
-模型编译器默认输出 `<stem>_model.h`、`<stem>_model.c` 和
-`<stem>.manifest.json`。生成的 `.c` 文件包含 C 配置、CMD128、Descriptor、
-权重和运行信息，应用程序把它与驱动库一同编译。裸 `.cmd.bin`、
-`.desc.bin`、`.const.bin`、`.runtime.json` 和低层 JSON IR 仅在使用
-`--emit-raw` 时生成，用于检查，不是驱动的默认输入。
+函数检查 80-bit 范围、数值宽度和重复写入。模型部署通常直接使用编译器生成的 CMD128 数组；手写测试可用此函数逐段构造 payload。
 
-运行程序先把 C 部署包中的 Descriptor、权重和输入放入 DDR，再按生成配置
-给出的提交组调用：
+### 5.2 AREF28
+
+```c
+uint32_t src;
+npu_drv_aref_encode(
+    1u,        /* 系统内存 */
+    2u,        /* weight base */
+    0x400u,    /* byte offset */
+    &src);
+```
+
+系统地址的 `base_select` 允许 0～5；L1 地址必须使用 0。byte offset 为 24 bit。
+
+### 5.3 LREF
+
+矩阵地址：
+
+```c
+uint16_t a_ref;
+npu_drv_lref_encode(
+    0x1000u,   /* L1 byte address */
+    6u,        /* 64-byte unit */
+    14u,
+    &a_ref);
+```
+
+向量和复杂数学单元把 `unit_shift` 设为 4，字段宽度设为 16。函数检查地址对齐和字段容量。
+
+## 6. GEMM 构造示例
+
+`examples/build_int8_gemm.c` 和 `examples/build_int16_gemm.c` 展示以下过程：
+
+1. 将 A、B、C 的 L1 地址压缩为 LREF14；
+2. 调用 `npu_drv_matrix_gemm_payload_encode()` 写入三个地址、M、N、K、
+   偏置引用、C 数据类型和 5-bit `requant_shift`；
+3. 设置 command ID、GEMM 操作码、A 数据类型和事件 ID；
+4. 编码为 low/high 两个 64-bit word。
+
+GEMM 的低 42 bit 为：
 
 ```text
-npu_drv_submit_batch(每组 1～8 条 CMD128)
-    → 检查组内每条 CFE 响应
-    → npu_drv_wait_task()
-    → npu_drv_query_status() / npu_drv_query_raw()
-    → npu_drv_ack_task()
+[37:26] bias_lref12
+[25:20] M-1
+[19:14] N-1
+[13:8]  K-1
+[7]     b_int4
+[6:5]   C dtype
+[4:0]   requant_shift
 ```
 
-四个示例的模型张量使用 INT8，Matrix 累加与 bias 使用 INT32。单独运行其中
-一个模型：
+`npu_drv_matrix_bmm_payload_encode()` 使用 BMM 的 batch 和尺寸位段。两个
+函数都会检查 1～64 的尺寸、0～31 的 shift、INT32 输出必须使用 shift 0，
+以及 B 的数据类型。A 为 INT8 时可以配合 INT4 B，此时函数自动写入
+`b_int4=1`；其余情况要求 A 与 B 的数据类型相同。偏置引用使用 LREF12，
+数值 0 表示没有偏置。
 
-```bash
-make -C "/home/yusen/Obsidian Vault/NPU/cmodel/examples/rnn" test
+INT8 示例使用 `requant_shift=5`，可以直接处理 Q5 数据；INT16 示例使用
+`requant_shift=8`。
+
+## 7. 编译器生成 C 包的使用
+
+以 `demo_model_config` 为例：
+
+```c
+#include "demo_model.h"
+#include "npu_driver.h"
+
+int submit_model(npu_driver_t *driver)
+{
+    npu_drv_submit_result_t results[8];
+    npu_drv_submit_batch_result_t summary;
+    npu_drv_task_status_t task_status;
+    uint32_t batch_index;
+
+    npu_drv_sync_for_device(
+        driver,
+        demo_model_config.weights,
+        demo_model_config.weight_bytes);
+
+    for (batch_index = 0;
+         batch_index < demo_model_config.command_batch_count;
+         ++batch_index) {
+        const demo_model_command_batch_t *batch =
+            &demo_model_config.command_batches[batch_index];
+        const demo_model_cmd128_t *commands =
+            &demo_model_config.commands[batch->command_id_offset];
+        int rc = npu_drv_submit_batch(
+            driver,
+            (const npu_drv_cmd128_t *)commands,
+            batch->command_count,
+            results,
+            &summary);
+        if (rc != NPU_DRV_OK) {
+            return rc;
+        }
+        if (batch->host_sync_after != 0u) {
+            uint32_t command_index;
+            for (command_index = 0u;
+                 command_index < batch->command_count;
+                 ++command_index) {
+                uint16_t command_id =
+                    demo_model_config.batch_command_ids[
+                        batch->command_id_offset + command_index];
+                rc = npu_drv_wait_task(
+                    driver, command_id, 1000000u, &task_status);
+                if (rc != NPU_DRV_OK) {
+                    return rc;
+                }
+                rc = npu_drv_ack_task(driver, command_id);
+                if (rc != NPU_DRV_OK) {
+                    return rc;
+                }
+            }
+        }
+    }
+    return NPU_DRV_OK;
+}
 ```
 
-一次运行全部四个模型：
+生成配置还提供每个输入和输出的 DDR/L1 地址。应用应把输入写到对应 DDR 地址，完成 cache clean 后提交任务；最后一组任务完成后，对输出区域做 cache invalidate 再读取。
+
+批次中的 command ID 当前按编译顺序连续生成，因此 `command_id_offset` 可直接作为指令数组下标。若后续编译器允许非连续 ID，应按 `batch_command_ids` 查找；应用可在构建时增加一致性检查。
+
+`host_sync_before` 表示提交当前批次前，上一批必须已完成并确认；
+`host_sync_after` 表示提交后必须等待并确认该批次。编译器为当前所有批次写入
+`host_sync_after=1`，并为第一批之后的批次写入
+`host_sync_before=1`。`contains_event_rearm=1` 的批次只包含
+`EVENT_REARM`，前后两次主机同步用于保证旧事件已经结束、等待者数量为 0，
+并保证后续生产者看到已经重置的 Event ID。
+
+## 8. P1 操作码
+
+驱动枚举保留：
+
+```c
+NPU_DRV_COMPACT_COMPLEX_ROPE   /* 28 */
+NPU_DRV_COMPACT_COMPLEX_RECIP  /* 30 */
+```
+
+P1 功能位关闭时，设备会对这两类指令返回 `ILLEGAL_OPCODE`。驱动仍能编码、解码并提交它们。`VSTAT=29`，`VADD_RESCALE=31`。
+
+## 9. 构建与测试
 
 ```bash
-cd "/home/yusen/Obsidian Vault/NPU/cmodel/examples"
+cd NPU/driver
 make clean
 make test
+make example
 ```
 
-这些运行程序都位于 NPU 外部。Generic Core 是外部主控 CPU，作为 AXI
-Master 主动调用驱动函数；NPU 的固定地址命令 FIFO、控制寄存器和 L1BUF 外部窗口均为
-AXI Slave 目标。驱动不把 Generic Core 作为 NPU 内部执行单元，也不会等待
-NPU 主动取得主机上的模型包。
+完整编译器组合：
+
+```bash
+make clean
+make regress
+```
+
+`make regress` 使用 GCC、Clang、AddressSanitizer 和 UndefinedBehaviorSanitizer。编译选项包含 `-Wall -Wextra -Werror -Wpedantic`，警告会使测试失败。

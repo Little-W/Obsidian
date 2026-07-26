@@ -438,6 +438,7 @@ static uint8_t npu_engine_data_matrix_port(
         return 2u;
     }
     if (desc->requant_enable != 0u &&
+        desc->inline_requant_enable == 0u &&
         npu_engine_data_range_hits_word(
             NPU_SPACE_L1, desc->requant_addr,
             npu_engine_data_mul_limit(

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import sys
+import struct
 import tempfile
 import unittest
 from pathlib import Path
@@ -119,11 +120,10 @@ class OnnxFrontendTests(unittest.TestCase):
                 for item in result.assembled_operations
                 if item.engine == "matrix"
             )
-            numeric = int.from_bytes(matrix.descriptor[0x38:0x3C], "little")
-            self.assertEqual(numeric & 0x3, 3)
-            self.assertEqual((numeric >> 2) & 0x3, 3)
-            self.assertEqual(matrix.descriptor[0x90], 5)
-            self.assertEqual(matrix.descriptor[0x91], 6)
+            _low, high = struct.unpack("<QQ", matrix.command)
+            self.assertEqual((high >> 16) & 0x3, 3)
+            self.assertEqual((matrix.payload >> 5) & 0x3, 3)
+            self.assertEqual(matrix.payload & 0x1F, 8)
             output = Path(temp) / "onnx-int16-c-package"
             self.assertEqual(
                 compiler.main(

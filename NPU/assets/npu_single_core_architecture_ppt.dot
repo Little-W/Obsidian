@@ -68,7 +68,7 @@ digraph NPU_SINGLE_CORE_PPT {
         <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="7" COLOR="#3B82F6">
           <TR><TD BGCOLOR="#2563EB" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" COLOR="#FFFFFF" POINT-SIZE="15"><B>模型专用 C 源码包（.c / .h）</B></FONT></TD></TR>
           <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="12"><B>配置结构体 · CMD128 指令数组</B></FONT></TD></TR>
-          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="12"><B>Descriptor 数组 · 权重与常量数组</B></FONT></TD></TR>
+          <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="12"><B>权重与常量数组 · CPU 辅助操作信息</B></FONT></TD></TR>
           <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="12"><B>输入输出信息 · 操作信息</B></FONT></TD></TR>
           <TR><TD BGCOLOR="#DBEAFE" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="12"><B>命令分组 · 配置入口</B></FONT></TD></TR>
         </TABLE>
@@ -222,8 +222,27 @@ digraph NPU_SINGLE_CORE_PPT {
           <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="7" COLOR="#3B82F6">
             <TR><TD BGCOLOR="#2563EB" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" COLOR="#FFFFFF" POINT-SIZE="15"><B>Command Front End</B></FONT></TD></TR>
             <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="12"><B>2 × 64-bit beat → CMD128</B></FONT></TD></TR>
-            <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="12"><B>次序 · 版本 · opcode · command_id 检查</B></FONT></TD></TR>
+            <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="12"><B>次序 · V2 标记 · 紧凑 opcode · command_id 检查</B></FONT></TD></TR>
             <TR><TD BGCOLOR="#DBEAFE" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="12"><B>内部接收模块，不发起 AXI 事务</B></FONT></TD></TR>
+          </TABLE>
+        >
+      ];
+
+      cmd_v2 [
+        shape=plain,
+        label=<
+          <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="7" COLOR="#2563EB">
+            <TR><TD COLSPAN="4" BGCOLOR="#1D4ED8" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" COLOR="#FFFFFF" POINT-SIZE="15"><B>CMD128 V2：任务参数随指令提交</B></FONT></TD></TR>
+            <TR>
+              <TD BGCOLOR="#DBEAFE" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="11"><B>[127] V2 标记</B></FONT></TD>
+              <TD BGCOLOR="#DBEAFE" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="11"><B>[126:122] 紧凑 opcode</B></FONT></TD>
+              <TD BGCOLOR="#DBEAFE" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="11"><B>[121:112] command_id</B></FONT></TD>
+              <TD BGCOLOR="#DBEAFE" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="11"><B>[111:88] wait0 / wait1 / signal</B></FONT></TD>
+            </TR>
+            <TR>
+              <TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="11"><B>[87:80] 选项 / timeout / dtype</B></FONT></TD>
+              <TD COLSPAN="3" BGCOLOR="#EFF6FF" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="12"><B>[79:0] 操作专用内联参数：地址引用 · 尺寸 · 数据格式 · 函数选项</B></FONT></TD>
+            </TR>
           </TABLE>
         >
       ];
@@ -263,7 +282,7 @@ digraph NPU_SINGLE_CORE_PPT {
               <TD COLSPAN="2" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="12"><B>wait0 · wait1 · signal · 终态</B></FONT></TD>
             </TR>
             <TR>
-              <TD COLSPAN="4" BGCOLOR="#EDE9FE" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="12"><B>DFU：向 MIF 提交 Descriptor 读取；TBU（Translation Buffer Unit）返回地址转换结果</B></FONT></TD>
+              <TD COLSPAN="4" BGCOLOR="#EDE9FE" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="12"><B>Task Context：保存 CMD128；内联解码器直接展开 80-bit 操作参数</B></FONT></TD>
             </TR>
             <TR>
               <TD PORT="dma_task" WIDTH="172" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="11"><B>DMA 任务执行 / 提交</B></FONT></TD>
@@ -295,7 +314,11 @@ digraph NPU_SINGLE_CORE_PPT {
         arrowtail=normal,
         penwidth=2.0
       ];
-      cfe:s -> scheduler:n [
+      cfe:s -> cmd_v2:n [
+        color="#2563EB",
+        style=solid
+      ];
+      cmd_v2:s -> scheduler:n [
         color="#2563EB",
         style=solid
       ];
@@ -348,7 +371,7 @@ digraph NPU_SINGLE_CORE_PPT {
           <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="7" COLOR="#F59E0B">
             <TR><TD BGCOLOR="#F59E0B" HEIGHT="34" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" COLOR="#422006" POINT-SIZE="14"><B>Matrix Engine</B></FONT></TD></TR>
             <TR><TD BGCOLOR="#FEF3C7" HEIGHT="48" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="12"><B>MAC_CTX<BR/>分块矩阵乘加</B></FONT></TD></TR>
-            <TR><TD BGCOLOR="#FEF3C7" HEIGHT="60" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="12"><B>ACCUM_CTX / Epilogue<BR/>部分和 · INT32 bias / residual<BR/>重缩放 · 裁剪 · 写回</B></FONT></TD></TR>
+            <TR><TD BGCOLOR="#FEF3C7" HEIGHT="60" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="12"><B>ACCUM_CTX / Epilogue<BR/>部分和 · GEMM 的逐列 INT32 bias<BR/>重缩放 · 裁剪 · 写回</B></FONT></TD></TR>
             <TR><TD HEIGHT="36" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="12"><B>无原生 CONV 指令</B></FONT></TD></TR>
           </TABLE>
         >
@@ -465,7 +488,7 @@ digraph NPU_SINGLE_CORE_PPT {
         label=<
           <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="7" COLOR="#14B8A6">
             <TR><TD BGCOLOR="#0F766E" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" COLOR="#FFFFFF" POINT-SIZE="15"><B>MIF · 64-bit AXI Master</B></FONT></TD></TR>
-            <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="12"><B>Descriptor / 权重 / 输入读取 · 输出写回</B></FONT></TD></TR>
+            <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="12"><B>DMA 全局数据读取 · 输出写回</B></FONT></TD></TR>
             <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="12"><B>m_axi_* · Burst · outstanding · 响应</B></FONT></TD></TR>
             <TR><TD BGCOLOR="#CCFBF1" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="11"><B>TBU（Translation Buffer Unit）<BR/>GVA → PA / 状态；不发起 AXI</B></FONT></TD></TR>
           </TABLE>

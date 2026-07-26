@@ -444,6 +444,20 @@ void npu_core_top_cycle_step(
         &lsc_inputs);
     npu_core_top_eval_lsc(
         &top->lsc, &lsc_inputs, &lsc_control);
+    top->ts.wire_limits.gaddr_base[0] = 0u;
+    top->ts.wire_limits.gaddr_base[1] = lsc_control.input_base;
+    top->ts.wire_limits.gaddr_base[2] = lsc_control.weight_base;
+    top->ts.wire_limits.gaddr_base[3] = lsc_control.work_base;
+    top->ts.wire_limits.gaddr_base[4] = lsc_control.output_base;
+    top->ts.wire_limits.gaddr_base[5] = lsc_control.kv_base;
+    for (index = 0u; index < NPU_TS_ENGINE_COUNT; index++) {
+        uint32_t base;
+
+        for (base = 0u; base < 6u; base++) {
+            top->engine[index].wire_limits.gaddr_base[base] =
+                top->ts.wire_limits.gaddr_base[base];
+        }
+    }
     module_reset_n =
         (uint8_t)(inputs->reset_n != 0u &&
                   lsc_control.internal_soft_reset_pulse == 0u);

@@ -37,6 +37,15 @@ static uint64_t npu_frontend_response(uint16_t command_id,
            ((uint64_t)free_count << 20);
 }
 
+static uint16_t npu_frontend_command_id(uint64_t low_beat,
+                                        uint64_t high_beat)
+{
+    if ((high_beat >> 63u) != 0u) {
+        return (uint16_t)((high_beat >> 48u) & 0x03ffu);
+    }
+    return (uint16_t)((low_beat >> 48u) & 0x0fffu);
+}
+
 npu_status_t npu_model_submit_wire(npu_model_t *model,
                                    uint64_t low_beat,
                                    uint64_t high_beat)
@@ -73,14 +82,19 @@ npu_status_t npu_model_submit_wire(npu_model_t *model,
     if (status != NPU_STATUS_SUCCESS) {
         return status;
     }
-    descriptor_bytes = npu_wire_descriptor_bytes(command.engine);
-    if (descriptor_bytes == 0u ||
-        command.desc_addr > model->ddr_size ||
-        descriptor_bytes >
-            model->ddr_size - (size_t)command.desc_addr) {
-        return NPU_STATUS_ADDR_FAULT;
+    if (command.inline_format != 0u) {
+        descriptor = (const uint8_t *)0;
+        descriptor_bytes = 0u;
+    } else {
+        descriptor_bytes = npu_wire_descriptor_bytes(command.engine);
+        if (descriptor_bytes == 0u ||
+            command.desc_addr > model->ddr_size ||
+            descriptor_bytes >
+                model->ddr_size - (size_t)command.desc_addr) {
+            return NPU_STATUS_ADDR_FAULT;
+        }
+        descriptor = &model->ddr[(size_t)command.desc_addr];
     }
-    descriptor = &model->ddr[(size_t)command.desc_addr];
     status = npu_wire_decode_task(cmd_wire, sizeof(cmd_wire),
                                   descriptor, descriptor_bytes,
                                   &limits, &request, &meta);
@@ -151,8 +165,8 @@ void npu_model_cycle_io(npu_model_t *model,
                 model->cfe.wait_cycles = 0u;
             }
         } else {
-            command_id =
-                (uint16_t)((model->cfe.low_beat >> 48) & 0x0fffu);
+            command_id = npu_frontend_command_id(
+                model->cfe.low_beat, inputs->cmd_data);
             if (inputs->cmd_first != 0u ||
                 inputs->cmd_last == 0u) {
                 status = NPU_STATUS_BAD_DESC;

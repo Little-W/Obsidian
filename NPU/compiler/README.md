@@ -1,435 +1,308 @@
-# NPU 模型编译器与汇编器
+# NPU 模型编译器与 CMD128 汇编器
 
-本目录包含两个工具和一个职责独立的产物生成模块：
+本目录包含两个层次：
 
-- `npu_model_compiler.py` 读取高层模型图，完成图检查、形状推导、算子展开、
-  张量布局、存储分配、Matrix-B 数据整理、任务依赖分析和设备任务生成；
-- `model_artifacts.py` 默认生成可直接加入 C 工程的模型头文件、模型源文件和
-  manifest，并负责命令行参数、JSON 文件读取、文件写入和 `--check`
-  逐字节检查；
-- `npu_assembler.py` 读取低层 JSON IR，把已经确定的任务字段编码成 CMD128 和
-  Descriptor。
+- `npu_model_compiler.py` 接收 Keras、PyTorch、TFLite、ONNX 或高层 JSON 模型，完成图检查、整数张量处理、常量排布、L1 地址分配、算子拆分和任务依赖生成。
+- `npu_assembler.py` 接收低层 JSON IR，把每个任务编码成一条 CMD128 inline V2 指令。
 
-简而言之，模型编译器决定“计算什么、数据放在哪里、先后关系是什么”，汇编器
-负责“把已经确定的设备任务编码成二进制”。`npu_model_compiler.py` 仍是高层
-编译的命令行与 Python API 主入口；产物相关代码放在独立模块中。低层 JSON IR
-是两个阶段之间可以检查、保存和重复汇编的中间文件。
+“低层 JSON IR”是保留名称。它描述已经选定执行单元、操作码、张量地址和任务事件的程序。V2 不读取外部 Descriptor；执行参数都在 128-bit 指令中。
 
-模型编译器的默认交付物不是若干裸二进制文件，而是一组 C 模型包：
-`<stem>_model.h` 声明配置结构体和数组，`<stem>_model.c` 定义 CMD128、
-Descriptor、权重以及运行元数据。主控程序把这两个文件和 NPU 驱动一起编译，
-再按模型配置装载数据、分组提交命令和读取输出。需要检查编码细节时，可以使用
-`--emit-raw` 额外生成低层 JSON IR 与裸数据文件。
+## 1. 编译结果
 
-## 1. 高层模型图
-
-高层输入只描述模型语义。以下示例表示一次 INT16 矩阵乘法：
-
-```json
-{
-  "schema_version": 1,
-  "model": {"name": "linear_demo"},
-  "inputs": [
-    {"name": "x", "shape": [2, 4], "dtype": "int16"}
-  ],
-  "constants": [
-    {
-      "name": "weight",
-      "shape": [4, 3],
-      "dtype": "int16",
-      "data": [1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1]
-    }
-  ],
-  "tensors": [
-    {"name": "y", "shape": [2, 3], "dtype": "int16"}
-  ],
-  "operators": [
-    {
-      "name": "projection",
-      "type": "MatMul",
-      "inputs": ["x", "weight"],
-      "outputs": ["y"]
-    }
-  ],
-  "outputs": ["y"]
-}
-```
-
-模型文件不填写下列设备细节：
-
-- DDR 或 L1 地址；
-- Descriptor 地址；
-- `command_id`；
-- 等待事件和完成事件；
-- 执行单元、opcode 和 Descriptor 字段；
-- DMA、PACK、SPLIT 或 stride 等低层搬运任务。
-
-这些内容均由模型编译器生成。这样，模型作者可以围绕张量和模型算子编写文件，
-而不需要手工维护地址和任务编号。
-
-模型张量支持 INT4、INT8、INT16 和 INT32。常量的 `data` 使用普通行主序，
-Matrix 权重无需由用户提前整理。
-
-## 2. 直接读取 Keras、PyTorch、TFLite 与 ONNX
-
-`npu_model_compiler.py` 可以直接读取以下文件：
-
-| 文件 | 读取方式 |
-|---|---|
-| `.keras`、`.h5`、`.hdf5` | Keras 3 安全加载；普通模型先在内存中转为 TFLite，标准 Transformer Encoder 直接保留多头注意力等高层节点 |
-| `.tflite` | 读取 FlatBuffer、常量、张量形状、scale 和 zero point |
-| `.onnx` | 检查模型并执行静态形状推导，再生成编译器高层图 |
-| `.pt`、`.pth`、`.ts`、`.torchscript` | 只接受 TorchScript；先导出 ONNX，再使用同一 ONNX 前端 |
-| `.pt2` | 读取 `torch.export` 的 ExportedProgram，导出 ONNX 后继续编译 |
-| `.json` | 读取本目录定义的高层模型图 |
-
-文件后缀不明确时可用 `--input-format` 指定类型。动态首维默认取
-`--batch-size 1`；其他动态维度必须用可重复的
-`--input-shape NAME=D0,D1,...` 提供静态数值。
-
-框架通常保存 FP32 参数，而 NPU 张量只使用整数。前端按
-
-```text
-integer = round(real_value / 2^(-fraction_bits))
-```
-
-把参数编码成 `--model-dtype` 指定的 INT4、INT8 或 INT16，并检查每个数是否
-能由目标整数类型保存。建议默认使用 INT8；小数位数由模型的数值范围确定。
-例如设置 6 个小数位时，scale 为 `2^-6 = 1/64`。INT16 可使用
-`--model-dtype int16 --fraction-bits 8`，对应 scale `1/256`。超出整数范围、
-NaN 或无穷值都会得到明确错误，不会静默截断。INT32 用于 Matrix 累加、bias
-及需要较大数值范围的中间张量，不作为框架 FP32 参数的直接编码目标。
-
-当前框架前端采用“明确支持集合”：
-
-- TFLite：FullyConnected、Add、ReLU、GELU、Logistic、Tanh、Softmax、
-  Reshape、二维 Transpose、末维 Concat 和 NHWC Conv2D；
-- ONNX：MatMul、Gemm、Add、ReLU、GELU、Sigmoid、Tanh、SiLU、Softmax、
-  常用形状调整节点、二维 Transpose、末维 Concat 和最后一维
-  LayerNormalization；
-- Keras：上述可经 TFLite 表达的普通模型，以及 Batch=1、静态
-  `[1, token 数, 特征数]` 的标准 Transformer Encoder；
-- PyTorch：能够导出到上述 ONNX 支持集合的 TorchScript 或 ExportedProgram。
-
-标准 Keras Transformer 路径支持 MultiHeadAttention、残差 Add、
-LayerNormalization、Dense、GELU 和推理阶段的 Dropout。当前要求自注意力、
-`num_heads × key_dim = 特征数`、`num_heads × value_dim = 特征数`，并且注意力
-投影不含 bias。未满足这些限制时，编译器会指出具体层和不受支持的属性。
-
-> [!warning] PyTorch 文件安全
-> PyTorch 反序列化可能执行文件中的代码，因此必须显式传入
-> `--trust-model`，并且只能读取来源可信的模型。只包含参数的 `state_dict`
-> 没有可执行计算图，不能直接编译；应先用模型类恢复网络，再导出
-> TorchScript 或 `.pt2`。
-
-`tf_2_18` 环境使用 PyTorch 2.5.1 的 CUDA 12.4 构建。该构建既可在 CPU 上
-完成模型导出，也可在 NVIDIA 驱动可用时使用 GPU。编译器本身把示例输入放在
-CPU 上执行 ONNX 导出，所以模型编译不依赖 GPU 是否当前可见。
-
-## 3. 编译流程
-
-一次高层编译包含以下步骤：
-
-1. 检查字段、名字、整数类型和常量元素个数；
-2. 根据张量生产关系计算稳定的拓扑顺序，并拒绝带环的图；
-3. 推导每个输出张量的形状和类型，并检查用户给出的声明；
-4. 展开复合算子；
-5. 为输入、输出、常量、临时张量及 Matrix-B tile 数据安排存储；
-6. 把行主序常量整理成设备读取格式；
-7. 生成输入 DDR→L1 和输出 L1→DDR 任务；
-8. 根据数据读写关系生成事件；直接前驱超过两个时自动生成事件合并任务；
-9. 生成低层 JSON IR，并调用 `npu_assembler.py`；
-10. 检查 Descriptor 区、常量区和运行时 DDR 数据区互不重叠。
-11. 把 CMD128、Descriptor、权重、输入输出信息和命令分组写入 C 模型包。
-
-模型输出是 DDR binding。C 程序从生成的运行元数据读取输入和输出地址、形状、
-类型和字节数，不需要知道内部 L1 地址。
-
-这里的软件与硬件有明确分工：
-
-- 编译器软件负责识别高层算子、推导形状、整理权重、拆分复合计算、安排 DMA
-  与 Matrix/Vector/Complex 任务，并生成 C 模型包；
-- 主控软件负责调用驱动函数、装载 Descriptor 与权重、写入输入、按命令分组
-  提交任务、等待完成并读取输出；
-- NPU 硬件只执行已经定义的 CMD128 操作，不直接理解 Keras、PyTorch 或
-  `Conv2D` 这类高层节点；
-- 某个高层节点无法用现有设备任务表达时，编译器应给出清晰错误，或由上层部署
-  软件安排 CPU 函数。不能把未知节点当作已经由 NPU 支持。
-
-## 4. 支持的模型算子
-
-高层编译器支持以下节点：
-
-- `MatMul`；
-- `Add`；
-- `Softmax`；
-- `LayerNorm`；
-- `GELU`；
-- `Reshape`；
-- `Transpose`；
-- `Concat`；
-- `MultiHeadAttention`；
-- `Conv2D`。
-
-`BMM` 是低层 Matrix opcode，仅由 `MultiHeadAttention` 展开时生成；当前高层
-模型输入不接受 `BatchedMatMul` 节点。
-
-Matrix-B 使用硬件要求的 tile 存储顺序。常量权重在编译时直接整理；运行时产生
-的 Matrix-B 张量由编译器生成填零和分 tile 搬运任务。Descriptor 中的
-`m`、`n`、`k`、tile 尾部有效元素数、批处理步长及整数重缩放表均由编译器填写。
-
-## 5. MultiHeadAttention
-
-一个高层 `MultiHeadAttention` 节点的输入为：
-
-```json
-{
-  "name": "self_attention",
-  "type": "MultiHeadAttention",
-  "inputs": ["x", "wq", "wk", "wv", "wo"],
-  "outputs": ["attention_output"],
-  "attributes": {
-    "num_heads": 2,
-    "softmax_output_scale": 0.25
-  }
-}
-```
-
-模型文件只给出输入、四组普通行主序权重和头数。编译器自动生成：
-
-1. Q、K、V 三次投影；
-2. Q 的 Head 分离；
-3. K 的 Head 分离与转置；
-4. V 的 Head 分离；
-5. `QK^T` 批矩阵乘法；
-6. Softmax；
-7. `Attention × V` 批矩阵乘法；
-8. Head 合并；
-9. 输出投影。
-
-每个内部张量的地址、每条任务的编号和事件都保存在生成结果中，不写入高层模型
-文件。
-
-## 6. Conv2D：编译时软件展开为 im2col + GEMM
-
-硬件没有单独的卷积 opcode，因此不能把一个 `Conv2D` 节点原样交给 NPU。
-高层 `Conv2D` 使用 NHWC 输入，kernel 使用 `[KH, KW, Cin, Cout]`，当前支持
-`groups=1`。stride、dilation、`VALID`、`SAME` 和显式 padding 均由编译器
-软件计算。
-
-编译器先推导：
-
-```text
-M = N × OH × OW
-K = KH × KW × Cin
-```
-
-然后生成形状为 `[M, K]` 的 im2col 张量。存在 padding 时，编译器先生成一条
-DMA FILL 任务，用于把 im2col 清零；随后针对每个 kernel tap 生成 COPY_ND
-任务，把有效的 `[N, OH, OW, Cin]` 数据写入对应列。kernel 常量在编译时从
-`[KH, KW, Cin, Cout]` 重新解释为 `[K, Cout]`，再整理为 Matrix-B tile
-存储顺序。最后生成 GEMM 任务，产生按 NHWC 线性保存的输出。
-
-因此，生成的低层 JSON IR 中不会出现不存在的卷积 opcode，只包含 DMA 和
-Matrix 任务。这个例子也说明了为什么模型编译结果需要包含 C 配置，而不能只有
-一串孤立指令：高层节点的拆分、数据地址、权重格式、任务分组和主控调用方式都
-由软件生成并交给驱动使用。
-
-## 7. 生成文件
-
-假设高层输入名为 `model.json`，默认生成以下部署文件：
+默认输出可直接加入 C 工程：
 
 | 文件 | 内容 |
 |---|---|
-| `model_model.h` | C 类型、尺寸宏、配置结构体和所有数组的 `extern` 声明 |
-| `model_model.c` | CMD128、Descriptor、权重、输入输出、命令信息和配置实例 |
-| `model.manifest.json` | 源文件摘要、C 文件摘要、命令数量、数据长度和命令分组 |
+| `<model>_model.h` | C 类型、数组声明、模型配置和尺寸宏 |
+| `<model>_model.c` | CMD128 指令数组、权重/常量数组、输入输出信息和批次信息 |
+| `<model>.manifest.json` | 输入摘要、文件摘要、算子列表和指令批次 |
 
-`model_model.h` 声明以下主要内容：
-
-- `model_model_cmd128_t`：一条 128-bit 指令，由 `low` 和 `high` 两个
-  `uint64_t` 组成；
-- `model_model_binding_t`：一个输入或输出的名字、DDR 地址、L1 地址、字节数、
-  整数类型和形状；
-- `model_model_command_batch_t`：一组命令在命令编号表中的起始位置和数量；
-- `model_model_config_t`：模型名、指令、Descriptor、权重、输入、输出、
-  设备任务和命令分组的统一入口；
-- `model_model_commands`、`model_model_descriptors`、
-  `model_model_weights`：分别保存指令、Descriptor 和权重数据；
-- `model_model_inputs`、`model_model_outputs`：主控软件需要读写的模型接口；
-- `model_model_command_batches`、`model_model_batch_command_ids`：驱动提交顺序。
-
-CMD128 数组按 16 字节对齐，Descriptor 按 64 字节对齐，权重按 256 字节对齐。
-头文件同时给出逻辑长度和存储长度。例如某个模型没有权重时，
-`WEIGHT_BYTES` 为 0，但 C 数组仍保留一个占位字节。这样不会生成非标准的
-零长度数组，主控程序只使用逻辑长度，不会装载占位字节。
-
-使用 `--emit-raw` 后，还会额外生成调试文件：
+使用 `--emit-raw` 后还会输出：
 
 | 文件 | 内容 |
 |---|---|
-| `model.npuasm.json` | 自动生成的低层 JSON IR |
-| `model.cmd.bin` | CMD128 原始字节，每条 16 字节 |
-| `model.desc.bin` | Descriptor 原始连续数据 |
-| `model.const.bin` | 已整理的权重和编译器常量数据 |
-| `model.runtime.json` | 输入、输出、地址和运行时装载信息 |
+| `<model>.npuasm.json` | 低层 JSON IR |
+| `<model>.cmd.bin` | 每条 16 byte 的 CMD128 数据 |
+| `<model>.const.bin` | 权重和常量数据 |
+| `<model>.runtime.json` | 运行时张量、地址、指令批次和内存计划 |
 
-裸数据用于编译器检查、汇编结果比对和问题定位，不是默认部署接口。
+编译器不生成 `.desc.bin`，C 包也没有 Descriptor 数组、Descriptor 地址或 Descriptor 字节数字段。
 
-### 7.1 主控程序如何使用 C 模型包
+生成的模型配置包含：
 
-下列伪代码说明调用顺序。具体函数名以驱动库为准：
+- `commands` 与 `command_count`；
+- `weights`、`weight_bytes`、`weight_base_ddr`、`weight_base_l1`；
+- 输入和输出的名称、DDR 地址、L1 地址、字节数、数据类型、维数及各维长度；
+- 低层操作列表；
+- 每次 FIXED burst 应提交的 command ID 列表；
+- 每个批次的 `host_sync_before`、`host_sync_after` 和
+  `contains_event_rearm` 标志。
 
-```c
-#include "model_model.h"
-#include "npu_driver.h"
+## 2. CMD128 inline V2 公共字段
 
-const model_model_config_t *model = &model_model_config;
+| bit | 字段 | 说明 |
+|---:|---|---|
+| 127 | `inline_v2` | 固定为 1 |
+| 126:122 | `compact_opcode` | 5-bit 操作码 |
+| 121:112 | `command_id` | 10-bit，范围 0～1023 |
+| 111:104 | `wait_event0` | 等待事件 ID，`0xFF` 表示不等待 |
+| 103:96 | `wait_event1` | 第二个等待事件 ID |
+| 95:88 | `signal_event` | 完成后更新的事件 ID |
+| 87 | `irq_success` | 成功时请求中断 |
+| 86 | `irq_error` | 失败时请求中断 |
+| 85 | `strict_numeric` | 复杂数学单元使用严格数值检查 |
+| 84 | `ordered` | 要求按程序顺序处理 |
+| 83:82 | `timeout_class` | 选择 4 组超时寄存器之一 |
+| 81:80 | `dtype` | `0=int4`、`1=int8`、`2=int32`、`3=int16` |
+| 79:0 | `payload` | 当前操作的全部执行参数 |
 
-npu_load_descriptors(model->descriptor_base,
-                     model->descriptors,
-                     model->descriptor_bytes);
-npu_load_weights(model->weight_base_ddr,
-                 model->weights,
-                 model->weight_bytes);
-npu_write_tensor(&model->inputs[0], input_data);
+事件字段只保存 8-bit ID，不保存 generation。`EVENT_REARM` 把待重置的事件 ID 放在 `signal_event` 中，两个等待字段均为 `0xFF`；Event Table 在硬件内部更新 generation。
 
-for (uint32_t group = 0; group < model->command_batch_count; ++group) {
-    const model_model_command_batch_t *batch =
-        &model->command_batches[group];
-    npu_drv_cmd128_t
-        commands[NPU_DRV_CMD_FIFO_MAX_BURST_COMMANDS];
-    npu_drv_submit_result_t
-        results[NPU_DRV_CMD_FIFO_MAX_BURST_COMMANDS];
-    npu_drv_submit_batch_result_t batch_result;
+直接提交低层 JSON IR 时，软件必须先确认该 Event ID 的旧生产者和全部等待者
+已经结束，再提交 `EVENT_REARM`；还要等 `EVENT_REARM` 完成后才能提交使用同一
+ID 的新生产者。高层编译器会生成满足这一顺序要求的批次信息。
 
-    for (uint32_t i = 0; i < batch->command_count; ++i) {
-        uint16_t command_id =
-            model->batch_command_ids[batch->command_id_offset + i];
-        commands[i].lo = model->commands[command_id].lo;
-        commands[i].hi = model->commands[command_id].hi;
-    }
-    if (npu_drv_submit_batch(
-            &driver, commands, batch->command_count,
-            model->descriptors, model->descriptor_bytes,
-            results, &batch_result) != NPU_DRV_OK) {
-        handle_submit_error(&batch_result, results);
-        break;
-    }
-    npu_wait_group();
-}
+## 3. 5-bit 操作码
 
-npu_read_tensor(&model->outputs[0], output_data);
+| 编码 | 名称 | 编码 | 名称 |
+|---:|---|---:|---|
+| 0 | NOP | 16 | VSUB |
+| 1 | EVENT_SIGNAL | 17 | VMUL |
+| 2 | EVENT_REARM | 18 | VFMA |
+| 3 | EVENT_JOIN | 19 | VMAX |
+| 4 | GLOBAL_FENCE | 20 | VMIN |
+| 5 | DMA_COPY_1D | 21 | VCMP |
+| 6 | DMA_COPY_ND | 22 | VSELECT |
+| 7 | DMA_FILL | 23 | VCLAMP |
+| 8 | DMA_TRANSPOSE_2D | 24 | VRELU |
+| 9 | DMA_PACK | 25 | VACT |
+| 10 | DMA_SPLIT | 26 | VSOFTMAX |
+| 11 | GEMM | 27 | VNORM |
+| 12 | BMM | 28 | VROPE（P1） |
+| 13 | GEMM_ACCUM | 29 | VSTAT |
+| 14 | GEMM_ZERO | 30 | VRECIP（P1） |
+| 15 | VADD | 31 | VADD_RESCALE |
+
+P1 功能位关闭时，VROPE 和 VRECIP 可以被编码和提交，但设备返回 `ILLEGAL_OPCODE`。保留这两个编码可使指令文件在启用 P1 后继续使用。
+
+## 4. 地址压缩
+
+### 4.1 AREF28
+
+DMA 使用 28-bit 地址引用：
+
+```text
+[27]       space       0=L1，1=系统地址
+[26:24]   base_select
+[23:0]    byte_offset
 ```
 
-主控 CPU 发起这些驱动调用。NPU 的命令接收端和控制寄存器是总线从设备接口；
-需要读取 DDR 时，NPU 的内存访问单元再作为总线主设备发起请求。C 模型包保存
-部署所需的静态数据，驱动负责实际的寄存器访问和数据传输。
+L1 地址要求 `base_select=0`。系统地址的基地址编号为：
 
-编译器保证每个 `command_batch` 最多包含 8 条 CMD128。驱动把它们排成
-`low0, high0, low1, high1, ...`，向固定地址 `0x020000` 发出 2～16 beat
-的 AXI FIXED burst。burst 的写响应成功后，驱动还要从 `0x020008` 逐项读取
-命令接收响应；只检查 AXI 写响应不足以确认每条 CMD 已被 CFE 接受。
+| 编号 | 基地址 |
+|---:|---|
+| 0 | zero |
+| 1 | input |
+| 2 | weight |
+| 3 | work |
+| 4 | output |
+| 5 | kv |
 
-## 8. 运行命令
+实际地址等于所选基地址加 `byte_offset`。当前高层编译器在默认 2 MiB DDR 配置中使用 zero 基地址，因此无需额外修正地址。
 
-高层模型编译：
+### 4.2 LREF12、LREF14 与 LREF16
 
-```bash
-cd "/home/yusen/Obsidian Vault/NPU/compiler"
-conda run -n tf_2_18 python npu_model_compiler.py model.json \
-  --output-dir build/model
+- 矩阵单元使用 LREF14，数值单位为 64 byte，可表示约 1 MiB L1 地址范围。
+- 矩阵偏置使用 LREF12，数值单位为 64 byte，可表示 256 KiB L1 地址范围。
+- 向量和复杂数学单元使用 LREF16，数值单位为 16 byte，也可表示约 1 MiB L1 地址范围。
+- 矩阵偏置引用值 0 表示没有偏置；L1 分配器从非零地址开始。
+
+## 5. 各类 payload
+
+### 5.1 DMA
+
+COPY 指令：
+
+```text
+[79:52] src_aref
+[51:24] dst_aref
+[23:4]  element_count
+[3:2]   dst_dtype
+[1]     src_nibble
+[0]     dst_nibble
 ```
 
-直接编译 Keras：
+`DMA_COPY_ND` 在 V2 中表示连续张量的扁平复制。高层编译器遇到带行间隔的数据时，会按行生成多条 `DMA_COPY_1D`；汇编器若直接收到不连续的 COPY_ND，会给出错误。
 
-```bash
-conda run -n tf_2_18 python npu_model_compiler.py encoder.keras \
-  --output-dir build/keras-encoder \
-  --model-dtype int16 \
-  --fraction-bits 8
+FILL 指令使用 `[79:52]` 保存目标地址、`[51:32]` 保存元素数、`[31:0]` 保存填充值。
+
+TRANSPOSE 指令使用两个 AREF28，并在低 24 bit 保存 8-bit 行数、8-bit 列数、目标数据类型和 INT4 nibble 信息。行数和列数均为 1～255。
+
+PACK/SPLIT 使用两个 AREF28，并保存 8-bit `segment_count`、`segment_bytes` 和 `segment_stride`。
+
+### 5.2 矩阵
+
+GEMM、GEMM_ACCUM 和 GEMM_ZERO：
+
+```text
+[79:66] A_lref14
+[65:52] B_lref14
+[51:38] C_lref14
+[37:26] bias_lref12
+[25:20] M-1
+[19:14] N-1
+[13:8]  K-1
+[7]     b_int4
+[6:5]   C dtype
+[4:0]   requant_shift
 ```
 
-直接编译 TFLite 或 ONNX：
+BMM：
+
+```text
+[79:66] A_lref14
+[65:52] B_lref14
+[51:38] C_lref14
+[37:32] batch-1
+[31:26] M-1
+[25:20] N-1
+[19:14] K-1
+[13]    b_int4
+[12:11] C dtype
+[10:6] requant_shift
+[5:0]  保留为 0
+```
+
+三个矩阵地址使用 64-byte 单位。偏置也使用 64-byte 单位，但字段宽度为
+12 bit，因此偏置必须位于 L1 的非零地址且低于 256 KiB；偏置引用值 0
+明确表示“不加偏置”。偏置元素的数据类型为 INT32。对输出通道
+$o=0,1,\ldots,N-1$，`bias[o]` 会加到该通道在全部 M 行中的结果上。
+例如 `M=2、N=3` 时，偏置形状是 `[3]`，计算结果分别为
+`C[0,0..2] += bias[0..2]` 和 `C[1,0..2] += bias[0..2]`。
+
+M、N、K 以及 BMM batch 的范围均为 1～64。B 矩阵必须按
+`KT × NT` tile 排列。`requant_shift` 直接保存 0～31，不再使用少数几个
+预设值；例如 Q5 模型可直接保存 5。C 为 INT32 时该字段必须为 0。
+
+`b_int4=1` 只表示“A 为 INT8、B 为 INT4”。其他组合要求 A、B 数据类型
+相同，并把该位写成 0。GEMM_ZERO 的 A、B、bias、K、`b_int4` 和
+`requant_shift` 字段均为 0。
+
+### 5.3 向量
+
+```text
+[79:64] src0_lref16
+[63:48] src1_lref16
+[47:32] src2_lref16 / compare / clamp
+[31:16] dst_lref16
+[15:11] rows-1
+[10:6]  length-1
+[5:4]   broadcast0
+[3:2]   broadcast1
+[1:0]   broadcast2
+```
+
+行数和每行元素数均为 1～32。`VCMP` 在 src2 字段的高 3 bit 保存比较方式，并输出 INT8 mask。`VSELECT` 的 src2 字段保存 mask 地址。`VCLAMP` 把 src1/src2 字段解释为两个 signed 16-bit 立即数。
+
+标量加法由高层编译器改写为“L1 标量张量 + scalar broadcast”，因此不需要把标量数值塞入额外参数区。
+
+### 5.4 复杂数学
+
+```text
+[79:64] src0_lref16
+[63:48] aux_lref16
+[47:32] dst_lref16
+[31:27] rows-1
+[26:19] length-1
+[18:0]  function metadata
+```
+
+行数为 1～32，每行元素数为 1～256。ACT、SOFTMAX、NORM 和 ADD_RESCALE 的比例参数必须是 `2^e`，其中 `e` 为 -8～7。NORM 的 epsilon 可选 `1e-5`、`1e-6`、`1e-3`、`1e-4`。
+
+LayerNorm 的 gamma 地址按 16 byte 保存。beta 必须位于 gamma 数据之后的下一个 64-byte 对齐地址。例如 gamma 是 16 个 INT16，共 32 byte，gamma 位于 `0x2000` 时，beta 应位于 `0x2040`。
+
+## 6. 高层编译器处理规则
+
+- 连续 COPY_ND 可直接编码；带行间隔的复制按最内层连续行拆为 COPY_1D。
+- 矩阵尺寸超过 64 时当前版本报告清晰错误。后续可增加 M/N/K 分块，其中 K 分块还需要 GEMM_ZERO、GEMM_ACCUM 和最终输出阶段。
+- 向量行数或每行元素数超过 32 时当前版本报告限制条件。
+- SOFTMAX、NORM 等操作不能沿每行元素方向任意拆开；每行元素数超过 256 时报告限制条件。
+- INT4 的行首和输出 nibble 必须满足硬件字段要求。
+- 复杂数学单元的比例字段保存 `2^e`，其中 `e` 为 -8～7。注意力分数若
+  需要 $1/\sqrt{d}$ 这类非 2 的整数次幂，编译器会显式生成
+  `FILL → VMUL → VADD_RESCALE → VSOFTMAX`。整数系数和 SOFTMAX 比例的
+  组合误差必须低于 1%，否则编译停止。例如
+  $1/\sqrt{8}\approx0.353553$ 使用 `91/128` 预缩放和 `1/2` 的
+  SOFTMAX 比例，合成比例为 `91/256≈0.355469`。
+- 前端默认 `fraction_bits=6`。矩阵的 5-bit `requant_shift` 可直接保存
+  0～31，因此 Q5、Q6 和 Q8 模型都不需要改成其他小数位数。
+- 同时处于使用期的依赖事件最多为 255 个。任务数超过 255 时，编译器按
+  事件的最后一个使用者释放 Event ID，并在再次使用前插入
+  `EVENT_REARM`。
+- 含 `EVENT_REARM` 的指令被放入独立批次。该批次的
+  `host_sync_before=1` 和 `host_sync_after=1`，运行时必须先等上一批任务
+  完成并确认，再提交重置事件的批次；完成该批次后才能提交新的生产者。
+
+这些检查的目的，是避免生成字段齐全但计算含义已经改变的指令。
+
+## 7. 使用方法
+
+### 7.1 编译框架模型
 
 ```bash
-conda run -n tf_2_18 python npu_model_compiler.py model.tflite \
-  --output-dir build/tflite-model \
+conda run -n tf_2_18 python NPU/compiler/npu_model_compiler.py \
+  model.keras \
+  --output-dir build/model \
   --model-dtype int8 \
-  --fraction-bits 6
-
-conda run -n tf_2_18 python npu_model_compiler.py model.onnx \
-  --output-dir build/onnx-model \
-  --model-dtype int16 \
-  --fraction-bits 8
+  --fraction-bits 5
 ```
 
-直接编译来源可信的 PyTorch TorchScript：
+PyTorch 文件需要显式确认文件可信：
 
 ```bash
-conda run -n tf_2_18 python npu_model_compiler.py model.torchscript \
-  --output-dir build/torch-model \
+conda run -n tf_2_18 python NPU/compiler/npu_model_compiler.py \
+  model.torchscript \
+  --output-dir build/model \
   --trust-model \
   --pytorch-format torchscript \
-  --input-shape 0=1,3 \
-  --model-dtype int8 \
-  --fraction-bits 6
+  --input-shape 0=1,16
 ```
 
-同时生成调试文件：
+支持的输入格式选项为 `json`、`keras`、`pytorch`、`tflite` 和 `onnx`。`auto` 根据文件后缀选择。
+
+### 7.2 汇编低层 JSON IR
 
 ```bash
-conda run -n tf_2_18 python npu_model_compiler.py model.json \
-  --output-dir build/model \
-  --emit-raw
-```
-
-只使用低层汇编器：
-
-```bash
-conda run -n tf_2_18 python npu_assembler.py examples/int16_regression.json \
-  --output-dir build/int16-regression \
+python3 NPU/compiler/npu_assembler.py \
+  NPU/compiler/examples/int8_regression.json \
+  --output-dir /tmp/npu-int8 \
   --emit-c-header
-conda run -n tf_2_18 python npu_assembler.py examples/int16_regression.json \
-  --output-dir build/int16-regression \
-  --emit-c-header \
+```
+
+### 7.3 检查已有结果
+
+```bash
+python3 NPU/compiler/npu_model_compiler.py \
+  model.json \
+  --output-dir build/model \
   --check
 ```
 
-运行全部测试：
+`--check` 重新编译并逐字节比较，不修改已有文件。
+
+## 8. 测试
+
+普通环境：
 
 ```bash
-conda run -n tf_2_18 python -m unittest discover -s tests -v
+python3 -m unittest discover -s NPU/compiler/tests -v
 ```
 
-`--check` 不写文件，而是重新生成内容并逐字节检查已有结果。默认检查 C 模型包
-与 manifest；和 `--emit-raw` 同时使用时，也检查全部调试文件。
+Keras、TFLite、PyTorch 和 ONNX 全部前端：
 
-## 9. 低层 JSON IR 与 CMD128
+```bash
+conda run -n tf_2_18 python -m unittest discover \
+  -s NPU/compiler/tests -v
+```
 
-低层 JSON IR 可以填写执行单元、opcode、张量地址、Descriptor 字段和任务依赖。
-它面向模型编译器后端、测试程序以及需要精确控制设备任务的开发者，不是普通
-模型输入格式。
-
-汇编器生成的 CMD128 由两个 64-bit beat 组成。主控 CPU 是命令发起方，NPU
-命令端口是总线从设备接口；传输时先写入 low，随后写入 high：
-
-- `low[47:0]`：Descriptor 地址；
-- `low[59:48]`：`command_id`；
-- `low[63:60]`：执行单元；
-- `high[7:0]`：opcode；
-- `high[19:8]`：任务属性；
-- `high[31:20]`、`high[43:32]`：两个等待事件；
-- `high[55:44]`：完成事件；
-- `high[63:56]`：格式版本。
-
-dtype 子字段的有效编码为 `0=INT4`、`1=INT8`、`2=INT32`、`3=INT16`。
-INT16 按小端序保存；Matrix 的 INT16 线性布局使用 pack code 5，
-KT×NT 的 Matrix-B tile 布局使用 pack code 6。汇编器会检查这两个 layout
-code 是否与张量 dtype 一致。
-
-## 10. Transformer 端到端测试
-
-`examples/int16_regression.json` 用于检查 INT16 的 DMA、GEMM、dtype code 与
-Matrix pack code。`../cmodel/examples/transformer` 是独立的 INT8 端到端示例；
-它采用 INT8，不影响编译器对 INT16 的支持。
+测试包含 INT4、INT8、INT16、INT32 张量检查、各 payload 位段逐位检查、事件 ID、P1 操作码保留、COPY_ND 拆分、生成 C 文件编译、文件稳定性和真实框架模型导入。

@@ -148,9 +148,13 @@ static int initialize_images(const input_payload_t *payloads,
     if (payloads == (const input_payload_t *)0 ||
         payload_count != MODEL_MODEL_INPUT_COUNT ||
         payload_count > MAX_BINDINGS ||
-        !address_span_valid(
-            MODEL_MODEL_DESCRIPTOR_BASE,
-            (size_t)MODEL_MODEL_DESCRIPTOR_BYTES) ||
+        model_model_config.command_format == (const char *)0 ||
+        strcmp(model_model_config.command_format,
+               "cmd128-inline-v2") != 0 ||
+        model_model_config.commands != model_model_commands ||
+        model_model_config.command_count != MODEL_MODEL_COMMAND_COUNT ||
+        model_model_config.weights != model_model_weights ||
+        model_model_config.weight_bytes != MODEL_MODEL_WEIGHT_BYTES ||
         !address_span_valid(
             MODEL_MODEL_WEIGHT_BASE_DDR,
             (size_t)MODEL_MODEL_WEIGHT_BYTES)) {
@@ -158,10 +162,6 @@ static int initialize_images(const input_payload_t *payloads,
     }
     (void)memset(model_l1, 0, sizeof(model_l1));
     (void)memset(model_ddr, 0, sizeof(model_ddr));
-    (void)memcpy(
-        &model_ddr[MODEL_MODEL_DESCRIPTOR_BASE],
-        model_model_descriptors,
-        (size_t)MODEL_MODEL_DESCRIPTOR_BYTES);
     (void)memcpy(
         &model_ddr[MODEL_MODEL_WEIGHT_BASE_DDR],
         model_model_weights,
@@ -197,10 +197,6 @@ static int sync_for_device(npu_driver_t *driver,
 
     if (npu_drv_sync_for_device(
             driver,
-            &model_ddr[MODEL_MODEL_DESCRIPTOR_BASE],
-            (size_t)MODEL_MODEL_DESCRIPTOR_BYTES) != NPU_DRV_OK ||
-        npu_drv_sync_for_device(
-            driver,
             &model_ddr[MODEL_MODEL_WEIGHT_BASE_DDR],
             (size_t)MODEL_MODEL_WEIGHT_BYTES) != NPU_DRV_OK) {
         return -1;
@@ -225,7 +221,8 @@ static int sync_for_device(npu_driver_t *driver,
 static int submit_batch(npu_driver_t *driver,
                         uint32_t batch,
                         uint32_t begin,
-                        uint32_t end)
+                        uint32_t end,
+                        int verbose)
 {
     npu_drv_cmd128_t
         commands[NPU_DRV_CMD_FIFO_MAX_BURST_COMMANDS];
@@ -255,25 +252,28 @@ static int submit_batch(npu_driver_t *driver,
         driver,
         commands,
         count,
-        (const void *)0,
-        0u,
         results,
         &summary);
-    (void)printf(
-        "    command_batch[%u]: commands=%u beats=%u "
-        "responses=%u rc=%d\n",
-        (unsigned)batch,
-        (unsigned)count,
-        (unsigned)(count * NPU_DRV_CMD128_BEATS),
-        (unsigned)summary.responses_received,
-        rc);
+    if (verbose != 0) {
+        (void)printf(
+            "    command_batch[%u]: commands=%u beats=%u "
+            "responses=%u rc=%d\n",
+            (unsigned)batch,
+            (unsigned)count,
+            (unsigned)(count * NPU_DRV_CMD128_BEATS),
+            (unsigned)summary.responses_received,
+            rc);
+    }
     if (rc != NPU_DRV_OK ||
         summary.burst_completed == 0u ||
         summary.responses_received != count ||
         summary.first_failed_index != NPU_DRV_NO_FAILED_COMMAND) {
         (void)printf(
-            "      batch_error: burst_completed=%u "
+            "      batch_error: batch=%u rc=%d "
+            "burst_completed=%u "
             "first_failed_index=%u\n",
+            (unsigned)batch,
+            rc,
             (unsigned)summary.burst_completed,
             summary.first_failed_index == NPU_DRV_NO_FAILED_COMMAND
                 ? UINT_MAX
@@ -334,7 +334,7 @@ static int wait_and_ack_batch(npu_driver_t *driver,
     return 0;
 }
 
-static int run_batches(npu_driver_t *driver)
+static int run_batches(npu_driver_t *driver, int verbose)
 {
     uint32_t batch;
 
@@ -351,7 +351,8 @@ static int run_batches(npu_driver_t *driver)
             begin +
             model_model_command_batches[batch].command_count;
 
-        if (submit_batch(driver, batch, begin, end) != 0 ||
+        if (submit_batch(
+                driver, batch, begin, end, verbose) != 0 ||
             wait_and_ack_batch(driver, begin, end) != 0) {
             return -1;
         }
@@ -360,7 +361,8 @@ static int run_batches(npu_driver_t *driver)
 }
 
 static int execute_device(const input_payload_t *payloads,
-                          size_t payload_count)
+                          size_t payload_count,
+                          int verbose)
 {
     npu_driver_t driver;
     npu_drv_platform_ops_t operations;
@@ -379,7 +381,7 @@ static int execute_device(const input_payload_t *payloads,
     operations = npu_example_cmodel_backend_operations(&model_backend);
     if (npu_drv_init(&driver, &operations) != NPU_DRV_OK ||
         sync_for_device(&driver, payloads, payload_count) != 0 ||
-        run_batches(&driver) != 0 ||
+        run_batches(&driver, verbose) != 0 ||
         npu_drv_fence(&driver, 1000000u, &fence_result) != NPU_DRV_OK) {
         return -1;
     }
@@ -553,7 +555,10 @@ static int run_recurrent(void)
             (void)printf(
                 "  time_step[%u] device execution\n",
                 (unsigned)step);
-            if (execute_device(payloads, 2u) != 0) {
+            if (execute_device(
+                    payloads,
+                    2u,
+                    sample == 0u && step == 0u) != 0) {
                 return -1;
             }
 
@@ -817,12 +822,10 @@ static int run_cnn(void)
         return -1;
     }
     (void)printf(
-        "cnn_device_images: descriptor_addr=0x%llx "
-        "descriptor_bytes=%u weight_addr=0x%llx weight_bytes=%u "
+        "cnn_device_images: inline_cmd128=yes "
+        "weight_addr=0x%llx weight_bytes=%u "
         "input_addr=0x%llx input_bytes=%u "
         "output_addr=0x%llx output_bytes=%u\n",
-        (unsigned long long)MODEL_MODEL_DESCRIPTOR_BASE,
-        (unsigned)MODEL_MODEL_DESCRIPTOR_BYTES,
         (unsigned long long)MODEL_MODEL_WEIGHT_BASE_DDR,
         (unsigned)MODEL_MODEL_WEIGHT_BYTES,
         (unsigned long long)input_binding->ddr_addr,
@@ -852,7 +855,8 @@ static int run_cnn(void)
             (unsigned)sample,
             (unsigned)label,
             class_name(label));
-        if (execute_device(&payload, 1u) != 0 ||
+        if (execute_device(
+                &payload, 1u, sample == 0u) != 0 ||
             read_output(
                 output_binding->name,
                 output_q,

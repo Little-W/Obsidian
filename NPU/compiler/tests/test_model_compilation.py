@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import shutil
+import struct
 import subprocess
 import sys
 import tempfile
@@ -158,13 +160,10 @@ class EndToEndCompilerTests(unittest.TestCase):
             for item in result.assembled_operations
             if item.name == "projection"
         )
-        numeric = int.from_bytes(projection.descriptor[0x38:0x3C], "little")
-        self.assertEqual(numeric & 0x3, 3)
-        self.assertEqual((numeric >> 2) & 0x3, 3)
-        self.assertEqual((numeric >> 6) & 0x3, 3)
-        self.assertEqual(projection.descriptor[0x90], 5)
-        self.assertEqual(projection.descriptor[0x91], 6)
-        self.assertEqual(projection.descriptor[0x92], 5)
+        _low, high = struct.unpack("<QQ", projection.command)
+        self.assertEqual((high >> 16) & 0x3, 3)
+        self.assertEqual((projection.payload >> 5) & 0x3, 3)
+        self.assertEqual(projection.payload & 0x1F, 0)
         package = model_artifacts.build_model_c_source(
             "int16_matmul", result
         ).decode("ascii")
@@ -174,19 +173,263 @@ class EndToEndCompilerTests(unittest.TestCase):
         result = compiler.compile_model_document(
             add_model(), compiler.TargetConfig()
         )
-        self.assertEqual(len(result.command_image), 4 * 16)
         self.assertEqual(
-            [item.name for item in result.assembled_operations],
-            [
-                "__load_constants",
-                "__load_input_x",
-                "sum",
-                "__store_output_y",
-            ],
+            len(result.command_image),
+            len(result.assembled_operations) * 16,
         )
+        names = [item.name for item in result.assembled_operations]
+        self.assertEqual(names[0], "__load_constants")
+        self.assertEqual(names[-1], "__store_output_y__row_1")
+        self.assertIn("sum", names)
         self.assertEqual(result.runtime["command_bits"], 128)
         self.assertEqual(result.runtime["inputs"][0]["name"], "x")
         self.assertEqual(result.runtime["outputs"][0]["name"], "y")
+
+    def test_wide_vector_operation_is_split_by_row_and_feature(self) -> None:
+        result = compiler.compile_model_document(
+            add_model(columns=48), compiler.TargetConfig()
+        )
+        chunks = [
+            item
+            for item in result.assembled_operations
+            if item.name.startswith("sum__rows_")
+        ]
+        self.assertEqual(
+            [item.name for item in chunks],
+            [
+                "sum__rows_0_1__features_0_32",
+                "sum__rows_0_1__features_32_16",
+                "sum__rows_1_1__features_0_32",
+                "sum__rows_1_1__features_32_16",
+            ],
+        )
+        self.assertEqual(
+            [((item.payload >> 11) & 0x1F) + 1 for item in chunks],
+            [1, 1, 1, 1],
+        )
+        self.assertEqual(
+            [((item.payload >> 6) & 0x1F) + 1 for item in chunks],
+            [32, 16, 32, 16],
+        )
+        x_base = result.tensors["x"].l1_addr
+        self.assertIsNotNone(x_base)
+        self.assertEqual(
+            [((item.payload >> 64) & 0xFFFF) << 4 for item in chunks],
+            [
+                x_base,
+                x_base + 32,
+                x_base + 48,
+                x_base + 80,
+            ],
+        )
+        all_operations = result.assembled_operations
+        for current in chunks[1:]:
+            current_index = all_operations.index(current)
+            predecessor = all_operations[current_index - 1]
+            self.assertEqual(predecessor.engine, "control")
+            self.assertTrue(predecessor.name.startswith("__event_join_"))
+            self.assertIn(predecessor.signal_event, current.wait_events)
+
+    def test_matrix_rows_are_split_without_changing_k_or_n(self) -> None:
+        document = {
+            "schema_version": 1,
+            "model": {"name": "matrix_rows"},
+            "inputs": [
+                {"name": "x", "shape": [65, 16], "dtype": "int8"}
+            ],
+            "constants": [
+                {
+                    "name": "weight",
+                    "shape": [16, 8],
+                    "dtype": "int8",
+                    "data": [1] * (16 * 8),
+                }
+            ],
+            "operators": [
+                {
+                    "name": "projection",
+                    "type": "MatMul",
+                    "inputs": ["x", "weight"],
+                    "outputs": ["y"],
+                }
+            ],
+            "outputs": ["y"],
+        }
+        result = compiler.compile_model_document(
+            document, compiler.TargetConfig()
+        )
+        chunks = [
+            operation
+            for operation in result.assembled_operations
+            if operation.name.startswith("projection__batch_")
+        ]
+        self.assertEqual(len(chunks), 2)
+        self.assertEqual(
+            [((item.payload >> 20) & 0x3F) + 1 for item in chunks],
+            [64, 1],
+        )
+        self.assertEqual(
+            [((item.payload >> 14) & 0x3F) + 1 for item in chunks],
+            [8, 8],
+        )
+        self.assertEqual(
+            [((item.payload >> 8) & 0x3F) + 1 for item in chunks],
+            [16, 16],
+        )
+        x_base = result.tensors["x"].l1_addr
+        y_base = result.tensors["y"].l1_addr
+        self.assertEqual(
+            [((item.payload >> 66) & 0x3FFF) << 6 for item in chunks],
+            [x_base, x_base + 64 * 16],
+        )
+        self.assertEqual(
+            [((item.payload >> 38) & 0x3FFF) << 6 for item in chunks],
+            [y_base, y_base + 64 * 8],
+        )
+
+    def test_matrix_packed_b_axis_over_64_is_rejected(self) -> None:
+        document = {
+            "schema_version": 1,
+            "model": {"name": "wide_matrix"},
+            "inputs": [{"name": "x", "shape": [1, 8], "dtype": "int8"}],
+            "constants": [
+                {
+                    "name": "weight",
+                    "shape": [8, 65],
+                    "dtype": "int8",
+                    "data": [1] * (8 * 65),
+                }
+            ],
+            "operators": [
+                {
+                    "name": "projection",
+                    "type": "MatMul",
+                    "inputs": ["x", "weight"],
+                    "outputs": ["y"],
+                }
+            ],
+            "outputs": ["y"],
+        }
+        with self.assertRaisesRegex(
+            compiler.ModelCompileError,
+            "packed-B stride field",
+        ):
+            compiler.compile_model_document(
+                document, compiler.TargetConfig()
+            )
+
+    def test_complex_rows_and_elementwise_features_are_split(self) -> None:
+        softmax_document = {
+            "schema_version": 1,
+            "model": {"name": "softmax_rows"},
+            "inputs": [
+                {"name": "x", "shape": [70, 16], "dtype": "int8"}
+            ],
+            "constants": [],
+            "operators": [
+                {
+                    "name": "softmax",
+                    "type": "Softmax",
+                    "inputs": ["x"],
+                    "outputs": ["y"],
+                }
+            ],
+            "outputs": ["y"],
+        }
+        softmax_result = compiler.compile_model_document(
+            softmax_document, compiler.TargetConfig()
+        )
+        softmax_chunks = [
+            operation
+            for operation in softmax_result.assembled_operations
+            if operation.name.startswith("softmax__rows_")
+        ]
+        self.assertEqual(len(softmax_chunks), 3)
+        self.assertEqual(
+            [((item.payload >> 27) & 0x1F) + 1 for item in softmax_chunks],
+            [32, 32, 6],
+        )
+        source_base = softmax_result.tensors["x"].l1_addr
+        self.assertEqual(
+            [((item.payload >> 64) & 0xFFFF) << 4 for item in softmax_chunks],
+            [source_base, source_base + 32 * 16, source_base + 64 * 16],
+        )
+
+        activation_document = {
+            "schema_version": 1,
+            "model": {"name": "wide_activation"},
+            "inputs": [
+                {"name": "x", "shape": [1, 300], "dtype": "int8"}
+            ],
+            "constants": [],
+            "operators": [
+                {
+                    "name": "gelu",
+                    "type": "GELU",
+                    "inputs": ["x"],
+                    "outputs": ["y"],
+                }
+            ],
+            "outputs": ["y"],
+        }
+        activation_result = compiler.compile_model_document(
+            activation_document, compiler.TargetConfig()
+        )
+        activation_chunks = [
+            operation
+            for operation in activation_result.assembled_operations
+            if operation.name.startswith("gelu__rows_")
+        ]
+        self.assertEqual(
+            [((item.payload >> 19) & 0xFF) + 1 for item in activation_chunks],
+            [256, 44],
+        )
+
+    def test_softmax_feature_length_over_256_is_rejected(self) -> None:
+        document = {
+            "schema_version": 1,
+            "model": {"name": "wide_softmax"},
+            "inputs": [
+                {"name": "x", "shape": [1, 257], "dtype": "int8"}
+            ],
+            "constants": [],
+            "operators": [
+                {
+                    "name": "softmax",
+                    "type": "Softmax",
+                    "inputs": ["x"],
+                    "outputs": ["y"],
+                }
+            ],
+            "outputs": ["y"],
+        }
+        with self.assertRaisesRegex(
+            compiler.ModelCompileError,
+            "feature axis would change the operation result",
+        ):
+            compiler.compile_model_document(
+                document, compiler.TargetConfig()
+            )
+
+    def test_attention_48_tokens_splits_complex_rows(self) -> None:
+        result = compiler.compile_model_document(
+            attention_model(tokens=48, width=8),
+            compiler.TargetConfig(),
+        )
+        softmax_chunks = [
+            operation
+            for operation in result.assembled_operations
+            if operation.name.startswith("attention_softmax__rows_")
+        ]
+        self.assertEqual(len(softmax_chunks), 3)
+        self.assertEqual(
+            [((item.payload >> 27) & 0x1F) + 1 for item in softmax_chunks],
+            [32, 32, 32],
+        )
+        self.assertEqual(
+            [((item.payload >> 19) & 0xFF) + 1 for item in softmax_chunks],
+            [48, 48, 48],
+        )
 
     def test_attention_is_expanded_without_device_fields_in_source(self) -> None:
         document = attention_model()
@@ -212,6 +455,63 @@ class EndToEndCompilerTests(unittest.TestCase):
         self.assertIn("attention_output_projection", names)
         self.assertTrue(any(name.startswith("__event_join_") for name in names))
 
+    def test_attention_non_power_of_two_score_scale_is_lowered_explicitly(
+        self,
+    ) -> None:
+        document = attention_model(width=16)
+        document["constants"][0]["data"] = [
+            64 if row == column else 0
+            for row in range(16)
+            for column in range(16)
+        ]
+        attributes = document["operators"][0]["attributes"]
+        attributes.update(
+            {
+                "projection_shift": 5,
+                "score_shift": 5,
+                "value_shift": 5,
+                "output_shift": 5,
+                "score_scale": 1.0 / math.sqrt(8.0),
+            }
+        )
+        result = compiler.compile_model_document(
+            document, compiler.TargetConfig()
+        )
+        operations = {
+            operation["name"]: operation
+            for operation in result.low_ir["operations"]
+        }
+        self.assertFalse(
+            any("score_scale_" in name for name in operations)
+        )
+        softmax = operations["attention_softmax"]
+        hardware_scale = softmax["fields"]["complex"]["src0_scale"]
+        self.assertEqual(hardware_scale, 0.5)
+        weight_scale = attributes["score_scale"] / hardware_scale
+        self.assertAlmostEqual(weight_scale, 1.0 / math.sqrt(2.0))
+        expected_query = [
+            45 if row == column else 0
+            for row in range(16)
+            for column in range(16)
+        ]
+        packed_query = compiler.pack_matrix_b_values(
+            expected_query,
+            16,
+            16,
+            "int8",
+            compiler.TargetConfig(),
+        )
+        query = result.tensors["wq"]
+        query_offset = (
+            query.ddr_addr - result.runtime["constant_base_ddr"]
+        )
+        self.assertEqual(
+            result.constant_image[
+                query_offset : query_offset + len(packed_query)
+            ],
+            packed_query,
+        )
+
     def test_conv2d_reaches_im2col_and_gemm_only(self) -> None:
         document = {
             "schema_version": 1,
@@ -233,7 +533,10 @@ class EndToEndCompilerTests(unittest.TestCase):
                     "type": "Conv2D",
                     "inputs": ["x", "kernel"],
                     "outputs": ["y"],
-                    "attributes": {"padding": "SAME"},
+                    "attributes": {
+                        "padding": "SAME",
+                        "output_shift": 5,
+                    },
                 }
             ],
             "outputs": ["y"],
@@ -244,9 +547,16 @@ class EndToEndCompilerTests(unittest.TestCase):
         low = result.low_ir["operations"]
         opcodes = [str(item["opcode"]) for item in low]
         self.assertIn("FILL", opcodes)
-        self.assertIn("COPY_ND", opcodes)
+        self.assertIn("COPY_1D", opcodes)
         self.assertIn("GEMM", opcodes)
+        self.assertNotIn("COPY_ND", opcodes)
         self.assertFalse(any("CONV" in opcode.upper() for opcode in opcodes))
+        gemm = next(
+            operation
+            for operation in result.assembled_operations
+            if operation.engine == "matrix"
+        )
+        self.assertEqual(gemm.payload & 0x1F, 5)
 
     def test_relu_marks_unused_vector_scales_as_zero(self) -> None:
         document = {
@@ -275,7 +585,7 @@ class EndToEndCompilerTests(unittest.TestCase):
             for item in result.low_ir["operations"]
             if item["name"] == "relu"
         )
-        vector = operation["descriptor"]["vector"]
+        vector = operation["fields"]["vector"]
         self.assertEqual(vector["src1_scale_bits"], 0)
         self.assertEqual(vector["src2_scale_bits"], 0)
 
@@ -292,11 +602,13 @@ class EndToEndCompilerTests(unittest.TestCase):
             ],
             bytes([0x11, 0x11, 0x01, 0x11, 0x11, 0x01]),
         )
-        load = result.low_ir["operations"][1]
-        self.assertEqual(load["opcode"], "COPY_ND")
-        self.assertEqual(
-            load["descriptor"]["dma"]["src_stride_bytes"], [3, 0]
+        load = next(
+            item
+            for item in result.low_ir["operations"]
+            if item["name"] == "__load_input_x__row_0"
         )
+        self.assertEqual(load["opcode"], "COPY_1D")
+        self.assertEqual(load["fields"]["dma"]["shape"], [5])
 
     def test_command_batches_fit_fixed_fifo_bursts(self) -> None:
         operators = []
@@ -361,9 +673,23 @@ class EndToEndCompilerTests(unittest.TestCase):
         offset = 0
         for batch in result.runtime["batches"]:
             self.assertIn(
-                f"    {{{offset}u, {len(batch)}u}},", source
+                f"    {{{offset}u, {len(batch)}u, ",
+                source,
             )
             offset += len(batch)
+        self.assertEqual(
+            len(result.runtime["batch_execution"]),
+            len(result.runtime["batches"]),
+        )
+        self.assertFalse(
+            result.runtime["batch_execution"][0]["host_sync_before"]
+        )
+        self.assertTrue(
+            all(
+                row["host_sync_after"]
+                for row in result.runtime["batch_execution"]
+            )
+        )
 
         with tempfile.TemporaryDirectory() as temporary:
             source_path = Path(temporary) / "long_chain.json"
@@ -387,6 +713,66 @@ class EndToEndCompilerTests(unittest.TestCase):
             ),
             8,
         )
+        self.assertEqual(
+            manifest["batch_execution"],
+            result.runtime["batch_execution"],
+        )
+
+    def test_dependency_events_are_reused_with_host_synchronized_rearm(self) -> None:
+        operators = []
+        previous = "x"
+        for index in range(280):
+            output = f"t{index}"
+            operators.append(
+                {
+                    "name": f"relu{index}",
+                    "type": "ReLU",
+                    "inputs": [previous],
+                    "outputs": [output],
+                }
+            )
+            previous = output
+        document = {
+            "schema_version": 1,
+            "model": {"name": "event_reuse"},
+            "inputs": [{"name": "x", "shape": [1, 8], "dtype": "int8"}],
+            "constants": [],
+            "operators": operators,
+            "outputs": [previous],
+        }
+        result = compiler.compile_model_document(
+            document, compiler.TargetConfig()
+        )
+        rearms = [
+            operation
+            for operation in result.assembled_operations
+            if operation.engine == "control"
+            and operation.opcode
+            == npu_assembler.OPCODES["control"]["EVENT_REARM"]
+        ]
+        self.assertTrue(rearms)
+        rearm_ids = {operation.command_id for operation in rearms}
+        rearm_batch_lengths = []
+        for row in result.runtime["batch_execution"]:
+            contains_rearm = any(
+                command_id in rearm_ids
+                for command_id in row["command_ids"]
+            )
+            self.assertEqual(row["contains_event_rearm"], contains_rearm)
+            if contains_rearm:
+                rearm_batch_lengths.append(len(row["command_ids"]))
+                self.assertLessEqual(len(row["command_ids"]), 8)
+                self.assertTrue(
+                    all(
+                        command_id in rearm_ids
+                        for command_id in row["command_ids"]
+                    )
+                )
+                self.assertTrue(row["host_sync_before"])
+                self.assertTrue(row["host_sync_after"])
+        self.assertGreater(max(rearm_batch_lengths), 1)
+        self.assertLessEqual(len(result.runtime["batches"]), 45)
+        self.assertEqual(result.low_ir["target"]["name"], "single-core-v2")
 
     def test_l1_storage_is_reused_after_last_consumer(self) -> None:
         document = {
@@ -434,12 +820,9 @@ class EndToEndCompilerTests(unittest.TestCase):
         result = compiler.compile_model_document(
             attention_model(), compiler.TargetConfig()
         )
-        operations, commands, descriptors = npu_assembler.compile_document(
-            result.low_ir
-        )
+        operations, commands = npu_assembler.compile_document(result.low_ir)
         self.assertEqual(len(operations), len(result.assembled_operations))
         self.assertEqual(commands, result.command_image)
-        self.assertEqual(descriptors, result.descriptor_image)
 
     def test_cli_emits_default_c_model_package_and_check(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -469,13 +852,12 @@ class EndToEndCompilerTests(unittest.TestCase):
             )
             self.assertIn("model_model_config_t", header)
             self.assertIn("model_model_commands", header)
-            self.assertIn("model_model_descriptors", header)
+            self.assertNotIn("model_model_descriptors", header)
             self.assertIn("model_model_weights", header)
             self.assertIn("model_model_inputs", header)
             self.assertIn("model_model_outputs", header)
             self.assertIn("model_model_command_batches", header)
             self.assertIn("NPU_MODEL_ALIGN(16)", c_source)
-            self.assertIn("NPU_MODEL_ALIGN(64)", c_source)
             self.assertIn("NPU_MODEL_ALIGN(256)", c_source)
 
             manifest = json.loads(
@@ -519,7 +901,6 @@ class EndToEndCompilerTests(unittest.TestCase):
                 "model_model.c",
                 "model.npuasm.json",
                 "model.cmd.bin",
-                "model.desc.bin",
                 "model.const.bin",
                 "model.runtime.json",
                 "model.manifest.json",

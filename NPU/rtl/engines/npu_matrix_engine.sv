@@ -91,7 +91,7 @@ module npu_matrix_engine (
   wire unused_command_id = ^command_id_i;
   wire unused_result_upper = ^result_q[63:32];
   wire unused_desc_fields = ^{
-    desc_q[2047:1408],
+    desc_q[2047:1424],
     desc_q[1215:1200],
     desc_q[511:480],
     desc_q[63:32]
@@ -127,6 +127,8 @@ module npu_matrix_engine (
   wire [7:0] residual_mode = desc_q[16'ha5 * 8 +: 8];
   wire [7:0] requant_entry_bytes = desc_q[16'ha6 * 8 +: 8];
   wire [31:0] requant_region_bytes = desc_q[16'ha8 * 8 +: 32];
+  wire inline_requant = desc_q[16'hb0 * 8];
+  wire [7:0] inline_requant_shift = desc_q[16'hb1 * 8 +: 8];
 
   wire transpose_a = matrix_flags[0];
   wire transpose_b = matrix_flags[1];
@@ -357,8 +359,10 @@ module npu_matrix_engine (
         l1_req_addr_o = {bias_addr[19:3], 3'b000};
       end
       ST_REQUANT_REQ: begin
-        l1_req_valid_o = 1'b1;
-        l1_req_addr_o = {requant_addr[19:3], 3'b000};
+        if (!inline_requant) begin
+          l1_req_valid_o = 1'b1;
+          l1_req_addr_o = {requant_addr[19:3], 3'b000};
+        end
       end
       ST_RMW_REQ: begin
         l1_req_valid_o = 1'b1;
@@ -443,8 +447,14 @@ module npu_matrix_engine (
                    ((accum_from_src2 || residual_enable) &&
                     src2_base[63:20] != 0) ||
                    (bias_enable && bias_base[63:20] != 0) ||
-                   (requant_enable && requant_base[63:20] != 0))
+                   (requant_enable && !inline_requant &&
+                    requant_base[63:20] != 0))
             fail_task(NPU_STATUS_ADDR_FAULT, 48'd0);
+          else if (desc_q[16'hb0 * 8 + 7 -: 7] != 0 ||
+                   (inline_requant &&
+                    (!requant_enable || requant_mode != 1 ||
+                     requant_count != 1)))
+            fail_task(NPU_STATUS_BAD_DESC, 48'd0);
           else if (batch_count == 0 ||
                    (opcode_q == NPU_MATRIX_GEMM && batch_count != 1) ||
                    (opcode_q == NPU_MATRIX_BMM && batch_count < 1))
@@ -659,7 +669,10 @@ module npu_matrix_engine (
           end
 
         ST_REQUANT_REQ:
-          if (l1_req_ready_i)
+          if (inline_requant) begin
+            requant_entry_q <= {inline_requant_shift, 32'd1};
+            state_q <= ST_EPILOGUE;
+          end else if (l1_req_ready_i)
             state_q <= ST_REQUANT_RSP;
 
         ST_REQUANT_RSP:

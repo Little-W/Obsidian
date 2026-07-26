@@ -143,6 +143,17 @@ static npu_status_t npu_matrix_read_requant(const npu_model_t *model,
     uint32_t byte;
     npu_status_t status;
 
+    if (desc->inline_requant_enable != 0u) {
+        if (desc->inline_requant_multiplier == 0u ||
+            desc->inline_requant_multiplier > 0x7fffffffu ||
+            desc->inline_requant_shift < -31 ||
+            desc->inline_requant_shift > 63) {
+            return NPU_STATUS_BAD_DESC;
+        }
+        entry->multiplier = desc->inline_requant_multiplier;
+        entry->shift = desc->inline_requant_shift;
+        return NPU_STATUS_SUCCESS;
+    }
     if (desc->requant_count == 1u) {
         index = 0u;
     } else if (desc->requant_count == desc->n) {
@@ -362,15 +373,30 @@ static npu_status_t npu_matrix_validate(const npu_model_t *model,
     }
     if (desc->c.dtype == NPU_DTYPE_INT32) {
         if (desc->requant_enable != 0u ||
-            desc->requant_count != 0u) {
+            desc->requant_count != 0u ||
+            desc->inline_requant_enable != 0u ||
+            desc->inline_requant_multiplier != 0u ||
+            desc->inline_requant_shift != 0) {
             return NPU_STATUS_BAD_DESC;
         }
     } else {
-        if (desc->requant_enable == 0u ||
-            !(desc->requant_count == 1u ||
-              desc->requant_count == desc->n) ||
-            desc->requant_region_bytes <
-                (uint64_t)desc->requant_count * 8u) {
+        if (desc->requant_enable == 0u) {
+            return NPU_STATUS_BAD_DESC;
+        }
+        if (desc->inline_requant_enable != 0u) {
+            if (desc->inline_requant_multiplier == 0u ||
+                desc->inline_requant_multiplier > 0x7fffffffu ||
+                desc->inline_requant_shift < -31 ||
+                desc->inline_requant_shift > 63 ||
+                desc->requant_addr != 0u ||
+                desc->requant_count != 0u ||
+                desc->requant_region_bytes != 0u) {
+                return NPU_STATUS_BAD_DESC;
+            }
+        } else if (!(desc->requant_count == 1u ||
+                     desc->requant_count == desc->n) ||
+                   desc->requant_region_bytes <
+                       (uint64_t)desc->requant_count * 8u) {
             return NPU_STATUS_BAD_DESC;
         }
     }
@@ -423,6 +449,9 @@ static npu_status_t npu_matrix_zero(npu_model_t *model,
         desc->requant_addr != 0u ||
         desc->requant_count != 0u ||
         desc->requant_region_bytes != 0u ||
+        desc->inline_requant_enable != 0u ||
+        desc->inline_requant_multiplier != 0u ||
+        desc->inline_requant_shift != 0 ||
         desc->output_zero_point != 0) {
         return NPU_STATUS_BAD_DESC;
     }

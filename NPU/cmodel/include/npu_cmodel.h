@@ -271,6 +271,10 @@ typedef struct {
     uint8_t header_version;
     uint8_t timeout_class;
     uint32_t user_tag;
+    uint64_t inline_payload_lo;
+    uint16_t inline_payload_hi;
+    uint8_t inline_format;
+    npu_dtype_t inline_dtype;
 } npu_cmd_t;
 
 typedef struct {
@@ -329,6 +333,9 @@ typedef struct {
     uint8_t final_output;
     uint8_t relu_enable;
     uint8_t requant_enable;
+    uint8_t inline_requant_enable;
+    uint32_t inline_requant_multiplier;
+    int8_t inline_requant_shift;
     npu_round_mode_t round_mode;
     npu_overflow_mode_t overflow_mode;
     int32_t output_zero_point;

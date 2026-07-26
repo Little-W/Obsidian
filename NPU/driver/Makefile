@@ -11,7 +11,6 @@ INCLUDES := -Iinclude
 LIB := $(BUILD_DIR)/libnpu_driver.a
 SOURCES := \
 	src/npu_driver_command.c \
-	src/npu_driver_descriptor.c \
 	src/npu_driver_device.c \
 	src/npu_driver_memory.c \
 	src/npu_driver_runtime.c

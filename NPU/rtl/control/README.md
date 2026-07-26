@@ -1,40 +1,174 @@
-# NPU control and memory RTL
+# NPU control, storage, and CMD128 V2 RTL
 
-This directory set contains the synthesizable control and storage foundation for
-one NPU core. All local data transfers are 64 bits wide. Every local reset input
-is named `reset_n` and is active low.
+This directory contains the synthesizable control and storage foundation for
+one NPU core. Software-visible buses and internal storage transfers use 64-bit
+beats. Every local active-low reset input is named `reset_n`.
+
+The active command format is CMD128 inline V2. Its 80-bit operation payload
+contains the task addresses, sizes, data types, and function options. A V2 task
+does not fetch a task parameter block from system memory. The RTL retains a V1
+decoder and Descriptor Fetch Unit for diagnostic compatibility tests.
 
 ## Source files
 
 | File | Function |
 | --- | --- |
-| `../npu_rtl_pkg.sv` | Shared widths, status values, dtype values, engine values and opcode checks |
-| `npu_cmd_frontend.sv` | Reassembles two 64-bit beats into CMD128, checks the header and holds accepted commands in an eight-entry FIFO |
-| `npu_descriptor_fetch.sv` | Reads one Descriptor at a time with 64-bit MIF requests, checks the common prefix and returns a 2048-bit packed copy |
-| `npu_task_scheduler.sv` | Holds the task table and Event Table, starts Descriptor reads, checks dependencies and sends work to four engines |
-| `npu_lsc.sv` | Implements the 64-bit local control registers, first-fault state, interrupt state, reset drain control and exported configuration |
-| `npu_crg.sv` | Synchronizes reset release, qualifies local clock enables and acknowledges an idle DVFS request |
-| `npu_wdt.sv` | Detects a lack of observable forward progress and holds the timeout request until software kicks or disables it |
-| `../memory/npu_l1buf.sv` | Arbitrates multiple single-beat clients and stores data in banked 64-bit SRAM arrays |
-| `../memory/npu_tbu.sv` | Performs identity translation after stream, access permission, alignment and address range checks |
-| `../memory/npu_axi_mif_master.sv` | Converts one internal 64-bit request into a protocol-complete single-beat AXI4 read or write |
+| `../npu_rtl_pkg.sv` | Shared widths, status values, integer data types, compact opcodes, and CMD128 field helpers |
+| `npu_cmd_frontend.sv` | Reassembles two 64-bit beats into CMD128, checks the header, checks duplicate command IDs, and holds accepted commands in an eight-entry FIFO |
+| `npu_inline_desc_decode.sv` | Checks the V2 payload and expands it into the existing internal engine request structure |
+| `npu_task_scheduler.sv` | Holds the task table and Event Table, resolves V2 Event generations, dispatches ready tasks, and records terminal results |
+| `npu_descriptor_fetch.sv` | Supports V1 diagnostic commands by reading an external parameter block through 64-bit MIF requests |
+| `npu_lsc.sv` | Implements 64-bit control registers, first-fault state, interrupt state, reset drain control, and exported configuration |
+| `npu_crg.sv` | Synchronizes reset release, qualifies local clock enables, and acknowledges an idle DVFS request |
+| `npu_wdt.sv` | Detects a lack of observable forward progress and holds a timeout request until software kicks or disables it |
+| `../memory/npu_l1buf.sv` | Arbitrates single-beat clients and stores data in banked 64-bit SRAM arrays |
+| `../memory/npu_tbu.sv` | Performs identity translation after stream, access-permission, alignment, and address-range checks |
+| `../memory/npu_axi_mif_master.sv` | Converts an internal 64-bit global-memory request into an AXI4 read or write |
 
-## Command and task flow
+## CMD ingress
 
-`npu_cmd_frontend` accepts CMD low word with `first=1,last=0`, followed by the
-high word with `first=0,last=1`. It checks version 1, 64-byte Descriptor
-alignment, event references, reserved header bits, engine/opcode agreement and
-duplicate command IDs. A response reports `command_id`, an 8-bit status and the
-remaining CFE FIFO entries. If the high word does not arrive within
-`WAIT_HIGH_TIMEOUT` cycles, whose default is 32, the partial command is
-discarded and the response status is `TIMEOUT`. A partial command is never
-visible on the scheduler output.
+The SoC CPU is outside the NPU. It accesses the NPU through a 64-bit AXI Slave
+port. Commands are written to the fixed `CMD_FIFO_DATA` address with
+`AWBURST=FIXED`.
 
-The CFE sends a complete `ts_cmd_o[127:0]` item to
-`npu_task_scheduler`. The scheduler contains 16 task entries by default and 255
-event entries. It preserves submission order for `ORDERED` and
-`GLOBAL_FENCE`, but independent engines can run at the same time. DMA, Matrix,
-Vector and Complex each have this interface:
+One command always uses two adjacent beats:
+
+1. low 64 bits with `first=1,last=0`;
+2. high 64 bits with `first=0,last=1`.
+
+A legal burst contains 2 through 16 beats and therefore submits 1 through 8
+commands. A command pair cannot be interleaved with another pair.
+
+`npu_cmd_frontend` checks the pair before exposing it to the scheduler. If the
+high beat does not arrive within `WAIT_HIGH_TIMEOUT` cycles, whose default is
+32, the partial pair is discarded and a `TIMEOUT` response is produced.
+
+The command response contains:
+
+```text
+[11:0]   command_id
+[19:12]  status
+[27:20]  remaining CFE FIFO entries
+```
+
+For V2, `command_id` comes from CMD128 bits `[121:112]`. The response still
+places it in a 12-bit field; the upper two response bits are zero.
+
+## CMD128 inline V2 header
+
+| CMD128 bits | Field | Meaning |
+| ---: | --- | --- |
+| `[127]` | `inline_v2` | Must be one |
+| `[126:122]` | `compact_opcode` | Five-bit operation selector |
+| `[121:112]` | `command_id` | Ten-bit in-flight task ID |
+| `[111:104]` | `wait_event0` | First Event ID; `8'hff` means unused |
+| `[103:96]` | `wait_event1` | Second Event ID; `8'hff` means unused |
+| `[95:88]` | `signal_event` | Completion Event ID; `8'hff` means unused |
+| `[87]` | `irq_success` | Request an interrupt after successful completion |
+| `[86]` | `irq_error` | Request an interrupt after failed completion |
+| `[85]` | `strict_numeric` | Report enabled complex-function numeric errors |
+| `[84]` | `ordered` | Apply ordered issue rules |
+| `[83:82]` | `timeout_class` | Select one of four timeout configurations |
+| `[81:80]` | `dtype` | `0=INT4`, `1=INT8`, `2=INT32`, `3=INT16` |
+| `[79:0]` | `payload` | Operation-specific inline parameters |
+
+All 32 compact-opcode values have an assigned decode:
+
+| Values | Engine | Operations |
+| --- | --- | --- |
+| 0–4 | Control | NOP, EVENT_SIGNAL, EVENT_REARM, EVENT_JOIN, GLOBAL_FENCE |
+| 5–10 | DMA | COPY_1D, COPY_ND, FILL, TRANSPOSE_2D, PACK, SPLIT |
+| 11–14 | Matrix | GEMM, BMM, GEMM_ACCUM, GEMM_ZERO |
+| 15–24 | Vector | ADD, SUB, MUL, FMA, MAX, MIN, CMP, SELECT, CLAMP, RELU |
+| 25–31 | Complex | ACT, SOFTMAX, NORM, ROPE, STAT, RECIP, ADD_RESCALE |
+
+ROPE and RECIP are recognized but disabled in the first feature set. They
+return `ILLEGAL_OPCODE` until the corresponding capability bit is enabled.
+
+## Inline payload expansion
+
+`npu_inline_desc_decode` converts the compact fields to the internal
+`task_desc_flat[2047:0]` request used by the execution engines. This is a local
+implementation interface. It is not an external array and does not create MIF
+traffic.
+
+The address references use the following units:
+
+- DMA `AREF28`: one address-space bit, three base-register bits, and a 24-bit
+  byte offset;
+- Matrix `LREF14`: L1 byte address equals the encoded value multiplied by 64;
+- Matrix bias `LREF12`: L1 byte address equals the encoded value multiplied by
+  64, with zero meaning that bias is disabled;
+- Vector and Complex `LREF16`: L1 byte address equals the encoded value
+  multiplied by 16.
+
+Global DMA base selectors are zero, input, weight, work, output, and KV for
+codes 0 through 5. Codes 6 and 7 are rejected.
+
+### Matrix fields
+
+GEMM, GEMM_ACCUM, and GEMM_ZERO use:
+
+```text
+[79:66] A LREF14
+[65:52] B LREF14
+[51:38] C LREF14
+[37:26] bias LREF12
+[25:20] M-1
+[19:14] N-1
+[13:8]  K-1
+[7]     B is INT4 when A is INT8
+[6:5]   C dtype
+[4:0]   direct requant right shift, 0 through 31
+```
+
+BMM replaces the bias field with `batch-1`, then stores `M-1`, `N-1`, `K-1`,
+the B-INT4 bit, C dtype, and the direct five-bit shift. Its lowest six payload
+bits must be zero.
+
+The accepted multiplier pairs are INT4×INT4, INT8×INT8, INT8×INT4, and
+INT16×INT16. An INT32 destination requires a zero right shift. Bias entries are
+INT32 and have shape `[N]`; bias entry `b[j]` is added to column `j` in every
+one of the `M` output rows.
+
+### Vector fields
+
+The Vector format contains `src0`, `src1`, `src2`, and `dst` LREF16 values,
+followed by `rows-1`, `length-1`, and three two-bit broadcast selectors. CMP
+uses the top three bits of the `src2` field as the compare mode and produces an
+INT8 zero-or-one mask. SELECT reads `src2` as that mask. CLAMP interprets
+`src1` and `src2` as signed 16-bit limits and requires their broadcast bits to
+be zero.
+
+### Complex fields
+
+The Complex format contains `src0`, `aux`, and `dst` LREF16 values,
+`rows-1`, `length-1`, and 19 bits of function metadata. The metadata selects
+the activation, signed power-of-two scales, destination type, clipping mode,
+Softmax mask mode, Norm mode, and epsilon profile. Complex functions use
+integer input, private FP32 intermediate values, and integer output.
+
+## Task Scheduler and Event Table
+
+The scheduler has 16 task entries by default and 255 usable Event entries.
+`8'hff` is reserved as the unused Event encoding.
+
+At V2 command acceptance, the scheduler reads each referenced Event entry and
+attaches its current four-bit generation to the local task. The generation is
+therefore not carried in CMD128.
+
+- a task with `wait_event0` or `wait_event1` remains waiting until both required
+  Events succeed;
+- a failed required Event terminates the consumer with `DEPENDENCY_FAILED`;
+- a task with `signal_event` reserves that Event and completes it when the task
+  reaches a terminal state;
+- EVENT_JOIN combines two prior Events;
+- EVENT_REARM advances an Event to its next generation only after the old
+  generation is terminal and its waiter count is zero;
+- GLOBAL_FENCE snapshots earlier selected-engine tasks when accepted.
+
+There can be one active task per engine. DMA, Matrix, Vector, and Complex use
+the following stable ready/valid interface:
 
 ```text
 task_valid, task_ready
@@ -49,36 +183,26 @@ done_fault_addr[47:0]
 done_progress[63:0]
 ```
 
-There can be one active task per engine. Task output remains stable while
-`task_valid=1` and `task_ready=0`. A task entry remains present after its
-terminal notification. Software first queries it and then completes the
-`task_ack_valid && task_ack_ready` handshake to release the entry.
+`task_valid` and its payload remain stable while `task_ready` is low. A terminal
+task remains queryable until software completes the ACK request.
 
-### Scheduler control requests
+## Scheduler control requests
 
-The scheduler also accepts one WAIT, QUERY or FENCE request at a time through
-`axi_ctl_*`. The operation values on this internal interface are `WAIT=1`,
-`QUERY=2` and `FENCE=3`.
+The scheduler accepts one WAIT, QUERY, or FENCE request at a time through
+`axi_ctl_*`.
 
 | Operation | `arg0` | `arg1` | Result |
 | --- | --- | --- | --- |
-| WAIT | Event reference in bits `[11:0]` | Maximum wait cycles in bits `[31:0]` | A terminal event returns state in `[2:0]` and producer command ID in `[19:8]`; an invalid reference, missing event or timeout returns the corresponding 8-bit status in `[7:0]` |
-| QUERY | Command ID in bits `[11:0]` | Selector in bits `[2:0]` | Selector-specific 64-bit data |
-| FENCE | Engine mask in bits `[3:0]`: DMA, Matrix, Vector, Complex | Maximum wait cycles in bits `[31:0]` | The earliest failed target status, `SUCCESS`, or `TIMEOUT` in `[7:0]` |
-
-FENCE captures the selected tasks when its request is accepted. Tasks submitted
-later are not added to that request. WAIT and FENCE give a terminal target
-priority over a timeout on the same cycle. `axi_ctl_cancel_i` cancels an active
-WAIT or FENCE without changing any task or event and without generating a
-scheduler response; the AXI control-window block records the cancelled software
-operation.
+| WAIT | Event reference in bits `[11:0]` | Maximum wait cycles in bits `[31:0]` | Terminal Event state and producer task ID, or an error status |
+| QUERY | Command ID in bits `[11:0]` | Selector in bits `[2:0]` | Selector-specific task data |
+| FENCE | Engine mask in bits `[3:0]` | Maximum wait cycles in bits `[31:0]` | Earliest failed target status, `SUCCESS`, or `TIMEOUT` |
 
 QUERY selectors are:
 
 | Selector | Result |
 | ---: | --- |
-| 0 | Task state `[3:0]`, status `[11:4]`, command ID `[23:12]`; software states are free, waiting, running and terminal |
-| 1 | User tag `[31:0]` and signal event `[43:32]` |
+| 0 | Task state `[3:0]`, status `[11:4]`, command ID `[23:12]` |
+| 1 | User tag `[31:0]` and signal Event `[43:32]` |
 | 2 | Fault address `[47:0]` |
 | 3 | Engine progress `[63:0]` |
 | 4 | ACK result: `0=ACKED`, `1=NOT_TERMINAL`, `2=NOT_FOUND` |
@@ -86,31 +210,9 @@ QUERY selectors are:
 | 6 | Completion flags `[15:0]` |
 | 7 | Reserved and returns `BAD_DESC` |
 
-ACK releases a terminal task only after its completion notification has been
-accepted. The direct `task_query_*`, `task_ack_*` and `event_query_*` ports
-provide the same stored information to local integration and debug logic.
+## L1 interface
 
-## Descriptor representation and dtype rules
-
-Descriptor byte zero occupies `desc_flat[7:0]`; later bytes follow in increasing
-bit positions. The maximum representation is 256 bytes. Control uses 64 bytes,
-Vector uses 192 bytes, and DMA, Matrix and Complex use 256 bytes.
-
-All ordinary dtype fields use exactly this two-bit definition:
-
-| Code | Type |
-| ---: | --- |
-| 0 | INT4 |
-| 1 | INT8 |
-| 2 | INT32 |
-| 3 | reserved; Descriptor fetch returns `BAD_DESC` |
-
-The accumulator field has its own definition and accepts only zero, denoting an
-INT32 accumulator. This RTL has no INT16 model-tensor mode.
-
-## L1 single-beat interface
-
-`npu_l1buf` exposes packed copies of one request/response interface:
+`npu_l1buf` exposes one request/response pair per client:
 
 ```text
 req_valid, req_ready, req_write
@@ -120,133 +222,72 @@ rsp_valid, rsp_ready, rsp_rdata[63:0], rsp_status[2:0]
 
 The default SRAM is 1 MiB in 16 banks. The current arbiter accepts one client
 request per cycle and rotates its starting client after every accepted request.
-Reads and writes return through a per-client response holding register, so
-response backpressure from one client does not consume another client's
-response slot. SRAM contents are intentionally not reset.
+Reads and writes return through per-client response holding registers. SRAM
+contents are intentionally not reset.
 
-## MIF and AXI4 behavior
+The external L1 window passes AXI Slave accesses through an internal request
+adapter. Software must enable the window before use.
 
-The internal MIF request is one aligned 64-bit access with a 48-bit virtual
-address. MIF first sends it to `npu_tbu`. A permitted access receives the same
-48-bit address. With the default `AXI_ADDR_W=40`, any nonzero translated bit
-above bit 39 returns an address error and creates no AXI request.
+## MIF, TBU, and AXI Master
 
-The AXI master uses:
+In V2 operation, DMA is the global-memory requester. Matrix, Vector, and Complex
+access L1 only. V1 diagnostic commands can additionally use MIF for parameter
+fetches.
+
+MIF submits a translated address request to TBU before issuing an AXI request.
+The AXI Master port connects to the SoC AXI Fabric; DDR and other permitted
+targets are outside the NPU.
+
+The current AXI master uses:
 
 - one outstanding request;
-- `AxLEN=0`, `AxSIZE=3`, `AxBURST=INCR`;
+- `AxSIZE=3` for 64-bit beats;
 - independent AW and W handshakes;
-- a held B/R ready state until the response arrives;
-- ID, response and `RLAST` checks;
-- stable request payload while any AXI valid signal is waiting.
+- held B/R readiness until the response arrives;
+- AXI ID, response, and `RLAST` checks;
+- stable payload while a valid signal waits for ready.
 
-Read data and write completion use the same internal response channel. AXI
-`SLVERR`, `DECERR`, an address error and a protocol error have distinct 3-bit
+Read data and write completion share the internal response channel. AXI
+`SLVERR`, `DECERR`, translation errors, and protocol errors produce distinct
 memory status values.
 
-## LSC registers implemented by this RTL
+## Implemented limits
 
-The base table follows the main specification from `0x0000` through `0x00f0`.
-It includes identification, fixed capabilities, start/stop, status, five
-48-bit model region bases, AXI address range, TBU IDs, interrupt state and mask,
-first fault, parameter-area control and the host L1 access enable.
-
-Three implementation registers are also provided:
-
-| Offset | Function |
-| ---: | --- |
-| `0x02c0` | WDT enable and kick |
-| `0x02c8` | WDT timeout cycles |
-| `0x02d0` | Eight local module clock enables |
-
-The register port returns one response for each accepted request and holds it
-until `reg_rsp_ready_i=1`. Misaligned accesses, writes to read-only registers
-and invalid field values return `SLVERR`.
-
-## Initial implementation limits
-
-- Descriptor CRC is not implemented. A command that enables it receives
-  `BAD_DESC`.
-- MIF and Descriptor Fetch each support one request at a time and issue only
-  single-beat AXI4 transfers.
-- TBU uses one configurable identity rule, not a page-table walker.
-- L1 storage has banked arrays, but this first arbiter grants at most one SRAM
-  access per cycle across all clients.
-- ECC status values are defined, but the SRAM array does not yet store or check
-  ECC bits.
-- Control tasks use the common Descriptor fetch flow. Event signal and join use
-  CMD dependencies; event rearm increments the selected event generation after
-  the prior task reaches its terminal state.
-- Event rearm is a minimal first implementation. It takes the selected event ID
-  from Descriptor byte 32, clears that entry and increments its generation. It
-  does not yet count registered task and host waiters.
-- The LSC exports parameter-area base, limit and lock state. The current packed
-  L1 interface does not carry a client permission bit, so `npu_l1buf` does not
-  yet enforce the parameter-area write protection itself.
-- AXI cache, protection and QoS values are fixed in this first MIF instance.
+- The first RTL feature set disables ROPE and RECIP.
+- V2 shape fields limit Matrix `M`, `N`, `K`, and BMM batch values to 1 through
+  64 per instruction. The compiler splits larger work.
+- Vector length is 1 through 32 and rows are 1 through 32 per instruction.
+- Complex length is 1 through 256 and rows are 1 through 32 per instruction.
+- MIF currently accepts one internal request at a time.
+- TBU uses a configurable identity rule instead of a page-table walker.
+- The current L1 arbiter grants one SRAM access per cycle across its clients.
+- ECC status values exist, but the SRAM arrays do not yet store ECC bits.
+- V1 Descriptor CRC remains unsupported.
 
 ## Verification
 
-Each module can be checked with Verilator by placing the package first:
+Run the complete RTL regression and lint checks from `NPU/rtl`:
 
 ```sh
-verilator --lint-only --Wall --top-module npu_cmd_frontend \
-  NPU/rtl/npu_rtl_pkg.sv NPU/rtl/control/npu_cmd_frontend.sv
-
-verilator --lint-only --Wall --top-module npu_task_scheduler \
-  NPU/rtl/npu_rtl_pkg.sv NPU/rtl/control/npu_task_scheduler.sv
-
-verilator --lint-only --Wall --top-module npu_l1buf \
-  NPU/rtl/npu_rtl_pkg.sv NPU/rtl/memory/npu_l1buf.sv
-
-verilator --lint-only --Wall --top-module npu_axi_mif_master \
-  NPU/rtl/npu_rtl_pkg.sv NPU/rtl/memory/npu_axi_mif_master.sv
+make clean
+make test
+make lint
+make clean
 ```
 
-The following functional smoke tests were run with Verilator 5.040 and passed:
+The regression includes:
 
-```sh
-CCACHE_DISABLE=1 verilator --binary --timing --assert --Wall --Wno-fatal \
-  --top-module tb_cmd_dfu_smoke \
-  NPU/rtl/npu_rtl_pkg.sv \
-  NPU/rtl/control/npu_cmd_frontend.sv \
-  NPU/rtl/control/npu_descriptor_fetch.sv \
-  NPU/rtl/control/tb_cmd_dfu_smoke.sv \
-  -Mdir /tmp/npu_tb_cmd_dfu --build-jobs 4
-/tmp/npu_tb_cmd_dfu/Vtb_cmd_dfu_smoke
+- atomic command-pair assembly and partial-command timeout;
+- CMD128 V2 decode for all engine classes;
+- zero V2 Descriptor Fetch Unit requests;
+- positive and negative payload checks;
+- Event generation resolution and EVENT_REARM;
+- INT4, INT8, INT16, and INT32 engine cases;
+- Matrix direct five-bit requant shift;
+- WAIT, QUERY, FENCE, and ACK;
+- L1, TBU, MIF, AXI, CRG, LSC, WDT, and complete single-core tests.
 
-CCACHE_DISABLE=1 verilator --binary --timing --assert --Wall --Wno-fatal \
-  --top-module tb_scheduler_ctl_smoke \
-  NPU/rtl/npu_rtl_pkg.sv \
-  NPU/rtl/control/npu_task_scheduler.sv \
-  NPU/rtl/control/tb_scheduler_ctl_smoke.sv \
-  -Mdir /tmp/npu_tb_scheduler_ctl --build-jobs 4
-/tmp/npu_tb_scheduler_ctl/Vtb_scheduler_ctl_smoke
-
-CCACHE_DISABLE=1 verilator --binary --timing --assert --Wall --Wno-fatal \
-  --top-module tb_lsc_crg_wdt_smoke \
-  NPU/rtl/npu_rtl_pkg.sv \
-  NPU/rtl/control/npu_lsc.sv \
-  NPU/rtl/control/npu_crg.sv \
-  NPU/rtl/control/npu_wdt.sv \
-  NPU/rtl/control/tb_lsc_crg_wdt_smoke.sv \
-  -Mdir /tmp/npu_tb_lsc_crg_wdt --build-jobs 4
-/tmp/npu_tb_lsc_crg_wdt/Vtb_lsc_crg_wdt_smoke
-
-CCACHE_DISABLE=1 verilator --binary --timing --assert --Wall --Wno-fatal \
-  --top-module tb_memory_smoke \
-  NPU/rtl/npu_rtl_pkg.sv \
-  NPU/rtl/memory/npu_l1buf.sv \
-  NPU/rtl/memory/npu_tbu.sv \
-  NPU/rtl/memory/npu_axi_mif_master.sv \
-  NPU/rtl/memory/tb_memory_smoke.sv \
-  -Mdir /tmp/npu_tb_memory --build-jobs 4
-/tmp/npu_tb_memory/Vtb_memory_smoke
-```
-
-The tests cover atomic CMD128 assembly, the 32-cycle partial-command timeout,
-Descriptor prefix rejection for dtype code 3, concurrent DMA and Matrix issue,
-WAIT/QUERY/FENCE/ACK behavior, completion progress, LSC register and first-fault
-state, controlled reset, CRG reset release and DVFS acknowledgement, WDT
-timeout/clear, L1 byte strobes, TBU permission and range errors, and AXI read,
-write and DECERR responses.
+The synced AXI TVIP environment also submits an inline V2 Vector task through
+the fixed-address AXI Slave FIFO and confirms that it creates no system-memory
+read. The command-FIFO and complete-core UVM tests both finish with zero UVM
+warnings, errors, or fatal reports.

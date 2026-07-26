@@ -6,6 +6,7 @@
 
 #define NPU_ENGINE_TASK_FLAGS_ALLOWED 0x003fu
 #define NPU_ENGINE_TASK_FLAG_DESC_CRC (1u << 5)
+#define NPU_ENGINE_META_INLINE (UINT64_C(1) << 44)
 #define NPU_ENGINE_FAULT_ADDR_MASK UINT64_C(0x0000ffffffffffff)
 
 static uint8_t npu_engine_instance_valid(npu_engine_t engine)
@@ -329,7 +330,7 @@ static void npu_engine_start_metadata(
     uint64_t data)
 {
     size_t descriptor_bytes;
-    uint64_t reserved = data >> 44;
+    uint64_t reserved = data >> 45;
     uint16_t task_flags =
         (uint16_t)((data >> 28) & UINT64_C(0x0fff));
     uint8_t opcode = (uint8_t)((data >> 12) & UINT64_C(0x00ff));
@@ -344,6 +345,8 @@ static void npu_engine_start_metadata(
     adapter->task_flags = task_flags;
     adapter->timeout_class =
         (uint8_t)((data >> 40) & UINT64_C(0x0f));
+    adapter->inline_format =
+        (uint8_t)((data & NPU_ENGINE_META_INLINE) != 0u);
 
     if (reserved != 0u) {
         npu_engine_set_terminal(
@@ -401,7 +404,10 @@ static void npu_engine_start_metadata(
         return;
     }
 
-    descriptor_bytes = npu_wire_descriptor_bytes(adapter->engine);
+    descriptor_bytes =
+        adapter->inline_format != 0u
+            ? NPU_WIRE_CMD_BYTES
+            : npu_wire_descriptor_bytes(adapter->engine);
     adapter->descriptor_bytes = (uint16_t)descriptor_bytes;
     adapter->descriptor_words =
         (uint8_t)(descriptor_bytes / NPU_REF_BUS_BYTES);
@@ -498,10 +504,19 @@ static void npu_engine_decode(npu_engine_cycle_t *adapter)
     command.wait_event[1] = npu_event_none();
     command.signal_event = npu_event_none();
 
-    status = npu_wire_decode_descriptor(
-        &command, adapter->descriptor, adapter->descriptor_bytes,
-        &adapter->wire_limits, &adapter->request,
-        &adapter->wire_meta);
+    if (adapter->inline_format != 0u) {
+        status = npu_wire_decode_task(
+            adapter->descriptor, adapter->descriptor_bytes,
+            (const uint8_t *)0, 0u,
+            &adapter->wire_limits, &adapter->request,
+            &adapter->wire_meta);
+    } else {
+        status = npu_wire_decode_descriptor(
+            &command, adapter->descriptor,
+            adapter->descriptor_bytes,
+            &adapter->wire_limits, &adapter->request,
+            &adapter->wire_meta);
+    }
     if (status != NPU_STATUS_SUCCESS) {
         if (status == NPU_STATUS_ADDR_FAULT &&
             adapter->wire_meta.fault_valid != 0u) {
@@ -509,7 +524,7 @@ static void npu_engine_decode(npu_engine_cycle_t *adapter)
             if (adapter->wire_meta.fault_space == NPU_SPACE_L1) {
                 done_flags |= NPU_DONE_FAULT_ADDR_IS_L1;
             }
-        } else {
+        } else if (adapter->inline_format == 0u) {
             npu_engine_capture_fault(adapter, status,
                                      &fault_addr, &done_flags);
         }
@@ -528,9 +543,14 @@ static void npu_engine_decode(npu_engine_cycle_t *adapter)
         adapter->functional_model, &adapter->request);
     adapter->estimated_total_cycles = total_cycles;
     adapter->descriptor_phase_cycles =
-        (uint64_t)adapter->descriptor_words +
-        NPU_ENGINE_DESC_OVERHEAD_CYCLES;
-    if (total_cycles > adapter->descriptor_phase_cycles) {
+        adapter->inline_format != 0u
+            ? 0u
+            : (uint64_t)adapter->descriptor_words +
+                  NPU_ENGINE_DESC_OVERHEAD_CYCLES;
+    if (adapter->inline_format != 0u) {
+        adapter->execute_remaining =
+            total_cycles == 0u ? 1u : total_cycles;
+    } else if (total_cycles > adapter->descriptor_phase_cycles) {
         adapter->execute_remaining =
             total_cycles - adapter->descriptor_phase_cycles;
     } else {

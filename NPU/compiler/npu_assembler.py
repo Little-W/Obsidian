@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Assemble normalized NPU JSON IR into deterministic device artifacts.
+"""Assemble the NPU low-level JSON IR into CMD128 inline-V2 records.
 
-The input is a documented low-level model IR. Framework frontends may lower
-supported graphs into this IR. This command does not claim to import every
-Keras, PyTorch, ONNX, or TFLite graph.
+Every executable parameter is encoded in the 128-bit command.  The assembler
+therefore emits a command image and metadata, but never emits a separate
+Descriptor image.
 """
 
 from __future__ import annotations
@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 import struct
 import sys
@@ -21,11 +22,12 @@ from typing import Any, Mapping, Sequence
 sys.dont_write_bytecode = True
 
 SCHEMA_VERSION = 1
-COMMAND_FORMAT = "cmd128-v1"
-HEADER_VERSION = 1
-EVENT_NONE = 0xFFF
-MAX_EVENT_ID = 254
-MAX_COMMAND_ID = 0xFFF
+COMMAND_FORMAT = "cmd128-inline-v2"
+HEADER_VERSION = 2
+EVENT_NONE = 0xFF
+MAX_EVENT_ID = 0xFE
+MAX_COMMAND_ID = 0x3FF
+PAYLOAD_BITS = 80
 
 ENGINE_CODES = {"control": 0, "dma": 1, "matrix": 2, "vector": 3, "complex": 4}
 OPCODES = {
@@ -72,51 +74,71 @@ OPCODES = {
         "ADD_RESCALE": 0x86,
     },
 }
-DESCRIPTOR_BYTES = {
-    "control": 64,
-    "dma": 256,
-    "matrix": 256,
-    "vector": 192,
-    "complex": 256,
+
+_COMPACT_NAMES = (
+    ("control", "NOP"),
+    ("control", "EVENT_SIGNAL"),
+    ("control", "EVENT_REARM"),
+    ("control", "EVENT_JOIN"),
+    ("control", "GLOBAL_FENCE"),
+    ("dma", "COPY_1D"),
+    ("dma", "COPY_ND"),
+    ("dma", "FILL"),
+    ("dma", "TRANSPOSE_2D"),
+    ("dma", "PACK"),
+    ("dma", "SPLIT"),
+    ("matrix", "GEMM"),
+    ("matrix", "BMM"),
+    ("matrix", "GEMM_ACCUM"),
+    ("matrix", "GEMM_ZERO"),
+    ("vector", "ADD"),
+    ("vector", "SUB"),
+    ("vector", "MUL"),
+    ("vector", "FMA"),
+    ("vector", "MAX"),
+    ("vector", "MIN"),
+    ("vector", "CMP"),
+    ("vector", "SELECT"),
+    ("vector", "CLAMP"),
+    ("vector", "RELU"),
+    ("complex", "ACT"),
+    ("complex", "SOFTMAX"),
+    ("complex", "NORM"),
+    ("complex", "ROPE"),
+    ("complex", "STAT"),
+    ("complex", "RECIP"),
+    ("complex", "ADD_RESCALE"),
+)
+COMPACT_OPCODES = {
+    pair: compact for compact, pair in enumerate(_COMPACT_NAMES)
 }
+
 DTYPE_CODES = {"int4": 0, "int8": 1, "int32": 2, "int16": 3}
-SPACE_CODES = {"l1": 0, "ddr": 1}
-ROUND_CODES = {
-    "nearest_even": 0,
-    "to_zero": 1,
-    "to_pos_inf": 2,
-    "to_neg_inf": 3,
-}
-OVERFLOW_CODES = {"saturate": 0, "error": 1, "wrap": 2}
-DMA_CONVERT_CODES = {
-    "none": 0,
-    "sign_extend": 1,
-    "saturate_narrow": 2,
-    "pack_int4": 3,
-}
+DTYPE_BITS = {"int4": 4, "int8": 8, "int32": 32, "int16": 16}
 BROADCAST_CODES = {"none": 0, "scalar": 1, "row": 2, "feature": 3}
 COMPARE_CODES = {"eq": 0, "ne": 1, "lt": 2, "le": 3, "gt": 4, "ge": 5}
-FUNCTION_CODES = {
-    "sigmoid": 0,
-    "tanh": 1,
-    "gelu": 2,
-    "silu": 3,
-    "softmax": 4,
-    "layernorm": 5,
-    "rmsnorm": 6,
-    "stat_sum": 7,
-    "stat_max": 8,
-    "stat_sumsq": 9,
-    "reciprocal": 10,
-    "reciprocal_sqrt": 11,
-    "add_rescale": 12,
-}
 MASK_CODES = {"none": 0, "boolean": 1, "causal": 2, "valid_length": 3}
-SCALE_CODES = {"none": 0, "per_tensor": 1, "per_row": 2, "per_feature": 3}
+GADDR_BASE_CODES = {
+    "zero": 0,
+    "input": 1,
+    "weight": 2,
+    "work": 3,
+    "output": 4,
+    "kv": 5,
+}
+EPSILON_PROFILES = {1.0e-5: 0, 1.0e-6: 1, 1.0e-3: 2, 1.0e-4: 3}
+CLIP_PROFILES = {
+    (-16.0, 16.0): 0,
+    (-8.0, 8.0): 1,
+    (-4.0, 4.0): 2,
+    (-2.0, 2.0): 3,
+}
+ACT_FUNCTION_CODES = {"sigmoid": 0, "tanh": 1, "gelu": 2, "silu": 3}
+STAT_FUNCTION_CODES = {"stat_sum": 0, "stat_max": 1, "stat_sumsq": 2}
 
 
 class CompileError(ValueError):
-    """Input or lowering error with a stable location."""
+    """Low-level IR or inline encoding error with a stable location."""
 
 
 @dataclass(frozen=True)
@@ -131,9 +153,8 @@ class CompiledOperation:
     command_id: int
     engine: str
     opcode: int
-    descriptor_addr: int
-    descriptor_offset: int
-    descriptor: bytes
+    compact_opcode: int
+    payload: int
     command: bytes
     wait_events: tuple[int, int]
     signal_event: int
@@ -180,10 +201,10 @@ def parse_int(
 
 
 def parse_signed(value: Any, location: str, bits: int = 32) -> int:
-    minimum = -(1 << (bits - 1))
-    maximum = (1 << (bits - 1)) - 1
     if isinstance(value, bool) or not isinstance(value, int):
         raise fail(location, "must be a signed JSON integer")
+    minimum = -(1 << (bits - 1))
+    maximum = (1 << (bits - 1)) - 1
     if value < minimum or value > maximum:
         raise fail(location, f"value is outside signed {bits}-bit range")
     return value
@@ -193,7 +214,7 @@ def parse_float(value: Any, location: str) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise fail(location, "must be a finite JSON number")
     result = float(value)
-    if not (-float("inf") < result < float("inf")):
+    if not math.isfinite(result):
         raise fail(location, "must be finite")
     return result
 
@@ -210,152 +231,135 @@ def enum_value(table: Mapping[str, int], value: Any, location: str) -> int:
     return table[key]
 
 
-def align_up(value: int, alignment: int) -> int:
-    return (value + alignment - 1) & ~(alignment - 1)
+def dtype_name(value: Any, location: str) -> str:
+    if not isinstance(value, str) or value.lower() not in DTYPE_CODES:
+        raise fail(location, "use int4, int8, int16, or int32")
+    return value.lower()
 
 
-def put_u8(data: bytearray, offset: int, value: Any, location: str) -> None:
-    if offset < 0 or offset >= len(data):
-        raise fail(location, "field does not fit in Descriptor")
-    data[offset] = parse_int(value, location, 0, 0xFF)
-
-
-def put_u16(data: bytearray, offset: int, value: Any, location: str) -> None:
-    if offset < 0 or offset + 2 > len(data):
-        raise fail(location, "field does not fit in Descriptor")
-    struct.pack_into("<H", data, offset, parse_int(value, location, 0, 0xFFFF))
-
-
-def put_u32(data: bytearray, offset: int, value: Any, location: str) -> None:
-    if offset < 0 or offset + 4 > len(data):
-        raise fail(location, "field does not fit in Descriptor")
-    struct.pack_into(
-        "<I", data, offset, parse_int(value, location, 0, 0xFFFFFFFF)
-    )
-
-
-def put_i32(data: bytearray, offset: int, value: Any, location: str) -> None:
-    if offset < 0 or offset + 4 > len(data):
-        raise fail(location, "field does not fit in Descriptor")
-    struct.pack_into("<i", data, offset, parse_signed(value, location))
-
-
-def put_u64(data: bytearray, offset: int, value: Any, location: str) -> None:
-    if offset < 0 or offset + 8 > len(data):
-        raise fail(location, "field does not fit in Descriptor")
-    struct.pack_into(
-        "<Q",
-        data,
-        offset,
-        parse_int(value, location, 0, 0xFFFFFFFFFFFFFFFF),
-    )
-
-
-def put_f32(data: bytearray, offset: int, value: Any, location: str) -> None:
-    if offset < 0 or offset + 4 > len(data):
-        raise fail(location, "field does not fit in Descriptor")
-    struct.pack_into("<f", data, offset, parse_float(value, location))
-
-
-def bool_bit(fields: Mapping[str, Any], name: str, bit: int) -> int:
-    value = fields.get(name, False)
-    if not isinstance(value, bool):
-        raise fail(name, "must be true or false")
-    return (1 << bit) if value else 0
+def pack_field(payload: int, value: int, lsb: int, width: int, location: str) -> int:
+    value = parse_int(value, location, 0, (1 << width) - 1)
+    mask = ((1 << width) - 1) << lsb
+    if payload & mask:
+        raise fail(location, "overlaps an already encoded payload field")
+    return payload | (value << lsb)
 
 
 def parse_event(value: Any, location: str) -> int:
     if value is None or value == "none":
         return EVENT_NONE
     if isinstance(value, int) and not isinstance(value, bool):
-        return parse_int(value, location, 0, EVENT_NONE)
+        if value == EVENT_NONE:
+            return EVENT_NONE
+        return parse_int(value, location, 0, MAX_EVENT_ID)
     event = object_value(value, location)
     event_id = parse_int(event.get("id"), f"{location}.id", 0, MAX_EVENT_ID)
     generation = parse_int(
         event.get("generation", 0), f"{location}.generation", 0, 15
     )
-    return (generation << 8) | event_id
+    if generation != 0:
+        raise fail(
+            f"{location}.generation",
+            "inline V2 carries an 8-bit event ID and requires generation 0",
+        )
+    return event_id
 
 
 def event_to_json(raw: int) -> dict[str, int] | None:
-    if raw == EVENT_NONE:
-        return None
-    return {"id": raw & 0xFF, "generation": (raw >> 8) & 0xF}
+    return None if raw == EVENT_NONE else {"id": raw, "generation": 0}
 
 
-def encode_command128(
-    descriptor_addr: int,
-    command_id: int,
-    engine: int,
-    opcode: int,
-    header_flags: int,
-    wait0: int,
-    wait1: int,
-    signal: int,
-) -> bytes:
-    descriptor_addr = parse_int(
-        descriptor_addr, "descriptor_addr", 0, (1 << 48) - 1
-    )
-    if descriptor_addr & 0x3F:
-        raise fail("descriptor_addr", "must be 64-byte aligned")
-    command_id = parse_int(command_id, "command_id", 0, MAX_COMMAND_ID)
-    engine = parse_int(engine, "engine", 0, 15)
-    opcode = parse_int(opcode, "opcode", 0, 0xFF)
-    header_flags = parse_int(header_flags, "header_flags", 0, 0xFFF)
-    if header_flags & 0xC00:
-        raise fail("header_flags", "bits 11:10 are reserved")
-    wait0 = parse_event(wait0, "wait0")
-    wait1 = parse_event(wait1, "wait1")
-    signal = parse_event(signal, "signal")
-    if signal != EVENT_NONE and signal in (wait0, wait1):
-        raise fail("signal", "cannot equal a wait event")
-    low = descriptor_addr | (command_id << 48) | (engine << 60)
-    high = (
-        opcode
-        | (header_flags << 8)
-        | (wait0 << 20)
-        | (wait1 << 32)
-        | (signal << 44)
-        | (HEADER_VERSION << 56)
-    )
-    return struct.pack("<QQ", low, high)
-
-
-def header_flags(fields: Mapping[str, Any], location: str) -> int:
-    if "raw" in fields:
-        result = parse_int(fields["raw"], f"{location}.raw", 0, 0x3FF)
-        if result & (1 << 5):
-            raise fail(
-                f"{location}.raw",
-                "the baseline profile does not advertise Descriptor CRC",
-            )
-        return result
-    result = 0
+def header_flags(fields: Mapping[str, Any], location: str) -> tuple[int, int]:
+    unsupported = set(fields) - {
+        "irq_on_success",
+        "irq_on_error",
+        "strict_numeric",
+        "ordered",
+        "timeout_class",
+    }
+    if unsupported:
+        raise fail(
+            location,
+            "inline V2 flag object does not support "
+            + ", ".join(sorted(unsupported)),
+        )
+    packed = 0
     for name, bit in (
-        ("irq_on_success", 0),
-        ("irq_on_error", 1),
-        ("strict_numeric", 2),
-        ("trace_enable", 3),
-        ("ordered", 4),
-        ("descriptor_crc", 5),
+        ("irq_on_success", 3),
+        ("irq_on_error", 2),
+        ("strict_numeric", 1),
+        ("ordered", 0),
     ):
         value = fields.get(name, False)
         if not isinstance(value, bool):
             raise fail(f"{location}.{name}", "must be true or false")
         if value:
-            result |= 1 << bit
-    if result & (1 << 5):
-        raise fail(
-            f"{location}.descriptor_crc",
-            "the baseline profile does not advertise Descriptor CRC",
-        )
+            packed |= 1 << bit
     timeout = parse_int(
-        fields.get("timeout_class", 0),
-        f"{location}.timeout_class",
-        0,
-        15,
+        fields.get("timeout_class", 0), f"{location}.timeout_class", 0, 3
     )
-    return result | (timeout << 6)
+    return packed, timeout
+
+
+def encode_command128(
+    payload: int,
+    command_id: int,
+    compact_opcode: int,
+    dtype: int,
+    flags: int,
+    timeout_class: int,
+    wait0: int,
+    wait1: int,
+    signal: int,
+) -> bytes:
+    payload = parse_int(payload, "payload", 0, (1 << PAYLOAD_BITS) - 1)
+    command_id = parse_int(command_id, "command_id", 0, MAX_COMMAND_ID)
+    compact_opcode = parse_int(compact_opcode, "compact_opcode", 0, 0x1F)
+    dtype = parse_int(dtype, "dtype", 0, 3)
+    flags = parse_int(flags, "flags", 0, 0xF)
+    timeout_class = parse_int(timeout_class, "timeout_class", 0, 3)
+    wait0 = parse_event(wait0, "wait0")
+    wait1 = parse_event(wait1, "wait1")
+    signal = parse_event(signal, "signal")
+    if signal != EVENT_NONE and signal in (wait0, wait1):
+        raise fail("signal", "cannot equal a wait event")
+    low = payload & ((1 << 64) - 1)
+    high = (
+        ((payload >> 64) & 0xFFFF)
+        | (dtype << 16)
+        | (timeout_class << 18)
+        | (flags << 20)
+        | (signal << 24)
+        | (wait1 << 32)
+        | (wait0 << 40)
+        | (command_id << 48)
+        | (compact_opcode << 58)
+        | (1 << 63)
+    )
+    return struct.pack("<QQ", low, high)
+
+
+def normalize_tensors(document: Mapping[str, Any]) -> dict[str, Mapping[str, Any]]:
+    source = object_value(document.get("tensors", {}), "tensors")
+    result: dict[str, Mapping[str, Any]] = {}
+    for name, value in source.items():
+        if not isinstance(name, str) or not name:
+            raise fail("tensors", "tensor names must be non-empty strings")
+        tensor = object_value(value, f"tensors.{name}")
+        parse_int(tensor.get("addr"), f"tensors.{name}.addr", 0, (1 << 48) - 1)
+        space = tensor.get("space", "l1")
+        if not isinstance(space, str) or space.lower() not in ("l1", "ddr"):
+            raise fail(f"tensors.{name}.space", "use l1 or ddr")
+        dtype_name(tensor.get("dtype"), f"tensors.{name}.dtype")
+        if "region_bytes" in tensor:
+            parse_int(
+                tensor["region_bytes"],
+                f"tensors.{name}.region_bytes",
+                0,
+                (1 << 48) - 1,
+            )
+        result[name] = tensor
+    return result
 
 
 def resolve_tensor(
@@ -372,672 +376,718 @@ def resolve_tensor(
     return object_value(value, location)
 
 
-def tensor_address(tensor: Mapping[str, Any], location: str) -> int:
+def tensor_addr(tensor: Mapping[str, Any], location: str) -> int:
     if not tensor:
         return 0
     return parse_int(tensor.get("addr"), f"{location}.addr", 0, (1 << 48) - 1)
 
 
 def tensor_dtype(
+    tensor: Mapping[str, Any], fallback: Any, location: str
+) -> str:
+    return dtype_name(tensor.get("dtype", fallback), f"{location}.dtype")
+
+
+def operation_fields(
+    operation: Mapping[str, Any], engine: str, location: str
+) -> tuple[Mapping[str, Any], Mapping[str, Any]]:
+    if "descriptor" in operation:
+        raise fail(
+            f"{location}.descriptor",
+            "inline V2 uses the fields object; external Descriptor input is not accepted",
+        )
+    fields = object_value(operation.get("fields", {}), f"{location}.fields")
+    common = object_value(fields.get("common", {}), f"{location}.fields.common")
+    engine_fields = object_value(
+        fields.get(engine, {}), f"{location}.fields.{engine}"
+    )
+    extra = set(fields) - {"common", engine}
+    if extra:
+        raise fail(
+            f"{location}.fields",
+            "unexpected field groups: " + ", ".join(sorted(extra)),
+        )
+    return common, engine_fields
+
+
+def gaddr_bases(target: Mapping[str, Any]) -> dict[int, int]:
+    raw = object_value(target.get("gaddr_bases", {}), "target.gaddr_bases")
+    result = {index: 0 for index in range(6)}
+    for name, value in raw.items():
+        if isinstance(name, str) and name.lower() in GADDR_BASE_CODES:
+            selector = GADDR_BASE_CODES[name.lower()]
+        else:
+            selector = parse_int(name, f"target.gaddr_bases.{name}", 0, 5)
+        result[selector] = parse_int(
+            value, f"target.gaddr_bases.{name}", 0, (1 << 48) - 1
+        )
+    return result
+
+
+def encode_aref(
     tensor: Mapping[str, Any],
-    fallback: Any,
+    target: Mapping[str, Any],
     location: str,
 ) -> int:
-    return enum_value(
-        DTYPE_CODES, tensor.get("dtype", fallback), f"{location}.dtype"
-    )
-
-
-def compile_common(
-    descriptor: bytearray,
-    engine: str,
-    operation: Mapping[str, Any],
-    tensors: Mapping[str, Mapping[str, Any]],
-    location: str,
-) -> dict[str, Mapping[str, Any]]:
-    descriptor_object = object_value(
-        operation.get("descriptor", {}), f"{location}.descriptor"
-    )
-    common = object_value(
-        descriptor_object.get("common", {}),
-        f"{location}.descriptor.common",
-    )
-    refs: dict[str, Mapping[str, Any]] = {}
-    names = ("src0", "src1", "src2", "dst", "aux0", "aux1")
-    for name in names:
-        refs[name] = resolve_tensor(
-            common.get(name), tensors, f"{location}.descriptor.common.{name}"
+    if not tensor:
+        raise fail(location, "tensor reference is required")
+    address = tensor_addr(tensor, location)
+    space = str(tensor.get("space", "l1")).lower()
+    if space == "l1":
+        if address > 0xFFFFFF:
+            raise fail(f"{location}.addr", "L1 AREF uses a 24-bit byte offset")
+        return address
+    if space != "ddr":
+        raise fail(f"{location}.space", "use l1 or ddr")
+    bases = gaddr_bases(target)
+    selector_value = tensor.get("base_select")
+    if selector_value is None:
+        candidates = [
+            selector
+            for selector, base in bases.items()
+            if address >= base and address - base <= 0xFFFFFF
+        ]
+        if not candidates:
+            raise fail(
+                f"{location}.addr",
+                "address needs a configured GADDR base with a 24-bit offset",
+            )
+        selector = min(candidates, key=lambda item: address - bases[item])
+    elif isinstance(selector_value, str):
+        selector = enum_value(
+            GADDR_BASE_CODES, selector_value, f"{location}.base_select"
         )
-
-    put_u8(descriptor, 0x00, 1, f"{location}.desc_version")
-    put_u8(descriptor, 0x01, ENGINE_CODES[engine], f"{location}.desc_type")
-    put_u16(descriptor, 0x02, len(descriptor), f"{location}.desc_bytes")
-
-    op_flags = parse_int(
-        common.get("op_flags", 0),
-        f"{location}.descriptor.common.op_flags",
-        0,
-        0xFFFFFFFF,
-    )
-    for index, name in enumerate(names):
-        tensor = refs[name]
-        space = tensor.get("space", "l1") if tensor else "l1"
-        if not isinstance(space, str):
-            raise fail(f"{location}.{name}.space", "must be a string")
-        if tensor and space.lower() == "ddr":
-            op_flags |= 1 << index
-    op_flags |= bool_bit(common, "allow_inplace", 6)
-    op_flags |= bool_bit(common, "allow_partial_dest", 7)
-    put_u32(descriptor, 0x04, op_flags, f"{location}.op_flags")
-
-    for offset, name in (
-        (0x08, "src0"),
-        (0x10, "src1"),
-        (0x18, "src2"),
-        (0x20, "dst"),
-        (0x28, "aux0"),
-        (0x30, "aux1"),
-    ):
-        address_key = f"{name}_addr"
-        value = (
-            common[address_key]
-            if address_key in common
-            else tensor_address(refs[name], f"{location}.{name}")
+    else:
+        selector = parse_int(
+            selector_value, f"{location}.base_select", 0, 5
         )
-        put_u64(descriptor, offset, value, f"{location}.{address_key}")
-
-    dtype_default = common.get("dtype", "int4")
-    numeric_cfg = 0
-    for shift, name in ((0, "src0"), (2, "src1"), (4, "src2"), (6, "dst")):
-        explicit = common.get(f"{name}_dtype", dtype_default)
-        numeric_cfg |= tensor_dtype(refs[name], explicit, f"{location}.{name}") << shift
-    numeric_cfg |= enum_value(
-        ROUND_CODES,
-        common.get("round_mode", "nearest_even"),
-        f"{location}.round_mode",
-    ) << 10
-    numeric_cfg |= bool_bit(common, "saturate_enable", 12)
-    numeric_cfg |= enum_value(
-        SCALE_CODES,
-        common.get("scale_mode", "none"),
-        f"{location}.scale_mode",
-    ) << 13
-    numeric_cfg |= bool_bit(common, "zero_point_enable", 15)
-    numeric_cfg |= bool_bit(common, "internal_fp32_enable", 16)
-    put_u32(descriptor, 0x38, numeric_cfg, f"{location}.numeric_cfg")
-    put_u32(
-        descriptor,
-        0x3C,
-        operation.get("user_tag", 0),
-        f"{location}.user_tag",
-    )
-    return refs
+    base = bases[selector]
+    if address < base or address - base > 0xFFFFFF:
+        raise fail(
+            f"{location}.addr",
+            f"does not fit the 24-bit offset for GADDR base {selector}",
+        )
+    return (1 << 27) | (selector << 24) | (address - base)
 
 
-def padded_array(value: Any, count: int, location: str) -> list[int]:
-    source = list_value(value, location)
-    if len(source) > count:
-        raise fail(location, f"supports at most {count} values")
-    result = [
-        parse_int(item, f"{location}[{index}]", 0, 0xFFFFFFFF)
-        for index, item in enumerate(source)
-    ]
-    return result + [0] * (count - len(result))
+def encode_lref(
+    tensor: Mapping[str, Any], shift: int, width: int, location: str
+) -> int:
+    if not tensor:
+        return 0
+    if str(tensor.get("space", "l1")).lower() != "l1":
+        raise fail(f"{location}.space", "this operand must reside in L1")
+    address = tensor_addr(tensor, location)
+    alignment = 1 << shift
+    if address & (alignment - 1):
+        raise fail(
+            f"{location}.addr",
+            f"must be aligned to {alignment} bytes for this inline field",
+        )
+    reference = address >> shift
+    if reference >= (1 << width):
+        raise fail(
+            f"{location}.addr",
+            f"does not fit the {width}-bit L1 reference",
+        )
+    return reference
 
 
-def encode_control(
-    data: bytearray,
-    fields: Mapping[str, Any],
-    location: str,
-) -> None:
-    if not fields:
-        return
-    put_u64(
-        data, 0x08, parse_event(fields.get("event0"), f"{location}.event0"), f"{location}.event0"
-    )
-    put_u64(
-        data, 0x10, parse_event(fields.get("event1"), f"{location}.event1"), f"{location}.event1"
-    )
-    put_u64(
-        data, 0x20, parse_event(fields.get("target"), f"{location}.target"), f"{location}.target"
-    )
-    put_u64(
-        data,
-        0x28,
-        parse_int(fields.get("engine_mask", 0), f"{location}.engine_mask", 0, 0xF),
-        f"{location}.engine_mask",
+def positive_product(values: Sequence[Any], location: str) -> int:
+    result = 1
+    if not values:
+        raise fail(location, "must contain at least one dimension")
+    for index, value in enumerate(values):
+        result *= parse_int(value, f"{location}[{index}]", 1, 0xFFFFFFFF)
+        if result > 0xFFFFFFFF:
+            raise fail(location, "element count exceeds 32 bits")
+    return result
+
+
+def power2_exponent(value: Any, location: str) -> int:
+    number = parse_float(value, location)
+    if number <= 0.0:
+        raise fail(location, "must be a positive power of two")
+    exponent = int(round(math.log2(number)))
+    if exponent < -8 or exponent > 7 or number != math.ldexp(1.0, exponent):
+        raise fail(location, "must equal 2^e with e in -8..7")
+    return exponent & 0xF
+
+
+def epsilon_profile(value: Any, location: str) -> int:
+    number = parse_float(value, location)
+    for candidate, profile in EPSILON_PROFILES.items():
+        if math.isclose(number, candidate, rel_tol=0.0, abs_tol=candidate * 1e-7):
+            return profile
+    raise fail(location, "use 1e-5, 1e-6, 1e-3, or 1e-4")
+
+
+def encode_control_payload(
+    opcode_name: str, fields: Mapping[str, Any], location: str
+) -> int:
+    payload = 0
+    engine_mask = parse_int(
+        fields.get("engine_mask", 0), f"{location}.engine_mask", 0, 0xF
     )
     join_mode = parse_int(
-        fields.get("join_mode", 0), f"{location}.join_mode", 0, 2
+        fields.get("join_mode", 0), f"{location}.join_mode", 0, 1
     )
-    current = struct.unpack_from("<I", data, 0x04)[0]
-    put_u32(data, 0x04, current | (join_mode << 8), f"{location}.join_mode")
+    if opcode_name != "GLOBAL_FENCE" and engine_mask != 0:
+        raise fail(f"{location}.engine_mask", "is only used by GLOBAL_FENCE")
+    if opcode_name == "GLOBAL_FENCE" and engine_mask == 0:
+        raise fail(f"{location}.engine_mask", "must select at least one engine")
+    if opcode_name != "EVENT_JOIN" and join_mode != 0:
+        raise fail(f"{location}.join_mode", "is only used by EVENT_JOIN")
+    payload = pack_field(payload, engine_mask, 76, 4, f"{location}.engine_mask")
+    payload = pack_field(payload, join_mode, 75, 1, f"{location}.join_mode")
+    return payload
 
 
-def encode_dma(
-    data: bytearray,
+def encode_dma_payload(
+    opcode_name: str,
+    common: Mapping[str, Any],
     fields: Mapping[str, Any],
-    refs: Mapping[str, Mapping[str, Any]],
-    location: str,
-) -> None:
-    shape = padded_array(fields.get("shape", []), 5, f"{location}.shape")
-    inferred_rank = len([value for value in shape if value != 0])
-    rank = parse_int(
-        fields.get("rank", inferred_rank), f"{location}.rank", 1, 5
-    )
-    src_strides = padded_array(
-        fields.get("src_stride_bytes", [0] * rank),
-        5,
-        f"{location}.src_stride_bytes",
-    )
-    dst_strides = padded_array(
-        fields.get("dst_stride_bytes", [0] * rank),
-        5,
-        f"{location}.dst_stride_bytes",
-    )
-    src_space = fields.get("src_space", refs["src0"].get("space", "l1"))
-    dst_space = fields.get("dst_space", refs["dst"].get("space", "l1"))
-    put_u8(data, 0x40, rank, f"{location}.rank")
-    put_u8(
-        data,
-        0x41,
-        enum_value(SPACE_CODES, src_space, f"{location}.src_space"),
-        f"{location}.src_space",
-    )
-    put_u8(
-        data,
-        0x42,
-        enum_value(SPACE_CODES, dst_space, f"{location}.dst_space"),
-        f"{location}.dst_space",
-    )
-    put_u8(
-        data,
-        0x43,
-        enum_value(
-            DMA_CONVERT_CODES,
-            fields.get("convert_mode", "none"),
-            f"{location}.convert_mode",
-        ),
-        f"{location}.convert_mode",
-    )
-    burst = parse_int(
-        fields.get("burst_beats", 16), f"{location}.burst_beats", 1, 256
-    )
-    put_u8(data, 0x44, burst - 1, f"{location}.burst_beats")
-    put_u8(
-        data, 0x45, fields.get("max_outstanding", 16), f"{location}.max_outstanding"
-    )
-    put_u8(data, 0x46, fields.get("src_nibble", 0), f"{location}.src_nibble")
-    put_u8(data, 0x47, fields.get("dst_nibble", 0), f"{location}.dst_nibble")
-    for index in range(5):
-        put_u32(data, 0x48 + index * 4, shape[index], f"{location}.shape[{index}]")
-        put_u32(
-            data,
-            0x60 + index * 4,
-            src_strides[index],
-            f"{location}.src_stride_bytes[{index}]",
-        )
-        put_u32(
-            data,
-            0x78 + index * 4,
-            dst_strides[index],
-            f"{location}.dst_stride_bytes[{index}]",
-        )
-    put_u64(data, 0x90, fields.get("fill_value", 0), f"{location}.fill_value")
-    put_u64(
-        data,
-        0x98,
-        fields.get("src_region_bytes", refs["src0"].get("region_bytes", 0)),
-        f"{location}.src_region_bytes",
-    )
-    put_u64(
-        data,
-        0xA0,
-        fields.get("dst_region_bytes", refs["dst"].get("region_bytes", 0)),
-        f"{location}.dst_region_bytes",
-    )
-    put_u16(
-        data, 0xA8, fields.get("segment_count", 0), f"{location}.segment_count"
-    )
-    put_u16(
-        data, 0xAA, fields.get("segment_bytes", 0), f"{location}.segment_bytes"
-    )
-    put_u32(
-        data, 0xAC, fields.get("segment_stride", 0), f"{location}.segment_stride"
-    )
-
-
-def last_tile(size: int, tile: int) -> int:
-    return 0 if size == 0 else ((size - 1) % tile) + 1
-
-
-def encode_matrix(
-    data: bytearray,
-    fields: Mapping[str, Any],
-    target: Mapping[str, Any],
-    location: str,
-) -> None:
-    m = parse_int(fields.get("m"), f"{location}.m", 0, 0xFFFFFFFF)
-    n = parse_int(fields.get("n"), f"{location}.n", 0, 0xFFFFFFFF)
-    k = parse_int(fields.get("k"), f"{location}.k", 0, 0xFFFFFFFF)
-    mt = parse_int(target.get("mt", 8), "target.mt", 1, 255)
-    kt = parse_int(target.get("kt", 16), "target.kt", 1, 255)
-    nt = parse_int(target.get("nt", 8), "target.nt", 1, 255)
-    values = (
-        (0x40, m, "m"),
-        (0x44, n, "n"),
-        (0x48, k, "k"),
-        (0x4C, fields.get("batch_count", 1), "batch_count"),
-        (0x50, fields.get("last_tile_valid_m", last_tile(m, mt)), "last_tile_valid_m"),
-        (0x54, fields.get("last_tile_valid_n", last_tile(n, nt)), "last_tile_valid_n"),
-        (0x58, fields.get("last_tile_valid_k", last_tile(k, kt)), "last_tile_valid_k"),
-    )
-    for offset, value, name in values:
-        put_u32(data, offset, value, f"{location}.{name}")
-    flags = 0
-    for name, bit in (
-        ("transpose_a", 0),
-        ("transpose_b", 1),
-        ("bias_enable", 2),
-        ("residual_enable", 3),
-        ("relu_enable", 4),
-        ("requant_enable", 5),
-        ("accum_from_src2", 6),
-        ("final_output", 7),
-    ):
-        flags |= bool_bit(fields, name, bit)
-    put_u32(data, 0x5C, flags, f"{location}.flags")
-    for offset, name in (
-        (0x60, "lda_bytes"),
-        (0x64, "ldb_bytes"),
-        (0x68, "ldc_bytes"),
-        (0x6C, "bias_stride_bytes"),
-    ):
-        put_u32(data, offset, fields.get(name, 0), f"{location}.{name}")
-    for offset, name in (
-        (0x70, "a_batch_stride_bytes"),
-        (0x78, "b_batch_stride_bytes"),
-        (0x80, "c_batch_stride_bytes"),
-        (0x88, "src2_batch_stride_bytes"),
-    ):
-        put_u64(data, offset, fields.get(name, 0), f"{location}.{name}")
-    numeric_cfg = struct.unpack_from("<I", data, 0x38)[0]
-    a_dtype = numeric_cfg & 0x3
-    b_dtype = (numeric_cfg >> 2) & 0x3
-    c_dtype = (numeric_cfg >> 6) & 0x3
-    # The C language reference model uses distinct layout codes for INT16:
-    # 5 for a linear tensor and 6 for a KT-by-NT tiled Matrix-B tensor.
-    linear_pack = {0: 1, 1: 0, 2: 4, 3: 5}
-    tiled_pack = {0: 3, 1: 2, 2: 4, 3: 6}
-    a_pack = parse_int(
-        fields.get("a_pack_format", linear_pack[a_dtype]),
-        f"{location}.a_pack_format",
-        0,
-        0xFF,
-    )
-    b_pack = parse_int(
-        fields.get("b_pack_format", tiled_pack[b_dtype]),
-        f"{location}.b_pack_format",
-        0,
-        0xFF,
-    )
-    c_pack = parse_int(
-        fields.get("c_pack_format", linear_pack[c_dtype]),
-        f"{location}.c_pack_format",
-        0,
-        0xFF,
-    )
-    for name, value, expected, dtype_code in (
-        ("a_pack_format", a_pack, linear_pack[a_dtype], a_dtype),
-        ("b_pack_format", b_pack, tiled_pack[b_dtype], b_dtype),
-        ("c_pack_format", c_pack, linear_pack[c_dtype], c_dtype),
-    ):
-        if value != expected:
-            raise fail(
-                f"{location}.{name}",
-                f"pack-format code {value} does not match dtype code "
-                f"{dtype_code}",
-            )
-    put_u8(
-        data,
-        0x90,
-        a_pack,
-        f"{location}.a_pack_format",
-    )
-    put_u8(
-        data,
-        0x91,
-        b_pack,
-        f"{location}.b_pack_format",
-    )
-    put_u8(
-        data,
-        0x92,
-        c_pack,
-        f"{location}.c_pack_format",
-    )
-    put_u8(
-        data,
-        0x93,
-        fields.get("pack_version", 0),
-        f"{location}.pack_version",
-    )
-    put_u8(
-        data,
-        0x94,
-        enum_value(
-            OVERFLOW_CODES,
-            fields.get("overflow_mode", "saturate"),
-            f"{location}.overflow_mode",
-        ),
-        f"{location}.overflow_mode",
-    )
-    put_u8(
-        data,
-        0x95,
-        1 if fields.get("relu_enable", False) else 0,
-        f"{location}.activation_mode",
-    )
-    put_i32(
-        data, 0x98, fields.get("output_zero_point", 0), f"{location}.output_zero_point"
-    )
-    put_u32(
-        data, 0x9C, fields.get("requant_count", 0), f"{location}.requant_count"
-    )
-    put_u32(data, 0xA0, fields.get("bias_count", 0), f"{location}.bias_count")
-    put_u8(data, 0xA4, fields.get("requant_mode", 0), f"{location}.requant_mode")
-    put_u8(data, 0xA5, fields.get("residual_mode", 0), f"{location}.residual_mode")
-    put_u8(
-        data, 0xA6, fields.get("requant_entry_bytes", 8), f"{location}.requant_entry_bytes"
-    )
-    put_u32(
-        data,
-        0xA8,
-        fields.get("requant_region_bytes", 0),
-        f"{location}.requant_region_bytes",
-    )
-
-
-def encode_vector(
-    data: bytearray,
-    fields: Mapping[str, Any],
-    location: str,
-) -> None:
-    for offset, name, default in (
-        (0x40, "rows", None),
-        (0x44, "length", None),
-        (0x48, "valid_length", 0),
-    ):
-        value = fields.get(name, default)
-        if value is None:
-            raise fail(f"{location}.{name}", "is required")
-        put_u32(data, offset, value, f"{location}.{name}")
-    flags = 0
-    for name, bit in (
-        ("mask_enable", 0),
-        ("mask_false_keep_dst", 1),
-        ("src1_from_scalar0", 2),
-        ("src2_from_scalar1", 3),
-    ):
-        flags |= bool_bit(fields, name, bit)
-    put_u32(data, 0x4C, flags, f"{location}.flags")
-    for offset, name in (
-        (0x50, "src0_elem_stride_bytes"),
-        (0x54, "src0_row_stride_bytes"),
-        (0x58, "src1_elem_stride_bytes"),
-        (0x5C, "src1_row_stride_bytes"),
-        (0x60, "src2_elem_stride_bytes"),
-        (0x64, "src2_row_stride_bytes"),
-        (0x68, "dst_elem_stride_bytes"),
-        (0x6C, "dst_row_stride_bytes"),
-    ):
-        put_u32(data, offset, fields.get(name, 0), f"{location}.{name}")
-    put_i32(data, 0x70, fields.get("scalar0", 0), f"{location}.scalar0")
-    put_i32(data, 0x74, fields.get("scalar1", 0), f"{location}.scalar1")
-    broadcast = 0
-    for shift, name in ((0, "broadcast0"), (2, "broadcast1"), (4, "broadcast2")):
-        broadcast |= enum_value(
-            BROADCAST_CODES,
-            fields.get(name, "none"),
-            f"{location}.{name}",
-        ) << shift
-    put_u8(data, 0x78, broadcast, f"{location}.broadcast")
-    put_u8(
-        data,
-        0x79,
-        enum_value(
-            COMPARE_CODES,
-            fields.get("compare_mode", "eq"),
-            f"{location}.compare_mode",
-        ),
-        f"{location}.compare_mode",
-    )
-    put_u8(
-        data,
-        0x7A,
-        enum_value(
-            OVERFLOW_CODES,
-            fields.get("overflow_mode", "saturate"),
-            f"{location}.overflow_mode",
-        ),
-        f"{location}.overflow_mode",
-    )
-    put_u8(data, 0x7B, fields.get("mask_mode", 0), f"{location}.mask_mode")
-    for offset, name in (
-        (0x7C, "src0_nibble"),
-        (0x7D, "src1_nibble"),
-        (0x7E, "dst_nibble"),
-        (0x7F, "src2_nibble"),
-    ):
-        put_u8(data, offset, fields.get(name, 0), f"{location}.{name}")
-    for offset, name, default in (
-        (0x80, "src0_scale_bits", 0x3F800000),
-        (0x84, "src1_scale_bits", 0x3F800000),
-        (0x88, "src2_scale_bits", 0x3F800000),
-        (0x8C, "dst_scale_bits", 0x3F800000),
-        (0x90, "mask_elem_stride_bytes", 0),
-        (0x94, "mask_row_stride_bytes", 0),
-    ):
-        put_u32(data, offset, fields.get(name, default), f"{location}.{name}")
-
-
-def encode_complex(
-    data: bytearray,
-    fields: Mapping[str, Any],
-    location: str,
-) -> None:
-    for offset, name, default in (
-        (0x40, "rows", None),
-        (0x44, "length", None),
-        (0x48, "valid_length", 0),
-    ):
-        value = fields.get(name, default)
-        if value is None:
-            raise fail(f"{location}.{name}", "is required")
-        put_u32(data, offset, value, f"{location}.{name}")
-    put_u32(
-        data,
-        0x4C,
-        enum_value(
-            FUNCTION_CODES, fields.get("function"), f"{location}.function"
-        ),
-        f"{location}.function",
-    )
-    for offset, name in (
-        (0x50, "src0_row_stride_bytes"),
-        (0x54, "src1_row_stride_bytes"),
-        (0x58, "src2_row_stride_bytes"),
-        (0x5C, "dst_row_stride_bytes"),
-    ):
-        put_u32(data, offset, fields.get(name, 0), f"{location}.{name}")
-    put_u64(data, 0x60, fields.get("mask_addr", 0), f"{location}.mask_addr")
-    put_u32(
-        data,
-        0x68,
-        fields.get("mask_row_stride_bytes", 0),
-        f"{location}.mask_row_stride_bytes",
-    )
-    put_u32(
-        data,
-        0x6C,
-        enum_value(
-            MASK_CODES, fields.get("mask_mode", "none"), f"{location}.mask_mode"
-        ),
-        f"{location}.mask_mode",
-    )
-    for offset, name, default in (
-        (0x70, "src0_scale", 1.0),
-        (0x74, "src1_scale", 1.0),
-        (0x78, "src2_scale", 1.0),
-        (0x7C, "dst_scale", 1.0),
-    ):
-        put_f32(data, offset, fields.get(name, default), f"{location}.{name}")
-    for offset, name in (
-        (0x80, "src0_zero_point"),
-        (0x84, "src1_zero_point"),
-        (0x88, "src2_zero_point"),
-        (0x8C, "dst_zero_point"),
-    ):
-        put_i32(data, offset, fields.get(name, 0), f"{location}.{name}")
-    put_f32(data, 0x90, fields.get("epsilon", 1e-5), f"{location}.epsilon")
-    put_f32(
-        data, 0x94, fields.get("input_clip_min", -16.0), f"{location}.input_clip_min"
-    )
-    put_f32(
-        data, 0x98, fields.get("input_clip_max", 16.0), f"{location}.input_clip_max"
-    )
-    put_u8(data, 0x9C, fields.get("approx_mode", 0), f"{location}.approx_mode")
-    put_u8(
-        data,
-        0x9D,
-        enum_value(
-            OVERFLOW_CODES,
-            fields.get("overflow_mode", "saturate"),
-            f"{location}.overflow_mode",
-        ),
-        f"{location}.overflow_mode",
-    )
-    put_u8(
-        data, 0x9E, fields.get("all_mask_mode", 0), f"{location}.all_mask_mode"
-    )
-    put_u8(data, 0x9F, fields.get("stats_mode", 0), f"{location}.stats_mode")
-    put_u32(data, 0xA0, fields.get("rotary_dim", 0), f"{location}.rotary_dim")
-    put_u32(data, 0xA4, fields.get("position_base", 0), f"{location}.position_base")
-    put_u32(data, 0xA8, fields.get("position_step", 0), f"{location}.position_step")
-    put_u8(data, 0xAC, fields.get("pair_mode", 0), f"{location}.pair_mode")
-    put_u32(
-        data,
-        0xB0,
-        fields.get("scratch_request_elems", 0),
-        f"{location}.scratch_request_elems",
-    )
-    put_u32(
-        data,
-        0xB4,
-        fields.get("query_position_base", 0),
-        f"{location}.query_position_base",
-    )
-    put_u32(
-        data,
-        0xB8,
-        fields.get("key_position_base", 0),
-        f"{location}.key_position_base",
-    )
-    put_u32(
-        data,
-        0xBC,
-        fields.get("query_position_step", 0),
-        f"{location}.query_position_step",
-    )
-    put_u64(
-        data,
-        0xC0,
-        fields.get("valid_length_addr", 0),
-        f"{location}.valid_length_addr",
-    )
-    put_u32(
-        data,
-        0xC8,
-        fields.get("valid_length_stride_bytes", 0),
-        f"{location}.valid_length_stride_bytes",
-    )
-
-
-def encode_descriptor(
-    operation: Mapping[str, Any],
-    engine: str,
     tensors: Mapping[str, Mapping[str, Any]],
     target: Mapping[str, Any],
     location: str,
-) -> bytes:
-    descriptor_object = object_value(
-        operation.get("descriptor", {}), f"{location}.descriptor"
+) -> tuple[int, int]:
+    source = resolve_tensor(common.get("src0"), tensors, f"{location}.src0")
+    destination = resolve_tensor(common.get("dst"), tensors, f"{location}.dst")
+    source_dtype = tensor_dtype(
+        source, common.get("src0_dtype", common.get("dtype", "int8")),
+        f"{location}.src0",
     )
-    size = DESCRIPTOR_BYTES[engine]
-    raw_hex = descriptor_object.get("raw_hex")
-    if raw_hex is not None:
-        if not isinstance(raw_hex, str):
-            raise fail(
-                f"{location}.descriptor.raw_hex",
-                "must be a hexadecimal string",
-            )
-        try:
-            raw = bytes.fromhex(raw_hex)
-        except ValueError as error:
-            raise fail(
-                f"{location}.descriptor.raw_hex",
-                "contains invalid hexadecimal data",
-            ) from error
-        if len(raw) != size:
-            raise fail(
-                f"{location}.descriptor.raw_hex",
-                f"must contain exactly {size} bytes",
-            )
-        return raw
-
-    data = bytearray(size)
-    refs = compile_common(data, engine, operation, tensors, location)
-    fields = object_value(
-        descriptor_object.get(engine, {}),
-        f"{location}.descriptor.{engine}",
+    destination_dtype = tensor_dtype(
+        destination,
+        common.get("dst_dtype", source_dtype),
+        f"{location}.dst",
     )
-    if engine == "control":
-        encode_control(data, fields, f"{location}.descriptor.control")
-    elif engine == "dma":
-        encode_dma(data, fields, refs, f"{location}.descriptor.dma")
-    elif engine == "matrix":
-        encode_matrix(data, fields, target, f"{location}.descriptor.matrix")
-    elif engine == "vector":
-        encode_vector(data, fields, f"{location}.descriptor.vector")
-    elif engine == "complex":
-        encode_complex(data, fields, f"{location}.descriptor.complex")
-    return bytes(data)
+    payload = 0
+    if opcode_name == "FILL":
+        destination_ref = encode_aref(destination, target, f"{location}.dst")
+        shape = list_value(fields.get("shape", []), f"{location}.shape")
+        count = parse_int(
+            fields.get("count", positive_product(shape, f"{location}.shape")),
+            f"{location}.count",
+            1,
+            (1 << 20) - 1,
+        )
+        raw_fill = fields.get("fill_value", 0)
+        if isinstance(raw_fill, int) and not isinstance(raw_fill, bool) and raw_fill < 0:
+            fill = parse_signed(raw_fill, f"{location}.fill_value", 32) & 0xFFFFFFFF
+        else:
+            fill = parse_int(raw_fill, f"{location}.fill_value", 0, 0xFFFFFFFF)
+        payload = pack_field(payload, destination_ref, 52, 28, f"{location}.dst")
+        payload = pack_field(payload, count, 32, 20, f"{location}.count")
+        payload = pack_field(payload, fill, 0, 32, f"{location}.fill_value")
+        return payload, DTYPE_CODES[destination_dtype]
 
+    source_ref = encode_aref(source, target, f"{location}.src0")
+    destination_ref = encode_aref(destination, target, f"{location}.dst")
+    payload = pack_field(payload, source_ref, 52, 28, f"{location}.src0")
+    payload = pack_field(payload, destination_ref, 24, 28, f"{location}.dst")
 
-def normalize_tensors(
-    document: Mapping[str, Any],
-) -> dict[str, Mapping[str, Any]]:
-    source = object_value(document.get("tensors", {}), "tensors")
-    result: dict[str, Mapping[str, Any]] = {}
-    for name, value in source.items():
-        if not isinstance(name, str) or not name:
-            raise fail("tensors", "tensor names must be non-empty strings")
-        tensor = object_value(value, f"tensors.{name}")
-        address = tensor_address(tensor, f"tensors.{name}")
-        space = tensor.get("space", "l1")
-        enum_value(SPACE_CODES, space, f"tensors.{name}.space")
-        enum_value(DTYPE_CODES, tensor.get("dtype"), f"tensors.{name}.dtype")
-        if isinstance(space, str) and space.lower() == "l1" and address >= (1 << 24):
-            raise fail(f"tensors.{name}.addr", "L1 address uses at most 24 bits")
-        if "region_bytes" in tensor:
-            parse_int(
-                tensor["region_bytes"],
-                f"tensors.{name}.region_bytes",
-                0,
-                0xFFFFFFFFFFFFFFFF,
+    if opcode_name in ("COPY_1D", "COPY_ND"):
+        shape = list_value(fields.get("shape", []), f"{location}.shape")
+        count = parse_int(
+            fields.get("count", positive_product(shape, f"{location}.shape")),
+            f"{location}.count",
+            1,
+            (1 << 20) - 1,
+        )
+        if opcode_name == "COPY_ND":
+            rank = parse_int(
+                fields.get("rank", len(shape)), f"{location}.rank", 1, 5
             )
-        result[name] = tensor
-    return result
+            if rank != len(shape):
+                raise fail(f"{location}.rank", "must equal the shape rank")
+            for key, value_dtype in (
+                ("src_stride_bytes", source_dtype),
+                ("dst_stride_bytes", destination_dtype),
+            ):
+                strides = list_value(fields.get(key, []), f"{location}.{key}")
+                if strides and len(strides) != rank:
+                    raise fail(
+                        f"{location}.{key}", "must have one entry per dimension"
+                    )
+                if strides:
+                    expected = [0] * rank
+                    row_bytes = (
+                        parse_int(shape[-1], f"{location}.shape[-1]", 1)
+                        * DTYPE_BITS[value_dtype]
+                        + 7
+                    ) // 8
+                    multiplier = 1
+                    for axis in range(rank - 2, -1, -1):
+                        expected[axis] = multiplier * row_bytes
+                        multiplier *= parse_int(
+                            shape[axis], f"{location}.shape[{axis}]", 1
+                        )
+                    parsed = [
+                        parse_int(
+                            item, f"{location}.{key}[{axis}]", 0, 0xFFFFFFFF
+                        )
+                        for axis, item in enumerate(strides)
+                    ]
+                    if parsed != expected:
+                        raise fail(
+                            f"{location}.{key}",
+                            "compact COPY_ND accepts contiguous tensors only; "
+                            "split strided rows into COPY_1D operations",
+                        )
+        payload = pack_field(payload, count, 4, 20, f"{location}.count")
+        payload = pack_field(
+            payload, DTYPE_CODES[destination_dtype], 2, 2, f"{location}.dst_dtype"
+        )
+        payload = pack_field(
+            payload,
+            parse_int(fields.get("src_nibble", 0), f"{location}.src_nibble", 0, 1),
+            1,
+            1,
+            f"{location}.src_nibble",
+        )
+        payload = pack_field(
+            payload,
+            parse_int(fields.get("dst_nibble", 0), f"{location}.dst_nibble", 0, 1),
+            0,
+            1,
+            f"{location}.dst_nibble",
+        )
+    elif opcode_name == "TRANSPOSE_2D":
+        shape = list_value(fields.get("shape"), f"{location}.shape")
+        if len(shape) != 2:
+            raise fail(f"{location}.shape", "must contain rows and columns")
+        rows = parse_int(shape[0], f"{location}.shape[0]", 1, 0xFF)
+        columns = parse_int(shape[1], f"{location}.shape[1]", 1, 0xFF)
+        if destination_dtype != source_dtype:
+            raise fail(f"{location}.dst_dtype", "transpose requires equal dtypes")
+        payload = pack_field(payload, rows, 16, 8, f"{location}.rows")
+        payload = pack_field(payload, columns, 8, 8, f"{location}.columns")
+        payload = pack_field(
+            payload, DTYPE_CODES[destination_dtype], 6, 2, f"{location}.dst_dtype"
+        )
+        payload = pack_field(
+            payload,
+            parse_int(fields.get("src_nibble", 0), f"{location}.src_nibble", 0, 1),
+            5,
+            1,
+            f"{location}.src_nibble",
+        )
+        payload = pack_field(
+            payload,
+            parse_int(fields.get("dst_nibble", 0), f"{location}.dst_nibble", 0, 1),
+            4,
+            1,
+            f"{location}.dst_nibble",
+        )
+    elif opcode_name in ("PACK", "SPLIT"):
+        segment_values: dict[str, int] = {}
+        for name, lsb in (
+            ("segment_count", 16),
+            ("segment_bytes", 8),
+            ("segment_stride", 0),
+        ):
+            minimum = 1
+            value = parse_int(fields.get(name), f"{location}.{name}", minimum, 0xFF)
+            segment_values[name] = value
+            payload = pack_field(payload, value, lsb, 8, f"{location}.{name}")
+        if segment_values["segment_stride"] < segment_values["segment_bytes"]:
+            raise fail(
+                f"{location}.segment_stride",
+                "must be at least segment_bytes",
+            )
+        if destination_dtype != source_dtype:
+            raise fail(f"{location}.dst_dtype", "PACK/SPLIT requires equal dtypes")
+    return payload, DTYPE_CODES[source_dtype]
+
+
+def requant_shift(
+    fields: Mapping[str, Any],
+    common: Mapping[str, Any],
+    location: str,
+) -> int:
+    value = fields.get("requant_shift", fields.get("output_shift"))
+    if value is None:
+        aux = common.get("aux1")
+        if isinstance(aux, str) and aux.startswith("__requant_shift_"):
+            try:
+                value = int(aux.rsplit("_", 1)[1])
+            except ValueError:
+                value = None
+    if value is None:
+        value = 0
+    return parse_int(value, f"{location}.requant_shift", 0, 31)
+
+
+def reject_true(fields: Mapping[str, Any], names: Sequence[str], location: str) -> None:
+    for name in names:
+        value = fields.get(name, False)
+        if not isinstance(value, bool):
+            raise fail(f"{location}.{name}", "must be true or false")
+        if value:
+            raise fail(f"{location}.{name}", "is not encoded by this compact opcode")
+
+
+def encode_matrix_payload(
+    opcode_name: str,
+    common: Mapping[str, Any],
+    fields: Mapping[str, Any],
+    tensors: Mapping[str, Mapping[str, Any]],
+    location: str,
+) -> tuple[int, int]:
+    a = resolve_tensor(common.get("src0"), tensors, f"{location}.src0")
+    b = resolve_tensor(common.get("src1"), tensors, f"{location}.src1")
+    c = resolve_tensor(common.get("dst"), tensors, f"{location}.dst")
+    bias = resolve_tensor(common.get("aux0"), tensors, f"{location}.aux0")
+    zero_accumulator = opcode_name == "GEMM_ZERO"
+    if not c:
+        raise fail(f"{location}.dst", "tensor reference is required")
+    if zero_accumulator:
+        if a:
+            raise fail(f"{location}.src0", "GEMM_ZERO requires A reference 0")
+        if b:
+            raise fail(f"{location}.src1", "GEMM_ZERO requires B reference 0")
+        if bias:
+            raise fail(f"{location}.aux0", "GEMM_ZERO requires bias reference 0")
+    elif not a or not b:
+        raise fail(f"{location}", "matrix A and B tensor references are required")
+    a_dtype = tensor_dtype(
+        a, common.get("src0_dtype", common.get("dtype", "int8")), f"{location}.src0"
+    )
+    b_dtype = tensor_dtype(b, common.get("src1_dtype", a_dtype), f"{location}.src1")
+    c_dtype = tensor_dtype(c, common.get("dst_dtype", a_dtype), f"{location}.dst")
+    inferred_b_int4 = a_dtype == "int8" and b_dtype == "int4"
+    if not inferred_b_int4 and b_dtype != a_dtype:
+        raise fail(
+            f"{location}.src1.dtype",
+            "B must match A, except INT8 A may use INT4 B",
+        )
+    requested_b_int4 = fields.get("b_int4", inferred_b_int4)
+    if not isinstance(requested_b_int4, bool):
+        raise fail(f"{location}.b_int4", "must be true or false")
+    if requested_b_int4 != inferred_b_int4:
+        raise fail(
+            f"{location}.b_int4",
+            "must agree with the A and B tensor dtypes",
+        )
+    b_int4 = 1 if requested_b_int4 else 0
+    if a_dtype != "int8" and b_int4 != 0:
+        raise fail(f"{location}.b_int4", "requires INT8 A")
+    if bias and tensor_dtype(bias, "int32", f"{location}.aux0") != "int32":
+        raise fail(f"{location}.aux0.dtype", "matrix bias must be INT32")
+    if "bias_enable" in fields:
+        bias_enable = fields["bias_enable"]
+        if not isinstance(bias_enable, bool):
+            raise fail(f"{location}.bias_enable", "must be true or false")
+        if bias_enable != bool(bias):
+            raise fail(
+                f"{location}.bias_enable",
+                "must agree with the presence of common.aux0",
+            )
+    reject_true(
+        fields,
+        ("transpose_a", "transpose_b", "residual_enable", "relu_enable"),
+        location,
+    )
+    a_ref = encode_lref(a, 6, 14, f"{location}.src0")
+    b_ref = encode_lref(b, 6, 14, f"{location}.src1")
+    c_ref = encode_lref(c, 6, 14, f"{location}.dst")
+    payload = 0
+    payload = pack_field(payload, a_ref, 66, 14, f"{location}.src0")
+    payload = pack_field(payload, b_ref, 52, 14, f"{location}.src1")
+    payload = pack_field(payload, c_ref, 38, 14, f"{location}.dst")
+    if opcode_name == "BMM":
+        if bias:
+            raise fail(f"{location}.aux0", "BMM payload has no bias field")
+        batch = parse_int(fields.get("batch_count", 1), f"{location}.batch_count", 1, 64)
+        m = parse_int(fields.get("m"), f"{location}.m", 1, 64)
+        n = parse_int(fields.get("n"), f"{location}.n", 1, 64)
+        k = parse_int(fields.get("k"), f"{location}.k", 1, 64)
+        shift = requant_shift(fields, common, location)
+        if c_dtype == "int32" and shift != 0:
+            raise fail(f"{location}.requant_shift", "INT32 output requires shift 0")
+        for value, lsb, name in (
+            (batch - 1, 32, "batch_count"),
+            (m - 1, 26, "m"),
+            (n - 1, 20, "n"),
+            (k - 1, 14, "k"),
+        ):
+            payload = pack_field(payload, value, lsb, 6, f"{location}.{name}")
+        payload = pack_field(payload, b_int4, 13, 1, f"{location}.b_int4")
+        payload = pack_field(
+            payload, DTYPE_CODES[c_dtype], 11, 2, f"{location}.c_dtype"
+        )
+        payload = pack_field(payload, shift, 6, 5, f"{location}.requant_shift")
+    else:
+        m = parse_int(fields.get("m"), f"{location}.m", 1, 64)
+        n = parse_int(fields.get("n"), f"{location}.n", 1, 64)
+        k_default = 1 if opcode_name == "GEMM_ZERO" else None
+        k = parse_int(fields.get("k", k_default), f"{location}.k", 1, 64)
+        bias_ref = encode_lref(bias, 6, 12, f"{location}.aux0")
+        if bias and bias_ref == 0:
+            raise fail(
+                f"{location}.aux0.addr",
+                "bias reference 0 means no bias; place bias at a nonzero L1 address",
+            )
+        shift = requant_shift(fields, common, location)
+        if c_dtype == "int32" and shift != 0:
+            raise fail(f"{location}.requant_shift", "INT32 output requires shift 0")
+        if zero_accumulator:
+            if k != 1:
+                raise fail(f"{location}.k", "GEMM_ZERO requires encoded K field 0")
+            if b_int4 != 0:
+                raise fail(f"{location}.b_int4", "GEMM_ZERO requires b_int4 0")
+            if shift != 0:
+                raise fail(
+                    f"{location}.requant_shift",
+                    "GEMM_ZERO requires requant_shift 0",
+                )
+        payload = pack_field(payload, bias_ref, 26, 12, f"{location}.aux0")
+        for value, lsb, name in (
+            (m - 1, 20, "m"),
+            (n - 1, 14, "n"),
+            (k - 1, 8, "k"),
+        ):
+            payload = pack_field(payload, value, lsb, 6, f"{location}.{name}")
+        payload = pack_field(payload, b_int4, 7, 1, f"{location}.b_int4")
+        payload = pack_field(
+            payload, DTYPE_CODES[c_dtype], 5, 2, f"{location}.c_dtype"
+        )
+        payload = pack_field(payload, shift, 0, 5, f"{location}.requant_shift")
+    return payload, DTYPE_CODES[a_dtype]
+
+
+def broadcast_value(fields: Mapping[str, Any], name: str, location: str) -> int:
+    return enum_value(
+        BROADCAST_CODES, fields.get(name, "none"), f"{location}.{name}"
+    )
+
+
+def encode_vector_payload(
+    opcode_name: str,
+    common: Mapping[str, Any],
+    fields: Mapping[str, Any],
+    tensors: Mapping[str, Mapping[str, Any]],
+    location: str,
+) -> tuple[int, int]:
+    src0 = resolve_tensor(common.get("src0"), tensors, f"{location}.src0")
+    src1 = resolve_tensor(common.get("src1"), tensors, f"{location}.src1")
+    src2 = resolve_tensor(common.get("src2"), tensors, f"{location}.src2")
+    dst = resolve_tensor(common.get("dst"), tensors, f"{location}.dst")
+    dtype = tensor_dtype(
+        src0, common.get("src0_dtype", common.get("dtype", "int8")), f"{location}.src0"
+    )
+    for tensor, name in ((src1, "src1"), (src2, "src2")):
+        if tensor and tensor_dtype(tensor, dtype, f"{location}.{name}") != dtype:
+            if not (opcode_name == "FMA" and name == "src2" and
+                    tensor_dtype(tensor, dtype, f"{location}.{name}") == "int32"):
+                raise fail(f"{location}.{name}.dtype", "does not match the opcode")
+    expected_dst = "int32" if opcode_name in ("MUL", "FMA") else (
+        "int8" if opcode_name == "CMP" else dtype
+    )
+    if tensor_dtype(dst, expected_dst, f"{location}.dst") != expected_dst:
+        raise fail(f"{location}.dst.dtype", f"must be {expected_dst}")
+    rows = parse_int(fields.get("rows"), f"{location}.rows", 1, 32)
+    length = parse_int(fields.get("length"), f"{location}.length", 1, 32)
+    broadcasts = [
+        broadcast_value(fields, name, location)
+        for name in ("broadcast0", "broadcast1", "broadcast2")
+    ]
+    if fields.get("src1_from_scalar0", False) or fields.get("src2_from_scalar1", False):
+        raise fail(location, "scalar arithmetic must be lowered before inline assembly")
+    src0_raw = encode_lref(src0, 4, 16, f"{location}.src0")
+    src1_raw = encode_lref(src1, 4, 16, f"{location}.src1")
+    src2_raw = encode_lref(src2, 4, 16, f"{location}.src2")
+    if opcode_name == "RELU":
+        if src1_raw or src2_raw:
+            raise fail(location, "RELU only accepts src0 and dst")
+    elif opcode_name == "CMP":
+        mode = enum_value(
+            COMPARE_CODES, fields.get("compare_mode", "eq"), f"{location}.compare_mode"
+        )
+        src2_raw = mode << 13
+        broadcasts[2] = 0
+    elif opcode_name == "SELECT":
+        mask = resolve_tensor(
+            common.get("aux0", common.get("src2")), tensors, f"{location}.mask"
+        )
+        src2_raw = encode_lref(mask, 4, 16, f"{location}.mask")
+        broadcasts[2] = 0
+    elif opcode_name == "CLAMP":
+        src1_raw = parse_signed(
+            fields.get("clamp_min", fields.get("scalar0")),
+            f"{location}.clamp_min",
+            16,
+        ) & 0xFFFF
+        src2_raw = parse_signed(
+            fields.get("clamp_max", fields.get("scalar1")),
+            f"{location}.clamp_max",
+            16,
+        ) & 0xFFFF
+        broadcasts[2] = 0
+    elif opcode_name == "FMA":
+        if not src1 or not src2:
+            raise fail(location, "FMA requires src1 and src2")
+    else:
+        if opcode_name != "RELU" and not src1:
+            raise fail(f"{location}.src1", f"{opcode_name} requires src1")
+        if opcode_name not in ("FMA",) and src2_raw:
+            raise fail(f"{location}.src2", f"{opcode_name} has no src2 operand")
+    payload = 0
+    for value, lsb, width, name in (
+        (src0_raw, 64, 16, "src0"),
+        (src1_raw, 48, 16, "src1"),
+        (src2_raw, 32, 16, "src2"),
+        (encode_lref(dst, 4, 16, f"{location}.dst"), 16, 16, "dst"),
+        (rows - 1, 11, 5, "rows"),
+        (length - 1, 6, 5, "length"),
+        (broadcasts[0], 4, 2, "broadcast0"),
+        (broadcasts[1], 2, 2, "broadcast1"),
+        (broadcasts[2], 0, 2, "broadcast2"),
+    ):
+        payload = pack_field(payload, value, lsb, width, f"{location}.{name}")
+    return payload, DTYPE_CODES[dtype]
+
+
+def encode_complex_payload(
+    opcode_name: str,
+    common: Mapping[str, Any],
+    fields: Mapping[str, Any],
+    tensors: Mapping[str, Mapping[str, Any]],
+    location: str,
+) -> tuple[int, int]:
+    src0 = resolve_tensor(common.get("src0"), tensors, f"{location}.src0")
+    dst = resolve_tensor(common.get("dst"), tensors, f"{location}.dst")
+    source_dtype = tensor_dtype(
+        src0, common.get("src0_dtype", common.get("dtype", "int8")), f"{location}.src0"
+    )
+    destination_dtype = tensor_dtype(
+        dst, common.get("dst_dtype", source_dtype), f"{location}.dst"
+    )
+    rows = parse_int(fields.get("rows"), f"{location}.rows", 1, 32)
+    length = parse_int(fields.get("length"), f"{location}.length", 1, 256)
+    src_ref = encode_lref(src0, 4, 16, f"{location}.src0")
+    dst_ref = encode_lref(dst, 4, 16, f"{location}.dst")
+    aux_ref = 0
+    meta = 0
+    if opcode_name == "ACT":
+        function = enum_value(
+            ACT_FUNCTION_CODES, fields.get("function"), f"{location}.function"
+        )
+        source_exp = power2_exponent(
+            fields.get("src0_scale", 1.0), f"{location}.src0_scale"
+        )
+        destination_exp = power2_exponent(
+            fields.get("dst_scale", 1.0), f"{location}.dst_scale"
+        )
+        clip_pair = (
+            parse_float(fields.get("input_clip_min", -16.0), f"{location}.input_clip_min"),
+            parse_float(fields.get("input_clip_max", 16.0), f"{location}.input_clip_max"),
+        )
+        if clip_pair not in CLIP_PROFILES:
+            raise fail(location, "activation clip must be ±16, ±8, ±4, or ±2")
+        meta = (
+            (function << 17)
+            | (source_exp << 13)
+            | (destination_exp << 9)
+            | (DTYPE_CODES[destination_dtype] << 7)
+            | (CLIP_PROFILES[clip_pair] << 5)
+        )
+    elif opcode_name == "SOFTMAX":
+        mask_mode = enum_value(
+            MASK_CODES, fields.get("mask_mode", "none"), f"{location}.mask_mode"
+        )
+        if mask_mode == MASK_CODES["causal"]:
+            raise fail(f"{location}.mask_mode", "causal mode must be lowered before assembly")
+        if mask_mode != MASK_CODES["none"]:
+            aux_value = common.get("aux0")
+            if aux_value is None and fields.get("mask_addr", 0):
+                aux_value = {
+                    "addr": fields["mask_addr"],
+                    "space": "l1",
+                    "dtype": "int8" if mask_mode == 1 else "int32",
+                }
+            aux = resolve_tensor(aux_value, tensors, f"{location}.aux0")
+            aux_ref = encode_lref(aux, 4, 16, f"{location}.aux0")
+        all_mask = parse_int(
+            fields.get("all_mask_mode", 0), f"{location}.all_mask_mode", 0, 1
+        )
+        meta = (
+            (mask_mode << 17)
+            | (all_mask << 16)
+            | (power2_exponent(fields.get("src0_scale", 1.0), f"{location}.src0_scale") << 12)
+            | (power2_exponent(fields.get("dst_scale", 1.0), f"{location}.dst_scale") << 8)
+            | (DTYPE_CODES[destination_dtype] << 6)
+        )
+    elif opcode_name == "NORM":
+        function = str(fields.get("function", "layernorm")).lower()
+        if function not in ("layernorm", "rmsnorm"):
+            raise fail(f"{location}.function", "use layernorm or rmsnorm")
+        gamma = resolve_tensor(common.get("src1"), tensors, f"{location}.src1")
+        aux_ref = encode_lref(gamma, 4, 16, f"{location}.src1")
+        parameter_dtype = tensor_dtype(gamma, source_dtype, f"{location}.src1")
+        if parameter_dtype != source_dtype:
+            raise fail(f"{location}.src1.dtype", "must match src0 dtype")
+        if function == "layernorm":
+            beta = resolve_tensor(common.get("src2"), tensors, f"{location}.src2")
+            parameter_bytes = (length * DTYPE_BITS[source_dtype] + 7) // 8
+            expected_beta = tensor_addr(gamma, f"{location}.src1")
+            expected_beta = (expected_beta + parameter_bytes + 63) & ~63
+            if tensor_addr(beta, f"{location}.src2") != expected_beta:
+                raise fail(
+                    f"{location}.src2.addr",
+                    "LayerNorm beta must follow gamma at the next 64-byte address",
+                )
+        meta = (
+            ((1 if function == "rmsnorm" else 0) << 18)
+            | (epsilon_profile(fields.get("epsilon", 1.0e-5), f"{location}.epsilon") << 16)
+            | (power2_exponent(fields.get("src0_scale", 1.0), f"{location}.src0_scale") << 12)
+            | (power2_exponent(fields.get("src1_scale", 1.0), f"{location}.src1_scale") << 8)
+            | (power2_exponent(fields.get("dst_scale", 1.0), f"{location}.dst_scale") << 4)
+            | (DTYPE_CODES[destination_dtype] << 2)
+        )
+    elif opcode_name in ("ROPE", "RECIP"):
+        aux_value = common.get("src1", common.get("aux0"))
+        if aux_value is not None:
+            aux = resolve_tensor(aux_value, tensors, f"{location}.aux")
+            aux_ref = encode_lref(aux, 4, 16, f"{location}.aux")
+        if "p1_meta" not in fields:
+            raise fail(
+                f"{location}.p1_meta",
+                f"{opcode_name} is a P1 opcode and requires its 19-bit P1 metadata",
+            )
+        meta = parse_int(
+            fields["p1_meta"], f"{location}.p1_meta", 0, (1 << 19) - 1
+        )
+    elif opcode_name == "STAT":
+        function = enum_value(
+            STAT_FUNCTION_CODES, fields.get("function"), f"{location}.function"
+        )
+        if destination_dtype != "int32":
+            raise fail(f"{location}.dst.dtype", "STAT output must be int32")
+        meta = function << 17
+    elif opcode_name == "ADD_RESCALE":
+        src1 = resolve_tensor(common.get("src1"), tensors, f"{location}.src1")
+        aux_ref = encode_lref(src1, 4, 16, f"{location}.src1")
+        if tensor_dtype(src1, source_dtype, f"{location}.src1") != source_dtype:
+            raise fail(f"{location}.src1.dtype", "must match src0 dtype")
+        meta = (
+            (power2_exponent(fields.get("src0_scale", 1.0), f"{location}.src0_scale") << 15)
+            | (power2_exponent(fields.get("src1_scale", 1.0), f"{location}.src1_scale") << 11)
+            | (power2_exponent(fields.get("dst_scale", 1.0), f"{location}.dst_scale") << 7)
+            | (DTYPE_CODES[destination_dtype] << 5)
+        )
+    payload = 0
+    for value, lsb, width, name in (
+        (src_ref, 64, 16, "src0"),
+        (aux_ref, 48, 16, "aux"),
+        (dst_ref, 32, 16, "dst"),
+        (rows - 1, 27, 5, "rows"),
+        (length - 1, 19, 8, "length"),
+        (meta, 0, 19, "meta"),
+    ):
+        payload = pack_field(payload, value, lsb, width, f"{location}.{name}")
+    return payload, DTYPE_CODES[source_dtype]
 
 
 def allocate_dependency_events(
@@ -1051,15 +1101,11 @@ def allocate_dependency_events(
         if name in names:
             raise fail(f"operations[{index}].name", f"duplicate name {name!r}")
         names[name] = index
-
     needed: list[str] = []
     dependencies: dict[str, list[str]] = {}
     for index, operation in enumerate(operations):
         name = str(operation["name"])
-        raw = list_value(
-            operation.get("depends_on", []),
-            f"operations[{index}].depends_on",
-        )
+        raw = list_value(operation.get("depends_on", []), f"operations[{index}].depends_on")
         values: list[str] = []
         for dep_index, dependency in enumerate(raw):
             if not isinstance(dependency, str) or dependency not in names:
@@ -1072,76 +1118,86 @@ def allocate_dependency_events(
                     f"operations[{index}].depends_on[{dep_index}]",
                     "must name an earlier operation",
                 )
+            dependency_operation = operations[names[dependency]]
+            if (
+                str(dependency_operation.get("engine", "")).lower()
+                == "control"
+                and str(dependency_operation.get("opcode", "")).upper()
+                == "EVENT_REARM"
+            ):
+                raise fail(
+                    f"operations[{index}].depends_on[{dep_index}]",
+                    "EVENT_REARM does not produce a dependency event",
+                )
             values.append(dependency)
             if dependency not in needed:
                 needed.append(dependency)
         if len(values) > 2:
             raise fail(
                 f"operations[{index}].depends_on",
-                "hardware CMD supports at most two direct dependencies",
+                "CMD128 supports at most two direct dependencies",
             )
         dependencies[name] = values
-
     signal_by_name: dict[str, int] = {}
     used_events: set[int] = set()
+    produced_events: set[int] = set()
+    rearmed_events: set[int] = set()
     for index, operation in enumerate(operations):
         name = str(operation["name"])
         if "signal_event" in operation:
-            event = parse_event(
-                operation["signal_event"],
-                f"operations[{index}].signal_event",
-            )
+            event = parse_event(operation["signal_event"], f"operations[{index}].signal_event")
             signal_by_name[name] = event
             if event != EVENT_NONE:
-                if event in used_events:
+                engine = str(operation.get("engine", "")).lower()
+                opcode = str(operation.get("opcode", "")).upper()
+                if engine == "control" and opcode == "EVENT_REARM":
+                    if event not in produced_events:
+                        raise fail(
+                            f"operations[{index}].signal_event",
+                            "EVENT_REARM requires an earlier producer of this event ID",
+                        )
+                    if event in rearmed_events:
+                        raise fail(
+                            f"operations[{index}].signal_event",
+                            "event ID was already rearmed and has no new producer",
+                        )
+                    rearmed_events.add(event)
+                    used_events.add(event)
+                    continue
+                if event in produced_events and event not in rearmed_events:
                     raise fail(
                         f"operations[{index}].signal_event",
-                        "event reference is already produced by another operation",
+                        "event ID needs EVENT_REARM before another producer",
                     )
+                produced_events.add(event)
+                rearmed_events.discard(event)
                 used_events.add(event)
-
-    next_event_id = 0
+    next_event = 0
     for name in needed:
-        if name in signal_by_name and signal_by_name[name] != EVENT_NONE:
+        if signal_by_name.get(name, EVENT_NONE) != EVENT_NONE:
             continue
-        while next_event_id in used_events:
-            next_event_id += 1
-        if next_event_id > MAX_EVENT_ID:
+        while next_event in used_events:
+            next_event += 1
+        if next_event > MAX_EVENT_ID:
             raise fail("operations", "not enough event IDs")
-        signal_by_name[name] = next_event_id
-        used_events.add(next_event_id)
-        next_event_id += 1
-
+        signal_by_name[name] = next_event
+        used_events.add(next_event)
+        next_event += 1
     waits: dict[str, tuple[int, int]] = {}
     for index, operation in enumerate(operations):
         name = str(operation["name"])
         if "wait_events" in operation and dependencies[name]:
-            raise fail(
-                f"operations[{index}]",
-                "use either depends_on or wait_events, not both",
-            )
+            raise fail(f"operations[{index}]", "use either depends_on or wait_events")
         if "wait_events" in operation:
-            raw = list_value(
-                operation["wait_events"],
-                f"operations[{index}].wait_events",
-            )
+            raw = list_value(operation["wait_events"], f"operations[{index}].wait_events")
             if len(raw) > 2:
-                raise fail(
-                    f"operations[{index}].wait_events",
-                    "supports at most two events",
-                )
+                raise fail(f"operations[{index}].wait_events", "supports at most two events")
             parsed = [
-                parse_event(
-                    value,
-                    f"operations[{index}].wait_events[{event_index}]",
-                )
+                parse_event(value, f"operations[{index}].wait_events[{event_index}]")
                 for event_index, value in enumerate(raw)
             ]
         else:
-            parsed = [
-                signal_by_name[dependency]
-                for dependency in dependencies[name]
-            ]
+            parsed = [signal_by_name[dependency] for dependency in dependencies[name]]
         parsed += [EVENT_NONE] * (2 - len(parsed))
         waits[name] = (parsed[0], parsed[1])
         signal_by_name.setdefault(name, EVENT_NONE)
@@ -1150,21 +1206,13 @@ def allocate_dependency_events(
 
 def compile_document(
     document: Mapping[str, Any],
-) -> tuple[list[CompiledOperation], bytes, bytes]:
+) -> tuple[list[CompiledOperation], bytes]:
     schema = parse_int(document.get("schema_version"), "schema_version", 1, 1)
     if schema != SCHEMA_VERSION:
         raise fail("schema_version", f"unsupported version {schema}")
     target = object_value(document.get("target", {}), "target")
     if target.get("command_format", COMMAND_FORMAT) != COMMAND_FORMAT:
         raise fail("target.command_format", f"must be {COMMAND_FORMAT!r}")
-    descriptor_base = parse_int(
-        target.get("descriptor_base"),
-        "target.descriptor_base",
-        0,
-        (1 << 48) - 1,
-    )
-    if descriptor_base & 0x3F:
-        raise fail("target.descriptor_base", "must be 64-byte aligned")
     tensors = normalize_tensors(document)
     raw_operations = list_value(document.get("operations"), "operations")
     operations = [
@@ -1172,39 +1220,25 @@ def compile_document(
         for index, value in enumerate(raw_operations)
     ]
     signals, waits = allocate_dependency_events(operations)
-
     command_ids: set[int] = set()
     compiled: list[CompiledOperation] = []
-    descriptor_image = bytearray()
     command_image = bytearray()
     for index, operation in enumerate(operations):
         location = f"operations[{index}]"
         name = str(operation["name"])
         engine_value = operation.get("engine")
-        if not isinstance(engine_value, str):
-            raise fail(f"{location}.engine", "must be a string")
+        if not isinstance(engine_value, str) or engine_value.lower() not in ENGINE_CODES:
+            raise fail(f"{location}.engine", "use control, dma, matrix, vector, or complex")
         engine = engine_value.lower()
-        if engine not in ENGINE_CODES:
-            raise fail(
-                f"{location}.engine",
-                f"unsupported engine {engine_value!r}",
-            )
         opcode_value = operation.get("opcode")
-        if isinstance(opcode_value, int) and not isinstance(opcode_value, bool):
-            opcode = parse_int(opcode_value, f"{location}.opcode", 0, 0xFF)
-        elif isinstance(opcode_value, str):
-            opcode_name = opcode_value.upper()
-            if opcode_name not in OPCODES[engine]:
-                raise fail(
-                    f"{location}.opcode",
-                    f"use one of {', '.join(OPCODES[engine])}",
-                )
-            opcode = OPCODES[engine][opcode_name]
-        else:
+        if not isinstance(opcode_value, str):
+            raise fail(f"{location}.opcode", "inline V2 requires an opcode name")
+        opcode_name = opcode_value.upper()
+        if opcode_name not in OPCODES[engine]:
             raise fail(
-                f"{location}.opcode",
-                "must be an opcode name or integer",
+                f"{location}.opcode", f"use one of {', '.join(OPCODES[engine])}"
             )
+        compact_opcode = COMPACT_OPCODES[(engine, opcode_name)]
         command_id = parse_int(
             operation.get("command_id", index),
             f"{location}.command_id",
@@ -1214,34 +1248,81 @@ def compile_document(
         if command_id in command_ids:
             raise fail(f"{location}.command_id", "duplicate command ID")
         command_ids.add(command_id)
-
-        descriptor_offset = align_up(len(descriptor_image), 64)
-        if descriptor_offset > len(descriptor_image):
-            descriptor_image.extend(
-                b"\0" * (descriptor_offset - len(descriptor_image))
+        common, engine_fields = operation_fields(operation, engine, location)
+        if engine == "control":
+            payload = encode_control_payload(
+                opcode_name, engine_fields, f"{location}.fields.control"
             )
-        descriptor = encode_descriptor(
-            operation, engine, tensors, target, location
-        )
-        descriptor_addr = descriptor_base + descriptor_offset
-        if descriptor_addr + len(descriptor) > (1 << 48):
-            raise fail(
-                location,
-                "Descriptor image exceeds 48-bit address range",
+            dtype = DTYPE_CODES["int8"]
+        elif engine == "dma":
+            payload, dtype = encode_dma_payload(
+                opcode_name,
+                common,
+                engine_fields,
+                tensors,
+                target,
+                f"{location}.fields.dma",
             )
-        descriptor_image.extend(descriptor)
-        flags = header_flags(
+        elif engine == "matrix":
+            payload, dtype = encode_matrix_payload(
+                opcode_name,
+                common,
+                engine_fields,
+                tensors,
+                f"{location}.fields.matrix",
+            )
+        elif engine == "vector":
+            payload, dtype = encode_vector_payload(
+                opcode_name,
+                common,
+                engine_fields,
+                tensors,
+                f"{location}.fields.vector",
+            )
+        else:
+            payload, dtype = encode_complex_payload(
+                opcode_name,
+                common,
+                engine_fields,
+                tensors,
+                f"{location}.fields.complex",
+            )
+        flags, timeout = header_flags(
             object_value(operation.get("flags", {}), f"{location}.flags"),
             f"{location}.flags",
         )
         signal = signals[name]
         wait0, wait1 = waits[name]
+        if engine == "control":
+            if opcode_name == "NOP" and (
+                wait0 != EVENT_NONE or wait1 != EVENT_NONE or signal != EVENT_NONE
+            ):
+                raise fail(location, "NOP cannot carry wait or signal events")
+            if opcode_name == "EVENT_JOIN" and (
+                wait0 == EVENT_NONE or wait1 == EVENT_NONE or signal == EVENT_NONE
+            ):
+                raise fail(
+                    location,
+                    "EVENT_JOIN requires wait0, wait1, and signal event IDs",
+                )
+            if opcode_name in ("EVENT_SIGNAL", "EVENT_REARM") and (
+                signal == EVENT_NONE
+            ):
+                raise fail(location, f"{opcode_name} requires signal_event")
+            if opcode_name == "EVENT_REARM" and (
+                wait0 != EVENT_NONE or wait1 != EVENT_NONE
+            ):
+                raise fail(
+                    location,
+                    "EVENT_REARM carries its event ID in signal_event and has no waits",
+                )
         command = encode_command128(
-            descriptor_addr,
+            payload,
             command_id,
-            ENGINE_CODES[engine],
-            opcode,
+            compact_opcode,
+            dtype,
             flags,
+            timeout,
             wait0,
             wait1,
             signal,
@@ -1252,22 +1333,21 @@ def compile_document(
                 name=name,
                 command_id=command_id,
                 engine=engine,
-                opcode=opcode,
-                descriptor_addr=descriptor_addr,
-                descriptor_offset=descriptor_offset,
-                descriptor=descriptor,
+                opcode=OPCODES[engine][opcode_name],
+                compact_opcode=compact_opcode,
+                payload=payload,
                 command=command,
                 wait_events=(wait0, wait1),
                 signal_event=signal,
                 user_tag=parse_int(
-                    operation.get("user_tag", 0),
+                    operation.get("user_tag", command_id),
                     f"{location}.user_tag",
                     0,
                     0xFFFFFFFF,
                 ),
             )
         )
-    return compiled, bytes(command_image), bytes(descriptor_image)
+    return compiled, bytes(command_image)
 
 
 def sha256_bytes(content: bytes) -> str:
@@ -1279,56 +1359,42 @@ def build_output_manifest(
     source_document: Mapping[str, Any],
     operations: list[CompiledOperation],
     command_name: str,
-    descriptor_name: str,
     command_image: bytes,
-    descriptor_image: bytes,
 ) -> bytes:
     output = {
-        "artifact_version": 1,
+        "artifact_version": 2,
         "source": source_path.name,
         "source_sha256": sha256_bytes(source_path.read_bytes()),
         "target": source_document["target"],
         "command_format": COMMAND_FORMAT,
+        "header_version": HEADER_VERSION,
         "command_record_bytes": 16,
         "command_count": len(operations),
         "command_file": command_name,
         "command_sha256": sha256_bytes(command_image),
-        "descriptor_file": descriptor_name,
-        "descriptor_bytes": len(descriptor_image),
-        "descriptor_sha256": sha256_bytes(descriptor_image),
+        "external_descriptor_bytes": 0,
         "operations": [
             {
                 "name": operation.name,
                 "command_id": operation.command_id,
                 "engine": operation.engine,
                 "opcode": operation.opcode,
-                "descriptor_addr": f"0x{operation.descriptor_addr:012x}",
-                "descriptor_offset": operation.descriptor_offset,
-                "descriptor_bytes": len(operation.descriptor),
+                "compact_opcode": operation.compact_opcode,
+                "payload": f"0x{operation.payload:020x}",
                 "wait_events": [
                     event_to_json(operation.wait_events[0]),
                     event_to_json(operation.wait_events[1]),
                 ],
                 "signal_event": event_to_json(operation.signal_event),
                 "user_tag": operation.user_tag,
-                "command_low": (
-                    f"0x{struct.unpack_from('<Q', operation.command, 0)[0]:016x}"
-                ),
-                "command_high": (
-                    f"0x{struct.unpack_from('<Q', operation.command, 8)[0]:016x}"
-                ),
+                "command_low": f"0x{struct.unpack_from('<Q', operation.command, 0)[0]:016x}",
+                "command_high": f"0x{struct.unpack_from('<Q', operation.command, 8)[0]:016x}",
             }
             for operation in operations
         ],
     }
     return (
-        json.dumps(
-            output,
-            indent=2,
-            sort_keys=True,
-            ensure_ascii=True,
-            allow_nan=False,
-        )
+        json.dumps(output, indent=2, sort_keys=True, ensure_ascii=True, allow_nan=False)
         + "\n"
     ).encode("utf-8")
 
@@ -1336,10 +1402,10 @@ def build_output_manifest(
 def c_array(content: bytes, name: str) -> str:
     lines = []
     for start in range(0, len(content), 12):
-        values = ", ".join(
-            f"0x{value:02x}" for value in content[start : start + 12]
-        )
+        values = ", ".join(f"0x{value:02x}" for value in content[start : start + 12])
         lines.append(f"    {values},")
+    if not lines:
+        lines.append("    0x00,")
     return (
         f"static const unsigned char {name}[] = {{\n"
         + "\n".join(lines)
@@ -1348,22 +1414,14 @@ def c_array(content: bytes, name: str) -> str:
     )
 
 
-def build_c_header(
-    stem: str,
-    command_image: bytes,
-    descriptor_image: bytes,
-) -> bytes:
-    symbol = "".join(
-        character if character.isalnum() else "_" for character in stem
-    )
+def build_c_header(stem: str, command_image: bytes) -> bytes:
+    symbol = "".join(character if character.isalnum() else "_" for character in stem)
     if not symbol or symbol[0].isdigit():
         symbol = f"model_{symbol}"
     guard = f"NPU_MODEL_{symbol.upper()}_H"
     content = (
         f"#ifndef {guard}\n#define {guard}\n\n"
         + c_array(command_image, f"{symbol}_commands")
-        + "\n"
-        + c_array(descriptor_image, f"{symbol}_descriptors")
         + f"\n#endif /* {guard} */\n"
     )
     return content.encode("ascii")
@@ -1387,36 +1445,23 @@ def output_artifacts(
     try:
         value = json.loads(input_path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as error:
-        raise CompileError(
-            f"{input_path}:{error.lineno}:{error.colno}: {error.msg}"
-        ) from error
+        raise CompileError(f"{input_path}:{error.lineno}:{error.colno}: {error.msg}") from error
     document = object_value(value, "document")
-    operations, command_image, descriptor_image = compile_document(document)
+    operations, command_image = compile_document(document)
     stem = input_path.stem
     command_name = f"{stem}.cmd.bin"
-    descriptor_name = f"{stem}.desc.bin"
     artifacts = [
         Artifact(output_dir / command_name, command_image),
-        Artifact(output_dir / descriptor_name, descriptor_image),
         Artifact(
             output_dir / f"{stem}.manifest.json",
             build_output_manifest(
-                input_path,
-                document,
-                operations,
-                command_name,
-                descriptor_name,
-                command_image,
-                descriptor_image,
+                input_path, document, operations, command_name, command_image
             ),
         ),
     ]
     if emit_c_header:
         artifacts.append(
-            Artifact(
-                output_dir / f"{stem}.npu.h",
-                build_c_header(stem, command_image, descriptor_image),
-            )
+            Artifact(output_dir / f"{stem}.npu.h", build_c_header(stem, command_image))
         )
     return artifacts, operations
 
@@ -1424,27 +1469,17 @@ def output_artifacts(
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Assemble normalized NPU JSON IR into a 128-bit command stream, "
-            "Descriptor image, and artifact manifest."
+            "Assemble the NPU low-level JSON IR into an inline CMD128 stream "
+            "and artifact metadata."
         )
     )
-    parser.add_argument("input", type=Path, help="normalized model JSON file")
+    parser.add_argument("input", type=Path, help="low-level JSON IR file")
+    parser.add_argument("-o", "--output-dir", type=Path, required=True)
     parser.add_argument(
-        "-o",
-        "--output-dir",
-        type=Path,
-        required=True,
-        help="artifact directory",
+        "--emit-c-header", action="store_true", help="also emit the command byte array"
     )
     parser.add_argument(
-        "--emit-c-header",
-        action="store_true",
-        help="also emit commands and Descriptors as C byte arrays",
-    )
-    parser.add_argument(
-        "--check",
-        action="store_true",
-        help="verify that every requested artifact already matches",
+        "--check", action="store_true", help="compare requested artifacts without writing"
     )
     return parser.parse_args(argv)
 
@@ -1454,12 +1489,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     if not args.input.is_file():
         raise CompileError(f"input is not a file: {args.input}")
     if args.output_dir.exists() and not args.output_dir.is_dir():
-        raise CompileError(
-            f"output path is not a directory: {args.output_dir}"
-        )
-    artifacts, operations = output_artifacts(
-        args.input, args.output_dir, args.emit_c_header
-    )
+        raise CompileError(f"output path is not a directory: {args.output_dir}")
+    artifacts, operations = output_artifacts(args.input, args.output_dir, args.emit_c_header)
     if args.check:
         for artifact in artifacts:
             if not artifact.path.is_file():

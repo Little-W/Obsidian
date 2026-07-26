@@ -65,6 +65,8 @@ module npu_cmd_frontend #(
   logic output_handshake;
   logic enqueue_now;
   logic [7:0] fifo_free_entries;
+  logic [127:0] candidate_cmd;
+  logic [11:0] candidate_command_id;
 
   function automatic logic [PTR_W-1:0] increment_ptr(
     input logic [PTR_W-1:0] pointer
@@ -78,12 +80,15 @@ module npu_cmd_frontend #(
   assign input_handshake  = axi_cmd_valid_i && axi_cmd_ready_o;
   assign output_handshake = ts_cmd_valid_o && ts_cmd_ready_i;
   assign enqueue_now      = state_q == CFE_ENQUEUE;
+  assign candidate_cmd    = {high_word_q, low_word_q};
+  assign candidate_command_id = npu_cmd_command_id(candidate_cmd);
 
   always_comb begin
     local_duplicate = 1'b0;
     for (int unsigned entry = 0; entry < FIFO_DEPTH; entry++) begin
       if (fifo_valid_q[entry]
-          && (fifo_q[entry][59:48] == low_word_q[59:48])) begin
+          && (npu_cmd_command_id(fifo_q[entry]) ==
+              candidate_command_id)) begin
         local_duplicate = 1'b1;
       end
     end
@@ -92,22 +97,28 @@ module npu_cmd_frontend #(
   assign fifo_free_entries = 8'(FIFO_DEPTH) - 8'(fifo_count_q);
 
   always_comb begin
-    header_format_valid =
-        (low_word_q[5:0] == 6'd0)
-      && (high_word_q[63:56] == 8'h01)
-      && (high_word_q[19:18] == 2'b00)
-      && npu_event_ref_valid(high_word_q[31:20])
-      && npu_event_ref_valid(high_word_q[43:32])
-      && npu_event_ref_valid(high_word_q[55:44]);
-    opcode_format_valid =
-      npu_opcode_engine_valid(low_word_q[63:60], high_word_q[7:0]);
+    if (candidate_cmd[127]) begin
+      header_format_valid = 1'b1;
+      opcode_format_valid =
+        npu_v2_compact_opcode_valid(candidate_cmd[126:122]);
+    end else begin
+      header_format_valid =
+          (low_word_q[5:0] == 6'd0)
+        && (high_word_q[63:56] == 8'h01)
+        && (high_word_q[19:18] == 2'b00)
+        && npu_event_ref_valid(high_word_q[31:20])
+        && npu_event_ref_valid(high_word_q[43:32])
+        && npu_event_ref_valid(high_word_q[55:44]);
+      opcode_format_valid =
+        npu_opcode_engine_valid(low_word_q[63:60], high_word_q[7:0]);
+    end
   end
 
   always_comb begin
     axi_cmd_ready_o       = 1'b0;
     axi_cmd_rsp_valid_o   = state_q == CFE_RESPOND;
     axi_cmd_rsp_data_o    = 64'd0;
-    axi_cmd_rsp_data_o[11:0]  = low_word_q[59:48];
+    axi_cmd_rsp_data_o[11:0]  = candidate_command_id;
     axi_cmd_rsp_data_o[19:12] = response_status_q;
     axi_cmd_rsp_data_o[27:20] = fifo_free_entries;
 
@@ -115,7 +126,7 @@ module npu_cmd_frontend #(
     ts_cmd_o              = fifo_q[fifo_rd_ptr_q];
 
     cmd_id_lookup_valid_o = (state_q == CFE_LOOKUP) && !lookup_sent_q;
-    cmd_id_lookup_id_o    = low_word_q[59:48];
+    cmd_id_lookup_id_o    = candidate_command_id;
 
     cfe_idle_o = (state_q == CFE_IDLE) && (fifo_count_q == 0);
 
@@ -187,8 +198,8 @@ module npu_cmd_frontend #(
 
         CFE_WAIT_HIGH: begin
           if (input_handshake) begin
+            high_word_q <= axi_cmd_data_i;
             if (!axi_cmd_first_i && axi_cmd_last_i) begin
-              high_word_q <= axi_cmd_data_i;
               state_q     <= CFE_CHECK;
             end else begin
               response_status_q <= NPU_STATUS_BAD_DESC;

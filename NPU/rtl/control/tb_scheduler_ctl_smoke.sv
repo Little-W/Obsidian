@@ -135,6 +135,12 @@ module tb_scheduler_ctl_smoke;
     .cfe_cmd_valid_i(cfe_cmd_valid),
     .cfe_cmd_ready_o(cfe_cmd_ready),
     .cfe_cmd_i(cfe_cmd),
+    .input_base_i(48'd0),
+    .weight_base_i(48'd0),
+    .work_base_i(48'd0),
+    .output_base_i(48'd0),
+    .kv_base_i(48'd0),
+    .param_l1_base_i(20'd0),
 
     .cmd_id_lookup_valid_i(1'b0),
     .cmd_id_lookup_ready_o(cmd_id_lookup_ready),

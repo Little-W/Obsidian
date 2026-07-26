@@ -1,4 +1,5 @@
 #include "npu_ts_cycle.h"
+#include "npu_inline.h"
 
 #include <limits.h>
 #include <string.h>
@@ -33,6 +34,18 @@ static uint64_t ts_u64(const uint8_t *data, size_t offset)
         value |= (uint64_t)data[offset + byte] << (byte * 8u);
     }
     return value;
+}
+
+static void ts_store_u64(uint8_t *data,
+                         size_t offset,
+                         uint64_t value)
+{
+    uint32_t byte;
+
+    for (byte = 0u; byte < 8u; byte++) {
+        data[offset + byte] =
+            (uint8_t)(value >> (byte * 8u));
+    }
 }
 
 static int ts_event_none(npu_event_ref_t event)
@@ -146,6 +159,23 @@ static uint8_t ts_find_task_slot(const npu_ts_cycle_t *model,
         }
     }
     return NPU_TS_INVALID_INDEX;
+}
+
+static int ts_command_id_duplicate(
+    const npu_ts_cycle_t *model,
+    uint8_t current_slot,
+    uint16_t command_id)
+{
+    uint32_t index;
+
+    for (index = 0u; index < NPU_TS_TASK_COUNT; index++) {
+        if (index != current_slot &&
+            model->task[index].valid != 0u &&
+            model->task[index].cmd.command_id == command_id) {
+            return 1;
+        }
+    }
+    return 0;
 }
 
 static uint8_t ts_task_slots_used(const npu_ts_cycle_t *model)
@@ -368,6 +398,9 @@ static void ts_finish_commits(npu_ts_cycle_t *model)
         ts_release_waiters(model, task);
         signal = task->cmd.signal_event;
         if (!ts_event_none(signal) &&
+            !(task->cmd.inline_format != 0u &&
+              task->cmd.engine == NPU_ENGINE_CONTROL &&
+              task->cmd.opcode == NPU_CTRL_EVENT_REARM) &&
             signal.id < NPU_TS_EVENT_COUNT) {
             npu_ts_event_entry_t *event = &model->event[signal.id];
 
@@ -562,6 +595,15 @@ static int ts_cmd_event_resources_valid(
     }
     if (cmd->engine == NPU_ENGINE_CONTROL &&
         cmd->opcode == NPU_CTRL_EVENT_REARM) {
+        if (cmd->inline_format != 0u) {
+            return !ts_event_none(signal) &&
+                   signal.id < NPU_TS_EVENT_COUNT &&
+                   model->event[signal.id].generation ==
+                       signal.generation &&
+                   ts_event_terminal(
+                       model->event[signal.id].state) &&
+                   model->event[signal.id].waiter_count == 0u;
+        }
         return ts_event_none(signal);
     }
     if (!ts_event_none(signal)) {
@@ -601,7 +643,10 @@ static void ts_cmd_event_resources_apply(
         }
         model->event[ref.id].waiter_count++;
     }
-    if (!ts_event_none(signal)) {
+    if (!ts_event_none(signal) &&
+        !(task->cmd.inline_format != 0u &&
+          task->cmd.engine == NPU_ENGINE_CONTROL &&
+          task->cmd.opcode == NPU_CTRL_EVENT_REARM)) {
         npu_ts_event_entry_t *event = &model->event[signal.id];
 
         event->state = NPU_TS_EVENT_RESERVED;
@@ -618,20 +663,11 @@ static void ts_accept_first_beat(npu_ts_cycle_t *model,
     uint8_t desc_slot = ts_find_free_desc(model);
     npu_ts_task_entry_t *task;
     npu_ts_desc_slot_t *desc;
-    uint16_t command_id;
-    uint8_t engine;
-    uint8_t duplicate;
 
     if (task_slot == NPU_TS_INVALID_INDEX ||
         desc_slot == NPU_TS_INVALID_INDEX) {
         return;
     }
-    command_id =
-        (uint16_t)((input->data >> 48) & 0x0fffu);
-    engine = (uint8_t)((input->data >> 60) & 0x0fu);
-    duplicate =
-        (uint8_t)(ts_find_task_slot(model, command_id) !=
-                  NPU_TS_INVALID_INDEX);
     task = &model->task[task_slot];
     desc = &model->desc_slot[desc_slot];
     memset(task, 0, sizeof(*task));
@@ -640,21 +676,21 @@ static void ts_accept_first_beat(npu_ts_cycle_t *model,
     task->desc_slot = desc_slot;
     task->cmd.desc_addr =
         input->data & UINT64_C(0x0000ffffffffffff);
-    task->cmd.command_id = command_id;
-    task->cmd.engine = (npu_engine_t)engine;
+    task->cmd.command_id = 0u;
+    task->cmd.engine = NPU_ENGINE_CONTROL;
     task->cmd.wait_event[0] = npu_event_none();
     task->cmd.wait_event[1] = npu_event_none();
     task->cmd.signal_event = npu_event_none();
     task->status = NPU_STATUS_BUSY;
     task->malformed_cmd =
         (uint8_t)(input->first == 0u ||
-                  input->last != 0u ||
-                  duplicate != 0u);
+                  input->last != 0u);
 
     memset(desc, 0, sizeof(*desc));
     desc->allocated = 1u;
-    desc->owner_engine = engine;
+    desc->owner_engine = 0u;
     desc->owner_task_slot = task_slot;
+    ts_store_u64(desc->data, 0u, input->data);
 
     model->cfe_half_valid = 1u;
     model->cfe_half_terminate = 0u;
@@ -677,8 +713,32 @@ static void ts_accept_second_beat(npu_ts_cycle_t *model,
         return;
     }
     task = &model->task[task_slot];
+    ts_store_u64(
+        model->desc_slot[task->desc_slot].data,
+        8u, input->data);
     status = npu_cmd_decode(model->cfe_low, input->data,
                             &task->cmd);
+    if (status == NPU_STATUS_SUCCESS &&
+        task->cmd.inline_format != 0u) {
+        uint32_t event_index;
+
+        for (event_index = 0u; event_index < 2u;
+             event_index++) {
+            npu_event_ref_t *event =
+                &task->cmd.wait_event[event_index];
+
+            if (event->id < NPU_TS_EVENT_COUNT) {
+                event->generation =
+                    model->event[event->id].generation;
+            }
+        }
+        if (task->cmd.signal_event.id <
+            NPU_TS_EVENT_COUNT) {
+            task->cmd.signal_event.generation =
+                model->event[
+                    task->cmd.signal_event.id].generation;
+        }
+    }
     task->submit_seq = model->next_submit_seq++;
     task->accept_cycle = model->cycle;
     task->state = NPU_TS_TASK_ACCEPTED;
@@ -709,6 +769,11 @@ static void ts_accept_second_beat(npu_ts_cycle_t *model,
         status = NPU_STATUS_BAD_DESC;
     }
     if (status == NPU_STATUS_SUCCESS &&
+        ts_command_id_duplicate(
+            model, task_slot, task->cmd.command_id)) {
+        status = NPU_STATUS_BAD_DESC;
+    }
+    if (status == NPU_STATUS_SUCCESS &&
         (!ts_opcode_valid(task->cmd.engine, task->cmd.opcode) ||
          (task->cmd.header_flags &
           NPU_TS_FLAG_DESC_CRC_ENABLE) != 0u)) {
@@ -736,7 +801,34 @@ static void ts_accept_second_beat(npu_ts_cycle_t *model,
         ts_cmd_event_resources_apply(model, task);
         model->desc_slot[task->desc_slot].owner_engine =
             (uint8_t)task->cmd.engine;
-        if (task->cmd.engine == NPU_ENGINE_CONTROL &&
+        if (task->cmd.inline_format != 0u) {
+            status = npu_inline_decode_task(
+                &task->cmd, &model->wire_limits,
+                &task->request, &task->meta);
+            if (status == NPU_STATUS_SUCCESS) {
+                model->desc_slot[task->desc_slot].bytes =
+                    NPU_WIRE_CMD_BYTES;
+                model->desc_slot[task->desc_slot].full = 1u;
+                task->user_tag = task->request.cmd.user_tag;
+                task->fetch_started = 1u;
+                task->state = NPU_TS_TASK_CHECK_DESC;
+                task->commit_cycle = model->cycle;
+            }
+        }
+        if (status != NPU_STATUS_SUCCESS) {
+            if (status == NPU_STATUS_ADDR_FAULT &&
+                task->meta.fault_valid != 0u) {
+                fault_addr = task->meta.fault_addr;
+                if (task->meta.fault_space == NPU_SPACE_L1) {
+                    done_flags |= NPU_DONE_FAULT_ADDR_IS_L1;
+                }
+            }
+            ts_mark_commit(
+                model, task_slot, (uint8_t)status,
+                0u, done_flags, fault_addr, 0u);
+        }
+        if (status == NPU_STATUS_SUCCESS &&
+            task->cmd.engine == NPU_ENGINE_CONTROL &&
             task->cmd.opcode == NPU_CTRL_GLOBAL_FENCE) {
             ts_snapshot_fence_targets(
                 model, task->submit_seq, TS_ENGINE_MASK_ALL,
@@ -1150,7 +1242,8 @@ static uint64_t ts_task_metadata(const npu_ts_task_entry_t *task)
            ((uint64_t)(task->cmd.header_flags & 0x003fu)
             << 28) |
            ((uint64_t)(task->cmd.timeout_class & 0x0fu)
-            << 40);
+            << 40) |
+           ((uint64_t)(task->cmd.inline_format != 0u) << 44);
 }
 
 static void ts_execute_control_ready(npu_ts_cycle_t *model,

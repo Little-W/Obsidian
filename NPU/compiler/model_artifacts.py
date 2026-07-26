@@ -153,13 +153,25 @@ def _operation_rows(values: Sequence[Mapping[str, Any]]) -> str:
 
 def _batch_metadata(
     batches: Sequence[Sequence[int]],
-) -> tuple[list[tuple[int, int]], list[int]]:
-    rows: list[tuple[int, int]] = []
+    execution: Sequence[Mapping[str, Any]] | None = None,
+) -> tuple[list[tuple[int, int, int, int, int]], list[int]]:
+    rows: list[tuple[int, int, int, int, int]] = []
     command_ids: list[int] = []
-    for batch in batches:
+    if execution is not None and len(execution) != len(batches):
+        raise ValueError("batch execution metadata length mismatch")
+    for index, batch in enumerate(batches):
         offset = len(command_ids)
         command_ids.extend(int(value) for value in batch)
-        rows.append((offset, len(batch)))
+        metadata = {} if execution is None else execution[index]
+        rows.append(
+            (
+                offset,
+                len(batch),
+                int(bool(metadata.get("host_sync_before", index != 0))),
+                int(bool(metadata.get("host_sync_after", True))),
+                int(bool(metadata.get("contains_event_rearm", False))),
+            )
+        )
     return rows, command_ids
 
 
@@ -177,10 +189,10 @@ def build_model_c_header(
     outputs = result.runtime["outputs"]
     operations = result.runtime["operations"]
     batches = result.runtime["batches"]
+    batch_execution = result.runtime["batch_execution"]
     command_count = len(result.command_image) // 16
-    descriptor_bytes = len(result.descriptor_image)
     weight_bytes = len(result.constant_image)
-    _batch_rows, batch_ids = _batch_metadata(batches)
+    _batch_rows, batch_ids = _batch_metadata(batches, batch_execution)
     content = (
         f"#ifndef {guard}\n#define {guard}\n\n"
         "#include <stdint.h>\n\n"
@@ -208,6 +220,10 @@ def build_model_c_header(
         "typedef struct {\n"
         "    uint32_t command_id_offset;\n"
         "    uint32_t command_count;\n"
+        "    uint8_t host_sync_before;\n"
+        "    uint8_t host_sync_after;\n"
+        "    uint8_t contains_event_rearm;\n"
+        "    uint8_t reserved;\n"
         f"}} {symbol}_command_batch_t;\n\n"
         "typedef struct {\n"
         "    const char *model_name;\n"
@@ -215,9 +231,6 @@ def build_model_c_header(
         "    const "
         f"{symbol}_cmd128_t *commands;\n"
         "    uint32_t command_count;\n"
-        "    const uint8_t *descriptors;\n"
-        "    uint32_t descriptor_bytes;\n"
-        "    uint64_t descriptor_base;\n"
         "    const uint8_t *weights;\n"
         "    uint32_t weight_bytes;\n"
         "    uint64_t weight_base_ddr;\n"
@@ -237,14 +250,9 @@ def build_model_c_header(
         f"#define {upper}_COMMAND_COUNT {command_count}u\n"
         f"#define {upper}_COMMAND_STORAGE_COUNT "
         f"{_storage_count(command_count)}u\n"
-        f"#define {upper}_DESCRIPTOR_BYTES {descriptor_bytes}u\n"
-        f"#define {upper}_DESCRIPTOR_STORAGE_BYTES "
-        f"{_storage_count(descriptor_bytes)}u\n"
         f"#define {upper}_WEIGHT_BYTES {weight_bytes}u\n"
         f"#define {upper}_WEIGHT_STORAGE_BYTES "
         f"{_storage_count(weight_bytes)}u\n"
-        f"#define {upper}_DESCRIPTOR_BASE "
-        f"UINT64_C(0x{int(result.runtime['descriptor_base']):x})\n"
         f"#define {upper}_WEIGHT_BASE_DDR "
         f"UINT64_C(0x{int(result.runtime['constant_base_ddr']):x})\n"
         f"#define {upper}_WEIGHT_BASE_L1 "
@@ -266,8 +274,6 @@ def build_model_c_header(
         f"{_storage_count(len(batch_ids))}u\n\n"
         f"extern const {symbol}_cmd128_t {symbol}_commands"
         f"[{upper}_COMMAND_STORAGE_COUNT];\n"
-        f"extern const uint8_t {symbol}_descriptors"
-        f"[{upper}_DESCRIPTOR_STORAGE_BYTES];\n"
         f"extern const uint8_t {symbol}_weights"
         f"[{upper}_WEIGHT_STORAGE_BYTES];\n"
         f"extern const {symbol}_binding_t {symbol}_inputs"
@@ -300,10 +306,21 @@ def build_model_c_source(
     outputs = result.runtime["outputs"]
     operations = result.runtime["operations"]
     batches = result.runtime["batches"]
-    batch_rows, batch_ids = _batch_metadata(batches)
+    batch_execution = result.runtime["batch_execution"]
+    batch_rows, batch_ids = _batch_metadata(batches, batch_execution)
     command_batches = (
         "\n".join(
-            f"    {{{offset}u, {count}u}}," for offset, count in batch_rows
+            (
+                f"    {{{offset}u, {count}u, {sync_before}u, "
+                f"{sync_after}u, {contains_rearm}u, 0u}},"
+            )
+            for (
+                offset,
+                count,
+                sync_before,
+                sync_after,
+                contains_rearm,
+            ) in batch_rows
         )
         if batch_rows
         else "    {0},"
@@ -327,10 +344,6 @@ def build_model_c_source(
         f"NPU_MODEL_ALIGN(16) const {symbol}_cmd128_t {symbol}_commands"
         f"[{upper}_COMMAND_STORAGE_COUNT] = {{\n"
         + _command_rows(result.command_image)
-        + "\n};\n\n"
-        f"NPU_MODEL_ALIGN(64) const uint8_t {symbol}_descriptors"
-        f"[{upper}_DESCRIPTOR_STORAGE_BYTES] = {{\n"
-        + _byte_initializer(result.descriptor_image)
         + "\n};\n\n"
         f"NPU_MODEL_ALIGN(256) const uint8_t {symbol}_weights"
         f"[{upper}_WEIGHT_STORAGE_BYTES] = {{\n"
@@ -361,9 +374,6 @@ def build_model_c_source(
         f"    {c_string(str(result.runtime['command_format']))},\n"
         f"    {symbol}_commands,\n"
         f"    {upper}_COMMAND_COUNT,\n"
-        f"    {symbol}_descriptors,\n"
-        f"    {upper}_DESCRIPTOR_BYTES,\n"
-        f"    {upper}_DESCRIPTOR_BASE,\n"
         f"    {symbol}_weights,\n"
         f"    {upper}_WEIGHT_BYTES,\n"
         f"    {upper}_WEIGHT_BASE_DDR,\n"
@@ -402,11 +412,12 @@ def build_model_manifest(
                 "cmd128",
                 "c-model-package",
             ],
-            "command_format": "cmd128-v1",
+            "command_format": npu_assembler.COMMAND_FORMAT,
             "command_count": len(result.assembled_operations),
-            "descriptor_bytes": len(result.descriptor_image),
+            "external_descriptor_bytes": 0,
             "weight_bytes": len(result.constant_image),
             "command_batches": result.runtime["batches"],
+            "batch_execution": result.runtime["batch_execution"],
             "artifacts": {
                 name: {
                     "bytes": len(content),
@@ -456,7 +467,6 @@ def output_artifacts(
             {
                 f"{stem}.npuasm.json": canonical_json(result.low_ir),
                 f"{stem}.cmd.bin": result.command_image,
-                f"{stem}.desc.bin": result.descriptor_image,
                 f"{stem}.const.bin": result.constant_image,
                 f"{stem}.runtime.json": canonical_json(result.runtime),
             }
@@ -530,8 +540,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--emit-raw",
         action="store_true",
         help=(
-            "also emit low-level JSON IR and raw command, Descriptor, "
-            "weight, and runtime files for debugging"
+            "also emit low-level JSON IR and raw command, weight, and "
+            "runtime files for debugging"
         ),
     )
     parser.add_argument(
@@ -584,9 +594,6 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="recompile and compare every requested artifact without writing",
     )
-    parser.add_argument(
-        "--descriptor-base", type=parse_cli_int, default=0x10000
-    )
     parser.add_argument("--l1-base", type=parse_cli_int, default=0x1000)
     parser.add_argument(
         "--l1-bytes", type=parse_cli_int, default=256 * 1024
@@ -620,7 +627,6 @@ def run_cli(
             f"output path is not a directory: {args.output_dir}"
         )
     target = target_type(
-        descriptor_base=args.descriptor_base,
         l1_base=args.l1_base,
         l1_bytes=args.l1_bytes,
         ddr_base=args.ddr_base,
@@ -648,7 +654,8 @@ def run_cli(
         action = "wrote"
     print(
         f"model={result.model_name} high_ops={len(result.operators)} "
-        f"low_ops={len(result.assembled_operations)} format=cmd128-v1"
+        f"low_ops={len(result.assembled_operations)} "
+        f"format={npu_assembler.COMMAND_FORMAT}"
     )
     for name, content in files.items():
         print(

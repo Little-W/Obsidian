@@ -1,4 +1,5 @@
 #include "npu_wire.h"
+#include "npu_inline.h"
 
 #include <limits.h>
 
@@ -203,6 +204,16 @@ static int npu_wire_event_equal(npu_event_ref_t left,
     return left.id == right.id && left.generation == right.generation;
 }
 
+static npu_event_ref_t npu_wire_inline_event(uint8_t raw)
+{
+    npu_event_ref_t event;
+
+    event.id = raw;
+    event.generation =
+        raw == NPU_EVENT_NONE_ID ? NPU_EVENT_NONE_GENERATION : 0u;
+    return event;
+}
+
 static int npu_wire_opcode_valid(npu_engine_t engine, uint8_t opcode)
 {
     if (engine == NPU_ENGINE_CONTROL) {
@@ -241,19 +252,29 @@ static int npu_wire_opcode_valid(npu_engine_t engine, uint8_t opcode)
 
 static int npu_wire_limits_valid(const npu_wire_limits_t *limits)
 {
-    return limits != (const npu_wire_limits_t *)0 &&
-           limits->l1_bytes != 0u &&
-           limits->l1_bytes <= (1u << 24) &&
-           limits->gaddr_limit != 0u &&
-           limits->gaddr_limit <= (UINT64_C(1) << 48) &&
-           limits->dma_max_burst_beats != 0u &&
-           limits->dma_max_burst_beats <= 256u &&
-           limits->dma_max_outstanding != 0u &&
-           limits->mt != 0u &&
-           limits->kt != 0u &&
-           limits->nt != 0u &&
-           limits->cme_scratch_elems != 0u &&
-           limits->desc_version != 0u;
+    uint32_t index;
+
+    if (limits == (const npu_wire_limits_t *)0 ||
+        limits->l1_bytes == 0u ||
+        limits->l1_bytes > (1u << 24) ||
+        limits->gaddr_limit == 0u ||
+        limits->gaddr_limit > (UINT64_C(1) << 48) ||
+        limits->dma_max_burst_beats == 0u ||
+        limits->dma_max_burst_beats > 256u ||
+        limits->dma_max_outstanding == 0u ||
+        limits->mt == 0u ||
+        limits->kt == 0u ||
+        limits->nt == 0u ||
+        limits->cme_scratch_elems == 0u ||
+        limits->desc_version == 0u) {
+        return 0;
+    }
+    for (index = 0u; index < 6u; index++) {
+        if (limits->gaddr_base[index] >= limits->gaddr_limit) {
+            return 0;
+        }
+    }
+    return 1;
 }
 
 void npu_wire_limits_reference(npu_wire_limits_t *limits)
@@ -261,6 +282,7 @@ void npu_wire_limits_reference(npu_wire_limits_t *limits)
     if (limits == (npu_wire_limits_t *)0) {
         return;
     }
+    npu_wire_clear(limits, sizeof(*limits));
     limits->l1_bytes = NPU_REF_L1_BYTES;
     limits->gaddr_limit = UINT64_C(1) << 48;
     limits->dma_max_burst_beats = NPU_REF_DMA_MAX_BURST_BEATS;
@@ -482,6 +504,9 @@ npu_status_t npu_wire_validate_cmd_address(
         !npu_wire_limits_valid(limits)) {
         return NPU_STATUS_BAD_DESC;
     }
+    if (cmd->inline_format != 0u) {
+        return NPU_STATUS_SUCCESS;
+    }
     desc_bytes = npu_wire_descriptor_bytes(cmd->engine);
     if (desc_bytes == 0u) {
         return NPU_STATUS_BAD_DESC;
@@ -513,6 +538,52 @@ npu_status_t npu_wire_decode_cmd_with_meta(
     npu_wire_clear(meta, sizeof(*meta));
     low = npu_wire_u64(wire, 0u);
     high = npu_wire_u64(wire, 8u);
+
+    if ((high >> 63u) != 0u) {
+        uint8_t compact_opcode =
+            (uint8_t)((high >> 58u) & UINT64_C(0x1f));
+        uint8_t packed_flags =
+            (uint8_t)((high >> 20u) & UINT64_C(0x0f));
+
+        cmd->inline_payload_lo = low;
+        cmd->inline_payload_hi =
+            (uint16_t)(high & UINT64_C(0xffff));
+        cmd->inline_format = 1u;
+        cmd->inline_dtype =
+            (npu_dtype_t)((high >> 16u) & UINT64_C(0x03));
+        cmd->timeout_class =
+            (uint8_t)((high >> 18u) & UINT64_C(0x03));
+        cmd->header_flags =
+            (uint16_t)(((packed_flags >> 3u) & 0x01u) |
+                       (((packed_flags >> 2u) & 0x01u) << 1u) |
+                       (((packed_flags >> 1u) & 0x01u) << 2u) |
+                       ((packed_flags & 0x01u) << 4u) |
+                       ((uint16_t)cmd->timeout_class << 6u));
+        cmd->signal_event = npu_wire_inline_event(
+            (uint8_t)((high >> 24u) & UINT64_C(0xff)));
+        cmd->wait_event[1] = npu_wire_inline_event(
+            (uint8_t)((high >> 32u) & UINT64_C(0xff)));
+        cmd->wait_event[0] = npu_wire_inline_event(
+            (uint8_t)((high >> 40u) & UINT64_C(0xff)));
+        cmd->command_id =
+            (uint16_t)((high >> 48u) & UINT64_C(0x03ff));
+        cmd->header_version = NPU_WIRE_INLINE_HEADER_VERSION;
+        if (!npu_wire_dtype_valid(cmd->inline_dtype)) {
+            return NPU_STATUS_DTYPE_UNSUPPORTED;
+        }
+        if (!npu_inline_opcode_decode(
+                compact_opcode, &cmd->engine, &cmd->opcode)) {
+            return NPU_STATUS_ILLEGAL_OPCODE;
+        }
+        if (!npu_wire_event_is_none(cmd->signal_event) &&
+            (npu_wire_event_equal(
+                 cmd->signal_event, cmd->wait_event[0]) ||
+             npu_wire_event_equal(
+                 cmd->signal_event, cmd->wait_event[1]))) {
+            return NPU_STATUS_BAD_DESC;
+        }
+        return NPU_STATUS_SUCCESS;
+    }
 
     cmd->desc_addr = low & UINT64_C(0x0000ffffffffffff);
     cmd->command_id = (uint16_t)((low >> 48) & 0x0fffu);
@@ -2803,6 +2874,10 @@ npu_status_t npu_wire_decode_task(const uint8_t *cmd_wire,
         cmd_wire, cmd_wire_bytes, limits, &cmd, meta);
     if (status != NPU_STATUS_SUCCESS) {
         return status;
+    }
+    if (cmd.inline_format != 0u) {
+        return npu_inline_decode_task(
+            &cmd, limits, request, meta);
     }
     return npu_wire_decode_descriptor(&cmd, desc_wire, desc_wire_bytes,
                                       limits, request, meta);

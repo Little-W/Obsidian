@@ -324,8 +324,8 @@ class ModelGraphValidationTests(unittest.TestCase):
             {},
         )[0]
         vector = task.descriptor["vector"]
-        self.assertTrue(vector["src1_from_scalar0"])
-        self.assertNotIn("broadcast1", vector)
+        self.assertEqual(vector["broadcast1"], "scalar")
+        self.assertEqual(task.descriptor["common"]["src1"], "scalar")
         self.assertEqual(vector["src2_scale_bits"], 0)
 
 

@@ -205,17 +205,14 @@ static int backend_wait_event(npu_example_cmodel_backend_t *backend,
                               uint64_t *value)
 {
     uint8_t event_id = (uint8_t)(packed & 0xffu);
-    uint8_t generation = (uint8_t)((packed >> 8u) & 0x0fu);
     uint32_t cycle;
 
-    if (event_id >= NPU_EVENT_NUM) {
+    if (event_id >= NPU_EVENT_NUM ||
+        (packed & UINT16_C(0xff00)) != 0u) {
         return -1;
     }
     for (cycle = 0u; cycle <= max_cycles; cycle++) {
         const npu_event_entry_t *event = &backend->model.events[event_id];
-        if (event->generation != generation) {
-            return -1;
-        }
         if (event->state == NPU_EVENT_SUCCESS ||
             event->state == NPU_EVENT_FAILED) {
             *value = (uint64_t)(uint8_t)event->state |

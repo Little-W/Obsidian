@@ -149,6 +149,7 @@ typedef struct {
     uint8_t desc_slot;
     uint16_t task_flags;
     uint8_t timeout_class;
+    uint8_t inline_format;
 
     uint8_t descriptor[NPU_ENGINE_DESC_MAX_BYTES];
     uint16_t descriptor_bytes;

@@ -45,6 +45,7 @@ int test_complex_acceptance(void);
 int test_scheduler(void);
 int test_frontend(void);
 int test_wire(void);
+int test_inline(void);
 int test_wire_e2e(void);
 int test_control_cycle(void);
 int test_cfe_cycle(void);

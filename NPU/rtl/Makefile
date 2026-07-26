@@ -104,6 +104,7 @@ control-test:
 		-Mdir $(GEN_DIR)/control_scheduler \
 		-o Vtb_scheduler_ctl_smoke \
 		npu_rtl_pkg.sv \
+		control/npu_inline_desc_decode.sv \
 		control/npu_task_scheduler.sv \
 		control/tb_scheduler_ctl_smoke.sv
 	mkdir -p $(BUILD_DIR)/control_scheduler
@@ -112,6 +113,22 @@ control-test:
 		-f Vtb_scheduler_ctl_smoke.mk -j1 \
 		$(VERILATOR_MAKE_FLAGS)
 	$(BUILD_DIR)/control_scheduler/Vtb_scheduler_ctl_smoke
+	mkdir -p $(GEN_DIR)/control_inline_scheduler
+	$(VERILATOR) --cc --exe --main $(VERILATOR_SIM) \
+		--top-module tb_inline_scheduler_smoke \
+		-Mdir $(GEN_DIR)/control_inline_scheduler \
+		-o Vtb_inline_scheduler_smoke \
+		npu_rtl_pkg.sv \
+		control/npu_inline_desc_decode.sv \
+		control/npu_task_scheduler.sv \
+		control/tb_inline_scheduler_smoke.sv
+	mkdir -p $(BUILD_DIR)/control_inline_scheduler
+	cp -a $(GEN_DIR)/control_inline_scheduler/. \
+		$(BUILD_DIR)/control_inline_scheduler/
+	$(MAKE) -C $(BUILD_DIR)/control_inline_scheduler \
+		-f Vtb_inline_scheduler_smoke.mk -j1 \
+		$(VERILATOR_MAKE_FLAGS)
+	$(BUILD_DIR)/control_inline_scheduler/Vtb_inline_scheduler_smoke
 
 memory-test:
 	mkdir -p $(GEN_DIR)/memory_smoke

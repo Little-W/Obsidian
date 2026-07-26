@@ -1459,7 +1459,7 @@ static int tc_test_scheduler_generated_error_info(void)
                 NPU_DMA_COPY_1D, 0u,
                 TC_NONE, TC_NONE, TC_NONE, &low, &high);
     TC_CALL(tc_submit(
-        &model, low, high | (UINT64_C(1) << 63u)));
+        &model, low, high | (UINT64_C(2) << 56u)));
     task = npu_ts_cycle_find_task(&model, 50u);
     TEST_CHECK(task != (const npu_ts_task_entry_t *)0);
     TEST_CHECK(task->state == NPU_TS_TASK_COMMIT);

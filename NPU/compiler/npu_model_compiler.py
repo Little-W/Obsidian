@@ -3,7 +3,7 @@
 
 The model graph contains logical tensors and semantic operators.  It does not
 contain device addresses, command identifiers, events, engine names, opcodes,
-DMA records, or Descriptor fields.  This program derives those details and
+DMA records, or inline command fields.  This program derives those details and
 emits a normalized low-level JSON IR for ``npu_assembler.py``.
 """
 
@@ -11,9 +11,10 @@ from __future__ import annotations
 
 import argparse
 import math
+import re
 import struct
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 
@@ -83,7 +84,6 @@ class OperatorInfo:
 
 @dataclass(frozen=True)
 class TargetConfig:
-    descriptor_base: int = 0x10000
     l1_base: int = 0x1000
     l1_bytes: int = 256 * 1024
     ddr_base: int = 0x20000
@@ -117,7 +117,6 @@ class CompilationResult:
     low_ir: dict[str, Any]
     assembled_operations: list[npu_assembler.CompiledOperation]
     command_image: bytes
-    descriptor_image: bytes
     constant_image: bytes
     runtime: dict[str, Any]
 
@@ -178,7 +177,7 @@ def parse_float(value: Any, location: str) -> float:
 
 
 def float_bits(value: float) -> int:
-    """Return the IEEE-754 binary32 encoding used by device Descriptors."""
+    """Return an IEEE-754 binary32 encoding used during graph lowering."""
 
     return struct.unpack("<I", struct.pack("<f", float(value)))[0]
 
@@ -967,10 +966,11 @@ def matrix_constant_requirements(
             )
         request = (rows, columns, values)
         previous = requirements.get(name)
-        if previous is not None and previous[:2] != request[:2]:
+        if previous is not None and previous != request:
             raise fail(
                 "operators",
-                f"constant {name!r} is used with incompatible Matrix shapes",
+                f"constant {name!r} is used with incompatible Matrix "
+                "shapes or compile-time scaling",
             )
         requirements[name] = request
 
@@ -980,7 +980,41 @@ def matrix_constant_requirements(
             weight = tensors[operator.inputs[1]]
             require(weight.name, weight.shape[0], weight.shape[1])
         elif kind == "multiheadattention":
-            for name in operator.inputs[1:5]:
+            query_name = operator.inputs[1]
+            key_name = operator.inputs[2]
+            query = tensors[query_name]
+            key = tensors[key_name]
+            score_scale = parse_float(
+                operator.attributes.get("score_scale", 1.0),
+                f"operator {operator.name}.score_scale",
+            )
+            _softmax_scale, score_weight_scale = attention_score_scale_plan(
+                score_scale,
+                tensors[operator.inputs[0]].dtype,
+                f"operator {operator.name}.score_scale",
+            )
+            projection_weight_scale = (
+                None
+                if score_weight_scale is None
+                else math.sqrt(score_weight_scale)
+            )
+            for name, tensor in ((query_name, query), (key_name, key)):
+                values = (
+                    None
+                    if projection_weight_scale is None
+                    else scale_integer_values(
+                        tensor.data or (),
+                        projection_weight_scale,
+                        tensor.dtype,
+                    )
+                )
+                require(
+                    name,
+                    tensor.shape[0],
+                    tensor.shape[1],
+                    values,
+                )
+            for name in operator.inputs[3:5]:
                 weight = tensors[name]
                 require(name, weight.shape[0], weight.shape[1])
         elif kind == "conv2d":
@@ -1025,7 +1059,6 @@ class AddressAllocator:
 
 def validate_target(target: TargetConfig) -> None:
     for name, value in (
-        ("descriptor_base", target.descriptor_base),
         ("l1_base", target.l1_base),
         ("l1_bytes", target.l1_bytes),
         ("ddr_base", target.ddr_base),
@@ -1033,8 +1066,6 @@ def validate_target(target: TargetConfig) -> None:
     ):
         if value < 0:
             raise fail(f"target.{name}", "must be nonnegative")
-    if target.descriptor_base & 0x3F:
-        raise fail("target.descriptor_base", "must be 64-byte aligned")
     if target.l1_base >= target.l1_bytes:
         raise fail("target.l1_base", "must be below the L1 capacity")
     if target.ddr_base >= target.ddr_bytes:
@@ -1354,9 +1385,27 @@ def make_matrix_task(
         "c_batch_stride_bytes": c_batch_stride,
         "final_output": True,
         "overflow_mode": "saturate",
+        "b_int4": source.dtype == "int8" and weight.dtype == "int4",
     }
+    if weight.dtype != source.dtype and not (
+        source.dtype == "int8" and weight.dtype == "int4"
+    ):
+        raise fail(
+            f"operator {high_level_node}",
+            "matrix B must match A, except INT8 A may use INT4 B",
+        )
     reads = [source.name, weight.name]
     if bias is not None:
+        if (
+            bias.l1_addr is None
+            or bias.l1_addr == 0
+            or bias.l1_addr >= 256 * 1024
+        ):
+            raise fail(
+                f"operator {high_level_node}",
+                "matrix bias must use a nonzero, 64-byte-aligned L1 "
+                "address below 256 KiB",
+            )
         common["aux0"] = bias.name
         matrix.update(
             {
@@ -1369,11 +1418,25 @@ def make_matrix_task(
     if destination.dtype != "int32":
         if requant is None:
             raise fail("lowering", f"{name} needs integer rescale metadata")
+        match = re.search(r"(?:shift_|rq)([0-9]+)$", requant.name)
+        if match is None:
+            raise fail(
+                "lowering",
+                f"{name} has unsupported rescale metadata {requant.name!r}",
+            )
+        try:
+            inline_shift = int(match.group(1))
+        except ValueError as error:
+            raise fail(
+                "lowering",
+                f"{name} has an invalid rescale shift name",
+            ) from error
         common["aux1"] = requant.name
         matrix.update(
             {
                 "requant_enable": True,
                 "requant_mode": 1,
+                "requant_shift": inline_shift,
                 "requant_count": 1,
                 "requant_entry_bytes": 8,
                 "requant_region_bytes": requant.storage_bytes,
@@ -1441,6 +1504,63 @@ def make_dma_copy_task(
         },
         flags={} if flags is None else dict(flags),
         high_level_node=high_level_node,
+    )
+
+
+def attention_score_scale_plan(
+    score_scale: float,
+    dtype: str,
+    location: str,
+) -> tuple[float, float | None]:
+    """Represent an attention score scale with inline power-of-two fields.
+
+    A directly representable value needs no weight change.  Otherwise the
+    compiler folds the square root of the non-power-of-two factor into both
+    query and key projection weights, then gives SOFTMAX an exact power-of-two
+    input scale.  Symmetric scaling reduces constant re-encoding error and
+    avoids rounding the complete score matrix a second time immediately
+    before SOFTMAX.
+    """
+
+    if not math.isfinite(score_scale) or score_scale <= 0.0:
+        raise fail(location, "must be finite and positive")
+    for exponent in range(-8, 8):
+        candidate = math.ldexp(1.0, exponent)
+        if math.isclose(
+            score_scale,
+            candidate,
+            rel_tol=0.0,
+            abs_tol=candidate * 1.0e-7,
+        ):
+            return candidate, None
+    if dtype not in ("int4", "int8", "int16"):
+        raise fail(
+            location,
+            "non-power-of-two attention scale requires INT4, INT8, or INT16",
+        )
+    exponent = max(-8, min(7, math.ceil(math.log2(score_scale))))
+    softmax_scale = math.ldexp(1.0, exponent)
+    weight_scale = score_scale / softmax_scale
+    if not (0.0 < weight_scale <= 1.0):
+        raise fail(
+            location,
+            "cannot be represented by query-weight scaling and the inline "
+            "SOFTMAX scale",
+        )
+    return softmax_scale, weight_scale
+
+
+def scale_integer_values(
+    values: Sequence[int],
+    scale: float,
+    dtype: str,
+) -> tuple[int, ...]:
+    """Scale integer constants with nearest-even rounding and saturation."""
+
+    minimum, maximum = DTYPE_LIMITS[dtype]
+    return tuple(
+        max(minimum, min(maximum, int(round(value * scale))))
+        for value in values
     )
 
 
@@ -1765,6 +1885,16 @@ def lower_multi_head_attention(
     tasks.append(qk)
 
     rows = heads * tokens
+    requested_score_scale = parse_float(
+        operator.attributes.get("score_scale", 1.0),
+        f"operator {operator.name}.score_scale",
+    )
+    softmax_input_scale, _query_weight_scale = attention_score_scale_plan(
+        requested_score_scale,
+        dtype,
+        f"operator {operator.name}.score_scale",
+    )
+
     softmax_scale = parse_float(
         operator.attributes.get("softmax_output_scale", 0.25),
         f"operator {operator.name}.softmax_output_scale",
@@ -1792,10 +1922,7 @@ def lower_multi_head_attention(
                     "function": "softmax",
                     "src0_row_stride_bytes": token_row_bytes,
                     "dst_row_stride_bytes": token_row_bytes,
-                    "src0_scale": parse_float(
-                        operator.attributes.get("score_scale", 1.0),
-                        f"operator {operator.name}.score_scale",
-                    ),
+                    "src0_scale": softmax_input_scale,
                     "src1_scale": 0.0,
                     "src2_scale": 0.0,
                     "dst_scale": softmax_scale,
@@ -1974,6 +2101,7 @@ def lower_conv2d_operator(
     for raw in lowered.operations:
         engine = str(raw["engine"])
         opcode = str(raw["opcode"])
+        descriptor = dict(raw["descriptor"])
         if opcode == "FILL":
             reads: tuple[str, ...] = ()
             writes = (im2col.name,)
@@ -1981,6 +2109,16 @@ def lower_conv2d_operator(
             reads = (source.name,)
             writes = (im2col.name,)
         else:
+            matrix_fields = dict(
+                as_object(
+                    descriptor.get("matrix", {}),
+                    f"operator {operator.name}.matrix",
+                )
+            )
+            matrix_fields["requant_shift"] = (
+                0 if output.dtype == "int32" else shift
+            )
+            descriptor["matrix"] = matrix_fields
             values = [im2col.name, kernel.name]
             if bias is not None:
                 values.append(bias.name)
@@ -1995,7 +2133,7 @@ def lower_conv2d_operator(
                 opcode=opcode,
                 reads=reads,
                 writes=writes,
-                descriptor=dict(raw["descriptor"]),
+                descriptor=descriptor,
                 extra_after=tuple(raw.get("depends_on", [])),
                 high_level_node=operator.name,
             )
@@ -2109,8 +2247,11 @@ def lower_simple_operator(
                 vector["broadcast1"] = "feature"
             reads.append(right.name)
         else:
-            vector["src1_from_scalar0"] = True
-            vector["scalar0"] = scalar
+            common["src1"] = right.name
+            vector["broadcast1"] = "scalar"
+            vector["src1_elem_stride_bytes"] = element_stride
+            vector["src1_row_stride_bytes"] = 0
+            reads.append(right.name)
         if "scale" in operator.attributes:
             scale = parse_float(
                 operator.attributes["scale"],
@@ -2666,32 +2807,712 @@ def event_object(event_id: int) -> dict[str, int]:
     return {"id": event_id, "generation": 0}
 
 
+def _task_tensor_reference(
+    value: Any,
+    tensors: Mapping[str, TensorInfo],
+    location: str,
+) -> dict[str, Any]:
+    if isinstance(value, str):
+        if value not in tensors:
+            raise fail(location, f"unknown tensor {value!r}")
+        return tensor_reference(tensors[value], "l1")
+    record = dict(as_object(value, location))
+    if "addr" not in record or "dtype" not in record:
+        raise fail(location, "tensor reference needs addr and dtype")
+    record.setdefault("space", "l1")
+    return record
+
+
+def _outer_indices(shape: Sequence[int]) -> Iterable[tuple[int, ...]]:
+    count = product(shape)
+    for linear in range(count):
+        remainder = linear
+        result = [0] * len(shape)
+        for axis in range(len(shape) - 1, -1, -1):
+            result[axis] = remainder % shape[axis]
+            remainder //= shape[axis]
+        yield tuple(result)
+
+
+def expand_inline_dma_copy_nd(
+    task: VirtualTask,
+    tensors: Mapping[str, TensorInfo],
+) -> list[VirtualTask]:
+    """Split a strided COPY_ND into compact COPY_1D row operations."""
+
+    dma = as_object(task.descriptor.get("dma", {}), f"task {task.name}.dma")
+    shape = tuple(
+        parse_int(value, f"task {task.name}.shape[{index}]", 1, 0xFFFFFFFF)
+        for index, value in enumerate(as_list(dma.get("shape"), f"task {task.name}.shape"))
+    )
+    rank = parse_int(dma.get("rank", len(shape)), f"task {task.name}.rank", 1, 5)
+    if rank != len(shape):
+        raise fail(f"task {task.name}.rank", "must equal the shape rank")
+    if rank == 1:
+        return [task]
+    src_strides = tuple(
+        parse_int(value, f"task {task.name}.src_stride_bytes[{index}]", 0)
+        for index, value in enumerate(
+            as_list(dma.get("src_stride_bytes"), f"task {task.name}.src_stride_bytes")
+        )
+    )
+    dst_strides = tuple(
+        parse_int(value, f"task {task.name}.dst_stride_bytes[{index}]", 0)
+        for index, value in enumerate(
+            as_list(dma.get("dst_stride_bytes"), f"task {task.name}.dst_stride_bytes")
+        )
+    )
+    if len(src_strides) != rank or len(dst_strides) != rank:
+        raise fail(
+            f"task {task.name}",
+            "COPY_ND stride arrays must have one entry per dimension",
+        )
+    common = as_object(task.descriptor.get("common", {}), f"task {task.name}.common")
+    source = _task_tensor_reference(
+        common.get("src0"), tensors, f"task {task.name}.src0"
+    )
+    destination = _task_tensor_reference(
+        common.get("dst"), tensors, f"task {task.name}.dst"
+    )
+    if source["dtype"] != destination["dtype"]:
+        raise fail(
+            f"task {task.name}",
+            "strided COPY_ND with dtype conversion must be lowered explicitly",
+        )
+    result: list[VirtualTask] = []
+    previous: str | None = None
+    for row_index, indices in enumerate(_outer_indices(shape[:-1])):
+        source_offset = sum(
+            index * src_strides[axis] for axis, index in enumerate(indices)
+        )
+        destination_offset = sum(
+            index * dst_strides[axis] for axis, index in enumerate(indices)
+        )
+        name = f"{task.name}__row_{row_index}"
+        source_ref = dict(source)
+        destination_ref = dict(destination)
+        source_ref["addr"] = int(source["addr"]) + source_offset
+        destination_ref["addr"] = int(destination["addr"]) + destination_offset
+        row_dma = {
+            "rank": 1,
+            "shape": [shape[-1]],
+            "src_stride_bytes": [0],
+            "dst_stride_bytes": [0],
+            "src_nibble": dma.get("src_nibble", 0),
+            "dst_nibble": dma.get("dst_nibble", 0),
+        }
+        dependencies = task.extra_after if previous is None else (previous,)
+        result.append(
+            VirtualTask(
+                name=name,
+                engine="dma",
+                opcode="COPY_1D",
+                reads=task.reads,
+                writes=task.writes,
+                descriptor={
+                    "common": {"src0": source_ref, "dst": destination_ref},
+                    "dma": row_dma,
+                },
+                flags=task.flags if row_index == product(shape[:-1]) - 1 else {},
+                extra_after=dependencies,
+                high_level_node=task.high_level_node,
+            )
+        )
+        previous = name
+    return result
+
+
+def _vector_chunk_reference(
+    value: Any,
+    tensors: Mapping[str, TensorInfo],
+    *,
+    broadcast: str,
+    row: int,
+    feature: int,
+    full_length: int,
+    location: str,
+) -> dict[str, Any]:
+    reference = _task_tensor_reference(value, tensors, location)
+    dtype = str(reference["dtype"]).lower()
+    if dtype not in DTYPE_BITS:
+        raise fail(f"{location}.dtype", "must be an integer NPU dtype")
+    if broadcast == "none":
+        element_offset = row * full_length + feature
+    elif broadcast == "scalar":
+        element_offset = 0
+    elif broadcast == "row":
+        element_offset = row
+    elif broadcast == "feature":
+        element_offset = feature
+    else:
+        raise fail(location, f"unsupported vector broadcast {broadcast!r}")
+    bit_offset = element_offset * DTYPE_BITS[dtype]
+    if bit_offset % 8:
+        raise fail(
+            location,
+            "vector chunk begins in the middle of a byte",
+        )
+    byte_offset = bit_offset // 8
+    reference["addr"] = int(reference["addr"]) + byte_offset
+    if int(reference["addr"]) & 0xF:
+        raise fail(
+            f"{location}.addr",
+            "vector chunk address must remain 16-byte aligned",
+        )
+    if "region_bytes" in reference:
+        reference["region_bytes"] = max(
+            0, int(reference["region_bytes"]) - byte_offset
+        )
+    return reference
+
+
+def expand_inline_vector_task(
+    task: VirtualTask,
+    tensors: Mapping[str, TensorInfo],
+) -> list[VirtualTask]:
+    """Split oversized vector work into addressable inline chunks."""
+
+    vector = dict(
+        as_object(task.descriptor.get("vector", {}), f"task {task.name}.vector")
+    )
+    rows = parse_int(vector.get("rows"), f"task {task.name}.rows", 1)
+    length = parse_int(vector.get("length"), f"task {task.name}.length", 1)
+    if rows <= 32 and length <= 32:
+        return [task]
+    common = dict(
+        as_object(task.descriptor.get("common", {}), f"task {task.name}.common")
+    )
+    if length > 32:
+        row_ranges = [(row, 1) for row in range(rows)]
+        feature_ranges = [
+            (feature, min(32, length - feature))
+            for feature in range(0, length, 32)
+        ]
+    else:
+        row_ranges = [
+            (row, min(32, rows - row))
+            for row in range(0, rows, 32)
+        ]
+        feature_ranges = [(0, length)]
+
+    result: list[VirtualTask] = []
+    previous: str | None = None
+    for row_start, row_count in row_ranges:
+        for feature_start, feature_count in feature_ranges:
+            chunk_common = dict(common)
+            for key, default_broadcast in (
+                ("src0", "none"),
+                ("src1", "none"),
+                ("src2", "none"),
+                ("dst", "none"),
+            ):
+                if key not in common:
+                    continue
+                broadcast = (
+                    "none"
+                    if key == "dst"
+                    else str(
+                        vector.get(
+                            f"broadcast{key[-1]}",
+                            default_broadcast,
+                        )
+                    ).lower()
+                )
+                chunk_common[key] = _vector_chunk_reference(
+                    common[key],
+                    tensors,
+                    broadcast=broadcast,
+                    row=row_start,
+                    feature=feature_start,
+                    full_length=length,
+                    location=f"task {task.name}.{key}",
+                )
+            if "aux0" in common:
+                chunk_common["aux0"] = _vector_chunk_reference(
+                    common["aux0"],
+                    tensors,
+                    broadcast="none",
+                    row=row_start,
+                    feature=feature_start,
+                    full_length=length,
+                    location=f"task {task.name}.aux0",
+                )
+            chunk_vector = {
+                key: value
+                for key, value in vector.items()
+                if not key.endswith("_stride_bytes")
+            }
+            chunk_vector["rows"] = row_count
+            chunk_vector["length"] = feature_count
+            chunk_vector["valid_length"] = feature_count
+            name = (
+                f"{task.name}__rows_{row_start}_{row_count}"
+                f"__features_{feature_start}_{feature_count}"
+            )
+            dependencies = task.extra_after if previous is None else (previous,)
+            result.append(
+                VirtualTask(
+                    name=name,
+                    engine="vector",
+                    opcode=task.opcode,
+                    reads=task.reads,
+                    writes=task.writes,
+                    descriptor={
+                        "common": chunk_common,
+                        "vector": chunk_vector,
+                    },
+                    flags=(
+                        task.flags
+                        if (
+                            row_start,
+                            row_count,
+                            feature_start,
+                            feature_count,
+                        )
+                        == (
+                            row_ranges[-1][0],
+                            row_ranges[-1][1],
+                            feature_ranges[-1][0],
+                            feature_ranges[-1][1],
+                        )
+                        else {}
+                    ),
+                    extra_after=dependencies,
+                    high_level_node=task.high_level_node,
+                )
+            )
+            previous = name
+    return result
+
+
+def _offset_inline_reference(
+    value: Any,
+    tensors: Mapping[str, TensorInfo],
+    *,
+    element_offset: int,
+    alignment: int,
+    location: str,
+) -> dict[str, Any]:
+    reference = _task_tensor_reference(value, tensors, location)
+    dtype = str(reference["dtype"]).lower()
+    bit_offset = element_offset * DTYPE_BITS[dtype]
+    if bit_offset % 8:
+        raise fail(location, "chunk begins in the middle of a byte")
+    byte_offset = bit_offset // 8
+    reference["addr"] = int(reference["addr"]) + byte_offset
+    if int(reference["addr"]) % alignment:
+        raise fail(
+            f"{location}.addr",
+            f"chunk address must remain {alignment}-byte aligned",
+        )
+    if "region_bytes" in reference:
+        reference["region_bytes"] = max(
+            0, int(reference["region_bytes"]) - byte_offset
+        )
+    return reference
+
+
+def expand_inline_complex_task(
+    task: VirtualTask,
+    tensors: Mapping[str, TensorInfo],
+) -> list[VirtualTask]:
+    """Split Complex work only where each chunk is mathematically independent."""
+
+    fields = dict(
+        as_object(
+            task.descriptor.get("complex", {}),
+            f"task {task.name}.complex",
+        )
+    )
+    rows = parse_int(fields.get("rows"), f"task {task.name}.rows", 1)
+    length = parse_int(fields.get("length"), f"task {task.name}.length", 1)
+    if rows <= 32 and length <= 256:
+        return [task]
+    if length > 256 and task.opcode not in ("ACT", "ADD_RESCALE"):
+        raise fail(
+            f"task {task.name}.length",
+            f"{task.opcode} length {length} exceeds 256; splitting the "
+            "feature axis would change the operation result",
+        )
+    common = dict(
+        as_object(task.descriptor.get("common", {}), f"task {task.name}.common")
+    )
+    if length > 256:
+        row_ranges = [(row, 1) for row in range(rows)]
+        feature_ranges = [
+            (feature, min(256, length - feature))
+            for feature in range(0, length, 256)
+        ]
+    else:
+        row_ranges = [
+            (row, min(32, rows - row))
+            for row in range(0, rows, 32)
+        ]
+        feature_ranges = [(0, length)]
+
+    result: list[VirtualTask] = []
+    previous: str | None = None
+    for row_start, row_count in row_ranges:
+        for feature_start, feature_count in feature_ranges:
+            chunk_common = dict(common)
+            source_offset = row_start * length + feature_start
+            for key in ("src0", "dst"):
+                if key in common:
+                    chunk_common[key] = _offset_inline_reference(
+                        common[key],
+                        tensors,
+                        element_offset=source_offset,
+                        alignment=16,
+                        location=f"task {task.name}.{key}",
+                    )
+            if task.opcode == "ADD_RESCALE" and "src1" in common:
+                chunk_common["src1"] = _offset_inline_reference(
+                    common["src1"],
+                    tensors,
+                    element_offset=source_offset,
+                    alignment=16,
+                    location=f"task {task.name}.src1",
+                )
+            elif task.opcode == "SOFTMAX" and "aux0" in common:
+                mask_mode = str(fields.get("mask_mode", "none")).lower()
+                if mask_mode == "boolean":
+                    mask_offset = source_offset
+                elif mask_mode == "valid_length":
+                    mask_offset = row_start
+                else:
+                    mask_offset = 0
+                chunk_common["aux0"] = _offset_inline_reference(
+                    common["aux0"],
+                    tensors,
+                    element_offset=mask_offset,
+                    alignment=16,
+                    location=f"task {task.name}.aux0",
+                )
+            if task.opcode == "STAT" and "dst" in common:
+                chunk_common["dst"] = _offset_inline_reference(
+                    common["dst"],
+                    tensors,
+                    element_offset=row_start,
+                    alignment=16,
+                    location=f"task {task.name}.dst",
+                )
+            chunk_fields = dict(fields)
+            chunk_fields["rows"] = row_count
+            chunk_fields["length"] = feature_count
+            chunk_fields["valid_length"] = feature_count
+            name = (
+                f"{task.name}__rows_{row_start}_{row_count}"
+                f"__features_{feature_start}_{feature_count}"
+            )
+            is_last = (
+                row_start,
+                row_count,
+                feature_start,
+                feature_count,
+            ) == (
+                row_ranges[-1][0],
+                row_ranges[-1][1],
+                feature_ranges[-1][0],
+                feature_ranges[-1][1],
+            )
+            result.append(
+                VirtualTask(
+                    name=name,
+                    engine="complex",
+                    opcode=task.opcode,
+                    reads=task.reads,
+                    writes=task.writes,
+                    descriptor={
+                        "common": chunk_common,
+                        "complex": chunk_fields,
+                    },
+                    flags=task.flags if is_last else {},
+                    extra_after=(
+                        task.extra_after if previous is None else (previous,)
+                    ),
+                    high_level_node=task.high_level_node,
+                )
+            )
+            previous = name
+    return result
+
+
+def _matrix_b_batch_elements(
+    k: int,
+    n: int,
+    target: TargetConfig,
+) -> int:
+    return (
+        ((k + target.kt - 1) // target.kt)
+        * ((n + target.nt - 1) // target.nt)
+        * target.kt
+        * target.nt
+    )
+
+
+def expand_inline_matrix_task(
+    task: VirtualTask,
+    tensors: Mapping[str, TensorInfo],
+    target: TargetConfig,
+) -> list[VirtualTask]:
+    """Split Matrix M rows and BMM batches without changing packed-B layout."""
+
+    fields = dict(
+        as_object(
+            task.descriptor.get("matrix", {}),
+            f"task {task.name}.matrix",
+        )
+    )
+    m = parse_int(fields.get("m"), f"task {task.name}.m", 1)
+    n = parse_int(fields.get("n"), f"task {task.name}.n", 1)
+    k = parse_int(fields.get("k", 1), f"task {task.name}.k", 1)
+    batch_count = parse_int(
+        fields.get("batch_count", 1),
+        f"task {task.name}.batch_count",
+        1,
+    )
+    if n > 64 or k > 64:
+        dimension = "N" if n > 64 else "K"
+        value = n if n > 64 else k
+        raise fail(
+            f"task {task.name}.{dimension.lower()}",
+            f"Matrix {dimension}={value} exceeds 64; the inline command has "
+            "no packed-B stride field, so this axis cannot be split safely",
+        )
+    if m <= 64 and batch_count <= 64:
+        return [task]
+    common = dict(
+        as_object(task.descriptor.get("common", {}), f"task {task.name}.common")
+    )
+    source = common.get("src0")
+    weight = common.get("src1")
+    destination = common.get("dst")
+    if task.opcode != "GEMM_ZERO" and (source is None or weight is None):
+        raise fail(f"task {task.name}", "Matrix source and weight are required")
+    if destination is None:
+        raise fail(f"task {task.name}.dst", "Matrix destination is required")
+
+    if batch_count > 1 and m <= 64:
+        batch_ranges = [
+            (batch, min(64, batch_count - batch))
+            for batch in range(0, batch_count, 64)
+        ]
+        row_ranges = [(0, m)]
+    elif batch_count > 1:
+        batch_ranges = [(batch, 1) for batch in range(batch_count)]
+        row_ranges = [
+            (row, min(64, m - row))
+            for row in range(0, m, 64)
+        ]
+    else:
+        batch_ranges = [(0, 1)]
+        row_ranges = [
+            (row, min(64, m - row))
+            for row in range(0, m, 64)
+        ]
+
+    b_batch_elements = _matrix_b_batch_elements(k, n, target)
+    result: list[VirtualTask] = []
+    previous: str | None = None
+    for batch_start, batch_chunk in batch_ranges:
+        for row_start, row_count in row_ranges:
+            chunk_common = dict(common)
+            if source is not None:
+                chunk_common["src0"] = _offset_inline_reference(
+                    source,
+                    tensors,
+                    element_offset=batch_start * m * k + row_start * k,
+                    alignment=64,
+                    location=f"task {task.name}.src0",
+                )
+            if weight is not None:
+                chunk_common["src1"] = _offset_inline_reference(
+                    weight,
+                    tensors,
+                    element_offset=batch_start * b_batch_elements,
+                    alignment=64,
+                    location=f"task {task.name}.src1",
+                )
+            chunk_common["dst"] = _offset_inline_reference(
+                destination,
+                tensors,
+                element_offset=batch_start * m * n + row_start * n,
+                alignment=64,
+                location=f"task {task.name}.dst",
+            )
+            chunk_fields = dict(fields)
+            chunk_fields["m"] = row_count
+            chunk_fields["batch_count"] = batch_chunk
+            opcode = task.opcode
+            if batch_count > 1 and batch_chunk == 1:
+                opcode = "GEMM"
+            name = (
+                f"{task.name}__batch_{batch_start}_{batch_chunk}"
+                f"__rows_{row_start}_{row_count}"
+            )
+            is_last = (
+                batch_start,
+                batch_chunk,
+                row_start,
+                row_count,
+            ) == (
+                batch_ranges[-1][0],
+                batch_ranges[-1][1],
+                row_ranges[-1][0],
+                row_ranges[-1][1],
+            )
+            result.append(
+                VirtualTask(
+                    name=name,
+                    engine="matrix",
+                    opcode=opcode,
+                    reads=task.reads,
+                    writes=task.writes,
+                    descriptor={
+                        "common": chunk_common,
+                        "matrix": chunk_fields,
+                    },
+                    flags=task.flags if is_last else {},
+                    extra_after=(
+                        task.extra_after if previous is None else (previous,)
+                    ),
+                    high_level_node=task.high_level_node,
+                )
+            )
+            previous = name
+    return result
+
+
+def expand_inline_tasks(
+    tasks: Sequence[VirtualTask],
+    tensors: Mapping[str, TensorInfo],
+    target: TargetConfig,
+) -> list[VirtualTask]:
+    result: list[VirtualTask] = []
+    final_name: dict[str, str] = {}
+    for task in tasks:
+        rewritten = replace(
+            task,
+            extra_after=tuple(
+                final_name.get(dependency, dependency)
+                for dependency in task.extra_after
+            ),
+        )
+        if rewritten.engine == "dma" and rewritten.opcode == "COPY_ND":
+            emitted = expand_inline_dma_copy_nd(rewritten, tensors)
+        elif rewritten.engine == "matrix":
+            emitted = expand_inline_matrix_task(rewritten, tensors, target)
+        elif rewritten.engine == "vector":
+            emitted = expand_inline_vector_task(rewritten, tensors)
+        elif rewritten.engine == "complex":
+            emitted = expand_inline_complex_task(rewritten, tensors)
+        else:
+            emitted = [rewritten]
+        result.extend(emitted)
+        final_name[task.name] = emitted[-1].name
+    return result
+
+
 def build_low_ir(
     tensors: Mapping[str, TensorInfo],
     tasks: Sequence[VirtualTask],
     target: TargetConfig,
 ) -> tuple[dict[str, Any], list[VirtualTask]]:
-    base_dependencies = task_dependencies(tasks, tensors)
+    inline_tasks = expand_inline_tasks(tasks, tensors, target)
+    base_dependencies = task_dependencies(inline_tasks, tensors)
     expanded, dependencies = expand_dependency_joins(
-        tasks, base_dependencies
+        inline_tasks, base_dependencies
     )
     used_as_dependency = {
         dependency
         for values in dependencies.values()
         for dependency in values
     }
-    if len(used_as_dependency) > npu_assembler.MAX_EVENT_ID + 1:
-        raise fail(
-            "scheduler",
-            "program needs more dependency events than the current target",
+    remaining_event_producers = [0] * (len(expanded) + 1)
+    for index in range(len(expanded) - 1, -1, -1):
+        remaining_event_producers[index] = (
+            remaining_event_producers[index + 1]
+            + (1 if expanded[index].name in used_as_dependency else 0)
         )
-    event_by_task = {
-        name: event_object(index)
-        for index, name in enumerate(
-            task.name for task in expanded if task.name in used_as_dependency
-        )
+    task_index = {
+        task.name: index for index, task in enumerate(expanded)
     }
-    if len(expanded) > npu_assembler.MAX_COMMAND_ID + 1:
+    last_consumer: dict[str, int] = {
+        name: max(
+            index
+            for index, task in enumerate(expanded)
+            if name in dependencies[task.name]
+        )
+        for name in used_as_dependency
+    }
+    event_by_task: dict[str, dict[str, int]] = {}
+    rearm_before: dict[int, list[int]] = {}
+    active_events: list[tuple[int, int]] = []
+    reusable_events: list[int] = []
+    rearmed_events: list[int] = []
+    next_unused_event = 0
+    for index, task in enumerate(expanded):
+        still_active: list[tuple[int, int]] = []
+        for end_index, event_id in active_events:
+            if end_index < index:
+                reusable_events.append(event_id)
+            else:
+                still_active.append((end_index, event_id))
+        active_events = still_active
+        reusable_events.sort()
+        if task.name not in used_as_dependency:
+            continue
+        if next_unused_event <= npu_assembler.MAX_EVENT_ID:
+            event_id = next_unused_event
+            next_unused_event += 1
+        else:
+            if not rearmed_events and reusable_events:
+                group_size = min(
+                    CMD_FIFO_MAX_BURST_COMMANDS,
+                    len(reusable_events),
+                    remaining_event_producers[index],
+                )
+                rearm_before[index] = reusable_events[:group_size]
+                rearmed_events.extend(reusable_events[:group_size])
+                del reusable_events[:group_size]
+            if not rearmed_events:
+                raise fail(
+                    "scheduler",
+                    "more than 255 dependency events are live at the same time",
+                )
+            event_id = rearmed_events.pop(0)
+        event_by_task[task.name] = event_object(event_id)
+        active_events.append((last_consumer[task.name], event_id))
+
+    scheduled: list[VirtualTask] = []
+    scheduled_dependencies: dict[str, tuple[str, ...]] = {}
+    forced_signal: dict[str, dict[str, int]] = {}
+    used_names = set(task_index)
+    rearm_index = 0
+    for index, task in enumerate(expanded):
+        for event_id in rearm_before.get(index, []):
+            while True:
+                rearm_name = f"__event_rearm_{rearm_index}"
+                rearm_index += 1
+                if rearm_name not in used_names:
+                    break
+            used_names.add(rearm_name)
+            rearm_task = VirtualTask(
+                name=rearm_name,
+                engine="control",
+                opcode="EVENT_REARM",
+                reads=(),
+                writes=(),
+                descriptor={"control": {}},
+                high_level_node="__scheduler",
+            )
+            scheduled.append(rearm_task)
+            scheduled_dependencies[rearm_name] = ()
+            forced_signal[rearm_name] = event_object(event_id)
+        scheduled.append(task)
+        scheduled_dependencies[task.name] = dependencies[task.name]
+
+    if len(scheduled) > npu_assembler.MAX_COMMAND_ID + 1:
         raise fail("scheduler", "program has too many commands")
 
     low_tensors: dict[str, Any] = {}
@@ -2706,18 +3527,20 @@ def build_low_ir(
         }
 
     operations: list[dict[str, Any]] = []
-    for command_id, task in enumerate(expanded):
-        waits = [event_by_task[name] for name in dependencies[task.name]]
-        signal: dict[str, int] | str = event_by_task.get(task.name, "none")
-        descriptor = dict(task.descriptor)
+    for command_id, task in enumerate(scheduled):
+        waits = [
+            event_by_task[name]
+            for name in scheduled_dependencies[task.name]
+        ]
+        signal: dict[str, int] | str = forced_signal.get(
+            task.name, event_by_task.get(task.name, "none")
+        )
+        fields = dict(task.descriptor)
         if task.engine == "control" and task.opcode == "EVENT_JOIN":
             if len(waits) != 2 or isinstance(signal, str):
                 raise fail("scheduler", "EVENT_JOIN fields are incomplete")
-            descriptor = {
+            fields = {
                 "control": {
-                    "event0": waits[0],
-                    "event1": waits[1],
-                    "target": signal,
                     "join_mode": 0,
                 }
             }
@@ -2729,7 +3552,7 @@ def build_low_ir(
             "wait_events": waits,
             "signal_event": signal,
             "user_tag": command_id,
-            "descriptor": descriptor,
+            "fields": fields,
         }
         if task.flags:
             operation["flags"] = task.flags
@@ -2738,9 +3561,8 @@ def build_low_ir(
     low_ir = {
         "schema_version": 1,
         "target": {
-            "name": "single-core-v1",
-            "command_format": "cmd128-v1",
-            "descriptor_base": target.descriptor_base,
+            "name": "single-core-v2",
+            "command_format": npu_assembler.COMMAND_FORMAT,
             "mt": target.mt,
             "kt": target.kt,
             "nt": target.nt,
@@ -2748,7 +3570,7 @@ def build_low_ir(
         "tensors": low_tensors,
         "operations": operations,
     }
-    return low_ir, expanded
+    return low_ir, scheduled
 
 
 def sha256_bytes(content: bytes) -> str:
@@ -2792,25 +3614,56 @@ def runtime_metadata(
     command_batch_limit = min(
         target.task_entries, CMD_FIFO_MAX_BURST_COMMANDS
     )
-    batches = [
-        [
-            operation.command_id
-            for operation in assembled[
-                start : start + command_batch_limit
-            ]
-        ]
-        for start in range(0, len(assembled), command_batch_limit)
+    batches: list[list[int]] = []
+    current_batch: list[int] = []
+    current_batch_is_rearm: bool | None = None
+
+    def finish_batch() -> None:
+        nonlocal current_batch_is_rearm
+        if current_batch:
+            batches.append(list(current_batch))
+            current_batch.clear()
+        current_batch_is_rearm = None
+
+    for operation in assembled:
+        is_rearm = (
+            operation.engine == "control"
+            and operation.opcode
+            == npu_assembler.OPCODES["control"]["EVENT_REARM"]
+        )
+        if (
+            current_batch
+            and current_batch_is_rearm is not None
+            and is_rearm != current_batch_is_rearm
+        ):
+            finish_batch()
+        if not current_batch:
+            current_batch_is_rearm = is_rearm
+        current_batch.append(operation.command_id)
+        if len(current_batch) == command_batch_limit:
+            finish_batch()
+    finish_batch()
+    batch_execution = [
+        {
+            "command_ids": batch,
+            "host_sync_before": index != 0,
+            "host_sync_after": True,
+            "contains_event_rearm": any(
+                assembled[command_id].engine == "control"
+                and assembled[command_id].opcode
+                == npu_assembler.OPCODES["control"]["EVENT_REARM"]
+                for command_id in batch
+            ),
+        }
+        for index, batch in enumerate(batches)
     ]
     return {
         "runtime_version": 1,
         "model_name": model_name,
-        "command_format": "cmd128-v1",
+        "command_format": npu_assembler.COMMAND_FORMAT,
         "command_bits": 128,
         "command_count": len(assembled),
-        "descriptor_base": target.descriptor_base,
-        "descriptor_bytes": sum(
-            len(operation.descriptor) for operation in assembled
-        ),
+        "external_descriptor_bytes": 0,
         "constant_base_ddr": ddr_base,
         "constant_base_l1": l1_base,
         "constant_bytes": len(constant_image),
@@ -2818,6 +3671,7 @@ def runtime_metadata(
         "task_entries": target.task_entries,
         "command_fifo_max_burst_commands": CMD_FIFO_MAX_BURST_COMMANDS,
         "batches": batches,
+        "batch_execution": batch_execution,
         "inputs": bindings(inputs),
         "outputs": bindings([tensors[name] for name in outputs]),
         "operations": [
@@ -2876,28 +3730,7 @@ def compile_model_document(
         requant_by_shift,
     )
     low_ir, expanded_tasks = build_low_ir(tensors, tasks, target)
-    assembled, command_image, descriptor_image = (
-        npu_assembler.compile_document(low_ir)
-    )
-    descriptor_end = target.descriptor_base + len(descriptor_image)
-    data_start = min(
-        tensor.ddr_addr
-        for tensor in tensors.values()
-        if tensor.ddr_addr is not None
-    )
-    data_end = max(
-        tensor.ddr_addr + tensor.storage_bytes
-        for tensor in tensors.values()
-        if tensor.ddr_addr is not None
-    )
-    if (
-        target.descriptor_base < data_end
-        and data_start < descriptor_end
-    ):
-        raise fail(
-            "target",
-            "Descriptor image overlaps the model DDR data arena",
-        )
+    assembled, command_image = npu_assembler.compile_document(low_ir)
     runtime = runtime_metadata(
         model_name,
         tensors,
@@ -2908,8 +3741,6 @@ def compile_model_document(
         arena,
         constant_image,
     )
-    runtime["descriptor_bytes"] = len(descriptor_image)
-    runtime["descriptor_sha256"] = sha256_bytes(descriptor_image)
     runtime["command_bytes"] = len(command_image)
     runtime["command_sha256"] = sha256_bytes(command_image)
     return CompilationResult(
@@ -2921,7 +3752,6 @@ def compile_model_document(
         low_ir=low_ir,
         assembled_operations=assembled,
         command_image=command_image,
-        descriptor_image=descriptor_image,
         constant_image=constant_image,
         runtime=runtime,
     )

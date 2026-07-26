@@ -1,4 +1,5 @@
 #include "npu_internal.h"
+#include "npu_inline.h"
 
 #include <limits.h>
 
@@ -204,6 +205,47 @@ static int npu_event_equal(npu_event_ref_t first,
            first.generation == second.generation;
 }
 
+static void npu_resolve_inline_event_generations(
+    const npu_model_t *model,
+    npu_task_request_t *request)
+{
+    uint32_t index;
+
+    if (request->cmd.inline_format == 0u) {
+        return;
+    }
+    for (index = 0u; index < 2u; index++) {
+        npu_event_ref_t *event = &request->cmd.wait_event[index];
+
+        if (event->id < NPU_EVENT_NUM) {
+            event->generation = model->events[event->id].generation;
+        }
+    }
+    if (request->cmd.signal_event.id < NPU_EVENT_NUM) {
+        request->cmd.signal_event.generation =
+            model->events[request->cmd.signal_event.id].generation;
+    }
+    if (request->cmd.engine == NPU_ENGINE_CONTROL) {
+        request->desc.control.event0 =
+            request->cmd.wait_event[0];
+        request->desc.control.event1 =
+            request->cmd.wait_event[1];
+        request->desc.control.target =
+            request->cmd.signal_event;
+    }
+    if (request->cmd.engine == NPU_ENGINE_CONTROL &&
+        request->cmd.opcode == NPU_CTRL_EVENT_REARM &&
+        request->cmd.signal_event.id < NPU_EVENT_NUM) {
+        request->desc.control.event0 =
+            request->cmd.signal_event;
+        request->desc.control.target.id =
+            request->cmd.signal_event.id;
+        request->desc.control.target.generation =
+            (uint8_t)((request->cmd.signal_event.generation + 1u) &
+                      0x0fu);
+    }
+}
+
 static int npu_opcode_valid(npu_engine_t engine, uint8_t opcode)
 {
     if (engine == NPU_ENGINE_CONTROL) {
@@ -253,6 +295,19 @@ static int npu_control_request_valid(
                desc->engine_mask == 0u;
     }
     if (cmd->opcode == NPU_CTRL_EVENT_REARM) {
+        if (cmd->inline_format != 0u) {
+            return npu_event_is_none(cmd->wait_event[0]) &&
+                   npu_event_is_none(cmd->wait_event[1]) &&
+                   !npu_event_is_none(cmd->signal_event) &&
+                   npu_event_equal(
+                       desc->event0, cmd->signal_event) &&
+                   desc->event0.id == desc->target.id &&
+                   desc->target.generation ==
+                       (uint8_t)((desc->event0.generation + 1u) &
+                                 0x0fu) &&
+                   desc->join_mode == 0u &&
+                   desc->engine_mask == 0u;
+        }
         return npu_event_is_none(cmd->wait_event[0]) &&
                npu_event_is_none(cmd->wait_event[1]) &&
                npu_event_is_none(cmd->signal_event) &&
@@ -381,6 +436,85 @@ npu_status_t npu_cmd_decode(uint64_t low_beat,
     if (cmd == (npu_cmd_t *)0) {
         return NPU_STATUS_BAD_DESC;
     }
+    cmd->desc_addr = 0u;
+    cmd->command_id = 0u;
+    cmd->engine = NPU_ENGINE_CONTROL;
+    cmd->opcode = 0u;
+    cmd->header_flags = 0u;
+    cmd->wait_event[0] = npu_event_none();
+    cmd->wait_event[1] = npu_event_none();
+    cmd->signal_event = npu_event_none();
+    cmd->header_version = 0u;
+    cmd->timeout_class = 0u;
+    cmd->user_tag = 0u;
+    cmd->inline_payload_lo = 0u;
+    cmd->inline_payload_hi = 0u;
+    cmd->inline_format = 0u;
+    cmd->inline_dtype = NPU_DTYPE_INT4;
+
+    if ((high_beat >> 63u) != 0u) {
+        uint8_t compact_opcode =
+            (uint8_t)((high_beat >> 58u) & UINT64_C(0x1f));
+        uint8_t packed_flags =
+            (uint8_t)((high_beat >> 20u) & UINT64_C(0x0f));
+        uint8_t wait0 =
+            (uint8_t)((high_beat >> 40u) & UINT64_C(0xff));
+        uint8_t wait1 =
+            (uint8_t)((high_beat >> 32u) & UINT64_C(0xff));
+        uint8_t signal =
+            (uint8_t)((high_beat >> 24u) & UINT64_C(0xff));
+
+        cmd->inline_payload_lo = low_beat;
+        cmd->inline_payload_hi =
+            (uint16_t)(high_beat & UINT64_C(0xffff));
+        cmd->inline_format = 1u;
+        cmd->inline_dtype =
+            (npu_dtype_t)((high_beat >> 16u) & UINT64_C(0x03));
+        cmd->timeout_class =
+            (uint8_t)((high_beat >> 18u) & UINT64_C(0x03));
+        cmd->header_flags =
+            (uint16_t)(((packed_flags >> 3u) & 0x01u) |
+                       (((packed_flags >> 2u) & 0x01u) << 1u) |
+                       (((packed_flags >> 1u) & 0x01u) << 2u) |
+                       ((packed_flags & 0x01u) << 4u) |
+                       ((uint16_t)cmd->timeout_class << 6u));
+        cmd->wait_event[0].id = wait0;
+        cmd->wait_event[0].generation =
+            wait0 == NPU_EVENT_NONE_ID
+                ? NPU_EVENT_NONE_GENERATION
+                : 0u;
+        cmd->wait_event[1].id = wait1;
+        cmd->wait_event[1].generation =
+            wait1 == NPU_EVENT_NONE_ID
+                ? NPU_EVENT_NONE_GENERATION
+                : 0u;
+        cmd->signal_event.id = signal;
+        cmd->signal_event.generation =
+            signal == NPU_EVENT_NONE_ID
+                ? NPU_EVENT_NONE_GENERATION
+                : 0u;
+        cmd->command_id =
+            (uint16_t)((high_beat >> 48u) & UINT64_C(0x03ff));
+        cmd->header_version = 2u;
+        if (!npu_dtype_valid(cmd->inline_dtype)) {
+            return NPU_STATUS_DTYPE_UNSUPPORTED;
+        }
+        if (!npu_inline_opcode_decode(
+                compact_opcode, &cmd->engine, &cmd->opcode)) {
+            return NPU_STATUS_ILLEGAL_OPCODE;
+        }
+        if (cmd->signal_event.id != NPU_EVENT_NONE_ID &&
+            ((cmd->signal_event.id == cmd->wait_event[0].id &&
+              cmd->signal_event.generation ==
+                  cmd->wait_event[0].generation) ||
+             (cmd->signal_event.id == cmd->wait_event[1].id &&
+              cmd->signal_event.generation ==
+                  cmd->wait_event[1].generation))) {
+            return NPU_STATUS_BAD_DESC;
+        }
+        return NPU_STATUS_SUCCESS;
+    }
+
     cmd->desc_addr = low_beat & UINT64_C(0x0000ffffffffffff);
     cmd->command_id = (uint16_t)((low_beat >> 48) & 0x0fffu);
     cmd->engine = (npu_engine_t)((low_beat >> 60) & 0x0fu);
@@ -395,7 +529,6 @@ npu_status_t npu_cmd_decode(uint64_t low_beat,
         npu_event_unpack((uint16_t)((high_beat >> 44) & 0x0fffu));
     cmd->header_version = (uint8_t)(high_beat >> 56);
     cmd->timeout_class = (uint8_t)((flags >> 6) & 0x0fu);
-    cmd->user_tag = 0u;
 
     if (cmd->header_version != 1u ||
         cmd->engine > NPU_ENGINE_COMPLEX ||
@@ -418,6 +551,50 @@ void npu_cmd_encode(const npu_cmd_t *cmd,
     if (cmd == (const npu_cmd_t *)0 ||
         low_beat == (uint64_t *)0 ||
         high_beat == (uint64_t *)0) {
+        return;
+    }
+    if (cmd->inline_format != 0u) {
+        uint8_t compact_opcode;
+        uint8_t packed_flags;
+
+        if (!npu_inline_opcode_encode(
+                cmd->engine, cmd->opcode, &compact_opcode) ||
+            cmd->command_id > 0x03ffu ||
+            cmd->timeout_class > 3u ||
+            !npu_dtype_valid(cmd->inline_dtype) ||
+            !npu_event_ref_valid(cmd->wait_event[0]) ||
+            !npu_event_ref_valid(cmd->wait_event[1]) ||
+            !npu_event_ref_valid(cmd->signal_event) ||
+            (cmd->wait_event[0].id != NPU_EVENT_NONE_ID &&
+             cmd->wait_event[0].generation != 0u) ||
+            (cmd->wait_event[1].id != NPU_EVENT_NONE_ID &&
+             cmd->wait_event[1].generation != 0u) ||
+            (cmd->signal_event.id != NPU_EVENT_NONE_ID &&
+             cmd->signal_event.generation != 0u)) {
+            *low_beat = 0u;
+            *high_beat = 0u;
+            return;
+        }
+        packed_flags =
+            (uint8_t)(((cmd->header_flags >> 0u) & 0x01u) << 3u);
+        packed_flags |=
+            (uint8_t)(((cmd->header_flags >> 1u) & 0x01u) << 2u);
+        packed_flags |=
+            (uint8_t)(((cmd->header_flags >> 2u) & 0x01u) << 1u);
+        packed_flags |=
+            (uint8_t)((cmd->header_flags >> 4u) & 0x01u);
+        *low_beat = cmd->inline_payload_lo;
+        *high_beat =
+            (uint64_t)cmd->inline_payload_hi |
+            ((uint64_t)(cmd->inline_dtype & 0x03u) << 16u) |
+            ((uint64_t)(cmd->timeout_class & 0x03u) << 18u) |
+            ((uint64_t)packed_flags << 20u) |
+            ((uint64_t)cmd->signal_event.id << 24u) |
+            ((uint64_t)cmd->wait_event[1].id << 32u) |
+            ((uint64_t)cmd->wait_event[0].id << 40u) |
+            ((uint64_t)(cmd->command_id & 0x03ffu) << 48u) |
+            ((uint64_t)compact_opcode << 58u) |
+            (UINT64_C(1) << 63u);
         return;
     }
     flags = (uint16_t)(cmd->header_flags & 0x0fffu);
@@ -486,6 +663,19 @@ static npu_status_t npu_submit_event_check(const npu_model_t *model,
         }
     }
     event = cmd->signal_event;
+    if (cmd->inline_format != 0u &&
+        cmd->engine == NPU_ENGINE_CONTROL &&
+        cmd->opcode == NPU_CTRL_EVENT_REARM) {
+        if (npu_event_is_none(event) ||
+            !npu_event_ref_valid(event) ||
+            model->events[event.id].generation != event.generation ||
+            (model->events[event.id].state != NPU_EVENT_SUCCESS &&
+             model->events[event.id].state != NPU_EVENT_FAILED) ||
+            model->events[event.id].waiter_count != 0u) {
+            return NPU_STATUS_BAD_DESC;
+        }
+        return NPU_STATUS_SUCCESS;
+    }
     if (!npu_event_is_none(event)) {
         if (!npu_event_ref_valid(event) ||
             model->events[event.id].state != NPU_EVENT_FREE ||
@@ -507,15 +697,29 @@ static npu_status_t npu_submit_event_check(const npu_model_t *model,
 npu_status_t npu_model_submit(npu_model_t *model,
                               const npu_task_request_t *request)
 {
+    npu_task_request_t resolved_request;
     uint32_t index;
     uint32_t free_slot = NPU_MAX_TASKS;
     npu_status_t status;
 
     if (model == (npu_model_t *)0 ||
-        request == (const npu_task_request_t *)0 ||
-        request->cmd.header_version != 1u ||
+        request == (const npu_task_request_t *)0) {
+        return NPU_STATUS_BAD_DESC;
+    }
+    if (request->cmd.inline_format != 0u) {
+        resolved_request = *request;
+        npu_resolve_inline_event_generations(
+            model, &resolved_request);
+        request = &resolved_request;
+    }
+    if ((request->cmd.header_version != 1u &&
+         request->cmd.header_version !=
+             NPU_WIRE_INLINE_HEADER_VERSION) ||
         request->cmd.engine > NPU_ENGINE_COMPLEX ||
-        request->cmd.command_id > 0x0fffu ||
+        request->cmd.command_id >
+            (request->cmd.inline_format != 0u
+                 ? 0x03ffu
+                 : 0x0fffu) ||
         request->cmd.timeout_class >= NPU_TIMEOUT_CLASS_NUM ||
         (request->cmd.header_flags & 0x0c00u) != 0u) {
         return NPU_STATUS_BAD_DESC;
@@ -598,7 +802,10 @@ npu_status_t npu_model_submit(npu_model_t *model,
         }
         model->events[wait_event.id].waiter_count++;
     }
-    if (!npu_event_is_none(request->cmd.signal_event)) {
+    if (!npu_event_is_none(request->cmd.signal_event) &&
+        !(request->cmd.inline_format != 0u &&
+          request->cmd.engine == NPU_ENGINE_CONTROL &&
+          request->cmd.opcode == NPU_CTRL_EVENT_REARM)) {
         npu_event_entry_t *signal =
             &model->events[request->cmd.signal_event.id];
         signal->state = NPU_EVENT_RESERVED;
@@ -879,7 +1086,10 @@ uint64_t npu_estimate_task_cycles(const npu_model_t *model,
         request == (const npu_task_request_t *)0) {
         return 0u;
     }
-    descriptor_cycles = npu_task_desc_beats(request->cmd.engine) + 3u;
+    descriptor_cycles =
+        request->cmd.inline_format != 0u
+            ? 0u
+            : npu_task_desc_beats(request->cmd.engine) + 3u;
     if (request->cmd.engine == NPU_ENGINE_CONTROL) {
         engine_cycles = 1u;
     } else if (request->cmd.engine == NPU_ENGINE_DMA) {
@@ -1095,7 +1305,10 @@ static void npu_task_finish(npu_model_t *model,
         model->perf.task_failed++;
     }
     npu_fence_record_completion(model, slot);
-    if (!npu_event_is_none(signal)) {
+    if (!npu_event_is_none(signal) &&
+        !(slot->request.cmd.inline_format != 0u &&
+          slot->request.cmd.engine == NPU_ENGINE_CONTROL &&
+          slot->request.cmd.opcode == NPU_CTRL_EVENT_REARM)) {
         (void)npu_event_signal(model, signal, status);
     }
     if (slot->request.cmd.engine < NPU_ENGINE_COUNT &&
@@ -1465,7 +1678,8 @@ static int npu_matrix_collect_regions(
                 return 0;
             }
         }
-        if (desc->requant_enable != 0u) {
+        if (desc->requant_enable != 0u &&
+            desc->inline_requant_enable == 0u) {
             if (!npu_checked_mul_u64(
                     desc->requant_count, 8u, &span) ||
                 !npu_matrix_region_set(

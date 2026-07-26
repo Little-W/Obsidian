@@ -2,8 +2,7 @@
   "schema_version": 1,
   "target": {
     "name": "single-core-v1",
-    "command_format": "cmd128-v1",
-    "descriptor_base": "0x000000100000",
+    "command_format": "cmd128-inline-v2",
     "mt": 8,
     "kt": 16,
     "nt": 8
@@ -51,7 +50,7 @@
         "irq_on_error": true,
         "timeout_class": 1
       },
-      "descriptor": {
+      "fields": {
         "common": {
           "src0": "input_ddr",
           "dst": "input_l1"
@@ -86,7 +85,7 @@
         "irq_on_error": true,
         "timeout_class": 2
       },
-      "descriptor": {
+      "fields": {
         "common": {
           "src0": "input_l1",
           "src1": "weight_l1",
@@ -104,6 +103,7 @@
           "ldb_bytes": 0,
           "ldc_bytes": 16,
           "requant_enable": true,
+          "requant_shift": 0,
           "final_output": true,
           "requant_mode": 1,
           "requant_count": 1,

@@ -19,6 +19,7 @@ extern "C" {
 
 #define NPU_WIRE_DEFAULT_DESC_VERSION 1u
 #define NPU_WIRE_HEADER_VERSION 1u
+#define NPU_WIRE_INLINE_HEADER_VERSION 2u
 
 /*
  * Address limits are exclusive.  The reference C model uses byte offsets
@@ -27,6 +28,7 @@ extern "C" {
 typedef struct {
     uint32_t l1_bytes;
     uint64_t gaddr_limit;
+    uint64_t gaddr_base[6];
     uint16_t dma_max_burst_beats;
     uint8_t dma_max_outstanding;
     uint8_t mt;

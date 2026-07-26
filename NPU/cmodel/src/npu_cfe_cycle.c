@@ -11,8 +11,13 @@ static uint8_t npu_cfe_next_index(uint8_t index)
     return index;
 }
 
-static uint16_t npu_cfe_command_id(uint64_t low_beat)
+static uint16_t npu_cfe_command_id(uint64_t low_beat,
+                                   uint64_t high_beat)
 {
+    if ((high_beat >> 63u) != 0u) {
+        return (uint16_t)((high_beat >> 48u) &
+                          UINT64_C(0x03ff));
+    }
     return (uint16_t)((low_beat >> 48) & UINT64_C(0x0fff));
 }
 
@@ -51,7 +56,8 @@ static uint8_t npu_cfe_fifo_has_id(
     uint8_t count;
 
     for (count = 0u; count < model->fifo_count; count++) {
-        if (npu_cfe_command_id(model->fifo[index].low) ==
+        if (npu_cfe_command_id(model->fifo[index].low,
+                               model->fifo[index].high) ==
             command_id) {
             return 1u;
         }
@@ -239,7 +245,7 @@ void npu_cfe_cycle_step(npu_cfe_cycle_t *model,
     case NPU_CFE_STATE_IDLE:
         if (gc_command_handshake != 0u) {
             model->response_command_id =
-                npu_cfe_command_id(inputs->gc_cmd_data_i);
+                npu_cfe_command_id(inputs->gc_cmd_data_i, 0u);
             if (inputs->gc_cmd_first_i == 0u ||
                 inputs->gc_cmd_last_i != 0u) {
                 model->error_pulse = 1u;
@@ -256,6 +262,10 @@ void npu_cfe_cycle_step(npu_cfe_cycle_t *model,
 
     case NPU_CFE_STATE_WAIT_HI:
         if (gc_command_handshake != 0u) {
+            model->high_beat = inputs->gc_cmd_data_i;
+            model->response_command_id =
+                npu_cfe_command_id(model->low_beat,
+                                   model->high_beat);
             if (inputs->gc_cmd_first_i != 0u ||
                 inputs->gc_cmd_last_i == 0u) {
                 model->error_pulse = 1u;
@@ -263,7 +273,6 @@ void npu_cfe_cycle_step(npu_cfe_cycle_t *model,
                     model, NPU_STATUS_BAD_DESC,
                     NPU_CFE_STATE_RESP_ERR);
             } else {
-                model->high_beat = inputs->gc_cmd_data_i;
                 model->beat_wait_cycles = 0u;
                 model->state = NPU_CFE_STATE_CHECK;
             }

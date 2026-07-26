@@ -1108,7 +1108,7 @@ static int engine_test_metadata_errors(void)
     engine_test_idle_inputs(&inputs);
     metadata = engine_test_metadata(
         0x231u, NPU_VECTOR_ADD, 0u, 0u, 0u) |
-        (UINT64_C(1) << 44);
+        (UINT64_C(1) << 45);
     line = engine_test_submit(&adapter, &inputs, metadata);
     if (line != 0) {
         return line;
@@ -1461,7 +1461,7 @@ static int engine_test_cancel_aborted_reuse(void)
      */
     metadata = engine_test_metadata(
         0x263u, NPU_DMA_COPY_1D, 2u, 0u, 0u) |
-        (UINT64_C(1) << 44);
+        (UINT64_C(1) << 45);
     line = engine_test_submit(&adapter, &inputs, metadata);
     if (line != 0) {
         return line;

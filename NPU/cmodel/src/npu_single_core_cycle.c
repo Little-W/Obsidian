@@ -2471,6 +2471,20 @@ void npu_single_core_cycle_core_tick(
         (uint8_t)(top->mif_soft_reset_started_core != 0u &&
                   top->mif_soft_reset_pending_core == 0u);
     single_eval_lsc(&top->lsc, &lsc_inputs, &lsc_outputs);
+    top->ts.wire_limits.gaddr_base[0] = 0u;
+    top->ts.wire_limits.gaddr_base[1] = lsc_outputs.input_base;
+    top->ts.wire_limits.gaddr_base[2] = lsc_outputs.weight_base;
+    top->ts.wire_limits.gaddr_base[3] = lsc_outputs.work_base;
+    top->ts.wire_limits.gaddr_base[4] = lsc_outputs.output_base;
+    top->ts.wire_limits.gaddr_base[5] = lsc_outputs.kv_base;
+    for (index = 0u; index < NPU_TS_ENGINE_COUNT; index++) {
+        uint32_t base;
+
+        for (base = 0u; base < 6u; base++) {
+            top->engine[index].engine.wire_limits.gaddr_base[base] =
+                top->ts.wire_limits.gaddr_base[base];
+        }
+    }
     module_reset_n =
         (uint8_t)(reset_n != 0u &&
                   lsc_outputs.internal_soft_reset_pulse == 0u);
