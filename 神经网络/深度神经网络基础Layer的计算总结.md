@@ -6,7 +6,7 @@
 > 内容包括逻辑 shape、stride、连续内存顺序、输入与输出排布、Kernel 排布、形状调整、全连接、Embedding、激活函数、归一化、Dropout、卷积、池化、填充、上采样、循环神经网络、GRU、LSTM、注意力、Transformer 基本子层、常见损失函数、相似度、反向梯度、数值稳定处理以及多种 Layer 的组合分析。卷积部分会逐项比较 PyTorch 的 NCHW、OIHW 与 Keras 的 NHWC、HWIO，并说明 Pointwise 怎样直接使用原生矩阵乘法。文末还提供一套通用手算模板和 19 道完整练习。PyTorch 名称主要对应 `torch.nn`，Keras 名称主要对应 Keras 3 的 `keras.layers` 与 `keras.losses`。
 
 > [!NOTE] 为什么同时写 PyTorch 与 Keras
-> 两个框架实现的数学原理大多相同，差异主要集中在构造参数名称、默认轴顺序、训练状态控制方式和损失函数的输入约定。把名称并列起来，可以避免把“接口写法不同”误认为“数学计算不同”。
+> 两个框架实现的数学原理大多相同，差异主要集中在构造参数名称、默认维度顺序、训练状态控制方式和损失函数的输入约定。把名称并列起来，可以避免把“接口写法不同”误认为“数学计算不同”。
 
 > [!INFO] API 名称来源
 > Layer 分类和接口名称以 [PyTorch `torch.nn` 官方文档](https://docs.pytorch.org/docs/stable/nn.html) 与 [Keras Layers API](https://keras.io/api/layers/) 为主要参考；损失函数名称同时参考 [Keras Losses API](https://keras.io/api/losses/)。框架升级可能增加新 Layer 或调整可选参数，但本文重点讲解的数学计算长期适用。
@@ -24,6 +24,8 @@
 $$
 y=xW+b.
 $$
+
+若 $x$ 的最后一个维度宽度为 $I$、输出宽度为 $O$，这里 $W$ 的计算形状为 $(I,O)$，$b$ 的实际 shape 为 `(O,)`，$y$ 的 shape 为 `(...,O)`；同一个 $b$ 会沿 `...` 表示的全部前导位置重复使用。
 
 矩阵乘和加法是算子；保存 $W,b$ 并定义输入输出规则的 `Linear` 或 `Dense` 是 Layer；若把多个全连接、激活和归一化组合起来，就得到一个更大的网络模块。
 
@@ -60,10 +62,13 @@ $$
 - `Sequence Length`：序列包含的位置数量；
 - `不含 Batch维度的输入`：只提供一个样本。
 
-> [!TIP] 形状中的字母不是数值本身
-> `(N,C,H,W)` 表示四个维度的含义和次序，不表示它们必须取某个固定数。若输入为 `(8,3,32,32)`，就是 $N=8,C=3,H=W=32$。
+> [!NOTE] 术语约定
+> 本文将张量语境中的 `axis` 统一称为“维度”；API 参数名 `axis`、`dim` 及代码保持原样。[TensorFlow《张量简介》](https://tensorflow.google.cn/guide/tensor?hl=zh-cn)将两种说法并列，本文选用“维度”以与形状表述保持一致。
 
-### 1.3 PyTorch 与 Keras 最需要先记住的轴顺序
+> [!TIP] 形状中的字母不是数值本身
+> `(N,C,H,W)` 表示四个维度的含义和顺序，不表示它们必须取某个固定数。若输入为 `(8,3,32,32)`，就是 $N=8,C=3,H=W=32$。
+
+### 1.3 PyTorch 与 Keras 最需要先记住的维度顺序
 
 图像 Layer 的数学公式相同，但两个框架常见的默认排列不同。
 
@@ -139,7 +144,7 @@ PyTorch 图像计算通常采用 channels-first，也就是 Channel维度在空�
 | $\lfloor a\rfloor$ | 不大于 $a$ 的最大整数 |
 
 > [!IMPORTANT] 本文怎样书写 bias 的形状
-> 若输出宽度为 $O$，常写 $b\in\mathbb R^O$，框架参数 shape 写成 `(O,)`；$b_o$ 只是其中第 $o$ 个标量，不表示 bias 只有一个数。若输出还有 Batch、序列或空间轴，这个 `(O,)` bias 会沿那些轴重复使用。后文每种带 bias 的 Layer 都会结合自己的输出轴再次说明具体 shape。
+> 对只有一个输出 Feature维度的普通仿射计算，若输出宽度为 $O$，常写 $b\in\mathbb R^O$，实际 Parameter shape 为 `(O,)`；$b_o$ 只是其中第 $o$ 个标量，不表示 bias 只有一个数。若输出还有 Batch、序列或空间维度，这个 `(O,)` bias 会沿那些维度重复使用。GRU、LSTM、Multi-Head Attention 等组合 Layer 可能把多个门段拼成 `(3H,)`、`(4H,)`，或保留 `(h,d)` Head 维度；相应章节会分别给出框架真实 shape。
 
 > [!EXAMPLE] 逐元素乘法与矩阵乘法不能混淆
 > 若 $a=[1,2]$、$b=[3,4]$，逐元素乘法得到 $a\odot b=[3,8]$；向量内积得到 $a\cdot b=1\times3+2\times4=11$。门控 Layer 常用逐元素乘法，注意力分数和全连接常用矩阵乘法。
@@ -161,12 +166,12 @@ Dropout 和 Batch Normalization 在训练与推理时行为不同；Linear、Den
 
 ### 1.8 逻辑形状、stride 与连续内存顺序
 
-前面的形状记号回答“每个轴表示什么、长度是多少”。内存顺序回答另一个问题：“这些元素在线性存储区中按照什么先后次序排列”。二者有关，但不是同一个概念。
+前面的形状记号回答“每个维度表示什么、长度是多少”。内存顺序回答另一个问题：“这些元素在线性存储区中按照什么先后次序排列”。二者有关，但不是同一个概念。
 
 > [!IMPORTANT] Shape 不能单独说明内存顺序
 > 两个张量都可以显示形状 `(N,C,H,W)`，其中一个按 NCHW 连续存储，另一个却采用 channels-last 内存格式。数值下标的含义相同，但相邻内存位置保存的元素不同。分析算子实现时，必须同时查看 shape 和 stride。
 
-#### stride 表示沿某个轴移动一格要跨过多少元素
+#### stride 表示沿某个维度移动一格要跨过多少元素
 
 设一个 $D$ 维张量的下标为：
 
@@ -174,7 +179,7 @@ $$
 (i_0,i_1,\ldots,i_{D-1}),
 $$
 
-各轴 stride 为：
+各维度的 stride 为：
 
 $$
 (s_0,s_1,\ldots,s_{D-1}).
@@ -208,7 +213,7 @@ $$
 
 其中 $\operatorname{base}$ 是底层存储区首地址。本文大多数连续张量例子都令 $o_{\mathrm{storage}}=0$，因此使用前面的简式。
 
-$s_k=1$ 表示沿第 $k$ 个轴移动一格，正好访问下一个元素。标准连续存储通常让最右侧轴的 stride 为 1，再从右向左依次乘后面的轴长度。
+$s_k=1$ 表示沿第 $k$ 个维度移动一格，正好访问下一个元素。标准连续存储通常让最右侧维度的 stride 为 1，再从右向左依次乘后面的维度长度。
 
 #### NCHW 与 NHWC 的连续 stride
 
@@ -224,7 +229,7 @@ $s_k=1$ 表示沿第 $k$ 个轴移动一格，正好访问下一个元素。标�
 表中的 Keras stride 描述常见的稠密连续张量。Keras 可以使用 TensorFlow、JAX 或 PyTorch 后端，具体后端还可能在执行前准备更适合设备的内部格式。
 
 > [!NOTE] PyTorch channels-last 不会把 shape 改成 NHWC
-> PyTorch 的四维图像仍用 `(N,C,H,W)` 访问，只有 stride 改为 Channel 最密集的顺序。例如 shape 为 `(10,3,16,16)` 时，channels-last stride 可以是 `(768,1,48,3)`。Keras 默认 NHWC 则连逻辑轴次序也写成 `(N,H,W,C)`。
+> PyTorch 的四维图像仍用 `(N,C,H,W)` 访问，只有 stride 改为 Channel 最密集的顺序。例如 shape 为 `(10,3,16,16)` 时，channels-last stride 可以是 `(768,1,48,3)`。Keras 默认 NHWC 则连逻辑维度顺序也写成 `(N,H,W,C)`。
 
 #### 用一个小图观察线性存储区
 
@@ -287,7 +292,7 @@ W_{\mathrm{out}}C_{\mathrm{out}},
 C_{\mathrm{out}})
 $$
 
-这里仍按 PyTorch 的逻辑轴 `(N,C_{\mathrm{out}},H_{\mathrm{out}},W_{\mathrm{out}})` 书写。Keras NHWC 的同一物理顺序则写成 stride：
+这里仍按 PyTorch 的逻辑维度 `(N,C_{\mathrm{out}},H_{\mathrm{out}},W_{\mathrm{out}})` 书写。Keras NHWC 的同一物理顺序则写成 stride：
 
 $$
 (H_{\mathrm{out}}W_{\mathrm{out}}C_{\mathrm{out}},
@@ -298,27 +303,27 @@ $$
 
 #### Permute、连续化与真正的数据搬运
 
-Permute 可以只改变 shape 与 stride，让新的下标次序读取原存储区，而不立即复制元素。这样的结果往往不是目标轴次序下的标准连续张量。后续算子若要求连续输入，才可能创建新存储区并按新次序写入。
+Permute 可以只改变 shape 与 stride，让新的下标次序读取原存储区，而不立即复制元素。这样的结果往往不是目标维度顺序下的标准连续张量。后续算子若要求连续输入，才可能创建新存储区并按新次序写入。
 
-例如，把 NCHW 张量的逻辑轴调整成 NHWC，不表示内存立刻变成标准 NHWC 连续顺序。只有新 stride 已满足该连续格式，或执行了相应的连续化操作，才能把它当作连续 NHWC 缓冲区逐项读取。
+例如，把 NCHW 张量的逻辑维度调整成 NHWC，不表示内存立刻变成标准 NHWC 连续顺序。只有新 stride 已满足该连续格式，或执行了相应的连续化操作，才能把它当作连续 NHWC 缓冲区逐项读取。
 
 > [!WARNING] Reshape 能否只改 shape 取决于 stride
-> 连续张量的若干相邻轴通常可以直接合并。经过 Permute 的张量若 stride 不再满足合并条件，Reshape 可能需要复制数据。公式中的元素数虽然没有变化，实际内存读写成本却可能不同。
+> 连续张量的若干相邻维度通常可以直接合并。经过 Permute 的张量若 stride 不再满足合并条件，Reshape 可能需要复制数据。公式中的元素数虽然没有变化，实际内存读写成本却可能不同。
 
 #### 框架张量顺序与设备内部格式要分开
 
-本文后续所说的 NCHW、NHWC、OIHW 和 HWIO，首先描述框架可见的逻辑轴及常见连续顺序。CPU 或加速器库可能把输入、Kernel 或输出暂时打包成分块格式，让若干 Channel 一组存储，或者直接在寄存器和片上存储中重排。
+本文后续所说的 NCHW、NHWC、OIHW 和 HWIO，首先描述框架可见的逻辑维度及常见连续顺序。CPU 或加速器库可能把输入、Kernel 或输出暂时打包成分块格式，让若干 Channel 一组存储，或者直接在寄存器和片上存储中重排。
 
 这些内部格式不改变 Layer 的数学公式，也不一定出现在模型文件中。判断模型接口时看框架可见 shape 与 stride；分析执行开销时，还要考虑后端是否增加了重排、打包和临时存储。
 
 > [!INFO] 进一步核对
-> PyTorch 的 [Channels Last Memory Format 教程](https://docs.pytorch.org/tutorials/intermediate/memory_format_tutorial.html) 说明了逻辑 NCHW shape 与 channels-last stride 可以同时存在；Keras [Conv2D 文档](https://keras.io/api/layers/convolution_layers/convolution2d/) 给出了 channels-last 和 channels-first 的输入输出轴次序。
+> PyTorch 的 [Channels Last Memory Format 教程](https://docs.pytorch.org/tutorials/intermediate/memory_format_tutorial.html) 说明了逻辑 NCHW shape 与 channels-last stride 可以同时存在；Keras [Conv2D 文档](https://keras.io/api/layers/convolution_layers/convolution2d/) 给出了 channels-last 和 channels-first 的输入输出维度顺序。
 
 ---
 
 ## 2. 形状调整、逐元素组合与多输入合并
 
-形状类 Layer 通常没有可学习参数，却会决定后续 Layer 怎样理解每一个维度。初学者最容易忽略的一点是：形状相同只说明每个维度的长度相同，不说明维度含义相同。例如 `(N,L,E)` 与 `(N,E,L)` 都是三维张量，但前者把第 1 维当作 Sequence Length，后者把第 1 维当作 Feature维度。若下一个 Layer 要求固定的轴顺序，仅仅看到“三维输入”还不够。
+形状类 Layer 通常没有可学习参数，却会决定后续 Layer 怎样理解每一个维度。初学者最容易忽略的一点是：形状相同只说明每个维度的长度相同，不说明维度含义相同。例如 `(N,L,E)` 与 `(N,E,L)` 都是三维张量，但前者把第 1 个维度当作 Sequence Length，后者把第 1 个维度当作 Feature维度。若下一个 Layer 要求固定的维度顺序，仅仅看到“三维输入”还不够。
 
 ### 2.1 Identity：保持输入不变
 
@@ -411,7 +416,7 @@ $$
 (N,H,W,C)\rightarrow(N,HWC).
 $$
 
-两者最终长度相同，都是每个样本包含的元素总数，但展开前的轴次序不同。
+两者最终长度相同，都是每个样本包含的元素总数，但展开前的维度顺序不同。
 
 设一个样本有 2 个 Channel，每个 Channel 是 `2×2`：
 
@@ -440,7 +445,7 @@ y=[1,2,3,4,5,6,7,8].
 $$
 
 > [!WARNING] 通常不要把 Batch维度一起合并
-> `(N,C,H,W)` 使用 `Flatten(1)` 会保留 $N$；若从第 0 维开始，多个样本会进入同一个长向量。分类模型通常希望每个样本独立产生预测，因此应保留 Batch维度。
+> `(N,C,H,W)` 使用 `Flatten(1)` 会保留 $N$；若从第 0 个维度开始，多个样本会进入同一个长向量。分类模型通常希望每个样本独立产生预测，因此应保留 Batch维度。
 
 > [!NOTE] Flatten 不会让相邻像素自动发生计算
 > 它只是重新组织形状，不执行加法、平均或卷积。原来相邻的数在长向量中可能仍相邻，但只有后续 Linear、Dense 或其他 Layer 才会真正组合它们。
@@ -508,7 +513,7 @@ $$
 > [!TIP] Reshape 前后都写出维度名称
 > 不要只写 `(N,12)` 变成 `(N,3,4)`，还应写清 `(N,Feature)` 变成 `(N,Channel,Length)`。一旦维度名称写不出来，通常说明目标形状的含义还没有想清。
 
-### 2.4 Permute 与转置：改变维度次序
+### 2.4 Permute 与转置：改变维度顺序
 
 | 框架 | 名称 |
 | --- | --- |
@@ -567,7 +572,7 @@ $$
 形状变为 `(E,L)=(3,2)`。
 
 > [!NOTE] Permute 与 Reshape 做的事不同
-> Permute 明确改变轴次序；Reshape 按当前元素次序重新拆分尺寸。若本来需要交换 Channel维度和 Feature维度，却只使用 Reshape，形状可能符合要求，元素所在的位置却不符合原意。
+> Permute 明确改变维度顺序；Reshape 按当前元素次序重新拆分尺寸。若本来需要交换 Channel维度和 Feature维度，却只使用 Reshape，形状可能符合要求，元素所在的位置却不符合原意。
 
 > [!WARNING] Keras `Permute` 通常不写 Batch维度
 > Keras 常把 Batch维度保留在最前，只在单样本的其余维度中指定次序。例如单样本部分从 `(L,E)` 调整为 `(E,L)` 时，设置的是 `(2,1)`，不是包含 Batch维度的三项排列。
@@ -707,7 +712,7 @@ $$
 a=[1,2],\qquad b=[3,4,5],
 $$
 
-沿唯一维度连接得到：
+沿唯一一个维度连接得到：
 
 $$
 y=[1,2,3,4,5].
@@ -823,7 +828,7 @@ $$
 同一个 $b$ 没有被学习成四份不同数据，它只是分别参与四个位置的计算。
 
 > [!WARNING] 能广播不代表应该广播
-> `(N,L,E)` 与 `(L,1)` 在某些情况下可以相加，此时第二个输入会按位置提供不同值，并沿 Feature维度重复。若原意是为每个 Feature 加偏置，应使用 `(E,)`。框架只检查尺寸规则，不知道想让参数沿哪个轴共享。
+> `(N,L,E)` 与 `(L,1)` 在某些情况下可以相加，此时第二个输入会按位置提供不同值，并沿 Feature维度重复。若原意是为每个 Feature 加偏置，应使用 `(E,)`。框架只检查尺寸规则，不知道想让参数沿哪个维度共享。
 
 > [!TIP] 广播前先在左侧补 1
 > 把较短形状左侧补成同样维数，再从右向左逐维比较。例如 `(E,)` 补成 `(1,1,E)`，就能直观看出它会沿 $N,L$ 重复使用。
@@ -838,11 +843,11 @@ $$
 
 三种合并产生不同结果：
 
-| 计算 | 输出形状 | 是否逐位置计算 | 是否新增轴 |
+| 计算 | 输出形状 | 是否逐位置计算 | 是否新增维度 |
 | --- | --- | --- | --- |
 | $a+b$ | `(N,L,E)` | 是，相同位置相加 | 否 |
 | 沿 Feature维度连接 | `(N,L,2E)` | 否，保留两侧原值 | 否 |
-| 沿新轴堆叠 | `(N,L,2,E)` | 否，保留两侧原值 | 是 |
+| 沿新维度堆叠 | `(N,L,2,E)` | 否，保留两侧原值 | 是 |
 
 用最小数字说明。令：
 
@@ -894,7 +899,7 @@ $$
 
 这相当于每个 Channel 的 16 个空间位置排成一个向量。
 
-第二步，交换 Channel 与展开后的位置轴：
+第二步，交换 Channel 与展开后的位置维度：
 
 $$
 (8,3,16)\rightarrow(8,16,3).
@@ -910,7 +915,7 @@ $$
 
 每张图成为长度 48 的向量。整个过程没有做加权求和，Parameter 数量一直为 0。
 
-同一图像在 Keras channels-last 形式中一开始就是 `(8,4,4,3)`。先合并两个空间轴可得到 `(8,16,3)`，因此不需要先交换 Channel轴。
+同一图像在 Keras channels-last 形式中一开始就是 `(8,4,4,3)`。先合并两个空间维度可得到 `(8,16,3)`，因此不需要先交换 Channel维度。
 
 > [!NOTE] 形状步骤会影响后续权重的含义
 > 最终虽然都是 48 个数，但不同展开次序会让第 0、1、2 个位置表示不同原始元素。Dense 可以适应固定次序；若训练和推理采用不同次序，同一组权重就会读取错误位置。
@@ -959,10 +964,10 @@ $$
 
 因此，门值 $b$ 很小时，不仅前向内容被压低，传给 $a$ 的梯度也会按 $b$ 缩小。
 
-Concatenate 的反向计算则把输出梯度沿原连接轴切回各输入。例如两个宽度分别为 2 和 3 的向量连接成宽度 5，前两个梯度返回第一个输入，后三个返回第二个输入。
+Concatenate 的反向计算则把输出梯度沿原连接维度切回各输入。例如两个宽度分别为 2 和 3 的向量连接成宽度 5，前两个梯度返回第一个输入，后三个返回第二个输入。
 
 > [!TIP] 无 Parameter Layer 的检查重点
-> 依次检查元素次序、轴含义、广播方式和梯度分配位置。它们不会自己学习纠正形状错误，后续 Layer 可能只能在错误组织的数据上继续训练。
+> 依次检查元素次序、维度含义、广播方式和梯度分配位置。它们不会自己学习纠正形状错误，后续 Layer 可能只能在错误组织的数据上继续训练。
 
 ---
 
@@ -1097,7 +1102,7 @@ $$
 7\times4+4=32.
 $$
 
-其中权重的二维计算形状为 $(7,4)$，bias shape 为 `(4,)`。Lazy 只延后确定输入宽度，不会让 bias 多出 Batch轴。
+其中权重的二维计算形状为 $(7,4)$，bias 的实际 Parameter shape 为 `(4,)`。对输出 `(N,4)`，为了理解逐样本相加，可以把它观察成 `(1,4)`；输出若还有更多前导维度，则可观察成 `(1,...,1,4)`。Lazy 只延后确定输入宽度，不会让 bias 多出 Batch维度。
 
 PyTorch `LazyLinear` 在首次收到输入前，weight 和 bias 可能仍是尚未初始化的 Parameter；首次输入确定 $I$ 后，bias 才取得正常存储，但最终 shape 仍只由预先指定的 $O$ 决定。
 
@@ -1142,7 +1147,7 @@ b=[b_0,\ldots,b_{O-1}]
 \in\mathbb R^O,
 $$
 
-框架参数 shape 为 `(O,)`。每个 $b_o$ 只加到输出 Feature $o$，并沿兼容的全部前导位置重复使用。下面只有一个输出的数字例子中 $O=1$，因此 `b=0.5` 实际是 shape `(1,)` 的向量所含的唯一标量。
+框架参数 shape 为 `(O,)`。输出为 `(...,O)` 时，可在概念上把它观察成 `(1,...,1,O)`；每个 $b_o$ 只加到输出 Feature $o$，并沿兼容的全部前导位置重复使用。下面只有一个输出的数字例子中 $O=1$，因此 `b=0.5` 实际是 shape `(1,)` 的向量所含的唯一标量。
 
 输入形状分别为 `(...,I1)` 与 `(...,I2)`，前导维度需要兼容，输出为 `(...,O)`。
 
@@ -1323,7 +1328,7 @@ $$
 s=a^Tb=\sum_{d=1}^{D}a_db_d.
 $$
 
-输入为 `(...,D)` 与 `(...,D)` 时，按指定轴点积后，该轴通常被缩并。Dot 没有 Parameter。
+输入为 `(...,D)` 与 `(...,D)` 时，按指定维度点积后，该维度通常被缩并。Dot 没有 Parameter。
 
 若：
 
@@ -1365,7 +1370,7 @@ Einsum 字符串常用 `...i,ij->...j` 表达这件事：
 - `...` 表示任意前导维度原样保留；
 - $i$ 同时出现在输入与权重中，却不出现在输出中，因此沿 $i$ 求和；
 - $j$ 出现在权重和输出中，因此成为新的 Feature维度；
-- bias 若只沿 $j$ 使用，则每个输出特征拥有一个偏置，shape 为 `(O,)`。
+- bias 若只沿 $j$ 使用，则每个输出特征拥有一个偏置，实际 shape 为 `(O,)`；对输出 `(...,O)`，可在概念上观察成 `(1,...,1,O)`。
 
 输入 `(...,I)`、权重 `(I,O)`，输出 `(...,O)`，Parameter 数量为：
 
@@ -1413,10 +1418,10 @@ $$
 
 这里 $h$ 同时保留在输入、权重和输出中，因此每个 Head 使用自己的权重；只有 $d$ 被求和。
 
-若这条 Head 公式同时为每个 Head、每个输出 Feature 保存独立 bias，则 bias shape 应为 `(H,O)`，元素写成 $b_{h,o}$；若所有 Head 共用同一个输出 bias，则 shape 为 `(O,)`。`EinsumDense` 的 bias shape 由所选 bias 轴决定，因此不能只写“有 bias”而省略轴。
+若这条 Head 公式同时为每个 Head、每个输出 Feature 保存独立 bias，则实际 bias shape 应为 `(H,O)`，元素写成 $b_{h,o}$；对输出 `(N,L,H,O)`，可在概念上观察成 `(1,1,H,O)`。若所有 Head 共用同一个输出 bias，则实际 shape 为 `(O,)`，概念 shape 为 `(1,1,1,O)`。`EinsumDense` 的 bias shape 由所选 bias 维度决定，因此不能只写“有 bias”而省略维度。
 
 > [!NOTE] 重复出现但不保留的下标会被求和
-> 阅读 Einsum 时，先圈出输出右侧没有出现的重复字母，它们就是缩并维度。出现在输出中的字母决定输出轴次序。
+> 阅读 Einsum 时，先圈出输出右侧没有出现的重复字母，它们就是缩并维度。出现在输出中的字母决定输出维度顺序。
 
 > [!WARNING] 字符串很短，含义却可能很复杂
 > 写 EinsumDense 前应先写出每个字母代表的维度、输入形状、权重形状和输出形状。只凭字符串试错，很容易在尺寸相同的情况下混淆 Sequence Length、Head 与 Feature维度。
@@ -1666,7 +1671,7 @@ $$
 因此该 Query 对两个 Key 的原始分数为 `[11,9]`。
 
 > [!TIP] 先用不同字母表示不同含义
-> 即使两个维度长度碰巧相同，也不要随意使用同一个下标字母。相同字母通常意味着这两个轴要对齐或缩并；不同字母表示它们在输出中可以分别保留。
+> 即使两个维度长度碰巧相同，也不要随意使用同一个下标字母。相同字母通常意味着这两个维度要对齐或缩并；不同字母表示它们在输出中可以分别保留。
 
 ---
 
@@ -1681,13 +1686,13 @@ $$
 | ReLU | `nn.ReLU` | `ReLU` 或 `Activation("relu")` | 负数变 0 |
 | LeakyReLU | `nn.LeakyReLU` | `LeakyReLU` | 负数保留小斜率 |
 | PReLU | `nn.PReLU` | `PReLU` | 负斜率可学习 |
-| ELU | `nn.ELU` | `ELU` | 负半轴平滑且有下限 |
+| ELU | `nn.ELU` | `ELU` | $x<0$ 时平滑且有下限 |
 | GELU | `nn.GELU` | `GELU` 或 `Activation("gelu")` | 平滑，Transformer 常见 |
 | SiLU | `nn.SiLU` | `Activation("silu")` | 又称 Swish |
 | Sigmoid | `nn.Sigmoid` | `Activation("sigmoid")` | 输出在 0 与 1 之间 |
 | Tanh | `nn.Tanh` | `Activation("tanh")` | 输出在 -1 与 1 之间 |
 | Softplus | `nn.Softplus` | `Activation("softplus")` | 输出为正 |
-| Softmax | `nn.Softmax` | `Softmax` | 指定轴之和为 1 |
+| Softmax | `nn.Softmax` | `Softmax` | 指定维度之和为 1 |
 | GLU | `nn.GLU` | `keras.activations.glu`，或拆分后组合 | 一半内容乘一半门值 |
 
 ### 4.2 ReLU、ReLU6 与 Threshold
@@ -1741,7 +1746,7 @@ $$
 $$
 
 > [!NOTE] ReLU 的梯度直觉
-> 正半轴斜率为 1，负半轴斜率为 0。某个单元若在很多输入上都落在负半轴，从这些输入传回的梯度就是 0。LeakyReLU 或 PReLU 会在负半轴保留非零斜率。
+> 当 $x>0$ 时斜率为 1；当 $x<0$ 时斜率为 0。某个单元若在很多输入上落在 $x<0$ 的区间，从这些输入传回的梯度就是 0。LeakyReLU 或 PReLU 会在该区间保留非零斜率。
 
 > [!WARNING] 原地激活会修改输入
 > PyTorch 部分激活支持 `inplace=True`。若同一个中间张量还要供残差加法或其他分支使用，原地修改会让那些位置也看到修改后的值。初学阶段使用默认的非原地形式更容易检查计算。
@@ -1772,7 +1777,7 @@ $$
 
 LeakyReLU 的 Parameter 数量为 0。
 
-PReLU 使用相同公式，但 $a$ 是可学习 Parameter。PyTorch 可让全部 Channel 共用一个 $a$，也可为每个 Channel 设置一个；Keras 可通过共享轴设置决定参数在哪些轴共用。
+PReLU 使用相同公式，但 $a$ 是可学习 Parameter。PyTorch 可让全部 Channel 共用一个 $a$，也可为每个 Channel 设置一个；Keras 可通过共享维度设置决定参数在哪些维度共用。
 
 若所有位置共享一个 $a$，Parameter 数量为 1；若有 $C$ 个 Channel 且每个 Channel 使用独立 $a_c$，Parameter 数量为 $C$。
 
@@ -1793,7 +1798,7 @@ y_1=0.25\times(-4)=-1.
 $$
 
 > [!TIP] 先确认 PReLU 参数在哪些位置共享
-> 同一个公式可能只用一个 $a$，也可能每个 Channel、每个空间位置都用不同参数。Parameter 形状不同会改变模型容量，应结合输入轴与框架设置核对。
+> 同一个公式可能只用一个 $a$，也可能每个 Channel、每个空间位置都用不同参数。Parameter 形状不同会改变模型容量，应结合输入维度与框架设置核对。
 
 ### 4.4 Sigmoid 与 Tanh
 
@@ -1868,7 +1873,7 @@ $$
 \operatorname{ELU}(2)=2.
 $$
 
-CELU 的负半轴为：
+CELU 在 $x<0$ 时为：
 
 $$
 \alpha\left(e^{x/\alpha}-1\right),
@@ -1876,7 +1881,7 @@ $$
 
 它在零点附近具有连续的一阶变化。
 
-SELU 为正半轴和负半轴再乘固定缩放系数 $\lambda$：
+SELU 的两个分段结果再乘固定缩放系数 $\lambda$：
 
 $$
 \operatorname{SELU}(x)=
@@ -2002,7 +2007,7 @@ $$
 | PyTorch | `nn.Softmax(dim)`、`nn.LogSoftmax(dim)` |
 | Keras | `keras.layers.Softmax(axis)` |
 
-沿指定轴，Softmax 计算：
+沿指定维度，Softmax 计算：
 
 $$
 p_i=\frac{e^{z_i}}{\sum_{j=1}^{K}e^{z_j}}.
@@ -2011,7 +2016,7 @@ $$
 其中：
 
 - $z_i$ 是第 $i$ 个 logit；
-- $K$ 是该轴的长度；
+- $K$ 是该维度的长度；
 - $p_i$ 位于 0 和 1 之间；
 - 同一组 $p_i$ 之和为 1；
 - Parameter 数量为 0；
@@ -2049,11 +2054,11 @@ $$
 \log p_i=z_i-\log\sum_j e^{z_j}.
 $$
 
-> [!WARNING] `dim` 或 `axis` 决定哪些数加起来等于 1
-> 对分类 logits `(N,C)`，通常沿类别轴 $C$ 计算。若沿 Batch维度计算，得到的是同一类别在不同样本之间的比例，含义已经改变。
+> [!WARNING] `dim` 或 `axis` 参数指定 Softmax 的计算维度
+> 对分类 logits `(N,C)`，通常沿类别维度 $C$ 计算。若沿 Batch维度计算，得到的是同一类别在不同样本之间的比例，含义已经改变。
 
-> [!TIP] 用求和检查轴
-> Softmax 后沿目标轴求和，结果应接近 1。还要进一步确认：这一组和为 1 的元素是否确实是需要互相比较的类别、位置或其他对象。
+> [!TIP] 用求和检查维度
+> Softmax 后沿目标维度求和，结果应接近 1。还要进一步确认：这一组和为 1 的元素是否确实是需要互相比较的类别、位置或其他对象。
 
 ### 4.9 GLU：内容与门值各占一半
 
@@ -2109,7 +2114,7 @@ W_a,W_g\in\mathbb R^{I\times D},
 b_a,b_g\in\mathbb R^D.
 $$
 
-两组 bias 的 shape 都是 `(D,)`，分别沿输入的全部前导位置重复使用。
+两组 bias 的实际 shape 都是 `(D,)`。若输入为 `(...,I)`，可在概念上把它们观察成 `(1,...,1,D)`，并沿输入的全部前导位置重复使用。
 
 SwiGLU 为：
 
@@ -2135,7 +2140,7 @@ $$
 DO+O.
 $$
 
-其中输出投影的权重 shape 为 $(D,O)$，输出 bias shape 为 `(O,)`。
+其中输出投影的权重 shape 为 $(D,O)$，输出 bias 的实际 shape 为 `(O,)`；对带前导维度的输出，可在概念上观察成 `(1,...,1,O)`。
 
 数值例子：设某个位置上：
 
@@ -2388,14 +2393,14 @@ $$
 
 | 使用位置 | 常见起点 | 需要留意 |
 | --- | --- | --- |
-| 普通 MLP 隐藏层 | ReLU | 负半轴梯度为 0 |
+| 普通 MLP 隐藏层 | ReLU | $x<0$ 时梯度为 0 |
 | 希望负数保留小斜率 | LeakyReLU、PReLU | PReLU 会增加 Parameter |
 | Transformer FFN | GELU、SiLU、SwiGLU | 门控版本常需要两组投影 |
 | 移动端卷积网络 | ReLU6、Hardswish | 输出截断或分段形式 |
 | LSTM、GRU 门值 | Sigmoid | 通常已包含在循环 Layer 内部 |
 | 带正负号的候选状态 | Tanh | 大绝对值区域导数较小 |
 | 正数回归输出 | Softplus | 0 输入输出约为 0.693 |
-| 多类别概率展示 | Softmax | 必须选对类别轴 |
+| 多类别概率展示 | Softmax | 必须选对类别维度 |
 
 > [!TIP] 初学者可从三项检查激活
 > 第一看输出形状是否保持；第二用 `[-2,-1,0,1,2]` 手算或查表；第三写出导数在负数、零附近和较大正数处的行为。完成这三步后，函数名称就不再只是需要死记的标签。
@@ -2443,8 +2448,8 @@ $$
 - $\gamma$ 是可学习缩放；
 - $\beta$ 是可学习平移。
 
-> [!NOTE] “统计轴”和“参数轴”要分开看
-> 某些轴参与均值与方差计算，不表示参数也沿这些轴各自独立。例如 BatchNorm 对 Batch维度与空间维度统计，却通常只为每个 Channel 保存一组 $\gamma,\beta$。
+> [!NOTE] “统计维度”和“参数维度”要分开看
+> 某些维度参与均值与方差计算，不表示参数也沿这些维度各自独立。例如 BatchNorm 对 Batch维度与空间维度统计，却通常只为每个 Channel 保存一组 $\gamma,\beta$。
 
 ### 5.2 Batch Normalization
 
@@ -2527,8 +2532,8 @@ $$
 > [!NOTE] BatchNorm 的输入维数名称表示空间维度数量
 > `BatchNorm1d` 可接收 `(N,C)` 或 `(N,C,L)`；`BatchNorm2d` 常接收 `(N,C,H,W)`；`BatchNorm3d` 常接收 `(N,C,D,H,W)`。名称中的 1d、2d、3d 不包含 Batch维度和 Channel维度。
 
-> [!WARNING] 序列轴次序要特别核对
-> PyTorch `BatchNorm1d(C)` 把第 1 维看作 Channel维度。普通序列 `(N,L,E)` 若希望按 Feature $E$ 归一化，通常要先调整为 `(N,E,L)`，计算后再调回 `(N,L,E)`。
+> [!WARNING] 序列维度顺序要特别核对
+> PyTorch `BatchNorm1d(C)` 把第 1 个维度看作 Channel维度。普通序列 `(N,L,E)` 若希望按 Feature $E$ 归一化，通常要先调整为 `(N,E,L)`，计算后再调回 `(N,L,E)`。
 
 #### 5.2.1 训练与推理使用的数据不同
 
@@ -2606,7 +2611,7 @@ $$
 2E.
 $$
 
-若 PyTorch 设置 `normalized_shape=(H,W)`，则最后两个维度一起统计，$\gamma,\beta$ 的形状也为 `(H,W)`，Parameter 数量是 $2HW$。Keras 可通过 `axis` 指定一个或多个轴。
+若 PyTorch 设置 `normalized_shape=(H,W)`，则最后两个维度一起统计，$\gamma,\beta$ 的形状也为 `(H,W)`，Parameter 数量是 $2HW$。Keras 可通过 `axis` 参数指定一个或多个归一化维度。
 
 手算一个 token：
 
@@ -2637,8 +2642,8 @@ $$
 > [!NOTE] LayerNorm 不依赖同一 Batch 中的其他样本
 > Batch Size 从 1 改为 32，不会改变一个固定 token 使用的统计集合。这也是它常用于 Transformer 的原因之一。
 
-> [!WARNING] PyTorch 的 `normalized_shape` 从最后维度开始匹配
-> `LayerNorm(8)` 要求最后一维长度为 8；它不会搜索任意一个长度为 8 的轴。输入 `(N,8,L)` 且 $L\ne8$ 时，不能据此认为 Channel维度会被自动选择。
+> [!WARNING] PyTorch 的 `normalized_shape` 从最后一个维度开始匹配
+> `LayerNorm(8)` 要求最后一维长度为 8；它不会搜索任意一个长度为 8 的维度。输入 `(N,8,L)` 且 $L\ne8$ 时，不能据此认为 Channel维度会被自动选择。
 
 ### 5.4 Group Normalization
 
@@ -2712,8 +2717,8 @@ $$
 > [!TIP] GroupNorm 常用于每张卡 Batch Size 较小的图像模型
 > 它不跨样本统计，一个样本的输出不会因为同一 Batch 中换入另一张图而改变。
 
-> [!WARNING] Keras 要明确 Channel轴
-> channels-last 图像通常令 `axis=-1`；channels-first 则使用 Channel维度所在轴。组数、Channel 数和轴位置必须一起核对。
+> [!WARNING] Keras 要明确 Channel维度
+> channels-last 图像通常令 `axis=-1`；channels-first 时，应将 `axis` 设为 Channel维度的索引，四维 NCHW 输入通常为 `axis=1`。组数、Channel 数和维度位置必须一起核对。
 
 ### 5.5 Instance Normalization
 
@@ -2856,7 +2861,7 @@ $$
 | InstanceNorm2d | 固定 $n,c$ | $h,w$ | 默认 0；启用后 $2C$ |
 | GroupNorm | 固定 $n,g$ | 组内 $c,h,w$ | $2C$ |
 | LayerNorm(C,H,W) | 固定 $n$ | $c,h,w$ | $2CHW$ |
-| RMSNorm | 由指定 Feature轴决定 | 平方均值，不减均值 | 常为归一化尺寸 |
+| RMSNorm | 由指定 Feature维度决定 | 平方均值，不减均值 | 常为归一化尺寸 |
 
 > [!TIP] 用“固定下标”读归一化
 > 先写出哪些下标固定，再让其余参与统计的下标变化。例如 BatchNorm2d 固定 $c$，InstanceNorm2d 固定 $n,c$，GroupNorm 固定 $n,g$。这个方法比只背 Layer 名称更可靠。
@@ -2969,7 +2974,7 @@ $$
 
 Parameter 数量为 0，输出形状不变。
 
-> [!NOTE] Channel轴随框架数据格式变化
+> [!NOTE] Channel维度随框架数据格式变化
 > PyTorch 二维图像常用 `(N,C,H,W)`；Keras SpatialDropout2D 默认常用 `(N,H,W,C)`。两者都以整个 Channel 为单位随机处理，但 Channel维度的位置不同。
 
 > [!TIP] 特征图相邻位置高度相关时可考虑 Spatial Dropout
@@ -3134,11 +3139,11 @@ $$
 
 ## 6. 卷积：从局部乘加到通道组合
 
-卷积 Layer 的核心任务，是让一组较小的权重在输入的空间维上反复使用。它不会为每一个空间位置准备一套独立权重，而是让同一组权重依次读取不同位置的局部区域。这样的参数共享方式既能提取局部特征，也能避免参数数目随着图像高宽快速增加。
+卷积 Layer 的核心任务，是让一组较小的权重在输入的空间维度上反复使用。它不会为每一个空间位置准备一套独立权重，而是让同一组权重依次读取不同位置的局部区域。这样的参数共享方式既能提取局部特征，也能避免参数数目随着图像高宽快速增加。
 
 ### 6.1 先看懂 Conv1D、Conv2D 与 Conv3D 的输入形状
 
-层名称中的 1D、2D、3D 表示卷积核沿几个空间维移动，不表示输入张量总共只有几个维度。输入还要包含 Batch维度和 Channel维度，所以带 Batch维度的输入通常分别是三维、四维和五维张量。
+层名称中的 1D、2D、3D 表示卷积核沿几个空间维度移动，不表示输入张量总共只有几个维度。输入还要包含 Batch维度和 Channel维度，所以带 Batch维度的输入通常分别是三维、四维和五维张量。
 
 | 计算 | PyTorch Layer | Keras Layer | PyTorch 默认输入 | Keras 默认输入 |
 | --- | --- | --- | --- | --- |
@@ -3155,15 +3160,15 @@ $$
 - $D$：体数据深度或视频帧数；
 - $H,W$：高度和宽度。
 
-PyTorch 图像卷积默认使用 channels-first，Channel维度位于空间维之前。Keras 默认使用 channels-last，Channel维度位于空间维之后。Keras 的卷积 Layer 可以通过 `data_format` 改用 channels-first，但模型中的其他 Layer 也要采用相同次序。
+PyTorch 图像卷积默认使用 channels-first，Channel维度位于空间维度之前。Keras 默认使用 channels-last，Channel维度位于空间维度之后。Keras 的卷积 Layer 可以通过 `data_format` 改用 channels-first，但模型中的其他 Layer 也要采用相同次序。
 
 > [!NOTE] 1D 不等于输入只有一个维度
-> 一段音频若有 2 个输入 Channel、16000 个采样点，PyTorch 形状是 $(N,2,16000)$，Keras 默认形状是 $(N,16000,2)$。卷积核只沿长度 16000 的轴移动，Batch维度和 Channel维度并不是滑动方向。
+> 一段音频若有 2 个输入 Channel、16000 个采样点，PyTorch 形状是 $(N,2,16000)$，Keras 默认形状是 $(N,16000,2)$。卷积核只沿长度 16000 的维度移动，Batch维度和 Channel维度并不是滑动方向。
 
-自然语言中的 token 序列通常写成 $(N,L,E)$，其中 $E$ 是 Feature维度宽度。Keras `Conv1D` 可以直接把 $E$ 当作 Channel维度。PyTorch `Conv1d` 则需要采用 $(N,E,L)$ 的次序，也就是让 Feature维度位于长度之前。卷积完成后，若后续 Layer 要求 $(N,L,E')$，还要再次交换这两个轴。
+自然语言中的 token 序列通常写成 $(N,L,E)$，其中 $E$ 是 Feature 宽度。Keras `Conv1D` 可以直接把 $E$ 当作 Channel维度。PyTorch `Conv1d` 则需要采用 $(N,E,L)$ 的次序，也就是让 Feature维度位于长度之前。卷积完成后，若后续 Layer 要求 $(N,L,E')$，还要再次交换这两个维度。
 
 > [!WARNING] 形状数值相同也可能含义错误
-> 假设 $L=64$、$E=64$，把 $(N,L,E)$ 错当成 $(N,E,L)$ 时，形状检查可能无法发现问题，因为两个轴长度恰好相同。此时卷积会沿错误的维度移动。调试时不要只打印数字，还应写出每个轴的含义。
+> 假设 $L=64$、$E=64$，把 $(N,L,E)$ 错当成 $(N,E,L)$ 时，形状检查可能无法发现问题，因为两个维度长度恰好相同。此时卷积会沿错误的维度移动。调试时不要只打印数字，还应写出每个维度的含义。
 
 ### 6.2 一维卷积公式：一个输出数怎样得到
 
@@ -3256,7 +3261,7 @@ $$
 > [!TIP] 阅读卷积时先固定一个输出数
 > 初学时不要一开始就试图想象整个四维或五维张量。先固定样本编号、输出 Channel 和输出位置，再列出这个数读取的输入 Channel 与局部位置。一个输出数看懂以后，其余位置只是重复相同规则。
 
-### 6.3 二维与三维卷积只是增加滑动轴
+### 6.3 二维与三维卷积只是增加滑动维度
 
 二维卷积的输出为：
 
@@ -3272,7 +3277,7 @@ X_{n,c,\,hs_h-p_h+rd_h,\,ws_w-p_w+qd_w}.
 \end{aligned}
 $$
 
-$K_h,K_w$ 是卷积核高宽，$s_h,s_w$ 是两个方向的 stride，$p_h,p_w$ 是两个方向的 padding，$d_h,d_w$ 是两个方向的 dilation。三维卷积再增加深度轴 $D$ 及核位置 $K_d$，计算思路完全相同。
+$K_h,K_w$ 是卷积核高宽，$s_h,s_w$ 是两个方向的 stride，$p_h,p_w$ 是两个方向的 padding，$d_h,d_w$ 是两个方向的 dilation。三维卷积再增加深度维度 $D$ 及核位置 $K_d$，计算思路完全相同。
 
 Conv2D 的实际 bias shape 仍是 `(C_out,)`。PyTorch NCHW 输出中可在概念上写成 `(1,C_out,1,1)`，Keras 默认 NHWC 输出中可写成 `(1,1,1,C_out)`。Conv3D 也仍只保存 `(C_out,)`，对应的概念 shape 分别是 `(1,C_out,1,1,1)` 与 `(1,1,1,1,C_out)`。
 
@@ -3333,11 +3338,11 @@ $$
 Conv3D 可用于体数据或短视频。PyTorch 输入 $(N,C,D,H,W)$ 中，核可以写成 $(K_d,K_h,K_w)$；Keras 默认输入 $(N,D,H,W,C)$。若设置核大小 $(3,3,3)$，一个输出位置会查看相邻 3 个深度切片以及每个切片上的 $3\times3$ 区域。
 
 > [!TIP] 视频不一定必须使用 Conv3D
-> Conv3D 会同时处理时间和空间。若只想逐帧提取图像特征，可以让 Conv2D 分别处理每一帧；若希望局部时间变化也参与一次乘加，再考虑 Conv3D 或把时间轴单独交给序列 Layer。
+> Conv3D 会同时处理时间和空间。若只想逐帧提取图像特征，可以让 Conv2D 分别处理每一帧；若希望局部时间变化也参与一次乘加，再考虑 Conv3D 或把时间维度单独交给序列 Layer。
 
 ### 6.4 输出尺寸公式与有效核大小
 
-对任意一个空间轴，先定义有效核大小：
+对任意一个空间维度，先定义有效核大小：
 
 $$
 K_{\mathrm{eff}}=d(K-1)+1.
@@ -3364,7 +3369,7 @@ L_{\mathrm{out}}
 $$
 
 > [!NOTE] 二维和三维不是新公式
-> 对二维输入分别计算 $H_{\mathrm{out}}$ 与 $W_{\mathrm{out}}$；对三维输入再计算 $D_{\mathrm{out}}$。每个轴可以有不同的 kernel size、stride、padding 和 dilation。
+> 对二维输入分别计算 $H_{\mathrm{out}}$ 与 $W_{\mathrm{out}}$；对三维输入再计算 $D_{\mathrm{out}}$。每个维度可以有不同的 kernel size、stride、padding 和 dilation。
 
 #### 手算：一维输出长度
 
@@ -3519,7 +3524,7 @@ $$
 
 若使用偏置，还要为每个输出 Channel 加一个偏置，因此增加 $C_{\mathrm{out}}$ 个参数。
 
-因此普通 Conv1D、Conv2D 与 Conv3D 的 bias 参数 shape 都是：
+因此普通 Conv1D、Conv2D 与 Conv3D 的实际 bias Parameter shape 都是：
 
 $$
 (C_{\mathrm{out}},).
@@ -3538,9 +3543,9 @@ $$
 
 其中 bias shape 为 `(16,)`，1168 中最后的 16 就来自这 16 个输出 Channel bias。
 
-若不使用偏置，则参数数目是 1152。PyTorch 权重形状为 $(16,8,3,3)$。Keras 默认内部核形状通常为 $(3,3,8,16)$。轴次序不同，但元素总数与数学计算一致。
+若不使用偏置，则参数数目是 1152。PyTorch 权重形状为 $(16,8,3,3)$。Keras 默认内部核形状通常为 $(3,3,8,16)$。维度顺序不同，但元素总数与数学计算一致。
 
-#### Kernel 的轴次序与连续存储
+#### Kernel 的维度顺序与连续存储
 
 令：
 
@@ -3607,11 +3612,11 @@ $$
 
 这时权重的物理顺序接近 OHWI：固定 $o,r,s$ 后，组内输入 Channel 最密集。它仍不是 Keras HWIO，因为输出 Channel $o$ 在两者中的位置不同。
 
-> [!IMPORTANT] `data_format` 通常不改变 Keras Kernel 的逻辑轴
-> Keras 输入可以是 NHWC 或 NCHW，但 `Conv2D.kernel` 仍通常按 $(K_h,K_w,I_g,O)$ 组织。`data_format` 主要决定输入与输出的 Channel轴位置，不应据此把 Kernel 也写成 OIHW。
+> [!IMPORTANT] `data_format` 通常不改变 Keras Kernel 的逻辑维度
+> Keras 输入可以是 NHWC 或 NCHW，但 `Conv2D.kernel` 仍通常按 $(K_h,K_w,I_g,O)$ 组织。`data_format` 主要决定输入与输出的 Channel维度位置，不应据此把 Kernel 也写成 OIHW。
 
-> [!NOTE] 长度为 1 的轴会让 stride 看起来不唯一
-> 若某个轴长度为 1，沿该轴不会真正访问“下一个元素”，所以不同 stride 数值可能表示同一线性顺序。$1\times1$ Kernel 的高、宽轴都属于这种情况。判断其物理次序时，应结合 memory format 与其他非单元素轴，而不是只比较这两个 stride 数字。
+> [!NOTE] 长度为 1 的维度会让 stride 看起来不唯一
+> 若某个维度长度为 1，沿该维度不会真正访问“下一个元素”，所以不同 stride 数值可能表示同一线性顺序。$1\times1$ Kernel 的高、宽维度都属于这种情况。判断其物理次序时，应结合 memory format 与其他非单元素维度，而不是只比较这两个 stride 数字。
 
 #### 用 $2\times2$ Kernel 观察线性顺序
 
@@ -3739,7 +3744,7 @@ $$
 - 空间上相邻输出位置的起始地址相差 $O$。
 
 > [!TIP] 先写偏移，再讨论哪种格式更快
-> “连续”必须说明固定了哪些下标。NCHW 让同一 Channel 的横向像素连续，NHWC 让同一像素的 Channel 连续。卷积程序通常同时计算多个输出位置和多个输出 Channel，并利用分块读取复用输入与 Kernel，不能只凭一个轴的 stride 判断全部性能。
+> “连续”必须说明固定了哪些下标。NCHW 让同一 Channel 的横向像素连续，NHWC 让同一像素的 Channel 连续。卷积程序通常同时计算多个输出位置和多个输出 Channel，并利用分块读取复用输入与 Kernel，不能只凭一个维度的 stride 判断全部性能。
 
 #### 用同一个 $2\times2$ 卷积比较输入与输出线性顺序
 
@@ -3756,7 +3761,7 @@ $$
 H_{\mathrm{out}}=W_{\mathrm{out}}=2.
 $$
 
-在 NCHW 连续输入中，省略样本轴后的线性存储区为：
+在 NCHW 连续输入中，省略样本维度后的线性存储区为：
 
 $$
 \begin{aligned}
@@ -3902,7 +3907,7 @@ Y_{\mathrm{flat}}
 X_{\mathrm{col}}K_{\mathrm{mat}}.
 $$
 
-两种写法的缩并顺序不同，只要输入窗口和 Kernel 使用相同的 $q$ 定义，最终卷积数值就相同。复制权重时不能只比较元素总数，还要调整 O、I、H、W 四个轴的次序。
+两种写法的缩并顺序不同，只要输入窗口和 Kernel 使用相同的 $q$ 定义，最终卷积数值就相同。复制权重时不能只比较元素总数，还要调整 O、I、H、W 四个维度的次序。
 
 groups 大于 1 时不能把全部输出作为一次普通稠密矩阵乘法。令 $O_g=O/G$，第 $g$ 组应分别写成：
 
@@ -3964,6 +3969,34 @@ C_{\mathrm{in}}\bmod G=0,\qquad
 C_{\mathrm{out}}\bmod G=0.
 $$
 
+记每组输入与输出 Channel 数为：
+
+$$
+I_g=\frac{C_{\mathrm{in}}}{G},
+\qquad
+O_g=\frac{C_{\mathrm{out}}}{G}.
+$$
+
+> [!IMPORTANT] 输出 Channel 总数由 `out_channels`（Keras 中为 `filters`）指定
+> 每组读取 $I_g$ 个输入 Channel，并产生 $O_g$ 个输出 Channel。编号从 0 开始且 $0\le o<C_{\mathrm{out}}$ 时，编号为 $o$ 的输出 Channel 属于
+>
+> $$
+> g=\left\lfloor\frac{o}{O_g}\right\rfloor
+> $$
+>
+> 组；它只读取输入 Channel $gI_g,\ldots,(g+1)I_g-1$。第 $g$ 组产生的输出编号为 $gO_g,\ldots,(g+1)O_g-1$。所有组的结果沿 Channel维度拼接，因此 PyTorch 的输出形状仍为 $(N,C_{\mathrm{out}},H_{\mathrm{out}},W_{\mathrm{out}})$，Keras 默认形式仍为 $(N,H_{\mathrm{out}},W_{\mathrm{out}},C_{\mathrm{out}})$；不会额外增加一个组维度。
+
+例如输入有 8 个 Channel、输出总数为 12 且 `groups=4` 时，每组读取 2 个输入 Channel 并产生 3 个输出 Channel：
+
+| 组 | 输入 Channel | 本组输出 Channel |
+| ---: | --- | --- |
+| 0 | 0、1 | 0、1、2 |
+| 1 | 2、3 | 3、4、5 |
+| 2 | 4、5 | 6、7、8 |
+| 3 | 6、7 | 9、10、11 |
+
+在 PyTorch 中可设置 `in_channels=8, out_channels=12, groups=4`；Keras 中相应设置为 `filters=12, groups=4`，每组使用 $12/4=3$ 个 filters，拼接后仍有 12 个输出 Channel。
+
 每个输出 Channel 只读取 $C_{\mathrm{in}}/G$ 个输入 Channel，所以 Conv2D 权重数变为：
 
 $$
@@ -3974,19 +4007,11 @@ C_{\mathrm{out}}
 K_hK_w.
 $$
 
-PyTorch `Conv1d/2d/3d` 和 Keras `Conv1D/2D/3D` 都可以通过 `groups` 指定分组数。轴排列仍分别遵循各自的默认方式。
+PyTorch `Conv1d/2d/3d` 和 Keras `Conv1D/2D/3D` 都可以通过 `groups` 指定分组数。维度排列仍分别遵循各自的默认方式。
 
-使用 bias 时，完整参数 shape 仍为 `(C_out,)`。第 $g$ 组只使用其中与本组输出 Channel 相符的连续 `(O_g,)` 段；bias 不含输入 Channel 轴和空间轴。
+使用 bias 时，完整 Parameter shape 仍为 `(C_out,)`。PyTorch Conv2D 输出中可在概念上观察成 `(1,C_out,1,1)`，Keras 默认格式中可观察成 `(1,1,1,C_out)`。第 $g$ 组只使用其中与本组输出 Channel 相符的连续 `(O_g,)` 段；bias 不含输入 Channel 维度和空间维度。
 
 #### groups 下输入、Kernel 与输出怎样分段
-
-再定义每组输入与输出 Channel 数：
-
-$$
-I_g=\frac{C_{\mathrm{in}}}{G},
-\qquad
-O_g=\frac{C_{\mathrm{out}}}{G}.
-$$
 
 第 $g$ 组使用的全局 Channel 范围为：
 
@@ -4006,7 +4031,7 @@ $$
 (C_{\mathrm{out}},I_g,K_h,K_w).
 $$
 
-它没有单独的 $G$ 轴。第 $g$ 组占据输出轴上连续的 $O_g$ 行；每一行内部只保存该组的 $I_g$ 个输入 Channel 权重。因此，不能用 Kernel 的第二轴编号直接当作输入张量的全局 Channel 编号。
+它没有单独的 $G$ 维度。第 $g$ 组占据输出维度上连续的 $O_g$ 行；每一行内部只保存该组的 $I_g$ 个输入 Channel 权重。因此，不能用 Kernel 的第二个维度编号直接当作输入张量的全局 Channel 编号。
 
 Keras 普通分组 Conv2D Kernel shape 为：
 
@@ -4014,13 +4039,13 @@ $$
 (K_h,K_w,I_g,C_{\mathrm{out}}).
 $$
 
-它同样没有显式 $G$ 轴。第 $g$ 组使用最后一轴中：
+它同样没有显式 $G$ 维度。第 $g$ 组使用最后一个维度中：
 
 $$
 gO_g:(g+1)O_g
 $$
 
-这一段输出权重，第三轴仍是组内输入 Channel。
+这一段输出权重，第三个维度仍是组内输入 Channel。
 
 以 stride 1、padding 0 的 Pointwise 为例，先定义：
 
@@ -4059,11 +4084,20 @@ $$
 $$
 Y_{n,g}
 =
-W_gX_{n,g}+b_g\mathbf 1_S^T
+W_gX_{n,g}+b_{g,\mathrm{col}}\mathbf 1_S^T
 \in\mathbb R^{O_g\times S}.
 $$
 
-这两个公式中的 $b_g$ 都是完整 `(C_out,)` bias 的一个 `(O_g,)` 连续段；矩阵写法会暂时把它观察成行向量或列向量，实际 Parameter 仍是一维。
+这里：
+
+$$
+b_{g,\mathrm{col}}
+=
+b_g[:,\mathrm{None}]
+\in\mathbb R^{O_g\times1}.
+$$
+
+两种格式中的 $b_g$ 都是完整 `(C_out,)` bias 的一个实际 shape 为 `(O_g,)` 的连续段。Keras 公式用 $b_g^T$ 暂时观察成行向量，PyTorch 公式用 $b_{g,\mathrm{col}}$ 暂时观察成列向量；框架仍只保存一维 Parameter。
 
 同一组的输入 Channel 平面和输出 Channel 平面在标准连续 NCHW 中各自形成连续区段，因此这种逐组写法与物理存储顺序十分接近。
 
@@ -4148,13 +4182,15 @@ $$
 P_W=C_{\mathrm{in}}M K_hK_w.
 $$
 
-若有 bias，再加 $C_{\mathrm{in}}M$。完整 bias shape 为：
+若有 bias，再加 $C_{\mathrm{in}}M$。完整 bias 向量为：
 
 $$
-(C_{\mathrm{in}}M,),
+b=
+[b_0,\ldots,b_{C_{\mathrm{in}}M-1}]
+\in\mathbb R^{C_{\mathrm{in}}M},
 $$
 
-也就是每个 Depthwise 输出 Channel 一个标量。它不是 `(C_in,)`，除非 depth multiplier 恰好为 1。
+实际 Parameter shape 为 `(C_in*M,)`，也就是每个 Depthwise 输出 Channel 一个标量。它不是 `(C_in,)`，除非 depth multiplier 恰好为 1。PyTorch Conv2D 输出中可在概念上观察成 `(1,C_in*M,1,1)`，Keras 默认格式中可观察成 `(1,1,1,C_in*M)`。
 
 #### Depthwise Kernel 不是普通 HWIO
 
@@ -4164,7 +4200,7 @@ $$
 (IM,1,K_h,K_w).
 $$
 
-第二轴长度为 1，因为每个输出 Channel 只读取所属组中的一个输入 Channel。常用输出 Channel 编号为：
+第二个维度长度为 1，因为每个输出 Channel 只读取所属组中的一个输入 Channel。常用输出 Channel 编号为：
 
 $$
 o=iM+m,
@@ -4178,13 +4214,13 @@ $$
 (K_h,K_w,I,M).
 $$
 
-它不是普通 Conv2D 的 $(K_h,K_w,I,O)$：最后一轴只记录“每个输入 Channel 产生几个输出”。标准连续 stride 为：
+它不是普通 Conv2D 的 $(K_h,K_w,I,O)$：最后一个维度只记录“每个输入 Channel 产生几个输出”。标准连续 stride 为：
 
 $$
 (K_wIM,IM,M,1).
 $$
 
-固定空间位置和输入 Channel 后，$M$ 个 multiplier 权重连续存放。Keras 默认 NHWC 输出的最后一轴通常也按 $o=iM+m$ 排列。
+固定空间位置和输入 Channel 后，$M$ 个 multiplier 权重连续存放。Keras 默认 NHWC 输出的最后一个维度通常也按 $o=iM+m$ 排列。
 
 ##### $1\times1$ Depthwise 的内存例子
 
@@ -4212,7 +4248,7 @@ x_1d_{1,0},x_1d_{1,1}
 ].
 $$
 
-PyTorch 等价权重的输出轴长度为 4，依次保存：
+PyTorch 等价权重的输出维度长度为 4，依次保存：
 
 $$
 o=0,\ 1,\ 2,\ 3.
@@ -4287,7 +4323,7 @@ C_{\mathrm{in}}K_hK_w
 +C_{\mathrm{in}}C_{\mathrm{out}}.
 $$
 
-Keras `SeparableConv2D` 启用 bias 时，最终只为 Pointwise 输出保存 shape 为 `(C_out,)` 的 bias。若在 PyTorch 中把 Depthwise 与 Pointwise 写成两个独立 Conv2D，并且两层都启用 bias，则 Depthwise bias shape 为 `(C_in M,)`，Pointwise bias shape 为 `(C_out,)`；这与只有最终一组 bias 的参数数目不同。
+Keras `SeparableConv2D` 启用 bias 时，最终只为 Pointwise 输出保存实际 shape 为 `(C_out,)` 的 bias；对默认 NHWC 输出，可在概念上观察成 `(1,1,1,C_out)`。若在 PyTorch 中把 Depthwise 与 Pointwise 写成两个独立 Conv2D，并且两层都启用 bias，则 Depthwise bias 实际 shape 为 `(C_in*M,)`，概念 NCHW shape 为 `(1,C_in*M,1,1)`；Pointwise bias 实际 shape 为 `(C_out,)`，概念 NCHW shape 为 `(1,C_out,1,1)`。这与只有最终一组 bias 的参数数目不同。
 
 普通卷积参数数目为：
 
@@ -4344,6 +4380,8 @@ $$
 $1\times1$ 卷积计算：
 
 $$
+y_{n,h,w}\in\mathbb R^{C_{\mathrm{out}}},
+\qquad
 y_{n,h,w}=Wx_{n,h,w}+b,
 \qquad
 W\in\mathbb R^{C_{\mathrm{out}}\times C_{\mathrm{in}}},
@@ -4402,7 +4440,9 @@ $$
 
 为避免只看 shape 看不出实际顺序，下面同时写出输入、Kernel 和输出的自然矩阵形状。
 
-| 框架与内存格式 | 输入可直接观察成 | Kernel 去掉 $1\times1$ 轴后 | 矩阵乘法 | 结果可直接观察成 |
+下表先讨论最常见的 stride 1、padding 0，此时 $P=NHW$。stride 大于 1 时应使用 $P_{\mathrm{out}}=NH_{\mathrm{out}}W_{\mathrm{out}}$，并按 stride 选择输入位置；其他情况在表后继续说明。
+
+| 框架与内存格式 | 输入可直接观察成 | Kernel 去掉 $1\times1$ 维度后 | 矩阵乘法 | 结果可直接观察成 |
 | --- | --- | --- | --- | --- |
 | Keras 默认 NHWC 连续 | $X_{\mathrm{flat}}\in\mathbb R^{P\times I}$ | $K\in\mathbb R^{I\times O}$ | $X_{\mathrm{flat}}K$ | $Y_{\mathrm{flat}}\in\mathbb R^{P\times O}$ |
 | PyTorch 默认 NCHW 连续 | 每个样本 $X_n\in\mathbb R^{I\times S}$ | $W\in\mathbb R^{O\times I}$ | $WX_n$ | $Y_n\in\mathbb R^{O\times S}$ |
@@ -4430,7 +4470,7 @@ $$
 (HWI,WI,I,1).
 $$
 
-最右侧的输入 Channel 连续，因此可以把前三个轴直接合并为 $P=NHW$：
+最右侧的输入 Channel 连续，因此可以把前三个维度直接合并为 $P=NHW$：
 
 $$
 X_{\mathrm{flat}}
@@ -4444,7 +4484,7 @@ $$
 (1,1,I,O).
 $$
 
-去掉两个长度为 1 的轴后，Kernel 的连续顺序正好是：
+去掉两个长度为 1 的空间维度后，Kernel 的连续顺序正好是：
 
 $$
 K\in\mathbb R^{I\times O}.
@@ -4545,7 +4585,7 @@ x^{(1)}_0&x^{(1)}_1&x^{(1)}_2
 \end{bmatrix}.
 $$
 
-Kernel 去掉 $1\times1$ 轴后的线性顺序为：
+Kernel 去掉 $1\times1$ 维度后的线性顺序为：
 
 $$
 [
@@ -4601,7 +4641,7 @@ $$
 (O,I,1,1).
 $$
 
-去掉两个空间轴后得到连续矩阵：
+去掉两个空间维度后得到连续矩阵：
 
 $$
 W\in\mathbb R^{O\times I}.
@@ -4693,10 +4733,10 @@ y^{(1)}_0,y^{(1)}_1
 ].
 $$
 
-这里先保存输出 Channel 0 的两个空间位置，再保存输出 Channel 1。它正好符合标准连续 NCHW，而不是先构造 $(P,I)$ 再把轴调回来。
+这里先保存输出 Channel 0 的两个空间位置，再保存输出 Channel 1。它正好符合标准连续 NCHW，而不是先构造 $(P,I)$ 再把维度调回来。
 
 > [!IMPORTANT] $(P,O)$ 不能直接当作标准连续 NCHW
-> 连续的 $(P,O)$ 先变化输出 Channel，天然对应 NHWC 物理顺序。标准连续 NCHW 则先连续保存同一输出 Channel 的全部空间位置，天然对应 $(O,S)$。两者元素数相同，但不能仅靠修改 shape 把一种连续次序解释成另一种；通常还需要交换轴，必要时还会复制数据。
+> 连续的 $(P,O)$ 先变化输出 Channel，天然对应 NHWC 物理顺序。标准连续 NCHW 则先连续保存同一输出 Channel 的全部空间位置，天然对应 $(O,S)$。两者元素数相同，但不能仅靠修改 shape 把一种连续次序解释成另一种；通常还需要交换维度，必要时还会复制数据。
 
 #### 情况三：PyTorch channels-last
 
@@ -4718,9 +4758,9 @@ $$
 X_{\mathrm{flat}}\in\mathbb R^{P\times I}.
 $$
 
-这里说的是物理存储视角。PyTorch 张量接口中的逻辑轴仍为 $(N,I,H,W)$；不能在忽略 stride 的情况下直接调用普通 reshape 并假定最后一轴已经表示 $I$。后端会依据 channels-last stride 读取，或者先取得等价的 NHWI 轴观察方式。
+这里说的是物理存储视角。PyTorch 张量接口中的逻辑维度仍为 $(N,I,H,W)$；不能在忽略 stride 的情况下直接调用普通 reshape 并假定最后一个维度已经表示 $I$。后端会依据 channels-last stride 读取，或者先按 NHWI 的维度顺序观察。
 
-PyTorch 权重去掉空间轴后的逻辑形状仍为 $(O,I)$。矩阵乘法可以使用转置读取选项，直接计算：
+PyTorch 权重去掉空间维度后的逻辑形状仍为 $(O,I)$。矩阵乘法可以使用转置读取选项，直接计算：
 
 $$
 Y_{\mathrm{flat}}
@@ -4773,6 +4813,8 @@ $$
 \text{NCHW：}\quad
 (O,I)(I,S)\rightarrow(O,S).
 $$
+
+这两条紧凑式只写了矩阵乘部分。若启用 bias，实际 Parameter shape 仍为 `(O,)`：前一种计算增加 $\mathbf 1_Pb^T$，后一种计算对每个样本增加 $b_{\mathrm{col}}\mathbf 1_S^T$；`(P,O)` 与 `(O,S)` 都只是计算结果 shape，不是 bias 的存储 shape。
 
 若 stride 大于 1，只需选择间隔位置；这些位置未必能直接合并成稠密二维视图，后端可以按跨度读取或先打包。若 padding 不为 0，输出外侧位置还可能读取补入值。若 groups 大于 1，则把输入和输出 Channel 分组，分别执行较小的矩阵乘法。$1\times1$ 的 dilation 不会扩大读取范围，因为唯一的空间权重没有相邻核元素可供拉开距离。
 
@@ -4879,7 +4921,7 @@ $$
 ### 6.12 卷积常见错误与检查顺序
 
 > [!WARNING] 错误一：把 Channel维度放错位置
-> PyTorch 常见图像输入是 $(N,C,H,W)$，Keras 默认是 $(N,H,W,C)$。看到“期望 3 个 Channel，却得到 224”之类的信息时，应先检查轴次序。
+> PyTorch 常见图像输入是 $(N,C,H,W)$，Keras 默认是 $(N,H,W,C)$。看到“期望 3 个 Channel，却得到 224”之类的信息时，应先检查维度顺序。
 
 > [!WARNING] 错误二：groups 不能整除 Channel
 > groups 必须同时整除输入与输出 Channel。若输入 Channel 为 6、输出 Channel 为 10，groups 可以是 1 或 2，但不能是 3，因为 3 不能整除 10。
@@ -4890,7 +4932,7 @@ $$
 > [!WARNING] 错误四：只看参数数目，不看输出尺寸
 > 两个卷积参数数目相同，但若一个输出 $128\times128$、另一个输出 $16\times16$，计算工作量与中间张量大小会明显不同。
 
-建议依次检查：输入轴次序、输入 Channel、kernel size、stride、padding、dilation、groups、输出 Channel，最后把每个空间轴代入公式。
+建议依次检查：输入维度顺序、输入 Channel、kernel size、stride、padding、dilation、groups、输出 Channel，最后把每个空间维度代入公式。
 
 ### 6.13 因果 Conv1D：只读取当前位置和过去位置
 
@@ -4951,7 +4993,7 @@ $$
 Keras `Conv1D` 提供 `padding="causal"`，用于常见的一维因果卷积。PyTorch `Conv1d` 通常先在左侧显式填充，再使用 `padding=0` 的卷积，也可以把这两步封装成一个模块。
 
 > [!WARNING] 因果只约束时间方向
-> 输入轴必须确实表示时间或序列位置。如果误把 Feature维度当成长度轴，即使使用 causal 设置，限制的也会是错误维度。
+> 输入维度必须确实表示时间或序列位置。如果误把 Feature维度当成长度维度，即使使用 causal 设置，限制的也会是错误维度。
 
 > [!NOTE] dilation 可以快速扩大历史范围
 > kernel size 为 3 时，dilation 依次取 1、2、4，三个 Layer 分别可以读取间隔为 1、2、4 的历史位置。堆叠后，一个输出能利用较长历史，而每层仍只有三个时间方向权重。
@@ -4989,9 +5031,9 @@ $$
 输出空间尺寸为 $4\times10$。
 
 > [!EXAMPLE] 为什么核不一定是正方形
-> 语谱图的一个轴表示时间，另一个轴表示频率。任务可能希望一次查看较长时间范围，却只查看较窄频率范围，此时 $3\times7$ 或 $1\times5$ 等核有明确含义。
+> 语谱图的一个维度表示时间，另一个维度表示频率。任务可能希望一次查看较长时间范围，却只查看较窄频率范围，此时 $3\times7$ 或 $1\times5$ 等核有明确含义。
 
-> [!TIP] 元组顺序跟随空间轴顺序
+> [!TIP] 元组顺序跟随空间维度顺序
 > PyTorch `Conv2d` 与 Keras `Conv2D` 的 kernel size 元组都通常按高、宽书写；三维则按深度、高度、宽度。输入 Channel 放在前还是最后，不会改变空间参数元组内部的先后次序。
 
 核大小为 $1\times K$ 时只沿宽度组合局部位置，$K\times1$ 时只沿高度组合。连续使用这两个卷积，可以把一个 $K\times K$ 空间计算拆成两个方向：
@@ -5033,7 +5075,7 @@ $$
 (1,O,1,1).
 $$
 
-两个长度为 1 的空间轴以及最前面的长度为 1 的轴会重复使用同一数值。实际参数 shape 仍是 `(O,)`，通常不会真的复制成完整输出大小。
+两个长度为 1 的空间维度以及最前面的长度为 1 的维度会重复使用同一数值。实际参数 shape 仍是 `(O,)`，通常不会真的复制成完整输出大小。
 
 Keras 默认输出 shape 为：
 
@@ -5054,7 +5096,7 @@ $$
 (1,1,1,O).
 $$
 
-两个框架只是 Channel轴位置不同；每个输出 Channel 仍只有一个 bias。
+两个框架只是 Channel维度位置不同；每个输出 Channel 仍只有一个 bias。
 
 #### 具体例子：3 个 bias 加到哪些元素
 
@@ -5131,7 +5173,7 @@ $$
 > [!TIP] 用一个下标问题判断该加哪个 bias
 > 先问当前输出元素属于哪个输出 Channel。若它属于 Channel 2，就只加 $b_2$；样本编号和高宽坐标不会改变 bias 的选择。
 
-当卷积后立即接带平移参数的 Batch Normalization 时，卷积 bias 有时会关闭，因为归一化后的 $\beta$ 已能提供每 Channel 平移。不过这是一种结构选择，不是所有“卷积后接归一化”都必须关闭 bias。若归一化的轴、参数设置或 Layer 次序不同，应重新分析。
+当卷积后立即接带平移参数的 Batch Normalization 时，卷积 bias 有时会关闭，因为归一化后的 $\beta$ 已能提供每 Channel 平移。不过这是一种结构选择，不是所有“卷积后接归一化”都必须关闭 bias。若归一化的维度、参数设置或 Layer 次序不同，应重新分析。
 
 > [!WARNING] 不要仅凭经验删除 bias
 > 先确认后续 Layer 是否真的带可学习平移参数，以及卷积输出是否完整经过该 Layer。存在分支、部分 Channel 处理或特殊归一化时，结论可能不同。
@@ -5206,7 +5248,7 @@ $$
 $$
 
 > [!TIP] 建议为复杂网络维护形状表
-> 每行写 Layer 名称、输入形状、输出形状、参数数目和尺寸公式。遇到分支相加或拼接时，这张表能帮助确认 Batch维度与空间轴是否一致。
+> 每行写 Layer 名称、输入形状、输出形状、参数数目和尺寸公式。遇到分支相加或拼接时，这张表能帮助确认 Batch维度与空间维度是否一致。
 
 > [!QUESTION] 若第二层改成普通卷积会怎样？
 > 普通 `32→32` 的 $3\times3$ 卷积、不使用 bias，需要 $32\times32\times9=9216$ 个权重；Depthwise 只需 288 个。两者参数差距很大，但普通卷积能在同一步同时组合全部输入 Channel。
@@ -5215,13 +5257,13 @@ $$
 
 PyTorch 提供 `LazyConv1d/2d/3d` 和相应 Lazy 转置卷积。它们允许构造时暂不填写输入 Channel，首次收到输入后再根据 Channel维度创建权重。输出 Channel、kernel size、stride 等仍要提前指定。
 
-Keras Layer 通常在 `build` 阶段根据首次输入中由 `data_format` 指定的 Channel轴创建卷积核，因此常规 Keras `Conv1D/2D/3D` 就具有相似的延后建权重行为，用户主要指定 filters 与 kernel size。默认 channels-last 时读取最后一轴；channels-first 时读取第 1 轴。
+Keras Layer 通常在 `build` 阶段根据首次输入中由 `data_format` 指定的 Channel维度创建卷积核，因此常规 Keras `Conv1D/2D/3D` 就具有相似的延后建权重行为，用户主要指定 filters 与 kernel size。默认 channels-last 时读取最后一个维度；channels-first 时读取第 1 个维度。
 
 > [!NOTE] 延后创建权重不会改变数学公式
 > 输入 Channel 一旦确定，权重形状、参数数目和普通卷积完全相同。Lazy 只省去构造时手工写入输入 Channel。
 
 > [!NOTE] Lazy Conv 的 bias 只由输出 Channel 数决定
-> 若启用 bias，初始化完成后的 shape 始终为 `(C_out,)`，不随首次输入得到的输入 Channel 数改变。PyTorch Lazy Conv 在首次输入前可能把 bias 保持为尚未初始化的 Parameter；首次输入后才建立正常存储。
+> 若启用 bias，初始化完成后的实际 shape 始终为 `(C_out,)`，不随首次输入得到的输入 Channel 数改变。对 PyTorch LazyConv1D、LazyConv2D 与 LazyConv3D 输出，可分别在概念上观察成 `(1,C_out,1)`、`(1,C_out,1,1)` 与 `(1,C_out,1,1,1)`；Keras 默认 channels-last 格式下相应为 `(1,1,C_out)`、`(1,1,1,C_out)` 与 `(1,1,1,1,C_out)`。PyTorch Lazy Conv 在首次输入前可能把 bias 保持为尚未初始化的 Parameter；首次输入后才建立正常存储。
 
 > [!WARNING] 首次输入会固定输入 Channel
 > 若一个 Lazy Conv2D 首次收到 5 个 Channel，它会创建适合 5 个输入 Channel 的核。之后再给 7 个 Channel，不能自动重新创建另一套权重。
@@ -5230,9 +5272,9 @@ Keras Layer 通常在 `build` 阶段根据首次输入中由 `data_format` 指�
 
 ## 7. 池化、填充、裁剪与局部窗口展开
 
-池化用于汇总局部区域，填充用于在空间轴两端或图像四周加入位置，裁剪用于移除外侧位置，Unfold 则把滑动窗口逐个取出。它们大多没有可学习参数，但会显著改变后续 Layer 接收到的形状和数值。
+池化用于汇总局部区域，填充用于在空间维度两端或图像四周加入位置，裁剪用于移除外侧位置，Unfold 则把滑动窗口逐个取出。它们大多没有可学习参数，但会显著改变后续 Layer 接收到的形状和数值。
 
-### 7.1 池化 Layer 的名称、轴顺序与共同特点
+### 7.1 池化 Layer 的名称、维度顺序与共同特点
 
 | 功能 | PyTorch | Keras |
 | --- | --- | --- |
@@ -5245,7 +5287,7 @@ Keras Layer 通常在 `build` 阶段根据首次输入中由 `data_format` 指�
 | 全局平均池化 | `AdaptiveAvgPool1d/2d/3d(1)` | `GlobalAveragePooling1D/2D/3D` |
 | 全局最大池化 | `AdaptiveMaxPool1d/2d/3d(1)` | `GlobalMaxPooling1D/2D/3D` |
 
-PyTorch 池化沿 channels-first 输入的空间轴移动，Keras 默认沿 channels-last 输入的空间轴移动。池化通常逐 Channel 独立进行，不把不同 Channel 相加，也不改变 Channel 数。
+PyTorch 池化沿 channels-first 输入的空间维度移动，Keras 默认沿 channels-last 输入的空间维度移动。池化通常逐 Channel 独立进行，不把不同 Channel 相加，也不改变 Channel 数。
 
 > [!NOTE] 池化没有卷积核权重
 > Max Pooling 只选择窗口最大值，Average Pooling 只计算窗口平均值。窗口大小和 stride 是固定设置，不是训练得到的参数。
@@ -5308,7 +5350,7 @@ PyTorch `MaxPool1d/2d/3d` 可以通过 `return_indices=True` 同时返回最大�
 
 ### 7.3 Max Pooling 的 padding、dilation 与 ceil mode
 
-Max Pooling 的单轴输出尺寸可用与卷积相似的公式：
+Max Pooling 在单个空间维度上的输出尺寸可用与卷积相似的公式：
 
 $$
 L_{\mathrm{out}}
@@ -5422,7 +5464,7 @@ y_{n,c}
 x_{n,c,h,w}.
 $$
 
-若保留空间轴，PyTorch 形状从 $(N,C,H,W)$ 变成 $(N,C,1,1)$；Keras 默认从 $(N,H,W,C)$ 变成 $(N,1,1,C)$。Keras `GlobalAveragePooling2D` 默认通常去掉空间轴，得到 $(N,C)$，可通过 `keepdims` 保留长度为 1 的空间轴。PyTorch `AdaptiveAvgPool2d(1)` 保留两个空间轴，若需要 $(N,C)$，还要再做 Flatten 或挤压。
+若保留空间维度，PyTorch 形状从 $(N,C,H,W)$ 变成 $(N,C,1,1)$；Keras 默认从 $(N,H,W,C)$ 变成 $(N,1,1,C)$。Keras `GlobalAveragePooling2D` 默认通常去掉空间维度，得到 $(N,C)$，可通过 `keepdims` 保留长度为 1 的空间维度。PyTorch `AdaptiveAvgPool2d(1)` 保留两个空间维度，若需要 $(N,C)$，还要再做 Flatten 或挤压。
 
 #### 手算：两个 Channel 的全局平均
 
@@ -5517,9 +5559,9 @@ $$
 > [!NOTE] Adaptive 不表示窗口由训练得到
 > 这些 Layer 没有可学习权重。“自适应”只表示区间由输入尺寸与目标输出尺寸计算出来。
 
-Keras 3 提供 `AdaptiveAveragePooling1D/2D/3D` 与 `AdaptiveMaxPooling1D/2D/3D`，可以直接指定目标空间大小。目标大小为 1 时，也可以使用更常见的 `GlobalAveragePooling1D/2D/3D` 与 `GlobalMaxPooling1D/2D/3D`。两类 Layer 都遵循 Keras 的 `data_format`：默认 channels-last 时只调整 Channel维度之前的空间轴，不改变 Batch维度和 Channel 数。
+Keras 3 提供 `AdaptiveAveragePooling1D/2D/3D` 与 `AdaptiveMaxPooling1D/2D/3D`，可以直接指定目标空间大小。目标大小为 1 时，也可以使用更常见的 `GlobalAveragePooling1D/2D/3D` 与 `GlobalMaxPooling1D/2D/3D`。两类 Layer 都遵循 Keras 的 `data_format`：默认 channels-last 时只调整 Channel维度之前的空间维度，不改变 Batch维度和 Channel 数。
 
-### 7.7 填充 Layer：在空间轴外侧加入位置
+### 7.7 填充 Layer：在空间维度外侧加入位置
 
 PyTorch 常见填充 Layer：
 
@@ -5570,14 +5612,14 @@ $$
 原高宽 $2\times2$ 变成 $3\times5$。
 
 > [!WARNING] 两个框架的填充元组写法不同
-> PyTorch 二维填充参数常按最后空间轴优先，顺序为左、右、上、下。Keras `ZeroPadding2D` 常写成“高度前后、宽度前后”的两对数。不要看到同样四个整数就直接照搬。
+> PyTorch 二维填充参数常按最后一个空间维度优先，顺序为左、右、上、下。Keras `ZeroPadding2D` 常写成“高度前后、宽度前后”的两对数。不要看到同样四个整数就直接照搬。
 
 Reflection Padding 要求每侧填充数小于相应输入尺寸，因为它需要从输入内部取得可反射的数。Replication Padding 只重复端点，对很小输入也较容易使用，但连续重复可能在外侧形成大片相同数值。
 
 > [!TIP] 把填充与卷积分开有助于观察
 > 当左右或上下需要不同数量时，先用独立填充 Layer，再使用 `padding=0` 的卷积，形状关系通常更清楚。
 
-### 7.8 Cropping：从空间轴两端移除位置
+### 7.8 Cropping：从空间维度两端移除位置
 
 Keras 提供 `Cropping1D`、`Cropping2D` 与 `Cropping3D`。PyTorch 没有同名的常用 Cropping Layer，通常通过张量切片、`narrow` 或自定义无参数模块完成。
 
@@ -5636,7 +5678,7 @@ $$
 (N,\;H_{\mathrm{out}},\;W_{\mathrm{out}},\;CK_hK_w)
 $$
 
-的组织方式。两者包含的局部数值相近，但轴排列不同。
+的组织方式。两者包含的局部数值相近，但维度排列不同。
 
 > [!NOTE] Unfold 没有学习参数
 > 它只复制并重新排列输入元素。相邻窗口共享的输入会在展开结果中重复出现，因此输出元素数可能远大于输入。
@@ -5691,8 +5733,8 @@ $$
 
 每一列代表一个窗口，不是每一行代表一个窗口。
 
-> [!TIP] 用输出形状判断窗口放在哪个轴
-> PyTorch 输出 $(N,CK_hK_w,L)$ 中，最后一轴枚举窗口；Keras 常见提取结果把窗口保留在高宽两轴，最后的 Feature维度保存展开后的窗口内容。
+> [!TIP] 用输出形状判断窗口放在哪个维度
+> PyTorch 输出 $(N,CK_hK_w,L)$ 中，最后一个维度枚举窗口；Keras 常见提取结果把窗口保留在高宽两个维度，最后的 Feature维度保存展开后的窗口内容。
 
 ### 7.10 Unfold 怎样把卷积变成矩阵乘
 
@@ -5798,7 +5840,7 @@ Keras 常见接口中没有与 PyTorch `Fold` 完全同名且组织方式完全�
 > Max Pooling 与 Average Pooling 会读取整个窗口。只有非常特殊的输入和参数组合，结果才碰巧等于固定间隔取样。
 
 > [!WARNING] Global Pooling 不会改变 Channel 数
-> 它删除或保留长度为 1 的空间轴，但每个 Channel 仍产生一个结果。若要改变 Feature 宽度，还需 Dense、Linear 或 $1\times1$ 卷积。
+> 它删除或保留长度为 1 的空间维度，但每个 Channel 仍产生一个结果。若要改变 Feature 宽度，还需 Dense、Linear 或 $1\times1$ 卷积。
 
 > [!WARNING] Padding 会参与后续计算
 > 补入的值不是只为了让形状好看。卷积与池化在外侧位置会读取它们，因此输出数值也会改变。
@@ -5985,12 +6027,12 @@ $$
 > [!WARNING] 无参数不等于开销小
 > Reshape 通常只改变观察方式，Unfold 却会复制重叠窗口内容。分析资源使用时，应同时看输出元素数。
 
-### 7.17 Padding、Cropping、Unfold 的轴差异总结
+### 7.17 Padding、Cropping、Unfold 的维度差异总结
 
 | 操作 | PyTorch channels-first | Keras 默认 channels-last | Channel 数是否改变 |
 | --- | --- | --- | --- |
 | 二维零填充 | $(N,C,H,W)$ 改变 $H,W$ | $(N,H,W,C)$ 改变 $H,W$ | 否 |
-| 二维裁剪 | 通过切片改变最后两轴 | `Cropping2D` 改变中间两空间轴 | 否 |
+| 二维裁剪 | 通过切片改变最后两个维度 | `Cropping2D` 改变中间两个空间维度 | 否 |
 | 局部块提取 | 常输出 $(N,CK_hK_w,L)$ | 常输出 $(N,H_o,W_o,CK_hK_w)$ | 内容被放入展开后的 Feature维度 |
 | Fold 或块组合 | 指定输出高宽并累加 | 常需后端运算或自定义 Layer | 由块内容决定 |
 
@@ -5998,7 +6040,7 @@ $$
 > PyTorch 的二维 pad 四元组常是左、右、上、下；Keras Cropping2D 的两对数常分别描述高度与宽度。它们都使用四个整数，却不能直接交换使用。
 
 > [!QUESTION] 为什么 Keras 提取块结果不像 PyTorch Unfold？
-> 两个框架默认 Channel 轴不同，而且一个把窗口位置压成单轴 $L$，另一个常保留输出高宽。把 Keras 的输出高宽展平，并把最后 Feature维度换到前面，就能得到与 $(N,CK_hK_w,L)$ 相近的组织方式。
+> 两个框架默认 Channel 维度不同，而且一个把窗口位置压成一个维度 $L$，另一个常保留输出高宽。把 Keras 的输出高宽展平，并把最后 Feature维度换到前面，就能得到与 $(N,CK_hK_w,L)$ 相近的组织方式。
 
 ---
 
@@ -6009,7 +6051,7 @@ $$
 > [!IMPORTANT] 尺寸变大不代表旧细节自动回来
 > 一个 $2\times2$ 特征图放大到 $4\times4$，只是产生了更多输出位置。若早先池化已经舍弃某些数值，仅靠上采样不能推知它们。解码器常结合跳接特征或训练得到的卷积权重补充信息。
 
-### 8.1 转置卷积的名称、输入轴与参数
+### 8.1 转置卷积的名称、输入维度与参数
 
 | 计算 | PyTorch | Keras | PyTorch 默认输入 | Keras 默认输入 |
 | --- | --- | --- | --- | --- |
@@ -6034,7 +6076,7 @@ $$
 (C_{\mathrm{out}},C_{\mathrm{in}}/G,K_h,K_w)
 $$
 
-轴次序不同。Keras `Conv2DTranspose` 的核轴常按空间高、空间宽、输出 Channel、输入 Channel 排列。
+维度顺序不同。Keras `Conv2DTranspose` 的核维度常按空间高、空间宽、输出 Channel、输入 Channel 排列。
 
 忽略 bias，分组转置卷积的权重参数数目仍为：
 
@@ -6052,14 +6094,14 @@ $$
 (C_{\mathrm{out}},).
 $$
 
-它不采用转置卷积 Kernel 的 Channel 轴次序。PyTorch ConvTranspose2D 输出为 `(N,C_out,H_out,W_out)` 时，可在概念上把 bias 看成 `(1,C_out,1,1)`；Keras 默认输出为 `(N,H_out,W_out,C_out)` 时，可看成 `(1,1,1,C_out)`。每个输出 Channel 的一个标量供该 Channel 的全部输出位置使用。
+它不采用转置卷积 Kernel 的 Channel 维度顺序。PyTorch ConvTranspose2D 输出为 `(N,C_out,H_out,W_out)` 时，可在概念上把 bias 看成 `(1,C_out,1,1)`；Keras 默认输出为 `(N,H_out,W_out,C_out)` 时，可看成 `(1,1,1,C_out)`。每个输出 Channel 的一个标量供该 Channel 的全部输出位置使用。
 
-> [!WARNING] 不要按普通卷积轴次序手工复制转置卷积权重
-> 即使元素总数相同，输入与输出 Channel 所在轴也可能不同。读取权重文件时应先检查框架、Layer 类型和张量轴说明。
+> [!WARNING] 不要按普通卷积维度顺序手工复制转置卷积权重
+> 即使元素总数相同，输入与输出 Channel 所在维度也可能不同。读取权重文件时应先检查框架、Layer 类型和张量维度说明。
 
 ### 8.2 转置卷积输出尺寸公式
 
-PyTorch 转置卷积在一个空间轴上的输出长度为：
+PyTorch 转置卷积在一个空间维度上的输出长度为：
 
 $$
 L_{\mathrm{out}}
@@ -6080,7 +6122,7 @@ $$
 - $d$：dilation；
 - $o$：output padding。
 
-二维和三维分别对每个空间轴使用该式。
+二维和三维分别对每个空间维度使用该式。
 
 #### 手算：长度 5 放大到长度 10
 
@@ -6103,12 +6145,12 @@ L_{\mathrm{out}}
 =10.
 $$
 
-二维输入高宽都是 5，两个轴采用相同设置时，高宽都变成 10。
+二维输入高宽都是 5，两个维度采用相同设置时，高宽都变成 10。
 
 > [!TIP] 不要用“乘 stride”代替完整公式
 > 上例恰好从 5 变成 10，但很多设置并不是简单乘 2。kernel size、padding、dilation 和 output padding 都会参与最终尺寸。
 
-Keras 的 `Conv1DTranspose/Conv2DTranspose/Conv3DTranspose` 常通过 `padding="valid"` 或 `"same"`、`strides` 和 `output_padding` 控制输出。跨框架迁移时，应根据实际输入尺寸逐轴核对结果，不要只根据 `"same"` 名称推断。
+Keras 的 `Conv1DTranspose/Conv2DTranspose/Conv3DTranspose` 常通过 `padding="valid"` 或 `"same"`、`strides` 和 `output_padding` 控制输出。跨框架迁移时，应根据实际输入尺寸逐个维度核对结果，不要只根据 `"same"` 名称推断。
 
 ### 8.3 一维手算：输入位置怎样生成并叠加
 
@@ -6232,7 +6274,7 @@ $$
 编码器和解码器使用跳接时，应记录每一级特征形状。若输入高宽为奇数，连续下采样后再按固定倍率放大，常出现相差一个像素的情况。PyTorch 转置卷积前向计算可通过 `output_size` 指定目标；Keras 可以通过明确的 padding、output padding、裁剪或补齐让形状一致。
 
 > [!WARNING] 不要先随意裁剪，再忽略尺寸差异原因
-> 相差一个像素可能来自向下取整、padding 设置或 output padding。应先逐轴代入公式，再决定采用哪种调整方式。
+> 相差一个像素可能来自向下取整、padding 设置或 output padding。应先逐个维度代入公式，再决定采用哪种调整方式。
 
 ### 8.6 nearest 上采样：复制邻近值
 
@@ -6278,7 +6320,7 @@ $$
 
 ### 8.7 linear、bilinear 与 trilinear
 
-linear 插值用于一个空间轴；bilinear 用于二维高宽；trilinear 用于三维深度、高度和宽度。它们都根据邻近输入按距离计算权重。
+linear 插值用于一个空间维度；bilinear 用于二维高宽；trilinear 用于三维深度、高度和宽度。它们都根据邻近输入按距离计算权重。
 
 一维线性插值可以写为：
 
@@ -6355,7 +6397,7 @@ $$
 
 ### 8.9 bicubic：使用更大的邻近区域
 
-bicubic 插值在二维图像上通常沿每个轴考虑四个邻近位置，因此一个输出像素最多受到 $4\times4$ 输入邻域影响。它使用三次函数计算权重，通常比 bilinear 更平滑，也保留更多曲线变化。
+bicubic 插值在二维图像上通常沿每个维度考虑四个邻近位置，因此一个输出像素最多受到 $4\times4$ 输入邻域影响。它使用三次函数计算权重，通常比 bilinear 更平滑，也保留更多曲线变化。
 
 > [!NOTE] bicubic 仍然没有可学习参数
 > 权重由相对坐标和固定三次插值公式决定，不由训练数据更新。这里的“权重”是本次插值系数，不是模型参数。
@@ -6383,7 +6425,7 @@ Keras `UpSampling2D(size=(r_h,r_w))` 中的 `size` 常表示整数放大倍率�
 > [!WARNING] 同名 size 在不同 Layer 中含义可能不同
 > PyTorch 插值接口中的 `size` 通常是目标尺寸，Keras `UpSampling2D` 的 `size` 通常是放大倍数。阅读构造参数时要结合 Layer 名称。
 
-假设解码器特征高宽为 $15\times16$，跳接特征为 $31\times33$。简单乘 2 得到 $30\times32$，无法拼接。直接指定目标为 $31\times33$ 可以避免两轴都差一个位置。
+假设解码器特征高宽为 $15\times16$，跳接特征为 $31\times33$。简单乘 2 得到 $30\times32$，无法拼接。直接指定目标为 $31\times33$ 可以避免两个维度都差一个位置。
 
 对于缩小图像，bilinear 或 bicubic 可以使用抗混叠设置，以减轻密集纹理缩小时出现的锯齿。PyTorch 和 Keras 的具体参数名称及支持模式可能不同，应结合版本文档确认。
 
@@ -6472,7 +6514,7 @@ $$
 (N,H,W,Cr^2).
 $$
 
-它把每个 $r\times r$ 空间小块中的数放到 Channel维度。只要轴次序与排列规则一致，PixelUnshuffle 可以还原 PixelShuffle 的结果。
+它把每个 $r\times r$ 空间小块中的数放到 Channel维度。只要维度顺序与排列规则一致，PixelUnshuffle 可以还原 PixelShuffle 的结果。
 
 以前面的矩阵为例：
 
@@ -6492,7 +6534,7 @@ space to depth 看起来像下采样，因为高宽变小；但它没有丢弃�
 
 ### 8.14 ChannelShuffle：让分组后的 Channel 交错排列
 
-ChannelShuffle 不改变张量形状，只改变 Channel 次序。PyTorch 提供 `ChannelShuffle(groups)`。Keras 常通过 Reshape、交换轴和再次 Reshape 组合实现，也可以封装成无参数自定义 Layer。
+ChannelShuffle 不改变张量形状，只改变 Channel 次序。PyTorch 提供 `ChannelShuffle(groups)`。Keras 常通过 Reshape、交换维度和再次 Reshape 组合实现，也可以封装成无参数自定义 Layer。
 
 假设 Channel 数为 $C$，分组数为 $G$。先把 Channel维度拆成：
 
@@ -6500,7 +6542,7 @@ $$
 (G,C/G),
 $$
 
-再交换这两个轴：
+再交换这两个维度：
 
 $$
 (C/G,G),
@@ -6525,7 +6567,7 @@ b_0&b_1&b_2&b_3
 \end{bmatrix}.
 $$
 
-交换组轴与组内轴后再展平：
+交换组维度与组内维度后再展平：
 
 $$
 [a_0,b_0,a_1,b_1,a_2,b_2,a_3,b_3].
@@ -6539,7 +6581,7 @@ $$
 > [!WARNING] Channel 数必须能被 groups 整除
 > 10 个 Channel 不能均分为 4 组。即使手工 Reshape，也必须满足元素数与目标形状一致。
 
-PyTorch channels-first 输入可把 Channel 轴拆成 $(G,C/G)$。Keras 默认 channels-last 时，应拆分最后一轴。若错误地拆分高或宽，运算可能仍能执行，但空间结构会被破坏。
+PyTorch channels-first 输入可把 Channel 维度拆成 $(G,C/G)$。Keras 默认 channels-last 时，应拆分最后一个维度。若错误地拆分高或宽，运算可能仍能执行，但空间结构会被破坏。
 
 ### 8.15 空间重排、池化与插值的元素数比较
 
@@ -6573,18 +6615,18 @@ PyTorch channels-first 输入可把 Channel 轴拆成 $(G,C/G)$。Keras 默认 c
 > [!WARNING] 错误四：PixelShuffle 的 Channel 数不满足要求
 > 倍率为 3 时，输入 Channel 必须能被 9 整除。目标输出 Channel 为 16 时，前一层应产生 144 个 Channel。
 
-> [!WARNING] 错误五：忽略框架默认轴次序
-> PyTorch PixelShuffle 操作第二轴 Channel，Keras 的 depth to space 常操作最后一轴 Channel。卷积、池化、填充与空间重排必须对同一轴约定保持一致。
+> [!WARNING] 错误五：忽略框架默认维度顺序
+> PyTorch PixelShuffle 操作第 1 个维度（Channel维度，从 0 开始计数），Keras 的 depth to space 常操作最后一个 Channel维度。卷积、池化、填充与空间重排必须对同一维度约定保持一致。
 
 面对一个空间尺寸变换 Layer，可以依次回答：
 
 1. 输入使用 channels-first 还是 channels-last？
-2. 哪些轴会改变，Batch维度与 Channel维度是否保留？
+2. 哪些维度会改变，Batch维度与 Channel维度是否保留？
 3. 输出尺寸由公式、目标 size 还是倍率决定？
 4. Layer 是否有可学习参数？
 5. 多个输入数是被选择、平均、加权相加，还是只重新排列？
 6. 奇数尺寸、padding 与取整会不会让两个分支相差一个位置？
-7. PyTorch 与 Keras 的参数名、默认轴和坐标规则是否一致？
+7. PyTorch 与 Keras 的参数名、默认维度和坐标规则是否一致？
 
 能回答这七个问题，就能把转置卷积、插值、PixelShuffle 和 ChannelShuffle 区分清楚。
 
@@ -6615,7 +6657,21 @@ PyTorch channels-first 输入可把 Channel 轴拆成 $(G,C/G)$。Keras 默认 c
 | $W$ | 可学习权重矩阵 |
 | $b$ | 可学习偏置向量 |
 
-循环 Layer 中，一个门或一组状态预激活的 bias 通常有 $H$ 个数，shape 为 `(H,)`。对单个时间位置的 Batch 结果 `(N,H)`，可在概念上把它看成 `(1,H)`；对完整序列 `(N,L,H)`，可看成 `(1,1,H)`。实际 Parameter 不含 Batch轴和时间轴，同一层、同一方向的 bias 会供全部样本与全部时间位置使用；不同层、不同方向各自保存参数。
+循环公式中拆开的一个门段或状态段有 $H$ 个 bias 数，shape 为 `(H,)`。对单个时间位置的 Batch 结果 `(N,H)`，可在概念上把这个门段观察成 `(1,H)`；对完整序列 `(N,L,H)`，可观察成 `(1,1,H)`。Parameter 不含 Batch维度和时间维度，同一层、同一方向的 bias 会供全部样本与全部时间位置使用；不同层、不同方向各自保存参数。
+
+内置 Layer 常把多个 `(H,)` 门段拼接存储：
+
+| 内置 Layer | 启用 bias 时每层、每个方向的实际 Parameter shape |
+|---|---|
+| PyTorch `RNN` | `bias_ih` 与 `bias_hh` 各 `(H,)` |
+| Keras `SimpleRNN` | 一份 `(H,)` |
+| PyTorch `GRU` | `bias_ih` 与 `bias_hh` 各 `(3H,)` |
+| Keras `GRU(reset_after=True)` | 一份 `(2,3H)`；关闭 `reset_after` 时为 `(3H,)` |
+| PyTorch `LSTM` | `bias_ih` 与 `bias_hh` 各 `(4H,)` |
+| Keras `LSTM` | 一份 `(4H,)` |
+
+> [!INFO] 循环 Layer 参数说明来源
+> 可分别核对 PyTorch 的 [`RNN`](https://docs.pytorch.org/docs/stable/generated/torch.nn.RNN.html)、[`GRU`](https://docs.pytorch.org/docs/stable/generated/torch.nn.GRU.html)、[`LSTM`](https://docs.pytorch.org/docs/stable/generated/torch.nn.LSTM.html) 与 Keras 的 [`SimpleRNN`](https://keras.io/api/layers/recurrent_layers/simple_rnn/)、[`GRU`](https://keras.io/api/layers/recurrent_layers/gru/)、[`LSTM`](https://keras.io/api/layers/recurrent_layers/lstm/)。
 
 常见的一个 Batch 输入采用 `(N,L,I)`，也就是 Batch维度在前、序列维度居中、Feature维度在后。PyTorch 设置 `batch_first=True` 后使用这一排列；Keras 的循环 Layer 默认也采用这一排列。
 
@@ -6626,7 +6682,7 @@ PyTorch channels-first 输入可把 Channel 轴拆成 $(G,C/G)$。Keras 默认 c
 | PyTorch 返回的全部层最终隐藏状态 | $(K,N,H)$ | $(2K,N,H)$ |
 
 > [!IMPORTANT] Batch维度放在前面，不会改变状态张量的组织方式
-> 在 PyTorch 中，即使 `batch_first=True`，最终状态仍以“层与方向”作为第 0 维。因此双向两层网络的最终状态形状是 $(4,N,H)$，不是 $(N,4,H)$。
+> 在 PyTorch 中，即使 `batch_first=True`，最终状态仍以“层与方向”作为第 0 个维度。因此双向两层网络的最终状态形状是 $(4,N,H)$，不是 $(N,4,H)$。
 
 > [!NOTE] Keras 堆放多层循环 Layer 时要逐层查看状态
 > Keras 的 `return_state=True` 返回当前循环 Layer 的状态。把多个循环 Layer 依次堆放，并不会自动把所有层状态合成上表所示的单个张量；若需要保留每一层状态，应分别接收并记录。
@@ -6651,7 +6707,7 @@ $$
 | $h_{t-1}$ | $(H)$ | 前一个位置留下的隐藏状态 |
 | $W_{ih}$ | $(H,I)$ | 把输入 Feature 转换到隐藏宽度 |
 | $W_{hh}$ | $(H,H)$ | 处理旧隐藏状态 |
-| $b_{ih},b_{hh}$ | $(H)$ | 两部分偏置 |
+| $b_{ih},b_{hh}$ | `(H,)` | 两部分偏置 |
 | $a_t$ | $(H)$ | 激活函数之前的中间结果 |
 | $h_t$ | $(H)$ | 当前时间位置的新状态 |
 
@@ -6769,7 +6825,7 @@ $$
 
 公式中的每个 bias shape 都是 `(H,)`，分别加到相应门或候选状态的 $H$ 个 Feature，并沿 Batch维度和时间位置重复使用。
 
-PyTorch 通常把三个输入侧 bias 拼接成一个 shape 为 `(3H,)` 的 Parameter，再把三个状态侧 bias 拼接成另一个 `(3H,)` Parameter。Keras 默认 `reset_after=True` 时保存输入侧和状态侧两行，常见 bias shape 为 `(2,3H)`；`reset_after=False` 时通常是 `(3H,)`。这些是存储组织方式，拆开后每个门段仍有 $H$ 个数。
+PyTorch `GRU(bias=True)` 把三个输入侧 bias 拼接成一个 shape 为 `(3H,)` 的 Parameter，再把三个状态侧 bias 拼接成另一个 `(3H,)` Parameter。Keras `GRU(use_bias=True,reset_after=True)` 保存输入侧和状态侧两行，bias shape 为 `(2,3H)`；`reset_after=False` 时为 `(3H,)`。这些是存储组织方式，拆开后每个门段仍有 $H$ 个数。
 
 > [!NOTE] 门不是人工指定的开关
 > 门值由当前输入、旧状态和可学习参数共同算出。训练会逐渐调整这些参数，使不同样本、不同时间位置得到不同门值。
@@ -6941,9 +6997,9 @@ $$
 
 ### 9.5 多层与双向状态到底怎样排列
 
-以两层双向 GRU 为例，$K=2,R=2$，最终状态第 0 维长度是 $KR=4$：
+以两层双向 GRU 为例，$K=2,R=2$，最终状态第 0 个维度长度是 $KR=4$：
 
-| 第 0 维下标 | 层 | 方向 |
+| 第 0 个维度下标 | 层 | 方向 |
 | --- | --- | --- |
 | 0 | 第 0 层 | 正向 |
 | 1 | 第 0 层 | 反向 |
@@ -7004,7 +7060,7 @@ PyTorch 常用打包序列功能，让循环 Layer 只处理有效长度。Keras
 ### 10.1 Query、Key、Value 的含义与形状
 
 > [!IMPORTANT] 本章统一按 `(N,L,E)` 书写
-> Keras 注意力 Layer 默认采用 Batch维度在前的 `(N,L,E)`。以下涉及 PyTorch `MultiheadAttention`、`TransformerEncoderLayer`、`TransformerDecoderLayer` 或 `Transformer` 的形状时，假设已经设置 `batch_first=True`；这些 Layer 的默认值通常是 `False`，默认输入排列为 `(L,N,E)`。改变排列只改变轴次序，不改变注意力公式。
+> Keras 注意力 Layer 默认采用 Batch维度在前的 `(N,L,E)`。以下涉及 PyTorch `MultiheadAttention`、`TransformerEncoderLayer`、`TransformerDecoderLayer` 或 `Transformer` 的形状时，假设已经设置 `batch_first=True`；这些 Layer 的默认值通常是 `False`，默认输入排列为 `(L,N,E)`。改变排列只改变维度顺序，不改变注意力公式。
 
 设 Query 序列长度为 $L_q$，Key 和 Value 序列长度为 $L_k$，Feature 宽度为 $E$：
 
@@ -7020,13 +7076,13 @@ $$
 | $X_k$ | $(N,L_k,E)$ | 产生检索特征的输入 |
 | $X_v$ | $(N,L_k,E)$ | 产生被加权内容的输入 |
 | $W_Q,W_K,W_V$ | 与投影宽度相容 | 可学习投影参数 |
-| $b_Q,b_K$ | $(d_k)$ | Query 与 Key 投影 bias |
-| $b_V$ | $(d_v)$ | Value 投影 bias |
+| $b_Q,b_K$ | `(d_k,)` | Query 与 Key 投影 bias |
+| $b_V$ | `(d_v,)` | Value 投影 bias |
 | $Q$ | $(N,L_q,d_k)$ | Query |
 | $K$ | $(N,L_k,d_k)$ | Key |
 | $V$ | $(N,L_k,d_v)$ | Value |
 
-表中的三个 bias 实际 shape 分别为 `(d_k,)`、`(d_k,)`、`(d_v,)`。它们沿 Batch维度和各自序列位置重复使用：例如 $b_{Q,r}$ 只加到全部 Query 位置的第 $r$ 个投影 Feature。若 Layer 关闭投影 bias，可以把相应 $b$ 视为 0。
+这里采用尚未拆分 Head 的普通 Dense 或 Linear 投影，因此三个 bias 的实际 shape 分别为 `(d_k,)`、`(d_k,)`、`(d_v,)`。它们沿 Batch维度和各自序列位置重复使用：例如 $b_{Q,r}$ 只加到全部 Query 位置的第 $r$ 个投影 Feature。内置多头 Layer 可能拼接这些参数或保留 Head 维度，实际存储见 10.5。若 Layer 关闭投影 bias，可以把相应 $b$ 视为 0。
 
 Query 与 Key 用来计算“相关程度”，Value 提供真正汇总到输出中的内容。Key 和 Value 的序列长度相同，是因为每个 Key 位置都对应一个 Value 位置。
 
@@ -7179,6 +7235,8 @@ $$
 - $e_{ij}$ 是未归一化分数；
 - $\alpha_{ij}$ 是最终权重。
 
+这里描述的是一般 Bahdanau 公式；其中 $b_a$ 是自定义投影所保存的 `(A,)` Parameter。Keras 内置 `AdditiveAttention` 使用后文的简化分数，不创建这份 $b_a$，因此也没有对应的 bias shape。
+
 对完整中间张量 $(N,L_q,L_k,A)$，可以在概念上把 $b_a$ 看成 `(1,1,1,A)`。同一个长度为 $A$ 的 bias 供全部样本、全部 Query 位置和全部 Key 位置使用。下面的一维例子采用 $A=1$，所以 `b_a=0` 表示 shape 为 `(1,)` 的 bias 中唯一的数。
 
 #### 一维中间特征的数字例子
@@ -7264,9 +7322,16 @@ b_V:(hd_v,),
 b_O:(E_{\mathrm{out}},).
 $$
 
-前三个 bias 分别沿 Batch维度和序列位置重复使用，$b_O$ 则加到每个输出位置的 $E_{\mathrm{out}}$ 个 Feature。
+Query bias 沿 Batch维度和 Query 位置重复使用；Key bias、Value bias 沿 Batch维度和 Key、Value 位置重复使用；$b_O$ 沿 Batch维度和 Query 输出位置重复使用，并分别加到 $E_{\mathrm{out}}$ 个输出 Feature。
 
-PyTorch `MultiheadAttention` 在常见等宽设置中，Q、K、V 三组 bias 各含 $E$ 个数，常合并保存为 `in_proj_bias`，shape 为 `(3E,)`；输出投影 bias shape 为 `(E,)`。Keras `MultiHeadAttention` 内部保留 Head 轴时，Query 与 Key bias 常可观察为 `(h,d_k)`，Value bias 为 `(h,d_v)`，输出 bias 的最后部分由输出宽度决定。存储 shape 可以不同，bias 总元素数和每个输出 Feature 的作用不变。
+PyTorch `MultiheadAttention` 在常见等宽设置中，Q、K、V 三组 bias 各含 $E$ 个数，并合并保存为 `in_proj_bias`，shape 为 `(3E,)`；输出投影 bias shape 为 `(E,)`。
+
+Keras `MultiHeadAttention(use_bias=True)` 的实际 Query bias shape 为 `(h,d_k)`，Key bias 为 `(h,d_k)`，Value bias 为 `(h,d_v)`。普通向量输出时，输出 bias shape 为 `(E_out,)`；`output_shape=None` 时，$E_{\mathrm{out}}$ 等于 Query 输入最后一个维度的宽度。若 `output_shape` 是由多个维度组成的 tuple，输出 bias shape 就是该 tuple。存储 shape 可以不同，但每个元素仍只服务于相应的投影输出 Feature。
+
+以上 Keras shape 采用默认 `use_gate=False`。若设置 `use_gate=True`，Layer 还会从 Query 产生门控张量，并增加一份实际 shape 为 `(h,d_v)` 的门控 bias；它沿 Batch维度和 Query 位置重复使用。
+
+> [!INFO] 多头注意力参数说明来源
+> PyTorch 的构造参数与输入输出见 [`MultiheadAttention`](https://docs.pytorch.org/docs/stable/generated/torch.nn.MultiheadAttention.html)；Keras 的 Head 维度、输出 shape 与 `use_gate` 说明见 [`MultiHeadAttention`](https://keras.io/api/layers/attention_layers/multi_head_attention/)，具体 Parameter 由其官方 [`EinsumDense` 构建源码](https://github.com/keras-team/keras/blob/master/keras/src/layers/attention/multi_head_attention.py)确定。
 
 若 $N=2,L=5,E=12,h=3$，则 $d_h=4$：
 
@@ -7354,7 +7419,7 @@ $$
 - $b_2$ shape 为 `(E,)`；
 - 每个 token 独立使用同一组 FFN 参数。
 
-输入为 $(N,L,E)$ 时，可在概念上把 $b_1$ 看成 `(1,1,F)`，把 $b_2$ 看成 `(1,1,E)`。二者都沿 Batch维度和全部 token 位置重复使用。Keras `Dense` 的 Kernel 轴次序通常与这里的列向量写法相反，但两组 bias shape 仍分别是 `(F,)` 与 `(E,)`。
+输入为 $(N,L,E)$ 时，可在概念上把 $b_1$ 看成 `(1,1,F)`，把 $b_2$ 看成 `(1,1,E)`。二者都沿 Batch维度和全部 token 位置重复使用。Keras `Dense` 的 Kernel 维度顺序通常与这里的列向量写法相反，但两组 bias shape 仍分别是 `(F,)` 与 `(E,)`。
 
 若输入为 $(N,L,E)=(2,6,16)$，Head 数为 4，中间宽度 $F=64$：
 
@@ -7805,7 +7870,7 @@ $$
 
 每个有效位置独立计算一次 $V$ 类交叉熵，再排除 PAD 并按有效 token 组合。
 
-Keras 的稀疏类别交叉熵默认把最后一轴视为类别轴，可以直接接收 `(N,L,V)` 与 `(N,L)`。PyTorch `CrossEntropyLoss` 把第 1 轴视为类别轴，因此有两种常见整理方式：
+Keras 的稀疏类别交叉熵默认把最后一个维度视为类别维度，可以直接接收 `(N,L,V)` 与 `(N,L)`。PyTorch `CrossEntropyLoss` 把第 1 个维度视为类别维度，因此有两种常见整理方式：
 
 $$
 (N,L,V)\rightarrow(N,V,L),
@@ -7821,7 +7886,7 @@ $$
 (N,L)\rightarrow(NL).
 $$
 
-两种方式计算的是同一组逐 token 交叉熵，但不能把 `(N,L,V)` 原样交给默认 PyTorch 接口并期待它自动识别最后一轴。
+两种方式计算的是同一组逐 token 交叉熵，但不能把 `(N,L,V)` 原样交给默认 PyTorch 接口并期待它自动识别最后一个维度。
 
 生成任务会把输入与目标错开。例如完整序列：
 
@@ -8306,7 +8371,7 @@ $$
 
 实际 shape 为 `(500,)`。对 logits `(4,4,500)`，可在概念上把它看成 `(1,1,500)`；$b_{\mathrm{vocab},v}$ 会加到 4 个样本、4 个 token 位置的词表项 $v$，不会加到其他词表项。
 
-这里的 logits 表按 Keras 默认类别轴和任务直觉写成 `(N,L,V)`。若直接使用 PyTorch `CrossEntropyLoss`，应先调整为 `(N,V,L)`，或整理为 `(NL,V)`；目标也按上一章说明保持 `(N,L)` 或整理为 `(NL)`。
+这里的 logits 表按 Keras 默认类别维度和任务直觉写成 `(N,L,V)`。若直接使用 PyTorch `CrossEntropyLoss`，应先调整为 `(N,V,L)`，或整理为 `(NL,V)`；目标也按上一章说明保持 `(N,L)` 或整理为 `(NL)`。
 
 位置 0 读取范围为位置 0；位置 1 可读取 0、1；位置 2 可读取 0、1、2；位置 3 可读取全部四个输入位置。
 
@@ -8342,7 +8407,7 @@ $$
 > Batch维度在哪里？序列长度是多少？每个位置的 Feature宽度是多少？整数编号是否先经过 Embedding？PAD 编号是否统一？
 
 > [!CHECK] 循环状态
-> 是单向还是双向？有几层？最终状态第 0 维是否按“层数乘方向数”组织？LSTM 是否同时处理 $h$ 和 $c$？
+> 是单向还是双向？有几层？最终状态第 0 个维度是否按“层数乘方向数”组织？LSTM 是否同时处理 $h$ 和 $c$？
 
 > [!CHECK] 注意力
 > Query 长度和 Key 长度分别是多少？Softmax 是否沿 Key 维度？权重形状是否包含 Head？PAD 权重是否为 0？因果任务是否禁止读取未来？
@@ -8390,7 +8455,7 @@ PyTorch 更常把激活写成下一个独立 Layer；Keras 常允许 `Dense` 或
 - PyTorch `Linear` 常把权重保存为 $(O,I)$，公式写作 $xW^T+b$；
 - Keras `Dense` 常把 kernel 保存为 $(I,O)$，公式写作 $xW+b$。
 
-两者都为每个输出计算 $I$ 个输入的加权和。两种框架的 bias shape 都是 `(O,)`，不会随权重是否转置而改变。差异来自权重参数的轴次序，不是计算能力差异。
+两者都为每个输出计算 $I$ 个输入的加权和。两种框架的 bias shape 都是 `(O,)`，不会随权重是否转置而改变。差异来自权重参数的维度顺序，不是计算能力差异。
 
 > [!EXAMPLE] 同一组权重的转置关系
 > 若 PyTorch 权重为 $\begin{bmatrix}1&2\\3&4\end{bmatrix}$，把参数交给使用 $(I,O)$ 次序的 Layer 时通常需要转置。仅复制数字而不检查形状，可能让输出含义变化。
@@ -8407,7 +8472,7 @@ PyTorch 更常把激活写成下一个独立 Layer；Keras 常允许 `Dense` 或
 - PyTorch：`(8,16,H_out,W_out)`；
 - Keras：`(8,H_out,W_out,16)`。
 
-卷积的每个输出数值仍来自相同的局部乘加公式，但两个 shape 中的公共轴次序不同。若张量采用各自常见的连续格式，线性存储顺序也不同；实际物理顺序仍要由 stride 判断。PyTorch channels-last 甚至可以让逻辑 shape 保持 `(N,C,H,W)`，同时使用与 NHWC 相同的物理次序。输入、Kernel 与输出的完整偏移公式见 1.8 和 6.6。
+卷积的每个输出数值仍来自相同的局部乘加公式，但两个 shape 中的公共维度顺序不同。若张量采用各自常见的连续格式，线性存储顺序也不同；实际物理顺序仍要由 stride 判断。PyTorch channels-last 甚至可以让逻辑 shape 保持 `(N,C,H,W)`，同时使用与 NHWC 相同的物理次序。输入、Kernel 与输出的完整偏移公式见 1.8 和 6.6。
 
 ### 13.4 RNN 输出规则需要单独核对
 
@@ -8523,13 +8588,13 @@ $$
 
 ### 15.1 Layer 的输出形状是不是只看参数名就能知道
 
-不能。还要知道输入形状、轴顺序、padding、stride、dilation、是否双向、是否返回完整序列等设置。最稳妥的方法是把每个相关数代入输出尺寸公式。
+不能。还要知道输入形状、维度顺序、padding、stride、dilation、是否双向、是否返回完整序列等设置。最稳妥的方法是把每个相关数代入输出尺寸公式。
 
 ### 15.2 为什么同一个公式在两个框架中看起来不同
 
 常见原因有三个：
 
-1. 权重张量轴次序不同；
+1. 权重张量维度顺序不同；
 2. 图像 Channel维度位置不同；
 3. 一个框架把激活或偏置写进 Layer 参数，另一个框架把它拆成单独步骤。
 
@@ -8539,7 +8604,7 @@ $$
 
 公式只说明数学关系。实际 Layer 还要求：
 
-- 维度次序正确；
+- 维度顺序正确；
 - Channel 数或 Feature 宽度满足构造参数；
 - 分组卷积的通道数可被 groups 整除；
 - Attention 的 Feature 宽度与 Head 数相容；
@@ -8756,8 +8821,8 @@ $$
 
 1. 图像是 channels-first 还是 channels-last；
 2. 全连接权重是否需要转置；
-3. 卷积核的输入、输出 Channel 轴次序是否一致；
-4. Batch Normalization 的 `axis` 是否指向 Channel维度；
+3. 卷积核的输入、输出 Channel 维度顺序是否一致；
+4. Batch Normalization 的 `axis` 参数是否设为 Channel维度的索引；
 5. RNN 是否返回完整序列和状态；
 6. Attention mask 中允许位置与禁止位置分别用什么值；
 7. 分类损失收到的是 logits 还是概率；
@@ -8975,7 +9040,8 @@ $$
 - $I$ 是输入 Feature 数量；
 - $O$ 是输出 Feature 数量；
 - $W_{i,o}$ 是输入特征 $i$ 对输出特征 $o$ 的系数；
-- $b_o$ 是输出特征 $o$ 的偏置。
+- $b$ 的实际 Parameter shape 是 `(O,)`；
+- $b_o$ 是其中服务于输出特征 $o$ 的一个偏置标量。
 
 设上游梯度为：
 
@@ -9100,10 +9166,10 @@ $$
 \sum_{m=1}^{M}G_m.
 $$
 
-同一组 Linear 或 Dense Parameter 在所有位置重复使用，所以各位置对它的梯度会汇总。
+同一组 Linear 或 Dense Parameter 在所有位置重复使用，所以各位置对它的梯度会汇总。结果 $\partial L/\partial b$ 的 shape 与原 bias 相同，仍为 `(O,)`，不会变成 `(M,O)`。
 
 > [!WARNING] PyTorch 与 Keras 权重形状显示不同
-> 上式按 Keras 常见的 `(I,O)` 书写。PyTorch `Linear.weight` 常保存为 `(O,I)`，所以显示出来的权重梯度也按 `(O,I)` 排列。数学关系相同，比较数值时要先统一轴次序。
+> 上式按 Keras 常见的 `(I,O)` 书写。PyTorch `Linear.weight` 常保存为 `(O,I)`，所以显示出来的权重梯度也按 `(O,I)` 排列。数学关系相同，比较数值时要先统一维度顺序。
 
 ### 18.4 Add、Multiply 与 Concatenate 的梯度
 
@@ -9214,7 +9280,7 @@ $$
 Concatenate 不会把两侧梯度相加，因为前向时它们没有占用同一输出位置。
 
 > [!TIP] 记忆方法
-> Add 的反向是“复制”，Multiply 的反向是“乘另一侧”，Concatenate 的反向是“沿原轴切开”。若前向含广播，还要把重复使用位置的梯度求和。
+> Add 的反向是“复制”，Multiply 的反向是“乘另一侧”，Concatenate 的反向是“沿原维度切开”。若前向含广播，还要把重复使用位置的梯度求和。
 
 ### 18.5 ReLU、Sigmoid、Tanh 与 GELU 的局部导数
 
@@ -10561,7 +10627,7 @@ $$
 > $h$ 太大时，差分不再代表局部斜率；$h$ 太小时，两次损失在有限精度中可能几乎相同，减法会丢失有效数字。通常要在若干数量级中比较。
 
 > [!TIP] 先检查一个元素，再扩大范围
-> 对复杂 Layer，可先选择一个权重、一个输入位置和一个标量损失。单点通过后，再随机抽查更多位置。这样更容易定位轴次序、求和范围或共享参数处理错误。
+> 对复杂 Layer，可先选择一个权重、一个输入位置和一个标量损失。单点通过后，再随机抽查更多位置。这样更容易定位维度顺序、求和范围或共享参数处理错误。
 
 ### 18.22 梯度异常的逐步排查顺序
 
@@ -10570,7 +10636,7 @@ $$
 1. 损失输入是否符合要求，例如是否把概率误传给接收 logits 的损失；
 2. 数据中是否已有无穷大、非数值或极端值；
 3. 除法、平方根和对数是否有安全处理；
-4. Softmax 是否沿正确轴计算，mask 是否导致整行都不可用；
+4. Softmax 是否沿正确维度计算，mask 是否导致整行都不可用；
 5. 激活输入是否长期处于导数很小的区域；
 6. 归一化统计组中是否只有一个有效元素；
 7. RNN 时间展开中局部系数是否反复放大或缩小；
@@ -10684,7 +10750,7 @@ $$
 $$
 
 > [!NOTE] 梯度形状与被求导对象相同
-> $\partial L/\partial x$ 的形状必须与 $x$ 相同，$\partial L/\partial W$ 的形状必须与 $W$ 相同。手算得到结果后，先检查形状通常能发现转置或求和轴错误。
+> $\partial L/\partial x$ 的形状必须与 $x$ 相同，$\partial L/\partial W$ 的形状必须与 $W$ 相同。手算得到结果后，先检查形状通常能发现转置或求和维度错误。
 
 ### 18.24 Identity、Flatten、Reshape 与 Permute 怎样传梯度
 
@@ -10737,7 +10803,7 @@ $$
 \end{bmatrix}.
 $$
 
-Permute 反向使用逆轴次序。二维转置是最直观例子：
+Permute 反向使用逆维度顺序。二维转置是最直观例子：
 
 $$
 y=x^T.
@@ -10766,7 +10832,7 @@ $$
 $$
 
 > [!WARNING] 改形状 Layer 不改变梯度数值，却会改变下标位置
-> 若前向轴次序错误，反向仍会忠实地按错误次序恢复梯度。自动求导只能执行已写出的计算，无法推断原本想让某个轴表示 Channel 还是 Feature。
+> 若前向维度顺序错误，反向仍会忠实地按错误次序恢复梯度。自动求导只能执行已写出的计算，无法推断原本想让某个维度表示 Channel 还是 Feature。
 
 ### 18.25 mask、有效位置与损失平均
 
@@ -11181,10 +11247,10 @@ $$
 (N,C,H,W)=(2,3,4,4).
 $$
 
-$N$ 表示 Batch Size，$L$ 表示 Sequence Length，$E$ 表示 Feature维度宽度，$C$ 表示 Channel 数，$H,W$ 表示高和宽。若使用 Keras 默认 channels-last，还应把图像写成 $(N,H,W,C)$。
+$N$ 表示 Batch Size，$L$ 表示 Sequence Length，$E$ 表示 Feature 宽度，$C$ 表示 Channel 数，$H,W$ 表示高和宽。若使用 Keras 默认 channels-last，还应把图像写成 $(N,H,W,C)$。
 
-> [!WARNING] 只有数字，没有轴含义，最容易算错
-> `(2,3,4)` 既可能是两个样本、三个时间步、每步四个 Feature，也可能是两个样本、三个 Channel、长度四的一维信号。Layer 名称和轴说明必须一起看。
+> [!WARNING] 只有数字，没有维度含义，最容易算错
+> `(2,3,4)` 既可能是两个样本、三个时间步、每步四个 Feature，也可能是两个样本、三个 Channel、长度四的一维信号。Layer 名称和维度说明必须一起看。
 
 #### 第二步：写出 Layer 参数的形状
 
@@ -11196,20 +11262,40 @@ $$
 
 Conv2D 的普通卷积核包含输入 Channel、输出 Channel 与空间核。GRU 有三组门参数，LSTM 有四组门参数。先写参数形状，再把各维相乘，可以减少漏算 bias 的情况。
 
+下面列出本章最常遇到的 bias Parameter shape。表中的 shape 是框架实际保存的 shape，不是为了参与计算而临时扩展后的 shape。
+
+| Layer 或实现 | 实际保存的 bias Parameter shape | 重复使用的维度 |
+|---|---:|---|
+| Linear / Dense | `(E_out,)` | 全部前导维度，例如 Batch维度和序列位置 |
+| Conv / ConvTranspose | `(C_out,)` | Batch维度和全部输出空间位置 |
+| Depthwise，depth multiplier 为 $M$ | `(C_in*M,)` | Batch维度和全部输出空间位置 |
+| PyTorch RNN | 每层、每个方向各有两个 `(H,)` | Batch维度和全部时间位置 |
+| Keras SimpleRNN | 每层一个 `(H,)` | Batch维度和全部时间位置 |
+| PyTorch GRU | 每层、每个方向各有两个 `(3H,)` | Batch维度和全部时间位置 |
+| Keras GRU | `reset_after=True` 时为 `(2,3H)`；否则为 `(3H,)` | Batch维度和全部时间位置 |
+| PyTorch LSTM | 每层、每个方向各有两个 `(4H,)` | Batch维度和全部时间位置 |
+| Keras LSTM | 每层一个 `(4H,)` | Batch维度和全部时间位置 |
+| Attention 的普通 Dense 投影 | `(O,)` | Batch维度和全部 Query、Key 或输出位置 |
+| PyTorch 等宽 MultiheadAttention | Q、K、V 合并为 `(3E,)`；输出投影为 `(E,)` | Batch维度和全部序列位置 |
+| Keras MultiHeadAttention，默认 `use_gate=False` | Query、Key 为 `(h,d_k)`；Value 为 `(h,d_v)`；单一输出 Feature维度时输出为 `(E_out,)` | Batch维度和全部序列位置 |
+
+> [!NOTE] 实际 shape 与计算时观察到的 shape
+> 一个 `(E_out,)` bias 加到 `(N,L,E_out)` 时，可在概念上观察成 `(1,1,E_out)`；一个 `(C_out,)` 卷积 bias 加到 PyTorch 的 `(N,C_out,H_out,W_out)` 时，可观察成 `(1,C_out,1,1)`。后两种写法只用于说明哪些维度重复读取同一参数，不表示框架真的保存了许多副本。
+
 #### 第三步：明确求和维度
 
-全连接在输入 Feature维度求和；普通卷积在输入 Channel 和核空间位置求和；归一化只在指定统计轴求均值与方差；Attention 对 Key 位置执行 Softmax，再对 Value 位置加权求和。
+全连接在输入 Feature维度求和；普通卷积在输入 Channel 和核空间位置求和；归一化只在指定统计维度求均值与方差；Attention 对 Key 位置执行 Softmax，再对 Value 位置加权求和。
 
 > [!TIP] 用一句话描述一个输出数
 > 例如：“固定样本 $n$ 和输出 Feature $j$，把全部输入 Feature 与第 $j$ 列权重相乘后相加，再加偏置。”一句话能说清，公式通常也能写对。
 
 #### 第四步：先算形状，再算数值
 
-形状错误时，后续乘法可能根本没有定义。卷积先用输出尺寸公式；矩阵乘先检查内侧维相等；残差相加先检查相关轴是否相同；拼接先确定在哪个轴合并。
+形状错误时，后续乘法可能根本没有定义。卷积先用输出尺寸公式；矩阵乘先检查内侧维相等；残差相加先检查相关维度是否相同；拼接先确定在哪个维度合并。
 
 #### 第五步：把广播写成显式重复
 
-若 bias 为 $(E,)$，输入输出为 $(N,L,E)$，bias 会在所有样本和所有序列位置重复使用。若归一化的 $\gamma,\beta$ 形状为 $(C,)$，要说明它们如何沿其他轴共享。
+若 bias 实际 shape 为 `(E,)`，输入输出为 $(N,L,E)$，计算时可把它观察成 `(1,1,E)`，并在所有样本和所有序列位置重复使用。若卷积输出是 PyTorch 的 $(N,C_{\mathrm{out}},H_{\mathrm{out}},W_{\mathrm{out}})$，实际 `(C_out,)` bias 可观察成 `(1,C_out,1,1)`；Keras 默认输出 $(N,H_{\mathrm{out}},W_{\mathrm{out}},C_{\mathrm{out}})$ 时可观察成 `(1,1,1,C_out)`。若归一化的 $\gamma,\beta$ shape 为 `(C,)`，也要说明它们如何沿其他维度共享。
 
 #### 第六步：区分参数与临时结果
 
@@ -11222,9 +11308,9 @@ Dropout 与 Batch Normalization 在训练和推理时规则不同。Linear、普
 #### 第八步：做四项最终自检
 
 1. 输出形状能否与下一层输入要求一致？
-2. 参数数目是否包含 weight 与 bias，但没有误加临时结果？
+2. 参数数目是否包含 weight 与 bias，是否写清实际 bias shape 和重复使用的维度，并且没有误加临时结果？
 3. Softmax 概率和是否约等于 1，归一化后均值与方差是否符合预期？
-4. PyTorch 与 Keras 的默认轴次序是否已分别说明？
+4. PyTorch 与 Keras 的默认维度顺序是否已分别说明？
 
 ---
 
@@ -11280,6 +11366,14 @@ b_2=[0,0].
 $$
 
 $W_1$ 的行数等于输入 Feature 数，列数等于第一层输出 Feature 数；$b_1$ 对第一层的两个输出分别加一个数。
+
+这里：
+
+$$
+b_1,b_2\in\mathbb R^2,
+$$
+
+所以两个 Dense bias 的实际 shape 都是 `(2,)`。输出虽然都是 $(N,2)=(2,2)$，但框架不会分别为两个样本保存 bias；同一个 $b_1$ 供两个样本的第一层输出使用，同一个 $b_2$ 供两个样本的 logits 使用。第二层中，$b_{2,0}$ 只加到类别 0 的 logit，$b_{2,1}$ 只加到类别 1 的 logit。计算时可把两个 bias 都观察成 `(1,2)`，再沿 Batch维度重复。
 
 #### 逐步计算
 
@@ -11377,10 +11471,10 @@ $$
 8+6=14.
 $$
 
-PyTorch `Linear(3,2)` 内部权重存放形状常为 $(2,3)$，Keras `Dense(2)` 的 kernel 常为 $(3,2)$。本题公式使用 $XW$，所以把权重写成输入宽度乘输出宽度；存储轴不同不改变参数数目。
+PyTorch `Linear(3,2)` 内部权重存放形状常为 $(2,3)$，Keras `Dense(2)` 的 kernel 常为 $(3,2)$。本题公式使用 $XW$，所以把权重写成输入宽度乘输出宽度；存储维度不同不改变参数数目。
 
 > [!WARNING] logits 不是概率
-> $[8,4]$ 的两个数不需要落在 0 到 1，也不要求和为 1。若要类别概率，还要在类别 Feature维度上使用 Softmax。
+> $[8,4]$ 的两个数不需要落在 0 到 1，也不要求和为 1。若要类别概率，还要在类别维度上使用 Softmax。
 
 > [!CHECK] 最终自检
 > 两个样本都保留在 Batch维度；ReLU 没有参数且不改形状；两个类别需要两个 logits；14 个参数中没有把中间激活计入。
@@ -11428,9 +11522,17 @@ W_0=
 \qquad b_0=1.
 $$
 
+这一层共有两个输出 Channel，因此完整卷积 bias 是：
+
+$$
+b_{\mathrm{conv}}=[b_0,b_1]\in\mathbb R^2,
+$$
+
+实际 shape 为 `(2,)`。本题只手算输出 Channel 0，所以只给出其中的 $b_0=1$；它会加到两个样本中输出 Channel 0 的全部 $3\times3$ 位置。另一个输出 Channel 使用 $b_1$，不会使用 $b_0$。
+
 #### 卷积输出尺寸
 
-单轴公式：
+单个维度的公式：
 
 $$
 L_{\mathrm{out}}
@@ -11504,6 +11606,8 @@ $$
 
 $3\times3$ 特征经过 $2\times2$ Max Pooling、stride 2，默认向下取整，空间尺寸变成 $1\times1$。输出 PyTorch 形状为 $(2,2,1,1)$，Keras 默认形状为 $(2,1,1,2)$。全局平均池化后每个样本得到两个 Feature，即 $(2,2)$。分类头从 2 个 Feature 变成 3 个 logits，输出 $(2,3)$。
 
+分类头的 bias 实际 shape 为 `(3,)`，三个元素分别服务于三个类别。它供两个样本重复使用；计算时可把它观察成 `(1,3)`，而不是保存 shape 为 `(2,3)` 的 bias Parameter。
+
 #### 参数数目
 
 卷积权重：
@@ -11512,7 +11616,7 @@ $$
 2\times1\times2\times2=8.
 $$
 
-卷积 bias 为 2 个，所以卷积参数共 10 个。Max Pooling 和全局平均池化都没有可学习参数。分类头参数：
+卷积 bias shape 为 `(2,)`，所以卷积参数共 10 个。Max Pooling 和全局平均池化都没有可学习参数。分类头 bias shape 为 `(3,)`，分类头参数：
 
 $$
 2\times3+3=9.
@@ -11528,7 +11632,7 @@ $$
 > 输入空间为 3 时，窗口 2、stride 2 的默认输出是 1，不是 1.5，也不会自动变成 2。必须使用带取整的公式。
 
 > [!CHECK] 最终自检
-> 卷积把 Channel 从 1 变成 2；池化与全局平均不改变 Channel；分类头才把两个 Feature 变成三个类别；PyTorch 与 Keras 只是在默认 Channel 轴位置上不同。
+> 卷积把 Channel 从 1 变成 2；池化与全局平均不改变 Channel；分类头才把两个 Feature 变成三个类别；PyTorch 与 Keras 只是在默认 Channel 维度位置上不同。
 
 ---
 
@@ -11581,6 +11685,8 @@ b=[0,1,0].
 $$
 
 矩阵 $P$ 的两行对应两个输入 Channel，三列对应三个输出 Channel。
+
+Depthwise 层关闭 bias，因此没有 bias Parameter；若启用，因为 $C_{\mathrm{in}}M=2\times1=2$，其 bias shape 应为 `(2,)`，两个元素分别服务于两个 Depthwise 输出 Channel，并沿 Batch维度以及全部输出高宽位置重复使用。Pointwise 的完整 bias 为 $b\in\mathbb R^3$，实际 shape 为 `(3,)`，三个元素分别服务于三个输出 Channel，并沿 Batch维度以及全部输出高宽位置重复使用。
 
 #### 第一步：Depthwise 各 Channel 独立计算
 
@@ -11691,7 +11797,7 @@ X_{\mathrm{NHWC}}
 \end{bmatrix}.
 $$
 
-Keras Kernel 的 $(1,1)$ 轴去掉后就是前面的：
+Keras Kernel 的 $(1,1)$ 维度去掉后就是前面的：
 
 $$
 P=
@@ -11750,7 +11856,7 @@ $$
 [1,0,\ 0,2,\ 1,-1].
 $$
 
-直接计算 $WX_{\mathrm{NCHW}}+b\mathbf 1_2^T$，连续 NCHW 输出为：
+把实际 `(3,)` bias 临时观察成列向量 $b_{\mathrm{col}}\in\mathbb R^{3\times1}$，直接计算 $WX_{\mathrm{NCHW}}+b_{\mathrm{col}}\mathbf 1_2^T$，连续 NCHW 输出为：
 
 $$
 [10,20,\ 101,121,\ -40,-40].
@@ -11871,7 +11977,7 @@ $\odot$ 表示逐元素乘法。逐元素计算 $F/M$ 可以恢复 $X$。
 
 #### 参数与 Keras 形状
 
-Unfold 与 Fold 都没有可学习参数。Keras 常用局部块提取运算把默认 channels-last 输入组织成 $(N,H_{\mathrm{out}},W_{\mathrm{out}},CK_hK_w)$，本题可得到 $(1,2,2,4)$。它与 PyTorch 包含相同四个窗口，但轴组织方式不同。
+Unfold 与 Fold 都没有可学习参数。Keras 常用局部块提取运算把默认 channels-last 输入组织成 $(N,H_{\mathrm{out}},W_{\mathrm{out}},CK_hK_w)$，本题可得到 $(1,2,2,4)$。它与 PyTorch 包含相同四个窗口，但维度组织方式不同。
 
 > [!WARNING] Fold 不是直接覆盖
 > 重叠位置采用加法。若忘记除以覆盖次数，中心数会从 5 变成 20。
@@ -11899,9 +12005,11 @@ $$
 
 使用 stride 2、padding 0、dilation 1、output padding 0，不使用 bias。
 
+本题没有 bias Parameter。若启用，因为输出 Channel 数为 1，实际 bias shape 只能是 `(1,)`，其中唯一的标量供该输出 Channel 的全部输出位置使用。
+
 #### 第一步：计算输出长度
 
-转置卷积单轴公式：
+转置卷积单个维度的公式：
 
 $$
 L_{\mathrm{out}}
@@ -11943,7 +12051,7 @@ $$
 
 PyTorch 输入形状 $(1,1,2)$，输出 $(1,1,5)$。Keras 默认输入形状 $(1,2,1)$，输出 $(1,5,1)$。单输入 Channel、单输出 Channel、核长度 3、无 bias，因此参数数目为 3。
 
-若加入一个输出 Channel bias，则同一个 bias 会加到全部五个输出位置，参数数目变成 4。
+若加入 bias，实际 Parameter shape 为 `(1,)`。其中唯一的标量会加到每个样本的输出 Channel 0 的五个长度位置；它不是长度为 5 的向量。参数数目变成 4。
 
 > [!WARNING] 转置卷积不是普通卷积的数值逆运算
 > 它执行的是“输入片段写入并累加”。即使输出长度与某个旧输入相同，也不能保证数值恢复。
@@ -12019,9 +12127,9 @@ $$
 
 $\mu_c$ 表示第 $c$ 个 Channel 的均值，$v_c$ 表示该 Channel 的总体方差，$\epsilon$ 是防止分母过小的正数，$\gamma_c,\beta_c$ 分别负责标准化后的缩放与平移。
 
-#### LayerNorm：每个前导位置只统计最后 Feature维度
+#### LayerNorm：每个前导位置只统计最后一个 Feature维度
 
-`LayerNorm(2)` 对最后长度为 2 的轴分别计算。例如第一个样本、第 0 个 Channel 的向量为 $[1,3]$：
+`LayerNorm(2)` 对最后长度为 2 的维度分别计算。例如第一个样本、第 0 个 Channel 的向量为 $[1,3]$：
 
 $$
 \mu=(1+3)/2=2,
@@ -12045,10 +12153,10 @@ $$
 
 BatchNorm1d 有两个 $\gamma$ 和两个 $\beta$，共 4 个可学习参数；运行均值和运行方差是状态，不计入可学习参数。LayerNorm 的 `normalized_shape=2` 也有两个 $\gamma$ 和两个 $\beta$，共 4 个参数，但它不保存 BatchNorm 那样的运行统计。
 
-Keras `BatchNormalization` 默认常把最后一轴当作 Channel维度。本题若使用 Keras 默认 $(N,L,C)$，应令归一化轴指向最后的 $C$。PyTorch `BatchNorm1d` 则要求 Channel 位于第二轴。
+Keras `BatchNormalization` 默认常把最后一个维度当作 Channel维度。本题若使用 Keras 默认 $(N,L,C)$，应令归一化维度指向最后的 $C$。PyTorch `BatchNorm1d` 则要求 Channel 位于第二个维度。
 
 > [!WARNING] 输出形状不变也可能统计对象完全不同
-> BatchNorm 汇总同一 Channel 上来自一个 Batch 与长度轴的数；本题 LayerNorm 只汇总每个长度为 2 的最后轴。只看输出形状无法区分。
+> BatchNorm 汇总同一 Channel 上来自一个 Batch 与长度维度的数；本题 LayerNorm 只汇总每个长度为 2 的最后一个维度。只看输出形状无法区分。
 
 > [!CHECK] 最终自检
 > BatchNorm 的第 0 个 Channel 均值是 4，第 1 个是 5；LayerNorm 对 $[1,3]$ 单独求均值 2；两层都不交换元素位置；参数各为 4。
@@ -12069,6 +12177,8 @@ $$
 
 它们可以做逐元素残差相加，也可以在 Feature维度拼接。
 
+这里的 $b$ 是第二个分支的普通输入，shape 为 `(3,)`，不是 Layer 保存的 bias。字母相同不代表含义相同，是否为 bias 要由公式和 Layer 定义判断。
+
 #### 残差相加
 
 $$
@@ -12086,7 +12196,7 @@ y_{\mathrm{cat}}
 =[1,2,3,4,5,6].
 $$
 
-输出 Feature 宽度从 3 变成 6。PyTorch 图像通常在 Channel 轴 1 拼接：
+输出 Feature 宽度从 3 变成 6。PyTorch 图像通常在 Channel 维度 1 拼接：
 
 $$
 (N,3,H,W)+(N,3,H,W)
@@ -12094,7 +12204,7 @@ $$
 (N,6,H,W).
 $$
 
-Keras 默认通常在最后 Channel 轴拼接：
+Keras 默认通常在最后 Channel 维度拼接：
 
 $$
 (N,H,W,3)+(N,H,W,3)
@@ -12112,10 +12222,12 @@ $$
 5\times3+5=20.
 $$
 
+这个投影卷积的 bias 实际 shape 为 `(5,)`，五个元素分别对应五个输出 Channel，并沿 Batch维度和所有高宽位置重复使用。
+
 完成后两个分支形状相同，才能逐元素相加。
 
 > [!WARNING] 拼接与相加不会得到相同形状
-> 相加要求相关维度相同，并保持宽度；拼接要求除拼接轴之外的维度相同，并让拼接轴长度相加。
+> 相加要求相关维度相同，并保持宽度；拼接要求除拼接维度之外的维度相同，并让拼接维度长度相加。
 
 > [!CHECK] 最终自检
 > $[5,7,9]$ 是相加结果，六元素向量是拼接结果；两种组合操作参数均为 0；若使用投影卷积，20 个参数属于投影 Layer。
@@ -12171,7 +12283,7 @@ $$
 (N,L,E)=(2,4,3).
 $$
 
-PyTorch 与 Keras 的普通文本 Embedding 都常使用这个输出轴次序。
+PyTorch 与 Keras 的普通文本 Embedding 都常使用这个输出维度顺序。
 
 #### 第二步：忽略补齐位置做平均
 
@@ -12202,6 +12314,8 @@ W=
 \end{bmatrix},
 \qquad b=[0,0].
 $$
+
+分类 Dense 的完整 bias 为 $b\in\mathbb R^2$，实际 shape 为 `(2,)`。$b_0$ 只加到类别 0 的 logit，$b_1$ 只加到类别 1 的 logit；整个向量供两个句子重复使用，计算时可观察成 `(1,2)`，并不是每个句子各保存一份 bias。
 
 第一个句子 logits：
 
@@ -12278,6 +12392,10 @@ $$
 
 $\sigma$ 是 Sigmoid，输出位于 0 和 1 之间；$z_t$ 是更新门；$r_t$ 是重置门；$\widetilde h_t$ 是候选状态。
 
+在上面的公式中，$b_z,b_r,b_{ih},b_{hh}$ 都作用于隐藏 Feature，因此每一个都属于 $\mathbb R^H$，写成独立向量时 shape 都是 `(H,)`。$b_z$ 与 $b_r$ 分别代表相应门的输入侧和状态侧 bias 之和；候选状态则保留了两个 bias 项，以展示 `reset_after=True` 的计算次序。它们沿 Batch维度与全部时间位置重复使用，不含 Batch维度或时间维度。
+
+框架的实际存储采用拼接形式。PyTorch 每层、每个方向保存输入侧 `(3H,)` 与状态侧 `(3H,)` 两个 bias Parameter，段次序为 `r, z, n`，即重置门、更新门、候选状态。Keras GRU 在默认 `reset_after=True` 时保存一个 `(2,3H)` bias：第一个维度的两行分别表示输入侧和循环状态侧，第二个维度按 `z, r, h` 三个 `(H,)` 门段拼接；设置为 `False` 时 shape 为 `(3H,)`。因此跨框架读取参数时不能仅按数组中的段编号直接复制。
+
 为了便于手算，令更新门和重置门全部权重与 bias 为 0，因此：
 
 $$
@@ -12336,7 +12454,7 @@ $$
 3+3+6=12.
 $$
 
-手算时把更新门与重置门的两组 bias 分别合并，若把候选状态的两个 bias 也按本题零值合并理解，简化公式相当于 9 个标量。PyTorch 实际保存输入侧与状态侧两组 bias，因此本题对应 12 个 Parameter。
+本题 $H=1$，所以公式中每个独立门段的 shape 都是 `(1,)`。若把每个门的输入侧与状态侧 bias 合成一个 `(1,)`，概念上的三门形式共有 3 个 bias 标量，连同 6 个权重得到 9 个标量。PyTorch 实际保存两个 `(3,)` bias Parameter，因此本题仍对应 12 个 Parameter；Keras 默认存储则是 `(2,3)`。
 
 Keras 默认 `reset_after=True`，候选状态采用本题所写的“先做状态线性计算，再乘重置门”的次序。设置 `reset_after=False` 时，常见公式改为：
 
@@ -12347,6 +12465,8 @@ $$
 W_hx_t+b_h+U_h(r_t\odot h_{t-1})
 \right).
 $$
+
+这里 $b_h\in\mathbb R^H$，实际 shape 为 `(H,)`，供全部样本和时间位置使用。本题 $H=1$ 时，它的 shape 为 `(1,)`。
 
 当隐藏宽度大于 1 时，$r_t$ 与 $U_h$ 的先后次序可能改变数值；不能只把这种差异理解成 bias 存放方式。本题是标量且相关 bias 为 0，所以两种次序恰好得到相同结果。
 
@@ -12401,6 +12521,10 @@ h_t=o_t\tanh(c_t).
 $$
 
 $i_t$ 是输入门，控制候选信息写入多少；$f_t$ 是遗忘门，控制旧记忆保留多少；$o_t$ 是输出门；$g_t$ 是候选记忆；$c_t$ 是记忆状态；$h_t$ 是对外隐藏状态。
+
+公式中的 $b_i,b_f,b_o,b_g$ 都属于 $\mathbb R^H$，独立书写时每个 shape 都是 `(H,)`。四个向量分别作用于输入门、遗忘门、输出门和候选记忆的 $H$ 个 Feature，并沿 Batch维度与全部时间位置重复使用。在 PyTorch 数学表达中，每个合并后的 $b_i,b_f,b_g,b_o$ 可理解为输入侧与状态侧相应 `(H,)` 门段之和。
+
+PyTorch 每层、每个方向保存输入侧 `(4H,)` 与状态侧 `(4H,)` 两个 bias Parameter，每个都按 `i, f, g, o` 由四个 `(H,)` 门段拼成。Keras LSTM 保存一个 `(4H,)` bias，源码中相应次序常写成 `i, f, c, o`，其中 `c` 表示候选记忆段。本题 $H=1$，所以公式中的每个门 bias shape 为 `(1,)`；PyTorch 的两个实际 Parameter shape 都是 `(4,)`，Keras 的实际 Parameter shape 是 `(4,)`。
 
 为便于手算，令三个 Sigmoid 门的权重与 bias 为 0，因此：
 
@@ -12468,7 +12592,9 @@ $$
 P=4+4+8=16.
 $$
 
-Keras LSTM 常把四组输入权重合成一个 kernel，把四组循环权重合成一个 recurrent kernel，并使用一组 bias。轴组织与 PyTorch 不同，但四个门的核心计算相同。
+Keras LSTM 常把四组输入权重合成一个 kernel，把四组循环权重合成一个 recurrent kernel，并使用一组 bias。维度组织与 PyTorch 不同，但四个门的核心计算相同。
+
+因此在本题 $I=H=1$ 时，Keras 常见 LSTM 的 kernel、recurrent kernel 和 `(4,)` bias 共含 $4+4+4=12$ 个 Parameter；上面的 16 是 PyTorch 保存两组 `(4,)` bias 时的数目。
 
 > [!WARNING] $c_t$ 与 $h_t$ 不能互换
 > $c_t$ 先通过输出门和 tanh 才产生 $h_t$。本题 $c_1=0.3808$，而 $h_1\approx0.1817$，数值明显不同。
@@ -12592,13 +12718,15 @@ $$
 O:(1,3,2).
 $$
 
-若使用带 bias 的完整投影，$W_Q,W_K,W_V,W_O$ 都是 $2\times2$，权重共 $4\times4=16$ 个；四个投影各有长度 2 的 bias，共 8 个，总参数 24。
+若使用带 bias 的完整投影，$W_Q,W_K,W_V,W_O$ 都是 $2\times2$，权重共 $4\times4=16$ 个。若用四个独立 Dense 或 Linear 表达，四个 bias 分别是 $b_Q,b_K,b_V,b_O\in\mathbb R^2$，实际 shape 各为 `(2,)`，共 8 个 bias 参数，总参数 24。Query bias 供三个 Query 位置使用，Key 和 Value bias 供三个 Key、Value 位置使用，输出 bias 供三个 Query 输出位置使用。
 
-> [!WARNING] Softmax 在 Key 位置轴上进行
+PyTorch 等宽 `MultiheadAttention` 会把前三个合并为 `(6,)` 的 `in_proj_bias`，输出投影保存 `(2,)`。Keras 单 Head `MultiHeadAttention` 的 Query、Key、Value bias 实际 shape 各为 `(1,2)`，输出 bias 为 `(2,)`。
+
+> [!WARNING] Softmax 在 Key 位置维度上进行
 > 每个 Query 都有自己的一行权重。不能把整张 $3\times3$ 分数表一次归一成总和 1，也不能在 Feature维度上做这一步。
 
 > [!CHECK] 最终自检
-> 分数表最后两轴都是序列长度；每行权重和约为 1；缩放因子是 $\sqrt{d_k}$；输出 Feature 宽度仍为 2。
+> 分数表最后两个维度都是序列长度；每行权重和约为 1；缩放因子是 $\sqrt{d_k}$；输出 Feature 宽度仍为 2。
 
 ---
 
@@ -12661,6 +12789,8 @@ W_1=
 \qquad b_1=[0,0].
 $$
 
+$b_1\in\mathbb R^2$，实际 shape 为 `(2,)`。对完整 $(N,L,2)$ 中间结果，同一个 $b_1$ 供所有样本和 token 位置使用。
+
 $$
 zW_1=[2,2].
 $$
@@ -12681,6 +12811,8 @@ W_2=
 \end{bmatrix},
 \qquad b_2=[0,0,0,0].
 $$
+
+$b_2\in\mathbb R^4$，实际 shape 为 `(4,)`。它供完整 $(N,L,4)$ 输出的所有样本和 token 位置使用。
 
 $$
 f=rW_2=[2,2,1,1].
@@ -12707,6 +12839,8 @@ $$
 $$
 4(4\times4+4)=80.
 $$
+
+若使用四个独立 Dense 或 Linear，四个 bias 的实际 shape 各为 `(4,)`。Query bias 沿 Batch维度和 Query 位置使用，Key、Value bias 沿 Batch维度和各自输入位置使用，输出 bias 沿 Batch维度和 Query 输出位置使用。PyTorch 等宽 `MultiheadAttention` 把 Q、K、V bias 合成 `(12,)`，输出投影 bias 为 `(4,)`；Keras 单 Head `MultiHeadAttention` 的前三个 bias 实际 shape 各为 `(1,4)`，输出 bias 为 `(4,)`。
 
 FFN 参数：
 
@@ -12735,7 +12869,7 @@ Dropout 即使存在也不增加参数。
 > 有的结构先做子层再做残差和归一化，有的结构先归一化再进入子层。二者公式顺序不同，不能只看到“Transformer Layer”就默认完全相同。
 
 > [!CHECK] 最终自检
-> 注意力与 FFN 都有自己的残差；LayerNorm 在最后 Feature维度统计；FFN 输出宽度必须回到 4；118 个参数中没有计入注意力分数和中间激活。
+> 注意力与 FFN 都有自己的残差；LayerNorm 在最后一个 Feature维度统计；FFN 输出宽度必须回到 4；118 个参数中没有计入注意力分数和中间激活。
 
 ---
 
@@ -12848,7 +12982,7 @@ $$
 PyTorch `CrossEntropyLoss` 与 Keras 的稀疏类别交叉熵都可以直接接收类别编号目标，但 Keras 是否把输入当作 logits 由 `from_logits` 设置决定。若先做 Softmax 又告诉损失输入是 logits，计算含义会不一致。
 
 > [!WARNING] 不能对两个样本的 logits 一起做 Softmax
-> Softmax 应在每个样本的类别 Feature维度上分别进行。Batch维度只排列样本，不参与类别概率归一。
+> Softmax 应在每个样本的类别维度上分别进行。Batch维度只排列样本，不参与类别概率归一。
 
 > [!WARNING] mean 不一定永远是简单除以 Batch Size
 > 使用类别权重、忽略标签或特殊序列遮罩时，有效权重总和可能改变平均规则。遇到这些设置，应查看损失定义中的分母。
@@ -12941,6 +13075,8 @@ $$
 4(2\times2+2)=24.
 $$
 
+若使用四个独立 Dense 或 Linear，四个 bias 的实际 shape 各为 `(2,)`。PyTorch 等宽 `MultiheadAttention` 保存 `in_proj_bias:(6,)` 与输出 bias `(2,)`；Keras 单 Head `MultiHeadAttention` 的 Query、Key、Value bias 实际 shape 各为 `(1,2)`，输出 bias 为 `(2,)`。本题是 Self-Attention，所以 Query、Key、Value 序列都长 3；这些参数供两个样本中各自对应的三个位置重复使用。
+
 #### 第三步：遮罩平均
 
 第一个句子只平均前两个有效位置，分母是 2；第二个句子三个位置都有效，分母是 3。无论 Attention 具体数值如何，池化后的形状都是：
@@ -12959,13 +13095,15 @@ $$
 2\times2+2=6.
 $$
 
+分类 Dense 的 bias shape 为 `(2,)`，两个元素分别对应两个类别，并沿两个样本重复使用。
+
 输出形状：
 
 $$
 (2,2).
 $$
 
-若两个监督类别编号形状为 $(2)$，Cross Entropy 在类别 Feature维度计算每个样本损失。reduction 为 mean 时，最终输出一个标量。
+若两个监督类别编号形状为 $(2)$，Cross Entropy 在类别维度计算每个样本损失。reduction 为 mean 时，最终输出一个标量。
 
 总参数：
 
@@ -12995,7 +13133,7 @@ $$
 > Attention 遮罩阻止 Query 读取补齐 Key；池化遮罩阻止补齐位置进入句子平均。只设置其中一种，另一处仍可能受到补齐位置影响。
 
 > [!CHECK] 最终自检
-> token 编号输入没有 Feature维度；Embedding 新增宽度 2；Attention 保持序列长度与 Feature 宽度；池化删除序列轴；分类头改变类别宽度；损失 mean 输出标量。
+> token 编号输入没有 Feature维度；Embedding 新增宽度 2；Attention 保持序列长度与 Feature 宽度；池化删除序列维度；分类头改变类别宽度；损失 mean 输出标量。
 
 ---
 
@@ -13015,11 +13153,11 @@ $$
 (N,D,H,W,C)=(2,5,6,6,3).
 $$
 
-Conv3D 输出 Channel 为 4，kernel size 为 $(3,3,3)$，stride 为 $(1,2,2)$，padding 为 $(1,1,1)$，dilation 为 1，使用 bias。
+Conv3D 输出 Channel 为 4，kernel size 为 $(3,3,3)$，stride 为 $(1,2,2)$，padding 为 $(1,1,1)$，dilation 为 1，使用实际 shape 为 `(4,)` 的 bias。
 
 $D$ 可以表示体数据深度，也可以表示视频时间；$H,W$ 是每个切片或每帧的高宽。
 
-#### 第一步：分别计算三个空间轴
+#### 第一步：分别计算三个空间维度
 
 深度方向：
 
@@ -13092,6 +13230,8 @@ $$
 y=1\times1+3\times2+2\times(-1)+0.5=5.5.
 $$
 
+完整 Conv3D bias 为 $b\in\mathbb R^4$，实际 shape 是 `(4,)`。这里的 0.5 只是当前输出 Channel 对应的一个 $b_o$，不是完整 bias。固定输出 Channel $o$ 后，同一个 $b_o$ 会加到两个样本以及全部输出深度、高度和宽度位置。
+
 其他 78 个权重为 0，所以它们不改变本次结果。真实训练中的核通常会让更多位置参与。
 
 #### 参数数目
@@ -13116,8 +13256,8 @@ $$
 
 参数数目与输入的深度、高度、宽度无关，但乘加次数会随输出空间位置数变化。
 
-> [!WARNING] 不要把深度轴与 Channel维度混在一起
-> 三个输入 Channel 会在一次输出乘加中求和；五个深度位置则是卷积核移动的空间轴。PyTorch 中两者分别位于第 1、2 轴，Keras 默认分别位于最后轴与第 1 个空间轴。
+> [!WARNING] 不要把深度维度与 Channel维度混在一起
+> 三个输入 Channel 会在一次输出乘加中求和；五个深度位置则是卷积核移动的空间维度。PyTorch 中两者分别位于第 1 个和第 2 个维度，Keras 默认分别位于最后一个 Channel维度与第 1 个空间维度。
 
 > [!CHECK] 最终自检
 > 输出 Channel 是 4；深度保持 5；高宽变成 3；每个输出 Channel 有 81 个核权重；328 个参数不包含输出特征张量。
@@ -13211,14 +13351,14 @@ $$
 
 所有 Channel 和空间位置共享这组均值与方差。
 
-#### 参数数目与 Keras 轴
+#### 参数数目与 Keras 的 Channel维度设置
 
 GroupNorm 的 $\gamma,\beta$ 通常各有四个数，共 8 个可学习参数。InstanceNorm 若开启 affine，也通常各有四个数；PyTorch InstanceNorm 默认 affine 常为关闭。`LayerNorm((4,1,2))` 的 $\gamma,\beta$ 各有 $4\times1\times2=8$ 个数，共 16 个参数，比只按 Channel 缩放更细。
 
-Keras 默认 channels-last，输入相应写成 $(1,1,2,4)$。`GroupNormalization` 的 axis 应指向最后的 Channel维度。若 axis 指错到宽度，统计分组含义就会改变。
+Keras 默认 channels-last，输入相应写成 $(1,1,2,4)$。`GroupNormalization` 的 `axis` 参数应指定最后一个 Channel维度，通常为 `-1`；若设为宽度维度的索引，统计分组含义会改变。
 
 > [!WARNING] “每个样本内计算”仍然不够具体
-> GroupNorm 还要说明哪些 Channel 属于同一组；InstanceNorm 每个 Channel 单独统计；多维 LayerNorm 可以让最后多个轴一起统计。
+> GroupNorm 还要说明哪些 Channel 属于同一组；InstanceNorm 每个 Channel 单独统计；多维 LayerNorm 可以让最后多个维度一起统计。
 
 > [!CHECK] 最终自检
 > GroupNorm 第一组均值 4，第二组均值 5；InstanceNorm 有四组独立空间统计；多维 LayerNorm 只有一组八元素统计；三者都保持原形状。
@@ -13261,7 +13401,7 @@ K=XW_K+b_K,
 V=XW_V+b_V.
 $$
 
-$W_Q,W_K,W_V$ 都是 $8\times8$，bias 都是长度 8。投影后：
+$W_Q,W_K,W_V$ 都是 $8\times8$。这里先按三个独立 Dense 或 Linear 书写，因此 $b_Q,b_K,b_V\in\mathbb R^8$，实际 shape 各为 `(8,)`；Query bias 供两个样本的四个 Query 位置使用，Key、Value bias 供两个样本的四个 Key、Value 位置使用。内置多头 Layer 的不同存储 shape 会在本题后面单独列出。投影后：
 
 $$
 Q,K,V:(2,4,8).
@@ -13271,7 +13411,7 @@ $$
 
 #### 第二步：拆成两个 Head
 
-先把最后宽度 8 拆成 $(h,d_h)=(2,4)$，再把 Head 轴放到序列轴之前：
+先把最后宽度 8 拆成 $(h,d_h)=(2,4)$，再把 Head 维度放到序列维度之前：
 
 $$
 (2,4,8)
@@ -13281,7 +13421,7 @@ $$
 (2,2,4,4).
 $$
 
-最终四个轴分别是 Batch维度、Head、Query 或 Key 位置、每个 Head 的 Feature。
+最终四个维度分别是 Batch维度、Head、Query 或 Key 位置、每个 Head 的 Feature。
 
 > [!NOTE] 拆头不复制元素
 > 总 Feature 数仍为 8，只是观察成两个宽度为 4 的 Head。真正让不同 Head 学到不同内容的是各投影权重。
@@ -13294,13 +13434,13 @@ $$
 S_r=\frac{Q_rK_r^T}{\sqrt{d_h}}.
 $$
 
-$Q_r$ 形状 $(2,4,4)$，$K_r^T$ 最后两轴为 $(4,4)$，因此每个 Head 的分数为 $(2,4,4)$。合并 Head 轴后：
+$Q_r$ 形状 $(2,4,4)$，$K_r^T$ 最后两个维度为 $(4,4)$，因此每个 Head 的分数为 $(2,4,4)$。合并 Head 维度后：
 
 $$
 S:(2,2,4,4).
 $$
 
-最后两个 4 分别表示四个 Query 位置和四个 Key 位置。Softmax 在最后的 Key 位置轴进行，得到同形状权重 $A$。
+最后两个 4 分别表示四个 Query 位置和四个 Key 位置。Softmax 在最后的 Key 位置维度进行，得到同形状权重 $A$。
 
 #### 第四步：加权 Value 并合头
 
@@ -13320,6 +13460,8 @@ $$
 
 最后再通过 $8\rightarrow8$ 输出投影，形状仍为 $(2,4,8)$。
 
+若用独立 Dense 或 Linear 表达，输出投影 bias 为 $b_O\in\mathbb R^8$，实际 shape 是 `(8,)`，沿 Batch维度和四个 Query 输出位置重复使用。PyTorch 等宽 `MultiheadAttention` 把 Q、K、V bias 合并保存为 `(24,)` 的 `in_proj_bias`，输出投影 bias 为 `(8,)`。Keras 保留 Head 维度时，Query、Key、Value bias 的实际 Parameter shape 都是 `(2,4)`；Query bias 供 Query 位置使用，Key、Value bias 供 Key、Value 位置使用。本题输出只有一个宽度为 8 的 Feature维度，因此 Keras 输出 bias shape 也是 `(8,)`。
+
 #### 参数数目
 
 四个投影分别是 Q、K、V 和输出投影。每个都有：
@@ -13334,7 +13476,7 @@ $$
 4\times72=288.
 $$
 
-参数数目不随 Sequence Length 4 改变。Sequence Length 增大时，分数张量最后两轴随之增大，计算与临时存储会增加。
+参数数目不随 Sequence Length 4 改变。Sequence Length 增大时，分数张量最后两个维度随之增大，计算与临时存储会增加。
 
 #### 两类常见遮罩
 
@@ -13344,7 +13486,7 @@ $$
 > 当总宽度 $E$ 保持 8 时，只是把 8 拆成更多较窄 Head，四个总投影仍可保持 $8\rightarrow8$。Head 数会改变每个 Head 宽度与计算组织。
 
 > [!CHECK] 最终自检
-> 每个 Head 宽度为 4；分数形状 $(2,2,4,4)$；合头后恢复 $(2,4,8)$；Softmax 在 Key 位置轴；总参数为 288。
+> 每个 Head 宽度为 4；分数形状 $(2,2,4,4)$；合头后恢复 $(2,4,8)$；Softmax 在 Key 位置维度；总参数为 288。
 
 ---
 
@@ -13366,9 +13508,11 @@ $$
 
 上采样结果与跳接特征沿 Channel维度拼接，再使用 $3\times3$ 普通卷积从 56 个 Channel 变成 32 个 Channel，stride 1、padding 1。两层都使用 bias。
 
+两层的输出 Channel 数都为 32，所以它们各自保存一份 shape 为 `(32,)` 的 bias。两份参数彼此独立：转置卷积的 bias 供 $X_{\mathrm{up}}$ 的全部样本和 $16\times16$ 位置使用，普通卷积的 bias 供最后输出的全部样本和 $16\times16$ 位置使用。
+
 #### 第一步：转置卷积输出形状
 
-单轴公式：
+单个维度的公式：
 
 $$
 L_{\mathrm{out}}
@@ -13430,12 +13574,16 @@ $$
 =32800.
 $$
 
+式末的 32 来自转置卷积的 `(32,)` bias。
+
 普通卷积：
 
 $$
 32\times56\times3\times3+32
 =16160.
 $$
+
+式末的 32 来自普通卷积自己保存的另一份 `(32,)` bias。
 
 合计：
 
@@ -13455,7 +13603,7 @@ $$
 (N,16,16,32).
 $$
 
-Keras 默认沿最后 Channel 轴拼接。
+Keras 默认沿最后 Channel 维度拼接。
 
 > [!WARNING] 跳接不是残差相加
 > 两个分支 Channel 分别为 32 和 24，不能直接逐元素相加；拼接允许 Channel 不同，并让后续卷积学习怎样组合 56 个 Channel。
@@ -13558,16 +13706,16 @@ $$
 1. 是否明确写出 Batch维度？
 2. 图像 Channel维度在 PyTorch 与 Keras 中是否放在正确位置？
 3. 矩阵乘法的内侧维是否相等？
-4. 卷积、池化和转置卷积是否逐轴代入尺寸公式？
+4. 卷积、池化和转置卷积是否逐个维度代入尺寸公式？
 5. 残差相加的两个输入是否具有相同形状？
-6. 拼接是否只让指定轴长度相加？
+6. 拼接是否只让指定维度长度相加？
 7. RNN、GRU、LSTM 是返回完整序列，还是只使用最后状态？
-8. Attention 分数最后两个轴是否分别表示 Query 位置与 Key 位置？
+8. Attention 分数最后两个维度是否分别表示 Query 位置与 Key 位置？
 
 #### 数值检查
 
 1. ReLU 是否把负数变成 0，而不是取绝对值？
-2. Softmax 是否在指定 Feature轴上求和为 1？
+2. Softmax 是否在指定 Feature维度上求和为 1？
 3. LayerNorm 与 BatchNorm 是否使用了正确统计集合？
 4. Fold 的重叠位置是否相加？
 5. 转置卷积的重叠写入是否相加？
@@ -13577,7 +13725,7 @@ $$
 #### 参数检查
 
 1. 是否把 weight 各维相乘？
-2. 使用 bias 时，是否为每个输出 Feature 或输出 Channel 增加一个参数？
+2. 使用 bias 时，是否写清实际 Parameter shape，并说明它沿哪些 Batch、序列或空间维度重复使用？
 3. groups 是否让每个输出 Channel 只读取 $C_{\mathrm{in}}/G$ 个输入 Channel？
 4. Depthwise 是否考虑 depth multiplier？
 5. GRU 的三组门与 LSTM 的四组门是否完整计算？
@@ -13593,4 +13741,4 @@ $$
 5. 训练与推理状态是否会改变 Layer 规则？
 
 > [!SUMMARY] 真正掌握 Layer 的标志
-> 能够从一个最小数字例子说清“读取哪些数、在哪些轴求和、参数怎样共享、输出形状怎样得到”，比背下接口参数更重要。复杂网络只是把这些基本规则反复组合；逐层记录形状与参数，就能把大模型拆成可以检查的小步骤。
+> 能够从一个最小数字例子说清“读取哪些数、在哪些维度求和、参数怎样共享、输出形状怎样得到”，比背下接口参数更重要。复杂网络只是把这些基本规则反复组合；逐层记录形状与参数，就能把大模型拆成可以检查的小步骤。

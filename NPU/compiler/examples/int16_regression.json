@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "target": {
+    "name": "single-core-v1",
+    "command_format": "cmd128-v1",
+    "descriptor_base": "0x000000100000",
+    "mt": 8,
+    "kt": 16,
+    "nt": 8
+  },
+  "tensors": {
+    "input_ddr": {
+      "addr": "0x000000200000",
+      "space": "ddr",
+      "dtype": "int16",
+      "region_bytes": 128
+    },
+    "input_l1": {
+      "addr": "0x00001000",
+      "space": "l1",
+      "dtype": "int16",
+      "region_bytes": 128
+    },
+    "weight_l1": {
+      "addr": "0x00002000",
+      "space": "l1",
+      "dtype": "int16",
+      "region_bytes": 128
+    },
+    "output_l1": {
+      "addr": "0x00003000",
+      "space": "l1",
+      "dtype": "int16",
+      "region_bytes": 128
+    },
+    "requant_l1": {
+      "addr": "0x00004000",
+      "space": "l1",
+      "dtype": "int32",
+      "region_bytes": 8
+    }
+  },
+  "operations": [
+    {
+      "name": "load_input",
+      "command_id": 16,
+      "engine": "dma",
+      "opcode": "COPY_1D",
+      "user_tag": 4097,
+      "flags": {
+        "irq_on_error": true,
+        "timeout_class": 1
+      },
+      "descriptor": {
+        "common": {
+          "src0": "input_ddr",
+          "dst": "input_l1"
+        },
+        "dma": {
+          "rank": 1,
+          "shape": [
+            64
+          ],
+          "src_stride_bytes": [
+            0
+          ],
+          "dst_stride_bytes": [
+            0
+          ],
+          "burst_beats": 16,
+          "max_outstanding": 8
+        }
+      }
+    },
+    {
+      "name": "regression_gemm",
+      "command_id": 17,
+      "engine": "matrix",
+      "opcode": "GEMM",
+      "depends_on": [
+        "load_input"
+      ],
+      "user_tag": 4098,
+      "flags": {
+        "irq_on_success": true,
+        "irq_on_error": true,
+        "timeout_class": 2
+      },
+      "descriptor": {
+        "common": {
+          "src0": "input_l1",
+          "src1": "weight_l1",
+          "dst": "output_l1",
+          "aux1": "requant_l1",
+          "round_mode": "nearest_even",
+          "saturate_enable": true
+        },
+        "matrix": {
+          "m": 8,
+          "n": 8,
+          "k": 8,
+          "batch_count": 1,
+          "lda_bytes": 16,
+          "ldb_bytes": 0,
+          "ldc_bytes": 16,
+          "requant_enable": true,
+          "final_output": true,
+          "requant_mode": 1,
+          "requant_count": 1,
+          "requant_entry_bytes": 8,
+          "requant_region_bytes": 8,
+          "overflow_mode": "saturate"
+        }
+      }
+    }
+  ]
+}
