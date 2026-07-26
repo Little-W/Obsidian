@@ -8,6 +8,13 @@ module tb_npu_single_core;
     localparam int unsigned AXI_S_ADDR_W = 24;
     localparam int unsigned AXI_M_ID_W = 8;
     localparam int unsigned AXI_M_ADDR_W = 40;
+`ifdef NPU_TRANSFORMER_E2E
+    localparam int unsigned TB_L1_BYTES = 1 << 15;
+    localparam int unsigned TB_SYSTEM_MEMORY_BYTES = 1 << 18;
+`else
+    localparam int unsigned TB_L1_BYTES = 1 << 12;
+    localparam int unsigned TB_SYSTEM_MEMORY_BYTES = 1 << 14;
+`endif
 
     localparam logic [23:0] CSR_CORE_CONTROL = 24'h000040;
     localparam logic [23:0] CSR_L1_HOST_ACCESS_CONTROL = 24'h0000f0;
@@ -122,6 +129,18 @@ module tb_npu_single_core;
     logic system_bus_protocol_error;
 
     logic [127:0] command_words [0:7];
+`ifdef NPU_TRANSFORMER_E2E
+    logic [127:0] transformer_commands [0:63];
+    logic [7:0] transformer_batch_sizes [0:15];
+    logic [7:0] transformer_weights [0:4095];
+    logic [7:0] transformer_input [0:63];
+    logic [7:0] transformer_expected [0:63];
+    logic [7:0] transformer_expected_score [0:63];
+    logic [7:0] transformer_expected_probability [0:63];
+    logic [7:0] transformer_expected_context [0:63];
+    logic [39:0] transformer_output_ddr_q;
+    logic [31:0] transformer_output_bytes_q;
+`endif
     logic [2047:0] matrix_desc;
     logic [2047:0] vector_desc;
     logic [2047:0] dma_desc;
@@ -155,7 +174,7 @@ module tb_npu_single_core;
         .AXI_S_ADDR_W(AXI_S_ADDR_W),
         .AXI_M_ID_W(AXI_M_ID_W),
         .AXI_M_ADDR_W(AXI_M_ADDR_W),
-        .L1_BYTES(1 << 12),
+        .L1_BYTES(TB_L1_BYTES),
         .L1_BANKS(16),
         .TASK_SLOTS(8),
         .EVENT_COUNT(255)
@@ -164,7 +183,7 @@ module tb_npu_single_core;
     tb_axi_memory_model #(
         .AXI_ID_W(AXI_M_ID_W),
         .AXI_ADDR_W(AXI_M_ADDR_W),
-        .MEM_BYTES(1 << 14)
+        .MEM_BYTES(TB_SYSTEM_MEMORY_BYTES)
     ) u_system_memory (
         .clk_i(core_clk_i),
         .reset_n(reset_n),
@@ -357,6 +376,23 @@ module tb_npu_single_core;
                 if (!system_dma_write_check_q) begin
                     $fatal(1, "unexpected NPU AXI write-address handshake");
                 end
+`ifdef NPU_TRANSFORMER_E2E
+                if ((m_axi_awid_o != 8'd0) ||
+                    (m_axi_awaddr_o <
+                     {transformer_output_ddr_q[39:3], 3'b000}) ||
+                    (m_axi_awaddr_o >=
+                     transformer_output_ddr_q +
+                     40'(transformer_output_bytes_q)) ||
+                    (m_axi_awlen_o != 8'd0) ||
+                    (m_axi_awsize_o != 3'd3) ||
+                    (m_axi_awburst_o != 2'b01) ||
+                    m_axi_awlock_o ||
+                    (m_axi_awcache_o != 4'b0011) ||
+                    (m_axi_awprot_o != 3'b000) ||
+                    (m_axi_awqos_o != 4'd0)) begin
+                    $fatal(1, "Transformer output AW fields are incorrect");
+                end
+`else
                 if ((m_axi_awid_o != 8'd0) ||
                     (m_axi_awaddr_o != 40'h0000_003100) ||
                     (m_axi_awlen_o != 8'd0) ||
@@ -368,6 +404,7 @@ module tb_npu_single_core;
                     (m_axi_awqos_o != 4'd0)) begin
                     $fatal(1, "L1-to-system DMA AW fields are incorrect");
                 end
+`endif
             end
 
             if (m_axi_wvalid_o && m_axi_wready_i) begin
@@ -375,6 +412,11 @@ module tb_npu_single_core;
                 if (!system_dma_write_check_q || !m_axi_wlast_o) begin
                     $fatal(1, "L1-to-system DMA W handshake is incorrect");
                 end
+`ifdef NPU_TRANSFORMER_E2E
+                if (!$onehot(m_axi_wstrb_o)) begin
+                    $fatal(1, "Transformer output WSTRB is not one-hot");
+                end
+`else
                 unique case (system_w_handshakes_q)
                     32'd0:
                         if ((m_axi_wdata_o != 64'h0000_0000_0000_0011) ||
@@ -411,6 +453,7 @@ module tb_npu_single_core;
                     default:
                         $fatal(1, "L1-to-system DMA emitted extra W beats");
                 endcase
+`endif
             end
 
             if (m_axi_bvalid_i && m_axi_bready_o) begin
@@ -745,6 +788,362 @@ module tb_npu_single_core;
         axi_read_single(L1_AXI_BASE + 24'(address), data);
     endtask
 
+`ifdef NPU_TRANSFORMER_E2E
+    function automatic logic [11:0] transformer_command_id(
+        input logic [127:0] command
+    );
+        return {2'd0, command[121:112]};
+    endfunction
+
+    task automatic run_transformer_batch(
+        input int unsigned command_offset,
+        input int unsigned command_count
+    );
+        logic [63:0] fence_result;
+        logic [63:0] task_status;
+        logic [11:0] command_id;
+        int unsigned poll_count;
+
+        check((command_count >= 1) && (command_count <= 8),
+              "Transformer batch size is invalid");
+        for (int unsigned index = 0; index < command_count; index++) begin
+            command_words[index] =
+                transformer_commands[command_offset + index];
+        end
+        axi_submit_commands(command_count);
+        for (int unsigned index = 0; index < command_count; index++) begin
+            command_id = transformer_command_id(
+                transformer_commands[command_offset + index]
+            );
+            read_command_response(command_id, NPU_STATUS_SUCCESS);
+        end
+
+        ctl_request(NPU_CTL_FENCE, 64'hf, 64'd500000, fence_result);
+        check(fence_result[7:0] == NPU_STATUS_SUCCESS,
+              "Transformer batch FENCE returned a failure");
+        for (int unsigned index = 0; index < command_count; index++) begin
+            command_id = transformer_command_id(
+                transformer_commands[command_offset + index]
+            );
+            task_status = 64'd0;
+            for (poll_count = 0; poll_count < 1000;
+                 poll_count = poll_count + 1) begin
+                query_task(command_id, 3'd0, task_status);
+                if (task_status[3:0] == 4'd3) begin
+                    break;
+                end
+            end
+            check(task_status[3:0] == 4'd3,
+                  "Transformer task did not reach terminal state");
+            check(task_status[11:4] == NPU_STATUS_SUCCESS,
+                  "Transformer task returned a failure status");
+            acknowledge_task(command_id);
+        end
+        for (int unsigned index = 0; index < 8; index++) begin
+            command_words[index] = 128'd0;
+        end
+    endtask
+`endif
+
+`ifdef NPU_TRANSFORMER_E2E
+    initial begin : run_transformer_model
+        string command_hex;
+        string batch_hex;
+        string weight_hex;
+        string input_hex;
+        string expected_hex;
+        string score_hex;
+        string probability_hex;
+        string context_hex;
+        int unsigned command_count;
+        int unsigned batch_count;
+        int unsigned weight_bytes;
+        int unsigned input_bytes;
+        int unsigned output_bytes;
+        int unsigned score_bytes;
+        int unsigned probability_bytes;
+        int unsigned context_bytes;
+        longint unsigned weight_ddr;
+        longint unsigned input_ddr;
+        longint unsigned output_ddr;
+        longint unsigned score_l1;
+        longint unsigned probability_l1;
+        longint unsigned context_l1;
+        int unsigned command_offset;
+        int unsigned output_index;
+        logic [63:0] actual_output_word;
+        logic [63:0] actual_score_word;
+        logic [63:0] actual_probability_word;
+        logic [63:0] actual_context_word;
+
+        core_clk_i = 1'b0;
+        reset_n = 1'b0;
+        dvfs_prepare_req_i = 1'b0;
+        soft_reset_req_i = 1'b0;
+        power_down_req_i = 1'b0;
+        system_bus_backpressure = 1'b1;
+        dependency_check_enable_q = 1'b0;
+        protocol_checks_enable = 1'b0;
+        system_dma_write_check_q = 1'b1;
+        transformer_output_ddr_q = 40'd0;
+        transformer_output_bytes_q = 32'd0;
+
+        s_axi_awid_i = '0;
+        s_axi_awaddr_i = '0;
+        s_axi_awlen_i = '0;
+        s_axi_awsize_i = 3'd3;
+        s_axi_awburst_i = 2'b01;
+        s_axi_awlock_i = 1'b0;
+        s_axi_awcache_i = 4'd0;
+        s_axi_awprot_i = 3'd0;
+        s_axi_awqos_i = 4'd0;
+        s_axi_awvalid_i = 1'b0;
+        s_axi_wdata_i = 64'd0;
+        s_axi_wstrb_i = 8'd0;
+        s_axi_wlast_i = 1'b0;
+        s_axi_wvalid_i = 1'b0;
+        s_axi_bready_i = 1'b0;
+        s_axi_arid_i = '0;
+        s_axi_araddr_i = '0;
+        s_axi_arlen_i = '0;
+        s_axi_arsize_i = 3'd3;
+        s_axi_arburst_i = 2'b01;
+        s_axi_arlock_i = 1'b0;
+        s_axi_arcache_i = 4'd0;
+        s_axi_arprot_i = 3'd0;
+        s_axi_arqos_i = 4'd0;
+        s_axi_arvalid_i = 1'b0;
+        s_axi_rready_i = 1'b0;
+        for (int unsigned index = 0; index < 8; index++) begin
+            command_words[index] = 128'd0;
+        end
+
+        check($value$plusargs("COMMAND_HEX=%s", command_hex),
+              "COMMAND_HEX plusarg is missing");
+        check($value$plusargs("COMMAND_COUNT=%d", command_count),
+              "COMMAND_COUNT plusarg is missing");
+        check($value$plusargs("BATCH_HEX=%s", batch_hex),
+              "BATCH_HEX plusarg is missing");
+        check($value$plusargs("BATCH_COUNT=%d", batch_count),
+              "BATCH_COUNT plusarg is missing");
+        check($value$plusargs("WEIGHT_HEX=%s", weight_hex),
+              "WEIGHT_HEX plusarg is missing");
+        check($value$plusargs("WEIGHT_BYTES=%d", weight_bytes),
+              "WEIGHT_BYTES plusarg is missing");
+        check($value$plusargs("WEIGHT_DDR=%d", weight_ddr),
+              "WEIGHT_DDR plusarg is missing");
+        check($value$plusargs("INPUT_HEX=%s", input_hex),
+              "INPUT_HEX plusarg is missing");
+        check($value$plusargs("INPUT_BYTES=%d", input_bytes),
+              "INPUT_BYTES plusarg is missing");
+        check($value$plusargs("INPUT_DDR=%d", input_ddr),
+              "INPUT_DDR plusarg is missing");
+        check($value$plusargs("EXPECTED_HEX=%s", expected_hex),
+              "EXPECTED_HEX plusarg is missing");
+        check($value$plusargs("OUTPUT_BYTES=%d", output_bytes),
+              "OUTPUT_BYTES plusarg is missing");
+        check($value$plusargs("OUTPUT_DDR=%d", output_ddr),
+              "OUTPUT_DDR plusarg is missing");
+        check($value$plusargs("SCORE_HEX=%s", score_hex),
+              "SCORE_HEX plusarg is missing");
+        check($value$plusargs("SCORE_BYTES=%d", score_bytes),
+              "SCORE_BYTES plusarg is missing");
+        check($value$plusargs("SCORE_L1=%d", score_l1),
+              "SCORE_L1 plusarg is missing");
+        check($value$plusargs("PROBABILITY_HEX=%s", probability_hex),
+              "PROBABILITY_HEX plusarg is missing");
+        check($value$plusargs(
+                  "PROBABILITY_BYTES=%d", probability_bytes
+              ), "PROBABILITY_BYTES plusarg is missing");
+        check($value$plusargs("PROBABILITY_L1=%d", probability_l1),
+              "PROBABILITY_L1 plusarg is missing");
+        check($value$plusargs("CONTEXT_HEX=%s", context_hex),
+              "CONTEXT_HEX plusarg is missing");
+        check($value$plusargs("CONTEXT_BYTES=%d", context_bytes),
+              "CONTEXT_BYTES plusarg is missing");
+        check($value$plusargs("CONTEXT_L1=%d", context_l1),
+              "CONTEXT_L1 plusarg is missing");
+        check((command_count <= 64) && (batch_count <= 16) &&
+              (weight_bytes <= 4096) && (input_bytes <= 64) &&
+              (output_bytes <= 64) && (score_bytes <= 64) &&
+              (probability_bytes <= 64) && (context_bytes <= 64),
+              "Transformer fixture exceeds testbench storage");
+        check((weight_ddr + 64'(weight_bytes) <=
+               64'(TB_SYSTEM_MEMORY_BYTES)) &&
+              (input_ddr + 64'(input_bytes) <=
+               64'(TB_SYSTEM_MEMORY_BYTES)) &&
+              (output_ddr + 64'(output_bytes) <=
+               64'(TB_SYSTEM_MEMORY_BYTES)),
+              "Transformer fixture exceeds system memory");
+        check((score_l1 + 64'(score_bytes) <= 64'(TB_L1_BYTES)) &&
+              (probability_l1 + 64'(probability_bytes) <=
+               64'(TB_L1_BYTES)) &&
+              (context_l1 + 64'(context_bytes) <=
+               64'(TB_L1_BYTES)),
+              "Transformer stage fixture exceeds L1");
+        check(output_bytes == 8,
+              "Transformer output check currently requires eight bytes");
+
+        $readmemh(command_hex, transformer_commands, 0, command_count - 1);
+        $readmemh(batch_hex, transformer_batch_sizes, 0, batch_count - 1);
+        $readmemh(weight_hex, transformer_weights, 0, weight_bytes - 1);
+        $readmemh(input_hex, transformer_input, 0, input_bytes - 1);
+        $readmemh(expected_hex, transformer_expected, 0, output_bytes - 1);
+        $readmemh(score_hex, transformer_expected_score, 0, score_bytes - 1);
+        $readmemh(
+            probability_hex,
+            transformer_expected_probability,
+            0,
+            probability_bytes - 1
+        );
+        $readmemh(
+            context_hex,
+            transformer_expected_context,
+            0,
+            context_bytes - 1
+        );
+        transformer_output_ddr_q = 40'(output_ddr);
+        transformer_output_bytes_q = output_bytes;
+
+        repeat (8) @(posedge core_clk_i);
+        @(negedge core_clk_i);
+        reset_n = 1'b1;
+        repeat (6) @(posedge core_clk_i);
+        protocol_checks_enable = 1'b1;
+        check(!accept_new_cmd_o,
+              "NPU accepted Transformer commands before START");
+        axi_write_single(CSR_CORE_CONTROL, 64'h1, 8'hff);
+        axi_write_single(CSR_L1_HOST_ACCESS_CONTROL, 64'h1, 8'hff);
+        repeat (2) @(posedge core_clk_i);
+        check(accept_new_cmd_o,
+              "NPU did not enter running state for Transformer");
+
+        for (int unsigned index = 0; index < weight_bytes; index++) begin
+            u_system_memory.write_byte(
+                weight_ddr + 64'(index), transformer_weights[index]
+            );
+        end
+        for (int unsigned index = 0; index < input_bytes; index++) begin
+            u_system_memory.write_byte(
+                input_ddr + 64'(index), transformer_input[index]
+            );
+        end
+
+        command_offset = 0;
+        for (int unsigned batch = 0; batch < batch_count; batch++) begin
+            check((transformer_batch_sizes[batch] >= 1) &&
+                  (transformer_batch_sizes[batch] <= 8),
+                  "Transformer batch file contains an invalid size");
+            check(command_offset +
+                  32'(transformer_batch_sizes[batch]) <=
+                  command_count,
+                  "Transformer batches exceed command count");
+            run_transformer_batch(
+                command_offset, 32'(transformer_batch_sizes[batch])
+            );
+            command_offset =
+                command_offset + 32'(transformer_batch_sizes[batch]);
+        end
+        check(command_offset == command_count,
+              "Transformer batches do not cover every command");
+
+        actual_output_word = u_system_memory.read_u64(output_ddr);
+        for (output_index = 0; output_index < output_bytes;
+             output_index = output_index + 1) begin
+            check(actual_output_word[output_index*8 +: 8] ==
+                  transformer_expected[output_index],
+                  "Transformer final output byte is incorrect");
+        end
+
+        l1_read_word(20'(score_l1), actual_score_word);
+        for (output_index = 0; output_index < score_bytes;
+             output_index = output_index + 1) begin
+            check(actual_score_word[output_index*8 +: 8] ==
+                  transformer_expected_score[output_index],
+                  "Transformer QK score is incorrect");
+        end
+        check((actual_score_word[7:0] != 0) &&
+              (actual_score_word[15:8] != 0) &&
+              (actual_score_word[23:16] != 0) &&
+              (actual_score_word[31:24] != 0),
+              "Transformer QK score fixture is zero");
+
+        l1_read_word(20'(probability_l1), actual_probability_word);
+        for (output_index = 0; output_index < probability_bytes;
+             output_index = output_index + 1) begin
+            check(actual_probability_word[output_index*8 +: 8] ==
+                  transformer_expected_probability[output_index],
+                  "Transformer Softmax output is incorrect");
+        end
+
+        l1_read_word(20'(context_l1), actual_context_word);
+        for (output_index = 0; output_index < context_bytes;
+             output_index = output_index + 1) begin
+            check(actual_context_word[output_index*8 +: 8] ==
+                  transformer_expected_context[output_index],
+                  "Transformer attention context is incorrect");
+        end
+
+        check(system_bus_read_handshakes ==
+              weight_bytes + input_bytes,
+              "Transformer AXI Master read count is incorrect");
+        check(system_bus_write_handshakes == output_bytes,
+              "Transformer AXI Master write count is incorrect");
+        check(system_aw_handshakes_q == output_bytes,
+              "Transformer output AW count is incorrect");
+        check(system_w_handshakes_q == output_bytes,
+              "Transformer output W count is incorrect");
+        check(system_b_handshakes_q == output_bytes,
+              "Transformer output B count is incorrect");
+        check(cfe_low_word_count_q == command_count,
+              "Transformer CFE low-word count is incorrect");
+        check(cfe_high_word_count_q == command_count,
+              "Transformer CFE high-word count is incorrect");
+        check(!cfe_expect_high_q,
+              "Transformer CFE ended with an unmatched word");
+        check(!system_bus_protocol_error,
+              "Transformer system-memory AXI model reported an error");
+        check(!wdt_reset_req_o,
+              "watchdog requested reset during Transformer inference");
+
+        $display(
+            "TB_TRANSFORMER_STAGES score=[%0d,%0d,%0d,%0d] probability=[%0d,%0d,%0d,%0d] context=[%0d,%0d,%0d,%0d,%0d,%0d,%0d,%0d]",
+            $signed(actual_score_word[7:0]),
+            $signed(actual_score_word[15:8]),
+            $signed(actual_score_word[23:16]),
+            $signed(actual_score_word[31:24]),
+            $signed(actual_probability_word[7:0]),
+            $signed(actual_probability_word[15:8]),
+            $signed(actual_probability_word[23:16]),
+            $signed(actual_probability_word[31:24]),
+            $signed(actual_context_word[7:0]),
+            $signed(actual_context_word[15:8]),
+            $signed(actual_context_word[23:16]),
+            $signed(actual_context_word[31:24]),
+            $signed(actual_context_word[39:32]),
+            $signed(actual_context_word[47:40]),
+            $signed(actual_context_word[55:48]),
+            $signed(actual_context_word[63:56])
+        );
+        $display(
+            "TB_TRANSFORMER_OUTPUT int8=[%0d,%0d,%0d,%0d,%0d,%0d,%0d,%0d]",
+            $signed(actual_output_word[7:0]),
+            $signed(actual_output_word[15:8]),
+            $signed(actual_output_word[23:16]),
+            $signed(actual_output_word[31:24]),
+            $signed(actual_output_word[39:32]),
+            $signed(actual_output_word[47:40]),
+            $signed(actual_output_word[55:48]),
+            $signed(actual_output_word[63:56])
+        );
+        $display(
+            "TB_TRANSFORMER_E2E_PASS commands=%0d batches=%0d master_reads=%0d master_writes=%0d",
+            command_count, batch_count, system_bus_read_handshakes,
+            system_bus_write_handshakes
+        );
+        $finish;
+    end
+`else
     initial begin
         logic [31:0] vector_l1_before_int16;
         logic [31:0] desc_reads_after_dependency;
@@ -1256,6 +1655,7 @@ module tb_npu_single_core;
         );
         $finish;
     end
+`endif
 
     initial begin
         #20000000;

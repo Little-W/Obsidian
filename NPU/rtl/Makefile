@@ -58,7 +58,15 @@ VERILATOR_SIM := $(VERILATOR_COMMON) \
 	--output-split 10000 \
 	--output-split-cfuncs 5000
 
-.PHONY: all lint control-test memory-test module-test system-test test clean
+# The model-only build excludes the legacy smoke-test initial block.  Its
+# shared declarations remain in the source so both modes use the same AXI
+# tasks and DUT wiring.
+VERILATOR_TRANSFORMER := $(VERILATOR_SIM) \
+	-Wno-UNUSEDSIGNAL \
+	-Wno-UNUSEDPARAM
+
+.PHONY: all lint control-test memory-test module-test system-test \
+	transformer-e2e test clean
 
 all: test
 
@@ -200,7 +208,31 @@ system-test:
 		$(VERILATOR_MAKE_FLAGS)
 	$(BUILD_DIR)/system/Vtb_npu_single_core
 
-test: lint module-test system-test
+transformer-e2e:
+	mkdir -p $(GEN_DIR)/transformer_e2e_data
+	python3 tb/models/generate_transformer_e2e.py \
+		--model tb/models/transformer_e2e_model.json \
+		--output-dir $(GEN_DIR)/transformer_e2e_data
+	mkdir -p $(GEN_DIR)/transformer_e2e
+	$(VERILATOR) --cc --exe --main $(VERILATOR_TRANSFORMER) \
+		-DNPU_TRANSFORMER_E2E \
+		--top-module tb_npu_single_core \
+		-Mdir $(GEN_DIR)/transformer_e2e \
+		-o Vtb_npu_transformer_e2e \
+		$(RTL_SRCS) \
+		tb/tb_axi_memory_model.sv \
+		tb/tb_npu_single_core.sv
+	mkdir -p $(BUILD_DIR)/transformer_e2e
+	cp -a $(GEN_DIR)/transformer_e2e/. $(BUILD_DIR)/transformer_e2e/
+	$(MAKE) -C $(BUILD_DIR)/transformer_e2e \
+		-f Vtb_npu_single_core.mk -j1 \
+		$(VERILATOR_MAKE_FLAGS)
+	python3 tb/models/generate_transformer_e2e.py \
+		--model tb/models/transformer_e2e_model.json \
+		--output-dir $(GEN_DIR)/transformer_e2e_data \
+		--run $(BUILD_DIR)/transformer_e2e/Vtb_npu_transformer_e2e
+
+test: lint module-test system-test transformer-e2e
 
 clean:
 	rm -rf $(BUILD_DIR) $(GEN_DIR) $(LOCAL_DEBUG_DIRS)

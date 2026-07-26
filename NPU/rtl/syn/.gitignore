@@ -1,0 +1,11 @@
+WORK*/
+alib-*/
+reports/
+*.log
+*.svf
+*.ddc
+*.vg
+*.v
+command.log
+default.svf
+filenames.log
