@@ -179,6 +179,7 @@ module tb_scheduler_join_fence;
       @(negedge clk);
       cfe_cmd_valid = 1'b0;
       cfe_cmd       = 128'd0;
+      while (dut.cmd_admit_valid_q) @(negedge clk);
     end
   endtask
 
@@ -515,6 +516,7 @@ module tb_scheduler_join_fence;
     .task_ack_ready_o(task_ack_ready),
 
     .scheduler_idle_o(),
+    .scheduler_quiescent_o(),
     .task_occupancy_o()
   );
   /* verilator lint_on PINCONNECTEMPTY */

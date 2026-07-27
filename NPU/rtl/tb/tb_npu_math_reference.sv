@@ -116,6 +116,46 @@ module tb_npu_math_reference;
     check_bits("exp", 4'd4, 32'h7f80_0000, 32'h4b07_975f);
     check_bits("exp", 4'd4, 32'hff80_0000, 32'h0000_0000);
     check_bits("exp", 4'd4, 32'h7fc1_2345, 32'h0000_0000);
+    check_bits(
+      "exp staged", 4'd4, 32'h3e80_0000,
+      fp32_exp_approx(32'h3e80_0000)
+    );
+    check_bits(
+      "exp staged", 4'd4, 32'h3f00_0000,
+      fp32_exp_approx(32'h3f00_0000)
+    );
+    check_bits(
+      "exp staged", 4'd4, 32'h4000_0000,
+      fp32_exp_approx(32'h4000_0000)
+    );
+    check_bits(
+      "exp staged", 4'd4, 32'h4080_0000,
+      fp32_exp_approx(32'h4080_0000)
+    );
+    check_bits(
+      "exp staged", 4'd4, 32'h4100_0000,
+      fp32_exp_approx(32'h4100_0000)
+    );
+    check_bits(
+      "exp staged", 4'd4, 32'hbe80_0000,
+      fp32_exp_approx(32'hbe80_0000)
+    );
+    check_bits(
+      "exp staged", 4'd4, 32'hbf00_0000,
+      fp32_exp_approx(32'hbf00_0000)
+    );
+    check_bits(
+      "exp staged", 4'd4, 32'hc000_0000,
+      fp32_exp_approx(32'hc000_0000)
+    );
+    check_bits(
+      "exp staged", 4'd4, 32'hc080_0000,
+      fp32_exp_approx(32'hc080_0000)
+    );
+    check_bits(
+      "exp staged", 4'd4, 32'hc100_0000,
+      fp32_exp_approx(32'hc100_0000)
+    );
 
     check_bits("reciprocal", 4'd10, 32'h0000_0000, 32'h7f7f_ffff);
     check_bits("reciprocal", 4'd10, 32'h8000_0000, 32'hff7f_ffff);

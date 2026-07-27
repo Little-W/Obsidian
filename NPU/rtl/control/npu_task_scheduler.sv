@@ -118,6 +118,7 @@ module npu_task_scheduler #(
   output logic          task_ack_ready_o,
 
   output logic          scheduler_idle_o,
+  output logic          scheduler_quiescent_o,
   output logic [15:0]   task_occupancy_o
 );
   import npu_rtl_pkg::*;
@@ -223,7 +224,6 @@ module npu_task_scheduler #(
   logic [TASK_IDX_W-1:0] ack_select;
 
   logic control_select_found;
-  logic [TASK_IDX_W-1:0] control_select;
   logic [TASK_SLOTS-1:0] completion_eligible_mask;
   logic [TASK_SLOTS-1:0] event_publish_eligible_mask;
   logic [TASK_SLOTS-1:0] control_eligible_mask;
@@ -258,6 +258,10 @@ module npu_task_scheduler #(
   logic completion_scan_round_dirty;
   logic event_publish_scan_round_dirty;
   logic control_scan_round_dirty;
+  logic control_exec_valid_q;
+  logic [TASK_IDX_W-1:0] control_exec_slot_q;
+  logic [63:0] control_exec_seq_q;
+  logic control_exec_task_valid;
 
   logic dependency_success [TASK_SLOTS];
   logic dependency_failed  [TASK_SLOTS];
@@ -266,6 +270,7 @@ module npu_task_scheduler #(
   logic [TASK_SLOTS-1:0] cmd_predecessor_mask;
   logic event_resources_valid;
   logic cmd_static_valid;
+  logic cmd_capture;
   logic cmd_accept;
   logic event_query_ref_valid;
   logic ctl_wait_event_found;
@@ -292,6 +297,25 @@ module npu_task_scheduler #(
   logic [11:0] cmd_wait1_resolved;
   logic [11:0] cmd_signal_resolved;
   logic cmd_is_inline_rearm;
+  logic cmd_admit_valid_q;
+  logic [TASK_IDX_W-1:0] cmd_admit_slot_q;
+  logic [11:0] cmd_admit_command_id_q;
+  logic [3:0] cmd_admit_engine_q;
+  logic [7:0] cmd_admit_opcode_q;
+  logic [11:0] cmd_admit_header_flags_q;
+  logic [11:0] cmd_admit_wait0_q;
+  logic [11:0] cmd_admit_wait1_q;
+  logic [11:0] cmd_admit_signal_q;
+  logic cmd_admit_static_valid_q;
+  logic cmd_admit_is_inline_rearm_q;
+  logic [TASK_SLOTS-1:0] cmd_admit_predecessor_mask_q;
+  logic [127:0] cmd_admit_cmd_q;
+  logic [47:0] cmd_admit_input_base_q;
+  logic [47:0] cmd_admit_weight_base_q;
+  logic [47:0] cmd_admit_work_base_q;
+  logic [47:0] cmd_admit_output_base_q;
+  logic [47:0] cmd_admit_kv_base_q;
+  logic [19:0] cmd_admit_param_l1_base_q;
   logic inline_desc_valid;
   logic [3:0] inline_engine;
   logic [7:0] inline_opcode;
@@ -597,7 +621,9 @@ module npu_task_scheduler #(
     event_resources_valid && inline_desc_valid;
 
   always_comb begin
-    lookup_busy_comb = 1'b0;
+    lookup_busy_comb =
+      cmd_admit_valid_q &&
+      (cmd_admit_command_id_q == {2'd0, cmd_id_lookup_id_i});
     for (int unsigned slot = 0; slot < TASK_SLOTS; slot++) begin
       if ((task_state_q[slot] != NPU_TASK_FREE) &&
           (task_command_id_q[slot] == {2'd0, cmd_id_lookup_id_i})) begin
@@ -661,9 +687,9 @@ module npu_task_scheduler #(
     end
   end
 
-  assign control_rearm_current_ref = task_signal_q[control_select];
+  assign control_rearm_current_ref = task_signal_q[control_exec_slot_q];
   assign control_rearm_next_generation =
-    task_signal_q[control_select][11:8] + 1'b1;
+    task_signal_q[control_exec_slot_q][11:8] + 1'b1;
 
   always_comb begin
     task_live_mask = '0;
@@ -768,7 +794,9 @@ module npu_task_scheduler #(
       control_eligible_mask[slot] =
         (task_state_q[slot] == NPU_TASK_READY) &&
         !order_blocked[slot] &&
-        (task_engine_q[slot] == NPU_ENGINE_CONTROL);
+        (task_engine_q[slot] == NPU_ENGINE_CONTROL) &&
+        !(control_exec_valid_q &&
+          (control_exec_slot_q == TASK_IDX_W'(slot)));
     end
   end
 
@@ -854,7 +882,6 @@ module npu_task_scheduler #(
     event_publish_found = 1'b0;
     event_publish_select = event_publish_scan_winner_slot;
     control_select_found = 1'b0;
-    control_select = control_scan_winner_slot;
     if ((select_scan_slot_q == TASK_IDX_W'(TASK_SLOTS - 1)) &&
         !abort_i) begin
       completion_found =
@@ -953,6 +980,45 @@ module npu_task_scheduler #(
     end
   end
 
+  /*
+   * The shared scan writes a narrow Control-task snapshot.  Execution uses
+   * that snapshot on the following cycle, so the 64-bit oldest-task compare
+   * does not continue through Event updates and task-state write controls.
+   */
+  always_comb begin
+    control_exec_task_valid =
+      control_exec_valid_q &&
+      (task_state_q[control_exec_slot_q] == NPU_TASK_READY) &&
+      (task_engine_q[control_exec_slot_q] == NPU_ENGINE_CONTROL) &&
+      (task_submit_seq_q[control_exec_slot_q] == control_exec_seq_q) &&
+      !order_blocked[control_exec_slot_q];
+  end
+
+  always_ff @(posedge clk_i or negedge reset_n) begin
+    if (!reset_n || abort_i) begin
+      control_exec_valid_q <= 1'b0;
+      control_exec_slot_q  <= '0;
+      control_exec_seq_q   <= 64'd0;
+    end else begin
+      if (control_exec_valid_q) begin
+        control_exec_valid_q <= 1'b0;
+      end
+      /*
+       * Capture the scan result on every final scan cycle.  The valid bit
+       * alone decides whether the snapshot may execute; keeping the wide
+       * payload write independent of the final validity checks prevents that
+       * late control result from driving every payload-register enable.
+       */
+      if (select_scan_slot_q == TASK_IDX_W'(TASK_SLOTS - 1)) begin
+        control_exec_slot_q <= control_scan_winner_slot;
+        control_exec_seq_q <= control_scan_winner_seq;
+      end
+      if (control_select_found) begin
+        control_exec_valid_q <= 1'b1;
+      end
+    end
+  end
+
   always_comb begin
     query_found  = 1'b0;
     query_select = '0;
@@ -980,8 +1046,56 @@ module npu_task_scheduler #(
     end
   end
 
-  assign cfe_cmd_ready_o = enable_i && !quiesce_i && free_found;
-  assign cmd_accept      = cfe_cmd_valid_i && cfe_cmd_ready_o;
+  assign cfe_cmd_ready_o = enable_i && !quiesce_i && !abort_i && free_found
+                         && !cmd_admit_valid_q
+                         && !control_exec_valid_q;
+  assign cmd_capture     = cfe_cmd_valid_i && cfe_cmd_ready_o;
+  assign cmd_accept      = cmd_admit_valid_q && !abort_i;
+
+  /*
+   * Command admission is a one-entry registered stage.  Validation and Event
+   * references are sampled with the CFE handshake, while the task-table write
+   * uses only registered values on the following cycle.
+   */
+  always_ff @(posedge clk_i or negedge reset_n) begin
+    if (!reset_n || abort_i) begin
+      cmd_admit_valid_q <= 1'b0;
+      cmd_admit_slot_q  <= '0;
+    end else begin
+      if (cmd_admit_valid_q) begin
+        cmd_admit_valid_q <= 1'b0;
+      end
+      if (cmd_capture) begin
+        cmd_admit_valid_q <= 1'b1;
+        cmd_admit_slot_q <= free_slot;
+        cmd_admit_command_id_q <= cmd_command_id;
+        cmd_admit_engine_q <= cmd_engine;
+        cmd_admit_opcode_q <= cmd_opcode;
+        cmd_admit_header_flags_q <= cmd_header_flags;
+        cmd_admit_wait0_q <= cmd_wait0_resolved;
+        cmd_admit_wait1_q <= cmd_wait1_resolved;
+        /*
+         * Keep the resolved reference independent of the validation result.
+         * Invalid commands are recorded as terminal tasks and never publish
+         * their Event, so forcing this field to NONE would only add the full
+         * validation network to every signal-register input.
+         */
+        cmd_admit_signal_q <= cmd_signal_resolved;
+        cmd_admit_static_valid_q <= cmd_static_valid;
+        cmd_admit_is_inline_rearm_q <= cmd_is_inline_rearm;
+        cmd_admit_predecessor_mask_q <= cmd_static_valid
+                                      ? cmd_predecessor_mask
+                                      : '0;
+        cmd_admit_cmd_q <= cfe_cmd_i;
+        cmd_admit_input_base_q <= input_base_i;
+        cmd_admit_weight_base_q <= weight_base_i;
+        cmd_admit_work_base_q <= work_base_i;
+        cmd_admit_output_base_q <= output_base_i;
+        cmd_admit_kv_base_q <= kv_base_i;
+        cmd_admit_param_l1_base_q <= param_l1_base_i;
+      end
+    end
+  end
 
   assign cmd_id_lookup_ready_o = 1'b1;
   assign cmd_id_busy_o          = lookup_busy_q;
@@ -1027,7 +1141,8 @@ module npu_task_scheduler #(
     task_header_flags_q[completion_hold_slot_q][1] &&
     (task_status_q[completion_hold_slot_q] != NPU_STATUS_SUCCESS);
 
-  assign axi_ctl_ready_o    = !ctl_active_q && !ctl_rsp_valid_q;
+  assign axi_ctl_ready_o    = !ctl_active_q && !ctl_rsp_valid_q
+                            && !cmd_admit_valid_q;
   assign axi_ctl_rsp_valid_o = ctl_rsp_valid_q;
   assign axi_ctl_rsp_data_o  = ctl_rsp_data_q;
 
@@ -1045,7 +1160,7 @@ module npu_task_scheduler #(
   assign task_ack_ready_o        = ack_found;
 
   always_comb begin
-    task_occupancy_o = 16'd0;
+    task_occupancy_o = cmd_admit_valid_q ? 16'd1 : 16'd0;
     for (int unsigned slot = 0; slot < TASK_SLOTS; slot++) begin
       if (task_state_q[slot] != NPU_TASK_FREE) begin
         task_occupancy_o = task_occupancy_o + 1'b1;
@@ -1057,6 +1172,23 @@ module npu_task_scheduler #(
                           && !matrix_active_q
                           && !vector_active_q
                           && !complex_active_q;
+  assign scheduler_quiescent_o =
+      !cmd_admit_valid_q
+      && !decode_pending_valid_q
+      && !decode_scan_active_q
+      && !dma_dispatch_valid_q
+      && !matrix_dispatch_valid_q
+      && !vector_dispatch_valid_q
+      && !complex_dispatch_valid_q
+      && !dma_active_q
+      && !matrix_active_q
+      && !vector_active_q
+      && !complex_active_q
+      && !control_exec_valid_q
+      && !completion_hold_valid_q
+      && !event_publish_pending_valid_q
+      && !ctl_active_q
+      && !ctl_rsp_valid_q;
 
   always_ff @(posedge clk_i or negedge reset_n) begin
     if (!reset_n) begin
@@ -1373,52 +1505,58 @@ module npu_task_scheduler #(
       end
 
       if (cmd_accept) begin
-        task_state_q[free_slot]        <= cmd_static_valid
+        task_state_q[cmd_admit_slot_q] <= cmd_admit_static_valid_q
                                         ? NPU_TASK_WAIT_EVENT
                                         : NPU_TASK_ERROR;
-        task_command_id_q[free_slot]   <= cmd_command_id;
-        task_engine_q[free_slot]       <= cmd_engine;
-        task_opcode_q[free_slot]       <= cmd_opcode;
-        task_header_flags_q[free_slot] <= cmd_header_flags;
-        task_wait0_q[free_slot]        <= cmd_wait0_resolved;
-        task_wait1_q[free_slot]        <= cmd_wait1_resolved;
-        task_signal_q[free_slot]       <= cmd_static_valid
-                                        ? cmd_signal_resolved
-                                        : NPU_EVENT_NONE;
-        task_submit_seq_q[free_slot]   <= submit_seq_q;
-        task_predecessor_mask_q[free_slot] <= cmd_static_valid
-                                            ? cmd_predecessor_mask
-                                            : '0;
-        task_cmd_q[free_slot]           <= cfe_cmd_i;
-        task_input_base_q[free_slot]    <= input_base_i;
-        task_weight_base_q[free_slot]   <= weight_base_i;
-        task_work_base_q[free_slot]     <= work_base_i;
-        task_output_base_q[free_slot]   <= output_base_i;
-        task_kv_base_q[free_slot]       <= kv_base_i;
-        task_param_l1_base_q[free_slot] <= param_l1_base_i;
-        task_status_q[free_slot]       <= cmd_static_valid
+        task_command_id_q[cmd_admit_slot_q] <=
+          cmd_admit_command_id_q;
+        task_engine_q[cmd_admit_slot_q] <= cmd_admit_engine_q;
+        task_opcode_q[cmd_admit_slot_q] <= cmd_admit_opcode_q;
+        task_header_flags_q[cmd_admit_slot_q] <=
+          cmd_admit_header_flags_q;
+        task_wait0_q[cmd_admit_slot_q] <= cmd_admit_wait0_q;
+        task_wait1_q[cmd_admit_slot_q] <= cmd_admit_wait1_q;
+        task_signal_q[cmd_admit_slot_q] <= cmd_admit_signal_q;
+        task_submit_seq_q[cmd_admit_slot_q] <= submit_seq_q;
+        task_predecessor_mask_q[cmd_admit_slot_q] <=
+          cmd_admit_predecessor_mask_q;
+        task_cmd_q[cmd_admit_slot_q] <= cmd_admit_cmd_q;
+        task_input_base_q[cmd_admit_slot_q] <=
+          cmd_admit_input_base_q;
+        task_weight_base_q[cmd_admit_slot_q] <=
+          cmd_admit_weight_base_q;
+        task_work_base_q[cmd_admit_slot_q] <= cmd_admit_work_base_q;
+        task_output_base_q[cmd_admit_slot_q] <=
+          cmd_admit_output_base_q;
+        task_kv_base_q[cmd_admit_slot_q] <= cmd_admit_kv_base_q;
+        task_param_l1_base_q[cmd_admit_slot_q] <=
+          cmd_admit_param_l1_base_q;
+        task_status_q[cmd_admit_slot_q] <= cmd_admit_static_valid_q
                                         ? NPU_STATUS_SUCCESS
                                         : NPU_STATUS_BAD_DESC;
-        task_fault_addr_q[free_slot]   <= 48'd0;
-        task_progress_q[free_slot]     <= 64'd0;
-        task_error_info_q[free_slot]   <= cmd_static_valid
-                                        ? 32'd0
-                                        : make_error_info(
-                                            4'd6,
-                                            NPU_STATUS_BAD_DESC,
-                                            cmd_opcode);
-        task_done_flags_q[free_slot]   <= 16'd0;
-        task_notify_q[free_slot]       <= !cmd_static_valid;
-        task_event_published_q[free_slot] <=
-          !cmd_static_valid ||
-          (cmd_signal_resolved == NPU_EVENT_NONE) ||
-          cmd_is_inline_rearm;
+        task_fault_addr_q[cmd_admit_slot_q] <= 48'd0;
+        task_progress_q[cmd_admit_slot_q] <= 64'd0;
+        task_error_info_q[cmd_admit_slot_q] <=
+          cmd_admit_static_valid_q
+          ? 32'd0
+          : make_error_info(
+              4'd6,
+              NPU_STATUS_BAD_DESC,
+              cmd_admit_opcode_q
+            );
+        task_done_flags_q[cmd_admit_slot_q] <= 16'd0;
+        task_notify_q[cmd_admit_slot_q] <= !cmd_admit_static_valid_q;
+        task_event_published_q[cmd_admit_slot_q] <=
+          !cmd_admit_static_valid_q ||
+          (cmd_admit_signal_q == NPU_EVENT_NONE) ||
+          cmd_admit_is_inline_rearm_q;
         submit_seq_q                   <= submit_seq_q + 1'b1;
-        if (cmd_static_valid &&
-            (cmd_signal_resolved != NPU_EVENT_NONE) &&
-            !cmd_is_inline_rearm) begin
-          event_state_q[cmd_signal_resolved[7:0]] <= NPU_EVENT_PENDING;
-          event_producer_q[cmd_signal_resolved[7:0]] <= cmd_command_id;
+        if (cmd_admit_static_valid_q &&
+            (cmd_admit_signal_q != NPU_EVENT_NONE) &&
+            !cmd_admit_is_inline_rearm_q) begin
+          event_state_q[cmd_admit_signal_q[7:0]] <= NPU_EVENT_PENDING;
+          event_producer_q[cmd_admit_signal_q[7:0]] <=
+            cmd_admit_command_id_q;
         end
       end
 
@@ -1439,12 +1577,13 @@ module npu_task_scheduler #(
         end
       end
 
-      if (control_select_found && !abort_i) begin
-        task_fault_addr_q[control_select] <= 48'd0;
-        task_progress_q[control_select]   <= 64'd0;
-        task_done_flags_q[control_select] <= 16'd0;
-        task_notify_q[control_select]     <= 1'b1;
-        if (task_opcode_q[control_select] == NPU_OPCODE_EVENT_REARM) begin
+      if (control_exec_task_valid && !abort_i) begin
+        task_fault_addr_q[control_exec_slot_q] <= 48'd0;
+        task_progress_q[control_exec_slot_q]   <= 64'd0;
+        task_done_flags_q[control_exec_slot_q] <= 16'd0;
+        task_notify_q[control_exec_slot_q]     <= 1'b1;
+        if (task_opcode_q[control_exec_slot_q] ==
+            NPU_OPCODE_EVENT_REARM) begin
           if ((control_rearm_current_ref[7:0] < 8'(EVENT_COUNT)) &&
               ((event_state_q[control_rearm_current_ref[7:0]] ==
                 NPU_EVENT_SUCCESS) ||
@@ -1453,12 +1592,12 @@ module npu_task_scheduler #(
               (event_generation_q[control_rearm_current_ref[7:0]] ==
                control_rearm_current_ref[11:8]) &&
               !event_has_live_waiter(control_rearm_current_ref) &&
-              !(cmd_accept && cmd_static_valid &&
-                ((cmd_wait0_resolved == control_rearm_current_ref) ||
-                 (cmd_wait1_resolved == control_rearm_current_ref)))) begin
-            task_status_q[control_select]     <= NPU_STATUS_SUCCESS;
-            task_error_info_q[control_select] <= 32'd0;
-            task_state_q[control_select]      <= NPU_TASK_SUCCESS;
+              !(cmd_accept && cmd_admit_static_valid_q &&
+                ((cmd_admit_wait0_q == control_rearm_current_ref) ||
+                 (cmd_admit_wait1_q == control_rearm_current_ref)))) begin
+            task_status_q[control_exec_slot_q] <= NPU_STATUS_SUCCESS;
+            task_error_info_q[control_exec_slot_q] <= 32'd0;
+            task_state_q[control_exec_slot_q] <= NPU_TASK_SUCCESS;
             event_state_q[control_rearm_current_ref[7:0]]
               <= NPU_EVENT_FREE;
             event_generation_q[control_rearm_current_ref[7:0]]
@@ -1466,17 +1605,17 @@ module npu_task_scheduler #(
             event_producer_q[control_rearm_current_ref[7:0]]
               <= 12'd0;
           end else begin
-            task_status_q[control_select] <= NPU_STATUS_BAD_DESC;
-            task_error_info_q[control_select] <= make_error_info(
+            task_status_q[control_exec_slot_q] <= NPU_STATUS_BAD_DESC;
+            task_error_info_q[control_exec_slot_q] <= make_error_info(
               4'd4, NPU_STATUS_BAD_DESC,
-              task_opcode_q[control_select]
+              task_opcode_q[control_exec_slot_q]
             );
-            task_state_q[control_select] <= NPU_TASK_ERROR;
+            task_state_q[control_exec_slot_q] <= NPU_TASK_ERROR;
           end
         end else begin
-          task_status_q[control_select]     <= NPU_STATUS_SUCCESS;
-          task_error_info_q[control_select] <= 32'd0;
-          task_state_q[control_select]      <= NPU_TASK_SUCCESS;
+          task_status_q[control_exec_slot_q] <= NPU_STATUS_SUCCESS;
+          task_error_info_q[control_exec_slot_q] <= 32'd0;
+          task_state_q[control_exec_slot_q] <= NPU_TASK_SUCCESS;
         end
       end
 
@@ -1821,6 +1960,11 @@ module npu_task_scheduler #(
         decode_scan_active_q     <= 1'b0;
         decode_scan_slot_q       <= '0;
         decode_scan_best_valid_q <= 1'b0;
+        completion_hold_valid_q  <= 1'b0;
+        event_publish_pending_valid_q <= 1'b0;
+        ctl_active_q             <= 1'b0;
+        ctl_rsp_valid_q          <= 1'b0;
+        ctl_ack_release_q        <= 1'b0;
         for (int unsigned slot = 0; slot < TASK_SLOTS; slot++) begin
           task_predecessor_mask_q[slot] <= '0;
           if ((task_state_q[slot] != NPU_TASK_FREE) &&

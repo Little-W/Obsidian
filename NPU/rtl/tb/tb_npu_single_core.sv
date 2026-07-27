@@ -1031,6 +1031,7 @@ module tb_npu_single_core;
         logic [31:0] vector_l1_before_int16;
         logic [63:0] control_status;
         logic [79:0] command_payload;
+        int unsigned reset_wait_cycles;
 
         core_clk_i = 1'b0;
         reset_n = 1'b0;
@@ -1348,7 +1349,9 @@ module tb_npu_single_core;
             query_task(12'(12'h106 + index), 3'd3, ctl_data);
             check(ctl_data == (index == 0 ? 64'd4 : 64'd0),
                   "INT16 Matrix progress is incorrect");
-            acknowledge_task(12'(12'h106 + index));
+            if (index == 0) begin
+                acknowledge_task(12'h106);
+            end
         end
         l1_read_word(20'h00c40, read_data);
         check(read_data == 64'h0006_0003_0006_0001,
@@ -1378,6 +1381,49 @@ module tb_npu_single_core;
         check(!wdt_reset_req_o, "watchdog unexpectedly requested reset");
         check(!(irq_done_o || irq_exception_o || irq_error_o),
               "masked interrupt unexpectedly asserted");
+
+        // Keep the terminal BAD_DESC task unacknowledged.  A soft reset must
+        // complete even though the task table still contains this entry.
+        check(dut.task_occupancy == 16'd1,
+              "soft-reset fixture did not retain one terminal task");
+        check(!dut.scheduler_idle,
+              "Scheduler reported idle with a retained terminal task");
+        @(negedge core_clk_i);
+        soft_reset_req_i = 1'b1;
+        for (reset_wait_cycles = 0;
+             reset_wait_cycles < 200;
+             reset_wait_cycles = reset_wait_cycles + 1) begin
+            @(posedge core_clk_i);
+            if (soft_reset_done_o) begin
+                break;
+            end
+        end
+        check(soft_reset_done_o,
+              "soft reset timed out with a retained terminal task");
+        check(dut.task_occupancy == 16'd0,
+              "soft reset did not clear the retained terminal task");
+        $display(
+            "TB_SOFT_RESET_PASS retained_tasks=1 completion_cycles=%0d",
+            reset_wait_cycles + 1
+        );
+
+        @(negedge core_clk_i);
+        soft_reset_req_i = 1'b0;
+        for (reset_wait_cycles = 0;
+             reset_wait_cycles < 20;
+             reset_wait_cycles = reset_wait_cycles + 1) begin
+            @(posedge core_clk_i);
+            if (!soft_reset_done_o) begin
+                break;
+            end
+        end
+        check(!soft_reset_done_o,
+              "soft reset completion stayed asserted after request release");
+        repeat (2) @(posedge core_clk_i);
+        check(!accept_new_cmd_o,
+              "NPU accepted commands after returning to the stopped state");
+        check(core_idle_o,
+              "NPU did not become idle after soft reset");
 
         $display(
             "TB_SYSTEM_PASS commands=8 system_reads=%0d system_writes=%0d matrix_l1=%0d vector_l1=%0d",

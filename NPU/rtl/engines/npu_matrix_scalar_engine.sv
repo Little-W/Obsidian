@@ -62,10 +62,14 @@ module npu_matrix_scalar_engine (
     ST_EP_INCREMENT,
     ST_EP_SIGN,
     ST_EP_NARROW,
-    ST_EP_ZERO_POINT
+    ST_EP_ZERO_POINT,
+    ST_ADDR_PREP,
+    ST_OUTPUT_CHECK
   } state_t;
 
   state_t state_q;
+  logic [1:0] operand_addr_phase_q;
+  logic [1:0] output_addr_phase_q;
   logic [2047:0] desc_q;
   logic [7:0] opcode_q;
   logic [31:0] batch_q;
@@ -74,6 +78,45 @@ module npu_matrix_scalar_engine (
   logic [31:0] k_q;
   logic signed [15:0] a_value_q;
   logic signed [15:0] b_value_q;
+  logic [31:0] b_n_tiles_q;
+  logic [63:0] a_element_offset_q;
+  logic [63:0] a_row_offset_q;
+  logic [63:0] a_col_offset_q;
+  logic [63:0] b_element_offset_q;
+  logic [63:0] b_linear_row_offset_q;
+  logic [63:0] b_linear_col_offset_q;
+  logic [63:0] b_tile_group_q;
+  logic [3:0] b_tile_k_inner_q;
+  logic [2:0] b_tile_n_inner_q;
+  logic [63:0] a_batch_offset_q;
+  logic [63:0] b_batch_offset_q;
+  logic [63:0] a_relative_addr_q;
+  logic [63:0] b_relative_addr_q;
+  logic [63:0] c_element_offset_q;
+  logic [63:0] src2_element_offset_q;
+  logic [63:0] bias_element_offset_q;
+  logic [47:0] requant_element_offset_q;
+  logic [63:0] c_batch_offset_q;
+  logic [63:0] src2_batch_offset_q;
+  logic [63:0] c_relative_addr_q;
+  logic [63:0] src2_relative_addr_q;
+  logic [63:0] bias_relative_addr_q;
+  logic [47:0] requant_relative_addr_q;
+  logic [63:0] a_addr_q;
+  logic [63:0] b_addr_q;
+  logic [63:0] c_addr_q;
+  logic [63:0] src2_addr_q;
+  logic [63:0] bias_addr_q;
+  logic [47:0] requant_addr_q;
+  logic a_addr_valid_q;
+  logic b_addr_valid_q;
+  logic c_addr_valid_q;
+  logic src2_addr_valid_q;
+  logic bias_addr_valid_q;
+  logic requant_addr_valid_q;
+  logic a_high_nibble_q;
+  logic b_high_nibble_q;
+  logic c_high_nibble_q;
   logic signed [31:0] mac_product_q;
   logic mac_last_q;
   logic mac_use_src2_q;
@@ -211,76 +254,73 @@ module npu_matrix_scalar_engine (
     return n_index_odd;
   endfunction
 
-  function automatic logic [63:0] tiled_b_offset(
-    input logic [31:0] k_index,
-    input logic [31:0] n_index,
-    input logic [31:0] n_size,
-    input logic [1:0] dtype
-  );
-    logic [31:0] k_outer;
-    logic [31:0] n_outer;
-    logic [31:0] k_inner;
-    logic [31:0] n_inner;
-    logic [31:0] n_tiles;
-    logic [63:0] element_index;
-    begin
-      k_outer = k_index / MATRIX_KT;
-      n_outer = n_index / MATRIX_NT;
-      k_inner = k_index % MATRIX_KT;
-      n_inner = n_index % MATRIX_NT;
-      n_tiles = (n_size + MATRIX_NT - 1) / MATRIX_NT;
-      element_index =
-        ((({32'd0, k_outer} * {32'd0, n_tiles} +
-           {32'd0, n_outer}) * {32'd0, MATRIX_KT} +
-          {32'd0, k_inner}) * {32'd0, MATRIX_NT}) +
-        {32'd0, n_inner};
-      if (dtype == NPU_DTYPE_INT4)
-        return element_index >> 1;
-      return element_index * dtype_bytes(dtype);
-    end
-  endfunction
-
-  wire [63:0] a_addr =
-    a_base + batch_q * a_batch_stride +
-    (transpose_a ?
-     row_major_offset(k_q, row_q, lda_bytes, a_dtype) :
-     row_major_offset(row_q, k_q, lda_bytes, a_dtype));
+  wire [31:0] a_row_index = transpose_a ? k_q : row_q;
+  wire [31:0] a_col_index = transpose_a ? row_q : k_q;
+  wire [63:0] a_row_offset =
+    a_row_index * lda_bytes;
+  wire [63:0] a_col_offset =
+    a_dtype == NPU_DTYPE_INT4 ?
+    ({32'd0, a_col_index} >> 1) :
+    ({32'd0, a_col_index} * dtype_bytes(a_dtype));
+  wire [63:0] a_batch_offset =
+    batch_q * a_batch_stride;
 
   wire b_is_tiled =
     b_pack_format == 8'd2 || b_pack_format == 8'd3 ||
     b_pack_format == 8'd6;
-  wire [63:0] b_addr =
-    b_base + batch_q * b_batch_stride +
-    (b_is_tiled ?
-     tiled_b_offset(k_q, col_q, matrix_n, b_dtype) :
-     (transpose_b ?
-      row_major_offset(col_q, k_q, ldb_bytes, b_dtype) :
-      row_major_offset(k_q, col_q, ldb_bytes, b_dtype)));
+  wire [31:0] b_linear_row_index = transpose_b ? col_q : k_q;
+  wire [31:0] b_linear_col_index = transpose_b ? k_q : col_q;
+  wire [63:0] b_linear_row_offset =
+    b_linear_row_index * ldb_bytes;
+  wire [63:0] b_linear_col_offset =
+    b_dtype == NPU_DTYPE_INT4 ?
+    ({32'd0, b_linear_col_index} >> 1) :
+    ({32'd0, b_linear_col_index} * dtype_bytes(b_dtype));
+  wire [63:0] b_tile_group =
+    ({36'd0, k_q[31:4]} * {32'd0, b_n_tiles_q}) +
+    {35'd0, col_q[31:3]};
+  wire [63:0] b_tiled_element_index =
+    (b_tile_group_q << 7) +
+    ({60'd0, b_tile_k_inner_q} << 3) +
+    {61'd0, b_tile_n_inner_q};
+  wire [63:0] b_tiled_element_offset =
+    b_dtype == NPU_DTYPE_INT4 ?
+    (b_tiled_element_index >> 1) :
+    (b_tiled_element_index * dtype_bytes(b_dtype));
+  wire [63:0] b_batch_offset =
+    batch_q * b_batch_stride;
 
-  wire [63:0] c_addr =
-    c_base + batch_q * c_batch_stride +
+  wire [63:0] c_element_offset =
     row_major_offset(row_q, col_q, ldc_bytes, c_dtype);
-  wire [63:0] src2_addr =
-    src2_base + batch_q * src2_batch_stride +
+  wire [63:0] src2_element_offset =
     row_major_offset(row_q, col_q, ldc_bytes, NPU_DTYPE_INT32);
-  wire [63:0] bias_addr =
-    bias_base + col_q * bias_stride_bytes;
+  wire [63:0] bias_element_offset =
+    {32'd0, col_q} * {32'd0, bias_stride_bytes};
+  wire [47:0] requant_element_offset =
+    requant_mode == 8'd2 ? {13'd0, col_q, 3'b000} : 48'd0;
+  wire [63:0] c_batch_offset =
+    batch_q * c_batch_stride;
+  wire [63:0] src2_batch_offset =
+    batch_q * src2_batch_stride;
+  wire [63:0] next_a_addr = a_base + a_relative_addr_q;
+  wire [63:0] next_b_addr = b_base + b_relative_addr_q;
+  wire [63:0] next_c_addr = c_base + c_relative_addr_q;
+  wire [63:0] next_src2_addr = src2_base + src2_relative_addr_q;
+  wire [63:0] next_bias_addr = bias_base + bias_relative_addr_q;
+  wire [47:0] next_requant_addr =
+    requant_base[47:0] + requant_relative_addr_q;
   /*
    * This single-core implementation exposes a 48-bit architectural fault
    * address.  Descriptor validation constrains every L1 base address, so the
    * arithmetic high bits are intentionally outside the reported address.
    */
   wire unused_address_upper = ^{
-    a_addr[63:48],
-    b_addr[63:48],
-    c_addr[63:48],
-    src2_addr[63:48],
-    bias_addr[63:48]
+    a_addr_q[63:48],
+    b_addr_q[63:48],
+    c_addr_q[63:48],
+    src2_addr_q[63:48],
+    bias_addr_q[63:48]
   };
-  wire [47:0] requant_addr =
-    requant_base[47:0] +
-    ((requant_mode == 8'd2) ? {13'd0, col_q, 3'b000} : 48'd0);
-
   wire signed [31:0] mac_product =
     a_value_q * b_value_q;
 
@@ -327,40 +367,52 @@ module npu_matrix_scalar_engine (
 
     case (state_q)
       ST_A_REQ: begin
-        l1_req_valid_o = 1'b1;
-        l1_req_addr_o = {a_addr[19:3], 3'b000};
+        if (a_addr_valid_q) begin
+          l1_req_valid_o = 1'b1;
+          l1_req_addr_o = {a_addr_q[19:3], 3'b000};
+        end
       end
       ST_B_REQ: begin
-        l1_req_valid_o = 1'b1;
-        l1_req_addr_o = {b_addr[19:3], 3'b000};
+        if (b_addr_valid_q) begin
+          l1_req_valid_o = 1'b1;
+          l1_req_addr_o = {b_addr_q[19:3], 3'b000};
+        end
       end
       ST_SRC2_REQ: begin
-        l1_req_valid_o = 1'b1;
-        l1_req_addr_o = {src2_addr[19:3], 3'b000};
+        if (src2_addr_valid_q) begin
+          l1_req_valid_o = 1'b1;
+          l1_req_addr_o = {src2_addr_q[19:3], 3'b000};
+        end
       end
       ST_BIAS_REQ: begin
-        l1_req_valid_o = 1'b1;
-        l1_req_addr_o = {bias_addr[19:3], 3'b000};
+        if (bias_addr_valid_q) begin
+          l1_req_valid_o = 1'b1;
+          l1_req_addr_o = {bias_addr_q[19:3], 3'b000};
+        end
       end
       ST_REQUANT_REQ: begin
-        if (!inline_requant) begin
+        if (!inline_requant && requant_addr_valid_q) begin
           l1_req_valid_o = 1'b1;
-          l1_req_addr_o = {requant_addr[19:3], 3'b000};
+          l1_req_addr_o = {requant_addr_q[19:3], 3'b000};
         end
       end
       ST_RMW_REQ: begin
-        l1_req_valid_o = 1'b1;
-        l1_req_addr_o = {c_addr[19:3], 3'b000};
+        if (c_addr_valid_q) begin
+          l1_req_valid_o = 1'b1;
+          l1_req_addr_o = {c_addr_q[19:3], 3'b000};
+        end
       end
       ST_WRITE_REQ: begin
-        l1_req_valid_o = 1'b1;
-        l1_req_write_o = 1'b1;
-        l1_req_addr_o = {c_addr[19:3], 3'b000};
-        l1_req_wdata_o = store_element_data(
-          rmw_beat_q, result_q[31:0], c_addr[2:0],
-          c_high_nibble, c_dtype
-        );
-        l1_req_wstrb_o = store_element_strb(c_addr[2:0], c_dtype);
+        if (c_addr_valid_q) begin
+          l1_req_valid_o = 1'b1;
+          l1_req_write_o = 1'b1;
+          l1_req_addr_o = {c_addr_q[19:3], 3'b000};
+          l1_req_wdata_o = store_element_data(
+            rmw_beat_q, result_q[31:0], c_addr_q[2:0],
+            c_high_nibble_q, c_dtype
+          );
+          l1_req_wstrb_o = store_element_strb(c_addr_q[2:0], c_dtype);
+        end
       end
       ST_A_RSP,
       ST_B_RSP,
@@ -379,9 +431,24 @@ module npu_matrix_scalar_engine (
     integer shift_amount;
     if (!reset_n) begin
       state_q <= ST_IDLE;
+      operand_addr_phase_q <= 2'd0;
+      output_addr_phase_q <= 2'd0;
       status_q <= NPU_STATUS_SUCCESS;
       fault_addr_q <= 48'd0;
       progress_q <= 64'd0;
+      a_addr_valid_q <= 1'b0;
+      b_addr_valid_q <= 1'b0;
+      a_row_offset_q <= 64'd0;
+      a_col_offset_q <= 64'd0;
+      b_linear_row_offset_q <= 64'd0;
+      b_linear_col_offset_q <= 64'd0;
+      b_tile_group_q <= 64'd0;
+      b_tile_k_inner_q <= 4'd0;
+      b_tile_n_inner_q <= 3'd0;
+      c_addr_valid_q <= 1'b0;
+      src2_addr_valid_q <= 1'b0;
+      bias_addr_valid_q <= 1'b0;
+      requant_addr_valid_q <= 1'b0;
     end else begin
       case (state_q)
         ST_IDLE: begin
@@ -520,17 +587,68 @@ module npu_matrix_scalar_engine (
             row_q <= 0;
             col_q <= 0;
             k_q <= 0;
+            b_n_tiles_q <=
+              32'(({1'b0, matrix_n} + 33'd7) >> 3);
             accum_q <= 0;
+            output_addr_phase_q <= 2'd0;
             state_q <= ST_START_OUTPUT;
           end
         end
 
         ST_START_OUTPUT: begin
-          accum_q <= 64'sd0;
-          k_q <= 32'd0;
-          rmw_beat_q <= 64'd0;
-          if (crosses_beat(c_addr[2:0], c_dtype))
-            fail_task(NPU_STATUS_ADDR_FAULT, c_addr[47:0]);
+          case (output_addr_phase_q)
+            2'd0: begin
+              accum_q <= 64'sd0;
+              k_q <= 32'd0;
+              rmw_beat_q <= 64'd0;
+              c_element_offset_q <= c_element_offset;
+              src2_element_offset_q <= src2_element_offset;
+              bias_element_offset_q <= bias_element_offset;
+              requant_element_offset_q <= requant_element_offset;
+              c_batch_offset_q <= c_batch_offset;
+              src2_batch_offset_q <= src2_batch_offset;
+              c_high_nibble_q <= c_high_nibble;
+              output_addr_phase_q <= 2'd1;
+            end
+            2'd1: begin
+              c_relative_addr_q <=
+                c_batch_offset_q + c_element_offset_q;
+              src2_relative_addr_q <=
+                src2_batch_offset_q + src2_element_offset_q;
+              bias_relative_addr_q <= bias_element_offset_q;
+              requant_relative_addr_q <= requant_element_offset_q;
+              output_addr_phase_q <= 2'd2;
+            end
+            default: begin
+              c_addr_q <= next_c_addr;
+              src2_addr_q <= next_src2_addr;
+              bias_addr_q <= next_bias_addr;
+              requant_addr_q <= next_requant_addr;
+              c_addr_valid_q <=
+                next_c_addr[63:20] == 0 &&
+                !crosses_beat(next_c_addr[2:0], c_dtype);
+              src2_addr_valid_q <=
+                next_src2_addr[63:20] == 0 &&
+                !crosses_beat(
+                  next_src2_addr[2:0], NPU_DTYPE_INT32
+                );
+              bias_addr_valid_q <=
+                next_bias_addr[63:20] == 0 &&
+                !crosses_beat(
+                  next_bias_addr[2:0], NPU_DTYPE_INT32
+                );
+              requant_addr_valid_q <=
+                next_requant_addr[47:20] == 0 &&
+                next_requant_addr[2:0] == 0;
+              output_addr_phase_q <= 2'd0;
+              state_q <= ST_OUTPUT_CHECK;
+            end
+          endcase
+        end
+
+        ST_OUTPUT_CHECK: begin
+          if (!c_addr_valid_q)
+            fail_task(NPU_STATUS_ADDR_FAULT, c_addr_q[47:0]);
           else if (opcode_q == NPU_MATRIX_GEMM_ZERO ||
                    matrix_k == 0) begin
             if (opcode_q == NPU_MATRIX_GEMM_ZERO)
@@ -543,44 +661,99 @@ module npu_matrix_scalar_engine (
               state_q <= ST_REQUANT_REQ;
             else
               state_q <= ST_EPILOGUE;
-          end else if (crosses_beat(a_addr[2:0], a_dtype))
-            fail_task(NPU_STATUS_ADDR_FAULT, a_addr[47:0]);
-          else
-            state_q <= ST_A_REQ;
+          end else begin
+            operand_addr_phase_q <= 2'd0;
+            state_q <= ST_ADDR_PREP;
+          end
         end
 
-        ST_A_REQ:
-          if (l1_req_ready_i)
+        ST_ADDR_PREP: begin
+          case (operand_addr_phase_q)
+            2'd0: begin
+              a_row_offset_q <= a_row_offset;
+              a_col_offset_q <= a_col_offset;
+              if (b_is_tiled) begin
+                b_tile_group_q <= b_tile_group;
+                b_tile_k_inner_q <= k_q[3:0];
+                b_tile_n_inner_q <= col_q[2:0];
+              end else begin
+                b_linear_row_offset_q <= b_linear_row_offset;
+                b_linear_col_offset_q <= b_linear_col_offset;
+              end
+              a_batch_offset_q <= a_batch_offset;
+              b_batch_offset_q <= b_batch_offset;
+              a_high_nibble_q <= a_high_nibble;
+              b_high_nibble_q <= b_high_nibble;
+              operand_addr_phase_q <= 2'd1;
+            end
+            2'd1: begin
+              a_element_offset_q <=
+                a_row_offset_q + a_col_offset_q;
+              if (b_is_tiled)
+                b_element_offset_q <= b_tiled_element_offset;
+              else
+                b_element_offset_q <=
+                  b_linear_row_offset_q + b_linear_col_offset_q;
+              operand_addr_phase_q <= 2'd2;
+            end
+            2'd2: begin
+              a_relative_addr_q <=
+                a_batch_offset_q + a_element_offset_q;
+              b_relative_addr_q <=
+                b_batch_offset_q + b_element_offset_q;
+              operand_addr_phase_q <= 2'd3;
+            end
+            default: begin
+              a_addr_q <= next_a_addr;
+              b_addr_q <= next_b_addr;
+              a_addr_valid_q <=
+                next_a_addr[63:20] == 0 &&
+                !crosses_beat(next_a_addr[2:0], a_dtype);
+              b_addr_valid_q <=
+                next_b_addr[63:20] == 0 &&
+                !crosses_beat(next_b_addr[2:0], b_dtype);
+              operand_addr_phase_q <= 2'd0;
+              state_q <= ST_A_REQ;
+            end
+          endcase
+        end
+
+        ST_A_REQ: begin
+          if (!a_addr_valid_q)
+            fail_task(NPU_STATUS_ADDR_FAULT, a_addr_q[47:0]);
+          else if (l1_req_ready_i)
             state_q <= ST_A_RSP;
+        end
 
         ST_A_RSP:
           if (l1_rsp_valid_i) begin
             if (l1_rsp_status_i != 0)
               fail_task(memory_status_to_task(l1_rsp_status_i),
-                        a_addr[47:0]);
+                        a_addr_q[47:0]);
             else begin
               a_value_q <= 16'(load_element(
-                l1_rsp_rdata_i, a_addr[2:0], a_high_nibble, a_dtype
+                l1_rsp_rdata_i, a_addr_q[2:0],
+                a_high_nibble_q, a_dtype
               ));
-              if (crosses_beat(b_addr[2:0], b_dtype))
-                fail_task(NPU_STATUS_ADDR_FAULT, b_addr[47:0]);
-              else
-                state_q <= ST_B_REQ;
+              state_q <= ST_B_REQ;
             end
           end
 
         ST_B_REQ:
-          if (l1_req_ready_i)
+          if (!b_addr_valid_q)
+            fail_task(NPU_STATUS_ADDR_FAULT, b_addr_q[47:0]);
+          else if (l1_req_ready_i)
             state_q <= ST_B_RSP;
 
         ST_B_RSP:
           if (l1_rsp_valid_i) begin
             if (l1_rsp_status_i != 0)
               fail_task(memory_status_to_task(l1_rsp_status_i),
-                        b_addr[47:0]);
+                        b_addr_q[47:0]);
             else begin
               b_value_q <= 16'(load_element(
-                l1_rsp_rdata_i, b_addr[2:0], b_high_nibble, b_dtype
+                l1_rsp_rdata_i, b_addr_q[2:0],
+                b_high_nibble_q, b_dtype
               ));
               state_q <= ST_MAC_MUL;
             end
@@ -600,7 +773,8 @@ module npu_matrix_scalar_engine (
             {{32{mac_product_q[31]}}, mac_product_q};
           if (!mac_last_q) begin
             k_q <= k_q + 1;
-            state_q <= ST_A_REQ;
+            operand_addr_phase_q <= 2'd0;
+            state_q <= ST_ADDR_PREP;
           end else if (mac_use_src2_q)
             state_q <= ST_SRC2_REQ;
           else if (mac_bias_enable_q)
@@ -612,8 +786,8 @@ module npu_matrix_scalar_engine (
         end
 
         ST_SRC2_REQ:
-          if (crosses_beat(src2_addr[2:0], NPU_DTYPE_INT32))
-            fail_task(NPU_STATUS_ADDR_FAULT, src2_addr[47:0]);
+          if (!src2_addr_valid_q)
+            fail_task(NPU_STATUS_ADDR_FAULT, src2_addr_q[47:0]);
           else if (l1_req_ready_i)
             state_q <= ST_SRC2_RSP;
 
@@ -621,10 +795,11 @@ module npu_matrix_scalar_engine (
           if (l1_rsp_valid_i) begin
             if (l1_rsp_status_i != 0)
               fail_task(memory_status_to_task(l1_rsp_status_i),
-                        src2_addr[47:0]);
+                        src2_addr_q[47:0]);
             else begin
               accum_q <= accum_q + load_element(
-                l1_rsp_rdata_i, src2_addr[2:0], 1'b0, NPU_DTYPE_INT32
+                l1_rsp_rdata_i, src2_addr_q[2:0],
+                1'b0, NPU_DTYPE_INT32
               );
               state_q <= bias_enable ? ST_BIAS_REQ :
                          (requant_enable ? ST_REQUANT_REQ : ST_EPILOGUE);
@@ -632,8 +807,8 @@ module npu_matrix_scalar_engine (
           end
 
         ST_BIAS_REQ:
-          if (crosses_beat(bias_addr[2:0], NPU_DTYPE_INT32))
-            fail_task(NPU_STATUS_ADDR_FAULT, bias_addr[47:0]);
+          if (!bias_addr_valid_q)
+            fail_task(NPU_STATUS_ADDR_FAULT, bias_addr_q[47:0]);
           else if (l1_req_ready_i)
             state_q <= ST_BIAS_RSP;
 
@@ -641,10 +816,11 @@ module npu_matrix_scalar_engine (
           if (l1_rsp_valid_i) begin
             if (l1_rsp_status_i != 0)
               fail_task(memory_status_to_task(l1_rsp_status_i),
-                        bias_addr[47:0]);
+                        bias_addr_q[47:0]);
             else begin
               accum_q <= accum_q + load_element(
-                l1_rsp_rdata_i, bias_addr[2:0], 1'b0, NPU_DTYPE_INT32
+                l1_rsp_rdata_i, bias_addr_q[2:0],
+                1'b0, NPU_DTYPE_INT32
               );
               state_q <= requant_enable ? ST_REQUANT_REQ : ST_EPILOGUE;
             end
@@ -654,6 +830,8 @@ module npu_matrix_scalar_engine (
           if (inline_requant) begin
             requant_entry_q <= {inline_requant_shift, 32'd1};
             state_q <= ST_EPILOGUE;
+          end else if (!requant_addr_valid_q) begin
+            fail_task(NPU_STATUS_ADDR_FAULT, requant_addr_q);
           end else if (l1_req_ready_i)
             state_q <= ST_REQUANT_RSP;
 
@@ -661,9 +839,9 @@ module npu_matrix_scalar_engine (
           if (l1_rsp_valid_i) begin
             if (l1_rsp_status_i != 0)
               fail_task(memory_status_to_task(l1_rsp_status_i),
-                        requant_addr);
+                        requant_addr_q);
             else if (l1_rsp_rdata_i[63:40] != 0)
-              fail_task(NPU_STATUS_BAD_DESC, requant_addr);
+              fail_task(NPU_STATUS_BAD_DESC, requant_addr_q);
             else begin
               requant_entry_q <= l1_rsp_rdata_i[39:0];
               state_q <= ST_EPILOGUE;
@@ -779,7 +957,7 @@ module npu_matrix_scalar_engine (
           overflow = epilogue_value_q < dtype_min(c_dtype) ||
                      epilogue_value_q > dtype_max(c_dtype);
           if (overflow && overflow_mode == 1)
-            fail_task(NPU_STATUS_NUMERIC_EXCEPTION, c_addr[47:0]);
+            fail_task(NPU_STATUS_NUMERIC_EXCEPTION, c_addr_q[47:0]);
           else begin
             if (overflow_mode == 2)
               result_q <= wrap_to_dtype(epilogue_value_q[31:0], c_dtype);
@@ -787,19 +965,21 @@ module npu_matrix_scalar_engine (
               result_q <= clip_to_dtype(epilogue_value_q, c_dtype);
             rmw_beat_q <= 64'd0;
             state_q <= c_dtype == NPU_DTYPE_INT4 &&
-                       c_high_nibble ? ST_RMW_REQ : ST_WRITE_REQ;
+                       c_high_nibble_q ? ST_RMW_REQ : ST_WRITE_REQ;
           end
         end
 
         ST_RMW_REQ:
-          if (l1_req_ready_i)
+          if (!c_addr_valid_q)
+            fail_task(NPU_STATUS_ADDR_FAULT, c_addr_q[47:0]);
+          else if (l1_req_ready_i)
             state_q <= ST_RMW_RSP;
 
         ST_RMW_RSP:
           if (l1_rsp_valid_i) begin
             if (l1_rsp_status_i != 0)
               fail_task(memory_status_to_task(l1_rsp_status_i),
-                        c_addr[47:0]);
+                        c_addr_q[47:0]);
             else begin
               rmw_beat_q <= l1_rsp_rdata_i;
               state_q <= ST_WRITE_REQ;
@@ -807,27 +987,32 @@ module npu_matrix_scalar_engine (
           end
 
         ST_WRITE_REQ:
-          if (l1_req_ready_i)
+          if (!c_addr_valid_q)
+            fail_task(NPU_STATUS_ADDR_FAULT, c_addr_q[47:0]);
+          else if (l1_req_ready_i)
             state_q <= ST_WRITE_RSP;
 
         ST_WRITE_RSP:
           if (l1_rsp_valid_i) begin
             if (l1_rsp_status_i != 0)
               fail_task(memory_status_to_task(l1_rsp_status_i),
-                        c_addr[47:0]);
+                        c_addr_q[47:0]);
             else begin
               progress_q <= progress_q + 1;
               if (col_q + 1 < matrix_n) begin
                 col_q <= col_q + 1;
+                output_addr_phase_q <= 2'd0;
                 state_q <= ST_START_OUTPUT;
               end else if (row_q + 1 < matrix_m) begin
                 row_q <= row_q + 1;
                 col_q <= 0;
+                output_addr_phase_q <= 2'd0;
                 state_q <= ST_START_OUTPUT;
               end else if (batch_q + 1 < batch_count) begin
                 batch_q <= batch_q + 1;
                 row_q <= 0;
                 col_q <= 0;
+                output_addr_phase_q <= 2'd0;
                 state_q <= ST_START_OUTPUT;
               end else begin
                 status_q <= NPU_STATUS_SUCCESS;

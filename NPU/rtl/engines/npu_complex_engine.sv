@@ -42,9 +42,11 @@ module npu_complex_engine (
     ST_IDLE,
     ST_CHECK,
     ST_ROW_INIT,
+    ST_VLEN_CHECK,
     ST_VLEN_REQ,
     ST_VLEN_RSP,
     ST_ELEMENT_BEGIN,
+    ST_ADDR_PREP,
     ST_MASK_REQ,
     ST_MASK_RSP,
     ST_SRC0_REQ,
@@ -113,6 +115,18 @@ module npu_complex_engine (
   logic [31:0] row_q;
   logic [31:0] col_q;
   logic [31:0] row_key_length_q;
+  logic [63:0] src0_addr_q;
+  logic [63:0] src1_addr_q;
+  logic [63:0] src2_addr_q;
+  logic [63:0] current_dst_addr_q;
+  logic [47:0] mask_addr_q;
+  logic [63:0] current_valid_length_addr_q;
+  logic src0_high_nibble_q;
+  logic src1_high_nibble_q;
+  logic src2_high_nibble_q;
+  logic dst_high_nibble_q;
+  logic derived_mask_valid_q;
+  logic [31:0] causal_query_position_q;
   logic mask_value_q;
   logic valid_seen_q;
   logic signed [63:0] src0_value_q;
@@ -125,7 +139,7 @@ module npu_complex_engine (
   logic stat_sumsq_overflow_q;
   logic stat_square_last_q;
   logic [7:0] stat_square_overflow_mode_q;
-  logic [47:0] stat_square_dst_addr_q;
+  logic [47:0] stat_dst_addr_q;
   logic [31:0] fp_row_sum_q;
   logic [31:0] fp_row_sumsq_q;
   logic [31:0] fp_lane_sum_q [0:3];
@@ -278,10 +292,9 @@ module npu_complex_engine (
   wire [63:0] normal_dst_addr = contiguous_element_addr(
     dst_base, row_q, col_q, dst_row_stride, dst_dtype, 1'b0
   );
-  wire [63:0] stat_dst_addr =
-    dst_base + row_q * dst_row_stride;
   wire [63:0] current_dst_addr =
-    phase_q == PH_STAT_OUT ? stat_dst_addr : normal_dst_addr;
+    phase_q == PH_STAT_OUT ?
+    {16'd0, stat_dst_addr_q} : normal_dst_addr;
   wire [47:0] mask_addr =
     mask_base[47:0] +
     ({16'd0, row_q} * {16'd0, mask_row_stride}) +
@@ -295,11 +308,11 @@ module npu_complex_engine (
    * unreported high bits here.
    */
   wire unused_address_upper = ^{
-    src0_addr[63:48],
-    src1_addr[63:48],
-    src2_addr[63:48],
-    current_dst_addr[63:48],
-    current_valid_length_addr[63:48]
+    src0_addr_q[63:48],
+    src1_addr_q[63:48],
+    src2_addr_q[63:48],
+    current_dst_addr_q[63:48],
+    current_valid_length_addr_q[63:48]
   };
 
   wire src0_high_nibble = src0_dtype == NPU_DTYPE_INT4 && col_q[0];
@@ -311,7 +324,7 @@ module npu_complex_engine (
 
   wire causal_valid =
     key_position_base + col_q <=
-    query_position_base + row_q * query_position_step;
+    causal_query_position_q;
   wire derived_mask_valid =
     mask_mode == 0 ? 1'b1 :
     mask_mode == 2 ? causal_valid :
@@ -470,38 +483,39 @@ module npu_complex_engine (
     case (state_q)
       ST_VLEN_REQ: begin
         l1_req_valid_o = 1'b1;
-        l1_req_addr_o = {current_valid_length_addr[19:3], 3'b000};
+        l1_req_addr_o =
+          {current_valid_length_addr_q[19:3], 3'b000};
       end
       ST_MASK_REQ: begin
         l1_req_valid_o = 1'b1;
-        l1_req_addr_o = {mask_addr[19:3], 3'b000};
+        l1_req_addr_o = {mask_addr_q[19:3], 3'b000};
       end
       ST_SRC0_REQ: begin
         l1_req_valid_o = 1'b1;
-        l1_req_addr_o = {src0_addr[19:3], 3'b000};
+        l1_req_addr_o = {src0_addr_q[19:3], 3'b000};
       end
       ST_SRC1_REQ: begin
         l1_req_valid_o = 1'b1;
-        l1_req_addr_o = {src1_addr[19:3], 3'b000};
+        l1_req_addr_o = {src1_addr_q[19:3], 3'b000};
       end
       ST_SRC2_REQ: begin
         l1_req_valid_o = 1'b1;
-        l1_req_addr_o = {src2_addr[19:3], 3'b000};
+        l1_req_addr_o = {src2_addr_q[19:3], 3'b000};
       end
       ST_RMW_REQ: begin
         l1_req_valid_o = 1'b1;
-        l1_req_addr_o = {current_dst_addr[19:3], 3'b000};
+        l1_req_addr_o = {current_dst_addr_q[19:3], 3'b000};
       end
       ST_WRITE_REQ: begin
         l1_req_valid_o = 1'b1;
         l1_req_write_o = 1'b1;
-        l1_req_addr_o = {current_dst_addr[19:3], 3'b000};
+        l1_req_addr_o = {current_dst_addr_q[19:3], 3'b000};
         l1_req_wdata_o = store_element_data(
-          rmw_beat_q, result_q[31:0], current_dst_addr[2:0],
-          dst_high_nibble, dst_dtype
+          rmw_beat_q, result_q[31:0], current_dst_addr_q[2:0],
+          dst_high_nibble_q, dst_dtype
         );
         l1_req_wstrb_o =
-          store_element_strb(current_dst_addr[2:0], dst_dtype);
+          store_element_strb(current_dst_addr_q[2:0], dst_dtype);
       end
       ST_VLEN_RSP,
       ST_MASK_RSP,
@@ -537,6 +551,18 @@ module npu_complex_engine (
       status_q <= NPU_STATUS_SUCCESS;
       fault_addr_q <= 48'd0;
       progress_q <= 64'd0;
+      causal_query_position_q <= 32'd0;
+      src0_addr_q <= 64'd0;
+      src1_addr_q <= 64'd0;
+      src2_addr_q <= 64'd0;
+      current_dst_addr_q <= 64'd0;
+      mask_addr_q <= 48'd0;
+      current_valid_length_addr_q <= 64'd0;
+      src0_high_nibble_q <= 1'b0;
+      src1_high_nibble_q <= 1'b0;
+      src2_high_nibble_q <= 1'b0;
+      dst_high_nibble_q <= 1'b0;
+      derived_mask_valid_q <= 1'b0;
     end else begin
       case (state_q)
         ST_IDLE: begin
@@ -656,12 +682,17 @@ module npu_complex_engine (
           end else begin
             row_q <= 0;
             col_q <= 0;
+            stat_dst_addr_q <= dst_base[47:0];
             state_q <= ST_ROW_INIT;
           end
         end
 
         ST_ROW_INIT: begin
           col_q <= 0;
+          current_valid_length_addr_q <=
+            current_valid_length_addr;
+          causal_query_position_q <=
+            query_position_base + row_q * query_position_step;
           mask_value_q <= 1'b1;
           valid_seen_q <= 1'b0;
           stat_sum_q <= 64'sd0;
@@ -696,17 +727,22 @@ module npu_complex_engine (
 
           if (opcode_q == NPU_COMPLEX_SOFTMAX &&
               mask_mode == 3) begin
-            if (crosses_beat(current_valid_length_addr[2:0],
-                             NPU_DTYPE_INT32))
-              fail_task(NPU_STATUS_ADDR_FAULT,
-                        current_valid_length_addr[47:0]);
-            else
-              state_q <= ST_VLEN_REQ;
+            state_q <= ST_VLEN_CHECK;
           end else begin
             row_key_length_q <= length;
             state_q <= ST_ELEMENT_BEGIN;
           end
         end
+
+        ST_VLEN_CHECK:
+          if (crosses_beat(current_valid_length_addr_q[2:0],
+                           NPU_DTYPE_INT32))
+            fail_task(
+              NPU_STATUS_ADDR_FAULT,
+              current_valid_length_addr_q[47:0]
+            );
+          else
+            state_q <= ST_VLEN_REQ;
 
         ST_VLEN_REQ:
           if (l1_req_ready_i)
@@ -716,17 +752,17 @@ module npu_complex_engine (
           if (l1_rsp_valid_i) begin
             if (l1_rsp_status_i != 0)
               fail_task(memory_status_to_task(l1_rsp_status_i),
-                        current_valid_length_addr[47:0]);
+                        current_valid_length_addr_q[47:0]);
             else begin
               valid_length_value = load_element(
-                l1_rsp_rdata_i, current_valid_length_addr[2:0],
+                l1_rsp_rdata_i, current_valid_length_addr_q[2:0],
                 1'b0, NPU_DTYPE_INT32
               );
               row_key_length_q <= valid_length_value[31:0];
               if (valid_length_value < 0 ||
                   valid_length_value > {32'd0, length})
                 fail_task(NPU_STATUS_BAD_SHAPE,
-                          current_valid_length_addr[47:0]);
+                          current_valid_length_addr_q[47:0]);
               else
                 state_q <= ST_ELEMENT_BEGIN;
             end
@@ -735,19 +771,34 @@ module npu_complex_engine (
         ST_ELEMENT_BEGIN: begin
           mask_value_q <= 1'b1;
           rmw_beat_q <= 64'd0;
+          src0_addr_q <= src0_addr;
+          src1_addr_q <= src1_addr;
+          src2_addr_q <= src2_addr;
+          current_dst_addr_q <= current_dst_addr;
+          mask_addr_q <= mask_addr;
+          src0_high_nibble_q <= src0_high_nibble;
+          src1_high_nibble_q <= src1_high_nibble;
+          src2_high_nibble_q <= src2_high_nibble;
+          dst_high_nibble_q <= dst_high_nibble;
+          derived_mask_valid_q <= derived_mask_valid;
+          state_q <= ST_ADDR_PREP;
+        end
+
+        ST_ADDR_PREP: begin
           if (opcode_q == NPU_COMPLEX_SOFTMAX && mask_mode == 1)
             state_q <= ST_MASK_REQ;
           else begin
-            current_valid = derived_mask_valid;
+            current_valid = derived_mask_valid_q;
             if (!current_valid) begin
               if (phase_q == PH_SOFT_OUT) begin
                 result_q <= 64'sd0;
                 state_q <= dst_dtype == NPU_DTYPE_INT4 &&
-                           dst_high_nibble ? ST_RMW_REQ : ST_WRITE_REQ;
+                           dst_high_nibble_q ?
+                           ST_RMW_REQ : ST_WRITE_REQ;
               end else
                 state_q <= ST_ADVANCE;
-            end else if (crosses_beat(src0_addr[2:0], src0_dtype))
-              fail_task(NPU_STATUS_ADDR_FAULT, src0_addr[47:0]);
+            end else if (crosses_beat(src0_addr_q[2:0], src0_dtype))
+              fail_task(NPU_STATUS_ADDR_FAULT, src0_addr_q[47:0]);
             else
               state_q <= ST_SRC0_REQ;
           end
@@ -761,19 +812,22 @@ module npu_complex_engine (
           if (l1_rsp_valid_i) begin
             if (l1_rsp_status_i != 0)
               fail_task(memory_status_to_task(l1_rsp_status_i),
-                        mask_addr[47:0]);
+                        mask_addr_q[47:0]);
             else begin
               mask_value_q <=
-                l1_rsp_rdata_i[mask_addr[2:0] * 8 +: 8] != 0;
-              if (l1_rsp_rdata_i[mask_addr[2:0] * 8 +: 8] == 0) begin
+                l1_rsp_rdata_i[mask_addr_q[2:0] * 8 +: 8] != 0;
+              if (l1_rsp_rdata_i[
+                    mask_addr_q[2:0] * 8 +: 8
+                  ] == 0) begin
                 if (phase_q == PH_SOFT_OUT) begin
                   result_q <= 64'sd0;
                   state_q <= dst_dtype == NPU_DTYPE_INT4 &&
-                             dst_high_nibble ? ST_RMW_REQ : ST_WRITE_REQ;
+                             dst_high_nibble_q ?
+                             ST_RMW_REQ : ST_WRITE_REQ;
                 end else
                   state_q <= ST_ADVANCE;
-              end else if (crosses_beat(src0_addr[2:0], src0_dtype))
-                fail_task(NPU_STATUS_ADDR_FAULT, src0_addr[47:0]);
+              end else if (crosses_beat(src0_addr_q[2:0], src0_dtype))
+                fail_task(NPU_STATUS_ADDR_FAULT, src0_addr_q[47:0]);
               else
                 state_q <= ST_SRC0_REQ;
             end
@@ -787,16 +841,16 @@ module npu_complex_engine (
           if (l1_rsp_valid_i) begin
             if (l1_rsp_status_i != 0)
               fail_task(memory_status_to_task(l1_rsp_status_i),
-                        src0_addr[47:0]);
+                        src0_addr_q[47:0]);
             else begin
               src0_value_q <= load_element(
-                l1_rsp_rdata_i, src0_addr[2:0],
-                src0_high_nibble, src0_dtype
+                l1_rsp_rdata_i, src0_addr_q[2:0],
+                src0_high_nibble_q, src0_dtype
               );
               if (opcode_q == NPU_COMPLEX_ADD_RESCALE ||
                   phase_q == PH_NORM_OUT) begin
-                if (crosses_beat(src1_addr[2:0], src1_dtype))
-                  fail_task(NPU_STATUS_ADDR_FAULT, src1_addr[47:0]);
+                if (crosses_beat(src1_addr_q[2:0], src1_dtype))
+                  fail_task(NPU_STATUS_ADDR_FAULT, src1_addr_q[47:0]);
                 else
                   state_q <= ST_SRC1_REQ;
               end else if (phase_q == PH_STAT_ACC &&
@@ -815,15 +869,15 @@ module npu_complex_engine (
           if (l1_rsp_valid_i) begin
             if (l1_rsp_status_i != 0)
               fail_task(memory_status_to_task(l1_rsp_status_i),
-                        src1_addr[47:0]);
+                        src1_addr_q[47:0]);
             else begin
               src1_value_q <= load_element(
-                l1_rsp_rdata_i, src1_addr[2:0],
-                src1_high_nibble, src1_dtype
+                l1_rsp_rdata_i, src1_addr_q[2:0],
+                src1_high_nibble_q, src1_dtype
               );
               if (phase_q == PH_NORM_OUT && function_mode == 5) begin
-                if (crosses_beat(src2_addr[2:0], src2_dtype))
-                  fail_task(NPU_STATUS_ADDR_FAULT, src2_addr[47:0]);
+                if (crosses_beat(src2_addr_q[2:0], src2_dtype))
+                  fail_task(NPU_STATUS_ADDR_FAULT, src2_addr_q[47:0]);
                 else
                   state_q <= ST_SRC2_REQ;
               end else
@@ -839,11 +893,11 @@ module npu_complex_engine (
           if (l1_rsp_valid_i) begin
             if (l1_rsp_status_i != 0)
               fail_task(memory_status_to_task(l1_rsp_status_i),
-                        src2_addr[47:0]);
+                        src2_addr_q[47:0]);
             else begin
               src2_value_q <= load_element(
-                l1_rsp_rdata_i, src2_addr[2:0],
-                src2_high_nibble, src2_dtype
+                l1_rsp_rdata_i, src2_addr_q[2:0],
+                src2_high_nibble_q, src2_dtype
               );
               state_q <= ST_COMPUTE;
             end
@@ -872,7 +926,7 @@ module npu_complex_engine (
                 if (output_overflow && overflow_mode == 1)
                   fail_task(
                     NPU_STATUS_NUMERIC_EXCEPTION,
-                    stat_dst_addr[47:0]
+                    stat_dst_addr_q
                   );
                 else begin
                   result_q <= overflow_mode == 2 ?
@@ -881,12 +935,14 @@ module npu_complex_engine (
                     ) :
                     clip_to_dtype(next_stat, NPU_DTYPE_INT32);
                   phase_q <= PH_STAT_OUT;
+                  current_dst_addr_q <= {16'd0, stat_dst_addr_q};
+                  dst_high_nibble_q <= 1'b0;
                   if (crosses_beat(
-                        stat_dst_addr[2:0], NPU_DTYPE_INT32
+                        stat_dst_addr_q[2:0], NPU_DTYPE_INT32
                       ))
                     fail_task(
                       NPU_STATUS_ADDR_FAULT,
-                      stat_dst_addr[47:0]
+                      stat_dst_addr_q
                     );
                   else
                     state_q <= ST_WRITE_REQ;
@@ -908,7 +964,6 @@ module npu_complex_engine (
           stat_square_q <= stat_square_product;
           stat_square_last_q <= col_q + 1 == active_columns;
           stat_square_overflow_mode_q <= overflow_mode;
-          stat_square_dst_addr_q <= stat_dst_addr[47:0];
           state_q <= ST_STAT_ACCUM;
         end
 
@@ -923,7 +978,7 @@ module npu_complex_engine (
                 stat_square_overflow_mode_q == 1)
               fail_task(
                 NPU_STATUS_NUMERIC_EXCEPTION,
-                stat_square_dst_addr_q
+                stat_dst_addr_q
               );
             else begin
               if (stat_square_overflow_mode_q == 2)
@@ -937,13 +992,15 @@ module npu_complex_engine (
                   next_stat, NPU_DTYPE_INT32
                 );
               phase_q <= PH_STAT_OUT;
+              current_dst_addr_q <= {16'd0, stat_dst_addr_q};
+              dst_high_nibble_q <= 1'b0;
               if (crosses_beat(
-                    stat_square_dst_addr_q[2:0],
+                    stat_dst_addr_q[2:0],
                     NPU_DTYPE_INT32
                   ))
                 fail_task(
                   NPU_STATUS_ADDR_FAULT,
-                  stat_square_dst_addr_q
+                  stat_dst_addr_q
                 );
               else
                 state_q <= ST_WRITE_REQ;
@@ -1049,7 +1106,7 @@ module npu_complex_engine (
                   default:
                     fail_task(
                       NPU_STATUS_BAD_DESC,
-                      current_dst_addr[47:0]
+                      current_dst_addr_q[47:0]
                     );
                 endcase
               end
@@ -1422,15 +1479,15 @@ module npu_complex_engine (
                 f2i_dst_dtype_q <= dst_dtype;
                 f2i_overflow_mode_q <= overflow_mode;
                 f2i_phase_q <= phase_q;
-                f2i_dst_addr_q <= current_dst_addr[47:0];
-                f2i_dst_high_nibble_q <= dst_high_nibble;
+                f2i_dst_addr_q <= current_dst_addr_q[47:0];
+                f2i_dst_high_nibble_q <= dst_high_nibble_q;
                 state_q <= ST_F2I_ROUND;
               end
 
               default:
                 fail_task(
                   NPU_STATUS_BAD_DESC,
-                  current_dst_addr[47:0]
+                  current_dst_addr_q[47:0]
                 );
             endcase
           end
@@ -1586,7 +1643,7 @@ module npu_complex_engine (
           if (l1_rsp_valid_i) begin
             if (l1_rsp_status_i != 0)
               fail_task(memory_status_to_task(l1_rsp_status_i),
-                        current_dst_addr[47:0]);
+                        current_dst_addr_q[47:0]);
             else begin
               rmw_beat_q <= l1_rsp_rdata_i;
               state_q <= ST_WRITE_REQ;
@@ -1601,12 +1658,14 @@ module npu_complex_engine (
           if (l1_rsp_valid_i) begin
             if (l1_rsp_status_i != 0)
               fail_task(memory_status_to_task(l1_rsp_status_i),
-                        current_dst_addr[47:0]);
+                        current_dst_addr_q[47:0]);
             else begin
               progress_q <= progress_q + 1;
               if (phase_q == PH_STAT_OUT) begin
                 if (row_q + 1 < rows) begin
                   row_q <= row_q + 1;
+                  stat_dst_addr_q <=
+                    stat_dst_addr_q + {16'd0, dst_row_stride};
                   state_q <= ST_ROW_INIT;
                 end else begin
                   status_q <= NPU_STATUS_SUCCESS;

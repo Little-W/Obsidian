@@ -54,6 +54,8 @@ module tb_lsc_crg_wdt_smoke;
   logic l1_host_access_enable;
   logic [7:0] lsc_module_clk_enable;
   logic s_axi_idle;
+  logic cmd_ingress_idle;
+  logic cfe_idle;
 
   logic wdt_enable;
   logic [31:0] wdt_timeout_cycles;
@@ -89,8 +91,8 @@ module tb_lsc_crg_wdt_smoke;
     .reg_rsp_ready_i(1'b1),
     .reg_rsp_rdata_o(reg_rsp_rdata),
     .reg_rsp_status_o(reg_rsp_status),
-    .cmd_ingress_idle_i(1'b1),
-    .cfe_idle_i(1'b1),
+    .cmd_ingress_idle_i(cmd_ingress_idle),
+    .cfe_idle_i(cfe_idle),
     .ts_idle_i(1'b1),
     .ts_quiescent_i(1'b1),
     .eng_quiescent_i(4'hf),
@@ -230,6 +232,8 @@ module tb_lsc_crg_wdt_smoke;
     module_clk_en            = 8'd0;
     module_idle              = 8'hff;
     s_axi_idle               = 1'b1;
+    cmd_ingress_idle         = 1'b1;
+    cfe_idle                 = 1'b1;
 
     repeat (4) @(posedge clk);
     reset_n = 1'b1;
@@ -284,6 +288,28 @@ module tb_lsc_crg_wdt_smoke;
     if ((response_status != 2'b00) || !accept_new_cmd) begin
       $fatal(1, "LSC start control failed");
     end
+
+    cmd_ingress_idle = 1'b0;
+    cfe_idle = 1'b0;
+    csr_access(1'b1, 16'h0040, 64'h2, read_data, response_status);
+    if ((response_status != 2'b00) || accept_new_cmd ||
+        cfe_quiesce || ts_quiesce) begin
+      $fatal(1, "LSC stopped before accepted command words could drain");
+    end
+    cmd_ingress_idle = 1'b1;
+    #1;
+    if (!cfe_quiesce || ts_quiesce) begin
+      $fatal(1, "LSC did not let the command FIFO drain after ingress");
+    end
+    cfe_idle = 1'b1;
+    #1;
+    if (!ts_quiesce) begin
+      $fatal(1, "LSC did not stop scheduler admission after FIFO drain");
+    end
+    csr_access(1'b1, 16'h0040, 64'h1, read_data, response_status);
+    if ((response_status != 2'b00) || !accept_new_cmd) begin
+      $fatal(1, "LSC restart after graceful stop failed");
+    end
     csr_access(1'b1, 16'h00a8, 64'h0, read_data, response_status);
 
     @(negedge clk);
@@ -331,8 +357,12 @@ module tb_lsc_crg_wdt_smoke;
       $fatal(1, "WDT progress did not clear the timeout");
     end
 
+    cmd_ingress_idle = 1'b0;
+    cfe_idle = 1'b0;
     soft_reset_req = 1'b1;
     wait (internal_soft_reset_pulse);
+    cmd_ingress_idle = 1'b1;
+    cfe_idle = 1'b1;
     @(negedge clk);
     internal_soft_reset_done = 1'b1;
     @(posedge clk);

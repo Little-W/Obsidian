@@ -49,6 +49,7 @@ module npu_cmd_frontend #(
   logic [63:0] low_word_q;
   logic [63:0] high_word_q;
   logic [7:0]  response_status_q;
+  logic [7:0]  response_free_entries_q;
   logic        lookup_sent_q;
   logic [TIMEOUT_W-1:0] wait_high_count_q;
 
@@ -57,6 +58,7 @@ module npu_cmd_frontend #(
   logic [PTR_W-1:0] fifo_wr_ptr_q;
   logic [PTR_W-1:0] fifo_rd_ptr_q;
   logic [COUNT_W-1:0] fifo_count_q;
+  logic [127:0] output_cmd_q;
 
   logic local_duplicate;
   logic opcode_format_valid;
@@ -104,10 +106,10 @@ module npu_cmd_frontend #(
     axi_cmd_rsp_data_o    = 64'd0;
     axi_cmd_rsp_data_o[11:0]  = candidate_command_id;
     axi_cmd_rsp_data_o[19:12] = response_status_q;
-    axi_cmd_rsp_data_o[27:20] = fifo_free_entries;
+    axi_cmd_rsp_data_o[27:20] = response_free_entries_q;
 
     ts_cmd_valid_o        = fifo_count_q != 0;
-    ts_cmd_o              = fifo_q[fifo_rd_ptr_q];
+    ts_cmd_o              = output_cmd_q;
 
     cmd_id_lookup_valid_o = (state_q == CFE_LOOKUP) && !lookup_sent_q;
     cmd_id_lookup_id_o    = candidate_command_id[9:0];
@@ -129,17 +131,31 @@ module npu_cmd_frontend #(
       low_word_q          <= '0;
       high_word_q         <= '0;
       response_status_q   <= NPU_STATUS_SUCCESS;
+      response_free_entries_q <= 8'(FIFO_DEPTH);
       lookup_sent_q       <= 1'b0;
       wait_high_count_q   <= '0;
       fifo_valid_q        <= '0;
       fifo_wr_ptr_q       <= '0;
       fifo_rd_ptr_q       <= '0;
       fifo_count_q        <= '0;
+      output_cmd_q        <= '0;
       cfe_error_o         <= 1'b0;
       cmd_accepted_o      <= 1'b0;
     end else begin
       cfe_error_o    <= 1'b0;
       cmd_accepted_o <= 1'b0;
+
+      /*
+       * Snapshot the entry count before a response becomes visible.  Once
+       * CFE_RESPOND is active, keep the full response payload stable until
+       * the receiver completes its handshake.
+       */
+      if (state_q != CFE_RESPOND) begin
+        response_free_entries_q <=
+          fifo_free_entries
+          + 8'(output_handshake)
+          - 8'(enqueue_now);
+      end
 
       unique case ({enqueue_now, output_handshake})
         2'b10: begin
@@ -147,11 +163,17 @@ module npu_cmd_frontend #(
           fifo_valid_q[fifo_wr_ptr_q] <= 1'b1;
           fifo_wr_ptr_q         <= increment_ptr(fifo_wr_ptr_q);
           fifo_count_q          <= fifo_count_q + 1'b1;
+          if (fifo_count_q == 0) begin
+            output_cmd_q <= {high_word_q, low_word_q};
+          end
         end
         2'b01: begin
           fifo_valid_q[fifo_rd_ptr_q] <= 1'b0;
           fifo_rd_ptr_q  <= increment_ptr(fifo_rd_ptr_q);
           fifo_count_q   <= fifo_count_q - 1'b1;
+          if (fifo_count_q > 1) begin
+            output_cmd_q <= fifo_q[increment_ptr(fifo_rd_ptr_q)];
+          end
         end
         2'b11: begin
           fifo_q[fifo_wr_ptr_q] <= {high_word_q, low_word_q};
@@ -159,6 +181,11 @@ module npu_cmd_frontend #(
           fifo_valid_q[fifo_wr_ptr_q] <= 1'b1;
           fifo_wr_ptr_q         <= increment_ptr(fifo_wr_ptr_q);
           fifo_rd_ptr_q         <= increment_ptr(fifo_rd_ptr_q);
+          if (fifo_count_q == 1) begin
+            output_cmd_q <= {high_word_q, low_word_q};
+          end else begin
+            output_cmd_q <= fifo_q[increment_ptr(fifo_rd_ptr_q)];
+          end
         end
         default: begin
         end
@@ -224,7 +251,8 @@ module npu_cmd_frontend #(
               response_status_q <= NPU_STATUS_BAD_DESC;
               cfe_error_o       <= 1'b1;
               state_q           <= CFE_RESPOND;
-            end else if (fifo_count_q == COUNT_W'(FIFO_DEPTH)) begin
+            end else if ((fifo_count_q == COUNT_W'(FIFO_DEPTH))
+                         && !output_handshake) begin
               response_status_q <= NPU_STATUS_BAD_DESC;
               cfe_error_o       <= 1'b1;
               state_q           <= CFE_RESPOND;

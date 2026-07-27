@@ -8,40 +8,22 @@ module dip_segmented_adder64 (
   localparam logic [1:0] MODE_INT8  = 2'b01;
   localparam logic [1:0] MODE_INT4  = 2'b10;
 
-  logic [15:0] nibble_carry_in;
-  logic [15:0] unused_nibble_carry_out;
-
-  assign nibble_carry_in[0] = 1'b0;
-
-  generate
-    for (genvar nibble = 0; nibble < 16; nibble++) begin : gen_add4
-      if (nibble > 0) begin : gen_carry_input
-        /*
-         * Carry control is needed only where an accumulator lane can start.
-         * Every other 4-bit slice connects directly to the preceding carry.
-         */
-        if ((nibble == 4) || (nibble == 12)) begin : gen_int4_cut
-          assign nibble_carry_in[nibble] =
-            (mode_i == MODE_INT4) ? 1'b0 :
-                                    unused_nibble_carry_out[nibble-1];
-        end else if (nibble == 8) begin : gen_int4_int8_cut
-          assign nibble_carry_in[nibble] =
-            ((mode_i == MODE_INT4) || (mode_i == MODE_INT8)) ? 1'b0 :
-              unused_nibble_carry_out[nibble-1];
-        end else begin : gen_direct_carry
-          assign nibble_carry_in[nibble] =
-            unused_nibble_carry_out[nibble-1];
-        end
+  always_comb begin
+    case (mode_i)
+      MODE_INT8: begin
+        sum_o[31:0]  = a_i[31:0]  + b_i[31:0];
+        sum_o[63:32] = a_i[63:32] + b_i[63:32];
       end
-
-      dip_base_add4 u_add4 (
-        .a_i(a_i[nibble * 4 +: 4]),
-        .b_i(b_i[nibble * 4 +: 4]),
-        .carry_i(nibble_carry_in[nibble]),
-        .sum_o(sum_o[nibble * 4 +: 4]),
-        .carry_o(unused_nibble_carry_out[nibble])
-      );
-    end
-  endgenerate
+      MODE_INT4: begin
+        sum_o[15:0]  = a_i[15:0]  + b_i[15:0];
+        sum_o[31:16] = a_i[31:16] + b_i[31:16];
+        sum_o[47:32] = a_i[47:32] + b_i[47:32];
+        sum_o[63:48] = a_i[63:48] + b_i[63:48];
+      end
+      default: begin
+        sum_o = a_i + b_i;
+      end
+    endcase
+  end
 
 endmodule

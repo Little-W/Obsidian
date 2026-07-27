@@ -36,6 +36,9 @@ module npu_fp32_alu_seq (
     ST_ADD_ROUND,
     ST_MUL_NORMALIZE,
     ST_MUL_PRODUCT,
+    ST_MUL_PREPARE,
+    ST_MUL_EXTRACT,
+    ST_MUL_COMPARE,
     ST_MUL_ROUND,
     ST_RESPONSE
   } state_t;
@@ -61,6 +64,14 @@ module npu_fp32_alu_seq (
   logic signed [10:0] mul_rhs_exp_q;
   logic signed [10:0] mul_result_exp_q;
   logic [47:0] mul_product_q;
+  logic signed [11:0] mul_round_exp_q;
+  logic [5:0]  mul_round_shift_q;
+  logic        mul_round_subnormal_q;
+  logic        mul_round_zero_q;
+  logic [23:0] mul_round_mantissa_q;
+  logic [47:0] mul_round_remainder_q;
+  logic [47:0] mul_round_halfway_q;
+  logic        mul_round_increment_q;
 
   assign req_ready_o = state_q == ST_IDLE;
   assign rsp_valid_o = state_q == ST_RESPONSE;
@@ -83,9 +94,8 @@ module npu_fp32_alu_seq (
     logic [24:0] rounded;
     logic increment;
     logic [47:0] remainder_mask;
-    logic [47:0] remainder;
-    logic [47:0] halfway;
     logic signed [11:0] result_unbiased;
+    logic signed [12:0] adjusted_shift;
     integer shift_amount;
 
     if (!reset_n) begin
@@ -312,36 +322,77 @@ module npu_fp32_alu_seq (
         ST_MUL_PRODUCT: begin
           mul_product_q <= mul_lhs_mant_q * mul_rhs_mant_q;
           mul_result_exp_q <= mul_lhs_exp_q + mul_rhs_exp_q;
+          state_q <= ST_MUL_PREPARE;
+        end
+
+        ST_MUL_PREPARE: begin
+          result_unbiased =
+            $signed({mul_result_exp_q[10], mul_result_exp_q});
+          if (mul_product_q[47])
+            result_unbiased = result_unbiased + 12'sd1;
+          mul_round_exp_q <= result_unbiased;
+          mul_round_subnormal_q <= result_unbiased < -12'sd126;
+          mul_round_zero_q <= 1'b0;
+          if (result_unbiased < -12'sd126) begin
+            adjusted_shift =
+              $signed({
+                7'd0,
+                mul_product_q[47] ? 6'd24 : 6'd23
+              }) +
+              (-13'sd126 -
+               $signed({
+                 result_unbiased[11],
+                 result_unbiased
+               }));
+            if (adjusted_shift > 13'sd48) begin
+              mul_round_shift_q <= 6'd48;
+              mul_round_zero_q <= 1'b1;
+            end else
+              mul_round_shift_q <= adjusted_shift[5:0];
+          end else
+            mul_round_shift_q <=
+              mul_product_q[47] ? 6'd24 : 6'd23;
+          state_q <= ST_MUL_EXTRACT;
+        end
+
+        ST_MUL_EXTRACT: begin
+          if (mul_round_zero_q) begin
+            mul_round_mantissa_q <= 24'd0;
+            mul_round_remainder_q <= 48'd0;
+            mul_round_halfway_q <= 48'd1;
+          end else begin
+            mul_round_mantissa_q <=
+              24'(mul_product_q >> mul_round_shift_q);
+            if (mul_round_shift_q == 6'd48)
+              remainder_mask = 48'hffff_ffff_ffff;
+            else
+              remainder_mask =
+                (48'd1 << mul_round_shift_q) - 1'b1;
+            mul_round_remainder_q <=
+              mul_product_q & remainder_mask;
+            mul_round_halfway_q <=
+              48'd1 << (mul_round_shift_q - 1'b1);
+          end
+          state_q <= ST_MUL_COMPARE;
+        end
+
+        ST_MUL_COMPARE: begin
+          mul_round_increment_q <=
+            !mul_round_zero_q &&
+            (mul_round_remainder_q > mul_round_halfway_q ||
+             (mul_round_remainder_q == mul_round_halfway_q &&
+              mul_round_mantissa_q[0]));
           state_q <= ST_MUL_ROUND;
         end
 
         ST_MUL_ROUND: begin
-          result_unbiased =
-            $signed({mul_result_exp_q[10], mul_result_exp_q});
-          if (mul_product_q[47]) begin
-            shift_amount = 24;
-            result_unbiased = result_unbiased + 1;
-          end else
-            shift_amount = 23;
-
-          if (result_unbiased < -126) begin
-            shift_amount =
-              shift_amount +
-              (-126 - integer'(result_unbiased));
-            if (shift_amount > 48)
-              result_q <= {mul_sign_q, 31'd0};
-            else begin
-              mantissa = 24'(mul_product_q >> shift_amount);
-              if (shift_amount == 48)
-                remainder_mask = 48'hffff_ffff_ffff;
-              else
-                remainder_mask = (48'd1 << shift_amount) - 1;
-              remainder = mul_product_q & remainder_mask;
-              halfway = 48'd1 << (shift_amount - 1);
-              rounded = {1'b0, mantissa};
-              if (remainder > halfway ||
-                  (remainder == halfway && mantissa[0]))
-                rounded = rounded + 1'b1;
+          if (mul_round_zero_q)
+            result_q <= {mul_sign_q, 31'd0};
+          else begin
+            rounded =
+              {1'b0, mul_round_mantissa_q} +
+              {24'd0, mul_round_increment_q};
+            if (mul_round_subnormal_q) begin
               if (rounded[23])
                 result_q <= {mul_sign_q, 8'd1, 23'd0};
               else
@@ -350,29 +401,22 @@ module npu_fp32_alu_seq (
                   8'd0,
                   rounded[22:0]
                 };
-            end
-          end else begin
-            mantissa = 24'(mul_product_q >> shift_amount);
-            remainder_mask = (48'd1 << shift_amount) - 1;
-            remainder = mul_product_q & remainder_mask;
-            halfway = 48'd1 << (shift_amount - 1);
-            rounded = {1'b0, mantissa};
-            if (remainder > halfway ||
-                (remainder == halfway && mantissa[0]))
-              rounded = rounded + 1'b1;
-            if (rounded[24]) begin
-              mantissa = rounded[24:1];
-              result_unbiased = result_unbiased + 1;
-            end else
+            end else begin
+              result_unbiased = mul_round_exp_q;
               mantissa = rounded[23:0];
-            if (result_unbiased > 127)
-              result_q <= {mul_sign_q, 8'hff, 23'd0};
-            else
-              result_q <= {
-                mul_sign_q,
-                8'(result_unbiased + 127),
-                mantissa[22:0]
-              };
+              if (rounded[24]) begin
+                mantissa = rounded[24:1];
+                result_unbiased = result_unbiased + 12'sd1;
+              end
+              if (result_unbiased > 12'sd127)
+                result_q <= {mul_sign_q, 8'hff, 23'd0};
+              else
+                result_q <= {
+                  mul_sign_q,
+                  8'(result_unbiased + 12'sd127),
+                  mantissa[22:0]
+                };
+            end
           end
           state_q <= ST_RESPONSE;
         end

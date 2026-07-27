@@ -173,9 +173,7 @@ module npu_lsc (
                      && l1_idle_i
                      && mif_idle_i;
   assign core_idle_o = config_idle && s_axi_idle_i;
-  assign all_drain_idle = cmd_ingress_idle_i
-                        && cfe_idle_i
-                        && ts_quiescent_i
+  assign all_drain_idle = ts_quiescent_i
                         && (&eng_quiescent_i)
                         && l1_idle_i
                         && mif_idle_i
@@ -186,9 +184,11 @@ module npu_lsc (
                           && (reset_state_q == RESET_IDLE)
                           && !power_down_req_i;
   assign cfe_quiesce_o = (reset_state_q != RESET_IDLE)
-                       || power_down_req_i || stop_q;
+                       || ((power_down_req_i || stop_q)
+                           && cmd_ingress_idle_i);
   assign ts_quiesce_o  = (reset_state_q != RESET_IDLE)
-                       || power_down_req_i || stop_q;
+                       || ((power_down_req_i || stop_q)
+                           && cmd_ingress_idle_i && cfe_idle_i);
   assign eng_abort_o   = {4{reset_state_q == RESET_DRAIN}};
   assign soft_reset_done_o = reset_state_q == RESET_DONE;
   assign power_down_ack_o = power_down_req_i && core_idle_o && stop_q;

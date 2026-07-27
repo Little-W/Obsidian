@@ -1,19 +1,21 @@
 module tb_memory_smoke;
   import npu_rtl_pkg::*;
 
+  localparam int unsigned L1_CLIENTS = 6;
+
   logic clk;
   logic reset_n;
 
-  logic [1:0] l1_req_valid;
-  logic [1:0] l1_req_ready;
-  logic [1:0] l1_req_write;
-  logic [39:0] l1_req_addr;
-  logic [127:0] l1_req_wdata;
-  logic [15:0] l1_req_wstrb;
-  logic [1:0] l1_rsp_valid;
-  logic [1:0] l1_rsp_ready;
-  logic [127:0] l1_rsp_rdata;
-  logic [5:0] l1_rsp_status;
+  logic [L1_CLIENTS-1:0] l1_req_valid;
+  logic [L1_CLIENTS-1:0] l1_req_ready;
+  logic [L1_CLIENTS-1:0] l1_req_write;
+  logic [L1_CLIENTS*20-1:0] l1_req_addr;
+  logic [L1_CLIENTS*64-1:0] l1_req_wdata;
+  logic [L1_CLIENTS*8-1:0] l1_req_wstrb;
+  logic [L1_CLIENTS-1:0] l1_rsp_valid;
+  logic [L1_CLIENTS-1:0] l1_rsp_ready;
+  logic [L1_CLIENTS*64-1:0] l1_rsp_rdata;
+  logic [L1_CLIENTS*3-1:0] l1_rsp_status;
   logic l1_idle;
 
   logic mif_req_valid;
@@ -77,7 +79,7 @@ module tb_memory_smoke;
   always #5 clk = ~clk;
 
   npu_l1buf #(
-    .CLIENTS(2),
+    .CLIENTS(L1_CLIENTS),
     .L1_BYTES(256),
     .BANKS(4)
   ) u_l1 (
@@ -224,13 +226,14 @@ module tb_memory_smoke;
     end
   end
 
-  task automatic l1_access(
+  task automatic l1_send_request(
     input int unsigned client,
     input logic write_access,
     input logic [19:0] address,
     input logic [63:0] data,
     input logic [7:0] strobe
   );
+    logic accepted;
     begin
       @(negedge clk);
       l1_req_write[client] = write_access;
@@ -238,11 +241,212 @@ module tb_memory_smoke;
       l1_req_wdata[client*64 +: 64] = data;
       l1_req_wstrb[client*8 +: 8] = strobe;
       l1_req_valid[client] = 1'b1;
-      while (!l1_req_ready[client]) @(negedge clk);
-      @(posedge clk);
+      accepted = 1'b0;
+      while (!accepted) begin
+        @(posedge clk);
+        accepted = l1_req_ready[client];
+      end
       @(negedge clk);
       l1_req_valid[client] = 1'b0;
+    end
+  endtask
+
+  task automatic l1_access(
+    input int unsigned client,
+    input logic write_access,
+    input logic [19:0] address,
+    input logic [63:0] data,
+    input logic [7:0] strobe
+  );
+    logic [L1_CLIENTS*64-1:0] response_data_before;
+    logic [L1_CLIENTS*3-1:0] response_status_before;
+    begin
+      response_data_before = l1_rsp_rdata;
+      response_status_before = l1_rsp_status;
+      l1_send_request(client, write_access, address, data, strobe);
       wait (l1_rsp_valid[client]);
+      for (int unsigned other = 0; other < L1_CLIENTS; other++) begin
+        if (other != client) begin
+          if (l1_rsp_rdata[other*64 +: 64] !==
+              response_data_before[other*64 +: 64]) begin
+            $fatal(1, "L1 response data changed for inactive client %0d",
+                   other);
+          end
+          if (l1_rsp_status[other*3 +: 3] !==
+              response_status_before[other*3 +: 3]) begin
+            $fatal(1, "L1 response status changed for inactive client %0d",
+                   other);
+          end
+        end
+      end
+    end
+  endtask
+
+  task automatic expect_l1_response(
+    input int unsigned client,
+    input logic [2:0] expected_status,
+    input logic [63:0] expected_data
+  );
+    logic [L1_CLIENTS-1:0] expected_valid;
+    begin
+      expected_valid = '0;
+      expected_valid[client] = 1'b1;
+      if (l1_rsp_valid !== expected_valid) begin
+        $fatal(1,
+               "L1 response valid mismatch client=%0d expected=%b got=%b",
+               client, expected_valid, l1_rsp_valid);
+      end
+      if (l1_rsp_status[client*3 +: 3] !== expected_status) begin
+        $fatal(1,
+               "L1 response status mismatch client=%0d expected=%0d got=%0d",
+               client, expected_status,
+               l1_rsp_status[client*3 +: 3]);
+      end
+      if (l1_rsp_rdata[client*64 +: 64] !== expected_data) begin
+        $fatal(1, "L1 response data mismatch client=%0d", client);
+      end
+    end
+  endtask
+
+  task automatic consume_l1_responses;
+    begin
+      @(posedge clk);
+      @(negedge clk);
+      if (l1_rsp_valid != '0) begin
+        $fatal(1, "L1 response did not clear after ready handshake");
+      end
+    end
+  endtask
+
+  task automatic l1_backpressure_check(
+    input int unsigned client,
+    input logic [19:0] address,
+    input logic [63:0] data
+  );
+    begin
+      @(negedge clk);
+      l1_rsp_ready[client] = 1'b0;
+      l1_access(client, 1'b1, address, data, 8'hff);
+      expect_l1_response(client, NPU_L1_OK, 64'd0);
+      repeat (3) begin
+        @(posedge clk);
+        @(negedge clk);
+        expect_l1_response(client, NPU_L1_OK, 64'd0);
+      end
+      l1_rsp_ready[client] = 1'b1;
+      consume_l1_responses();
+    end
+  endtask
+
+  task automatic l1_concurrent_return_check(
+    input int unsigned read_client,
+    input int unsigned request_client,
+    input logic [19:0] read_address,
+    input logic [63:0] read_data,
+    input logic [19:0] write_address,
+    input logic [63:0] write_data
+  );
+    logic [L1_CLIENTS*64-1:0] response_data_before;
+    logic [L1_CLIENTS*3-1:0] response_status_before;
+    logic [L1_CLIENTS-1:0] expected_valid;
+    begin
+      response_data_before = l1_rsp_rdata;
+      response_status_before = l1_rsp_status;
+      l1_send_request(read_client, 1'b0, read_address, 64'd0, 8'd0);
+
+      l1_req_write[request_client] = 1'b1;
+      l1_req_addr[request_client*20 +: 20] = write_address;
+      l1_req_wdata[request_client*64 +: 64] = write_data;
+      l1_req_wstrb[request_client*8 +: 8] = 8'hff;
+      l1_req_valid[request_client] = 1'b1;
+
+      @(posedge clk);
+      if (!l1_req_ready[request_client]) begin
+        $fatal(1,
+               "L1 did not accept client %0d while returning client %0d read",
+               request_client, read_client);
+      end
+      @(negedge clk);
+      l1_req_valid[request_client] = 1'b0;
+
+      @(posedge clk);
+      @(negedge clk);
+      expected_valid = '0;
+      expected_valid[read_client] = 1'b1;
+      expected_valid[request_client] = 1'b1;
+      if (l1_rsp_valid !== expected_valid) begin
+        $fatal(1,
+               "L1 concurrent response mismatch expected=%b got=%b",
+               expected_valid, l1_rsp_valid);
+      end
+      if ((l1_rsp_status[read_client*3 +: 3] !== NPU_L1_OK)
+          || (l1_rsp_rdata[read_client*64 +: 64] !== read_data)) begin
+        $fatal(1, "L1 concurrent read response is incorrect");
+      end
+      if ((l1_rsp_status[request_client*3 +: 3] !== NPU_L1_OK)
+          || (l1_rsp_rdata[request_client*64 +: 64] !== 64'd0)) begin
+        $fatal(1, "L1 concurrent write response is incorrect");
+      end
+      for (int unsigned other = 0; other < L1_CLIENTS; other++) begin
+        if ((other != read_client) && (other != request_client)) begin
+          if (l1_rsp_rdata[other*64 +: 64] !==
+              response_data_before[other*64 +: 64]) begin
+            $fatal(1,
+                   "L1 concurrent operation changed client %0d response data",
+                   other);
+          end
+          if (l1_rsp_status[other*3 +: 3] !==
+              response_status_before[other*3 +: 3]) begin
+            $fatal(1,
+                   "L1 concurrent operation changed client %0d status",
+                   other);
+          end
+        end
+      end
+      consume_l1_responses();
+    end
+  endtask
+
+  task automatic l1_same_client_busy_check(
+    input int unsigned client,
+    input logic [19:0] address,
+    input logic [63:0] expected_data
+  );
+    begin
+      @(negedge clk);
+      l1_rsp_ready[client] = 1'b0;
+      l1_req_write[client] = 1'b0;
+      l1_req_addr[client*20 +: 20] = address;
+      l1_req_wdata[client*64 +: 64] = 64'd0;
+      l1_req_wstrb[client*8 +: 8] = 8'd0;
+      l1_req_valid[client] = 1'b1;
+
+      @(posedge clk);
+      if (!l1_req_ready[client]) begin
+        $fatal(1, "L1 did not accept the initial read request");
+      end
+
+      @(negedge clk);
+      if (l1_req_ready[client] || l1_idle) begin
+        $fatal(1, "L1 request register did not block the same client");
+      end
+
+      @(posedge clk);
+      @(negedge clk);
+      if (l1_req_ready[client] || l1_idle) begin
+        $fatal(1, "L1 read wait state did not block the same client");
+      end
+
+      @(posedge clk);
+      @(negedge clk);
+      if (l1_req_ready[client] || l1_idle) begin
+        $fatal(1, "L1 pending response did not block the same client");
+      end
+      expect_l1_response(client, NPU_L1_OK, expected_data);
+
+      l1_req_valid[client] = 1'b0;
+      l1_rsp_ready[client] = 1'b1;
+      consume_l1_responses();
     end
   endtask
 
@@ -269,12 +473,12 @@ module tb_memory_smoke;
   initial begin
     clk              = 1'b0;
     reset_n          = 1'b0;
-    l1_req_valid     = 2'b00;
-    l1_req_write     = 2'b00;
+    l1_req_valid     = '0;
+    l1_req_write     = '0;
     l1_req_addr      = '0;
     l1_req_wdata     = '0;
     l1_req_wstrb     = '0;
-    l1_rsp_ready     = 2'b11;
+    l1_rsp_ready     = '1;
     mif_req_valid    = 1'b0;
     mif_req_write    = 1'b0;
     mif_req_addr     = 48'd0;
@@ -287,29 +491,82 @@ module tb_memory_smoke;
     reset_n = 1'b1;
     repeat (2) @(posedge clk);
 
-    l1_access(0, 1'b1, 20'h00010, 64'h1122_3344_5566_7788, 8'hff);
-    if (l1_rsp_status[2:0] != NPU_L1_OK) begin
-      $fatal(1, "L1 full write failed");
+    for (int unsigned client = 0;
+         client < L1_CLIENTS; client++) begin
+      l1_access(
+        client,
+        1'b1,
+        20'(client * 8),
+        64'h1100_0000_0000_0000 + 64'(client),
+        8'hff
+      );
+      expect_l1_response(client, NPU_L1_OK, 64'd0);
+      consume_l1_responses();
+
+      l1_access(client, 1'b0, 20'(client * 8), 64'd0, 8'd0);
+      expect_l1_response(
+        client,
+        NPU_L1_OK,
+        64'h1100_0000_0000_0000 + 64'(client)
+      );
+      consume_l1_responses();
     end
-    @(posedge clk);
-    l1_access(1, 1'b0, 20'h00010, 64'd0, 8'd0);
-    if ((l1_rsp_status[5:3] != NPU_L1_OK)
-        || (l1_rsp_rdata[127:64] != 64'h1122_3344_5566_7788)) begin
-      $fatal(1, "L1 readback mismatch");
+
+    l1_same_client_busy_check(
+      0, 20'h00000, 64'h1100_0000_0000_0000
+    );
+
+    l1_access(
+      0, 1'b1, 20'h00038, 64'h1122_3344_5566_7788, 8'hff
+    );
+    expect_l1_response(0, NPU_L1_OK, 64'd0);
+    consume_l1_responses();
+    l1_access(
+      1, 1'b1, 20'h00038, 64'haaaa_bbbb_cccc_dddd, 8'h0f
+    );
+    expect_l1_response(1, NPU_L1_OK, 64'd0);
+    consume_l1_responses();
+    l1_access(2, 1'b0, 20'h00038, 64'd0, 8'd0);
+    expect_l1_response(
+      2, NPU_L1_OK, 64'h1122_3344_cccc_dddd
+    );
+    consume_l1_responses();
+
+    for (int unsigned client = 0;
+         client < L1_CLIENTS; client++) begin
+      l1_access(
+        client, 1'b0, 20'h00041 + 20'(client * 8), 64'd0, 8'd0
+      );
+      expect_l1_response(
+        client, NPU_L1_PROTOCOL_ERROR, 64'd0
+      );
+      consume_l1_responses();
+
+      l1_access(client, 1'b0, 20'h00100, 64'd0, 8'd0);
+      expect_l1_response(client, NPU_L1_ADDR_FAULT, 64'd0);
+      consume_l1_responses();
     end
-    @(posedge clk);
-    l1_access(0, 1'b1, 20'h00010, 64'haaaa_bbbb_cccc_dddd, 8'h0f);
-    @(posedge clk);
-    l1_access(1, 1'b0, 20'h00010, 64'd0, 8'd0);
-    if (l1_rsp_rdata[127:64] != 64'h1122_3344_cccc_dddd) begin
-      $fatal(1, "L1 byte strobes were not applied");
+
+    for (int unsigned client = 0;
+         client < L1_CLIENTS; client++) begin
+      l1_backpressure_check(
+        client,
+        20'h00080 + 20'(client * 8),
+        64'h2200_0000_0000_0000 + 64'(client)
+      );
     end
-    @(posedge clk);
-    l1_access(0, 1'b0, 20'h00011, 64'd0, 8'd0);
-    if (l1_rsp_status[2:0] != NPU_L1_PROTOCOL_ERROR) begin
-      $fatal(1, "L1 accepted a misaligned request");
+
+    for (int unsigned client = 0;
+         client < L1_CLIENTS; client++) begin
+      l1_concurrent_return_check(
+        client,
+        (client + 1) % L1_CLIENTS,
+        20'(client * 8),
+        64'h1100_0000_0000_0000 + 64'(client),
+        20'h000c0 + 20'(client * 8),
+        64'h3300_0000_0000_0000 + 64'(client)
+      );
     end
-    @(posedge clk);
 
     mif_access(1'b0, 48'h1000, 64'd0);
     if ((mif_rsp_status != NPU_MEM_OK)

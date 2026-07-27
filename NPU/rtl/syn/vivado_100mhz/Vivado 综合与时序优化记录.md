@@ -1,10 +1,8 @@
 # Vivado 综合与时序优化记录
 
-## 1. 验证目标
+## 1. 验证目标与固定配置
 
-本记录用于追踪 NPU 单核 RTL 在 Xilinx Artix-7 FPGA 上的综合、布局和布线结果，并记录复杂数学单元的结构调整过程。
-
-固定配置如下：
+本文记录 NPU 单核 RTL 在 Xilinx Artix-7 FPGA 上的综合、布局和布线结果，并说明各次 RTL 调整针对的数据路径。综合后的报告用于快速检查 RTL 结构；100 MHz 是否满足要求，以布局和布线后的报告为准。
 
 | 项目 | 配置 |
 |---|---|
@@ -17,153 +15,52 @@
 | 输入延迟 | `1.000 ns` |
 | 输出延迟 | `1.000 ns` |
 | 综合方式 | Out-of-Context |
+| Vivado 进程数 | `1` |
 
-`core_clk_i` 与 `noc_clk_i` 均使用 `10.000 ns` 周期。两个时钟属于异步时钟组，因此时序工具不会检查两个时钟域之间的同步时序。
+`core_clk_i` 与 `noc_clk_i` 均使用 `10.000 ns` 周期。两个时钟属于异步时钟组，工具不检查两个时钟域之间的同步时序。当前使用 Out-of-Context 方式，最终接入 SoC 顶层后还需要使用实际时钟资源、芯片引脚位置和外围接口约束再次检查。
 
-> [!NOTE]
-> 综合后的时序报告用于快速判断 RTL 结构。100 MHz 是否满足要求，最终以布局和布线后的报告为准。
-
-## 2. 命令与报告位置
+## 2. 运行命令与报告目录
 
 ### 2.1 综合快速检查
 
-综合快速检查使用：
-
-```sh
-/home/yusen/opt/Xilinx/Vivado/2024.2/bin/vivado \
-  -mode batch \
-  -notrace \
-  -source "/home/yusen/Obsidian Vault/NPU/rtl/syn/vivado_100mhz/run_vivado_synth_only.tcl" \
-  -tclargs \
-  <RTL_ROOT> \
-  "/home/yusen/Obsidian Vault/NPU/rtl/syn/vivado_100mhz/npu_single_core_100mhz.xdc" \
-  <REPORT_DIR> \
-  xc7a200tfbg484-3 \
-  10.000
-```
-
-脚本位置：
-
-- `NPU/rtl/syn/vivado_100mhz/run_vivado_synth_only.tcl`
-- `NPU/rtl/syn/vivado_100mhz/npu_single_core_100mhz.xdc`
-
-计划保存的文本报告：
-
-- `NPU/rtl/syn/vivado_100mhz/reports/baseline/utilization_post_synth.rpt`
-- `NPU/rtl/syn/vivado_100mhz/reports/baseline/timing_post_synth.rpt`
-- `NPU/rtl/syn/vivado_100mhz/reports/baseline/critical_paths_post_synth.rpt`
-- `NPU/rtl/syn/vivado_100mhz/reports/fp_seq/utilization_post_synth.rpt`
-- `NPU/rtl/syn/vivado_100mhz/reports/fp_seq/timing_post_synth.rpt`
-- `NPU/rtl/syn/vivado_100mhz/reports/fp_seq/critical_paths_post_synth.rpt`
-
-### 2.2 布局和布线
-
-完整运行命令：
-
 ```sh
 cd "/home/yusen/Obsidian Vault/NPU/rtl/syn/vivado_100mhz"
-make clean
-make syn \
-  BUILD_DIR=build_fp_seq_100mhz \
+make synth-only \
+  BUILD_DIR=build_pipeline_round3_synth \
   JOBS=1 \
   PART=xc7a200tfbg484-3 \
   PERIOD_NS=10.000
 ```
 
-完整结果将保存在：
+round2 与 round3 已保存相同类型的报告。round3 的主要文件如下：
 
-- `NPU/rtl/syn/vivado_100mhz/build_fp_seq_100mhz/summary.txt`
-- `NPU/rtl/syn/vivado_100mhz/build_fp_seq_100mhz/utilization_post_route.rpt`
-- `NPU/rtl/syn/vivado_100mhz/build_fp_seq_100mhz/timing_post_route.rpt`
-- `NPU/rtl/syn/vivado_100mhz/build_fp_seq_100mhz/critical_paths_post_route.rpt`
-- `NPU/rtl/syn/vivado_100mhz/build_fp_seq_100mhz/methodology_post_route.rpt`
+- `build_pipeline_round3_synth/summary_post_synth.txt`
+- `build_pipeline_round3_synth/utilization_post_synth.rpt`
+- `build_pipeline_round3_synth/utilization_hierarchical_post_synth.rpt`
+- `build_pipeline_round3_synth/timing_summary_post_synth.rpt`
+- `build_pipeline_round3_synth/timing_paths_setup_post_synth_dedup.rpt`
+- `build_pipeline_round3_synth/memory_primitives_post_synth.rpt`
+- `build_pipeline_round3_synth/hierarchy_timing/`
+- `build_pipeline_round3_synth/post_synth.dcp`
 
-## 3. 初始结构
+### 2.2 完整布局和布线
 
-初始版本的 `npu_complex_engine` 直接调用多个组合 FP32 函数。Sigmoid、Tanh、GELU、SiLU、Softmax、LayerNorm 和 RMSNorm 会同时展开多个加法、减法、乘法、倒数、指数和平方根倒数运算。
+```sh
+cd "/home/yusen/Obsidian Vault/NPU/rtl/syn/vivado_100mhz"
+make syn \
+  BUILD_DIR=<FINAL_BUILD_DIR> \
+  JOBS=1 \
+  PART=xc7a200tfbg484-3 \
+  PERIOD_NS=10.000
+```
 
-这种写法产生以下硬件结构：
+完整运行需要检查 `summary_post_route.txt`、`timing_post_route.rpt`、`utilization_post_route.rpt`、`critical_paths_post_route.rpt`、`methodology_post_route.rpt`、`route_status_post_route.rpt` 和 `post_route.dcp`。本文第 7 节为下一次综合和最终完整运行保留了明确标记，数字产生前不填写估计值。
 
-- 相同 FP32 运算在多个表达式中重复展开；
-- 一个时钟周期内串接多级 FP32 运算；
-- 次正规数处理包含多次连续移位；
-- 指数、倒数和平方根倒数包含多层多项式运算；
-- 复杂数学结果继续进入整数转换和数据类型裁剪。
+## 3. 结构调整前的完整基线
 
-初始版本快照：
+基线来自 `NPU/rtl/syn/vivado_100mhz/build/`。该次运行完成 Out-of-Context 综合、布局、物理优化和布线，`108272` 条需要布线的网络均已完成，布线错误数为 0。
 
-| 项目 | 值 |
-|---|---|
-| Git 提交 | `d9b6315db52ae63c99bcf86f85d33ef689d5d271` |
-| 快照目录 | `/tmp/npu_fp_baseline.8cV0xQ/rtl` |
-| 首次综合并行度 | 4 |
-| 首次运行结果 | 因物理内存不足产生大量主缺页，已中断 |
-| 首次运行峰值内存 | `6098.270 MB`，来自 Vivado 日志 |
-| 首次运行结束位置 | `Start Timing Optimization` |
-
-> [!WARNING]
-> 首次运行出现 Vivado 的 `Thrashing Detected` 提示，主缺页数量超过 70 万。该次运行没有生成最终报告，不用于资源或时序结论。随后把综合并行度改为 1 并重新运行。
-
-## 4. RTL 调整记录
-
-### 4.1 第 1 轮：共享顺序 FP32 加减乘单元
-
-新增 `engines/npu_fp32_alu_seq.sv`。
-
-主要调整：
-
-- ADD、SUB 和 MUL 共用一个 FP32 运算单元；
-- 请求使用 `req_valid_i/req_ready_o`；
-- 结果使用 `rsp_valid_o/rsp_ready_i`；
-- 加法对齐、加减、规格化和舍入分为多个状态；
-- 次正规数每个周期移动 1 bit；
-- 24-bit × 24-bit 乘法单独占用一个状态；
-- 结果保持到接收方确认。
-
-目标是缩短单周期组合数据路径，并减少重复的 FP32 运算硬件。
-
-### 4.2 第 2 轮：复杂数学微操作状态机
-
-新增 `engines/npu_complex_math_seq.sv`。
-
-主要调整：
-
-- Sigmoid、Tanh、GELU、SiLU、EXP、倒数和平方根倒数改为多周期执行；
-- 复合函数通过微操作调用共享 ADD、SUB 和 MUL；
-- 使用返回状态栈支持函数内部调用；
-- I2F 后乘比例值、近似除法和倒数也使用同一请求/响应接口；
-- 中间值存放在寄存器中，下一步运算在后续周期发起。
-
-### 4.3 第 3 轮：Complex Engine 接入
-
-修改 `engines/npu_complex_engine.sv`。
-
-主要调整：
-
-- 增加 `ST_MATH_REQ` 和 `ST_MATH_RSP`；
-- 增加动作编号，记录每次数学结果的后续处理；
-- 激活、Softmax、LayerNorm、RMSNorm 和 ADD_RESCALE 改为逐步发起微操作；
-- 四组分段累加值按固定顺序相加；
-- Welford 均值和 M2 更新改为多个微操作；
-- 输出比例除法完成后再执行 FP32 到整数转换；
-- 保留原有数据类型裁剪、异常状态、INT4 读改写和存储请求行为。
-
-### 4.4 第 4 轮：拆分 EXP 的两个转换
-
-`ST_EXP_RANGE_ROUND` 原本在同一周期执行：
-
-1. FP32 到整数舍入；
-2. 整数再转换为 FP32。
-
-新增 `ST_EXP_RANGE_FROM_INT`，把两次转换放到两个周期，避免两段可变移位逻辑串接。
-
-## 5. 每轮结果
-
-### 5.1 结构修改前基线
-
-本轮结果来自 `npu_single_core_top` 的完整 Out-of-Context 综合、布局、物理优化和布线。器件为 `xc7a200tfbg484-3`，Vivado 为 `2024.2.1`，`core_clk_i` 与 `noc_clk_i` 的周期均为 `10.000 ns`，时钟不确定度为 `0.200 ns`，Vivado 进程数为 1。布线已完成，`108272` 条需要布线的网络全部完成，布线错误数为 0。
-
-#### 5.1.1 时序结果
+### 3.1 时序结果
 
 | 指标 | 综合后 | 布线后 |
 |---|---:|---:|
@@ -178,133 +75,236 @@ make syn \
 
 综合后的最差 setup 路径从 `u_task_scheduler/task_submit_seq_q_reg[0][1]/C` 到 `u_task_scheduler/u_task_desc_decode/desc_flat_o0/B[0]`。布线后的最差 setup 路径从 `u_task_scheduler/task_submit_seq_q_reg[0][19]/C` 到 `u_task_scheduler/decode_pending_cmd_q_reg[123]_rep/D`。
 
-> [!WARNING]
-> `10.000 ns` 周期要求下，布线后 WNS 为 `-78.625 ns`，因此本轮结果不满足 100 MHz。按照最差路径所需时间进行粗略换算，频率约为 11.3 MHz；该数值只用于说明差距，不作为可用工作频率。
+基线布线后 WNS 为 `-78.625 ns`，不满足 100 MHz。最差路径的逻辑延迟为 `23.718 ns`，布线延迟为 `64.476 ns`，布线部分约占 `73.1%`。路径经过 Scheduler 的 16 槽扫描、64-bit 提交序号比较和逐项优先选择，并继续驱动命令及多个基地址寄存器。
 
-#### 5.1.2 层级资源
+### 3.2 资源使用
 
-| 层级 | Slice LUTs | Slice Registers | RAMB36 | DSP48E1 |
-|---|---:|---:|---:|---:|
-| `npu_single_core_top` | `96374` | `30306` | `256` | `134` |
-| `u_task_scheduler` | `60390` | `18111` | `0` | `10` |
-| `u_task_scheduler/u_task_desc_decode` | `11912` | `32` | `0` | `10` |
-| `u_axi_slave_frontend` | `11645` | `2740` | `0` | `0` |
-| `u_complex_engine` | `9010` | `2797` | `0` | `33` |
-| `u_matrix_engine` | `4573` | `864` | `0` | `49` |
-| `u_dma_engine` | `3448` | `2535` | `0` | `0` |
-| `u_vector_engine` | `2811` | `835` | `0` | `42` |
-| `u_l1buf` | `2527` | `346` | `256` | `0` |
-| `u_cmd_frontend` | `1551` | `1163` | `0` | `0` |
+| 层级 | Slice LUTs | Slice Registers | RAMB36 | RAMB18 | DSP48E1 |
+|---|---:|---:|---:|---:|---:|
+| `npu_single_core_top` | `96374` | `30306` | `256` | `0` | `134` |
+| `u_task_scheduler` | `60390` | `18111` | `0` | `0` | `10` |
+| `u_axi_slave_frontend` | `11645` | `2740` | `0` | `0` | `0` |
+| `u_complex_engine` | `9010` | `2797` | `0` | `0` | `33` |
+| `u_matrix_engine` | `4573` | `864` | `0` | `0` | `49` |
+| `u_dma_engine` | `3448` | `2535` | `0` | `0` | `0` |
+| `u_vector_engine` | `2811` | `835` | `0` | `0` | `42` |
+| `u_l1buf` | `2527` | `346` | `256` | `0` | `0` |
+| `u_cmd_frontend` | `1551` | `1163` | `0` | `0` | `0` |
 
-器件总体使用率为 Slice LUT `72.03%`、Slice Register `11.33%`、Block RAM Tile `70.14%`、DSP `18.11%`。`u_task_scheduler` 占全部 Slice LUT 的 `62.66%`，占全部 Slice Register 的 `59.76%`，是本轮面积与布线压力的主要来源。
+器件总体使用率为 Slice LUT `72.03%`、Slice Register `11.33%`、Block RAM Tile `70.14%`、DSP `18.11%`。Scheduler 占基线全部 Slice LUT 的 `62.66%`，也是基线内部最差 setup 路径所在模块。
 
-#### 5.1.3 L1 RAM 原语检查
+### 3.3 L1 RAM 原语检查
 
 | 检查项 | 结果 |
 |---|---:|
 | 全设计 RAMB36E1 | `256` |
-| 全设计 RAMB18 | `0` |
+| 全设计 RAMB18E1 | `0` |
 | 全设计 LUTRAM | `0` |
 | L1 RAMB36E1 | `256` |
-| L1 RAMB18 | `0` |
+| L1 RAMB18E1 | `0` |
 | L1 LUTRAM | `0` |
 | L1 `memory_q` 名称下的触发器 | `0` |
 
-L1 的 16 个 bank 各使用 16 个 RAMB36E1。大容量存储均由 Block RAM 实现，检查结果为 PASS。
+L1 的 16 个 bank 各使用 16 个 RAMB36E1，大容量 L1 存储由 Block RAM 实现。
 
-> [!NOTE]
-> Vivado 同时报告 256 条 `SYNTH-6` 告警：Block RAM 输出寄存器没有并入 RAM 原语。这不会改变上表中的原语数量，但会增加 RAM 读数据之后的时序压力，后续需要结合 L1 请求和响应周期处理。
+## 4. 已实施的 RTL 调整
 
-#### 5.1.4 关键路径根因
+### 4.1 DiP 矩阵计算路径
 
-setup 原始报告中的 200 条路径经过结构去重后保留 26 条。最差的 5 条记录如下：
+- Matrix Engine 为适合 DiP 的矩阵任务选择 DiP 脉动阵列，其他任务仍可进入标量执行单元。
+- `dip_simd_dot_product` 将基础乘法、分组重组和加法树分到连续寄存阶段，避免乘法和宽加法全部落在一个周期。
+- 16 个 4×4 基础乘法器按照数据类型复用：INT16 每次形成 1 个乘积，INT8 每次形成 4 个乘积，INT4 每次形成 16 个乘积。
+- PE 累加器按照数据类型分段：INT16 使用 64-bit 累加，INT8 使用两组 32-bit 累加，INT4 使用四组 16-bit 累加。这样不会让某个分段的进位进入相邻分段。
+- DiP 结果暂存数组 `accum_rows_q` 使用 `ram_style = "block"`，综合结果为 14 个 RAMB36E1 和 1 个 RAMB18E1，未把该大容量数组展开为大量触发器。
+- 分段累加器改为直接表达 64-bit、两组 32-bit 或四组 16-bit 加法，便于综合工具使用 FPGA 的进位资源。
 
-| 序号 | 起点 | 终点 | Slack | 数据路径延迟 | 逻辑级数 | 重复数 |
-|---:|---|---|---:|---:|---:|---:|
-| 1 | `task_submit_seq_q[0][19]/C` | `decode_pending_cmd_q[123]_rep/D` | `-78.625 ns` | `88.194 ns` | `205` | `3` |
-| 2 | `task_submit_seq_q[0][19]/C` | `decode_pending_cmd_q[123]/D` | `-78.617 ns` | `88.198 ns` | `205` | `18` |
-| 3 | `task_submit_seq_q[0][19]/C` | `decode_pending_input_base_q[18]/CE` | `-78.565 ns` | `88.145 ns` | `204` | `21` |
-| 4 | `task_submit_seq_q[0][19]/C` | `decode_pending_weight_base_q[17]/D` | `-78.546 ns` | `88.371 ns` | `206` | `15` |
-| 5 | `task_submit_seq_q[0][19]/C` | `decode_pending_weight_base_q[10]/CE` | `-78.534 ns` | `88.144 ns` | `204` | `22` |
+### 4.2 Matrix 标量执行单元
 
-这 5 条记录具有相同的结构原因。Scheduler 在一个周期内检查 16 个任务槽，计算每个槽的顺序阻塞状态，再使用 64-bit 提交序号逐项选择可执行任务。综合结果把这些比较器和优先选择逻辑串接起来，最差路径包含 112 个 CARRY4。随后，该选择结果同时驱动命令、基地址、命令编号等快照寄存器的 D 或 CE 引脚。
+- 乘法和部分和更新分为 `ST_MAC_MUL` 与 `ST_MAC_ACC`，降低单周期内的组合层数。
+- 输出后处理依次执行乘法、绝对值、移位、舍入增量、符号恢复、64-bit 缩小、零点相加和数据类型裁剪，128-bit 乘法结果不再直接穿过全部后处理逻辑。
+- 检查阶段预先保存 B 矩阵每行的分块数量 `b_n_tiles_q`。
+- 发起 A 数据请求时计算并保存完整的 B 数据地址 `b_addr_q`；B 请求、跨 64-bit 数据字检查、故障地址和元素提取均使用该寄存地址。这样把分块地址乘加与 L1 请求分到不同周期。
+- 矩阵测试增加 `M=1、N=9、K=2` 的分块 B 输入，覆盖 N 方向跨两个分块的地址计算。
 
-最差路径的逻辑延迟为 `23.718 ns`，布线延迟为 `64.476 ns`，布线部分占 `73.1%`。布局报告中的方向热点约为 `85.6%` 至 `93.7%`。因此问题不仅来自 64-bit 比较器本身，也来自 Scheduler 的大规模组合扫描、高扇出控制以及较高的 LUT 使用率。
+### 4.3 Vector 执行单元
 
-#### 5.1.5 Methodology 告警与 Out-of-Context 限制
+- 快速逐元素乘法复用 16 个 4×4 基础乘法器，并使用两级加法树重组 INT8 和 INT16 结果。
+- 写请求阶段保存本次写入后的动作、进度增量、当前行元素数量和末行状态。
+- 写响应阶段只执行已保存的动作：继续写一对元素、转到下一个 64-bit 输入数据字、转到下一行或结束任务。
+- 地址更新和末行判断不再与 L1 写响应后的全部控制选择串在同一个周期。
 
-Methodology 报告没有 Error 或 Critical Warning，共记录 2491 条 Warning。需要优先关注的项目如下：
+### 4.4 Scheduler
 
-| 规则 | 数量 | 说明 |
-|---|---:|---|
-| `LUTAR-1` | `2` | 组合 LUT 驱动异步清除，其中一项涉及 12505 个清除引脚，另一项涉及 163 个清除引脚，存在毛刺触发风险 |
-| `TIMING-16` | `1000` | 大 setup 违例 |
-| `TIMING-9` | `1` | 工具发现未识别的跨时钟处理结构 |
-| `TIMING-18` | `241` | 部分输入或输出缺少相对于相应时钟的延迟设置 |
-| `XDCH-2` | `616` | 输入或输出的最小延迟与最大延迟均设置为 `1.000 ns`，需要结合 SoC 接口时序确认 |
-| `SYNTH-6` | `256` | Block RAM 输出寄存器没有并入 RAM 原语 |
-| `SYNTH-10` | `119` | 宽乘法器被拆成多个 DSP |
-| `SYNTH-15` | `256` | Block RAM 没有推断出 byte-wide write enable |
+- Scheduler 使用共享扫描器检查任务槽，避免为多个执行单元重复展开相同的槽选择网络。
+- Control 指令先保存候选槽和提交序号，下一周期重新检查任务状态、执行单元类型、提交序号及顺序约束后再执行。扫描结果不再直接驱动 Event 和任务状态的大量寄存器。
+- 指令接收增加一级暂存。前端握手时保存指令、基地址、已解析 Event、静态检查结果、前序任务位图和目标槽，下一周期再写任务表。
+- 暂存有效期间停止接收下一条指令，并把该条指令计入任务占用数；命令编号查询也会检查暂存内容。
+- AXI 控制访问在指令暂存期间等待，避免 FENCE 与任务表写入在相邻周期产生观察次序问题。
+- 当前结构中，前端接收与任务表写入相隔一个周期。指令输入由两个 64-bit 数据拍组成，而执行单元任务通常远长于两个周期，因此该级寄存对当前任务流吞吐影响较小。
 
-本轮使用 Out-of-Context 方式，因此没有顶层封装中的真实时钟缓冲位置、芯片引脚位置和 SoC 总线外围逻辑。报告明确提示 `core_clk_i` 未设置 `HD.CLK_SRC`，部分端口未设置 `HD.PARTPIN_LOCS`。这些缺失会影响时钟偏差和端口路径估算，最终 SoC 工程需要使用实际引脚、时钟资源和外部器件时序重新检查。
+### 4.5 Complex Engine
 
-> [!NOTE]
-> 最差 setup 路径的起点和终点都位于 `core_clk` 时钟域内，不经过顶层输入或输出端口。因此，I/O 延迟设置不完整不能解释 `-78.625 ns` 的内部路径违例；Scheduler 组合结构仍是当前需要优先处理的问题。
+- ADD、SUB 和 MUL 共用 `npu_fp32_alu_seq`，请求和结果均使用 `valid/ready` 握手。
+- Sigmoid、Tanh、GELU、SiLU、EXP、倒数和平方根倒数由 `npu_complex_math_seq` 多周期执行，中间结果保存在寄存器中。
+- Complex Engine 的 FP32 到整数输出处理分为 `ST_F2I_ROUND`、`ST_F2I_MAG`、`ST_F2I_SIGN`、`ST_F2I_OFFSET` 和 `ST_F2I_FINISH`。
+- EXP 的范围计算进一步分为 `ST_EXP_RANGE_ROUND`、`ST_EXP_RANGE_SHIFT`、`ST_EXP_RANGE_INCREMENT`、`ST_EXP_RANGE_COMMIT` 和 `ST_EXP_RANGE_FROM_INT`，避免可变移位、舍入和整数转 FP32 在同一个周期连续执行。
+- EXP 输入已经限制在 `[-16,16]`，内部整数幅值按可达到的数值范围保存，不再保留不必要的宽比较逻辑。
 
-#### 5.1.6 报告文件
+### 4.6 L1 Buffer
 
-- 总结：`NPU/rtl/syn/vivado_100mhz/build/summary.txt`
-- 综合后总结：`NPU/rtl/syn/vivado_100mhz/build/summary_post_synth.txt`
-- 布线后总结：`NPU/rtl/syn/vivado_100mhz/build/summary_post_route.txt`
-- 层级资源：`NPU/rtl/syn/vivado_100mhz/build/utilization_hierarchical_post_route.rpt`
-- RAM 原语：`NPU/rtl/syn/vivado_100mhz/build/memory_primitives_post_route.rpt`
-- 去重后的 setup 路径：`NPU/rtl/syn/vivado_100mhz/build/timing_paths_setup_post_route_dedup.rpt`
-- Methodology：`NPU/rtl/syn/vivado_100mhz/build/methodology_post_route.rpt`
-- 布线状态：`NPU/rtl/syn/vivado_100mhz/build/route_status_post_route.rpt`
-- Vivado 日志：`NPU/rtl/syn/vivado_100mhz/build/vivado_resume_internal.log`
-- 布线后检查点：`NPU/rtl/syn/vivado_100mhz/build/post_route.dcp`
+- 16 个 bank 继续使用 Block RAM，每个 bank 保存 64-bit 数据字。
+- 每个客户端分别生成 `grant_fire_oh`、`read_return_oh`、地址对齐错误和地址范围错误。
+- 每个客户端的响应寄存器由对应的静态 `always_ff` 写入；公共控制时序只更新轮询位置和待读请求信息。
+- 读取返回、写响应和错误响应仍保持原有优先关系和周期数，同时去除“一个客户端的请求可能驱动另一个客户端响应寄存器”的无效组合路径。
 
-### 5.2 优化后结果
+## 5. `build_pipeline_round2_synth` 综合结果
 
-Scheduler 共用扫描器、Matrix 标量后处理分级以及 DiP 数据路径调整完成后，在相同器件、时钟设置和工具版本下重新运行。下表保留给后续结果：
+本节数字来自已经保存的 `build_pipeline_round2_synth` 报告，器件、周期和 Vivado 配置与基线相同。第 4 节中在该报告产生后继续完成的寄存分级，需要由后续综合和完整布线结果评价，不能用本节数字代替。
 
-| 指标 | 综合后 | 布线后 |
+### 5.1 顶层时序与资源
+
+| 指标 | 综合后结果 |
+|---|---:|
+| WNS | `-4.037 ns` |
+| TNS | `-24892.776 ns` |
+| setup 失败终点数 | `14499` |
+| WHS | `-0.021 ns` |
+| THS | `-2.967 ns` |
+| hold 失败终点数 | `199` |
+| 最差 setup 数据路径延迟 | `13.796 ns` |
+| 最差 setup 逻辑级数 | `31` |
+| Slice LUTs | `97218`，`72.23%` |
+| Slice Registers | `45760`，`17.00%` |
+| RAMB36E1 | `270` |
+| RAMB18E1 | `1` |
+| Block RAM Tile | `270.5`，`74.11%` |
+| DSP48E1 | `133`，`17.97%` |
+
+WNS 从基线综合后的 `-58.981 ns` 改善到 `-4.037 ns`。该结果仍不满足 100 MHz，而且只是综合后结果，不能代替布局和布线后的结论。
+
+### 5.2 层级资源
+
+| 层级 | LUTs | FFs | RAMB36 | RAMB18 | DSP |
+|---|---:|---:|---:|---:|---:|
+| `npu_single_core_top` | `97218` | `45760` | `270` | `1` | `133` |
+| `u_task_scheduler` | `38915` | `19128` | `0` | `0` | `10` |
+| `u_matrix_engine` | `26956` | `13335` | `14` | `1` | `49` |
+| `u_axi_slave_frontend` | `11684` | `2741` | `0` | `0` | `0` |
+| `u_complex_engine` | `8070` | `3206` | `0` | `0` | `32` |
+| `u_vector_engine` | `5015` | `2401` | `0` | `0` | `42` |
+| `u_dma_engine` | `3494` | `2532` | `0` | `0` | `0` |
+| `u_l1buf` | `1769` | `341` | `256` | `0` | `0` |
+| `u_cmd_frontend` | `886` | `1164` | `0` | `0` | `0` |
+
+L1 仍使用 256 个 RAMB36E1，L1 内没有 RAMB18E1、LUTRAM 或 `memory_q` 数据触发器。新增的 14 个 RAMB36E1 和 1 个 RAMB18E1 位于 Matrix Engine 的 DiP 结果暂存数组。顶层 DSP 报告值为 `133`。
+
+### 5.3 各层级最差 setup 路径
+
+下表来自 `hierarchy_timing/` 中保存的综合后报告。报告以指定层级内的寄存器作为起点，因此终点可能位于 L1 或 Scheduler 等其他层级。
+
+| 起点层级 | Slack | 数据路径延迟 | 逻辑级数 | 路径摘要 |
+|---|---:|---:|---:|---|
+| Matrix | `-4.037 ns` | `13.796 ns` | `31` | DiP 乘积贡献寄存器到同一 PE 的 64-bit 部分和寄存器 |
+| Vector | `-2.740 ns` | `12.121 ns` | `14` | Vector 列地址计算经过 DSP 与地址选择后到 L1 Block RAM 使能 |
+| Command Frontend | `-2.671 ns` | `12.430 ns` | `25` | 命令 FIFO 数据经过指令检查和 Event 选择后到 Scheduler Event 状态 |
+| Complex | `-1.960 ns` | `11.719 ns` | `27` | EXP 舍入整数寄存器经过宽移位和选择后到工作寄存器 |
+| Scheduler | `-0.883 ns` | `10.642 ns` | `21` | Event 代次寄存器经过 Event 检查和选择后到 Event 状态 |
+| AXI Slave Frontend | `+1.458 ns` | `7.923 ns` | `11` | 读状态经过 L1 仲裁选择后到 Block RAM 使能 |
+| DMA | `+1.492 ns` | `7.889 ns` | `9` | DMA 状态经过 L1 仲裁选择后到 Block RAM 使能 |
+| L1 | `+1.927 ns` | `7.454 ns` | `9` | 待读客户端寄存器经过 bank 选择后到 Block RAM 使能 |
+
+顶层最差路径是 DiP PE 内的 64-bit 部分和加法。下一组路径是 Matrix 标量执行单元 `k_q` 到 L1 Block RAM 使能，Slack 为 `-2.890 ns`、数据路径延迟为 `12.272 ns`、逻辑级数为 `15`。第 4 节记录的分段加法、B 地址寄存、Vector 写动作寄存、指令接收暂存、Control 执行暂存、EXP 多级舍入和 L1 静态客户端响应，分别针对这些路径继续拆分。
+
+## 6. `build_pipeline_round3_synth` 综合结果
+
+round3 在相同器件、时钟周期、Vivado 版本和进程数下运行。本节所有数字均来自 `build_pipeline_round3_synth` 内保存的报告。
+
+### 6.1 顶层时序与资源
+
+| 指标 | 综合后结果 |
+|---|---:|
+| WNS | `-2.157 ns` |
+| TNS | `-7181.155 ns` |
+| setup 失败终点数 | `5845` |
+| WHS | `-0.021 ns` |
+| THS | `-2.967 ns` |
+| hold 失败终点数 | `199` |
+| 最差 setup 数据路径延迟 | `11.538 ns` |
+| 最差 setup 逻辑级数 | `14` |
+| Slice LUTs | `98733`，`73.35%` |
+| Slice Registers | `46202`，`17.16%` |
+| RAMB36E1 | `270` |
+| RAMB18E1 | `1` |
+| Block RAM Tile | `270.5`，`74.11%` |
+| DSP48E1 | `133`，`17.97%` |
+
+与 round2 相比，WNS 从 `-4.037 ns` 改善到 `-2.157 ns`，TNS 从 `-24892.776 ns` 降到 `-7181.155 ns`，setup 失败终点数从 `14499` 降到 `5845`。Slice LUT 增加 `1515`，Slice Register 增加 `442`；Block RAM 和 DSP 数量保持不变。round3 仍未满足 100 MHz。
+
+### 6.2 各层级最差 setup 路径
+
+| 起点层级 | Slack | 数据路径延迟 | 逻辑级数 | 路径摘要 |
+|---|---:|---:|---:|---|
+| Matrix | `-2.157 ns` | `11.538 ns` | `14` | Matrix 残差输入地址计算经过 DSP 和 L1 请求选择后到 Block RAM 使能 |
+| Complex | `-1.558 ns` | `10.939 ns` | `13` | STAT 输出地址计算经过 DSP 和 L1 请求选择后到 Block RAM 使能 |
+| Vector | `-0.167 ns` | `9.548 ns` | `21` | 快速路径目标地址寄存器经过地址增量和请求选择后到 Block RAM 使能 |
+| Command Frontend | `+0.006 ns` | `9.406 ns` | `17` | 命令 FIFO 数据经过 Event 解析后到 `cmd_admit_signal_q` |
+| Scheduler | `+0.770 ns` | `8.642 ns` | `15` | Event 代次寄存器经过 Event 解析后到 `cmd_admit_signal_q` |
+| AXI Slave Frontend | `+1.766 ns` | `7.993 ns` | `14` | 控制参数寄存器经过控制读取选择后到 Scheduler 响应数据 |
+| DMA | `+1.991 ns` | `7.591 ns` | `24` | DMA 操作码经过地址计算和错误选择后到故障地址寄存器使能 |
+| L1 | `+2.378 ns` | `7.003 ns` | `9` | 轮询客户端寄存器经过 bank 选择后到 Block RAM 使能 |
+
+round2 的 DiP PE 累加路径不再是顶层最差路径，Vector、Command Frontend、Scheduler、AXI Slave Frontend、DMA 和 L1 的层级最差 Slack 均得到改善。round3 的前三条剩余路径集中在 Matrix、Complex 和 Vector 的 L1 地址请求。
+
+### 6.3 round3 报告产生后继续实施的调整
+
+- Matrix 标量执行单元增加输出地址寄存阶段。`ST_START_OUTPUT` 保存输出、残差、bias、缩放参数地址及 INT4 半字节位置，`ST_OUTPUT_CHECK` 使用寄存值检查输出地址；每次乘法前由 `ST_ADDR_PREP` 保存 A 和 B 地址。
+- Vector 快速路径增加 `ST_FAST_WRITE_PREP`。该状态保存写地址、64-bit 写数据和字节使能，后续 `ST_FAST_WRITE_REQ` 只使用寄存值发起 L1 写请求。
+- Complex Engine 在每行开始时保存 STAT 输出地址。STAT 结果写入、跨 64-bit 数据字检查和故障地址均使用 `stat_dst_addr_q`，不再从行号和行步长组合计算后直接驱动 L1 请求。
+- Scheduler 的 `cmd_admit_signal_q` 始终保存已经解析的 signal 引用。无效指令会直接成为结束状态的任务，也不会发布 Event，因此不需要使用整组静态检查结果再次选择 signal 寄存器输入。
+
+这些调整尚未反映在 round3 数字中。下一次综合和最终布线结果必须从对应报告读取。
+
+## 7. 后续综合与最终完整运行
+
+以下标记只表示报告正在生成，不表示已经满足 100 MHz。
+
+| 指标 | 后续综合 | 最终布线 |
 |---|---:|---:|
-| Slice LUTs | 待填写 | 待填写 |
-| Slice Registers | 待填写 | 待填写 |
-| Block RAM Tile | 待填写 | 待填写 |
-| DSPs | 待填写 | 待填写 |
-| WNS | 待填写 | 待填写 |
-| TNS | 待填写 | 待填写 |
-| WHS | 待填写 | 待填写 |
-| THS | 待填写 | 待填写 |
+| WNS | `【待后续综合报告】` | `【待最终完整运行】` |
+| TNS | `【待后续综合报告】` | `【待最终完整运行】` |
+| setup 失败终点数 | `【待后续综合报告】` | `【待最终完整运行】` |
+| WHS | `【待后续综合报告】` | `【待最终完整运行】` |
+| THS | `【待后续综合报告】` | `【待最终完整运行】` |
+| LUTs | `【待后续综合报告】` | `【待最终完整运行】` |
+| FFs | `【待后续综合报告】` | `【待最终完整运行】` |
+| RAMB36E1 | `【待后续综合报告】` | `【待最终完整运行】` |
+| RAMB18E1 | `【待后续综合报告】` | `【待最终完整运行】` |
+| DSP48E1 | `【待后续综合报告】` | `【待最终完整运行】` |
+| 最差路径起点 | `【待后续综合报告】` | `【待最终完整运行】` |
+| 最差路径终点 | `【待后续综合报告】` | `【待最终完整运行】` |
+| 最差路径逻辑级数 | `【待后续综合报告】` | `【待最终完整运行】` |
+| 最差路径数据延迟 | `【待后续综合报告】` | `【待最终完整运行】` |
 
-关键路径：
+最终结论必须同时满足以下检查：完整布局和布线正常结束、路由状态没有错误、setup 与 hold 报告可读取、Block RAM 数量符合预期、功能回归通过。若布线后 WNS 仍小于 0，应继续依据布线后最差路径修改 RTL，不能用综合后 WNS 代替。
 
-| 项目 | 综合后 | 布线后 |
-|---|---|---|
-| 起点 | 待填写 | 待填写 |
-| 终点 | 待填写 | 待填写 |
-| 逻辑级数 | 待填写 | 待填写 |
-| 数据路径延迟 | 待填写 | 待填写 |
-| 主要逻辑 | 待填写 | 待填写 |
+## 8. 功能回归
 
-100 MHz 结论：待填写。
-
-## 6. 功能回归
-
-当前已经完成：
+最近一次完整 `make test` 已通过，主要结果如下：
 
 | 测试 | 结果 |
 |---|---|
 | 顶层 Verilator lint | PASS，无告警 |
-| FP32 ADD/SUB/MUL 随机比对 | PASS，6010 项 |
-| 复杂数学参考测试 | PASS，71 项 |
-| 模块级 Engine 测试 | PASS，L1 握手 156 次，MIF 握手 8 次 |
-| 独立 Complex Engine 测试 | PASS |
-| Sigmoid、Tanh、Softmax、LayerNorm 示例 | PASS |
+| FP32 ADD/SUB/MUL 随机比对 | PASS，`6010` 项 |
+| 复杂数学参考测试 | PASS，`87` 项 |
+| Matrix、Vector、Complex、DMA、L1 与 Scheduler 模块测试 | PASS |
+| 单核系统测试 | PASS，`commands=8` |
+| 单核系统 AXI Master 访问 | `system_reads=8`，`system_writes=8` |
+| 单核系统 L1 请求统计 | `matrix_l1=56`，`vector_l1=36` |
+| Transformer 端到端测试 | `TB_TRANSFORMER_E2E_PASS` |
+| Transformer 指令与批次 | `commands=41`，`batches=6` |
+| Transformer AXI Master 访问 | `master_reads=1544`，`master_writes=8` |
 
-Transformer 旧构建的 41 条指令测试结果：
+Transformer 中间值和最终输出：
 
 ```text
 score=[14,-5,-5,30]
@@ -313,21 +313,16 @@ context=[2,-1,3,0,-2,4,1,3]
 int8=[7,-8,13,-14,-3,4,1,5]
 ```
 
-最新 RTL 的 `make clean && make test` 结果：待实现结果。
+这些回归结果说明新增寄存阶段没有改变已覆盖任务的结果、错误状态和 AXI 访问次数。时序调整完成后仍需再次运行相同测试，并在最终 RTL 上完成 UVM 回归。
 
-## 7. 综合警告
+## 9. 工具警告与使用限制
 
-初始版本日志已经确认以下类别：
+基线 Methodology 报告记录了组合 LUT 驱动异步清除、大量 setup 失败路径、未识别的跨时钟结构、部分 I/O 延迟不完整、Block RAM 输出寄存器未并入 RAM 原语、宽乘法拆成多个 DSP 以及 Block RAM byte write enable 未推断等警告。
 
-- 前端部分数组无法推断为 Block RAM，工具改用寄存器；
-- 部分寄存器同时具有 set 和 reset；
-- 若干未使用寄存器被综合工具删除；
-- 首次 4 进程运行发生物理内存不足和大量主缺页。
+Out-of-Context 工程没有 SoC 顶层的真实时钟缓冲位置、芯片引脚位置和全部外围逻辑，因此端口路径与时钟偏差只是当前约束下的估算。不过基线、round2 与 round3 的最差 setup 起点和终点均位于 `core_clk` 时钟域内部，I/O 约束不完整不能解释这些内部失败路径。
 
-结构修改前基线的完整 Methodology 结果见 5.1.5。当前需要优先处理组合 LUT 驱动异步清除、Scheduler 大 setup 违例、跨时钟处理检查、I/O 延迟设置、Block RAM 输出寄存器和宽乘法器拆分等项目。
+## 10. 当前结论
 
-## 8. 当前结论
+结构调整前的完整布线结果为 WNS `-78.625 ns`。`build_pipeline_round2_synth` 的综合后 WNS 为 `-4.037 ns`，`build_pipeline_round3_synth` 进一步改善到 `-2.157 ns`，但仍未满足 100 MHz。round3 的主要剩余路径位于 Matrix、Complex 和 Vector 到 L1 的地址请求逻辑。
 
-结构修改前基线已经完成综合、布局、物理优化和布线。L1 使用 256 个 RAMB36E1，RAM 原语检查通过，hold 检查通过；setup 的 WNS 为 `-78.625 ns`，不满足 100 MHz。关键问题集中在 Scheduler 的 16-slot 组合扫描、64-bit 提交序号比较和逐项优先选择，相关逻辑还带来较高的 LUT 使用率和布线延迟。
-
-后续结果需要在 Scheduler、Matrix 和 DiP 调整完成并通过功能回归后，使用相同器件、周期、Vivado 版本和报告脚本重新生成。5.2 暂不填写，避免把结构修改前结果与调整后的 RTL 混在一起。
+针对上述路径的进一步拆分已经写入 RTL，下一次综合与最终布局布线的数字必须从实际报告填入第 7 节。在最终布线报告生成之前，本文不声明 100 MHz 已经满足。

@@ -229,6 +229,36 @@ module tb_npu_complex_engine;
              $signed(l1.mem['h1a0]),
              $signed(l1.mem['h1a1]));
 
+    l1.mem['h360] = 8'd0;
+    l1.mem['h361] = 8'd0;
+    l1.mem['h362] = 8'd0;
+    l1.mem['h368] = 8'd0;
+    l1.mem['h369] = 8'd0;
+    l1.mem['h36a] = 8'd0;
+    setup_fp_task(
+      NPU_COMPLEX_SOFTMAX, 32'd4,
+      64'h360, 64'd0, 64'd0, 64'h3a0, 32'd3,
+      32'h3f80_0000, 32'd0, 32'd0, 32'h3e80_0000, 32'd0
+    );
+    put32('h40, 32'd2);
+    put32('h50, 32'd8);
+    put32('h5c, 32'd8);
+    put32('h6c, 32'd2);
+    put32('hb4, 32'd0);
+    put32('hb8, 32'd0);
+    put32('hbc, 32'd1);
+    submit_and_expect(NPU_STATUS_SUCCESS);
+    if (done_progress != 6)
+      $fatal(1, "complex causal softmax progress %0d expected 6",
+             done_progress);
+    if ($signed(l1.mem['h3a0]) != 4 ||
+        $signed(l1.mem['h3a1]) != 0 ||
+        $signed(l1.mem['h3a2]) != 0 ||
+        $signed(l1.mem['h3a8]) != 2 ||
+        $signed(l1.mem['h3a9]) != 2 ||
+        $signed(l1.mem['h3aa]) != 0)
+      $fatal(1, "complex causal softmax row result mismatch");
+
     l1.mem['h120] = 8'hff;
     l1.mem['h121] = 8'h01;
     l1.mem['h130] = 8'h01;
@@ -247,6 +277,35 @@ module tb_npu_complex_engine;
       $fatal(1, "complex layernorm mismatch: %0d %0d",
              $signed(l1.mem['h1b0]),
              $signed(l1.mem['h1b1]));
+
+    l1.mem['h300] = 8'd1;
+    l1.mem['h301] = 8'd2;
+    l1.mem['h302] = 8'd3;
+    l1.mem['h308] = 8'hff;
+    l1.mem['h309] = 8'hfe;
+    l1.mem['h30a] = 8'd4;
+    setup_fp_task(
+      NPU_COMPLEX_STAT, 32'd7,
+      64'h300, 64'd0, 64'd0, 64'h340, 32'd3,
+      32'd0, 32'd0, 32'd0, 32'd0, 32'd0
+    );
+    put32('h38, 32'h0000_1095);
+    put32('h40, 32'd2);
+    put32('h50, 32'd8);
+    put32('h5c, 32'd8);
+    submit_and_expect(NPU_STATUS_SUCCESS);
+    if (done_progress != 2)
+      $fatal(1, "complex stat progress %0d expected 2",
+             done_progress);
+    if ($signed({
+          l1.mem['h343], l1.mem['h342],
+          l1.mem['h341], l1.mem['h340]
+        }) != 32'sd6 ||
+        $signed({
+          l1.mem['h34b], l1.mem['h34a],
+          l1.mem['h349], l1.mem['h348]
+        }) != 32'sd1)
+      $fatal(1, "complex stat row address mismatch");
 
     setup_fp_task(
       NPU_COMPLEX_ACT, 32'd0,

@@ -294,6 +294,7 @@ module npu_single_core_top #(
     logic [2:0] mif_error_status;
 
     logic scheduler_idle;
+    logic scheduler_quiescent;
     logic [15:0] task_occupancy;
     logic completion_valid;
     logic completion_ready;
@@ -602,7 +603,7 @@ module npu_single_core_top #(
     ) u_task_scheduler (
         .clk_i(core_clk_i),
         .reset_n(functional_reset_n),
-        .enable_i(accept_new_cmd_o),
+        .enable_i(accept_new_cmd_o || !cfe_idle),
         .quiesce_i(ts_quiesce),
         .abort_i(|eng_abort),
         .cfe_cmd_valid_i(cfe_ts_cmd_valid),
@@ -702,6 +703,7 @@ module npu_single_core_top #(
         .task_ack_command_id_i(task_ack_command_id),
         .task_ack_ready_o(task_ack_ready),
         .scheduler_idle_o(scheduler_idle),
+        .scheduler_quiescent_o(scheduler_quiescent),
         .task_occupancy_o(task_occupancy)
     );
 
@@ -727,7 +729,7 @@ module npu_single_core_top #(
         .cmd_ingress_idle_i(cmd_ingress_idle),
         .cfe_idle_i(cfe_idle),
         .ts_idle_i(scheduler_idle),
-        .ts_quiescent_i(scheduler_idle),
+        .ts_quiescent_i(scheduler_quiescent),
         .eng_quiescent_i({
             complex_task_ready,
             vector_task_ready,

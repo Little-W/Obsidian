@@ -10,6 +10,7 @@ module tb_cmd_frontend_smoke;
   logic cmd_first;
   logic cmd_last;
   logic cmd_rsp_valid;
+  logic cmd_rsp_ready;
   logic [63:0] cmd_rsp_data;
   logic ts_cmd_valid;
   logic ts_cmd_ready;
@@ -59,7 +60,7 @@ module tb_cmd_frontend_smoke;
     .axi_cmd_first_i(cmd_first),
     .axi_cmd_last_i(cmd_last),
     .axi_cmd_rsp_valid_o(cmd_rsp_valid),
-    .axi_cmd_rsp_ready_i(1'b1),
+    .axi_cmd_rsp_ready_i(cmd_rsp_ready),
     .axi_cmd_rsp_data_o(cmd_rsp_data),
     .ts_cmd_valid_o(ts_cmd_valid),
     .ts_cmd_ready_i(ts_cmd_ready),
@@ -128,6 +129,23 @@ module tb_cmd_frontend_smoke;
     end
   endtask
 
+  task automatic check_cmd_response_with_free(
+    input logic [11:0] expected_id,
+    input logic [7:0] expected_status,
+    input logic [7:0] expected_free_entries
+  );
+    begin
+      check_cmd_response(expected_id, expected_status);
+      if (cmd_rsp_data[27:20] != expected_free_entries) begin
+        $fatal(
+          1,
+          "CFE free-entry count mismatch: expected=%0d actual=%0d",
+          expected_free_entries, cmd_rsp_data[27:20]
+        );
+      end
+    end
+  endtask
+
   task automatic send_cmd_beat(
     input logic [63:0] data,
     input logic first,
@@ -149,11 +167,35 @@ module tb_cmd_frontend_smoke;
     end
   endtask
 
+  task automatic submit_command(
+    input logic [127:0] command,
+    input logic [7:0] expected_status,
+    input logic [7:0] expected_free_entries
+  );
+    begin
+      expected_lookup_id = command[121:112];
+      send_cmd_beat(command[63:0], 1'b1, 1'b0);
+      send_cmd_beat(command[127:64], 1'b0, 1'b1);
+      wait (cmd_rsp_valid);
+      check_cmd_response_with_free(
+        {2'd0, command[121:112]},
+        expected_status,
+        expected_free_entries
+      );
+      @(posedge clk);
+    end
+  endtask
+
   initial begin
     logic [63:0] low_word;
     logic [63:0] high_word;
     logic [127:0] command;
     logic [79:0] command_payload;
+    logic [127:0] queued_commands [0:7];
+    logic [127:0] simultaneous_commands [0:2];
+    logic [127:0] replace_commands [0:1];
+    logic [127:0] stalled_command;
+    logic [63:0] held_response;
 
     clk            = 1'b0;
     reset_n        = 1'b0;
@@ -161,6 +203,7 @@ module tb_cmd_frontend_smoke;
     cmd_data       = 64'd0;
     cmd_first      = 1'b0;
     cmd_last       = 1'b0;
+    cmd_rsp_ready  = 1'b1;
     ts_cmd_ready   = 1'b0;
     lookup_ready   = 1'b1;
     expected_lookup_id = 10'h001;
@@ -225,6 +268,193 @@ module tb_cmd_frontend_smoke;
     @(posedge clk);
     @(negedge clk);
     ts_cmd_ready = 1'b0;
+
+    command = make_command(
+      6'd5, 10'h0f0, NPU_DTYPE_INT8, command_payload
+    );
+    expected_lookup_id = 10'h0f0;
+    cmd_rsp_ready = 1'b0;
+    send_cmd_beat(command[63:0], 1'b1, 1'b0);
+    send_cmd_beat(command[127:64], 1'b0, 1'b1);
+    wait (cmd_rsp_valid);
+    check_cmd_response_with_free(
+      12'h0f0, NPU_STATUS_SUCCESS, 8'd7
+    );
+    held_response = cmd_rsp_data;
+    wait (ts_cmd_valid);
+    @(negedge clk);
+    ts_cmd_ready = 1'b1;
+    @(posedge clk);
+    @(negedge clk);
+    ts_cmd_ready = 1'b0;
+    repeat (3) begin
+      @(posedge clk);
+      if (!cmd_rsp_valid || (cmd_rsp_data != held_response)) begin
+        $fatal(1, "CFE response changed while backpressured");
+      end
+    end
+    @(negedge clk);
+    cmd_rsp_ready = 1'b1;
+    @(posedge clk);
+    @(negedge clk);
+    if (cmd_rsp_valid) begin
+      $fatal(1, "CFE response remained valid after its handshake");
+    end
+
+    for (int unsigned command_index = 0;
+         command_index < 8;
+         command_index++) begin
+      queued_commands[command_index] = make_command(
+        6'd5,
+        10'(10'h100 + command_index),
+        NPU_DTYPE_INT8,
+        command_payload
+      );
+      submit_command(
+        queued_commands[command_index],
+        NPU_STATUS_SUCCESS,
+        8'(7 - command_index)
+      );
+
+      if (command_index == 0) begin
+        wait (ts_cmd_valid);
+        stalled_command = ts_cmd;
+        repeat (4) begin
+          @(posedge clk);
+          if (!ts_cmd_valid || (ts_cmd != stalled_command)) begin
+            $fatal(1, "CFE output register changed while stalled");
+          end
+        end
+
+        submit_command(
+          queued_commands[0],
+          NPU_STATUS_BAD_DESC,
+          8'd7
+        );
+      end
+    end
+
+    command = make_command(
+      6'd5, 10'h108, NPU_DTYPE_INT8, command_payload
+    );
+    submit_command(command, NPU_STATUS_BAD_DESC, 8'd0);
+    if (!ts_cmd_valid || (ts_cmd != queued_commands[0])) begin
+      $fatal(1, "CFE full FIFO changed the pending output command");
+    end
+
+    @(negedge clk);
+    ts_cmd_ready = 1'b1;
+    for (int unsigned command_index = 0;
+         command_index < 8;
+         command_index++) begin
+      if (!ts_cmd_valid
+          || (ts_cmd != queued_commands[command_index])) begin
+        $fatal(
+          1,
+          "CFE continuous dequeue mismatch at command %0d",
+          command_index
+        );
+      end
+      @(posedge clk);
+      @(negedge clk);
+    end
+    ts_cmd_ready = 1'b0;
+    if (ts_cmd_valid) begin
+      $fatal(1, "CFE output stayed valid after continuous dequeue");
+    end
+
+    simultaneous_commands[0] = make_command(
+      6'd5, 10'h120, NPU_DTYPE_INT8, command_payload
+    );
+    simultaneous_commands[1] = make_command(
+      6'd5, 10'h121, NPU_DTYPE_INT8, command_payload
+    );
+    simultaneous_commands[2] = make_command(
+      6'd5, 10'h122, NPU_DTYPE_INT8, command_payload
+    );
+    submit_command(
+      simultaneous_commands[0], NPU_STATUS_SUCCESS, 8'd7
+    );
+    submit_command(
+      simultaneous_commands[1], NPU_STATUS_SUCCESS, 8'd6
+    );
+
+    fork
+      begin
+        submit_command(
+          simultaneous_commands[2], NPU_STATUS_SUCCESS, 8'd6
+        );
+      end
+      begin
+        wait (u_cfe.state_q == 3'd4);
+        @(negedge clk);
+        if (!ts_cmd_valid
+            || (ts_cmd != simultaneous_commands[0])) begin
+          $fatal(1, "CFE lost the head command before paired transfer");
+        end
+        ts_cmd_ready = 1'b1;
+        @(posedge clk);
+        @(negedge clk);
+        ts_cmd_ready = 1'b0;
+      end
+    join
+
+    if (!ts_cmd_valid || (ts_cmd != simultaneous_commands[1])) begin
+      $fatal(1, "CFE failed to prefetch during paired enqueue/dequeue");
+    end
+    @(negedge clk);
+    ts_cmd_ready = 1'b1;
+    if (!ts_cmd_valid || (ts_cmd != simultaneous_commands[1])) begin
+      $fatal(1, "CFE returned the wrong first prefetched command");
+    end
+    @(posedge clk);
+    @(negedge clk);
+    if (!ts_cmd_valid || (ts_cmd != simultaneous_commands[2])) begin
+      $fatal(1, "CFE returned the wrong command after paired transfer");
+    end
+    @(posedge clk);
+    @(negedge clk);
+    ts_cmd_ready = 1'b0;
+    if (ts_cmd_valid) begin
+      $fatal(1, "CFE retained data after paired-transfer dequeue");
+    end
+
+    replace_commands[0] = make_command(
+      6'd5, 10'h130, NPU_DTYPE_INT8, command_payload
+    );
+    replace_commands[1] = make_command(
+      6'd5, 10'h131, NPU_DTYPE_INT8, command_payload
+    );
+    submit_command(replace_commands[0], NPU_STATUS_SUCCESS, 8'd7);
+    fork
+      begin
+        submit_command(
+          replace_commands[1], NPU_STATUS_SUCCESS, 8'd7
+        );
+      end
+      begin
+        wait (u_cfe.state_q == 3'd4);
+        @(negedge clk);
+        if (!ts_cmd_valid || (ts_cmd != replace_commands[0])) begin
+          $fatal(1, "CFE head changed before output replacement");
+        end
+        ts_cmd_ready = 1'b1;
+        @(posedge clk);
+        @(negedge clk);
+        ts_cmd_ready = 1'b0;
+      end
+    join
+    if (!ts_cmd_valid || (ts_cmd != replace_commands[1])) begin
+      $fatal(1, "CFE did not replace a consumed registered output");
+    end
+    @(negedge clk);
+    ts_cmd_ready = 1'b1;
+    @(posedge clk);
+    @(negedge clk);
+    ts_cmd_ready = 1'b0;
+    if (ts_cmd_valid) begin
+      $fatal(1, "CFE output remained valid after replacement dequeue");
+    end
 
     command[127:122] = 6'd11;
     command[121:112] = 10'h03b;
@@ -295,8 +525,8 @@ module tb_cmd_frontend_smoke;
 
     @(negedge clk);
 
-    if (!cfe_idle || (cmd_accepted_count != 2)
-        || (cfe_error_count != 6)) begin
+    if (!cfe_idle || (cmd_accepted_count != 16)
+        || (cfe_error_count != 8)) begin
       $fatal(
         1,
         "CFE state/count error: cfe_idle=%0b accepted=%0d errors=%0d",

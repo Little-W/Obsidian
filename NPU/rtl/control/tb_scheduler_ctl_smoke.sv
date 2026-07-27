@@ -90,6 +90,7 @@ module tb_scheduler_ctl_smoke;
   logic [11:0] task_ack_command_id;
   logic task_ack_ready;
   logic scheduler_idle;
+  logic scheduler_quiescent;
   logic [15:0] task_occupancy;
 
   always #5 clk = ~clk;
@@ -235,6 +236,7 @@ module tb_scheduler_ctl_smoke;
     .task_ack_ready_o(task_ack_ready),
 
     .scheduler_idle_o(scheduler_idle),
+    .scheduler_quiescent_o(scheduler_quiescent),
     .task_occupancy_o(task_occupancy)
   );
 
@@ -716,6 +718,30 @@ module tb_scheduler_ctl_smoke;
     reset_n = 1'b1;
     repeat (2) @(posedge clk);
 
+    @(negedge clk);
+    cfe_cmd = make_command(
+      6'd5, 10'h055, NPU_DTYPE_INT8, payload, 8'hff);
+    cfe_cmd_valid = 1'b1;
+    while (!cfe_cmd_ready) @(negedge clk);
+    @(posedge clk);
+    @(negedge clk);
+    if (!u_scheduler.cmd_admit_valid_q) begin
+      $fatal(1, "command was not captured by the admission stage");
+    end
+    cfe_cmd_valid = 1'b0;
+    cfe_cmd = 128'd0;
+    abort = 1'b1;
+    if (cfe_cmd_ready) begin
+      $fatal(1, "command ready remained asserted during abort");
+    end
+    @(posedge clk);
+    @(negedge clk);
+    if (u_scheduler.cmd_admit_valid_q || (task_occupancy != 16'd0)
+        || !scheduler_idle) begin
+      $fatal(1, "abort did not discard a pending admitted command");
+    end
+    abort = 1'b0;
+
     submit_command(make_command(
       6'd5, 10'h008, NPU_DTYPE_INT8, payload, 8'hff));
     wait ((dma_accepted_command_id_q == 12'h008) && dma_done_ready);
@@ -743,10 +769,22 @@ module tb_scheduler_ctl_smoke;
     @(posedge clk);
     @(negedge clk);
     abort = 1'b0;
-    receive_ctl(response);
-    if (response[7:0] != NPU_STATUS_ABORTED) begin
-      $fatal(1, "FENCE did not report an aborted captured task");
+    if (u_scheduler.ctl_active_q || ctl_rsp_valid) begin
+      $fatal(1, "abort did not cancel the active FENCE request");
     end
+    ctl_request(NPU_CTL_FENCE, 64'h1, 64'd100, response);
+    if (response[7:0] != NPU_STATUS_ABORTED) begin
+      $fatal(1, "new FENCE did not report the aborted task");
+    end
+    @(negedge clk);
+    abort = 1'b1;
+    complete_dma(NPU_STATUS_SUCCESS, 64'h999);
+    repeat (2) @(posedge clk);
+    if (!scheduler_quiescent || scheduler_idle ||
+        (task_occupancy == 16'd0)) begin
+      $fatal(1, "aborted terminal record blocked scheduler quiescence");
+    end
+    abort = 1'b0;
 
     $display(
       "PASS: scheduler WAIT, registered FENCE scan, QUERY and ACK signature=%0b",
@@ -763,7 +801,7 @@ module tb_scheduler_ctl_smoke;
         task_query_fault_addr, task_query_progress, task_query_user_tag,
         task_query_signal_event, task_query_error_info,
         task_query_done_flags, task_ack_ready,
-        scheduler_idle, task_occupancy
+        scheduler_idle, scheduler_quiescent, task_occupancy
       }
     );
     $finish;

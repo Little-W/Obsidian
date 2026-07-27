@@ -124,12 +124,16 @@ module tb_npu_matrix_engine;
   function automatic integer tiled_b_byte_offset(
     input logic [1:0] dtype,
     input integer row,
-    input integer col
+    input integer col,
+    input integer n_size
   );
     integer element_index;
+    integer n_tiles;
     begin
+      n_tiles = (n_size + 7) / 8;
       element_index =
-        (((col / 8) * 16 + row) * 8) + (col % 8);
+        ((((row / 16) * n_tiles + (col / 8)) * 16 +
+          (row % 16)) * 8) + (col % 8);
       if (dtype == NPU_DTYPE_INT4)
         return element_index / 2;
       if (dtype == NPU_DTYPE_INT8)
@@ -228,7 +232,7 @@ module tb_npu_matrix_engine;
             );
             address =
               b_base_addr + batch * b_batch_bytes +
-              tiled_b_byte_offset(dtype, row, col);
+              tiled_b_byte_offset(dtype, row, col, logical_n);
             write_packed_value(
               address, dtype, col[0],
               16'(fast_b_value(batch, row, col))
@@ -308,6 +312,262 @@ module tb_npu_matrix_engine;
         "DiP fast path PASS: dtype=%0d size=%0d batches=%0d",
         dtype, logical_n, batches
       );
+    end
+  endtask
+
+  task automatic run_scalar_tiled_b_case;
+    integer address;
+    integer expected;
+    begin
+      for (int byte_index = 'h500;
+           byte_index < 'h780;
+           byte_index++)
+        l1.mem[byte_index] = 8'd0;
+
+      l1.mem['h500] = 8'd2;
+      l1.mem['h501] = 8'hfd;
+      l1.mem['h510] = 8'hff;
+      l1.mem['h511] = 8'd4;
+      for (int batch = 0; batch < 2; batch++) begin
+        for (int col = 0; col < 9; col++) begin
+          address =
+            'h520 + batch * 'h100 +
+            tiled_b_byte_offset(NPU_DTYPE_INT8, 0, col, 9);
+          write_packed_value(
+            address, NPU_DTYPE_INT8, 1'b0,
+            16'(col + 1 + batch)
+          );
+          address =
+            'h520 + batch * 'h100 +
+            tiled_b_byte_offset(NPU_DTYPE_INT8, 1, col, 9);
+          write_packed_value(
+            address, NPU_DTYPE_INT8, 1'b0,
+            16'(2 * col - 4 - batch)
+          );
+        end
+      end
+
+      desc = '0;
+      opcode = NPU_MATRIX_BMM;
+      put8('h00, 8'h01);
+      put8('h01, 8'h02);
+      put16('h02, 16'd256);
+      put64('h08, 64'h500);
+      put64('h10, 64'h520);
+      put64('h20, 64'h700);
+      put32('h38, 32'h0000_0085);
+      put32('h40, 32'd1);
+      put32('h44, 32'd9);
+      put32('h48, 32'd2);
+      put32('h4c, 32'd2);
+      put32('h50, 32'd1);
+      put32('h54, 32'd1);
+      put32('h58, 32'd2);
+      put32('h5c, 32'h0000_0080);
+      put32('h60, 32'd2);
+      put32('h64, 32'd9);
+      put32('h68, 32'd36);
+      put64('h70, 64'h10);
+      put64('h78, 64'h100);
+      put64('h80, 64'h40);
+      put8('h90, 8'd0);
+      put8('h91, 8'd2);
+      put8('h92, 8'd4);
+      put8('h93, 8'd0);
+      put8('h94, 8'd0);
+      put8('h95, 8'd0);
+
+      submit_and_expect(NPU_STATUS_SUCCESS);
+      if (dut.dip_task_count_q != 0)
+        $fatal(1, "scalar tiled-B case unexpectedly used DiP");
+      if (done_progress != 18)
+        $fatal(1, "scalar tiled-B progress %0d expected 18",
+               done_progress);
+      for (int batch = 0; batch < 2; batch++) begin
+        for (int col = 0; col < 9; col++) begin
+          expected = batch == 0 ? 14 - 4 * col : 7 * col - 22;
+          address = 'h700 + batch * 'h40 + col * 4;
+          if (read_s32(address) != expected)
+            $fatal(
+              1,
+              "scalar tiled-B batch=%0d col=%0d got=%0d expected=%0d",
+              batch, col, read_s32(address), expected
+            );
+        end
+      end
+    end
+  endtask
+
+  task automatic run_scalar_tiled_rollover_case(
+    input logic [1:0] dtype,
+    input logic [7:0] a_pack,
+    input logic [7:0] b_pack
+  );
+    integer a_stride;
+    integer b_stride;
+    integer address;
+    integer expected;
+    integer before_count;
+    integer numeric;
+    begin
+      case (dtype)
+        NPU_DTYPE_INT16: begin
+          a_stride = 34;
+          b_stride = 18;
+        end
+        NPU_DTYPE_INT8: begin
+          a_stride = 17;
+          b_stride = 9;
+        end
+        default: begin
+          a_stride = 9;
+          b_stride = 5;
+        end
+      endcase
+
+      for (int byte_index = 'h700;
+           byte_index < 'hc40;
+           byte_index++)
+        l1.mem[byte_index] = 8'd0;
+
+      for (int k = 0; k < 17; k++) begin
+        address = 'h700 + packed_byte_offset(dtype, k);
+        write_packed_value(
+          address, dtype, k[0], 16'((k % 7) - 3)
+        );
+        for (int col = 0; col < 9; col++) begin
+          address =
+            'h800 + tiled_b_byte_offset(dtype, k, col, 9);
+          write_packed_value(
+            address, dtype, col[0],
+            16'(((3 * k + 2 * col) % 5) - 2)
+          );
+        end
+      end
+
+      desc = '0;
+      opcode = NPU_MATRIX_GEMM;
+      put8('h00, 8'h01);
+      put8('h01, 8'h02);
+      put16('h02, 16'd256);
+      put64('h08, 64'h700);
+      put64('h10, 64'h800);
+      put64('h20, 64'hc00);
+      numeric = {
+        24'd0,
+        NPU_DTYPE_INT32,
+        NPU_DTYPE_INT32,
+        dtype,
+        dtype
+      };
+      put32('h38, numeric);
+      put32('h40, 32'd1);
+      put32('h44, 32'd9);
+      put32('h48, 32'd17);
+      put32('h4c, 32'd1);
+      put32('h50, 32'd1);
+      put32('h54, 32'd1);
+      put32('h58, 32'd1);
+      put32('h5c, 32'h0000_0080);
+      put32('h60, a_stride);
+      put32('h64, b_stride);
+      put32('h68, 32'd36);
+      put8('h90, a_pack);
+      put8('h91, b_pack);
+      put8('h92, 8'd4);
+      put8('h93, 8'd0);
+      put8('h94, 8'd0);
+      put8('h95, 8'd0);
+
+      before_count = dut.dip_task_count_q;
+      submit_and_expect(NPU_STATUS_SUCCESS);
+      if (dut.dip_task_count_q != before_count)
+        $fatal(1, "tiled rollover case unexpectedly used DiP");
+      if (done_progress != 9)
+        $fatal(1, "tiled rollover progress %0d expected 9",
+               done_progress);
+      for (int col = 0; col < 9; col++) begin
+        expected = 0;
+        for (int k = 0; k < 17; k++)
+          expected +=
+            ((k % 7) - 3) *
+            (((3 * k + 2 * col) % 5) - 2);
+        address = 'hc00 + col * 4;
+        if (read_s32(address) != expected)
+          $fatal(
+            1,
+            "tiled rollover dtype=%0d col=%0d got=%0d expected=%0d",
+            dtype, col, read_s32(address), expected
+          );
+      end
+    end
+  endtask
+
+  task automatic run_scalar_transpose_int4_case;
+    integer before_count;
+    begin
+      for (int byte_index = 'h500;
+           byte_index < 'h600;
+           byte_index++)
+        l1.mem[byte_index] = 8'd0;
+
+      l1.mem['h500] = 8'hf1;
+      l1.mem['h501] = 8'h02;
+      l1.mem['h502] = 8'h23;
+      l1.mem['h520] = 8'h01;
+      l1.mem['h521] = 8'h02;
+      l1.mem['h522] = 8'hf2;
+      l1.mem['h523] = 8'h01;
+      l1.mem['h524] = 8'h30;
+      l1.mem['h525] = 8'h01;
+
+      desc = '0;
+      opcode = NPU_MATRIX_GEMM;
+      put8('h00, 8'h01);
+      put8('h01, 8'h02);
+      put16('h02, 16'd256);
+      put64('h08, 64'h500);
+      put64('h10, 64'h520);
+      put64('h20, 64'h580);
+      put32('h38, 32'h0000_0080);
+      put32('h40, 32'd2);
+      put32('h44, 32'd3);
+      put32('h48, 32'd3);
+      put32('h4c, 32'd1);
+      put32('h50, 32'd2);
+      put32('h54, 32'd3);
+      put32('h58, 32'd3);
+      put32('h5c, 32'h0000_0083);
+      put32('h60, 32'd1);
+      put32('h64, 32'd2);
+      put32('h68, 32'd12);
+      put8('h90, 8'd1);
+      put8('h91, 8'd1);
+      put8('h92, 8'd4);
+      put8('h93, 8'd0);
+      put8('h94, 8'd0);
+      put8('h95, 8'd0);
+
+      before_count = dut.dip_task_count_q;
+      submit_and_expect(NPU_STATUS_SUCCESS);
+      if (dut.dip_task_count_q != before_count)
+        $fatal(1, "transpose case unexpectedly used DiP");
+      if (done_progress != 6)
+        $fatal(1, "transpose progress %0d expected 6",
+               done_progress);
+      if (read_s32('h580) != 7 ||
+          read_s32('h584) != 3 ||
+          read_s32('h588) != 9 ||
+          read_s32('h58c) != 3 ||
+          read_s32('h590) != 0 ||
+          read_s32('h594) != 2)
+        $fatal(
+          1,
+          "transpose INT4 mismatch: %0d %0d %0d %0d %0d %0d",
+          read_s32('h580), read_s32('h584),
+          read_s32('h588), read_s32('h58c),
+          read_s32('h590), read_s32('h594)
+        );
     end
   endtask
 
@@ -479,6 +739,18 @@ module tb_npu_matrix_engine;
     if (read_s32('h480) != -17 || read_s32('h484) != 8)
       $fatal(1, "matrix INT8xINT4 GEMM mismatch: %0d %0d",
              read_s32('h480), read_s32('h484));
+
+    run_scalar_tiled_b_case();
+    run_scalar_tiled_rollover_case(
+      NPU_DTYPE_INT4, 8'd1, 8'd3
+    );
+    run_scalar_tiled_rollover_case(
+      NPU_DTYPE_INT8, 8'd0, 8'd2
+    );
+    run_scalar_tiled_rollover_case(
+      NPU_DTYPE_INT16, 8'd5, 8'd6
+    );
+    run_scalar_transpose_int4_case();
 
     l1.mem['h600] = 8'h02;
     l1.mem['h601] = 8'h00;

@@ -76,15 +76,23 @@ module npu_l1buf #(
   logic grant_found;
   logic [CLIENT_W-1:0] grant_client;
   logic [19:0] grant_addr;
-  logic [16:0] grant_word;
-  logic [BANK_W-1:0] grant_bank;
-  logic [ROW_W-1:0] grant_row;
-  logic grant_bad_align;
-  logic grant_bad_range;
   logic grant_handshake;
   logic grant_write;
   logic [63:0] grant_wdata;
   logic [7:0] grant_wstrb;
+  logic request_valid_q;
+  logic [CLIENT_W-1:0] request_client_q;
+  logic request_write_q;
+  logic [19:0] request_addr_q;
+  logic [63:0] request_wdata_q;
+  logic [7:0] request_wstrb_q;
+  logic request_bad_align;
+  logic request_bad_range;
+  logic [16:0] request_word;
+  logic [BANK_W-1:0] request_bank;
+  logic [ROW_W-1:0] request_row;
+  logic [CLIENTS-1:0] request_complete_oh;
+  logic [CLIENTS-1:0] read_return_oh;
 
   logic [BANKS-1:0] bank_enable;
   logic [BANKS*64-1:0] bank_rdata;
@@ -102,6 +110,8 @@ module npu_l1buf #(
           && (client_idx >= int'(rr_client_q))
           && req_valid_i[client_idx]
           && (!rsp_valid_q[client_idx] || rsp_ready_i[client_idx])
+          && !(request_valid_q
+               && (request_client_q == CLIENT_W'(client_idx)))
           && !(read_pending_q
                && (read_client_q == CLIENT_W'(client_idx)))) begin
         grant_found  = 1'b1;
@@ -114,6 +124,8 @@ module npu_l1buf #(
           && (client_idx < int'(rr_client_q))
           && req_valid_i[client_idx]
           && (!rsp_valid_q[client_idx] || rsp_ready_i[client_idx])
+          && !(request_valid_q
+               && (request_client_q == CLIENT_W'(client_idx)))
           && !(read_pending_q
                && (read_client_q == CLIENT_W'(client_idx)))) begin
         grant_found  = 1'b1;
@@ -122,34 +134,27 @@ module npu_l1buf #(
     end
   end
 
-  always_comb begin
-    req_ready_o = '0;
-    if (grant_found) begin
-      req_ready_o[grant_client] = 1'b1;
-    end
-  end
-
   assign grant_addr      = req_addr_i[grant_client*20 +: 20];
-  assign grant_word      = grant_addr[19:3];
-  assign grant_bank      = BANK_W'(grant_word % BANKS);
-  assign grant_row       = ROW_W'(grant_word / BANKS);
-  assign grant_bad_align = grant_addr[2:0] != 3'd0;
-  assign grant_bad_range = grant_addr > 20'(L1_BYTES - 8);
   assign grant_handshake = grant_found
                          && req_valid_i[grant_client]
                          && req_ready_o[grant_client];
   assign grant_write     = req_write_i[grant_client];
   assign grant_wdata     = req_wdata_i[grant_client*64 +: 64];
   assign grant_wstrb     = req_wstrb_i[grant_client*8 +: 8];
+  assign request_word    = request_addr_q[19:3];
+  assign request_bank    = BANK_W'(request_word % BANKS);
+  assign request_row     = ROW_W'(request_word / BANKS);
+  assign request_bad_align = request_addr_q[2:0] != 3'd0;
+  assign request_bad_range = request_addr_q > 20'(L1_BYTES - 8);
   assign read_bank_data  =
       bank_rdata[read_bank_q*64 +: 64];
 
   always_comb begin
     bank_enable = '0;
-    if (grant_handshake
-        && !grant_bad_align
-        && !grant_bad_range) begin
-      bank_enable[grant_bank] = 1'b1;
+    if (request_valid_q
+        && !request_bad_range
+        && !request_bad_align) begin
+      bank_enable[request_bank] = 1'b1;
     end
   end
 
@@ -161,10 +166,10 @@ module npu_l1buf #(
       ) u_bank (
         .clk_i(clk_i),
         .enable_i(bank_enable[bank]),
-        .write_i(grant_write),
-        .row_i(grant_row),
-        .wdata_i(grant_wdata),
-        .wstrb_i(grant_wstrb),
+        .write_i(request_write_q),
+        .row_i(request_row),
+        .wdata_i(request_wdata_q),
+        .wstrb_i(request_wstrb_q),
         .rdata_o(bank_rdata[bank*64 +: 64])
       );
     end
@@ -172,64 +177,94 @@ module npu_l1buf #(
 
   generate
     genvar client;
-    for (client = 0; client < CLIENTS; client++) begin : g_rsp_flat
+    for (client = 0; client < CLIENTS; client++) begin : g_client_rsp
+      assign req_ready_o[client] =
+          grant_found && (grant_client == CLIENT_W'(client));
+      assign request_complete_oh[client] =
+          request_valid_q
+          && (request_client_q == CLIENT_W'(client));
+      assign read_return_oh[client] =
+          read_pending_q && (read_client_q == CLIENT_W'(client));
+
       assign rsp_rdata_o[client*64 +: 64] = rsp_data_q[client];
       assign rsp_status_o[client*3 +: 3]  = rsp_status_q[client];
+
+      always_ff @(posedge clk_i or negedge reset_n) begin
+        if (!reset_n) begin
+          rsp_valid_q[client]  <= 1'b0;
+          rsp_data_q[client]   <= 64'd0;
+          rsp_status_q[client] <= NPU_L1_OK;
+        end else begin
+          if (rsp_valid_q[client] && rsp_ready_i[client]) begin
+            rsp_valid_q[client] <= 1'b0;
+          end
+
+          if (read_return_oh[client]) begin
+            rsp_valid_q[client]  <= 1'b1;
+            rsp_data_q[client]   <= read_bank_data;
+            rsp_status_q[client] <= NPU_L1_OK;
+          end
+
+          if (request_complete_oh[client]) begin
+            if (request_bad_align) begin
+              rsp_valid_q[client]  <= 1'b1;
+              rsp_data_q[client]   <= 64'd0;
+              rsp_status_q[client] <= NPU_L1_PROTOCOL_ERROR;
+            end else if (request_bad_range) begin
+              rsp_valid_q[client]  <= 1'b1;
+              rsp_data_q[client]   <= 64'd0;
+              rsp_status_q[client] <= NPU_L1_ADDR_FAULT;
+            end else if (request_write_q) begin
+              rsp_valid_q[client]  <= 1'b1;
+              rsp_data_q[client]   <= 64'd0;
+              rsp_status_q[client] <= NPU_L1_OK;
+            end
+          end
+        end
+      end
     end
   endgenerate
   assign rsp_valid_o = rsp_valid_q;
-  assign l1_idle_o   = (rsp_valid_q == '0) && !read_pending_q;
+  assign l1_idle_o   = (rsp_valid_q == '0)
+                     && !request_valid_q
+                     && !read_pending_q;
 
   always_ff @(posedge clk_i or negedge reset_n) begin
     if (!reset_n) begin
-      rsp_valid_q   <= '0;
-      rr_client_q   <= '0;
-      read_pending_q <= 1'b0;
-      read_client_q  <= '0;
-      read_bank_q    <= '0;
-      for (int unsigned client_idx = 0;
-           client_idx < CLIENTS; client_idx++) begin
-        rsp_data_q[client_idx]   <= 64'd0;
-        rsp_status_q[client_idx] <= NPU_L1_OK;
-      end
+      rr_client_q         <= '0;
+      request_valid_q     <= 1'b0;
+      request_client_q    <= '0;
+      request_write_q     <= 1'b0;
+      request_addr_q      <= 20'd0;
+      request_wdata_q     <= 64'd0;
+      request_wstrb_q     <= 8'd0;
+      read_pending_q      <= 1'b0;
+      read_client_q       <= '0;
+      read_bank_q         <= '0;
     end else begin
-      for (int unsigned client_idx = 0;
-           client_idx < CLIENTS; client_idx++) begin
-        if (rsp_valid_q[client_idx] && rsp_ready_i[client_idx]) begin
-          rsp_valid_q[client_idx] <= 1'b0;
-        end
-      end
-
+      request_valid_q <= grant_handshake;
       read_pending_q <= 1'b0;
-      if (read_pending_q) begin
-        rsp_valid_q[read_client_q]  <= 1'b1;
-        rsp_data_q[read_client_q]   <= read_bank_data;
-        rsp_status_q[read_client_q] <= NPU_L1_OK;
-      end
 
       if (grant_handshake) begin
-        if (grant_bad_align) begin
-          rsp_valid_q[grant_client]  <= 1'b1;
-          rsp_data_q[grant_client]   <= 64'd0;
-          rsp_status_q[grant_client] <= NPU_L1_PROTOCOL_ERROR;
-        end else if (grant_bad_range) begin
-          rsp_valid_q[grant_client]  <= 1'b1;
-          rsp_data_q[grant_client]   <= 64'd0;
-          rsp_status_q[grant_client] <= NPU_L1_ADDR_FAULT;
-        end else if (grant_write) begin
-          rsp_valid_q[grant_client]  <= 1'b1;
-          rsp_data_q[grant_client]   <= 64'd0;
-          rsp_status_q[grant_client] <= NPU_L1_OK;
-        end else begin
-          read_pending_q <= 1'b1;
-          read_client_q  <= grant_client;
-          read_bank_q    <= grant_bank;
-        end
+        request_client_q    <= grant_client;
+        request_write_q     <= grant_write;
+        request_addr_q      <= grant_addr;
+        request_wdata_q     <= grant_wdata;
+        request_wstrb_q     <= grant_wstrb;
         if (grant_client == CLIENT_W'(CLIENTS-1)) begin
           rr_client_q <= '0;
         end else begin
           rr_client_q <= grant_client + 1'b1;
         end
+      end
+
+      if (request_valid_q
+          && !request_bad_align
+          && !request_bad_range
+          && !request_write_q) begin
+        read_pending_q <= 1'b1;
+        read_client_q  <= request_client_q;
+        read_bank_q    <= request_bank;
       end
     end
   end

@@ -23,6 +23,14 @@ module tb_npu_vector_engine;
   logic l1_rsp_ready;
   logic [63:0] l1_rsp_rdata;
   logic [2:0] l1_rsp_status;
+  integer address_prep_count;
+  integer address_prep_before;
+  integer l1_request_count;
+  integer l1_request_before;
+
+  localparam logic [5:0] VECTOR_ST_ADDR_PREP = 6'd29;
+  localparam logic [5:0] VECTOR_ST_ADDR_FINAL = 6'd30;
+  localparam logic [5:0] VECTOR_ST_ADDR_CHECK = 6'd31;
 
   npu_vector_engine dut (
     .clk_i(clk),
@@ -51,7 +59,7 @@ module tb_npu_vector_engine;
 
   npu_single_beat_memory_model #(
     .ADDR_W(20),
-    .MEM_BYTES(4096)
+    .MEM_BYTES(1048576)
   ) l1 (
     .clk_i(clk),
     .reset_n(reset_n),
@@ -68,6 +76,13 @@ module tb_npu_vector_engine;
   );
 
   always #5 clk = ~clk;
+
+  always_ff @(posedge clk or negedge reset_n) begin
+    if (!reset_n)
+      l1_request_count <= 0;
+    else if (l1_req_valid && l1_req_ready)
+      l1_request_count <= l1_request_count + 1;
+  end
 
   task automatic put8(input integer offset, input logic [7:0] value);
     desc[offset * 8 +: 8] = value;
@@ -165,7 +180,10 @@ module tb_npu_vector_engine;
     end
   endtask
 
-  task automatic submit_and_expect(input logic [7:0] expected_status);
+  task automatic submit_and_expect_result(
+    input logic [7:0] expected_status,
+    input logic [47:0] expected_fault_addr
+  );
     integer timeout;
     begin
       timeout = 0;
@@ -182,17 +200,29 @@ module tb_npu_vector_engine;
       timeout = 0;
       while (!done_valid && timeout < 10000) begin
         @(posedge clk);
+        if (dut.state_q == VECTOR_ST_ADDR_PREP)
+          address_prep_count = address_prep_count + 1;
+        if (dut.state_q == VECTOR_ST_ADDR_PREP ||
+            dut.state_q == VECTOR_ST_ADDR_FINAL ||
+            dut.state_q == VECTOR_ST_ADDR_CHECK) begin
+          if (l1_req_valid)
+            $fatal(1, "address preparation issued an L1 request");
+        end
         timeout = timeout + 1;
       end
       if (!done_valid)
         $fatal(1, "vector done timeout");
       if (done_status !== expected_status)
-        $fatal(1, "vector status %02x expected %02x",
-               done_status, expected_status);
-      if (done_fault_addr !== 48'd0)
-        $fatal(1, "vector unexpected fault address %012x",
-               done_fault_addr);
+        $fatal(1, "vector status %02x expected %02x fault %012x",
+               done_status, expected_status, expected_fault_addr);
+      if (done_fault_addr !== expected_fault_addr)
+        $fatal(1, "vector fault address %012x expected %012x",
+               done_fault_addr, expected_fault_addr);
     end
+  endtask
+
+  task automatic submit_and_expect(input logic [7:0] expected_status);
+    submit_and_expect_result(expected_status, 48'd0);
   endtask
 
   initial begin
@@ -203,6 +233,8 @@ module tb_npu_vector_engine;
     opcode = NPU_VECTOR_ADD;
     command_id = 12'h101;
     desc = '0;
+    address_prep_count = 0;
+    l1_request_count = 0;
     repeat (4) @(posedge clk);
     reset_n = 1'b1;
 
@@ -281,6 +313,22 @@ module tb_npu_vector_engine;
         l1.mem['h242] != 8'h06)
       $fatal(1, "vector INT4 ADD mismatch: %02x %02x %02x",
              l1.mem['h240], l1.mem['h241], l1.mem['h242]);
+
+    l1.mem['h260] = 8'h21;
+    l1.mem['h261] = 8'h43;
+    l1.mem['h262] = 8'ha5;
+    l1.mem['h270] = 8'h11;
+    l1.mem['h271] = 8'h11;
+    l1.mem['h272] = 8'h01;
+    put64('h08, 64'h260);
+    put64('h10, 64'h270);
+    put64('h20, 64'h260);
+    submit_and_expect(NPU_STATUS_SUCCESS);
+    if (l1.mem['h260] != 8'h32 ||
+        l1.mem['h261] != 8'h54 ||
+        l1.mem['h262] != 8'ha6)
+      $fatal(1, "vector INT4 in-place ADD mismatch: %02x %02x %02x",
+             l1.mem['h260], l1.mem['h261], l1.mem['h262]);
 
     setup_int8_vector_task(
       NPU_VECTOR_SUB, 64'h280, 32'h0000_0045, 32'd0,
@@ -426,6 +474,102 @@ module tb_npu_vector_engine;
              $signed({l1.mem['h3c3], l1.mem['h3c2]}),
              $signed({l1.mem['h3c5], l1.mem['h3c4]}),
              $signed({l1.mem['h3c7], l1.mem['h3c6]}));
+
+    l1.mem['h500] = 8'h10;
+    l1.mem['h501] = 8'h32;
+    l1.mem['h504] = 8'h40;
+    l1.mem['h505] = 8'h05;
+    l1.mem['h520] = 8'h32;
+    l1.mem['h521] = 8'h04;
+    l1.mem['h524] = 8'h76;
+    put_s32('h540, 32'sd10);
+    put_s32('h544, 32'sd20);
+    put_s32('h548, 32'sd30);
+    put_s32('h550, 32'sd40);
+    put_s32('h554, 32'sd50);
+    l1.mem['h5c0] = 8'd1;
+    l1.mem['h5c1] = 8'd1;
+    l1.mem['h5c2] = 8'd1;
+    l1.mem['h5c4] = 8'd1;
+    l1.mem['h5c5] = 8'd1;
+
+    desc = '0;
+    opcode = NPU_VECTOR_FMA;
+    put8('h00, 8'h01);
+    put8('h01, 8'h03);
+    put16('h02, 16'd192);
+    put64('h08, 64'h500);
+    put64('h10, 64'h520);
+    put64('h18, 64'h540);
+    put64('h20, 64'h580);
+    put64('h28, 64'h5c0);
+    put32('h38, 32'h0000_00a0);
+    put32('h40, 32'd2);
+    put32('h44, 32'd3);
+    put32('h48, 32'd2);
+    put32('h4c, 32'd1);
+    put32('h50, 32'd0);
+    put32('h54, 32'd4);
+    put32('h58, 32'd0);
+    put32('h5c, 32'd4);
+    put32('h60, 32'd4);
+    put32('h64, 32'd16);
+    put32('h68, 32'd4);
+    put32('h6c, 32'd16);
+    put8('h7a, 8'd0);
+    put8('h7b, 8'd1);
+    put8('h7c, 8'd1);
+    put32('h90, 32'd1);
+    put32('h94, 32'd4);
+    address_prep_before = address_prep_count;
+    submit_and_expect(NPU_STATUS_SUCCESS);
+    if (done_progress != 5)
+      $fatal(1, "vector address-prep progress %0d expected 5",
+             done_progress);
+    if (address_prep_count - address_prep_before != 5)
+      $fatal(1, "address preparation count %0d expected 5",
+             address_prep_count - address_prep_before);
+    if (read_s32('h580) != 12 || read_s32('h584) != 26 ||
+        read_s32('h588) != 42 || read_s32('h590) != 64 ||
+        read_s32('h594) != 85)
+      $fatal(1, "vector registered-address FMA mismatch");
+
+    setup_int8_vector_task(
+      NPU_VECTOR_RELU, 64'h680, 32'h0000_0045, 32'd0,
+      64'd0, 64'd0, 32'sd0, 32'sd0, 8'd0, 8'd0
+    );
+    put32('h44, 32'd2);
+    put32('h48, 32'd2);
+    put32('h50, 32'h0010_0000);
+    l1_request_before = l1_request_count;
+    submit_and_expect_result(NPU_STATUS_ADDR_FAULT, 48'h0010_0100);
+    if (l1_request_count - l1_request_before != 2)
+      $fatal(1, "out-of-range element issued an L1 request");
+
+    setup_int8_vector_task(
+      NPU_VECTOR_RELU, 64'h700, 32'h0000_00aa, 32'd0,
+      64'd0, 64'd0, 32'sd0, 32'sd0, 8'd0, 8'd0
+    );
+    put64('h08, 64'h105);
+    put32('h44, 32'd1);
+    put32('h48, 32'd1);
+    put32('h50, 32'd4);
+    put32('h54, 32'd4);
+    put32('h68, 32'd4);
+    put32('h6c, 32'd4);
+    l1_request_before = l1_request_count;
+    submit_and_expect_result(NPU_STATUS_ADDR_FAULT, 48'h105);
+    if (l1_request_count != l1_request_before)
+      $fatal(1, "cross-beat element issued an L1 request");
+
+    setup_int8_vector_task(
+      NPU_VECTOR_MUL, 64'h000f_fff8, 32'h0000_0085, 32'd0,
+      64'd0, 64'd0, 32'sd0, 32'sd0, 8'd0, 8'd0
+    );
+    l1_request_before = l1_request_count;
+    submit_and_expect_result(NPU_STATUS_ADDR_FAULT, 48'h0010_0000);
+    if (l1_request_count - l1_request_before != 3)
+      $fatal(1, "out-of-range fast write issued an L1 request");
 
     $display("tb_npu_vector_engine PASS");
     $finish;

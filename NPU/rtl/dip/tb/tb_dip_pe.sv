@@ -22,6 +22,10 @@ module tb_dip_pe;
   logic signed [15:0] data_out;
   logic signed [15:0] weight_out;
   logic signed [63:0] psum_out;
+  logic [1:0] segmented_mode;
+  logic [63:0] segmented_a;
+  logic [63:0] segmented_b;
+  logic [63:0] segmented_sum;
 
   dip_pe dut (
     .clk_i(clk),
@@ -40,6 +44,13 @@ module tb_dip_pe;
     .data_o(data_out),
     .weight_o(weight_out),
     .psum_o(psum_out)
+  );
+
+  dip_segmented_adder64 u_segmented_adder (
+    .mode_i(segmented_mode),
+    .a_i(segmented_a),
+    .b_i(segmented_b),
+    .sum_o(segmented_sum)
   );
 
   always #5 clk = ~clk;
@@ -112,10 +123,41 @@ module tb_dip_pe;
     data_neighbor = '0;
     weight_in = '0;
     psum_in = '0;
+    segmented_mode = MODE_INT16;
+    segmented_a = '0;
+    segmented_b = '0;
 
     repeat (3) @(posedge clk);
     @(negedge clk);
     reset_n = 1'b1;
+
+    segmented_mode = MODE_INT16;
+    segmented_a = 64'h0000_ffff_ffff_ffff;
+    segmented_b = 64'h0000_0000_0000_0001;
+    #1;
+    if (segmented_sum !== 64'h0001_0000_0000_0000)
+      $fatal(1, "INT16 segmented add got %h", segmented_sum);
+
+    segmented_mode = MODE_INT8;
+    segmented_a = {32'h0000_0005, 32'hffff_ffff};
+    segmented_b = {32'h0000_0007, 32'h0000_0001};
+    #1;
+    if (segmented_sum !== {32'h0000_000c, 32'h0000_0000})
+      $fatal(1, "INT8 segmented add got %h", segmented_sum);
+
+    segmented_mode = MODE_INT4;
+    segmented_a = {16'h7fff, 16'hffff, 16'h1234, 16'hffff};
+    segmented_b = {16'h0001, 16'h0002, 16'h0001, 16'h0001};
+    #1;
+    if (segmented_sum !== {16'h8000, 16'h0001, 16'h1235, 16'h0000})
+      $fatal(1, "INT4 segmented add got %h", segmented_sum);
+
+    segmented_mode = 2'b11;
+    segmented_a = 64'h0000_0000_ffff_ffff;
+    segmented_b = 64'h0000_0000_0000_0001;
+    #1;
+    if (segmented_sum !== 64'h0000_0001_0000_0000)
+      $fatal(1, "default segmented add got %h", segmented_sum);
 
     // INT16: one signed product, one signed 64-bit temporary accumulator.
     mode = MODE_INT16;

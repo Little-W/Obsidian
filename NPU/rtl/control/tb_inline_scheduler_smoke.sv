@@ -61,6 +61,7 @@ module tb_inline_scheduler_smoke;
   logic [15:0] task_query_flags;
   logic task_ack_ready;
   logic scheduler_idle;
+  logic scheduler_quiescent;
   logic [15:0] task_occupancy;
   logic [127:0] decode_cmd;
   logic decode_valid;
@@ -212,6 +213,7 @@ module tb_inline_scheduler_smoke;
       @(negedge clk);
       cfe_cmd_valid = 1'b0;
       cfe_cmd = 128'd0;
+      while (dut.cmd_admit_valid_q) @(negedge clk);
     end
   endtask
 
@@ -335,6 +337,7 @@ module tb_inline_scheduler_smoke;
     .task_ack_command_id_i(12'd0),
     .task_ack_ready_o(task_ack_ready),
     .scheduler_idle_o(scheduler_idle),
+    .scheduler_quiescent_o(scheduler_quiescent),
     .task_occupancy_o(task_occupancy)
   );
 
@@ -568,11 +571,11 @@ module tb_inline_scheduler_smoke;
     repeat (10) @(posedge clk);
 
     /*
-     * Build a terminal Event, enqueue EVENT_REARM, wait for the shared
-     * selection scan to produce the Control pulse, then accept a new waiter
-     * on the exact cycle that the control task executes.  The waiter has
-     * priority over rearming: EVENT_REARM must fail, the Event must remain
-     * successful at its current generation, and the waiter must dispatch.
+     * Build a terminal Event and enqueue EVENT_REARM.  Hold a new waiter at
+     * the CFE input while the Control snapshot executes.  Admission pauses
+     * for that cycle, EVENT_REARM advances the Event generation, and the
+     * waiter is checked against the updated Event state after admission
+     * resumes.
      */
     event_command = make_command(
       6'd5, 10'h00b, NPU_DTYPE_INT8, dma_payload
@@ -606,73 +609,82 @@ module tb_inline_scheduler_smoke;
     );
     event_command[111:104] = 8'h08;
     scan_wait_cycles = 0;
-    while (!dut.control_select_found && (scan_wait_cycles < 256)) begin
+    while (!dut.control_exec_task_valid &&
+           (scan_wait_cycles < 256)) begin
       @(negedge clk);
       scan_wait_cycles++;
     end
-    if (!dut.control_select_found)
-      $fatal(1, "Control scan did not select EVENT_REARM within 256 cycles");
-    if ((dut.task_opcode_q[dut.control_select] !=
+    if (!dut.control_exec_task_valid)
+      $fatal(1, "Control execution did not select EVENT_REARM within 256 cycles");
+    if ((dut.task_opcode_q[dut.control_exec_slot_q] !=
          NPU_OPCODE_EVENT_REARM) ||
         (dut.control_rearm_current_ref != 12'h008)) begin
-      $fatal(1, "Control scan selected the wrong EVENT_REARM task");
+      $fatal(1, "Control execution selected the wrong EVENT_REARM task");
     end
     cfe_cmd = event_command;
     cfe_cmd_valid = 1'b1;
-    if (!cfe_cmd_ready)
-      $fatal(1, "scheduler was not ready for the concurrent Event waiter");
+    if (cfe_cmd_ready)
+      $fatal(1, "CFE admission was not paused for Control execution");
     @(posedge clk);
-    if (!dut.cmd_accept || !dut.cmd_static_valid ||
-        !dut.control_select_found ||
-        (dut.task_opcode_q[dut.control_select] !=
+    if (dut.cmd_capture ||
+        !dut.control_exec_task_valid ||
+        (dut.task_opcode_q[dut.control_exec_slot_q] !=
          NPU_OPCODE_EVENT_REARM) ||
-        (dut.control_rearm_current_ref != 12'h008) ||
-        (dut.cmd_wait0_resolved != 12'h008)) begin
+        (dut.control_rearm_current_ref != 12'h008)) begin
       $fatal(
         1,
-        "EVENT_REARM and the new waiter did not execute on the same cycle"
+        "CFE accepted a waiter while EVENT_REARM executed"
       );
     end
     @(negedge clk);
+    if (!cfe_cmd_ready)
+      $fatal(1, "CFE admission did not resume after Control execution");
+    if ((dut.event_state_q[8] != NPU_EVENT_FREE) ||
+        (dut.event_generation_q[8] != 4'd1)) begin
+      $fatal(1, "EVENT_REARM did not advance Event 8 to generation 1");
+    end
+    @(posedge clk);
+    @(negedge clk);
+    if (!dut.cmd_admit_valid_q ||
+        dut.cmd_admit_static_valid_q ||
+        (dut.cmd_admit_wait0_q != 12'h108)) begin
+      $fatal(
+        1,
+        "resumed waiter was not checked against Event generation 1"
+      );
+    end
     cfe_cmd_valid = 1'b0;
     cfe_cmd = 128'd0;
+    while (dut.cmd_admit_valid_q) @(negedge clk);
 
     wait (completion_valid && completion_command_id == 12'h00c);
     if ((completion_engine != NPU_ENGINE_CONTROL) ||
         (completion_opcode != NPU_OPCODE_EVENT_REARM) ||
-        (completion_status != NPU_STATUS_BAD_DESC)) begin
+        (completion_status != NPU_STATUS_SUCCESS)) begin
       $fatal(
         1,
-        "concurrent EVENT_REARM did not return BAD_DESC: status=%0d",
+        "EVENT_REARM did not complete successfully: status=%0d",
         completion_status
       );
     end
-    if ((dut.event_state_q[8] != NPU_EVENT_SUCCESS) ||
-        (dut.event_generation_q[8] != 4'd0)) begin
-      $fatal(1, "failed EVENT_REARM changed Event 8");
+    if ((dut.event_state_q[8] != NPU_EVENT_FREE) ||
+        (dut.event_generation_q[8] != 4'd1)) begin
+      $fatal(1, "completed EVENT_REARM changed Event 8 unexpectedly");
     end
 
-    wait (dma_task_valid && dma_task_command_id == 12'h00d);
-    if ((dut.event_state_q[8] != NPU_EVENT_SUCCESS) ||
-        (dut.event_generation_q[8] != 4'd0)) begin
-      $fatal(1, "Event 8 changed before the waiter dispatched");
-    end
-    @(negedge clk);
-    dma_task_ready = 1'b1;
-    @(posedge clk);
-    @(negedge clk);
-    dma_task_ready = 1'b0;
-    wait (dma_done_ready);
-    @(negedge clk);
-    dma_done_command_id = 12'h00d;
-    dma_done_valid = 1'b1;
-    @(posedge clk);
-    @(negedge clk);
-    dma_done_valid = 1'b0;
     wait (completion_valid && completion_command_id == 12'h00d);
-    if (completion_status != NPU_STATUS_SUCCESS)
-      $fatal(1, "Event waiter completed with status %0d",
+    if ((completion_engine != NPU_ENGINE_DMA) ||
+        (completion_opcode != NPU_OPCODE_DMA_COPY_1D) ||
+        (completion_status != NPU_STATUS_BAD_DESC)) begin
+      $fatal(1, "stale Event waiter completed with status %0d",
              completion_status);
+    end
+    if (dma_task_valid && dma_task_command_id == 12'h00d)
+      $fatal(1, "stale Event waiter reached the DMA engine");
+    if ((dut.event_state_q[8] != NPU_EVENT_FREE) ||
+        (dut.event_generation_q[8] != 4'd1)) begin
+      $fatal(1, "rejected waiter changed Event 8 generation");
+    end
 
     submit(make_command(6'd0, 10'h011, NPU_DTYPE_INT8, 80'd0));
 
@@ -763,7 +775,7 @@ module tb_inline_scheduler_smoke;
         task_query_found, task_query_state, task_query_status,
         task_query_fault, task_query_progress, task_query_tag,
         task_query_signal, task_query_error, task_query_flags,
-        task_ack_ready, scheduler_idle, task_occupancy,
+        task_ack_ready, scheduler_idle, scheduler_quiescent, task_occupancy,
         decode_cmd, decode_valid, decode_engine, decode_opcode, decode_desc
       }
     );

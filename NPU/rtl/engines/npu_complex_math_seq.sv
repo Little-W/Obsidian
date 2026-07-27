@@ -49,6 +49,10 @@ module npu_complex_math_seq (
     ST_ALU_RSP,
 
     ST_I2F_CONVERT,
+    ST_I2F_GROUP,
+    ST_I2F_BIT,
+    ST_I2F_ALIGN,
+    ST_I2F_ROUND,
     ST_I2F_MUL_START,
 
     ST_DIV_AFTER_RECIP,
@@ -57,6 +61,9 @@ module npu_complex_math_seq (
     ST_EXP_ENTRY,
     ST_EXP_RANGE_MUL_START,
     ST_EXP_RANGE_ROUND,
+    ST_EXP_RANGE_SHIFT,
+    ST_EXP_RANGE_INCREMENT,
+    ST_EXP_RANGE_COMMIT,
     ST_EXP_RANGE_FROM_INT,
     ST_EXP_HI_MUL_START,
     ST_EXP_HI_SUB_START,
@@ -169,7 +176,22 @@ module npu_complex_math_seq (
   logic [31:0] polynomial_q;
   logic [31:0] reduced_q;
   logic signed [10:0] exponent_q;
-  logic signed [63:0] rounded_integer_q;
+  logic round_sign_q;
+  logic [7:0] round_biased_exponent_q;
+  logic [23:0] round_significand_q;
+  logic [6:0] round_quotient_q;
+  logic [23:0] round_remainder_q;
+  logic [23:0] round_halfway_q;
+  logic [6:0] round_magnitude_q;
+  logic i2f_sign_q;
+  logic [31:0] i2f_magnitude_q;
+  logic [1:0] i2f_group_q;
+  logic [7:0] i2f_byte_q;
+  logic [4:0] i2f_leading_q;
+  logic [7:0] i2f_exponent_q;
+  logic [23:0] i2f_significand_q;
+  logic [7:0] i2f_remainder_q;
+  logic [7:0] i2f_halfway_q;
   logic [2:0] iteration_q;
   logic function_sign_q;
   logic recip_sign_q;
@@ -199,6 +221,45 @@ module npu_complex_math_seq (
       3'd4: return 32'h3f80_0000;
       default: return 32'h3f80_0000;
     endcase
+  endfunction
+
+  function automatic logic [31:0] fp32_from_exp_integer(
+    input logic       sign,
+    input logic [6:0] magnitude
+  );
+    logic [30:0] positive_value;
+    begin
+      case (magnitude)
+        7'd0:  positive_value = 31'h0000_0000;
+        7'd1:  positive_value = 31'h3f80_0000;
+        7'd2:  positive_value = 31'h4000_0000;
+        7'd3:  positive_value = 31'h4040_0000;
+        7'd4:  positive_value = 31'h4080_0000;
+        7'd5:  positive_value = 31'h40a0_0000;
+        7'd6:  positive_value = 31'h40c0_0000;
+        7'd7:  positive_value = 31'h40e0_0000;
+        7'd8:  positive_value = 31'h4100_0000;
+        7'd9:  positive_value = 31'h4110_0000;
+        7'd10: positive_value = 31'h4120_0000;
+        7'd11: positive_value = 31'h4130_0000;
+        7'd12: positive_value = 31'h4140_0000;
+        7'd13: positive_value = 31'h4150_0000;
+        7'd14: positive_value = 31'h4160_0000;
+        7'd15: positive_value = 31'h4170_0000;
+        7'd16: positive_value = 31'h4180_0000;
+        7'd17: positive_value = 31'h4188_0000;
+        7'd18: positive_value = 31'h4190_0000;
+        7'd19: positive_value = 31'h4198_0000;
+        7'd20: positive_value = 31'h41a0_0000;
+        7'd21: positive_value = 31'h41a8_0000;
+        7'd22: positive_value = 31'h41b0_0000;
+        7'd23: positive_value = 31'h41b8_0000;
+        default: positive_value = 31'h0000_0000;
+      endcase
+      return magnitude == 0
+        ? 32'h0000_0000
+        : {sign, positive_value};
+    end
   endfunction
 
   function automatic logic [31:0] tanh_small_coefficient(
@@ -273,9 +334,12 @@ module npu_complex_math_seq (
   );
 
   always_ff @(posedge clk_i or negedge reset_n) begin
-    logic signed [63:0] rounded_integer;
+    logic signed [10:0] staged_exponent;
     logic [31:0] magnitude;
     logic [31:0] clamped;
+    logic [5:0] i2f_shift;
+    logic [7:0] i2f_mask;
+    logic [24:0] i2f_rounded;
 
     if (!reset_n) begin
       state_q <= ST_IDLE;
@@ -299,7 +363,22 @@ module npu_complex_math_seq (
       polynomial_q <= 32'd0;
       reduced_q <= 32'd0;
       exponent_q <= 11'sd0;
-      rounded_integer_q <= 64'sd0;
+      round_sign_q <= 1'b0;
+      round_biased_exponent_q <= 8'd0;
+      round_significand_q <= 24'd0;
+      round_quotient_q <= 7'd0;
+      round_remainder_q <= 24'd0;
+      round_halfway_q <= 24'd0;
+      round_magnitude_q <= 7'd0;
+      i2f_sign_q <= 1'b0;
+      i2f_magnitude_q <= 32'd0;
+      i2f_group_q <= 2'd0;
+      i2f_byte_q <= 8'd0;
+      i2f_leading_q <= 5'd0;
+      i2f_exponent_q <= 8'd0;
+      i2f_significand_q <= 24'd0;
+      i2f_remainder_q <= 8'd0;
+      i2f_halfway_q <= 8'd1;
       iteration_q <= 3'd0;
       function_sign_q <= 1'b0;
       recip_sign_q <= 1'b0;
@@ -389,12 +468,105 @@ module npu_complex_math_seq (
           if (alu_rsp_valid) begin
             temp_q <= alu_result;
             state_q <= alu_resume_q;
-          end
+        end
 
         ST_I2F_CONVERT: begin
-          work0_q <= fp32_from_int(
-            $signed({{32{root_x_q[31]}}, root_x_q})
-          );
+          i2f_sign_q <= root_x_q[31];
+          i2f_magnitude_q <=
+            root_x_q[31] ?
+            (~root_x_q + 1'b1) :
+            root_x_q;
+          state_q <= ST_I2F_GROUP;
+        end
+
+        ST_I2F_GROUP: begin
+          if (i2f_magnitude_q == 0) begin
+            work0_q <= 32'd0;
+            state_q <= ST_I2F_MUL_START;
+          end else begin
+            if (|i2f_magnitude_q[31:24]) begin
+              i2f_group_q <= 2'd3;
+              i2f_byte_q <= i2f_magnitude_q[31:24];
+            end else if (|i2f_magnitude_q[23:16]) begin
+              i2f_group_q <= 2'd2;
+              i2f_byte_q <= i2f_magnitude_q[23:16];
+            end else if (|i2f_magnitude_q[15:8]) begin
+              i2f_group_q <= 2'd1;
+              i2f_byte_q <= i2f_magnitude_q[15:8];
+            end else begin
+              i2f_group_q <= 2'd0;
+              i2f_byte_q <= i2f_magnitude_q[7:0];
+            end
+            state_q <= ST_I2F_BIT;
+          end
+        end
+
+        ST_I2F_BIT: begin
+          casez (i2f_byte_q)
+            8'b1???_????:
+              i2f_leading_q <= {i2f_group_q, 3'd7};
+            8'b01??_????:
+              i2f_leading_q <= {i2f_group_q, 3'd6};
+            8'b001?_????:
+              i2f_leading_q <= {i2f_group_q, 3'd5};
+            8'b0001_????:
+              i2f_leading_q <= {i2f_group_q, 3'd4};
+            8'b0000_1???:
+              i2f_leading_q <= {i2f_group_q, 3'd3};
+            8'b0000_01??:
+              i2f_leading_q <= {i2f_group_q, 3'd2};
+            8'b0000_001?:
+              i2f_leading_q <= {i2f_group_q, 3'd1};
+            default:
+              i2f_leading_q <= {i2f_group_q, 3'd0};
+          endcase
+          state_q <= ST_I2F_ALIGN;
+        end
+
+        ST_I2F_ALIGN: begin
+          i2f_exponent_q <=
+            {3'd0, i2f_leading_q} + 8'd127;
+          if (i2f_leading_q <= 5'd23) begin
+            i2f_significand_q <=
+              24'(i2f_magnitude_q <<
+                  (5'd23 - i2f_leading_q));
+            i2f_remainder_q <= 8'd0;
+            i2f_halfway_q <= 8'd1;
+          end else begin
+            i2f_shift =
+              {1'b0, i2f_leading_q} - 6'd23;
+            i2f_significand_q <=
+              24'(i2f_magnitude_q >> i2f_shift);
+            i2f_mask =
+              (8'd1 << i2f_shift) - 1'b1;
+            i2f_remainder_q <=
+              i2f_magnitude_q[7:0] & i2f_mask;
+            i2f_halfway_q <=
+              8'd1 << (i2f_shift - 1'b1);
+          end
+          state_q <= ST_I2F_ROUND;
+        end
+
+        ST_I2F_ROUND: begin
+          i2f_rounded =
+            {1'b0, i2f_significand_q} + {
+              24'd0,
+              i2f_remainder_q > i2f_halfway_q ||
+              (i2f_remainder_q == i2f_halfway_q &&
+               i2f_significand_q[0])
+            };
+          if (i2f_rounded[24])
+            work0_q <= {
+              i2f_sign_q,
+              i2f_exponent_q + 1'b1,
+              i2f_rounded[23:1]
+            };
+          else
+            work0_q <= {
+              i2f_sign_q,
+              i2f_exponent_q,
+              i2f_rounded[22:0]
+            };
           state_q <= ST_I2F_MUL_START;
         end
 
@@ -433,14 +605,95 @@ module npu_complex_math_seq (
           );
 
         ST_EXP_RANGE_ROUND: begin
-          rounded_integer = fp32_to_int_round(temp_q, 2'd0);
-          exponent_q <= $signed(rounded_integer[10:0]);
-          rounded_integer_q <= rounded_integer;
+          /*
+           * ST_EXP_ENTRY limits x to [-16, 16].  Multiplication by
+           * log2(e) therefore gives a finite magnitude below 24.  Capture
+           * the FP32 fields here, then perform the shift, nearest-even
+           * increment, and sign application in separate cycles.  The
+           * seven-bit integer datapath covers every reachable result
+           * (-23 through 23) without the former 64-bit carry chains.
+           */
+          round_sign_q <= temp_q[31];
+          round_biased_exponent_q <= temp_q[30:23];
+          round_significand_q <=
+            temp_q[30:23] == 0 ?
+            {1'b0, temp_q[22:0]} :
+            {1'b1, temp_q[22:0]};
+          state_q <= ST_EXP_RANGE_SHIFT;
+        end
+
+        ST_EXP_RANGE_SHIFT: begin
+          round_quotient_q <= 7'd0;
+          round_remainder_q <= 24'd0;
+          round_halfway_q <= 24'd1;
+          case (round_biased_exponent_q)
+            8'd126: begin
+              round_remainder_q <= round_significand_q;
+              round_halfway_q <= 24'h80_0000;
+            end
+            8'd127: begin
+              round_quotient_q <=
+                {6'd0, round_significand_q[23]};
+              round_remainder_q <=
+                round_significand_q & 24'h7f_ffff;
+              round_halfway_q <= 24'h40_0000;
+            end
+            8'd128: begin
+              round_quotient_q <=
+                {5'd0, round_significand_q[23:22]};
+              round_remainder_q <=
+                round_significand_q & 24'h3f_ffff;
+              round_halfway_q <= 24'h20_0000;
+            end
+            8'd129: begin
+              round_quotient_q <=
+                {4'd0, round_significand_q[23:21]};
+              round_remainder_q <=
+                round_significand_q & 24'h1f_ffff;
+              round_halfway_q <= 24'h10_0000;
+            end
+            8'd130: begin
+              round_quotient_q <=
+                {3'd0, round_significand_q[23:20]};
+              round_remainder_q <=
+                round_significand_q & 24'h0f_ffff;
+              round_halfway_q <= 24'h08_0000;
+            end
+            8'd131: begin
+              round_quotient_q <=
+                {2'd0, round_significand_q[23:19]};
+              round_remainder_q <=
+                round_significand_q & 24'h07_ffff;
+              round_halfway_q <= 24'h04_0000;
+            end
+            default: begin end
+          endcase
+          state_q <= ST_EXP_RANGE_INCREMENT;
+        end
+
+        ST_EXP_RANGE_INCREMENT: begin
+          round_magnitude_q <= round_quotient_q + {
+            6'd0,
+            round_remainder_q > round_halfway_q ||
+            (round_remainder_q == round_halfway_q &&
+             round_quotient_q[0])
+          };
+          state_q <= ST_EXP_RANGE_COMMIT;
+        end
+
+        ST_EXP_RANGE_COMMIT: begin
+          staged_exponent =
+            round_sign_q ?
+            -$signed({4'd0, round_magnitude_q}) :
+            $signed({4'd0, round_magnitude_q});
+          exponent_q <= staged_exponent;
           state_q <= ST_EXP_RANGE_FROM_INT;
         end
 
         ST_EXP_RANGE_FROM_INT: begin
-          work1_q <= fp32_from_int(rounded_integer_q);
+          work1_q <= fp32_from_exp_integer(
+            round_sign_q, round_magnitude_q
+          );
           state_q <= ST_EXP_HI_MUL_START;
         end
 
