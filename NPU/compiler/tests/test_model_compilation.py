@@ -230,7 +230,7 @@ class EndToEndCompilerTests(unittest.TestCase):
             self.assertTrue(predecessor.name.startswith("__event_join_"))
             self.assertIn(predecessor.signal_event, current.wait_events)
 
-    def test_matrix_rows_are_split_without_changing_k_or_n(self) -> None:
+    def test_matrix_m_axis_over_64_uses_grouped_stages(self) -> None:
         document = {
             "schema_version": 1,
             "model": {"name": "matrix_rows"},
@@ -261,7 +261,7 @@ class EndToEndCompilerTests(unittest.TestCase):
         chunks = [
             operation
             for operation in result.assembled_operations
-            if operation.name.startswith("projection__batch_")
+            if operation.name.startswith("projection_product_")
         ]
         self.assertEqual(len(chunks), 2)
         self.assertEqual(
@@ -278,16 +278,56 @@ class EndToEndCompilerTests(unittest.TestCase):
         )
         x_base = result.tensors["x"].l1_addr
         y_base = result.tensors["y"].l1_addr
+        a_stages = [
+            result.tensors[f"__projection_blocks_a_{index}"].l1_addr
+            for index in range(2)
+        ]
+        output_stages = [
+            result.tensors[
+                f"__projection_blocks_out_{index}_0"
+            ].l1_addr
+            for index in range(2)
+        ]
         self.assertEqual(
             [((item.payload >> 66) & 0x3FFF) << 6 for item in chunks],
-            [x_base, x_base + 64 * 16],
+            a_stages,
         )
         self.assertEqual(
             [((item.payload >> 38) & 0x3FFF) << 6 for item in chunks],
-            [y_base, y_base + 64 * 8],
+            output_stages,
+        )
+        self.assertEqual(
+            len(
+                {
+                    (item.payload >> 52) & 0x3FFF
+                    for item in chunks
+                }
+            ),
+            1,
+        )
+        task_by_name = {task.name: task for task in result.tasks}
+        first_a = task_by_name["projection_stage_a_g0_r0_k0"]
+        second_a = task_by_name["projection_stage_a_g0_r1_k0"]
+        self.assertEqual(
+            first_a.descriptor["common"]["src0"]["addr"],
+            x_base,
+        )
+        self.assertEqual(
+            second_a.descriptor["common"]["src0"]["addr"],
+            x_base + 64 * 16,
+        )
+        first_store = task_by_name["projection_store_c_g0_r0_w0"]
+        second_store = task_by_name["projection_store_c_g0_r1_w0"]
+        self.assertEqual(
+            first_store.descriptor["common"]["dst"]["addr"],
+            y_base,
+        )
+        self.assertEqual(
+            second_store.descriptor["common"]["dst"]["addr"],
+            y_base + 64 * 8,
         )
 
-    def test_matrix_packed_b_axis_over_64_is_rejected(self) -> None:
+    def test_matrix_n_axis_over_64_uses_staged_output_blocks(self) -> None:
         document = {
             "schema_version": 1,
             "model": {"name": "wide_matrix"},
@@ -310,13 +350,293 @@ class EndToEndCompilerTests(unittest.TestCase):
             ],
             "outputs": ["y"],
         }
+        result = compiler.compile_model_document(
+            document, compiler.TargetConfig()
+        )
+        products = [
+            operation
+            for operation in result.assembled_operations
+            if operation.name.startswith("projection_product_")
+        ]
+        self.assertEqual(len(products), 2)
+        self.assertEqual(
+            [((item.payload >> 14) & 0x3F) + 1 for item in products],
+            [64, 1],
+        )
+        self.assertEqual(
+            [((item.payload >> 8) & 0x3F) + 1 for item in products],
+            [8, 8],
+        )
+        self.assertTrue(
+            all(
+                item.engine_opcode
+                == npu_assembler.OPCODES["matrix"]["GEMM"]
+                for item in products
+            )
+        )
+        stores = [
+            operation
+            for operation in result.assembled_operations
+            if operation.name.startswith("projection_store_c_")
+        ]
+        self.assertEqual(len(stores), 2)
+
+    def test_matrix_k_axis_over_64_uses_zero_and_accum(self) -> None:
+        document = {
+            "schema_version": 1,
+            "model": {"name": "deep_matrix"},
+            "inputs": [
+                {"name": "x", "shape": [2, 65], "dtype": "int8"}
+            ],
+            "constants": [
+                {
+                    "name": "weight",
+                    "shape": [65, 16],
+                    "dtype": "int8",
+                    "data": [1] * (65 * 16),
+                }
+            ],
+            "operators": [
+                {
+                    "name": "projection",
+                    "type": "MatMul",
+                    "inputs": ["x", "weight"],
+                    "outputs": ["y"],
+                }
+            ],
+            "outputs": ["y"],
+        }
+        result = compiler.compile_model_document(
+            document, compiler.TargetConfig()
+        )
+        products = [
+            operation
+            for operation in result.assembled_operations
+            if operation.name.startswith("projection_product_")
+        ]
+        self.assertEqual(len(products), 2)
+        self.assertEqual(
+            [item.engine_opcode for item in products],
+            [npu_assembler.OPCODES["matrix"]["GEMM_ACCUM"]] * 2,
+        )
+        self.assertEqual(
+            [((item.payload >> 8) & 0x3F) + 1 for item in products],
+            [64, 1],
+        )
+        self.assertEqual(
+            len(
+                [
+                    operation
+                    for operation in result.assembled_operations
+                    if operation.engine_opcode
+                    == npu_assembler.OPCODES["matrix"]["GEMM_ZERO"]
+                ]
+            ),
+            2,
+        )
+        accumulator_refs = {
+            (item.payload >> 38) & 0x3FFF for item in products
+        }
+        self.assertEqual(len(accumulator_refs), 1)
+        self.assertTrue(
+            any(
+                operation.name.startswith("projection_rescale_")
+                for operation in result.assembled_operations
+            )
+        )
+
+    def test_matrix_k_blocks_cover_int4_and_int16(self) -> None:
+        for dtype in ("int4", "int16"):
+            with self.subTest(dtype=dtype):
+                document = {
+                    "schema_version": 1,
+                    "model": {"name": f"deep_matrix_{dtype}"},
+                    "inputs": [
+                        {
+                            "name": "x",
+                            "shape": [2, 65],
+                            "dtype": dtype,
+                        }
+                    ],
+                    "constants": [
+                        {
+                            "name": "weight",
+                            "shape": [65, 16],
+                            "dtype": dtype,
+                            "data": [1] * (65 * 16),
+                        }
+                    ],
+                    "operators": [
+                        {
+                            "name": "projection",
+                            "type": "MatMul",
+                            "inputs": ["x", "weight"],
+                            "outputs": ["y"],
+                        }
+                    ],
+                    "outputs": ["y"],
+                }
+                result = compiler.compile_model_document(
+                    document, compiler.TargetConfig()
+                )
+                products = [
+                    operation
+                    for operation in result.assembled_operations
+                    if operation.name.startswith("projection_product_")
+                ]
+                self.assertEqual(len(products), 2)
+                self.assertTrue(
+                    all(
+                        operation.engine_opcode
+                        == npu_assembler.OPCODES["matrix"]["GEMM_ACCUM"]
+                        for operation in products
+                    )
+                )
+
+    def test_matrix_k_blocks_reject_unavailable_large_output_shift(
+        self,
+    ) -> None:
+        document = {
+            "schema_version": 1,
+            "model": {"name": "deep_matrix_shift"},
+            "inputs": [
+                {"name": "x", "shape": [2, 65], "dtype": "int8"}
+            ],
+            "constants": [
+                {
+                    "name": "weight",
+                    "shape": [65, 16],
+                    "dtype": "int8",
+                    "data": [1] * (65 * 16),
+                }
+            ],
+            "operators": [
+                {
+                    "name": "projection",
+                    "type": "MatMul",
+                    "inputs": ["x", "weight"],
+                    "outputs": ["y"],
+                    "attributes": {"output_shift": 9},
+                }
+            ],
+            "outputs": ["y"],
+        }
         with self.assertRaisesRegex(
             compiler.ModelCompileError,
-            "packed-B stride field",
+            "supports output_shift in 0..8",
         ):
             compiler.compile_model_document(
                 document, compiler.TargetConfig()
             )
+
+    def test_matrix_k_blocks_can_store_int32_without_rescale(self) -> None:
+        document = {
+            "schema_version": 1,
+            "model": {"name": "deep_matrix_int32"},
+            "inputs": [
+                {"name": "x", "shape": [2, 65], "dtype": "int8"}
+            ],
+            "constants": [
+                {
+                    "name": "weight",
+                    "shape": [65, 16],
+                    "dtype": "int8",
+                    "data": [1] * (65 * 16),
+                }
+            ],
+            "operators": [
+                {
+                    "name": "projection",
+                    "type": "MatMul",
+                    "inputs": ["x", "weight"],
+                    "outputs": ["y"],
+                    "attributes": {"output_dtype": "int32"},
+                }
+            ],
+            "outputs": ["y"],
+        }
+        result = compiler.compile_model_document(
+            document, compiler.TargetConfig()
+        )
+        self.assertEqual(result.tensors["y"].dtype, "int32")
+        self.assertFalse(
+            any(
+                operation.name.startswith("projection_rescale_")
+                for operation in result.assembled_operations
+            )
+        )
+        self.assertEqual(
+            len(
+                [
+                    operation
+                    for operation in result.assembled_operations
+                    if operation.engine_opcode
+                    == npu_assembler.OPCODES["matrix"]["GEMM_ZERO"]
+                ]
+            ),
+            1,
+        )
+
+    def test_explicit_matrix_blocks_enable_grouped_products(self) -> None:
+        document = {
+            "schema_version": 1,
+            "model": {"name": "explicit_blocks"},
+            "inputs": [
+                {"name": "x", "shape": [16, 32], "dtype": "int8"}
+            ],
+            "constants": [
+                {
+                    "name": "weight",
+                    "shape": [32, 16],
+                    "dtype": "int8",
+                    "data": [1] * (32 * 16),
+                }
+            ],
+            "operators": [
+                {
+                    "name": "projection",
+                    "type": "MatMul",
+                    "inputs": ["x", "weight"],
+                    "outputs": ["y"],
+                    "attributes": {
+                        "block_m": 8,
+                        "block_n": 8,
+                        "block_k": 16,
+                        "block_group_rows": 2,
+                        "block_group_columns": 2,
+                    },
+                }
+            ],
+            "outputs": ["y"],
+        }
+        result = compiler.compile_model_document(
+            document, compiler.TargetConfig()
+        )
+        products = [
+            operation
+            for operation in result.assembled_operations
+            if operation.name.startswith("projection_product_")
+        ]
+        self.assertEqual(len(products), 8)
+        self.assertTrue(
+            all(
+                operation.engine_opcode
+                == npu_assembler.OPCODES["matrix"]["GEMM_ACCUM"]
+                for operation in products
+            )
+        )
+        a_loads = [
+            operation
+            for operation in result.assembled_operations
+            if operation.name.startswith("projection_stage_a_")
+        ]
+        b_loads = [
+            operation
+            for operation in result.assembled_operations
+            if operation.name.startswith("projection_stage_b_")
+        ]
+        self.assertEqual(len(a_loads), 4)
+        self.assertEqual(len(b_loads), 4)
 
     def test_complex_rows_and_elementwise_features_are_split(self) -> None:
         softmax_document = {

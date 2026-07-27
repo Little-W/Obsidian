@@ -26,6 +26,7 @@ if str(_HERE) not in sys.path:
 
 import npu_assembler
 import conv_lowering
+import matrix_outer_product
 import model_artifacts
 from frontends import (
     FrontendError,
@@ -1555,6 +1556,879 @@ def make_dma_copy_task(
     )
 
 
+_MATRIX_BLOCK_ATTRIBUTES = {
+    "block_m",
+    "block_n",
+    "block_k",
+    "block_group_rows",
+    "block_group_columns",
+}
+
+
+def _matrix_blocking_requested(
+    operator: OperatorInfo,
+    *,
+    m: int,
+    n: int,
+    k: int,
+) -> bool:
+    return (
+        m > matrix_outer_product.INSTRUCTION_DIMENSION_LIMIT
+        or n > matrix_outer_product.INSTRUCTION_DIMENSION_LIMIT
+        or k > matrix_outer_product.INSTRUCTION_DIMENSION_LIMIT
+        or any(
+            name in operator.attributes
+            for name in _MATRIX_BLOCK_ATTRIBUTES
+        )
+    )
+
+
+def _matrix_axis_block_size(
+    operator: OperatorInfo,
+    name: str,
+    axis_length: int,
+    hardware_tile: int,
+    address_grain: int,
+) -> int:
+    unit = math.lcm(hardware_tile, address_grain)
+    limit = matrix_outer_product.INSTRUCTION_DIMENSION_LIMIT
+    maximum = (limit // unit) * unit
+    location = f"operator {operator.name}.{name}"
+    if maximum == 0:
+        raise fail(
+            location,
+            f"hardware tile and address units need a block larger than {limit}",
+        )
+    default = min(
+        maximum,
+        (
+            (min(axis_length, limit) + unit - 1)
+            // unit
+        )
+        * unit,
+    )
+    value = parse_int(
+        operator.attributes.get(name, default),
+        location,
+        1,
+        limit,
+    )
+    if value % unit:
+        raise fail(
+            location,
+            f"must be divisible by {unit} for tile and address alignment",
+        )
+    return value
+
+
+def _matrix_stage_bytes(
+    plan: matrix_outer_product.MatrixSchedulePlan,
+    source_dtype: str,
+    weight_dtype: str,
+    destination_dtype: str,
+    target: TargetConfig,
+    *,
+    row_slots: int,
+    column_slots: int,
+    accumulated: bool,
+    start: int = 0,
+) -> int:
+    a_bytes = logical_tensor_bytes(
+        (plan.block_m, plan.block_k), source_dtype
+    )
+    b_bytes = tiled_matrix_bytes(
+        plan.block_k, plan.block_n, weight_dtype, target
+    )
+    output_slots = row_slots * column_slots
+    if accumulated:
+        output_bytes = logical_tensor_bytes(
+            (plan.block_m, plan.block_n), "int32"
+        )
+        if destination_dtype != "int32":
+            output_bytes += logical_tensor_bytes(
+                (plan.block_m, plan.block_n), destination_dtype
+            )
+    else:
+        output_bytes = logical_tensor_bytes(
+            (plan.block_m, plan.block_n), destination_dtype
+        )
+    cursor = start
+    for _slot in range(row_slots):
+        cursor = align_up(cursor, 64) + a_bytes
+    for _slot in range(column_slots):
+        cursor = align_up(cursor, 256) + b_bytes
+    for _slot in range(output_slots):
+        if accumulated:
+            cursor = align_up(cursor, 64) + logical_tensor_bytes(
+                (plan.block_m, plan.block_n), "int32"
+            )
+            if destination_dtype != "int32":
+                cursor = align_up(cursor, 64) + logical_tensor_bytes(
+                    (plan.block_m, plan.block_n), destination_dtype
+                )
+        else:
+            cursor = align_up(cursor, 64) + output_bytes
+    if accumulated and destination_dtype != "int32":
+        cursor = align_up(cursor, 64) + logical_tensor_bytes(
+            (plan.block_m, plan.block_n), "int32"
+        )
+    return cursor - start
+
+
+def _choose_matrix_group_shape(
+    operator: OperatorInfo,
+    preliminary: matrix_outer_product.MatrixSchedulePlan,
+    source_dtype: str,
+    weight_dtype: str,
+    destination_dtype: str,
+    target: TargetConfig,
+    allocator: AddressAllocator,
+) -> tuple[int, int]:
+    row_count = len(preliminary.row_blocks)
+    column_count = len(preliminary.column_blocks)
+    accumulated = len(preliminary.reduction_blocks) > 1
+    explicit = (
+        "block_group_rows" in operator.attributes
+        or "block_group_columns" in operator.attributes
+    )
+    if explicit:
+        row_slots = parse_int(
+            operator.attributes.get("block_group_rows", 1),
+            f"operator {operator.name}.block_group_rows",
+            1,
+            32,
+        )
+        column_slots = parse_int(
+            operator.attributes.get("block_group_columns", 1),
+            f"operator {operator.name}.block_group_columns",
+            1,
+            32,
+        )
+        row_slots = min(row_slots, row_count)
+        column_slots = min(column_slots, column_count)
+        candidates = [(row_slots, column_slots)]
+    else:
+        candidates = sorted(
+            {
+                (rows, columns)
+                for rows in range(1, min(2, row_count) + 1)
+                for columns in range(1, min(2, column_count) + 1)
+            },
+            key=lambda item: (
+                item[0] * item[1],
+                min(item),
+                item[0] + item[1],
+            ),
+            reverse=True,
+        )
+
+    available = allocator.limit - allocator.cursor
+    for row_slots, column_slots in candidates:
+        required = _matrix_stage_bytes(
+            preliminary,
+            source_dtype,
+            weight_dtype,
+            destination_dtype,
+            target,
+            row_slots=row_slots,
+            column_slots=column_slots,
+            accumulated=accumulated,
+            start=allocator.cursor,
+        )
+        if required <= available:
+            return row_slots, column_slots
+    required = _matrix_stage_bytes(
+        preliminary,
+        source_dtype,
+        weight_dtype,
+        destination_dtype,
+        target,
+        row_slots=candidates[-1][0],
+        column_slots=candidates[-1][1],
+        accumulated=accumulated,
+        start=allocator.cursor,
+    )
+    raise fail(
+        f"operator {operator.name}",
+        f"block schedule needs about 0x{required:x} bytes of L1 work "
+        f"storage; 0x{max(0, available):x} bytes remain",
+    )
+
+
+def _tensor_ref_with_byte_offset(
+    tensor: TensorInfo,
+    byte_offset: int,
+) -> dict[str, Any]:
+    if tensor.l1_addr is None:
+        raise fail("lowering", f"tensor {tensor.name!r} has no L1 address")
+    if byte_offset < 0 or byte_offset >= tensor.storage_bytes:
+        raise fail(
+            "lowering",
+            f"byte offset 0x{byte_offset:x} is outside {tensor.name!r}",
+        )
+    return {
+        "addr": tensor.l1_addr + byte_offset,
+        "space": "l1",
+        "dtype": tensor.dtype,
+        "region_bytes": tensor.storage_bytes - byte_offset,
+    }
+
+
+def _matrix_row_transfer_tasks(
+    name: str,
+    source: TensorInfo,
+    destination: TensorInfo,
+    *,
+    source_byte_offset: int,
+    destination_byte_offset: int,
+    rows: int,
+    row_elements: int,
+    source_row_bytes: int,
+    destination_row_bytes: int,
+    pack: bool,
+    high_level_node: str,
+) -> list[VirtualTask]:
+    if source.dtype != destination.dtype:
+        raise fail("lowering", f"{name} requires equal dtypes")
+    dtype = source.dtype
+    row_bytes = logical_tensor_bytes((row_elements,), dtype)
+    spaced_stride = source_row_bytes if pack else destination_row_bytes
+    source_ref = _tensor_ref_with_byte_offset(source, source_byte_offset)
+    destination_ref = _tensor_ref_with_byte_offset(
+        destination, destination_byte_offset
+    )
+    if (
+        row_bytes <= 0xFF
+        and spaced_stride <= 0xFF
+        and int(source_ref["addr"]) % 8 == 0
+        and int(destination_ref["addr"]) % 8 == 0
+    ):
+        return [
+            VirtualTask(
+                name=name,
+                engine="dma",
+                opcode="PACK" if pack else "SPLIT",
+                reads=(source.name,),
+                writes=(destination.name,),
+                descriptor={
+                    "common": {
+                        "src0": source_ref,
+                        "dst": destination_ref,
+                    },
+                    "dma": {
+                        "rank": 1,
+                        "shape": [rows],
+                        "segment_count": rows,
+                        "segment_bytes": row_bytes,
+                        "segment_stride": spaced_stride,
+                    },
+                },
+                high_level_node=high_level_node,
+            )
+        ]
+
+    result: list[VirtualTask] = []
+    for row in range(rows):
+        source_offset = source_byte_offset + row * source_row_bytes
+        destination_offset = (
+            destination_byte_offset + row * destination_row_bytes
+        )
+        row_source = _tensor_ref_with_byte_offset(source, source_offset)
+        row_destination = _tensor_ref_with_byte_offset(
+            destination, destination_offset
+        )
+        if (
+            int(row_source["addr"]) % 8
+            or int(row_destination["addr"]) % 8
+        ):
+            raise fail(
+                f"operator {high_level_node}",
+                f"{name} needs an 8-byte aligned row address; the inline "
+                "DMA stride field is too small for this tensor shape",
+            )
+        result.append(
+            VirtualTask(
+                name=f"{name}_row_{row}",
+                engine="dma",
+                opcode="COPY_1D",
+                reads=(source.name,),
+                writes=(destination.name,),
+                descriptor={
+                    "common": {
+                        "src0": row_source,
+                        "dst": row_destination,
+                    },
+                    "dma": {
+                        "rank": 1,
+                        "shape": [row_elements],
+                        "src_stride_bytes": [0],
+                        "dst_stride_bytes": [0],
+                    },
+                },
+                high_level_node=high_level_node,
+            )
+        )
+    return result
+
+
+def _stage_matrix_a_tasks(
+    operator: OperatorInfo,
+    source: TensorInfo,
+    stage: TensorInfo,
+    row: matrix_outer_product.AxisBlock,
+    reduction: matrix_outer_product.AxisBlock,
+    index: str,
+) -> list[VirtualTask]:
+    source_row_bytes = logical_tensor_bytes(
+        (source.shape[1],), source.dtype
+    )
+    stage_row_bytes = logical_tensor_bytes(
+        (reduction.size,), source.dtype
+    )
+    start_element = row.start * source.shape[1] + reduction.start
+    source_byte_offset = element_byte_offset(start_element, source.dtype)
+    return _matrix_row_transfer_tasks(
+        f"{operator.name}_stage_a_{index}",
+        source,
+        stage,
+        source_byte_offset=source_byte_offset,
+        destination_byte_offset=0,
+        rows=row.size,
+        row_elements=reduction.size,
+        source_row_bytes=source_row_bytes,
+        destination_row_bytes=stage_row_bytes,
+        pack=True,
+        high_level_node=operator.name,
+    )
+
+
+def _stage_matrix_b_tasks(
+    operator: OperatorInfo,
+    weight: TensorInfo,
+    stage: TensorInfo,
+    column: matrix_outer_product.AxisBlock,
+    reduction: matrix_outer_product.AxisBlock,
+    target: TargetConfig,
+    index: str,
+) -> list[VirtualTask]:
+    global_n_tiles = (weight.shape[1] + target.nt - 1) // target.nt
+    local_n_tiles = (column.size + target.nt - 1) // target.nt
+    local_k_tiles = (reduction.size + target.kt - 1) // target.kt
+    k_tile_start = reduction.start // target.kt
+    n_tile_start = column.start // target.nt
+    tile_elements = target.kt * target.nt
+    copy_elements = local_n_tiles * tile_elements
+    result: list[VirtualTask] = []
+    for local_k_tile in range(local_k_tiles):
+        global_tile = (
+            (k_tile_start + local_k_tile) * global_n_tiles
+            + n_tile_start
+        )
+        local_tile = local_k_tile * local_n_tiles
+        source_offset = element_byte_offset(
+            global_tile * tile_elements, weight.dtype
+        )
+        destination_offset = element_byte_offset(
+            local_tile * tile_elements, stage.dtype
+        )
+        source_ref = _tensor_ref_with_byte_offset(weight, source_offset)
+        destination_ref = _tensor_ref_with_byte_offset(
+            stage, destination_offset
+        )
+        if (
+            int(source_ref["addr"]) % 8
+            or int(destination_ref["addr"]) % 8
+        ):
+            raise fail(
+                f"operator {operator.name}",
+                "packed Matrix-B tile rows must begin at 8-byte addresses",
+            )
+        result.append(
+            VirtualTask(
+                name=(
+                    f"{operator.name}_stage_b_{index}"
+                    f"_ktile_{local_k_tile}"
+                ),
+                engine="dma",
+                opcode="COPY_1D",
+                reads=(weight.name,),
+                writes=(stage.name,),
+                descriptor={
+                    "common": {
+                        "src0": source_ref,
+                        "dst": destination_ref,
+                    },
+                    "dma": {
+                        "rank": 1,
+                        "shape": [copy_elements],
+                        "src_stride_bytes": [0],
+                        "dst_stride_bytes": [0],
+                    },
+                },
+                high_level_node=operator.name,
+            )
+        )
+    return result
+
+
+def _make_matrix_zero_task(
+    name: str,
+    destination: TensorInfo,
+    *,
+    m: int,
+    n: int,
+    high_level_node: str,
+) -> VirtualTask:
+    return VirtualTask(
+        name=name,
+        engine="matrix",
+        opcode="GEMM_ZERO",
+        reads=(),
+        writes=(destination.name,),
+        descriptor={
+            "common": {"dst": destination.name},
+            "matrix": {
+                "m": m,
+                "n": n,
+                "k": 1,
+                "b_int4": False,
+            },
+        },
+        high_level_node=high_level_node,
+    )
+
+
+def _make_matrix_accum_task(
+    name: str,
+    source: TensorInfo,
+    weight: TensorInfo,
+    destination: TensorInfo,
+    *,
+    m: int,
+    n: int,
+    k: int,
+    high_level_node: str,
+) -> VirtualTask:
+    if destination.dtype != "int32":
+        raise fail("lowering", f"{name} accumulator must use int32")
+    if weight.dtype != source.dtype and not (
+        source.dtype == "int8" and weight.dtype == "int4"
+    ):
+        raise fail(
+            f"operator {high_level_node}",
+            "matrix B must match A, except INT8 A may use INT4 B",
+        )
+    return VirtualTask(
+        name=name,
+        engine="matrix",
+        opcode="GEMM_ACCUM",
+        reads=(source.name, weight.name, destination.name),
+        writes=(destination.name,),
+        descriptor={
+            "common": {
+                "src0": source.name,
+                "src1": weight.name,
+                "dst": destination.name,
+            },
+            "matrix": {
+                "m": m,
+                "n": n,
+                "k": k,
+                "b_int4": (
+                    source.dtype == "int8" and weight.dtype == "int4"
+                ),
+            },
+        },
+        high_level_node=high_level_node,
+    )
+
+
+def _make_matrix_rescale_task(
+    name: str,
+    accumulator: TensorInfo,
+    zero: TensorInfo,
+    destination: TensorInfo,
+    *,
+    rows: int,
+    columns: int,
+    shift: int,
+    high_level_node: str,
+) -> VirtualTask:
+    if shift > 8:
+        raise fail(
+            f"operator {high_level_node}.output_shift",
+            "K-block accumulation followed by integer output supports "
+            "output_shift in 0..8 with the current Complex scale field",
+        )
+    source_scale = math.ldexp(1.0, -shift)
+    return VirtualTask(
+        name=name,
+        engine="complex",
+        opcode="ADD_RESCALE",
+        reads=(accumulator.name, zero.name),
+        writes=(destination.name,),
+        descriptor={
+            "common": {
+                "src0": accumulator.name,
+                "src1": zero.name,
+                "dst": destination.name,
+                "round_mode": "nearest_even",
+                "saturate_enable": True,
+                "scale_mode": "per_tensor",
+                "internal_fp32_enable": True,
+            },
+            "complex": {
+                "rows": rows,
+                "length": columns,
+                "valid_length": columns,
+                "function": "add_rescale",
+                "src0_scale": source_scale,
+                "src1_scale": source_scale,
+                "dst_scale": 1.0,
+                "epsilon": 0.0,
+                "input_clip_min": 0.0,
+                "input_clip_max": 0.0,
+                "scratch_request_elems": 0,
+            },
+        },
+        high_level_node=high_level_node,
+    )
+
+
+def _store_matrix_output_tasks(
+    operator: OperatorInfo,
+    stage: TensorInfo,
+    destination: TensorInfo,
+    row: matrix_outer_product.AxisBlock,
+    column: matrix_outer_product.AxisBlock,
+    index: str,
+) -> list[VirtualTask]:
+    stage_row_bytes = logical_tensor_bytes(
+        (column.size,), destination.dtype
+    )
+    destination_row_bytes = logical_tensor_bytes(
+        (destination.shape[1],), destination.dtype
+    )
+    destination_element = (
+        row.start * destination.shape[1] + column.start
+    )
+    destination_offset = element_byte_offset(
+        destination_element, destination.dtype
+    )
+    return _matrix_row_transfer_tasks(
+        f"{operator.name}_store_c_{index}",
+        stage,
+        destination,
+        source_byte_offset=0,
+        destination_byte_offset=destination_offset,
+        rows=row.size,
+        row_elements=column.size,
+        source_row_bytes=stage_row_bytes,
+        destination_row_bytes=destination_row_bytes,
+        pack=False,
+        high_level_node=operator.name,
+    )
+
+
+def lower_blocked_matmul(
+    operator: OperatorInfo,
+    source: TensorInfo,
+    weight: TensorInfo,
+    destination: TensorInfo,
+    allocator: AddressAllocator,
+    target: TargetConfig,
+    requant_by_shift: Mapping[int, str],
+    tensors: dict[str, TensorInfo],
+) -> list[VirtualTask]:
+    m, k = source.shape
+    n = weight.shape[1]
+    source_address_grain = 64 // DTYPE_BITS[source.dtype]
+    destination_address_grain = 64 // DTYPE_BITS[destination.dtype]
+    block_m = _matrix_axis_block_size(
+        operator, "block_m", m, target.mt, 8
+    )
+    block_n = _matrix_axis_block_size(
+        operator,
+        "block_n",
+        n,
+        target.nt,
+        destination_address_grain,
+    )
+    block_k = _matrix_axis_block_size(
+        operator,
+        "block_k",
+        k,
+        target.kt,
+        source_address_grain,
+    )
+    try:
+        preliminary = matrix_outer_product.build_matrix_schedule(
+            m,
+            n,
+            k,
+            block_m=block_m,
+            block_n=block_n,
+            block_k=block_k,
+            row_group_blocks=1,
+            column_group_blocks=1,
+            mt=math.lcm(target.mt, 8),
+            nt=math.lcm(target.nt, destination_address_grain),
+            kt=math.lcm(target.kt, source_address_grain),
+        )
+    except matrix_outer_product.MatrixScheduleError as error:
+        raise fail(f"operator {operator.name}", str(error)) from error
+    row_slots, column_slots = _choose_matrix_group_shape(
+        operator,
+        preliminary,
+        source.dtype,
+        weight.dtype,
+        destination.dtype,
+        target,
+        allocator,
+    )
+    try:
+        plan = matrix_outer_product.build_matrix_schedule(
+            m,
+            n,
+            k,
+            block_m=block_m,
+            block_n=block_n,
+            block_k=block_k,
+            row_group_blocks=row_slots,
+            column_group_blocks=column_slots,
+            mt=math.lcm(target.mt, 8),
+            nt=math.lcm(target.nt, destination_address_grain),
+            kt=math.lcm(target.kt, source_address_grain),
+        )
+    except matrix_outer_product.MatrixScheduleError as error:
+        raise fail(f"operator {operator.name}", str(error)) from error
+
+    prefix = f"__{operator.name}_blocks"
+    a_stages = [
+        add_internal_tensor(
+            tensors,
+            allocator,
+            f"{prefix}_a_{slot}",
+            (block_m, block_k),
+            source.dtype,
+        )
+        for slot in range(row_slots)
+    ]
+    b_stages = [
+        add_internal_tensor(
+            tensors,
+            allocator,
+            f"{prefix}_b_{slot}",
+            (block_k, block_n),
+            weight.dtype,
+            storage_bytes=tiled_matrix_bytes(
+                block_k, block_n, weight.dtype, target
+            ),
+            alignment=256,
+            layout="matrix_b",
+        )
+        for slot in range(column_slots)
+    ]
+
+    accumulated = len(plan.reduction_blocks) > 1
+    accumulator_stages: list[list[TensorInfo]] = []
+    output_stages: list[list[TensorInfo]] = []
+    for row_slot in range(row_slots):
+        accumulator_row: list[TensorInfo] = []
+        output_row: list[TensorInfo] = []
+        for column_slot in range(column_slots):
+            slot_name = f"{row_slot}_{column_slot}"
+            if accumulated:
+                accumulator_row.append(
+                    add_internal_tensor(
+                        tensors,
+                        allocator,
+                        f"{prefix}_acc_{slot_name}",
+                        (block_m, block_n),
+                        "int32",
+                    )
+                )
+                if destination.dtype != "int32":
+                    output_row.append(
+                        add_internal_tensor(
+                            tensors,
+                            allocator,
+                            f"{prefix}_out_{slot_name}",
+                            (block_m, block_n),
+                            destination.dtype,
+                        )
+                    )
+            else:
+                output_row.append(
+                    add_internal_tensor(
+                        tensors,
+                        allocator,
+                        f"{prefix}_out_{slot_name}",
+                        (block_m, block_n),
+                        destination.dtype,
+                    )
+                )
+        accumulator_stages.append(accumulator_row)
+        output_stages.append(output_row)
+
+    zero_stage: TensorInfo | None = None
+    result: list[VirtualTask] = []
+    if accumulated and destination.dtype != "int32":
+        zero_stage = add_internal_tensor(
+            tensors,
+            allocator,
+            f"{prefix}_zero",
+            (block_m, block_n),
+            "int32",
+        )
+        result.append(
+            _make_matrix_zero_task(
+                f"{operator.name}_zero_epilogue_input",
+                zero_stage,
+                m=block_m,
+                n=block_n,
+                high_level_node=operator.name,
+            )
+        )
+
+    shift = parse_int(
+        operator.attributes.get("output_shift", 0),
+        f"operator {operator.name}.output_shift",
+        0,
+        31,
+    )
+    requant = (
+        None
+        if destination.dtype == "int32"
+        else tensors[requant_by_shift[shift]]
+    )
+    for group in plan.groups:
+        if accumulated:
+            for row_slot, row in enumerate(group.rows):
+                for column_slot, column in enumerate(group.columns):
+                    accumulator = accumulator_stages[row_slot][column_slot]
+                    result.append(
+                        _make_matrix_zero_task(
+                            (
+                                f"{operator.name}_zero_g{group.index}"
+                                f"_r{row.index}_w{column.index}"
+                            ),
+                            accumulator,
+                            m=row.size,
+                            n=column.size,
+                            high_level_node=operator.name,
+                        )
+                    )
+
+        for reduction_step in group.reductions:
+            reduction = reduction_step.reduction
+            for row_slot, row in enumerate(reduction_step.rows):
+                result.extend(
+                    _stage_matrix_a_tasks(
+                        operator,
+                        source,
+                        a_stages[row_slot],
+                        row,
+                        reduction,
+                        (
+                            f"g{group.index}_r{row.index}"
+                            f"_k{reduction.index}"
+                        ),
+                    )
+                )
+            for column_slot, column in enumerate(
+                reduction_step.columns
+            ):
+                result.extend(
+                    _stage_matrix_b_tasks(
+                        operator,
+                        weight,
+                        b_stages[column_slot],
+                        column,
+                        reduction,
+                        target,
+                        (
+                            f"g{group.index}_w{column.index}"
+                            f"_k{reduction.index}"
+                        ),
+                    )
+                )
+            for product_step in reduction_step.products:
+                row_slot = product_step.row_slot
+                column_slot = product_step.column_slot
+                product_name = (
+                    f"{operator.name}_product_g{group.index}"
+                    f"_r{product_step.row.index}"
+                    f"_w{product_step.column.index}"
+                    f"_k{reduction.index}"
+                )
+                if accumulated:
+                    result.append(
+                        _make_matrix_accum_task(
+                            product_name,
+                            a_stages[row_slot],
+                            b_stages[column_slot],
+                            accumulator_stages[row_slot][column_slot],
+                            m=product_step.row.size,
+                            n=product_step.column.size,
+                            k=reduction.size,
+                            high_level_node=operator.name,
+                        )
+                    )
+                else:
+                    result.append(
+                        make_matrix_task(
+                            product_name,
+                            a_stages[row_slot],
+                            b_stages[column_slot],
+                            output_stages[row_slot][column_slot],
+                            requant,
+                            m=product_step.row.size,
+                            n=product_step.column.size,
+                            k=reduction.size,
+                            high_level_node=operator.name,
+                        )
+                    )
+
+        for row_slot, row in enumerate(group.rows):
+            for column_slot, column in enumerate(group.columns):
+                index = (
+                    f"g{group.index}_r{row.index}_w{column.index}"
+                )
+                if accumulated:
+                    accumulator = accumulator_stages[row_slot][column_slot]
+                    if destination.dtype == "int32":
+                        final_stage = accumulator
+                    else:
+                        assert zero_stage is not None
+                        final_stage = output_stages[row_slot][column_slot]
+                        result.append(
+                            _make_matrix_rescale_task(
+                                f"{operator.name}_rescale_{index}",
+                                accumulator,
+                                zero_stage,
+                                final_stage,
+                                rows=row.size,
+                                columns=column.size,
+                                shift=shift,
+                                high_level_node=operator.name,
+                            )
+                        )
+                else:
+                    final_stage = output_stages[row_slot][column_slot]
+                result.extend(
+                    _store_matrix_output_tasks(
+                        operator,
+                        final_stage,
+                        destination,
+                        row,
+                        column,
+                        index,
+                    )
+                )
+    return result
+
+
 def attention_score_scale_plan(
     score_scale: float,
     dtype: str,
@@ -2671,6 +3545,22 @@ def lower_simple_operator(
             0,
             31,
         )
+        if _matrix_blocking_requested(
+            operator,
+            m=left.shape[0],
+            n=right.shape[1],
+            k=left.shape[1],
+        ):
+            return lower_blocked_matmul(
+                operator,
+                left,
+                right,
+                destination,
+                allocator,
+                target,
+                requant_by_shift,
+                tensors,
+            )
         return [
             make_matrix_task(
                 operator.name,

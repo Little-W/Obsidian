@@ -1,0 +1,86 @@
+digraph BlockOuterProductGrid {
+  graph [
+    charset="UTF-8",
+    bgcolor="white",
+    rankdir=TB,
+    splines=ortho,
+    nodesep=0.45,
+    ranksep=0.44,
+    pad=0.18,
+    margin=0.03,
+    size="8.0,6.6!",
+    ratio=compress,
+    fontname="Microsoft YaHei",
+    fontsize=24,
+    labelloc=t,
+    label="固定一个 K 块时，R×W 个输出块同时得到更新"
+  ];
+  node [
+    shape=plain,
+    fontname="Microsoft YaHei",
+    fontsize=18
+  ];
+  edge [
+    penwidth=2.6,
+    arrowsize=0.78
+  ];
+
+  weight_buffer [
+    label=<
+      <TABLE BORDER="2" CELLBORDER="0" CELLSPACING="0" CELLPADDING="11" COLOR="#D98C10" BGCOLOR="#FFF2D6">
+        <TR><TD><B>权重缓冲：W 个 B 块</B></TD></TR>
+        <TR><TD><FONT POINT-SIZE="14">同一个 p，覆盖连续输出列</FONT></TD></TR>
+      </TABLE>
+    >
+  ];
+
+  ia_cache [
+    label=<
+      <TABLE BORDER="2" CELLBORDER="0" CELLSPACING="0" CELLPADDING="11" COLOR="#3478C5" BGCOLOR="#E7F3FF">
+        <TR><TD><B>IA 缓存：R 个 A 块</B></TD></TR>
+        <TR><TD><FONT POINT-SIZE="14">同一个 p，覆盖连续输出行</FONT></TD></TR>
+      </TABLE>
+    >
+  ];
+
+  outer_grid [
+    label=<
+      <TABLE BORDER="2" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4" COLOR="#25825B" BGCOLOR="#F4FFF9">
+        <TR>
+          <TD WIDTH="92" HEIGHT="92" FIXEDSIZE="TRUE" BGCOLOR="#F1F3F7"><B>A × B</B><BR/><FONT POINT-SIZE="12">块坐标</FONT></TD>
+          <TD PORT="weight_in" WIDTH="92" HEIGHT="92" FIXEDSIZE="TRUE" BGCOLOR="#F6B84A"><B>B[p,j]</B></TD>
+          <TD WIDTH="92" HEIGHT="92" FIXEDSIZE="TRUE" BGCOLOR="#F6B84A"><B>B[p,j+1]</B></TD>
+          <TD WIDTH="92" HEIGHT="92" FIXEDSIZE="TRUE" BGCOLOR="#F6B84A"><B>B[p,j+2]</B></TD>
+        </TR>
+        <TR>
+          <TD PORT="ia_in" WIDTH="92" HEIGHT="92" FIXEDSIZE="TRUE" BGCOLOR="#6CB3F4"><B>A[i,p]</B></TD>
+          <TD WIDTH="92" HEIGHT="92" FIXEDSIZE="TRUE"><B>C[i,j]</B><BR/><FONT POINT-SIZE="12">+= 块乘</FONT></TD>
+          <TD WIDTH="92" HEIGHT="92" FIXEDSIZE="TRUE"><B>C[i,j+1]</B><BR/><FONT POINT-SIZE="12">+= 块乘</FONT></TD>
+          <TD WIDTH="92" HEIGHT="92" FIXEDSIZE="TRUE"><B>C[i,j+2]</B><BR/><FONT POINT-SIZE="12">+= 块乘</FONT></TD>
+        </TR>
+        <TR>
+          <TD WIDTH="92" HEIGHT="92" FIXEDSIZE="TRUE" BGCOLOR="#6CB3F4"><B>A[i+1,p]</B></TD>
+          <TD WIDTH="92" HEIGHT="92" FIXEDSIZE="TRUE"><B>C[i+1,j]</B><BR/><FONT POINT-SIZE="12">+= 块乘</FONT></TD>
+          <TD WIDTH="92" HEIGHT="92" FIXEDSIZE="TRUE"><B>C[i+1,j+1]</B><BR/><FONT POINT-SIZE="12">+= 块乘</FONT></TD>
+          <TD WIDTH="92" HEIGHT="92" FIXEDSIZE="TRUE"><B>C[i+1,j+2]</B><BR/><FONT POINT-SIZE="12">+= 块乘</FONT></TD>
+        </TR>
+      </TABLE>
+    >
+  ];
+
+  reuse_note [
+    label=<
+      <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="8" COLOR="#7A68B3" BGCOLOR="#F5F1FF">
+        <TR><TD ALIGN="LEFT"><B>示例参数：R=2，W=3</B></TD></TR>
+        <TR><TD ALIGN="LEFT"><FONT POINT-SIZE="14">每个 C[row,col] 加上 A[row,p] × B[p,col]。</FONT></TD></TR>
+        <TR><TD ALIGN="LEFT"><FONT POINT-SIZE="14">读取 2 个 A 块与 3 个 B 块，形成 2×3=6 次块乘更新。</FONT></TD></TR>
+        <TR><TD ALIGN="LEFT"><FONT POINT-SIZE="14">每个 A 块供 3 个输出列块使用；每个 B 块供 2 个输出行块使用。</FONT></TD></TR>
+      </TABLE>
+    >
+  ];
+
+  weight_buffer -> outer_grid:weight_in:n [color="#D98C10"];
+  { rank=same; ia_cache; outer_grid; }
+  ia_cache -> outer_grid:ia_in:w [color="#3478C5"];
+  outer_grid -> reuse_note [style=invis, weight=20];
+}
