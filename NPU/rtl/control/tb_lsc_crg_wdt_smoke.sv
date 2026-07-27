@@ -53,6 +53,7 @@ module tb_lsc_crg_wdt_smoke;
   logic param_lock;
   logic l1_host_access_enable;
   logic [7:0] lsc_module_clk_enable;
+  logic s_axi_idle;
 
   logic wdt_enable;
   logic [31:0] wdt_timeout_cycles;
@@ -96,7 +97,7 @@ module tb_lsc_crg_wdt_smoke;
     .l1_idle_i(1'b1),
     .l1_write_idle_i(1'b1),
     .mif_idle_i(1'b1),
-    .s_axi_idle_i(1'b1),
+    .s_axi_idle_i(s_axi_idle),
     .soft_reset_req_i(soft_reset_req),
     .internal_soft_reset_done_i(internal_soft_reset_done),
     .power_down_req_i(1'b0),
@@ -228,6 +229,7 @@ module tb_lsc_crg_wdt_smoke;
     dvfs_req                 = 1'b0;
     module_clk_en            = 8'd0;
     module_idle              = 8'hff;
+    s_axi_idle               = 1'b1;
 
     repeat (4) @(posedge clk);
     reset_n = 1'b1;
@@ -245,8 +247,10 @@ module tb_lsc_crg_wdt_smoke;
     end
     dvfs_req = 1'b0;
 
+    s_axi_idle = 1'b0;
     csr_access(1'b1, 16'h0058, 64'h0000_0000_0000_1000,
                read_data, response_status);
+    s_axi_idle = 1'b1;
     if ((response_status != 2'b00) || (input_base != 48'h1000)) begin
       $fatal(1, "LSC input base write failed");
     end

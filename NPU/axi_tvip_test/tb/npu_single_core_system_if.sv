@@ -2,7 +2,7 @@
 `define NPU_SINGLE_CORE_SYSTEM_IF_SV
 
 interface npu_single_core_system_if #(
-    parameter int unsigned MEMORY_BYTES = 1 << 16
+    parameter int unsigned MEMORY_BYTES = 1 << 20
 ) (
     input logic clk,
     input logic reset_n

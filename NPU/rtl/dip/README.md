@@ -56,7 +56,7 @@ INT16 的一个物理 C word 是一个 INT32；INT8 的一个物理 C word 按�
 
 ## 2. 总体结构
 
-![多精度 DiP RTL 总体结构](docs/figures/system_overview.svg)
+![多精度 DiP RTL 总体结构][docs/figures/system_overview.svg]
 
 图 1：`dip_gemm_core` 先接收完整 B tile，预处理模块生成 DiP 权重次序，随后把权重送入物理阵列。最后一个权重拍可以与第一个 A 行同时接收。阵列完成计算后按原始 A 行次序输出 C。
 

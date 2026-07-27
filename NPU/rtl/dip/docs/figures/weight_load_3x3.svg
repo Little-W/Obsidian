@@ -5,8 +5,8 @@
     <style>
       .title { font: 700 28px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #0f172a; }
       .h2 { font: 700 20px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #0f172a; text-anchor: middle; }
-      .label { font: 600 16px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #334155; text-anchor: middle; }
-      .small { font: 500 14px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #475569; text-anchor: middle; }
+      .label { font: 700 16px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #334155; text-anchor: middle; }
+      .small { font: 700 14px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #475569; text-anchor: middle; }
       .left { text-anchor: start; }
       .mono { font: 700 18px "JetBrains Mono", "DejaVu Sans Mono", monospace; fill: #0f172a; text-anchor: middle; dominant-baseline: middle; }
       .row { fill: #fff7ed; stroke: #d97706; stroke-width: 2; rx: 8; }
@@ -31,7 +31,7 @@
     <rect class="panel" x="0" y="0" width="295" height="455"/>
     <text class="h2" x="147" y="35">Cycle -2</text>
     <text class="small" x="147" y="65">输入 P[2] = [c,d,h]</text>
-    <path class="arrow" d="M147 78V108" marker-end="url(#arrow-w)"/>
+    <path class="arrow" d="M147 78V112" marker-end="url(#arrow-w)"/>
     <rect class="row" x="55" y="115" width="185" height="72"/>
     <text class="mono" x="86" y="151">c</text><text class="mono" x="147" y="151">d</text><text class="mono" x="208" y="151">h</text>
     <rect class="empty" x="55" y="220" width="185" height="72"/>
@@ -41,16 +41,16 @@
     <text class="small" x="147" y="425">PE row 0 / 1 / 2</text>
   </g>
 
-  <path class="arrow" d="M365 337H415" marker-end="url(#arrow-w)"/>
+  <path class="arrow" d="M350 337H427" marker-end="url(#arrow-w)"/>
 
   <g transform="translate(430 110)">
     <rect class="panel" x="0" y="0" width="295" height="455"/>
     <text class="h2" x="147" y="35">Cycle -1</text>
     <text class="small" x="147" y="65">输入 P[1] = [b,f,g]</text>
-    <path class="arrow" d="M147 78V108" marker-end="url(#arrow-w)"/>
+    <path class="arrow" d="M147 78V112" marker-end="url(#arrow-w)"/>
     <rect class="row" x="55" y="115" width="185" height="72"/>
     <text class="mono" x="86" y="151">b</text><text class="mono" x="147" y="151">f</text><text class="mono" x="208" y="151">g</text>
-    <path class="arrow" d="M147 190V213" marker-end="url(#arrow-w)"/>
+    <path class="arrow" d="M147 187V217" marker-end="url(#arrow-w)"/>
     <rect class="row" x="55" y="220" width="185" height="72"/>
     <text class="mono" x="86" y="256">c</text><text class="mono" x="147" y="256">d</text><text class="mono" x="208" y="256">h</text>
     <rect class="empty" x="55" y="325" width="185" height="72"/>
@@ -58,38 +58,38 @@
     <text class="small" x="147" y="425">PE row 0 / 1 / 2</text>
   </g>
 
-  <path class="arrow" d="M740 337H790" marker-end="url(#arrow-w)"/>
+  <path class="arrow" d="M725 337H802" marker-end="url(#arrow-w)"/>
 
   <g transform="translate(805 110)">
     <rect class="panel" x="0" y="0" width="295" height="455"/>
     <text class="h2" x="147" y="35">Cycle 0</text>
     <text class="small" x="147" y="65">输入 P[0] = [a,e,i]</text>
-    <path class="arrow" d="M147 78V108" marker-end="url(#arrow-w)"/>
+    <path class="arrow" d="M147 78V112" marker-end="url(#arrow-w)"/>
     <rect class="row" x="55" y="115" width="185" height="72"/>
     <text class="mono" x="86" y="151">a</text><text class="mono" x="147" y="151">e</text><text class="mono" x="208" y="151">i</text>
-    <path class="arrow" d="M147 190V213" marker-end="url(#arrow-w)"/>
+    <path class="arrow" d="M147 187V217" marker-end="url(#arrow-w)"/>
     <rect class="row" x="55" y="220" width="185" height="72"/>
     <text class="mono" x="86" y="256">b</text><text class="mono" x="147" y="256">f</text><text class="mono" x="208" y="256">g</text>
-    <path class="arrow" d="M147 295V318" marker-end="url(#arrow-w)"/>
+    <path class="arrow" d="M147 292V322" marker-end="url(#arrow-w)"/>
     <rect class="row" x="55" y="325" width="185" height="72"/>
     <text class="mono" x="86" y="361">c</text><text class="mono" x="147" y="361">d</text><text class="mono" x="208" y="361">h</text>
     <text class="small" x="147" y="425">装载完成</text>
   </g>
 
-  <g transform="translate(1135 150)">
-    <rect x="0" y="0" width="225" height="315" rx="12" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
-    <text class="h2" x="112" y="38">同一个 Cycle 0</text>
-    <rect x="12" y="62" width="92" height="82" rx="8" fill="#fff7ed" stroke="#d97706" stroke-width="1.5"/>
-    <text class="small" x="58" y="87">最后一拍权重</text>
-    <text class="small" x="58" y="112">写入 weight_q</text>
-    <rect x="121" y="62" width="92" height="82" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
-    <text class="small" x="167" y="87">第一行 A</text>
-    <text class="small" x="167" y="112">写入 data_q</text>
-    <path class="arrow" d="M58 145 C58 180 100 172 110 202" marker-end="url(#arrow-w)"/>
-    <path class="data" d="M167 145 C167 180 125 172 115 202" marker-end="url(#arrow-d)"/>
-    <rect x="45" y="212" width="135" height="68" rx="8" fill="#ffffff" stroke="#64748b" stroke-width="1.5"/>
-    <text class="small" x="112" y="237">Cycle 1 锁存</text>
-    <text class="small" x="112" y="263">product_q</text>
+  <g transform="translate(1115 150)">
+    <rect x="0" y="0" width="265" height="315" rx="12" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+    <text class="h2" x="132" y="38">同一个 Cycle 0</text>
+    <rect x="12" y="62" width="112" height="82" rx="8" fill="#fff7ed" stroke="#d97706" stroke-width="1.5"/>
+    <text class="small" x="68" y="87">最后一拍权重</text>
+    <text class="small" x="68" y="112">写入 weight_q</text>
+    <rect x="141" y="62" width="112" height="82" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+    <text class="small" x="197" y="87">第一行 A</text>
+    <text class="small" x="197" y="112">写入 data_q</text>
+    <rect x="55" y="212" width="155" height="68" rx="8" fill="#ffffff" stroke="#64748b" stroke-width="1.5"/>
+    <path class="arrow" d="M68 144 C68 180 88 176 98 209" marker-end="url(#arrow-w)"/>
+    <path class="data" d="M197 144 C197 180 177 176 167 209" marker-end="url(#arrow-d)"/>
+    <text class="small" x="132" y="237">Cycle 1 锁存</text>
+    <text class="small" x="132" y="263">product_q</text>
   </g>
 
   <rect x="55" y="590" width="1045" height="38" rx="8" fill="#fff7ed"/>

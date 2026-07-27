@@ -217,9 +217,11 @@ package npu_engine_pkg;
   );
     case (status)
       3'd0: return NPU_STATUS_SUCCESS;
-      3'd1: return NPU_STATUS_BUS_SLVERR;
-      3'd2: return NPU_STATUS_BUS_DECERR;
-      default: return NPU_STATUS_ADDR_FAULT;
+      3'd1,
+      3'd2: return NPU_STATUS_ADDR_FAULT;
+      3'd3: return NPU_STATUS_BUS_SLVERR;
+      3'd4: return NPU_STATUS_BUS_DECERR;
+      default: return NPU_STATUS_BAD_DESC;
     endcase
   endfunction
 

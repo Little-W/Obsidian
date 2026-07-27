@@ -5,11 +5,11 @@
     <style>
       .title { font: 700 28px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #0f172a; }
       .h2 { font: 700 20px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #0f172a; }
-      .label { font: 600 16px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #334155; }
-      .small { font: 500 14px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #475569; }
+      .label { font: 700 16px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #334155; }
+      .small { font: 700 14px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #475569; }
       .left { text-anchor: start; }
       .celltext { font: 700 18px "JetBrains Mono", "DejaVu Sans Mono", monospace; fill: #0f172a; text-anchor: middle; dominant-baseline: middle; }
-      .formula { font: 600 16px "JetBrains Mono", "DejaVu Sans Mono", monospace; fill: #4c1d95; text-anchor: middle; }
+      .formula { font: 700 16px "JetBrains Mono", "DejaVu Sans Mono", monospace; fill: #4c1d95; text-anchor: middle; }
       .matrix { fill: #ffffff; stroke: #94a3b8; stroke-width: 1.5; }
       .pe { fill: #f8fafc; stroke: #334155; stroke-width: 2; rx: 8; }
       .data { fill: none; stroke: #2563eb; stroke-width: 3; }
@@ -52,9 +52,9 @@
     <text class="celltext" x="25" y="125">c</text><text class="celltext" x="75" y="125">f</text><text class="celltext" x="125" y="125">i</text>
   </g>
 
-  <path class="weight" d="M430 220H495" marker-end="url(#arrow-weight)"/>
-  <text x="462" y="195" class="small" text-anchor="middle">第 c 列</text>
-  <text x="462" y="214" class="small" text-anchor="middle">循环上移 c 位</text>
+  <path class="weight" d="M410 235H512" marker-end="url(#arrow-weight)"/>
+  <text x="462" y="188" class="small" text-anchor="middle">第 c 列</text>
+  <text x="462" y="211" class="small" text-anchor="middle">循环上移 c 位</text>
 
   <g transform="translate(515 145)">
     <rect class="matrix" x="0" y="0" width="150" height="150" rx="8"/>

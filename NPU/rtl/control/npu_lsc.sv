@@ -116,6 +116,7 @@ module npu_lsc (
   logic csr_soft_reset_req_q;
 
   logic [63:0] csr_read_data;
+  logic config_idle;
   logic all_drain_idle;
   logic reset_requested;
 
@@ -165,13 +166,13 @@ module npu_lsc (
   assign reg_rsp_rdata_o  = rsp_data_q;
   assign reg_rsp_status_o = rsp_status_q;
 
-  assign core_idle_o = cmd_ingress_idle_i
+  assign config_idle = cmd_ingress_idle_i
                      && cfe_idle_i
                      && ts_idle_i
                      && (&eng_quiescent_i)
                      && l1_idle_i
-                     && mif_idle_i
-                     && s_axi_idle_i;
+                     && mif_idle_i;
+  assign core_idle_o = config_idle && s_axi_idle_i;
   assign all_drain_idle = cmd_ingress_idle_i
                         && cfe_idle_i
                         && ts_quiescent_i
@@ -340,14 +341,14 @@ module npu_lsc (
                 if (reg_req_wdata_i[2]) begin
                   csr_soft_reset_req_q <= 1'b1;
                 end
-                if (reg_req_wdata_i[3] && stop_q && core_idle_o) begin
+                if (reg_req_wdata_i[3] && stop_q && config_idle) begin
                   single_step_pulse_o <= 1'b1;
                 end
               end
             end
 
             16'h0058: begin
-              if (!core_idle_o || (|reg_req_wdata_i[63:40])
+              if (!config_idle || (|reg_req_wdata_i[63:40])
                   || (|reg_req_wdata_i[2:0])) begin
                 rsp_status_q <= 2'b10;
               end else begin
@@ -357,7 +358,7 @@ module npu_lsc (
               end
             end
             16'h0060: begin
-              if (!core_idle_o || (|reg_req_wdata_i[63:40])
+              if (!config_idle || (|reg_req_wdata_i[63:40])
                   || (|reg_req_wdata_i[2:0])) begin
                 rsp_status_q <= 2'b10;
               end else begin
@@ -367,7 +368,7 @@ module npu_lsc (
               end
             end
             16'h0068: begin
-              if (!core_idle_o || (|reg_req_wdata_i[63:40])
+              if (!config_idle || (|reg_req_wdata_i[63:40])
                   || (|reg_req_wdata_i[2:0])) begin
                 rsp_status_q <= 2'b10;
               end else begin
@@ -377,7 +378,7 @@ module npu_lsc (
               end
             end
             16'h0070: begin
-              if (!core_idle_o || (|reg_req_wdata_i[63:40])
+              if (!config_idle || (|reg_req_wdata_i[63:40])
                   || (|reg_req_wdata_i[2:0])) begin
                 rsp_status_q <= 2'b10;
               end else begin
@@ -387,7 +388,7 @@ module npu_lsc (
               end
             end
             16'h0078: begin
-              if (!core_idle_o || (|reg_req_wdata_i[63:40])
+              if (!config_idle || (|reg_req_wdata_i[63:40])
                   || (|reg_req_wdata_i[2:0])) begin
                 rsp_status_q <= 2'b10;
               end else begin
@@ -397,7 +398,7 @@ module npu_lsc (
               end
             end
             16'h0080: begin
-              if (!core_idle_o || (|reg_req_wdata_i[63:40])
+              if (!config_idle || (|reg_req_wdata_i[63:40])
                   || (|reg_req_wdata_i[2:0])
                   || (reg_req_wdata_i[47:0] > m_axi_addr_limit_q)) begin
                 rsp_status_q <= 2'b10;
@@ -406,7 +407,7 @@ module npu_lsc (
               end
             end
             16'h0088: begin
-              if (!core_idle_o || (|reg_req_wdata_i[63:40])
+              if (!config_idle || (|reg_req_wdata_i[63:40])
                   || (|reg_req_wdata_i[2:0])
                   || (reg_req_wdata_i[47:0] < m_axi_addr_base_q)) begin
                 rsp_status_q <= 2'b10;
@@ -433,7 +434,7 @@ module npu_lsc (
               end
             end
             16'h00d0: begin
-              if (!core_idle_o || (|reg_req_wdata_i[63:20])
+              if (!config_idle || (|reg_req_wdata_i[63:20])
                   || (|reg_req_wdata_i[2:0])
                   || (reg_req_wdata_i[19:0] > param_l1_limit_q)) begin
                 rsp_status_q <= 2'b10;
@@ -442,7 +443,7 @@ module npu_lsc (
               end
             end
             16'h00d8: begin
-              if (!core_idle_o || (|reg_req_wdata_i[63:20])
+              if (!config_idle || (|reg_req_wdata_i[63:20])
                   || (|reg_req_wdata_i[2:0])
                   || (reg_req_wdata_i[19:0] < param_l1_base_q)) begin
                 rsp_status_q <= 2'b10;

@@ -162,7 +162,7 @@ module axi_tvip_myip_wrapper(
     .AXI_S_ADDR_W(24),
     .AXI_M_ID_W(8),
     .AXI_M_ADDR_W(40),
-    .L1_BYTES(1 << 12),
+    .L1_BYTES(1 << 20),
     .L1_BANKS(16),
     .TASK_SLOTS(8),
     .EVENT_COUNT(255)
@@ -267,7 +267,7 @@ module axi_tvip_myip_wrapper(
   npu_axi_system_memory_model #(
     .AXI_ID_WIDTH(8),
     .AXI_ADDR_WIDTH(40),
-    .MEMORY_BYTES(1 << 16)
+    .MEMORY_BYTES(1 << 20)
   ) u_system_memory (
     .clk(axi_if.aclk),
     .reset_n(core_reset_n),

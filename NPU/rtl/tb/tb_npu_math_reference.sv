@@ -68,6 +68,26 @@ module tb_npu_math_reference;
     end
   endtask
 
+  task automatic check_memory_status(
+    input logic [2:0] memory_status,
+    input logic [7:0] expected_task_status
+  );
+    logic [7:0] actual_task_status;
+    begin
+      actual_task_status = memory_status_to_task(memory_status);
+      checks_q = checks_q + 1;
+      if (actual_task_status !== expected_task_status) begin
+        errors_q = errors_q + 1;
+        $display(
+          "ERROR memory status %0d: actual=%02x expected=%02x",
+          memory_status,
+          actual_task_status,
+          expected_task_status
+        );
+      end
+    end
+  endtask
+
   initial begin
     clk_q = 1'b0;
     reset_n = 1'b0;
@@ -79,6 +99,13 @@ module tb_npu_math_reference;
     errors_q = 0;
     repeat (4) @(posedge clk_q);
     reset_n = 1'b1;
+
+    check_memory_status(3'd0, NPU_STATUS_SUCCESS);
+    check_memory_status(3'd1, NPU_STATUS_ADDR_FAULT);
+    check_memory_status(3'd2, NPU_STATUS_ADDR_FAULT);
+    check_memory_status(3'd3, NPU_STATUS_BUS_SLVERR);
+    check_memory_status(3'd4, NPU_STATUS_BUS_DECERR);
+    check_memory_status(3'd5, NPU_STATUS_BAD_DESC);
 
     check_bits("exp", 4'd4, 32'hc188_0000, 32'h0000_0000);
     check_bits("exp", 4'd4, 32'hc180_0000, 32'h33f1_aade);

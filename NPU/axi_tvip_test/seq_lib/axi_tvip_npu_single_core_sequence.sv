@@ -591,6 +591,24 @@ class axi_tvip_npu_single_core_sequence
     acknowledge_task(12'h10a);
     write_word(CSR_FAULT_CLEAR, 64'd1);
 
+    write_word(
+      CSR_M_AXI_ADDR_LIMIT,
+      64'h0000_00ff_ffff_fff8
+    );
+    write_word(CSR_M_AXI_ADDR_BASE, 64'd0);
+    do_read(CSR_M_AXI_ADDR_LIMIT, result);
+    check_equal64(
+      "M_AXI maximum physical-address limit",
+      result,
+      64'h0000_00ff_ffff_fff8
+    );
+    do_read(CSR_M_AXI_ADDR_BASE, result);
+    check_equal64(
+      "M_AXI physical-address base before bit-40 test",
+      result,
+      64'd0
+    );
+
     l1_write_word(20'h00e40, 64'h8877_6655_4433_2211);
     ar_count_before =
       system_vif.monitor_cb.system_memory_read_handshakes;

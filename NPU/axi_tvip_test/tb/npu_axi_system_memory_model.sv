@@ -3,7 +3,7 @@
 module npu_axi_system_memory_model #(
     parameter int unsigned AXI_ID_WIDTH = 8,
     parameter int unsigned AXI_ADDR_WIDTH = 40,
-    parameter int unsigned MEMORY_BYTES = 1 << 16
+    parameter int unsigned MEMORY_BYTES = 1 << 20
 ) (
     input  logic                         clk,
     input  logic                         reset_n,

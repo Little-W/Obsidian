@@ -3899,17 +3899,17 @@ MIF 的 `reset_n` 复位状态机、请求 valid、AW/W 完成位、响应 valid
 
 未来的多 beat内部请求可使用以下字段：
 
-| 字段 | 位宽 | 说明 |
-| --- | ---: | --- |
-| `req_valid`、`req_ready` | 各 1 | 请求握手 |
-| `req_write` | 1 | 读写方向 |
-| `req_addr` | `PA_W` | 第一个 beat 的物理字节地址 |
-| `req_beats` | 8 | beat 数减 1 |
-| `req_tag` | 12 | 发起端请求编号 |
-| `req_task_id` | 12 | 用于错误归属的任务编号 |
-| `req_attr` | 8 | cache、保护属性和 QoS |
-| `wdata`、`wstrb`、`wlast` | 64、8、1 | 写数据 |
-| `rsp_data`、`rsp_status`、`rsp_last` | 64、8、1 | 返回数据、状态和末拍 |
+| 字段                                 |     位宽 | 说明               |
+| ---------------------------------- | -----: | ---------------- |
+| `req_valid`、`req_ready`            |    各 1 | 请求握手             |
+| `req_write`                        |      1 | 读写方向             |
+| `req_addr`                         | `PA_W` | 第一个 beat 的物理字节地址 |
+| `req_beats`                        |      8 | beat 数减 1        |
+| `req_tag`                          |     12 | 发起端请求编号          |
+| `req_task_id`                      |     12 | 用于错误归属的任务编号      |
+| `req_attr`                         |      8 | cache、保护属性和 QoS  |
+| `wdata`、`wstrb`、`wlast`            | 64、8、1 | 写数据              |
+| `rsp_data`、`rsp_status`、`rsp_last` | 64、8、1 | 返回数据、状态和末拍       |
 
 MIF 接收请求时必须检查整个物理地址范围。若起始地址为 $p_0$，beat 数为 $n+1$，最后一个 beat 的起始地址为：
 
@@ -4119,7 +4119,7 @@ RTL 的条件分支直接确定：
 | `0x02C8` | `WDT_TIMEOUT_CYCLES` | RW | WDT 的 32-bit 超时周期数 |
 | `0x02D0` | `MODULE_CLK_ENABLE` | RW | 低 8 bit 控制八个模块的时钟使能 |
 
-`idle-only` 寄存器在 NPU 忙时写入必须返回 `SLVERR`，原值保持不变。
+`idle-only` 寄存器在命令入口、CFE、TS、执行单元、L1BUF 或 MIF 忙时写入必须返回 `SLVERR`，原值保持不变。检查该属性时不计入正在处理本次寄存器访问的 AXI Slave 事务，否则每次配置写入都会被自身造成的 `s_axi_idle_i=0` 拒绝。用于复位、断电和状态查询的 `core_idle_o` 仍包含 `s_axi_idle_i`，必须等 AXI Slave 的请求与响应全部处理完毕后才能置 1。
 复位后 `M_AXI_ADDR_BASE=0`，`M_AXI_ADDR_LIMIT=0x00FF_FFFF_FFF8`，对应 40-bit 物理地址空间中最后一个 8B 对齐的 beat 起始地址。软件可在启动 NPU 前缩小该允许访问范围。
 
 `NPU_VERSION` 位段固定如下：

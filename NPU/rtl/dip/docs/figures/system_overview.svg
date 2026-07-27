@@ -5,10 +5,10 @@
     <style>
       .title { font: 700 28px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #0f172a; }
       .h2 { font: 700 20px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #0f172a; text-anchor: middle; }
-      .label { font: 600 16px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #334155; text-anchor: middle; }
-      .small { font: 500 14px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #475569; text-anchor: middle; }
+      .label { font: 700 16px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #334155; text-anchor: middle; }
+      .small { font: 700 14px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #475569; text-anchor: middle; }
       .left { text-anchor: start; }
-      .mono { font: 600 15px "JetBrains Mono", "DejaVu Sans Mono", monospace; fill: #0f172a; text-anchor: middle; }
+      .mono { font: 700 15px "JetBrains Mono", "DejaVu Sans Mono", monospace; fill: #0f172a; text-anchor: middle; }
       .module { fill: #f8fafc; stroke: #334155; stroke-width: 2; rx: 12; }
       .pre { fill: #fff7ed; stroke: #d97706; stroke-width: 2; rx: 12; }
       .array { fill: #eff6ff; stroke: #2563eb; stroke-width: 2; rx: 12; }
@@ -25,6 +25,8 @@
     <marker id="arr-a" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#2563eb"/></marker>
     <marker id="arr-c" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#7c3aed"/></marker>
     <marker id="arr-g" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#059669"/></marker>
+    <marker id="arr-diag" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#60a5fa"/></marker>
+    <marker id="arr-vertical" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#a78bfa"/></marker>
   </defs>
 
   <rect width="1500" height="690" fill="#ffffff"/>
@@ -45,17 +47,17 @@
     <text class="small" x="195" y="257">可由 SRAM bank 及读地址控制替换</text>
   </g>
 
-  <path class="busb" d="M5 255H70" marker-end="url(#arr-b)"/>
+  <path class="busb" d="M5 255H77" marker-end="url(#arr-b)"/>
   <text x="38" y="225" class="small">B raw</text>
   <text x="38" y="244" class="small">N·16 bit</text>
 
-  <path class="busb" d="M470 320H570" marker-end="url(#arr-b)"/>
+  <path class="busb" d="M470 320H577" marker-end="url(#arr-b)"/>
   <text x="520" y="292" class="small">weight beat</text>
   <text x="520" y="311" class="small">N·16 bit</text>
 
   <g transform="translate(580 185)">
     <rect class="array" x="0" y="0" width="570" height="270"/>
-    <text class="h2" x="285" y="37">dip_systolic_array：N×N 物理 PE</text>
+    <text class="h2" x="285" y="28">dip_systolic_array：N×N 物理 PE</text>
     <g transform="translate(120 62)">
       <rect class="pe" x="0" y="0" width="82" height="52"/><rect class="pe" x="102" y="0" width="82" height="52"/><rect class="pe" x="204" y="0" width="82" height="52"/><rect class="pe" x="306" y="0" width="82" height="52"/>
       <rect class="pe" x="0" y="72" width="82" height="52"/><rect class="pe" x="102" y="72" width="82" height="52"/><rect class="pe" x="204" y="72" width="82" height="52"/><rect class="pe" x="306" y="72" width="82" height="52"/>
@@ -63,16 +65,26 @@
       <text class="small" x="41" y="32">PE</text><text class="small" x="143" y="32">PE</text><text class="small" x="245" y="32">…</text><text class="small" x="347" y="32">PE</text>
       <text class="small" x="41" y="104">PE</text><text class="small" x="143" y="104">PE</text><text class="small" x="245" y="104">…</text><text class="small" x="347" y="104">PE</text>
       <text class="small" x="41" y="176">PE</text><text class="small" x="143" y="176">PE</text><text class="small" x="245" y="176">…</text><text class="small" x="347" y="176">PE</text>
-      <path class="diag" d="M41 52L347 72 M143 52L41 72 M347 52L245 72 M41 124L347 144 M143 124L41 144 M347 124L245 144"/>
-      <path class="vertical" d="M70 52V72 M172 52V72 M376 52V72 M70 124V144 M172 124V144 M376 124V144"/>
+      <path class="diag" d="M41 52L347 70" marker-end="url(#arr-diag)"/>
+      <path class="diag" d="M143 52L41 70" marker-end="url(#arr-diag)"/>
+      <path class="diag" d="M347 52L245 70" marker-end="url(#arr-diag)"/>
+      <path class="diag" d="M41 124L347 142" marker-end="url(#arr-diag)"/>
+      <path class="diag" d="M143 124L41 142" marker-end="url(#arr-diag)"/>
+      <path class="diag" d="M347 124L245 142" marker-end="url(#arr-diag)"/>
+      <path class="vertical" d="M70 52V70" marker-end="url(#arr-vertical)"/>
+      <path class="vertical" d="M172 52V70" marker-end="url(#arr-vertical)"/>
+      <path class="vertical" d="M376 52V70" marker-end="url(#arr-vertical)"/>
+      <path class="vertical" d="M70 124V142" marker-end="url(#arr-vertical)"/>
+      <path class="vertical" d="M172 124V142" marker-end="url(#arr-vertical)"/>
+      <path class="vertical" d="M376 124V142" marker-end="url(#arr-vertical)"/>
     </g>
   </g>
 
-  <path class="busa" d="M480 230H685" marker-end="url(#arr-a)"/>
-  <text x="575" y="207" class="small">A row：N·16 bit</text>
+  <path class="busa" d="M5 168H555V232H697" marker-end="url(#arr-a)"/>
+  <text x="230" y="159" class="small">A row：N·16 bit</text>
   <path class="busa" d="M700 232H1088"/>
   <path class="busa" d="M741 232V246 M843 232V246 M945 232V246 M1047 232V246"/>
-  <path class="busc" d="M1080 458V507" marker-end="url(#arr-c)"/>
+  <path class="busc" d="M1080 455V507" marker-end="url(#arr-c)"/>
   <text x="1080" y="540" class="small">C row：N·32 bit</text>
 
   <g transform="translate(1190 185)">
@@ -89,11 +101,11 @@
   <text x="80" y="595" class="h2 left">单 tile 状态次序</text>
   <g transform="translate(285 575)">
     <rect class="state" x="0" y="0" width="225" height="65"/><text class="label" x="112" y="29">接收 L 行 B</text><text class="small" x="112" y="51">mode 在首拍锁存</text>
-    <path class="ctrl" d="M225 32H285" marker-end="url(#arr-g)"/>
+    <path class="ctrl" d="M225 32H292" marker-end="url(#arr-g)"/>
     <rect class="state" x="295" y="0" width="225" height="65"/><text class="label" x="407" y="29">装载 L 拍权重</text><text class="small" x="407" y="51">最后一拍可同时接收 A</text>
-    <path class="ctrl" d="M520 32H580" marker-end="url(#arr-g)"/>
+    <path class="ctrl" d="M520 32H587" marker-end="url(#arr-g)"/>
     <rect class="state" x="590" y="0" width="225" height="65"/><text class="label" x="702" y="29">接收 L 行 A</text><text class="small" x="702" y="51">允许 valid 气泡</text>
-    <path class="ctrl" d="M815 32H875" marker-end="url(#arr-g)"/>
+    <path class="ctrl" d="M815 32H882" marker-end="url(#arr-g)"/>
     <rect class="state" x="885" y="0" width="225" height="65"/><text class="label" x="997" y="29">排出 L 行 C</text><text class="small" x="997" y="51">末行产生 tile_done</text>
   </g>
 </svg>

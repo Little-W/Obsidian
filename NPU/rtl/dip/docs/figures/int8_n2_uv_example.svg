@@ -5,10 +5,10 @@
     <style>
       .title { font: 700 28px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #0f172a; }
       .h2 { font: 700 20px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #0f172a; }
-      .label { font: 600 16px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #334155; }
-      .small { font: 500 14px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #475569; }
+      .label { font: 700 16px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #334155; }
+      .small { font: 700 14px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #475569; }
       .left { text-anchor: start; }
-      .mono { font: 600 16px "JetBrains Mono", "DejaVu Sans Mono", monospace; fill: #0f172a; }
+      .mono { font: 700 16px "JetBrains Mono", "DejaVu Sans Mono", monospace; fill: #0f172a; }
       .monoc { font: 700 17px "JetBrains Mono", "DejaVu Sans Mono", monospace; fill: #0f172a; text-anchor: middle; dominant-baseline: middle; }
       .word0 { fill: #dbeafe; stroke: #2563eb; stroke-width: 2; }
       .word1 { fill: #e0e7ff; stroke: #4f46e5; stroke-width: 2; }
@@ -44,21 +44,22 @@
     <text class="small" x="380" y="104" text-anchor="middle">physical word C=1</text>
   </g>
 
-  <path class="arrow" d="M265 300 C265 270 555 270 555 300" marker-end="url(#arrow-blue)"/>
-  <text x="410" y="266" class="label" text-anchor="middle">C=1 的右邻按模 2 回到 C=0</text>
+  <text x="315" y="279" class="label" text-anchor="middle">C=1 的右邻按模 2 回到 C=0</text>
 
   <g transform="translate(70 315)">
     <rect x="0" y="0" width="490" height="135" rx="12" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
     <text x="20" y="32" class="label left">目标：PE(R=0,C=1)</text>
-    <rect class="word1" x="20" y="52" width="210" height="65" rx="7"/>
-    <line x1="125" y1="52" x2="125" y2="117" stroke="#a5b4fc" stroke-width="1.3"/>
-    <text class="small" x="72" y="72" text-anchor="middle">self[0]</text><text class="small" x="178" y="72" text-anchor="middle">self[1]</text>
-    <text class="monoc" x="72" y="96">A2</text><text class="monoc" x="178" y="96">A3</text>
-    <rect class="word0" x="260" y="52" width="210" height="65" rx="7"/>
-    <line x1="365" y1="52" x2="365" y2="117" stroke="#93c5fd" stroke-width="1.3"/>
-    <text class="small" x="312" y="72" text-anchor="middle">right[0]</text><text class="small" x="418" y="72" text-anchor="middle">right[1]</text>
-    <text class="monoc" x="312" y="96">A0</text><text class="monoc" x="418" y="96">A1</text>
+    <rect class="word0" x="20" y="52" width="210" height="65" rx="7"/>
+    <line x1="125" y1="52" x2="125" y2="117" stroke="#93c5fd" stroke-width="1.3"/>
+    <text class="small" x="72" y="72" text-anchor="middle">right[0]</text><text class="small" x="178" y="72" text-anchor="middle">right[1]</text>
+    <text class="monoc" x="72" y="96">A0</text><text class="monoc" x="178" y="96">A1</text>
+    <rect class="word1" x="260" y="52" width="210" height="65" rx="7"/>
+    <line x1="365" y1="52" x2="365" y2="117" stroke="#a5b4fc" stroke-width="1.3"/>
+    <text class="small" x="312" y="72" text-anchor="middle">self[0]</text><text class="small" x="418" y="72" text-anchor="middle">self[1]</text>
+    <text class="monoc" x="312" y="96">A2</text><text class="monoc" x="418" y="96">A3</text>
   </g>
+  <path class="arrow" d="M70 184H45V399.5H87" marker-end="url(#arrow-blue)"/>
+  <path class="arrow" d="M560 184H585V399.5H543" marker-end="url(#arrow-blue)"/>
 
   <text x="625" y="126" class="h2">PE 内保存的四个 INT8 权重</text>
   <g transform="translate(625 145)">
@@ -84,8 +85,8 @@
     <text class="small" x="-12" y="40" text-anchor="end">u=0</text><text class="small" x="-12" y="120" text-anchor="end">u=1</text>
   </g>
 
-  <path class="arrow2" d="M1080 325V385" marker-end="url(#arrow-purple)"/>
-  <path class="arrow2" d="M1247 325V385" marker-end="url(#arrow-purple)"/>
+  <path class="arrow2" d="M1082 305V397" marker-end="url(#arrow-purple)"/>
+  <path class="arrow2" d="M1247 305V397" marker-end="url(#arrow-purple)"/>
 
   <g transform="translate(865 400)">
     <rect class="sum" x="0" y="0" width="465" height="120" rx="12"/>
