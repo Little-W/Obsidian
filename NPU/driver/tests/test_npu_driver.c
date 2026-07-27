@@ -103,7 +103,7 @@ static int fake_submit_response(void *context, uint64_t *value)
                            (fake->beats[
                                 index * NPU_DRV_CMD128_BEATS + 1u] >>
                             48u) &
-                           0x07ffu);
+                           0x03ffu);
     *value = (uint64_t)command_id |
              ((uint64_t)fake->response_status[index] << 12u) |
              ((uint64_t)(NPU_DRV_CMD_FIFO_MAX_BURST_COMMANDS -
@@ -235,6 +235,31 @@ static int test_references_and_payload(void)
     CHECK(lref == 0xc0u);
     CHECK(npu_drv_lref_encode(0x3001u, 6u, 14u, &lref) == NPU_DRV_ERANGE);
 
+    CHECK(npu_drv_dma_gather_nd_payload_encode(
+              UINT32_C(0x0a000100),
+              0x100u,
+              0x200u,
+              3u,
+              64u,
+              &payload) == NPU_DRV_OK);
+    CHECK(payload.lo == UINT64_C(0x100010002000203f));
+    CHECK(payload.hi == UINT16_C(0xa000));
+    CHECK(npu_drv_dma_gather_nd_payload_encode(
+              UINT32_C(0x00000100),
+              0x100u,
+              0x200u,
+              3u,
+              64u,
+              &payload) == NPU_DRV_EINVAL);
+    CHECK(npu_drv_dma_gather_nd_payload_encode(
+              UINT32_C(0x0a000100),
+              0x100u,
+              0x200u,
+              0u,
+              64u,
+              &payload) == NPU_DRV_EINVAL);
+
+    memset(&payload, 0, sizeof(payload));
     CHECK(npu_drv_payload_field_set(&payload, 66u, 14u, 0x1234u) ==
           NPU_DRV_OK);
     CHECK(payload.hi == (uint16_t)(0x1234u << 2u));
@@ -336,7 +361,7 @@ static int test_command(void)
         (UINT64_C(0x56) << 32u) |
         (UINT64_C(0x23) << 40u) |
         (UINT64_C(0x345) << 48u) |
-        (UINT64_C(27) << 59u);
+        (UINT64_C(28) << 58u);
     CHECK(command.lo == fields.payload.lo);
     CHECK(command.hi == expected_high);
     CHECK(npu_drv_cmd128_decode(&command, &decoded) == NPU_DRV_OK);
@@ -350,11 +375,17 @@ static int test_command(void)
     fields.opcode = NPU_DRV_OPCODE_COMPLEX_ADD_RESCALE;
     fields.signal_event.id = 0x88u;
     CHECK(npu_drv_cmd128_encode(&fields, &command) == NPU_DRV_OK);
-    CHECK(((command.hi >> 59u) & 0x1fu) == 31u);
+    CHECK(((command.hi >> 58u) & 0x3fu) == 32u);
     CHECK(npu_drv_cmd128_decode(&command, &decoded) == NPU_DRV_OK);
     CHECK(decoded.opcode == NPU_DRV_OPCODE_COMPLEX_ADD_RESCALE);
 
-    fields.opcode = (npu_drv_opcode_t)32;
+    fields.opcode = NPU_DRV_OPCODE_DMA_GATHER_ND;
+    CHECK(npu_drv_cmd128_encode(&fields, &command) == NPU_DRV_OK);
+    CHECK(((command.hi >> 58u) & 0x3fu) == 11u);
+    CHECK(npu_drv_cmd128_decode(&command, &decoded) == NPU_DRV_OK);
+    CHECK(decoded.opcode == NPU_DRV_OPCODE_DMA_GATHER_ND);
+
+    fields.opcode = (npu_drv_opcode_t)33;
     CHECK(npu_drv_cmd128_encode(&fields, &command) == NPU_DRV_EINVAL);
     fields.signal_event = fields.wait_event[0];
     CHECK(npu_drv_cmd128_encode(&fields, &command) == NPU_DRV_EINVAL);
@@ -480,6 +511,6 @@ int main(void)
     CHECK(test_command() == 0);
     CHECK(test_fixed_burst_batch() == 0);
     CHECK(test_driver() == 0);
-    puts("npu_driver inline-V2 tests: PASS");
+    puts("npu_driver CMD128 tests: PASS");
     return 0;
 }

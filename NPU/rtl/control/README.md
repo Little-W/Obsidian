@@ -12,7 +12,7 @@ submitted task does not fetch a parameter block from system memory.
 
 | File | Function |
 | --- | --- |
-| `../npu_rtl_pkg.sv` | Shared widths, status values, integer data types, five-bit command opcodes, and CMD128 field helpers |
+| `../npu_rtl_pkg.sv` | Shared widths, status values, integer data types, six-bit command opcodes, and CMD128 field helpers |
 | `npu_cmd_frontend.sv` | Reassembles two 64-bit beats into CMD128, checks the header, checks duplicate command IDs, and holds accepted commands in an eight-entry FIFO |
 | `npu_inline_desc_decode.sv` | Checks the inline payload and expands it into the internal engine request structure |
 | `npu_task_scheduler.sv` | Holds the task table and Event Table, resolves Event generations, dispatches ready tasks, and records terminal results |
@@ -50,19 +50,19 @@ The command response contains:
 [27:20]  remaining CFE FIFO entries
 ```
 
-`command_id` comes from CMD128 bits `[122:112]`. The response places it in a
-12-bit field whose upper bit is zero.
+`command_id` comes from CMD128 bits `[121:112]`. The response places it in a
+12-bit field whose upper two bits are zero.
 
-The CFE-to-scheduler duplicate-ID query carries `cmd_id_lookup_id[10:0]`.
+The CFE-to-scheduler duplicate-ID query carries `cmd_id_lookup_id[9:0]`.
 Scheduler task records and completion messages remain 12 bits wide for the
-internal interface; bit 11 is always zero for a CMD128 command.
+internal interface; bits 11 and 10 are always zero for a CMD128 command.
 
 ## CMD128 header
 
 | CMD128 bits | Field | Meaning |
 | ---: | --- | --- |
-| `[127:123]` | `opcode` | Five-bit operation selector |
-| `[122:112]` | `command_id` | Eleven-bit in-flight task ID, 0 through 2047 |
+| `[127:122]` | `opcode` | Six-bit operation selector; values 0 through 32 are assigned |
+| `[121:112]` | `command_id` | Ten-bit in-flight task ID, 0 through 1023 |
 | `[111:104]` | `wait_event0` | First Event ID; `8'hff` means unused |
 | `[103:96]` | `wait_event1` | Second Event ID; `8'hff` means unused |
 | `[95:88]` | `signal_event` | Completion Event ID; `8'hff` means unused |
@@ -74,18 +74,19 @@ internal interface; bit 11 is always zero for a CMD128 command.
 | `[81:80]` | `dtype` | `0=INT4`, `1=INT8`, `2=INT32`, `3=INT16` |
 | `[79:0]` | `payload` | Operation-specific inline parameters |
 
-The five-bit opcode has the following decode:
+The six-bit opcode has the following decode. Values 33 through 63 are illegal.
 
 | Values | Engine | Operations |
 | --- | --- | --- |
 | 0–4 | Control | NOP, EVENT_SIGNAL, EVENT_REARM, EVENT_JOIN, GLOBAL_FENCE |
-| 5–10 | DMA | COPY_1D, COPY_ND, FILL, TRANSPOSE_2D, PACK, SPLIT |
-| 11–14 | Matrix | GEMM, BMM, GEMM_ACCUM, GEMM_ZERO |
-| 15–24 | Vector | ADD, SUB, MUL, FMA, MAX, MIN, CMP, SELECT, CLAMP, RELU |
-| 25–31 | Complex | ACT, SOFTMAX, NORM, ROPE, STAT, RECIP, ADD_RESCALE |
+| 5–11 | DMA | COPY_1D, COPY_ND, FILL, TRANSPOSE_2D, PACK, SPLIT, GATHER_ND |
+| 12–15 | Matrix | GEMM, BMM, GEMM_ACCUM, GEMM_ZERO |
+| 16–25 | Vector | ADD, SUB, MUL, FMA, MAX, MIN, CMP, SELECT, CLAMP, RELU |
+| 26–32 | Complex | ACT, SOFTMAX, NORM, ROPE, STAT, RECIP, ADD_RESCALE |
 
-ROPE and RECIP are recognized but disabled in the first feature set. They
-return `ILLEGAL_OPCODE` until the corresponding capability bit is enabled.
+GATHER_ND, ROPE, and RECIP have assigned values, while their capability bits
+are disabled in this configuration. Opcodes 11, 29, and 31 therefore return
+`ILLEGAL_OPCODE`.
 
 ## Inline payload expansion
 
@@ -187,7 +188,7 @@ done_progress[63:0]
 
 `task_valid` and its payload remain stable while `task_ready` is low. A terminal
 task remains queryable until software completes the ACK request. The 12-bit
-task and completion ID fields carry `{1'b0, command_id[10:0]}`.
+task and completion ID fields carry `{2'b00, command_id[9:0]}`.
 
 ## Scheduler control requests
 
@@ -255,7 +256,7 @@ memory status values.
 
 ## Implemented limits
 
-- The first RTL feature set disables ROPE and RECIP.
+- The RTL capability register disables GATHER_ND, ROPE, and RECIP.
 - CMD128 shape fields limit Matrix `M`, `N`, `K`, and BMM batch values to 1 through
   64 per instruction. The compiler splits larger work.
 - Vector length is 1 through 32 and rows are 1 through 32 per instruction.
@@ -280,6 +281,8 @@ make clean
 The regression includes:
 
 - atomic command-pair assembly and partial-command timeout;
+- command ID `10'h3ff`, disabled opcode values 11, 29, and 31, and illegal
+  opcode values 33 through 63;
 - CMD128 decode for all engine classes;
 - zero Descriptor Fetch Unit requests during CMD128 task submission;
 - positive and negative payload checks;

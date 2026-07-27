@@ -1712,6 +1712,27 @@ def lower_multi_head_attention(
         (heads, tokens, head_width),
         dtype,
     )
+    k_heads = add_internal_tensor(
+        tensors,
+        allocator,
+        f"{prefix}_k_heads",
+        (heads, tokens, head_width),
+        dtype,
+    )
+    k_transposed = add_internal_tensor(
+        tensors,
+        allocator,
+        f"{prefix}_k_transposed",
+        (heads, head_width, tokens),
+        dtype,
+    )
+    v_heads = add_internal_tensor(
+        tensors,
+        allocator,
+        f"{prefix}_v_heads",
+        (heads, tokens, head_width),
+        dtype,
+    )
     k_head_bytes = tiled_matrix_bytes(
         head_width, tokens, dtype, target
     )
@@ -1737,6 +1758,20 @@ def lower_multi_head_attention(
         storage_bytes=heads * v_head_bytes,
         alignment=256,
         layout="matrix_b",
+    )
+    k_tile_stage = add_internal_tensor(
+        tensors,
+        allocator,
+        f"{prefix}_k_tile_stage",
+        (target.kt, target.nt),
+        dtype,
+    )
+    v_tile_stage = add_internal_tensor(
+        tensors,
+        allocator,
+        f"{prefix}_v_tile_stage",
+        (target.kt, target.nt),
+        dtype,
     )
     scores = add_internal_tensor(
         tensors,
@@ -1830,7 +1865,63 @@ def lower_multi_head_attention(
         ),
     ]
 
-    element_size = element_bytes(dtype)
+    k_tile_elements = (
+        heads
+        * ((head_width + target.kt - 1) // target.kt)
+        * ((tokens + target.nt - 1) // target.nt)
+        * target.kt
+        * target.nt
+    )
+    v_tile_elements = (
+        heads
+        * ((tokens + target.kt - 1) // target.kt)
+        * ((head_width + target.nt - 1) // target.nt)
+        * target.kt
+        * target.nt
+    )
+    tasks.extend(
+        [
+            VirtualTask(
+                name=f"{operator.name}_fill_k_tiles",
+                engine="dma",
+                opcode="FILL",
+                reads=(),
+                writes=(k_tiles.name,),
+                descriptor={
+                    "common": {
+                        "dst": k_tiles.name,
+                        "dst_dtype": dtype,
+                    },
+                    "dma": {
+                        "rank": 1,
+                        "shape": [k_tile_elements],
+                        "fill_value": 0,
+                    },
+                },
+                high_level_node=operator.name,
+            ),
+            VirtualTask(
+                name=f"{operator.name}_fill_v_tiles",
+                engine="dma",
+                opcode="FILL",
+                reads=(),
+                writes=(v_tiles.name,),
+                descriptor={
+                    "common": {
+                        "dst": v_tiles.name,
+                        "dst_dtype": dtype,
+                    },
+                    "dma": {
+                        "rank": 1,
+                        "shape": [v_tile_elements],
+                        "fill_value": 0,
+                    },
+                },
+                high_level_node=operator.name,
+            ),
+        ]
+    )
+
     head_row_bytes = element_bytes(dtype, head_width)
     full_row_bytes = element_bytes(dtype, width)
     token_row_bytes = element_bytes(dtype, tokens)
@@ -1883,13 +1974,13 @@ def lower_multi_head_attention(
         tasks.append(q_task)
         q_previous = q_name
 
-        k_name = f"{operator.name}_transpose_k_head_{head}"
-        k_task = VirtualTask(
-            name=k_name,
+        k_pack_name = f"{operator.name}_pack_k_head_{head}"
+        k_pack_task = VirtualTask(
+            name=k_pack_name,
             engine="dma",
-            opcode="TRANSPOSE_2D",
+            opcode="PACK",
             reads=(k.name,),
-            writes=(k_tiles.name,),
+            writes=(k_heads.name,),
             descriptor={
                 "common": {
                     "src0": {
@@ -1901,37 +1992,193 @@ def lower_multi_head_attention(
                         ),
                     },
                     "dst": {
-                        "addr": k_tiles.l1_addr + head * k_head_bytes,
+                        "addr": (
+                            k_heads.l1_addr
+                            + head * tokens * head_row_bytes
+                        ),
                         "space": "l1",
                         "dtype": dtype,
-                        "region_bytes": k_head_bytes,
+                        "region_bytes": tokens * head_row_bytes,
+                    },
+                },
+                "dma": {
+                    "rank": 1,
+                    "shape": [tokens],
+                    "src_stride_bytes": [0],
+                    "dst_stride_bytes": [0],
+                    "segment_count": tokens,
+                    "segment_bytes": head_row_bytes,
+                    "segment_stride": full_row_bytes,
+                    "burst_beats": 16,
+                    "max_outstanding": 8,
+                },
+            },
+            high_level_node=operator.name,
+        )
+        tasks.append(k_pack_task)
+
+        k_transpose_name = f"{operator.name}_transpose_k_head_{head}"
+        k_transpose_task = VirtualTask(
+            name=k_transpose_name,
+            engine="dma",
+            opcode="TRANSPOSE_2D",
+            reads=(k_heads.name,),
+            writes=(k_transposed.name,),
+            descriptor={
+                "common": {
+                    "src0": {
+                        "addr": (
+                            k_heads.l1_addr
+                            + head * tokens * head_row_bytes
+                        ),
+                        "space": "l1",
+                        "dtype": dtype,
+                        "region_bytes": tokens * head_row_bytes,
+                    },
+                    "dst": {
+                        "addr": (
+                            k_transposed.l1_addr
+                            + head * tokens * head_row_bytes
+                        ),
+                        "space": "l1",
+                        "dtype": dtype,
+                        "region_bytes": tokens * head_row_bytes,
                     },
                 },
                 "dma": {
                     "rank": 2,
                     "shape": [tokens, head_width],
-                    "src_stride_bytes": [full_row_bytes, 0],
-                    "dst_stride_bytes": [
-                        element_bytes(dtype, target.nt),
-                        0,
-                    ],
+                    "src_stride_bytes": [head_row_bytes, 0],
+                    "dst_stride_bytes": [token_row_bytes, 0],
                     "burst_beats": 16,
                     "max_outstanding": 8,
                 },
             },
-            extra_after=() if k_previous is None else (k_previous,),
             high_level_node=operator.name,
         )
-        tasks.append(k_task)
-        k_previous = k_name
+        tasks.append(k_transpose_task)
+        k_previous = k_transpose_name
 
-        v_name = f"{operator.name}_tile_v_head_{head}"
-        v_task = VirtualTask(
-            name=v_name,
+        k_tiles_k = (head_width + target.kt - 1) // target.kt
+        k_tiles_n = (tokens + target.nt - 1) // target.nt
+        for k_outer in range(k_tiles_k):
+            valid_k = min(target.kt, head_width - k_outer * target.kt)
+            for n_outer in range(k_tiles_n):
+                valid_n = min(target.nt, tokens - n_outer * target.nt)
+                source_element = (
+                    head * head_width * tokens
+                    + k_outer * target.kt * tokens
+                    + n_outer * target.nt
+                )
+                destination_element = (
+                    head * (k_head_bytes * 8 // DTYPE_BITS[dtype])
+                    + (
+                        (k_outer * k_tiles_n + n_outer)
+                        * target.kt
+                        * target.nt
+                    )
+                )
+                tile_suffix = f"{head}_{k_outer}_{n_outer}"
+                stage_name = (
+                    f"{operator.name}_pack_k_tile_{tile_suffix}"
+                )
+                stage_task = VirtualTask(
+                    name=stage_name,
+                    engine="dma",
+                    opcode="PACK",
+                    reads=(k_transposed.name,),
+                    writes=(k_tile_stage.name,),
+                    descriptor={
+                        "common": {
+                            "src0": {
+                                "addr": (
+                                    k_transposed.l1_addr
+                                    + element_byte_offset(
+                                        source_element, dtype
+                                    )
+                                ),
+                                "space": "l1",
+                                "dtype": dtype,
+                                "region_bytes": (
+                                    k_transposed.storage_bytes
+                                    - element_byte_offset(
+                                        source_element, dtype
+                                    )
+                                ),
+                            },
+                            "dst": k_tile_stage.name,
+                        },
+                        "dma": {
+                            "rank": 1,
+                            "shape": [valid_k],
+                            "src_stride_bytes": [0],
+                            "dst_stride_bytes": [0],
+                            "segment_count": valid_k,
+                            "segment_bytes": element_bytes(
+                                dtype, valid_n
+                            ),
+                            "segment_stride": token_row_bytes,
+                        },
+                    },
+                    high_level_node=operator.name,
+                )
+                tasks.append(stage_task)
+
+                split_name = (
+                    f"{operator.name}_split_k_tile_{tile_suffix}"
+                )
+                split_task = VirtualTask(
+                    name=split_name,
+                    engine="dma",
+                    opcode="SPLIT",
+                    reads=(k_tile_stage.name,),
+                    writes=(k_tiles.name,),
+                    descriptor={
+                        "common": {
+                            "src0": k_tile_stage.name,
+                            "dst": {
+                                "addr": (
+                                    k_tiles.l1_addr
+                                    + element_byte_offset(
+                                        destination_element, dtype
+                                    )
+                                ),
+                                "space": "l1",
+                                "dtype": dtype,
+                                "region_bytes": (
+                                    k_tiles.storage_bytes
+                                    - element_byte_offset(
+                                        destination_element, dtype
+                                    )
+                                ),
+                            },
+                        },
+                        "dma": {
+                            "rank": 1,
+                            "shape": [valid_k],
+                            "src_stride_bytes": [0],
+                            "dst_stride_bytes": [0],
+                            "segment_count": valid_k,
+                            "segment_bytes": element_bytes(
+                                dtype, valid_n
+                            ),
+                            "segment_stride": element_bytes(
+                                dtype, target.nt
+                            ),
+                        },
+                    },
+                    high_level_node=operator.name,
+                )
+                tasks.append(split_task)
+                k_previous = split_name
+
+        v_pack_name = f"{operator.name}_pack_v_head_{head}"
+        v_pack_task = VirtualTask(
+            name=v_pack_name,
             engine="dma",
-            opcode="COPY_ND",
+            opcode="PACK",
             reads=(v.name,),
-            writes=(v_tiles.name,),
+            writes=(v_heads.name,),
             descriptor={
                 "common": {
                     "src0": {
@@ -1943,29 +2190,146 @@ def lower_multi_head_attention(
                         ),
                     },
                     "dst": {
-                        "addr": v_tiles.l1_addr + head * v_head_bytes,
+                        "addr": (
+                            v_heads.l1_addr
+                            + head * tokens * head_row_bytes
+                        ),
                         "space": "l1",
                         "dtype": dtype,
-                        "region_bytes": v_head_bytes,
+                        "region_bytes": tokens * head_row_bytes,
                     },
                 },
                 "dma": {
-                    "rank": 2,
-                    "shape": [tokens, head_width],
-                    "src_stride_bytes": [full_row_bytes, 0],
-                    "dst_stride_bytes": [
-                        element_bytes(dtype, target.nt),
-                        0,
-                    ],
+                    "rank": 1,
+                    "shape": [tokens],
+                    "src_stride_bytes": [0],
+                    "dst_stride_bytes": [0],
+                    "segment_count": tokens,
+                    "segment_bytes": head_row_bytes,
+                    "segment_stride": full_row_bytes,
                     "burst_beats": 16,
                     "max_outstanding": 8,
                 },
             },
-            extra_after=() if v_previous is None else (v_previous,),
             high_level_node=operator.name,
         )
-        tasks.append(v_task)
-        v_previous = v_name
+        tasks.append(v_pack_task)
+        v_previous = v_pack_name
+
+        v_tiles_k = (tokens + target.kt - 1) // target.kt
+        v_tiles_n = (head_width + target.nt - 1) // target.nt
+        for k_outer in range(v_tiles_k):
+            valid_k = min(target.kt, tokens - k_outer * target.kt)
+            for n_outer in range(v_tiles_n):
+                valid_n = min(
+                    target.nt, head_width - n_outer * target.nt
+                )
+                source_element = (
+                    head * tokens * head_width
+                    + k_outer * target.kt * head_width
+                    + n_outer * target.nt
+                )
+                destination_element = (
+                    head * (v_head_bytes * 8 // DTYPE_BITS[dtype])
+                    + (
+                        (k_outer * v_tiles_n + n_outer)
+                        * target.kt
+                        * target.nt
+                    )
+                )
+                tile_suffix = f"{head}_{k_outer}_{n_outer}"
+                stage_name = (
+                    f"{operator.name}_pack_v_tile_{tile_suffix}"
+                )
+                stage_task = VirtualTask(
+                    name=stage_name,
+                    engine="dma",
+                    opcode="PACK",
+                    reads=(v_heads.name,),
+                    writes=(v_tile_stage.name,),
+                    descriptor={
+                        "common": {
+                            "src0": {
+                                "addr": (
+                                    v_heads.l1_addr
+                                    + element_byte_offset(
+                                        source_element, dtype
+                                    )
+                                ),
+                                "space": "l1",
+                                "dtype": dtype,
+                                "region_bytes": (
+                                    v_heads.storage_bytes
+                                    - element_byte_offset(
+                                        source_element, dtype
+                                    )
+                                ),
+                            },
+                            "dst": v_tile_stage.name,
+                        },
+                        "dma": {
+                            "rank": 1,
+                            "shape": [valid_k],
+                            "src_stride_bytes": [0],
+                            "dst_stride_bytes": [0],
+                            "segment_count": valid_k,
+                            "segment_bytes": element_bytes(
+                                dtype, valid_n
+                            ),
+                            "segment_stride": head_row_bytes,
+                        },
+                    },
+                    high_level_node=operator.name,
+                )
+                tasks.append(stage_task)
+
+                split_name = (
+                    f"{operator.name}_split_v_tile_{tile_suffix}"
+                )
+                split_task = VirtualTask(
+                    name=split_name,
+                    engine="dma",
+                    opcode="SPLIT",
+                    reads=(v_tile_stage.name,),
+                    writes=(v_tiles.name,),
+                    descriptor={
+                        "common": {
+                            "src0": v_tile_stage.name,
+                            "dst": {
+                                "addr": (
+                                    v_tiles.l1_addr
+                                    + element_byte_offset(
+                                        destination_element, dtype
+                                    )
+                                ),
+                                "space": "l1",
+                                "dtype": dtype,
+                                "region_bytes": (
+                                    v_tiles.storage_bytes
+                                    - element_byte_offset(
+                                        destination_element, dtype
+                                    )
+                                ),
+                            },
+                        },
+                        "dma": {
+                            "rank": 1,
+                            "shape": [valid_k],
+                            "src_stride_bytes": [0],
+                            "dst_stride_bytes": [0],
+                            "segment_count": valid_k,
+                            "segment_bytes": element_bytes(
+                                dtype, valid_n
+                            ),
+                            "segment_stride": element_bytes(
+                                dtype, target.nt
+                            ),
+                        },
+                    },
+                    high_level_node=operator.name,
+                )
+                tasks.append(split_task)
+                v_previous = split_name
 
     qk = make_matrix_task(
         f"{operator.name}_qk",
@@ -2945,7 +3309,7 @@ def expand_inline_dma_copy_nd(
     task: VirtualTask,
     tensors: Mapping[str, TensorInfo],
 ) -> list[VirtualTask]:
-    """Split a strided COPY_ND into compact COPY_1D row operations."""
+    """Split a strided COPY_ND into addressable COPY_1D row operations."""
 
     dma = as_object(task.descriptor.get("dma", {}), f"task {task.name}.dma")
     shape = tuple(

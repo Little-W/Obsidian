@@ -11,12 +11,16 @@ JOBS ?= 8
 
 syn:
 	mkdir -p "$(BUILD_DIR)"
+	cd "$(BUILD_DIR)" && \
 	"$(VIVADO)" -mode batch -notrace \
-		-source run_vivado.tcl \
-		-tclargs "$(BUILD_DIR)" "$(PART)" "$(PERIOD_NS)" "$(JOBS)" \
-		2>&1 | tee "$(BUILD_DIR)/vivado.log"
+		-journal vivado.jou \
+		-log vivado_internal.log \
+		-source "$(abspath run_vivado.tcl)" \
+		-tclargs "." "$(PART)" "$(PERIOD_NS)" "$(JOBS)" \
+		2>&1 | tee vivado.log
 
 clean:
 	rm -rf "$(BUILD_DIR)"
-	rm -f vivado.jou vivado.log vivado_pid*.str
-
+	rm -rf .Xil
+	rm -f vivado.jou vivado.log vivado_*.backup.jou \
+		vivado_*.backup.log vivado_pid*.str

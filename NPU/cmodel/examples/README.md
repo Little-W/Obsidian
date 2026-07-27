@@ -495,7 +495,7 @@ $c^\ast$ 是真实类别，$c$ 是其他类别编号，$p$ 是 token 位置。�
 软件生成两个输入张量，复制权重和输入，直接提交编译器给出的 CMD128 数组，等待并读取三个输出；分类时只平均有效 token。NPU 执行词特征与位置特征相加、两组多头注意力、四次 LayerNorm、两组前馈网络和线性分类层。当前编译结果使用的主要指令类别包括 `GEMM`、`BMM`、`SPLIT`、`TRANSPOSE_2D`、`PACK`、`SOFTMAX`、`NORM`、`ACT`、`ADD`、`COPY_1D`、`EVENT_JOIN` 和 `EVENT_REARM`。
 
 > [!note] 参数放在哪里
-> 当前 C 包采用 `cmd128-inline-v2`。每条命令的 80-bit 操作参数与命令编号、数据类型、等待事件和完成事件一起放在 128-bit 命令中，`external_descriptor_bytes` 必须为 0。指令数量会受任务拆分和事件重复使用方式影响，每次编译后的准确数值应读取 `transformer/build/generated/keras_transformer.manifest.json`。
+> 当前 C 包采用 `cmd128`。每条命令的 80-bit 操作参数与命令编号、数据类型、等待事件和完成事件一起放在 128-bit 命令中，`external_descriptor_bytes` 必须为 0。指令数量会受任务拆分和事件重复使用方式影响，每次编译后的准确数值应读取 `transformer/build/generated/keras_transformer.manifest.json`。
 
 测试数据同时保存第一编码器输出、第二编码器输出和最终分数的 Keras INT8 参考值。这样可以区分误差是在第一组编码器、第二组编码器还是分类层开始增大；24 条留出语句还覆盖同义词、词序变化、3～5 个有效 token 和右侧 padding。CModel 的最终误差与分类统计以本次 `make test` 的终端输出为准，不在测试程序完成更新前猜测数值。
 
@@ -789,7 +789,7 @@ true_intent=light_on Keras_prediction=light_on CModel_prediction=light_on
 | CNN | 418 | 54 | 0 B | 832 B |
 | Transformer | 366 | 48 | 0 B | 16192 B |
 
-五个模型都要求 manifest 中的 `command_format` 为 `cmd128-inline-v2`，`external_descriptor_bytes` 为 0。命令数和命令组数会随算子拆分及事件重复使用方式变化，请以各目录本次生成的 manifest 为准；这些数值不是模型结构本身的固定参数。
+五个模型都要求 manifest 中的 `command_format` 为 `cmd128`，`external_descriptor_bytes` 为 0。命令数和命令组数会随算子拆分及事件重复使用方式变化，请以各目录本次生成的 manifest 为准；这些数值不是模型结构本身的固定参数。
 
 > [!note] 结果为什么与 Keras 不会逐 bit 相同
 > Keras 参考模型使用 FP32，NPU 模型张量使用步长为 1/32 的 INT8。输入、权重、门值和每个时刻的隐状态都可能产生不超过若干个步长的差异。序列模型还会把前一时刻的差异带到下一时刻。因此测试同时检查对真实目标的误差、对 Keras 的误差和最大绝对误差，而不是要求逐 bit 相同。

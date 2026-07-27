@@ -253,8 +253,8 @@ MIF 不接收 Task Context 地址，也不读取外部任务参数块。
 
 |     bit | 名称               | 说明                          |
 | ------: | ---------------- | --------------------------- |
-| 127:123 | `opcode`         | 5 bit，见 6.3                 |
-| 122:112 | `command_id`     | 11 bit，0..2047              |
+| 127:122 | `opcode`         | 6 bit，见 6.3                 |
+| 121:112 | `command_id`     | 10 bit，0..1023              |
 | 111:104 | `wait0`          | 8 bit Event ID，0xff 表示 none |
 |  103:96 | `wait1`          | 8 bit Event ID，0xff 表示 none |
 |   95:88 | `signal`         | 8 bit Event ID，0xff 表示 none |
@@ -266,8 +266,9 @@ MIF 不接收 Task Context 地址，也不读取外部任务参数块。
 |   81:80 | `dtype`          | 公共输入 dtype                  |
 |    79:0 | `payload`        | 操作专有字段                      |
 
-指令不设置专用版本标志。`opcode` 直接占用最高 5 bit，`command_id` 使用
-11 bit，因此可表示 0..2047。
+
+`opcode` 占用最高 6 bit。数值 0..32 的含义见 6.3；33..63 返回
+ILLEGAL_OPCODE。
 
 各操作的保留位必须为 0。命令以 little-endian 字节保存并先发送低 64 bit。
 `command_id` 在未 ACK 的 Task 表项中必须唯一。CFE 在接收前查询占用状态；
@@ -289,44 +290,50 @@ REARM 不会改变已经接收任务所等待的代次。
 
 ### 6.3 操作码
 
-| 值 | 类别 | 指令 |
-| ---: | --- | --- |
-| 0 | Control | NOP |
-| 1 | Control | SIGNAL |
-| 2 | Control | REARM |
-| 3 | Control | JOIN |
-| 4 | Control | FENCE |
-| 5 | DMA | COPY1D |
-| 6 | DMA | COPYND |
-| 7 | DMA | FILL |
-| 8 | DMA | TRANSPOSE |
-| 9 | DMA | PACK |
-| 10 | DMA | SPLIT |
-| 11 | Matrix | GEMM |
-| 12 | Matrix | BMM |
-| 13 | Matrix | ACCUM |
-| 14 | Matrix | ZERO |
-| 15 | Vector | ADD |
-| 16 | Vector | SUB |
-| 17 | Vector | MUL |
-| 18 | Vector | FMA |
-| 19 | Vector | MAX |
-| 20 | Vector | MIN |
-| 21 | Vector | CMP |
-| 22 | Vector | SELECT |
-| 23 | Vector | CLAMP |
-| 24 | Vector | RELU |
-| 25 | Complex | ACT |
-| 26 | Complex | SOFTMAX |
-| 27 | Complex | NORM |
-| 28 | Complex | ROPE |
-| 29 | Complex | STAT |
-| 30 | Complex | RECIP |
-| 31 | Complex | ADD_RESCALE |
+本表的“CMD128 值”是 `opcode[127:122]` 的 6 bit 线上编码，不是 DMA、
+Matrix、IVE 或 CME 内部使用的操作码。每条任务的地址引用、尺寸、数据格式和
+操作选项均由命令头与 `payload` 直接给出；“直接字段”仅作索引，精确位段见第
+8～12 节。
 
-首版关闭 ROPE 与 RECIP 功能；收到 28 或 30 必须返回 ILLEGAL_OPCODE，不得
-启动 CME，也不得写目标张量。功能寄存器可在后续实现中开启，但位格式不能
-改变。
+| CMD128 值 | 接口名称 | 单元 | 状态 | 直接字段 | 定义与当前限制 |
+| ---: | --- | --- | --- | --- | --- |
+| 0 | `NOP` | Control | P0，已实现 | `payload=0`；三个 Event 字段均为 none | 创建占位任务，不读写数据。 |
+| 1 | `EVENT_SIGNAL` | Control | P0，已实现 | `signal`；`payload=0` | 主动把指定 Event 置为成功，不启动执行单元。 |
+| 2 | `EVENT_REARM` | Control | P0，已实现 | `signal`；`payload=0` | 将已完成且没有等待者的 Event 进入新代次。 |
+| 3 | `EVENT_JOIN` | Control | P0，已实现 | `wait0`、`wait1`、`signal`、`join_mode` | 合并两个前置 Event 的结果；`join_mode` 选择“均成功”或“任一成功”。 |
+| 4 | `GLOBAL_FENCE` | Control | P0，已实现 | `engine_mask` | 等待所选 DMA、Matrix、IVE、CME 中更早提交的任务结束。 |
+| 5 | `DMA_COPY_1D` | DMA | P0，已实现 | `src_aref`、`dst_aref`、`count`、源/目标 dtype、INT4 半字节选择 | 连续复制元素，可做整数位宽转换和饱和写回。 |
+| 6 | `DMA_COPY_ND` | DMA | P0，已实现 | 与 `DMA_COPY_1D` 相同 | 复制连续保存的张量区域；不含 rank、shape 或 src/dst stride。带间隔访问由编译器拆成多条复制或使用布局指令。 |
+| 7 | `DMA_FILL` | DMA | P0，已实现 | `dst_aref`、`count`、`fill_value`、目标 dtype | 以一个立即数连续填充目标元素。 |
+| 8 | `DMA_TRANSPOSE_2D` | DMA | P0，已实现 | `src_aref`、`dst_aref`、`rows`、`columns`、dtype、INT4 半字节选择 | 对连续行优先二维数组转置；不含行间隔字段。 |
+| 9 | `DMA_PACK` | DMA | P0，已实现 | `src_aref`、`dst_aref`、`segment_count`、`segment_bytes`、`segment_stride` | 从等间隔数据段读取并连续写入；后三项均为 8 bit。 |
+| 10 | `DMA_SPLIT` | DMA | P0，已实现 | `src_aref`、`dst_aref`、`segment_count`、`segment_bytes`、`segment_stride` | 从连续数据区读取并按固定间隔写入；后三项均为 8 bit。 |
+| 11 | `DMA_GATHER_ND` | DMA | P1，功能位关闭 | `src_aref`、索引表 `LREF16`、目标 `LREF16`、`block_count`、`block_bytes` | 根据 L1 中的 UINT32 索引表，从全局内存读取多个数据块并连续写入 L1。当前提交返回 `ILLEGAL_OPCODE`。 |
+| 12 | `GEMM` | Matrix | P0，已实现 | A/B/C `LREF14`、bias `LREF12`、M/N/K、`b_int4`、C dtype、右移位数 | 矩阵乘法后可加 INT32 bias 并写回。无 residual、ReLU 或逐输出通道重缩放字段。 |
+| 13 | `BMM` | Matrix | P0，已实现 | A/B/C `LREF14`、batch、M/N/K、`b_int4`、C dtype、右移位数 | 连续保存的 batch 矩阵乘法；不带 bias。 |
+| 14 | `GEMM_ACCUM` | Matrix | P0，已实现 | A/B/C `LREF14`、M/N/K、`b_int4` | 将新的乘加结果加入原 C；C 必须为 INT32，bias 和右移位数必须为 0。 |
+| 15 | `GEMM_ZERO` | Matrix | P0，已实现 | C `LREF14`、M/N | 清零 C 指向的 INT32 矩阵区域，为后续 `GEMM_ACCUM` 准备部分和。 |
+| 16 | `VECTOR_ADD` | IVE | P0，已实现 | `src0`、`src1`、`dst`、`rows`、`length`、广播方式 | 逐元素相加；输出保持公共输入 dtype。 |
+| 17 | `VECTOR_SUB` | IVE | P0，已实现 | `src0`、`src1`、`dst`、`rows`、`length`、广播方式 | 逐元素相减；输出保持公共输入 dtype。 |
+| 18 | `VECTOR_MUL` | IVE | P0，已实现 | `src0`、`src1`、`dst`、`rows`、`length`、广播方式 | 逐元素相乘，结果写为 INT32。 |
+| 19 | `VECTOR_FMA` | IVE | P0，已实现 | `src0`、`src1`、`src2`、`dst`、`rows`、`length`、三路广播方式 | 计算 `src0*src1+src2`，结果写为 INT32。 |
+| 20 | `VECTOR_MAX` | IVE | P0，已实现 | `src0`、`src1`、`dst`、`rows`、`length`、广播方式 | 写入逐元素较大值，输出保持公共输入 dtype。 |
+| 21 | `VECTOR_MIN` | IVE | P0，已实现 | `src0`、`src1`、`dst`、`rows`、`length`、广播方式 | 写入逐元素较小值，输出保持公共输入 dtype。 |
+| 22 | `VECTOR_CMP`（`VCMP_I`） | IVE | P0，已实现 | `src0`、`src1`、`src2[15:13]`、`dst`、`rows`、`length`、前两路广播方式 | 按公共输入 dtype 比较。`src2[15:13]` 依次编码 EQ、NE、LT、LE、GT、GE，低 13 bit 必须为 0；每个结果写为 INT8 mask，真值为 1、假值为 0。 |
+| 23 | `VECTOR_SELECT` | IVE | P0，已实现 | `src0`、`src1`、`src2` mask、`dst`、`rows`、`length`、前两路广播方式 | `src2` 指向 `VECTOR_CMP` 产生的 INT8 mask；mask 非零选 `src0`，零选 `src1`。 |
+| 24 | `VECTOR_CLAMP` | IVE | P0，已实现 | `src0`、`src1` 下限、`src2` 上限、`dst`、`rows`、`length` | `src1`、`src2` 是 signed16 立即数而非地址；输出保持公共输入 dtype。 |
+| 25 | `VECTOR_RELU` | IVE | P0，已实现 | `src0`、`dst`、`rows`、`length` | 计算 `max(src0,0)`；未使用输入字段和对应广播字段必须为 0。 |
+| 26 | `COMPLEX_ACT` | CME | P0，已实现 | `src0`、`dst`、`rows`、`length`、函数、输入/输出 scale 指数、目标 dtype、截断区间 | 执行 Sigmoid、Tanh、GELU 或 SiLU；内部使用 FP32。 |
+| 27 | `COMPLEX_SOFTMAX` | CME | P0，已实现 | `src0`、可选 `aux`、`dst`、`rows`、`length`、mask 模式、scale 指数、目标 dtype | 逐行 Softmax，支持 boolean mask 和 valid length；causal 模式当前返回命令字段错误。 |
+| 28 | `COMPLEX_NORM` | CME | P0，已实现 | `src0`、gamma/beta `aux`、`dst`、`rows`、`length`、Norm 类型、epsilon、scale 指数、目标 dtype | 执行 LayerNorm 或 RMSNorm；参数按连续 L1 区域读取。 |
+| 29 | `COMPLEX_ROPE` | CME | P1，功能位关闭 | 操作码与命令位置已分配 | 当前提交返回 `ILLEGAL_OPCODE`，不得启动 CME 或写目标张量。 |
+| 30 | `COMPLEX_STAT` | CME | P0，已实现 | `src0`、`dst`、`rows`、`length`、统计模式 | 按行求 SUM、MAX 或 SUMSQ，每行写一个 INT32 结果。 |
+| 31 | `COMPLEX_RECIP` | CME | P1，功能位关闭 | 操作码与命令位置已分配 | 当前提交返回 `ILLEGAL_OPCODE`，不得启动 CME 或写目标张量。 |
+| 32 | `COMPLEX_ADD_RESCALE` | CME | P0，已实现 | `src0`、`aux`、`dst`、`rows`、`length`、三个 scale 指数、目标 dtype | 按两个输入 scale 相加，再按目标 scale 写回整数结果。 |
+
+数值 33..63 当前没有定义，必须返回 `ILLEGAL_OPCODE`。`DMA_GATHER_ND`、
+`COMPLEX_ROPE` 与 `COMPLEX_RECIP` 只有在功能寄存器声明支持后才能执行，
+且已有位格式不得改变。
 
 ### 6.4 为什么不使用 64 bit 指令加共享 CSR
 
@@ -452,10 +459,10 @@ Event ID 数量小于模型任务总数时，编译器负责安排复用。REARM
 | 0 | `dst_nibble` |
 
 `dtype` 是源 dtype。`count` 是元素数且必须非零。相同 dtype 原样复制；
-变宽做符号扩展，变窄做饱和，目标 INT4 做半字节打包。`dst_nibble` 首版必须
+变宽做符号扩展，变窄做饱和，目标 INT4 做半字节打包。`dst_nibble` 必须
 为 0；源 INT4 可用 `src_nibble` 选择首元素所在半字节。
 
-COPYND 在首版采用与 COPY1D 相同的连续元素字段。高层多层
+COPYND 采用与 COPY1D 相同的连续元素字段。高层多层
 stride 操作由编译器拆成多条 COPYND/COPY1D，或结合 PACK、SPLIT、
 TRANSPOSE。硬件不得再读取 stride 参数块。
 
@@ -498,6 +505,42 @@ TRANSPOSE。硬件不得再读取 stride 参数块。
 三项都必须非零，且 `segment_stride>=segment_bytes`。PACK 从带间隔的
 segments 读出并连续写入；SPLIT 从连续区域读出并按 stride 写入。所有 DMA
 操作先检查完整源/目标区域；失败时不得留下部分目标写入。
+
+### 9.5 GATHER_ND
+
+`DMA_GATHER_ND` 使用以下 P1 payload：
+
+| bit | 字段 |
+| ---: | --- |
+| 79:52 | `src_aref`，全局数据区起始地址 |
+| 51:36 | `index_lref`，L1 中的 UINT32 索引表 |
+| 35:20 | `dst_lref`，L1 连续目标区 |
+| 19:12 | `block_count-1` |
+| 11:0 | `block_bytes-1` |
+
+`index_lref` 和 `dst_lref` 均按 `LREF16` 解释，实际地址为字段值乘 16。
+`block_count` 范围为 1～256，`block_bytes` 范围为 1～4096。索引表包含
+`block_count` 个 UINT32 元素。第 $i$ 个数据块的全局起始地址与 L1 目标
+地址分别为：
+
+$$
+\begin{aligned}
+\mathrm{src}_i
+  &= \mathrm{src\_base}
+     + \mathrm{index}[i]\times\mathrm{block\_bytes},\\
+\mathrm{dst}_i
+  &= \mathrm{dst\_base}
+     + i\times\mathrm{block\_bytes}.
+\end{aligned}
+$$
+
+因此，数据块可以位于全局内存中不相邻的位置，写入 L1 后则连续保存。索引表
+本身必须先由软件或 DMA 放入 L1。INT4 数据按字节块读取，单个块必须从完整
+字节开始，`block_bytes` 已包含打包后的实际字节数。
+
+该指令的 opcode 和 payload 已分配，但当前功能位为 0。CFE 收到该指令时返回
+`ILLEGAL_OPCODE`，不得读取索引表、访问全局内存或修改 L1。启用功能位后，
+硬件还必须先检查索引表和完整目标区域，再开始提交目标写入。
 
 ## 10. Matrix payload
 
@@ -655,7 +698,7 @@ meta19[7:6]   dst_dtype
 meta19[5:0]   0
 ```
 
-首版不支持 causal，编码 2 返回 BAD_DESC。boolean 模式下 aux 指向与输入同
+本设计不支持 causal，编码 2 返回 BAD_DESC。boolean 模式下 aux 指向与输入同
 形状的 INT8 mask；valid_length 模式下 aux 指向每行一个 INT32 有效长度。
 每行先求最大值 `m`，再计算 `exp(x_i-m)`，求总和后相除。全部被遮住时按
 `all_mask_mode` 写零或报告 NUMERIC_EXCEPTION。私有暂存需求为 `length`
@@ -710,7 +753,7 @@ dst  = saturate(round_nearest_even(real / dst_scale))
 
 ### 12.7 ROPE 与 RECIP
 
-操作码和命令位置已经分配，但首版 feature 位为 0。CFE/TS 解码后返回
+操作码和命令位置已经分配，但 feature 位为 0。CFE/TS 解码后返回
 ILLEGAL_OPCODE；不得把它们解释成 ACT 或其他函数。
 
 ## 13. CFE 与 Task Scheduler
@@ -739,7 +782,7 @@ command_id 查询接口：
 ```text
 cmd_id_lookup_valid_o
 cmd_id_lookup_ready_i
-cmd_id_lookup_id_o[10:0]
+cmd_id_lookup_id_o[9:0]
 cmd_id_lookup_rsp_valid_i
 cmd_id_busy_i
 ```
@@ -931,7 +974,7 @@ TBU 最多保存 64 条页规则和 8 个查询中的请求。每条规则定义
 
 LSC 至少提供：
 
-- 能力寄存器：指令集版本、opcode feature、L1 大小、tile 参数、lane 数。
+- 能力寄存器：opcode feature、L1 大小、tile 参数、lane 数。
 - `GADDR_BASE[0..5]` 与 TBU 控制。
 - 4 个 timeout class 周期值。
 - CMD FIFO 状态与接收响应。
@@ -973,7 +1016,7 @@ LSC 至少提供：
 
 CSR 是 64 bit little-endian 寄存器。CMD128 只选择 timeout class 0..3；实现可以
 保留更多诊断类，但不能由 CMD128 选择。`ISA_FEATURE` 的 ROPE、RECIP 与
-causal softmax 位在首版为 0。
+causal softmax 位为 0。
 
 配置寄存器在 Task 或 DMA 活动时写入应返回 BUSY。首错寄存器保持第一次错误，
 直到软件明确清除。
@@ -1006,7 +1049,7 @@ dtype 和 scale，进行常量折叠、L1 生命周期分配、操作选择、Ev
 
 Conv2D 降低为 im2col/数据准备、PACK/TRANSPOSE 和 GEMM；数据形状或算子
 不适合 NPU 时允许 CPU 辅助。循环网络和 Transformer 由 GEMM、IVE、CME
-与 DMA 组合。首版关闭的 ROPE/RECIP 必须由其他可用指令或 CPU 实现。
+与 DMA 组合。未启用的 ROPE/RECIP 必须由其他可用指令或 CPU 实现。
 
 ### 17.2 生成文件
 
@@ -1025,7 +1068,7 @@ Conv2D 降低为 im2col/数据准备、PACK/TRANSPOSE 和 GEMM；数据形状或
 
 ### 17.3 驱动提交次序
 
-1. 读取能力并确认指令集版本与所需 opcode。
+1. 读取能力并确认所需 opcode 与数据类型均受支持。
 2. 配置 TBU、全局基址、timeout 和中断。
 3. 通过 L1 窗口或 DMA 装载权重、常量和输入。
 4. 逐条以 FIXED burst 写 CMD 固定地址，读取接收响应。
@@ -1038,10 +1081,11 @@ Conv2D 降低为 im2col/数据准备、PACK/TRANSPOSE 和 GEMM；数据形状或
 
 ### 18.1 指令检查
 
-- 对 32 个 opcode 做编码/解码互反测试。
+- 对 33 个已分配 opcode 做编码/解码互反测试。
 - 对公共头每个字段做 bit-accurate little-endian 测试。
 - 对所有保留位、非法 dtype、重复 command_id、同一 signal/wait ID 做负例。
-- 明确检查 ROPE/RECIP feature-off 返回 ILLEGAL_OPCODE 且目标不变。
+- 明确检查 GATHER_ND、ROPE、RECIP 在功能位关闭时返回
+  ILLEGAL_OPCODE，且目标数据保持不变。
 - 检查提交过程中 MIF 没有任务参数读取。
 
 ### 18.2 数值检查
@@ -1051,7 +1095,7 @@ Conv2D 降低为 im2col/数据准备、PACK/TRANSPOSE 和 GEMM；数据形状或
 - 四种 Matrix 输入组合、四种 C dtype、bias 的列位置。
 - ZERO 特殊保留字段、ACCUM 旧 C、BMM 多 batch stride。
 - Vector 三个 broadcast、CMP 六种模式、SELECT mask、CLAMP signed16。
-- ACT 四函数、SOFTMAX 三种首版 mask 输入、LayerNorm、RMSNorm、
+- ACT 四函数、SOFTMAX 支持的三种 mask 输入、LayerNorm、RMSNorm、
   STAT 三模式、ADD_RESCALE。
 - strict numeric 的 NaN/Inf/全 mask/除零错误。
 

@@ -16,11 +16,11 @@ module tb_cmd_dfu_smoke;
   logic [127:0] ts_cmd;
   logic lookup_valid;
   logic lookup_ready;
-  logic [10:0] lookup_id;
+  logic [9:0] lookup_id;
   logic lookup_rsp_valid;
   logic lookup_busy;
   logic lookup_pending_q;
-  logic [10:0] expected_lookup_id;
+  logic [9:0] expected_lookup_id;
   logic cfe_idle;
   logic cfe_error;
   logic cmd_accepted;
@@ -55,16 +55,16 @@ module tb_cmd_dfu_smoke;
   always #5 clk = ~clk;
 
   function automatic logic [127:0] make_command(
-    input logic [4:0] command_opcode,
-    input logic [10:0] command_id,
+    input logic [5:0] command_opcode,
+    input logic [9:0] command_id,
     input logic [1:0] dtype,
     input logic [79:0] payload
   );
     logic [127:0] command;
     begin
       command = 128'd0;
-      command[127:123] = command_opcode;
-      command[122:112] = command_id;
+      command[127:122] = command_opcode;
+      command[121:112] = command_id;
       command[111:104] = 8'hff;
       command[103:96] = 8'hff;
       command[95:88] = 8'hff;
@@ -259,7 +259,7 @@ module tb_cmd_dfu_smoke;
     cmd_last       = 1'b0;
     ts_cmd_ready   = 1'b0;
     lookup_ready   = 1'b1;
-    expected_lookup_id = 11'h001;
+    expected_lookup_id = 10'h001;
     fetch_valid    = 1'b0;
     fetch_addr     = 48'h0000_0000_1000;
     fetch_id       = 12'h02a;
@@ -275,7 +275,7 @@ module tb_cmd_dfu_smoke;
       NPU_DTYPE_INT8, 1'b0, 1'b0
     };
     command = make_command(
-      5'd5, 11'h001, NPU_DTYPE_INT8, command_payload
+      6'd5, 10'h001, NPU_DTYPE_INT8, command_payload
     );
     low_word = command[63:0];
     high_word = command[127:64];
@@ -303,22 +303,22 @@ module tb_cmd_dfu_smoke;
     ts_cmd_ready = 1'b0;
 
     command = make_command(
-      5'd5, 11'h7ff, NPU_DTYPE_INT8, command_payload
+      6'd5, 10'h3ff, NPU_DTYPE_INT8, command_payload
     );
     command[87:84] = 4'b1010;
     command[83:82] = 2'd2;
-    if ((npu_cmd_command_id(command) != 12'h7ff) ||
+    if ((npu_cmd_command_id(command) != 12'h3ff) ||
         (npu_cmd_header_flags(command) != 12'h085) ||
         (npu_cmd_wait0(command) != NPU_EVENT_NONE) ||
         (npu_cmd_wait1(command) != NPU_EVENT_NONE) ||
         (npu_cmd_signal(command) != NPU_EVENT_NONE)) begin
       $fatal(1, "CMD128 header fields decode incorrectly");
     end
-    expected_lookup_id = 11'h7ff;
+    expected_lookup_id = 10'h3ff;
     send_cmd_beat(command[63:0], 1'b1, 1'b0);
     send_cmd_beat(command[127:64], 1'b0, 1'b1);
     wait (cmd_rsp_valid);
-    check_cmd_response(12'h7ff, NPU_STATUS_SUCCESS);
+    check_cmd_response(12'h3ff, NPU_STATUS_SUCCESS);
     wait (ts_cmd_valid);
     if (ts_cmd != command) begin
       $fatal(1, "CFE changed CMD128 data");
@@ -328,8 +328,8 @@ module tb_cmd_dfu_smoke;
     @(negedge clk);
     ts_cmd_ready = 1'b0;
 
-    command[127:123] = 5'd28;
-    command[122:112] = 11'h03b;
+    command[127:122] = 6'd11;
+    command[121:112] = 10'h03b;
     send_cmd_beat(command[63:0], 1'b1, 1'b0);
     send_cmd_beat(command[127:64], 1'b0, 1'b1);
     wait (cmd_rsp_valid);
@@ -339,7 +339,40 @@ module tb_cmd_dfu_smoke;
     end
     @(posedge clk);
 
-    expected_lookup_id = 11'h001;
+    command[127:122] = 6'd29;
+    command[121:112] = 10'h03c;
+    send_cmd_beat(command[63:0], 1'b1, 1'b0);
+    send_cmd_beat(command[127:64], 1'b0, 1'b1);
+    wait (cmd_rsp_valid);
+    check_cmd_response(12'h03c, NPU_STATUS_ILLEGAL_OPCODE);
+    if (ts_cmd_valid) begin
+      $fatal(1, "disabled opcode 29 reached the scheduler output");
+    end
+    @(posedge clk);
+
+    command[127:122] = 6'd31;
+    command[121:112] = 10'h03d;
+    send_cmd_beat(command[63:0], 1'b1, 1'b0);
+    send_cmd_beat(command[127:64], 1'b0, 1'b1);
+    wait (cmd_rsp_valid);
+    check_cmd_response(12'h03d, NPU_STATUS_ILLEGAL_OPCODE);
+    if (ts_cmd_valid) begin
+      $fatal(1, "disabled opcode 31 reached the scheduler output");
+    end
+    @(posedge clk);
+
+    command[127:122] = 6'd33;
+    command[121:112] = 10'h03e;
+    send_cmd_beat(command[63:0], 1'b1, 1'b0);
+    send_cmd_beat(command[127:64], 1'b0, 1'b1);
+    wait (cmd_rsp_valid);
+    check_cmd_response(12'h03e, NPU_STATUS_ILLEGAL_OPCODE);
+    if (ts_cmd_valid) begin
+      $fatal(1, "opcode 33 reached the scheduler output");
+    end
+    @(posedge clk);
+
+    expected_lookup_id = 10'h001;
     send_cmd_beat(low_word, 1'b1, 1'b0);
     send_cmd_beat(high_word, 1'b1, 1'b0);
     wait (cmd_rsp_valid);
@@ -351,7 +384,7 @@ module tb_cmd_dfu_smoke;
     @(posedge clk);
 
     command = make_command(
-      5'd5, 11'h001, NPU_DTYPE_INT8, command_payload
+      6'd5, 10'h001, NPU_DTYPE_INT8, command_payload
     );
     low_word = command[63:0];
     send_cmd_beat(low_word, 1'b1, 1'b0);
@@ -394,7 +427,7 @@ module tb_cmd_dfu_smoke;
     @(negedge clk);
 
     if (!cfe_idle || !dfu_idle || (cmd_accepted_count != 2)
-        || (cfe_error_count != 3)) begin
+        || (cfe_error_count != 6)) begin
       $fatal(
         1,
         "CFE/DFU state/count error: cfe_idle=%0b dfu_idle=%0b accepted=%0d errors=%0d",

@@ -89,7 +89,7 @@ static void inline_wire(const npu_cmd_t *cmd,
 
 static int inline_test_opcode_table(void)
 {
-    static const uint8_t opcode[32] = {
+    static const uint8_t opcode[33] = {
         NPU_CTRL_NOP,
         NPU_CTRL_EVENT_SIGNAL,
         NPU_CTRL_EVENT_REARM,
@@ -101,6 +101,7 @@ static int inline_test_opcode_table(void)
         NPU_DMA_TRANSPOSE_2D,
         NPU_DMA_PACK,
         NPU_DMA_SPLIT,
+        NPU_DMA_GATHER_ND,
         NPU_MATRIX_GEMM,
         NPU_MATRIX_BMM,
         NPU_MATRIX_GEMM_ACCUM,
@@ -123,12 +124,13 @@ static int inline_test_opcode_table(void)
         NPU_COMPLEX_RECIP,
         NPU_COMPLEX_ADD_RESCALE
     };
-    static const npu_engine_t engine[32] = {
+    static const npu_engine_t engine[33] = {
         NPU_ENGINE_CONTROL,
         NPU_ENGINE_CONTROL,
         NPU_ENGINE_CONTROL,
         NPU_ENGINE_CONTROL,
         NPU_ENGINE_CONTROL,
+        NPU_ENGINE_DMA,
         NPU_ENGINE_DMA,
         NPU_ENGINE_DMA,
         NPU_ENGINE_DMA,
@@ -159,10 +161,10 @@ static int inline_test_opcode_table(void)
     };
     uint32_t index;
 
-    for (index = 0u; index < 32u; index++) {
+    for (index = 0u; index < 33u; index++) {
         npu_engine_t decoded_engine = NPU_ENGINE_CONTROL;
         uint8_t decoded_opcode = 0u;
-        uint8_t encoded_compact = 0xffu;
+        uint8_t encoded_opcode = 0xffu;
 
         TEST_CHECK(
             npu_inline_opcode_decode(
@@ -173,8 +175,8 @@ static int inline_test_opcode_table(void)
         TEST_CHECK(
             npu_inline_opcode_encode(
                 decoded_engine, decoded_opcode,
-                &encoded_compact) != 0);
-        TEST_CHECK(encoded_compact == index);
+                &encoded_opcode) != 0);
+        TEST_CHECK(encoded_opcode == index);
     }
     return 0;
 }
@@ -211,8 +213,8 @@ static int inline_test_vector_and_header(npu_model_t *model,
     inline_wire(&encoded, wire, &low, &high);
 
     TEST_CHECK((high >> 63u) == 0u);
-    TEST_CHECK(((high >> 59u) & 0x1fu) == 15u);
-    TEST_CHECK(((high >> 48u) & 0x7ffu) == 0x155u);
+    TEST_CHECK(((high >> 58u) & 0x3fu) == 16u);
+    TEST_CHECK(((high >> 48u) & 0x3ffu) == 0x155u);
     TEST_CHECK(((high >> 40u) & 0xffu) == 2u);
     TEST_CHECK(((high >> 32u) & 0xffu) == 0xffu);
     TEST_CHECK(((high >> 24u) & 0xffu) == 7u);
@@ -232,6 +234,13 @@ static int inline_test_vector_and_header(npu_model_t *model,
     TEST_CHECK(decoded.wait_event[1].id == NPU_EVENT_NONE_ID);
     TEST_CHECK(decoded.wait_event[1].generation ==
                NPU_EVENT_NONE_GENERATION);
+    TEST_CHECK_STATUS(
+        npu_cmd_decode(
+            low,
+            (high & ~(UINT64_C(0x3f) << 58u)) |
+                (UINT64_C(33) << 58u),
+            &decoded),
+        NPU_STATUS_ILLEGAL_OPCODE);
 
     TEST_CHECK_STATUS(
         npu_wire_decode_task(
@@ -438,6 +447,18 @@ static int inline_test_dma(npu_model_t *model,
     TEST_CHECK(inline_l1[0x301u] == 0x22u);
     TEST_CHECK(inline_l1[0x302u] == 0x33u);
     TEST_CHECK(inline_l1[0x303u] == 0x44u);
+
+    (void)memset(payload, 0, sizeof(payload));
+    cmd = inline_command(
+        payload, 11u, NPU_ENGINE_DMA,
+        NPU_DMA_GATHER_ND, NPU_DTYPE_INT8);
+    inline_wire(&cmd, wire, &low, &high);
+    TEST_CHECK_STATUS(
+        npu_wire_decode_task(
+            wire, sizeof(wire), (const uint8_t *)0, 0u,
+            limits, &request, &meta),
+        NPU_STATUS_ILLEGAL_OPCODE);
+
     limits->gaddr_base[1] = 0u;
     return 0;
 }

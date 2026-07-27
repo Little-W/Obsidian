@@ -455,6 +455,58 @@ class EndToEndCompilerTests(unittest.TestCase):
         self.assertIn("attention_output_projection", names)
         self.assertTrue(any(name.startswith("__event_join_") for name in names))
 
+    def test_attention_initializes_and_populates_matrix_b_tiles(self) -> None:
+        result = compiler.compile_model_document(
+            attention_model(tokens=4, width=8),
+            compiler.TargetConfig(),
+        )
+        operations = {
+            operation["name"]: operation
+            for operation in result.low_ir["operations"]
+        }
+        k_tiles = result.tensors["__attention_k_tiles"]
+        v_tiles = result.tensors["__attention_v_tiles"]
+
+        for kind, tensor in (("k", k_tiles), ("v", v_tiles)):
+            fill = operations[f"attention_fill_{kind}_tiles"]
+            self.assertEqual(fill["opcode"], "FILL")
+            self.assertEqual(
+                fill["fields"]["dma"]["shape"],
+                [tensor.storage_bytes],
+            )
+            self.assertEqual(fill["fields"]["dma"]["fill_value"], 0)
+
+            for head in range(2):
+                split = operations[
+                    f"attention_split_{kind}_tile_{head}_0_0"
+                ]
+                fields = split["fields"]
+                self.assertEqual(split["opcode"], "SPLIT")
+                self.assertEqual(
+                    fields["common"]["dst"]["addr"],
+                    tensor.l1_addr + head * 128,
+                )
+                self.assertEqual(fields["dma"]["segment_count"], 4)
+                self.assertEqual(fields["dma"]["segment_bytes"], 4)
+                self.assertEqual(fields["dma"]["segment_stride"], 8)
+
+        self.assertEqual(
+            operations["attention_transpose_k_head_0"]["fields"]["common"][
+                "dst"
+            ]["addr"],
+            result.tensors["__attention_k_transposed"].l1_addr,
+        )
+        self.assertEqual(
+            operations["attention_qk"]["fields"]["common"]["src1"],
+            "__attention_k_tiles",
+        )
+        self.assertEqual(
+            operations["attention_attention_value"]["fields"]["common"][
+                "src1"
+            ],
+            "__attention_v_tiles",
+        )
+
     def test_attention_non_power_of_two_scale_is_folded_into_q_and_k(
         self,
     ) -> None:

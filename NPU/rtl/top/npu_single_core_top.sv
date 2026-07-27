@@ -162,7 +162,7 @@ module npu_single_core_top #(
     logic [127:0] cfe_ts_cmd;
     logic lookup_valid;
     logic lookup_ready;
-    logic [10:0] lookup_id;
+    logic [9:0] lookup_id;
     logic lookup_rsp_valid;
     logic lookup_busy;
     logic cfe_idle;

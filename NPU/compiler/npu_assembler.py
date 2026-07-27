@@ -25,7 +25,7 @@ SCHEMA_VERSION = 1
 COMMAND_FORMAT = "cmd128"
 EVENT_NONE = 0xFF
 MAX_EVENT_ID = 0xFE
-MAX_COMMAND_ID = 0x7FF
+MAX_COMMAND_ID = 0x3FF
 PAYLOAD_BITS = 80
 
 ENGINE_CODES = {"control": 0, "dma": 1, "matrix": 2, "vector": 3, "complex": 4}
@@ -44,6 +44,7 @@ OPCODES = {
         "TRANSPOSE_2D": 0x23,
         "PACK": 0x24,
         "SPLIT": 0x25,
+        "GATHER_ND": 0x28,
     },
     "matrix": {
         "GEMM": 0x40,
@@ -74,7 +75,7 @@ OPCODES = {
     },
 }
 
-_COMPACT_NAMES = (
+_OPCODE_NAMES = (
     ("control", "NOP"),
     ("control", "EVENT_SIGNAL"),
     ("control", "EVENT_REARM"),
@@ -86,6 +87,7 @@ _COMPACT_NAMES = (
     ("dma", "TRANSPOSE_2D"),
     ("dma", "PACK"),
     ("dma", "SPLIT"),
+    ("dma", "GATHER_ND"),
     ("matrix", "GEMM"),
     ("matrix", "BMM"),
     ("matrix", "GEMM_ACCUM"),
@@ -108,8 +110,8 @@ _COMPACT_NAMES = (
     ("complex", "RECIP"),
     ("complex", "ADD_RESCALE"),
 )
-COMPACT_OPCODES = {
-    pair: compact for compact, pair in enumerate(_COMPACT_NAMES)
+OPCODE_FIELDS = {
+    pair: opcode for opcode, pair in enumerate(_OPCODE_NAMES)
 }
 
 DTYPE_CODES = {"int4": 0, "int8": 1, "int32": 2, "int16": 3}
@@ -151,8 +153,8 @@ class CompiledOperation:
     name: str
     command_id: int
     engine: str
+    engine_opcode: int
     opcode: int
-    compact_opcode: int
     payload: int
     command: bytes
     wait_events: tuple[int, int]
@@ -303,7 +305,7 @@ def header_flags(fields: Mapping[str, Any], location: str) -> tuple[int, int]:
 def encode_command128(
     payload: int,
     command_id: int,
-    compact_opcode: int,
+    opcode: int,
     dtype: int,
     flags: int,
     timeout_class: int,
@@ -313,7 +315,7 @@ def encode_command128(
 ) -> bytes:
     payload = parse_int(payload, "payload", 0, (1 << PAYLOAD_BITS) - 1)
     command_id = parse_int(command_id, "command_id", 0, MAX_COMMAND_ID)
-    compact_opcode = parse_int(compact_opcode, "compact_opcode", 0, 0x1F)
+    opcode = parse_int(opcode, "opcode", 0, 0x20)
     dtype = parse_int(dtype, "dtype", 0, 3)
     flags = parse_int(flags, "flags", 0, 0xF)
     timeout_class = parse_int(timeout_class, "timeout_class", 0, 3)
@@ -332,7 +334,7 @@ def encode_command128(
         | (wait1 << 32)
         | (wait0 << 40)
         | (command_id << 48)
-        | (compact_opcode << 59)
+        | (opcode << 58)
     )
     return struct.pack("<QQ", low, high)
 
@@ -580,6 +582,70 @@ def encode_dma_payload(
         payload = pack_field(payload, fill, 0, 32, f"{location}.fill_value")
         return payload, DTYPE_CODES[destination_dtype]
 
+    if opcode_name == "GATHER_ND":
+        index_value = common.get("aux0")
+        if index_value is None:
+            index_value = common.get("src1")
+        index = resolve_tensor(index_value, tensors, f"{location}.index")
+        if not source:
+            raise fail(f"{location}.src0", "tensor reference is required")
+        if not index:
+            raise fail(f"{location}.index", "tensor reference is required")
+        if not destination:
+            raise fail(f"{location}.dst", "tensor reference is required")
+        if str(source.get("space", "l1")).lower() != "ddr":
+            raise fail(f"{location}.src0.space", "GATHER_ND source must use ddr")
+        if str(destination.get("space", "l1")).lower() != "l1":
+            raise fail(f"{location}.dst.space", "GATHER_ND destination must use l1")
+        if tensor_dtype(index, "int32", f"{location}.index") != "int32":
+            raise fail(f"{location}.index.dtype", "GATHER_ND index must be int32")
+        if destination_dtype != source_dtype:
+            raise fail(
+                f"{location}.dst.dtype",
+                "GATHER_ND source and destination dtypes must match",
+            )
+        source_ref = encode_aref(source, target, f"{location}.src0")
+        index_ref = encode_lref(index, 4, 16, f"{location}.index")
+        destination_ref = encode_lref(
+            destination, 4, 16, f"{location}.dst"
+        )
+        block_count = parse_int(
+            fields.get("block_count"),
+            f"{location}.block_count",
+            1,
+            256,
+        )
+        block_bytes = parse_int(
+            fields.get("block_bytes"),
+            f"{location}.block_bytes",
+            1,
+            4096,
+        )
+        payload = pack_field(
+            payload, source_ref, 52, 28, f"{location}.src0"
+        )
+        payload = pack_field(
+            payload, index_ref, 36, 16, f"{location}.index"
+        )
+        payload = pack_field(
+            payload, destination_ref, 20, 16, f"{location}.dst"
+        )
+        payload = pack_field(
+            payload,
+            block_count - 1,
+            12,
+            8,
+            f"{location}.block_count",
+        )
+        payload = pack_field(
+            payload,
+            block_bytes - 1,
+            0,
+            12,
+            f"{location}.block_bytes",
+        )
+        return payload, DTYPE_CODES[source_dtype]
+
     source_ref = encode_aref(source, target, f"{location}.src0")
     destination_ref = encode_aref(destination, target, f"{location}.dst")
     payload = pack_field(payload, source_ref, 52, 28, f"{location}.src0")
@@ -630,7 +696,7 @@ def encode_dma_payload(
                     if parsed != expected:
                         raise fail(
                             f"{location}.{key}",
-                            "compact COPY_ND accepts contiguous tensors only; "
+                            "CMD128 COPY_ND accepts contiguous tensors only; "
                             "split strided rows into COPY_1D operations",
                         )
         payload = pack_field(payload, count, 4, 20, f"{location}.count")
@@ -1236,7 +1302,7 @@ def compile_document(
             raise fail(
                 f"{location}.opcode", f"use one of {', '.join(OPCODES[engine])}"
             )
-        compact_opcode = COMPACT_OPCODES[(engine, opcode_name)]
+        opcode = OPCODE_FIELDS[(engine, opcode_name)]
         command_id = parse_int(
             operation.get("command_id", index),
             f"{location}.command_id",
@@ -1317,7 +1383,7 @@ def compile_document(
         command = encode_command128(
             payload,
             command_id,
-            compact_opcode,
+            opcode,
             dtype,
             flags,
             timeout,
@@ -1331,8 +1397,8 @@ def compile_document(
                 name=name,
                 command_id=command_id,
                 engine=engine,
-                opcode=OPCODES[engine][opcode_name],
-                compact_opcode=compact_opcode,
+                engine_opcode=OPCODES[engine][opcode_name],
+                opcode=opcode,
                 payload=payload,
                 command=command,
                 wait_events=(wait0, wait1),
@@ -1375,8 +1441,8 @@ def build_output_manifest(
                 "name": operation.name,
                 "command_id": operation.command_id,
                 "engine": operation.engine,
+                "engine_opcode": operation.engine_opcode,
                 "opcode": operation.opcode,
-                "encoded_opcode": operation.compact_opcode,
                 "payload": f"0x{operation.payload:020x}",
                 "wait_events": [
                     event_to_json(operation.wait_events[0]),

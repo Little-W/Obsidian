@@ -546,6 +546,56 @@ module tb_npu_engines;
         repeat (3) @(posedge clk_i);
         check(l1_idle, "L1 did not become idle after reset");
 
+        // Matrix right shifts use the same signed rounding rules as CModel.
+        check($signed(u_matrix.requantize(
+                64'sd1, 32'd1, 8'sd1, 2'd0
+              )) == 64'sd0,
+              "matrix nearest-even +0.5 mismatch");
+        check($signed(u_matrix.requantize(
+                64'sd3, 32'd1, 8'sd1, 2'd0
+              )) == 64'sd2,
+              "matrix nearest-even +1.5 mismatch");
+        check($signed(u_matrix.requantize(
+                -64'sd1, 32'd1, 8'sd1, 2'd0
+              )) == 64'sd0,
+              "matrix nearest-even -0.5 mismatch");
+        check($signed(u_matrix.requantize(
+                -64'sd3, 32'd1, 8'sd1, 2'd0
+              )) == -64'sd2,
+              "matrix nearest-even -1.5 mismatch");
+        check($signed(u_matrix.requantize(
+                64'sd5, 32'd1, 8'sd2, 2'd0
+              )) == 64'sd1,
+              "matrix nearest-even positive non-half mismatch");
+        check($signed(u_matrix.requantize(
+                -64'sd5, 32'd1, 8'sd2, 2'd0
+              )) == -64'sd1,
+              "matrix nearest-even negative non-half mismatch");
+        check($signed(u_matrix.requantize(
+                64'sd3, 32'd1, 8'sd1, 2'd1
+              )) == 64'sd1,
+              "matrix round-to-zero positive mismatch");
+        check($signed(u_matrix.requantize(
+                -64'sd3, 32'd1, 8'sd1, 2'd1
+              )) == -64'sd1,
+              "matrix round-to-zero negative mismatch");
+        check($signed(u_matrix.requantize(
+                64'sd3, 32'd1, 8'sd1, 2'd2
+              )) == 64'sd2,
+              "matrix round-to-positive-infinity positive mismatch");
+        check($signed(u_matrix.requantize(
+                -64'sd3, 32'd1, 8'sd1, 2'd2
+              )) == -64'sd1,
+              "matrix round-to-positive-infinity negative mismatch");
+        check($signed(u_matrix.requantize(
+                64'sd3, 32'd1, 8'sd1, 2'd3
+              )) == 64'sd1,
+              "matrix round-to-negative-infinity positive mismatch");
+        check($signed(u_matrix.requantize(
+                -64'sd3, 32'd1, 8'sd1, 2'd3
+              )) == -64'sd2,
+              "matrix round-to-negative-infinity negative mismatch");
+
         // DMA_COPY_1D: system-memory bytes move into L1 despite MIF stalls.
         system_mem[13'h1000] = 64'h0a07_0301_00ff_fcf8;
         init_common(
@@ -649,6 +699,8 @@ module tb_npu_engines;
         put_u32(complex_desc, 16'h74, 32'h3f80_0000);
         put_u32(complex_desc, 16'h78, 32'h3f80_0000);
         put_u32(complex_desc, 16'h7c, 32'h3f80_0000);
+        put_u32(complex_desc, 16'h94, 32'hc180_0000);
+        put_u32(complex_desc, 16'h98, 32'h4180_0000);
         start_complex();
         do @(posedge clk_i); while (!complex_done_valid);
         check(complex_done_status == 8'h00,
@@ -660,6 +712,107 @@ module tb_npu_engines;
         l1_read_word(20'h00800, read_word);
         check((read_word & 64'hffff_ffff) == 64'h0100_ffff,
               "Complex Tanh numeric result mismatch");
+
+        /*
+         * Softmax must find the maximum from the unmodified inputs.  The
+         * clipping range applies to x-max, not to x itself.  Inputs above the
+         * positive clipping value therefore remain distinguishable.
+         */
+        l1_write_word(20'h00900, 64'h0000_0000_1d1e_1f20, 8'h0f);
+        init_common(
+            complex_desc, 8'h04, 16'd256,
+            64'h0900, 64'd0, 64'd0, 64'h0a00, 32'h0001_30d5
+        );
+        put_u32(complex_desc, 16'h40, 32'd1);
+        put_u32(complex_desc, 16'h44, 32'd4);
+        put_u32(complex_desc, 16'h48, 32'd4);
+        put_u32(complex_desc, 16'h4c, 32'd4);
+        put_u32(complex_desc, 16'h50, 32'd4);
+        put_u32(complex_desc, 16'h5c, 32'd8);
+        put_u32(complex_desc, 16'h70, 32'h3f80_0000);
+        put_u32(complex_desc, 16'h74, 32'h3f80_0000);
+        put_u32(complex_desc, 16'h78, 32'h3f80_0000);
+        put_u32(complex_desc, 16'h7c, 32'h3a83_126f);
+        put_u32(complex_desc, 16'h94, 32'hc180_0000);
+        put_u32(complex_desc, 16'h98, 32'h4180_0000);
+        complex_opcode = 8'h81;
+        start_complex();
+        do @(posedge clk_i); while (!complex_done_valid);
+        check(complex_done_status == 8'h00,
+              "Complex Softmax returned a failure status");
+        check(complex_done_progress == 4,
+              "Complex Softmax progress element count mismatch");
+        l1_read_word(20'h00a00, read_word);
+        check(read_word == 64'h0020_0057_00ed_0284,
+              "Complex Softmax lane sum or reciprocal mismatch");
+
+        /*
+         * LayerNorm mode 0 uses one pass for the lane-wise mean, one pass for
+         * squared deviations, and a final pass for gamma/beta and output.
+         */
+        l1_write_word(20'h00b00, 64'h0000_0000_0301_fffd, 8'h0f);
+        l1_write_word(20'h00c00, 64'h0000_0000_01ff_0201, 8'h0f);
+        l1_write_word(20'h00d00, 64'h0000_0000_0002_ff01, 8'h0f);
+        init_common(
+            complex_desc, 8'h04, 16'd256,
+            64'h0b00, 64'h0c00, 64'h0d00, 64'h0e00,
+            32'h0001_30d5
+        );
+        put_u32(complex_desc, 16'h40, 32'd1);
+        put_u32(complex_desc, 16'h44, 32'd4);
+        put_u32(complex_desc, 16'h48, 32'd4);
+        put_u32(complex_desc, 16'h4c, 32'd5);
+        put_u32(complex_desc, 16'h50, 32'd4);
+        put_u32(complex_desc, 16'h54, 32'd4);
+        put_u32(complex_desc, 16'h58, 32'd4);
+        put_u32(complex_desc, 16'h5c, 32'd8);
+        put_u32(complex_desc, 16'h70, 32'h3f80_0000);
+        put_u32(complex_desc, 16'h74, 32'h3f80_0000);
+        put_u32(complex_desc, 16'h78, 32'h3f80_0000);
+        put_u32(complex_desc, 16'h7c, 32'h3c23_d70a);
+        put_u32(complex_desc, 16'h90, 32'h3c23_d70a);
+        complex_opcode = 8'h82;
+        start_complex();
+        do @(posedge clk_i); while (!complex_done_valid);
+        check(complex_done_status == 8'h00,
+              "Complex LayerNorm returned a failure status");
+        check(complex_done_progress == 4,
+              "Complex LayerNorm progress element count mismatch");
+        l1_read_word(20'h00e00, read_word);
+        check(read_word == 64'h0086_009b_ff43_ffde,
+              "Complex LayerNorm two-pass result mismatch");
+
+        // Two rows exercise row-state reset and shared gamma/beta addressing.
+        l1_write_word(20'h00f00, 64'h0300_03fe_ff03_ff03, 8'hff);
+        l1_write_word(20'h00f40, 64'h0000_0000_0a08_0604, 8'h0f);
+        l1_write_word(20'h00f80, 64'h0000_0000_fc05_fe03, 8'h0f);
+        init_common(
+            complex_desc, 8'h04, 16'd256,
+            64'h0f00, 64'h0f40, 64'h0f80, 64'h1000,
+            32'h0001_3055
+        );
+        put_u32(complex_desc, 16'h40, 32'd2);
+        put_u32(complex_desc, 16'h44, 32'd4);
+        put_u32(complex_desc, 16'h48, 32'd4);
+        put_u32(complex_desc, 16'h4c, 32'd5);
+        put_u32(complex_desc, 16'h50, 32'd4);
+        put_u32(complex_desc, 16'h54, 32'd0);
+        put_u32(complex_desc, 16'h58, 32'd0);
+        put_u32(complex_desc, 16'h5c, 32'd4);
+        put_u32(complex_desc, 16'h70, 32'h3f80_0000);
+        put_u32(complex_desc, 16'h74, 32'h3f80_0000);
+        put_u32(complex_desc, 16'h78, 32'h3f80_0000);
+        put_u32(complex_desc, 16'h7c, 32'h3f80_0000);
+        put_u32(complex_desc, 16'h90, 32'h3a83_126f);
+        start_complex();
+        do @(posedge clk_i); while (!complex_done_valid);
+        check(complex_done_status == 8'h00,
+              "Complex two-row LayerNorm returned a failure status");
+        check(complex_done_progress == 8,
+              "Complex two-row LayerNorm progress mismatch");
+        l1_read_word(20'h01000, read_word);
+        check(read_word == 64'h0501_04fd_f20d_f807,
+              "Complex two-row LayerNorm row reset mismatch");
 
         // A nonzero accumulator encoding is invalid for this Vector command.
         handshakes_before_bad_numeric = l1_engine_handshakes_q;

@@ -26,7 +26,7 @@ module npu_cmd_frontend #(
 
   output logic         cmd_id_lookup_valid_o,
   input  logic         cmd_id_lookup_ready_i,
-  output logic [10:0]  cmd_id_lookup_id_o,
+  output logic [9:0]   cmd_id_lookup_id_o,
   input  logic         cmd_id_lookup_rsp_valid_i,
   input  logic         cmd_id_busy_i,
 
@@ -96,7 +96,7 @@ module npu_cmd_frontend #(
   assign fifo_free_entries = 8'(FIFO_DEPTH) - 8'(fifo_count_q);
 
   assign opcode_format_valid =
-    npu_cmd_opcode_valid(candidate_cmd[127:123]);
+    npu_cmd_opcode_valid(candidate_cmd[127:122]);
 
   always_comb begin
     axi_cmd_ready_o       = 1'b0;
@@ -110,7 +110,7 @@ module npu_cmd_frontend #(
     ts_cmd_o              = fifo_q[fifo_rd_ptr_q];
 
     cmd_id_lookup_valid_o = (state_q == CFE_LOOKUP) && !lookup_sent_q;
-    cmd_id_lookup_id_o    = candidate_command_id[10:0];
+    cmd_id_lookup_id_o    = candidate_command_id[9:0];
 
     cfe_idle_o = (state_q == CFE_IDLE) && (fifo_count_q == 0);
 

@@ -150,7 +150,7 @@ static int initialize_images(const input_payload_t *payloads,
         payload_count > MAX_BINDINGS ||
         model_model_config.command_format == (const char *)0 ||
         strcmp(model_model_config.command_format,
-               "cmd128-inline-v2") != 0 ||
+               "cmd128") != 0 ||
         model_model_config.commands != model_model_commands ||
         model_model_config.command_count != MODEL_MODEL_COMMAND_COUNT ||
         model_model_config.weights != model_model_weights ||

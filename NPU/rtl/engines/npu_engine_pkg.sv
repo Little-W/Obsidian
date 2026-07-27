@@ -533,6 +533,26 @@ package npu_engine_pkg;
         result_unbiased = result_unbiased + 1;
       end else
         shift_amount = 23;
+      if (result_unbiased < -126) begin
+        shift_amount =
+          shift_amount + (-126 - result_unbiased);
+        if (shift_amount > 48)
+          return {result_sign, 31'd0};
+        mantissa = 24'(product >> shift_amount);
+        if (shift_amount == 48)
+          remainder_mask = 48'hffff_ffff_ffff;
+        else
+          remainder_mask = (48'd1 << shift_amount) - 1;
+        remainder = product & remainder_mask;
+        halfway = 48'd1 << (shift_amount - 1);
+        rounded = {1'b0, mantissa};
+        if (remainder > halfway ||
+            (remainder == halfway && mantissa[0]))
+          rounded = rounded + 1;
+        if (rounded[23])
+          return {result_sign, 8'd1, 23'd0};
+        return {result_sign, 8'd0, rounded[22:0]};
+      end
       mantissa = 24'(product >> shift_amount);
       remainder_mask = (48'd1 << shift_amount) - 1;
       remainder = product & remainder_mask;
@@ -548,8 +568,6 @@ package npu_engine_pkg;
         mantissa = rounded[23:0];
       if (result_unbiased > 127)
         return {result_sign, 8'hff, 23'd0};
-      if (result_unbiased < -126)
-        return {result_sign, 31'd0};
       return {
         result_sign,
         8'(result_unbiased + 127),
@@ -724,21 +742,152 @@ package npu_engine_pkg;
     end
   endfunction
 
-  function automatic logic [31:0] fp32_exp_neg_approx(
+  function automatic logic [31:0] fp32_maximum_finite(
+    input logic sign
+  );
+    return {sign, 8'hfe, 23'h7f_ffff};
+  endfunction
+
+  function automatic logic [31:0] fp32_abs(
     input logic [31:0] value
   );
+    logic unused_sign;
+    begin
+      unused_sign = value[31];
+      return {1'b0, value[30:0]};
+    end
+  endfunction
+
+  function automatic logic [31:0] fp32_with_sign(
+    input logic [31:0] magnitude,
+    input logic        sign
+  );
+    logic unused_magnitude_sign;
+    begin
+      unused_magnitude_sign = magnitude[31];
+      return {sign, magnitude[30:0]};
+    end
+  endfunction
+
+  function automatic logic [31:0] fp32_pow2_integer(
+    input integer exponent
+  );
+    logic [31:0] result;
+    integer bit_index;
+    begin
+      if (exponent < -149)
+        return 32'd0;
+      if (exponent < -126) begin
+        bit_index = exponent + 149;
+        result = 32'd1 << bit_index;
+        return result;
+      end
+      if (exponent > 127)
+        return 32'h7f7f_ffff;
+      return 32'((exponent + 127) << 23);
+    end
+  endfunction
+
+  /*
+   * Multiply by an integral power of two using the same sequence as the
+   * software reference.  The split cases cover reciprocal results for
+   * subnormal inputs without constructing an IEEE-754 exponent above 127.
+   */
+  function automatic logic [31:0] fp32_scale_pow2_saturating(
+    input logic [31:0] value,
+    input integer      exponent
+  );
+    logic [31:0] scaled;
+    integer remaining;
+    integer split_index;
+    begin
+      scaled = value;
+      remaining = exponent;
+      for (split_index = 0;
+           split_index < 3;
+           split_index = split_index + 1) begin
+        if (remaining > 127) begin
+          scaled = fp32_mul(scaled, fp32_pow2_integer(127));
+          remaining = remaining - 127;
+          if (fp32_is_inf(scaled))
+            return fp32_maximum_finite(scaled[31]);
+        end else if (remaining < -149) begin
+          scaled = fp32_mul(scaled, fp32_pow2_integer(-149));
+          remaining = remaining + 149;
+          if (fp32_is_zero(scaled))
+            return scaled;
+        end
+      end
+      scaled = fp32_mul(scaled, fp32_pow2_integer(remaining));
+      if (fp32_is_inf(scaled))
+        return fp32_maximum_finite(scaled[31]);
+      return scaled;
+    end
+  endfunction
+
+  function automatic integer fp32_normalized_exponent(
+    input logic [31:0] value
+  );
+    logic [31:0] normalized;
+    logic unused_normalized_bits;
+    begin
+      if (value[30:23] == 0) begin
+        normalized = fp32_mul(fp32_abs(value), 32'h4b80_0000);
+        unused_normalized_bits = ^{
+          normalized[31], normalized[22:0]
+        };
+        return integer'({24'd0, normalized[30:23]}) - 127 - 24;
+      end
+      unused_normalized_bits = 1'b0;
+      return integer'({24'd0, value[30:23]}) - 127;
+    end
+  endfunction
+
+  function automatic logic [31:0] fp32_normalized_mantissa(
+    input logic [31:0] value
+  );
+    logic [31:0] normalized;
+    begin
+      normalized = fp32_abs(value);
+      if (normalized[30:23] == 0)
+        normalized = fp32_mul(normalized, 32'h4b80_0000);
+      return {1'b0, 8'h7f, normalized[22:0]};
+    end
+  endfunction
+
+  function automatic logic [31:0] fp32_exp_approx(
+    input logic [31:0] value
+  );
+    logic [31:0] clamped;
+    logic [31:0] exponent_fp;
     logic [31:0] reduced;
     logic [31:0] polynomial;
+    logic signed [63:0] rounded_exponent;
+    integer exponent;
     begin
       if (fp32_is_nan(value))
-        return 32'h7fc0_0000;
-      if (!value[31] || fp32_is_zero(value))
-        return 32'h3f80_0000;
-      if (fp32_less_than(value, 32'hc180_0000) ||
-          fp32_equal(value, 32'hc180_0000))
         return 32'd0;
-      reduced = fp32_mul(value, 32'h3d80_0000);
-      polynomial = 32'h3c08_8889;
+      if (fp32_less_than(value, 32'hc180_0000))
+        return 32'd0;
+      clamped = fp32_less_than(32'h4180_0000, value) ?
+                32'h4180_0000 : value;
+
+      rounded_exponent = fp32_to_int_round(
+        fp32_mul(clamped, 32'h3fb8_aa3b), 2'd0
+      );
+      exponent = $signed(rounded_exponent[31:0]);
+      exponent_fp = fp32_from_int(rounded_exponent);
+      reduced = fp32_sub(
+        clamped, fp32_mul(exponent_fp, 32'h3f31_7180)
+      );
+      reduced = fp32_sub(
+        reduced, fp32_mul(exponent_fp, 32'h3717_f7d1)
+      );
+
+      polynomial = 32'h3ab6_0b61;
+      polynomial = fp32_add(
+        32'h3c08_8889, fp32_mul(reduced, polynomial)
+      );
       polynomial = fp32_add(
         32'h3d2a_aaab, fp32_mul(reduced, polynomial)
       );
@@ -754,68 +903,206 @@ package npu_engine_pkg;
       polynomial = fp32_add(
         32'h3f80_0000, fp32_mul(reduced, polynomial)
       );
-      polynomial = fp32_mul(polynomial, polynomial);
-      polynomial = fp32_mul(polynomial, polynomial);
-      polynomial = fp32_mul(polynomial, polynomial);
-      polynomial = fp32_mul(polynomial, polynomial);
-      if (polynomial[31])
-        return 32'd0;
-      return polynomial;
+      return fp32_mul(polynomial, fp32_pow2_integer(exponent));
+    end
+  endfunction
+
+  function automatic logic [31:0] fp32_exp_neg_approx(
+    input logic [31:0] value
+  );
+    return fp32_exp_approx(value);
+  endfunction
+
+  function automatic logic [31:0] fp32_reciprocal_approx(
+    input logic [31:0] value
+  );
+    logic sign;
+    logic [31:0] magnitude;
+    logic [31:0] mantissa;
+    logic [31:0] estimate;
+    logic [31:0] product;
+    integer exponent;
+    integer iteration;
+    begin
+      sign = value[31];
+      magnitude = fp32_abs(value);
+      if (fp32_is_zero(magnitude))
+        return fp32_maximum_finite(sign);
+      if (magnitude[30:23] == 8'hff) begin
+        if (magnitude[22:0] != 0)
+          return 32'd0;
+        return {sign, 31'd0};
+      end
+
+      exponent = fp32_normalized_exponent(magnitude);
+      mantissa = fp32_normalized_mantissa(magnitude);
+      estimate = fp32_sub(
+        32'h3fb4_b4b5, fp32_mul(32'h3ef0_f0f1, mantissa)
+      );
+      for (iteration = 0;
+           iteration < 3;
+           iteration = iteration + 1) begin
+        product = fp32_mul(mantissa, estimate);
+        estimate = fp32_mul(
+          estimate, fp32_sub(32'h4000_0000, product)
+        );
+      end
+      estimate = fp32_scale_pow2_saturating(estimate, -exponent);
+      return fp32_with_sign(estimate, sign);
     end
   endfunction
 
   function automatic logic [31:0] fp32_sigmoid_approx(
     input logic [31:0] value
   );
+    logic [31:0] magnitude;
     logic [31:0] exponential;
-    logic [31:0] denominator;
+    logic [31:0] inverse;
     begin
       if (fp32_is_nan(value))
-        return 32'h7fc0_0000;
-      if (value[31] && !fp32_is_zero(value)) begin
-        exponential = fp32_exp_neg_approx(value);
-        denominator = fp32_add(32'h3f80_0000, exponential);
-        return fp32_div(exponential, denominator);
-      end
-      exponential = fp32_exp_neg_approx(fp32_neg(value));
-      denominator = fp32_add(32'h3f80_0000, exponential);
-      return fp32_div(32'h3f80_0000, denominator);
+        return 32'd0;
+      if (fp32_less_than(32'h4180_0000, value))
+        return 32'h3f80_0000;
+      if (fp32_less_than(value, 32'hc180_0000))
+        return 32'd0;
+
+      magnitude = fp32_abs(value);
+      exponential = fp32_exp_approx(fp32_neg(magnitude));
+      inverse = fp32_reciprocal_approx(
+        fp32_add(32'h3f80_0000, exponential)
+      );
+      if (!value[31])
+        return inverse;
+      return fp32_mul(exponential, inverse);
     end
   endfunction
 
   function automatic logic [31:0] fp32_tanh_approx(
     input logic [31:0] value
   );
-    logic [31:0] doubled;
-    logic [31:0] sigmoid_value;
+    logic sign;
+    logic [31:0] magnitude;
+    logic [31:0] square;
+    logic [31:0] polynomial;
+    logic [31:0] exponential;
+    logic [31:0] numerator;
+    logic [31:0] inverse;
+    logic [31:0] result;
     begin
-      doubled = fp32_mul(value, 32'h4000_0000);
-      sigmoid_value = fp32_sigmoid_approx(doubled);
-      return fp32_sub(
-        fp32_mul(sigmoid_value, 32'h4000_0000),
-        32'h3f80_0000
+      if (fp32_is_nan(value))
+        return 32'd0;
+      sign = value[31];
+      magnitude = fp32_abs(value);
+      if (fp32_less_than(32'h4100_0000, magnitude))
+        return {sign, 8'h7f, 23'd0};
+
+      if (fp32_less_than(magnitude, 32'h3e80_0000)) begin
+        square = fp32_mul(magnitude, magnitude);
+        polynomial = 32'hbd5d_0dd1;
+        polynomial = fp32_add(
+          32'h3e08_8889, fp32_mul(square, polynomial)
+        );
+        polynomial = fp32_add(
+          32'hbeaa_aaab, fp32_mul(square, polynomial)
+        );
+        polynomial = fp32_add(
+          32'h3f80_0000, fp32_mul(square, polynomial)
+        );
+        result = fp32_mul(magnitude, polynomial);
+        return fp32_with_sign(result, sign);
+      end
+
+      exponential = fp32_exp_approx(
+        fp32_mul(32'hc000_0000, magnitude)
       );
+      numerator = fp32_sub(32'h3f80_0000, exponential);
+      inverse = fp32_reciprocal_approx(
+        fp32_add(32'h3f80_0000, exponential)
+      );
+      result = fp32_mul(numerator, inverse);
+      return fp32_with_sign(result, sign);
+    end
+  endfunction
+
+  function automatic logic [31:0] fp32_gelu_approx(
+    input logic [31:0] value
+  );
+    logic [31:0] square;
+    logic [31:0] shape;
+    logic [31:0] inner;
+    logic [31:0] tanh_value;
+    logic [31:0] half_value;
+    begin
+      if (fp32_is_nan(value))
+        return 32'd0;
+      if (fp32_less_than(32'h4100_0000, value))
+        return value;
+      if (fp32_less_than(value, 32'hc100_0000))
+        return 32'd0;
+
+      square = fp32_mul(value, value);
+      shape = fp32_add(
+        32'h3f80_0000, fp32_mul(32'h3d37_2713, square)
+      );
+      inner = fp32_mul(
+        fp32_mul(32'h3f4c_422a, value), shape
+      );
+      tanh_value = fp32_tanh_approx(inner);
+      half_value = fp32_mul(32'h3f00_0000, value);
+      return fp32_mul(
+        half_value, fp32_add(32'h3f80_0000, tanh_value)
+      );
+    end
+  endfunction
+
+  function automatic logic [31:0] fp32_silu_approx(
+    input logic [31:0] value
+  );
+    begin
+      if (fp32_is_nan(value))
+        return 32'd0;
+      if (fp32_less_than(32'h4180_0000, value))
+        return value;
+      if (fp32_less_than(value, 32'hc180_0000))
+        return 32'd0;
+      return fp32_mul(value, fp32_sigmoid_approx(value));
     end
   endfunction
 
   function automatic logic [31:0] fp32_rsqrt_approx(
     input logic [31:0] value
   );
+    logic [31:0] magnitude;
+    logic [31:0] mantissa;
     logic [31:0] half_value;
     logic [31:0] estimate;
     logic [31:0] estimate_sq;
     logic [31:0] correction;
+    integer exponent;
     integer iteration;
     begin
-      if (fp32_is_nan(value) || value[31])
-        return 32'h7fc0_0000;
-      if (fp32_is_zero(value))
-        return 32'h7f80_0000;
-      if (fp32_is_inf(value))
-        return 32'd0;
-      half_value = fp32_mul(value, 32'h3f00_0000);
-      estimate = 32'h5f37_5a86 - (value >> 1);
-      for (iteration = 0; iteration < 2; iteration = iteration + 1) begin
+      magnitude = fp32_abs(value);
+      if (magnitude[30:23] == 8'hff) begin
+        if (magnitude[22:0] != 0)
+          return 32'd0;
+        if (!value[31])
+          return 32'd0;
+        return 32'h7f7f_ffff;
+      end
+      if (value[31] || fp32_is_zero(magnitude))
+        return 32'h7f7f_ffff;
+
+      exponent = fp32_normalized_exponent(value);
+      mantissa = fp32_normalized_mantissa(value);
+      if ((exponent % 2) != 0) begin
+        mantissa = fp32_mul(mantissa, 32'h4000_0000);
+        exponent = exponent - 1;
+      end
+      half_value = fp32_mul(32'h3f00_0000, mantissa);
+      estimate = 32'h5f37_5a86 - (mantissa >> 1);
+      for (iteration = 0;
+           iteration < 3;
+           iteration = iteration + 1) begin
         estimate_sq = fp32_mul(estimate, estimate);
         correction = fp32_sub(
           32'h3fc0_0000,
@@ -823,7 +1110,9 @@ package npu_engine_pkg;
         );
         estimate = fp32_mul(estimate, correction);
       end
-      return estimate;
+      return fp32_scale_pow2_saturating(
+        estimate, -(exponent / 2)
+      );
     end
   endfunction
 

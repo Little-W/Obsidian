@@ -44,6 +44,17 @@ static void cfe_test_inputs_default(
     inputs->cmd_id_lookup_ready_i = 1u;
 }
 
+static void cfe_test_cycle_step(
+    npu_cfe_cycle_t *model,
+    const npu_cfe_cycle_inputs_t *inputs,
+    npu_cfe_cycle_outputs_t *outputs)
+{
+    model->descriptor_diagnostic_mode = 1u;
+    npu_cfe_cycle_step(model, inputs, outputs);
+}
+
+#define npu_cfe_cycle_step cfe_test_cycle_step
+
 static uint16_t cfe_test_response_id(uint64_t response)
 {
     return (uint16_t)(response & UINT64_C(0x0fff));

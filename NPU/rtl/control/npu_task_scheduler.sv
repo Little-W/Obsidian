@@ -22,7 +22,7 @@ module npu_task_scheduler #(
 
   input  logic          cmd_id_lookup_valid_i,
   output logic          cmd_id_lookup_ready_o,
-  input  logic [10:0]   cmd_id_lookup_id_i,
+  input  logic [9:0]    cmd_id_lookup_id_i,
   output logic          cmd_id_lookup_rsp_valid_o,
   output logic          cmd_id_busy_o,
 
@@ -455,7 +455,7 @@ module npu_task_scheduler #(
     lookup_busy_comb = 1'b0;
     for (int unsigned slot = 0; slot < TASK_SLOTS; slot++) begin
       if ((task_state_q[slot] != NPU_TASK_FREE) &&
-          (task_command_id_q[slot] == {1'b0, cmd_id_lookup_id_i})) begin
+          (task_command_id_q[slot] == {2'd0, cmd_id_lookup_id_i})) begin
         lookup_busy_comb = 1'b1;
       end
     end

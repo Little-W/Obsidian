@@ -95,6 +95,11 @@ package npu_rtl_pkg;
   localparam logic [7:0] NPU_OPCODE_DMA_TRANSPOSE_2D = 8'h23;
   localparam logic [7:0] NPU_OPCODE_DMA_PACK         = 8'h24;
   localparam logic [7:0] NPU_OPCODE_DMA_SPLIT        = 8'h25;
+  // Internal execution-unit value reserved for GATHER_ND. CMD opcode 11 is
+  // rejected before task dispatch while its capability bit is disabled.
+  /* verilator lint_off UNUSEDPARAM */
+  localparam logic [7:0] NPU_OPCODE_DMA_GATHER_ND    = 8'h28;
+  /* verilator lint_on UNUSEDPARAM */
   localparam logic [7:0] NPU_OPCODE_GEMM             = 8'h40;
   localparam logic [7:0] NPU_OPCODE_BMM              = 8'h41;
   localparam logic [7:0] NPU_OPCODE_GEMM_ACCUM       = 8'h42;
@@ -118,45 +123,54 @@ package npu_rtl_pkg;
   localparam logic [7:0] NPU_OPCODE_VADD_RESCALE_I   = 8'h86;
 
   function automatic logic npu_cmd_opcode_valid(
-    input logic [4:0] opcode_field
+    input logic [5:0] opcode_field
   );
-    return (opcode_field != 5'd28) &&
-           (opcode_field != 5'd30);
+    return opcode_field <= 6'd32 &&
+           opcode_field != 6'd11 &&
+           opcode_field != 6'd29 &&
+           opcode_field != 6'd31;
   endfunction
 
   function automatic logic [3:0] npu_cmd_engine_from_opcode(
-    input logic [4:0] opcode_field
+    input logic [5:0] opcode_field
   );
-    if (opcode_field <= 5'd4)
+    if (!npu_cmd_opcode_valid(opcode_field))
+      return 4'hf;
+    if (opcode_field <= 6'd4)
       return NPU_ENGINE_CONTROL;
-    if (opcode_field <= 5'd10)
+    if (opcode_field <= 6'd10)
       return NPU_ENGINE_DMA;
-    if (opcode_field <= 5'd14)
+    if (opcode_field <= 6'd15)
       return NPU_ENGINE_MATRIX;
-    if (opcode_field <= 5'd24)
+    if (opcode_field <= 6'd25)
       return NPU_ENGINE_VECTOR;
     return NPU_ENGINE_COMPLEX;
   endfunction
 
   function automatic logic [7:0] npu_cmd_expanded_opcode(
-    input logic [4:0] opcode_field
+    input logic [5:0] opcode_field
   );
-    if (opcode_field <= 5'd4)
-      return {3'd0, opcode_field};
-    if (opcode_field <= 5'd10)
-      return NPU_OPCODE_DMA_COPY_1D + 8'(opcode_field - 5'd5);
-    if (opcode_field <= 5'd14)
-      return NPU_OPCODE_GEMM + 8'(opcode_field - 5'd11);
-    if (opcode_field <= 5'd24)
-      return NPU_OPCODE_VADD_I + 8'(opcode_field - 5'd15);
+    if (!npu_cmd_opcode_valid(opcode_field))
+      return 8'hff;
+    if (opcode_field <= 6'd4)
+      return {2'd0, opcode_field};
+    if (opcode_field <= 6'd10)
+      return NPU_OPCODE_DMA_COPY_1D
+           + 8'(opcode_field - 6'd5);
+    if (opcode_field <= 6'd15)
+      return NPU_OPCODE_GEMM
+           + 8'(opcode_field - 6'd12);
+    if (opcode_field <= 6'd25)
+      return NPU_OPCODE_VADD_I
+           + 8'(opcode_field - 6'd16);
     unique case (opcode_field)
-      5'd25: return NPU_OPCODE_VACT_I;
-      5'd26: return NPU_OPCODE_VSOFTMAX_I;
-      5'd27: return NPU_OPCODE_VNORM_I;
-      5'd28: return NPU_OPCODE_VROPE_I;
-      5'd29: return NPU_OPCODE_VSTAT_I;
-      5'd30: return NPU_OPCODE_VRECIP_I;
-      5'd31: return NPU_OPCODE_VADD_RESCALE_I;
+      6'd26: return NPU_OPCODE_VACT_I;
+      6'd27: return NPU_OPCODE_VSOFTMAX_I;
+      6'd28: return NPU_OPCODE_VNORM_I;
+      6'd29: return NPU_OPCODE_VROPE_I;
+      6'd30: return NPU_OPCODE_VSTAT_I;
+      6'd31: return NPU_OPCODE_VRECIP_I;
+      6'd32: return NPU_OPCODE_VADD_RESCALE_I;
       default: return 8'hff;
     endcase
   endfunction
@@ -171,19 +185,19 @@ package npu_rtl_pkg;
   function automatic logic [11:0] npu_cmd_command_id(
     input logic [127:0] command
   );
-    return {1'b0, command[122:112]};
+    return {2'd0, command[121:112]};
   endfunction
 
   function automatic logic [3:0] npu_cmd_engine(
     input logic [127:0] command
   );
-    return npu_cmd_engine_from_opcode(command[127:123]);
+    return npu_cmd_engine_from_opcode(command[127:122]);
   endfunction
 
   function automatic logic [7:0] npu_cmd_opcode(
     input logic [127:0] command
   );
-    return npu_cmd_expanded_opcode(command[127:123]);
+    return npu_cmd_expanded_opcode(command[127:122]);
   endfunction
 
   function automatic logic [11:0] npu_cmd_wait0(

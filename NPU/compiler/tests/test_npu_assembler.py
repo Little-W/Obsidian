@@ -25,7 +25,7 @@ class CommandTests(unittest.TestCase):
         encoded = npu_assembler.encode_command128(
             payload=payload,
             command_id=0x345,
-            compact_opcode=27,
+            opcode=27,
             dtype=3,
             flags=0xB,
             timeout_class=2,
@@ -45,7 +45,7 @@ class CommandTests(unittest.TestCase):
             | (0x56 << 32)
             | (0x23 << 40)
             | (0x345 << 48)
-            | (27 << 59),
+            | (27 << 58),
         )
 
     def test_event_generation_and_command_ranges_are_rejected(self) -> None:
@@ -61,9 +61,13 @@ class CommandTests(unittest.TestCase):
                 "none",
                 "none",
             )
-        with self.assertRaisesRegex(npu_assembler.CompileError, "0..2047"):
+        with self.assertRaisesRegex(npu_assembler.CompileError, "0..1023"):
             npu_assembler.encode_command128(
-                0, 2048, 0, 1, 0, 0, "none", "none", "none"
+                0, 1024, 0, 1, 0, 0, "none", "none", "none"
+            )
+        with self.assertRaisesRegex(npu_assembler.CompileError, "0..32"):
+            npu_assembler.encode_command128(
+                0, 1, 33, 1, 0, 0, "none", "none", "none"
             )
 
 
@@ -87,7 +91,7 @@ class AssemblerTests(unittest.TestCase):
             | (64 << 4)
             | (1 << 2)
         )
-        self.assertEqual(dma.compact_opcode, 5)
+        self.assertEqual(dma.opcode, 5)
         self.assertEqual(dma.payload, expected_dma)
         self.assertEqual(dma.signal_event, 0)
         matrix = operations[1]
@@ -100,12 +104,12 @@ class AssemblerTests(unittest.TestCase):
             | (7 << 8)
             | (1 << 5)
         )
-        self.assertEqual(matrix.compact_opcode, 11)
+        self.assertEqual(matrix.opcode, 12)
         self.assertEqual(matrix.payload, expected_matrix)
         self.assertEqual(matrix.wait_events, (0, npu_assembler.EVENT_NONE))
         _low, high = struct.unpack("<QQ", matrix.command)
         self.assertEqual((high >> 16) & 0x3, 1)
-        self.assertEqual((high >> 59) & 0x1F, 11)
+        self.assertEqual((high >> 58) & 0x3F, 12)
         self.assertEqual((high >> 63) & 0x1, 0)
 
     def test_example_int16_header_and_matrix_dtype_fields(self) -> None:
@@ -425,12 +429,77 @@ class AssemblerTests(unittest.TestCase):
         }
         operations, _commands = npu_assembler.compile_document(document)
         self.assertEqual(
-            [operation.compact_opcode for operation in operations],
-            [28, 30, 31],
+            [operation.opcode for operation in operations],
+            [29, 31, 32],
         )
-        for operation, expected in zip(operations, (28, 30, 31)):
+        for operation, expected in zip(operations, (29, 31, 32)):
             _low, high = struct.unpack("<QQ", operation.command)
-            self.assertEqual((high >> 59) & 0x1F, expected)
+            self.assertEqual((high >> 58) & 0x3F, expected)
+
+    def test_gather_nd_has_an_inline_p1_payload(self) -> None:
+        document = {
+            "schema_version": 1,
+            "target": {
+                "command_format": npu_assembler.COMMAND_FORMAT,
+                "gaddr_bases": {"weight": 0x200000},
+            },
+            "tensors": {
+                "source": {
+                    "addr": 0x200100,
+                    "space": "ddr",
+                    "base_select": "weight",
+                    "dtype": "int8",
+                },
+                "index": {
+                    "addr": 0x1000,
+                    "space": "l1",
+                    "dtype": "int32",
+                },
+                "destination": {
+                    "addr": 0x2000,
+                    "space": "l1",
+                    "dtype": "int8",
+                },
+            },
+            "operations": [
+                {
+                    "name": "gather",
+                    "engine": "dma",
+                    "opcode": "GATHER_ND",
+                    "fields": {
+                        "common": {
+                            "src0": "source",
+                            "aux0": "index",
+                            "dst": "destination",
+                        },
+                        "dma": {
+                            "block_count": 3,
+                            "block_bytes": 64,
+                        },
+                    },
+                }
+            ],
+        }
+        operations, _commands = npu_assembler.compile_document(document)
+        gather = operations[0]
+        expected_payload = (
+            (0x0A000100 << 52)
+            | (0x100 << 36)
+            | (0x200 << 20)
+            | (2 << 12)
+            | 63
+        )
+        self.assertEqual(gather.opcode, 11)
+        self.assertEqual(gather.engine_opcode, 0x28)
+        self.assertEqual(gather.payload, expected_payload)
+        _low, high = struct.unpack("<QQ", gather.command)
+        self.assertEqual((high >> 58) & 0x3F, 11)
+
+        document["tensors"]["source"]["space"] = "l1"
+        with self.assertRaisesRegex(
+            npu_assembler.CompileError, "source must use ddr"
+        ):
+            npu_assembler.compile_document(document)
 
     def test_matrix_shift_and_dimensions_are_checked(self) -> None:
         document = self.example("int8_regression.json")

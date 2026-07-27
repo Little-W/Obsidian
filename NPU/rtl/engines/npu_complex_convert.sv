@@ -33,7 +33,9 @@ module npu_complex_f2i (
   logic [31:0] scaled_value;
 
   always_comb begin
-    scaled_value = fp32_div(value_i, scale_i);
+    scaled_value = fp32_mul(
+      value_i, fp32_reciprocal_approx(scale_i)
+    );
     result_o = fp32_to_int_round(scaled_value, round_mode_i);
     exceptional_o = fp32_is_nan(scaled_value) ||
                     fp32_is_inf(scaled_value);

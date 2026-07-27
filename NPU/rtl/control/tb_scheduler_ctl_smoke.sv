@@ -19,8 +19,6 @@ module tb_scheduler_ctl_smoke;
   logic [7:0] df_fetch_rsp_status;
   logic [47:0] df_fetch_rsp_fault_addr;
   logic [2047:0] df_fetch_rsp_desc_flat;
-  logic df_pending_q;
-  logic [11:0] df_pending_command_id_q;
   logic cmd_id_lookup_ready;
   logic cmd_id_lookup_rsp_valid;
   logic cmd_id_busy;
@@ -104,21 +102,23 @@ module tb_scheduler_ctl_smoke;
   always #5 clk = ~clk;
 
   function automatic logic [127:0] make_command(
-    input logic [3:0] engine,
-    input logic [11:0] command_id,
-    input logic [7:0] opcode,
-    input logic [11:0] signal_event
+    input logic [5:0] command_opcode,
+    input logic [9:0] command_id,
+    input logic [1:0] dtype,
+    input logic [79:0] payload,
+    input logic [7:0] signal_event
   );
-    logic [63:0] low_word;
-    logic [63:0] high_word;
+    logic [127:0] command;
     begin
-      low_word = {engine, command_id,
-                  36'd0, command_id};
-      low_word[5:0] = 6'd0;
-      high_word = {8'h01, signal_event,
-                   NPU_EVENT_NONE, NPU_EVENT_NONE,
-                   12'd0, opcode};
-      return {high_word, low_word};
+      command = 128'd0;
+      command[127:122] = command_opcode;
+      command[121:112] = command_id;
+      command[111:104] = 8'hff;
+      command[103:96] = 8'hff;
+      command[95:88] = signal_event;
+      command[81:80] = dtype;
+      command[79:0] = payload;
+      return command;
     end
   endfunction
 
@@ -144,7 +144,7 @@ module tb_scheduler_ctl_smoke;
 
     .cmd_id_lookup_valid_i(1'b0),
     .cmd_id_lookup_ready_o(cmd_id_lookup_ready),
-    .cmd_id_lookup_id_i(11'd0),
+    .cmd_id_lookup_id_i(10'd0),
     .cmd_id_lookup_rsp_valid_o(cmd_id_lookup_rsp_valid),
     .cmd_id_busy_o(cmd_id_busy),
 
@@ -260,35 +260,20 @@ module tb_scheduler_ctl_smoke;
 
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
-      df_pending_q              <= 1'b0;
-      df_pending_command_id_q   <= 12'd0;
       df_fetch_rsp_valid        <= 1'b0;
       df_fetch_rsp_command_id   <= 12'd0;
       df_fetch_rsp_status       <= NPU_STATUS_SUCCESS;
       df_fetch_rsp_fault_addr   <= 48'd0;
       df_fetch_rsp_desc_flat    <= 2048'd0;
     end else begin
-      df_fetch_rsp_valid <= df_pending_q;
-      if (df_pending_q) begin
-        df_fetch_rsp_command_id <= df_pending_command_id_q;
-        df_fetch_rsp_status     <= NPU_STATUS_SUCCESS;
-        df_fetch_rsp_fault_addr <= 48'd0;
-        df_fetch_rsp_desc_flat  <= 2048'd0;
-        df_fetch_rsp_desc_flat[511:480] <=
-          {20'habcde, df_pending_command_id_q};
-      end
-      df_pending_q <= 1'b0;
+      df_fetch_rsp_valid <= 1'b0;
       if (df_fetch_valid && df_fetch_ready) begin
-        if ((df_fetch_desc_addr != 48'd0)
-            || df_fetch_crc_enable
-            || !((df_fetch_command_id == 12'h001
-                  && df_fetch_engine == NPU_ENGINE_DMA)
-                 || (df_fetch_command_id == 12'h002
-                     && df_fetch_engine == NPU_ENGINE_MATRIX))) begin
-          $fatal(1, "descriptor-fetch request fields are incorrect");
-        end
-        df_pending_q            <= 1'b1;
-        df_pending_command_id_q <= df_fetch_command_id;
+        $fatal(
+          1,
+          "CMD128 task requested a descriptor fetch: addr=%h id=%h engine=%h crc=%b",
+          df_fetch_desc_addr, df_fetch_command_id,
+          df_fetch_engine, df_fetch_crc_enable
+        );
       end
       if (df_fetch_rsp_valid && !df_fetch_rsp_ready) begin
         $fatal(1, "scheduler did not accept a descriptor response");
@@ -337,8 +322,9 @@ module tb_scheduler_ctl_smoke;
       matrix_accepted_user_tag_q    <= 32'd0;
     end else begin
       if (dma_task_valid) begin
-        if ((dma_task_desc_flat[479:0] != 480'd0)
-            || (dma_task_desc_flat[2047:512] != 1536'd0)) begin
+        if ((dma_task_desc_flat[64 +: 64] != 64'h100)
+            || (dma_task_desc_flat[256 +: 64] != 64'h200)
+            || (dma_task_desc_flat[16'h48 * 8 +: 32] != 32'd4)) begin
           $fatal(1, "DMA dispatch changed descriptor data");
         end
         dma_seen_q                <= 1'b1;
@@ -347,8 +333,12 @@ module tb_scheduler_ctl_smoke;
         dma_accepted_user_tag_q   <= dma_task_desc_flat[511:480];
       end
       if (matrix_task_valid) begin
-        if ((matrix_task_desc_flat[479:0] != 480'd0)
-            || (matrix_task_desc_flat[2047:512] != 1536'd0)) begin
+        if ((matrix_task_desc_flat[64 +: 64] != 64'h100)
+            || (matrix_task_desc_flat[128 +: 64] != 64'h200)
+            || (matrix_task_desc_flat[256 +: 64] != 64'h300)
+            || (matrix_task_desc_flat[16'h40 * 8 +: 32] != 32'd1)
+            || (matrix_task_desc_flat[16'h44 * 8 +: 32] != 32'd1)
+            || (matrix_task_desc_flat[16'h48 * 8 +: 32] != 32'd1)) begin
           $fatal(1, "Matrix dispatch changed descriptor data");
         end
         matrix_seen_q                <= 1'b1;
@@ -452,6 +442,7 @@ module tb_scheduler_ctl_smoke;
 
   initial begin
     logic [63:0] response;
+    logic [79:0] payload;
 
     clk                    = 1'b0;
     reset_n                = 1'b0;
@@ -477,17 +468,26 @@ module tb_scheduler_ctl_smoke;
     reset_n = 1'b1;
     repeat (2) @(posedge clk);
 
+    payload = {
+      28'h000_0100, 28'h000_0200, 20'd4,
+      NPU_DTYPE_INT8, 1'b0, 1'b0
+    };
     submit_command(make_command(
-      NPU_ENGINE_DMA, 12'h001, NPU_OPCODE_DMA_COPY_1D, 12'h000));
+      6'd5, 10'h001, NPU_DTYPE_INT8, payload, 8'h00));
+    payload = {
+      14'h004, 14'h008, 14'h00c, 12'd0,
+      6'd0, 6'd0, 6'd0,
+      1'b0, NPU_DTYPE_INT32, 5'd0
+    };
     submit_command(make_command(
-      NPU_ENGINE_MATRIX, 12'h002, NPU_OPCODE_GEMM, NPU_EVENT_NONE));
+      6'd12, 10'h002, NPU_DTYPE_INT8, payload, 8'hff));
 
     wait (dma_seen_q && matrix_seen_q
           && dma_done_ready && matrix_done_ready);
     if ((dma_accepted_opcode_q != NPU_OPCODE_DMA_COPY_1D)
         || (matrix_accepted_opcode_q != NPU_OPCODE_GEMM)
-        || (dma_accepted_user_tag_q != 32'habcde001)
-        || (matrix_accepted_user_tag_q != 32'habcde002)) begin
+        || (dma_accepted_user_tag_q != 32'h0000_0001)
+        || (matrix_accepted_user_tag_q != 32'h0000_0002)) begin
       $fatal(1, "engine dispatch data mismatch");
     end
 
@@ -547,6 +547,7 @@ module tb_scheduler_ctl_smoke;
       "PASS: scheduler concurrency, WAIT, FENCE, QUERY and ACK signature=%0b",
       ^{
         cmd_id_lookup_ready, cmd_id_lookup_rsp_valid, cmd_id_busy,
+        dma_task_desc_flat, matrix_task_desc_flat,
         vector_task_valid, vector_task_opcode, vector_task_command_id,
         vector_task_desc_flat, vector_done_ready,
         complex_task_valid, complex_task_opcode, complex_task_command_id,

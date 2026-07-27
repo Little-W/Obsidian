@@ -21,7 +21,7 @@ import npu_model_compiler as compiler  # noqa: E402
 
 # These fixed vectors were independently checked with the NPU cycle C model.
 MODEL_INPUT = (2, -1, 3, 0, -2, 4, 1, 3)
-EXPECTED_SCORE = (4, -4, -4, 4)
+EXPECTED_SCORE = (14, -5, -5, 30)
 EXPECTED_PROBABILITY = (4, 0, 0, 4)
 EXPECTED_CONTEXT = MODEL_INPUT
 EXPECTED_OUTPUT = (7, -8, 13, -14, -3, 4, 1, 5)
@@ -57,7 +57,9 @@ def compile_fixture(model_path: Path, output_dir: Path) -> dict[str, object]:
         if name not in operations:
             raise RuntimeError(f"missing lowered operation {name}")
         operation = operations[name]
-        expected_opcode = compiler.npu_assembler.OPCODES[engine][opcode_name]
+        expected_opcode = compiler.npu_assembler.OPCODE_FIELDS[
+            (engine, opcode_name)
+        ]
         if operation.engine != engine or operation.opcode != expected_opcode:
             raise RuntimeError(
                 f"{name} was lowered as {operation.engine}/{operation.opcode}"

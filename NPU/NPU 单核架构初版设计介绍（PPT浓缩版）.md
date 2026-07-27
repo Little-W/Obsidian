@@ -1,4 +1,4 @@
-# NPU 单核架构初版设计介绍
+# NPU 单核架构设计介绍
 
 > [!summary]
 > 本设计从单核开始。外部 Generic Core 负责模型调度，NPU 通过 64-bit AXI
@@ -12,7 +12,7 @@
 - Sigmoid、Tanh、GELU、SiLU、Softmax 和 Norm 在 Complex Engine 内部执行
   `INT → FP32 → INT`，FP32 中间值不写入软件可见张量。
 - 总线数据宽度为 64 bit；一条 128-bit 指令使用相邻的 low、high 两个 beat。
-- 第一版不设置卷积执行单元。Conv2D 由编译器拆成数据整理、im2col、GEMM、
+- 本设计不设置卷积执行单元。Conv2D 由编译器拆成数据整理、im2col、GEMM、
   bias 和输出整理；CPU 可处理硬件指令不适合承担的步骤。
 - Matrix 的分块乘加与 INT32 部分和处理可同时推进，减少执行单元等待。
 
@@ -52,8 +52,8 @@ NPU AXI Slave 提供三类访问入口：
 
 |          位段 | 字段               | 说明                                    |
 | ----------: | ---------------- | ------------------------------------- |
-| `[127:123]` | `opcode`         | 5-bit 操作码                              |
-| `[122:112]` | `command_id`     | 11-bit 在途任务编号，范围 0～2047              |
+| `[127:122]` | `opcode`         | 6-bit 操作码                              |
+| `[121:112]` | `command_id`     | 10-bit 在途任务编号，范围 0～1023              |
 | `[111:104]` | `wait_event0`    | 第一个前置 Event ID，`0xFF` 表示不用            |
 |  `[103:96]` | `wait_event1`    | 第二个前置 Event ID，`0xFF` 表示不用            |
 |   `[95:88]` | `signal_event`   | 完成后更新的 Event ID，`0xFF` 表示不用           |
@@ -65,27 +65,56 @@ NPU AXI Slave 提供三类访问入口：
 |   `[81:80]` | `dtype`          | `0=INT4`、`1=INT8`、`2=INT32`、`3=INT16` |
 |    `[79:0]` | `payload`        | 按操作类型解释的任务参数                          |
 
-指令不设置专用版本标志。`opcode` 使用最高 5 bit，`command_id` 扩展为
-11 bit。
+`opcode` 占用最高 6 bit。数值 0～32 的含义见下表；33～63 返回
+`ILLEGAL_OPCODE`。
 
-CFE 和 TS 保存收到的 16 字节 CMD128，内联解码器从
-`payload` 直接得到地址引用、尺寸、数据格式和函数选项。MIF 不再产生任务参数
-读取事务。
+CFE 和 TS 保存收到的 16 字节 CMD128，内联解码器从 `payload` 直接得到
+地址引用、尺寸、数据格式和函数选项。`opcode[127:122]` 是线上 6-bit 值，
+不是执行单元内部枚举；全部任务操作数都在命令头和 `payload` 内。
 
 ### 4.2 操作码
 
-5-bit 编码的 32 个值均有明确用途：
+当前定义的 33 个操作码如下。除标注为功能位关闭的三项外，其他表项均为 P0：
 
-| 值     | 执行单元    | 指令                                                   |
-| ----- | ------- | ---------------------------------------------------- |
-| 0～4   | Control | NOP、EVENT_SIGNAL、EVENT_REARM、EVENT_JOIN、GLOBAL_FENCE |
-| 5～10  | DMA     | COPY_1D、COPY_ND、FILL、TRANSPOSE_2D、PACK、SPLIT         |
-| 11～14 | Matrix  | GEMM、BMM、GEMM_ACCUM、GEMM_ZERO                        |
-| 15～24 | Vector  | ADD、SUB、MUL、FMA、MAX、MIN、CMP、SELECT、CLAMP、RELU        |
-| 25～31 | Complex | ACT、SOFTMAX、NORM、ROPE、STAT、RECIP、ADD_RESCALE         |
+|   值 | 指令                 | 执行单元    | 主要作用                                            | 关键输入、参数与输出                                                                                  | 当前支持情况                    |
+| --: | ------------------ | ------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------------------- |
+|   0 | `NOP`              | Control | 创建一个不进行数据运算的任务，可用于占位或验证任务控制。                    | `payload=0`，三个 Event 字段均为 `0xFF`；完成后只产生任务状态。                                                | 已实现                       |
+|   1 | `EVENT_SIGNAL`     | Control | 由指令主动把一个 Event 置为成功。                            | `signal_event` 必须有效，`payload=0`；不启动计算单元。                                                    | 已实现                       |
+|   2 | `EVENT_REARM`      | Control | 复用已经完成且没有等待者的 Event，并开始新的代次。                    | `signal_event` 指定待复用的 Event；Event 仍被占用时返回错误。                                                | 已实现                       |
+|   3 | `EVENT_JOIN`       | Control | 把两个前置 Event 的结果合并后写入一个新 Event。                  | `wait_event0`、`wait_event1`、`signal_event` 均有效；`join_mode=0` 要求两者成功，`join_mode=1` 表示任一成功即可。 | 已实现                       |
+|   4 | `GLOBAL_FENCE`     | Control | 等待所选执行单元中更早提交的任务全部结束。                           | `engine_mask[3:0]` 依次选择 DMA、Matrix、Vector、Complex，至少选择一项。                                   | 已实现                       |
+|   5 | `DMA_COPY_1D`      | DMA     | 连续复制一段元素，并可在不同整数宽度之间转换。                         | 源/目标 `AREF28`、元素数、源/目标 dtype、INT4 起始半字节；变窄时执行饱和。                                            | 已实现                       |
+|   6 | `DMA_COPY_ND`      | DMA     | 复制连续保存的张量区域。                                    | 字段与 `DMA_COPY_1D` 相同；不含 rank、shape、src/dst stride，带间隔访问由编译器拆成多条任务。                              | 已实现                       |
+|   7 | `DMA_FILL`         | DMA     | 用同一个数值连续填充目标区域。                                 | 目标 `AREF28`、元素数、`fill_value[31:0]` 和目标 dtype；不含多维 shape。                                      | 已实现                       |
+|   8 | `DMA_TRANSPOSE_2D` | DMA     | 将连续行优先二维数组从 `[rows, columns]` 改排为 `[columns, rows]`。 | 源/目标 `AREF28`、行数、列数、dtype 和 INT4 半字节选择；不含行间隔字段。                                         | 已实现                       |
+|   9 | `DMA_PACK`         | DMA     | 从等间隔数据段读取并连续写入目标区域。                             | 源/目标 `AREF28`、段数、每段字节数、段间隔；后三项均为 8 bit，且段间隔不得小于段字节数。                                | 已实现                       |
+|  10 | `DMA_SPLIT`        | DMA     | 从连续区域读取，并按固定间隔写入多个数据段。                          | 源/目标 `AREF28`、段数、每段字节数、段间隔；后三项均为 8 bit。                                                  | 已实现                       |
+|  11 | `DMA_GATHER_ND`    | DMA     | 根据索引表从全局内存读取多个数据块，并连续写入 L1。                    | 全局源 `AREF28`、索引表和目标 `LREF16`、块数、每块字节数；索引表元素为 UINT32。                                    | P1，功能位关闭，返回 `ILLEGAL_OPCODE` |
+|  12 | `GEMM`             | Matrix  | 计算矩阵乘法，可在写回前加 INT32 bias。                         | A、B、C 的 `LREF14`，bias 的 `LREF12`，`M/N/K`、B 数据格式、C dtype 和右移位数；无 residual、ReLU、逐输出通道重缩放字段。 | 已实现                       |
+|  13 | `BMM`              | Matrix  | 对连续保存的多组矩阵执行批量矩阵乘法。                            | A、B、C 的 `LREF14`，batch 数、`M/N/K`、B 数据格式、C dtype 和右移位数；不使用 bias。                             | 已实现                       |
+|  14 | `GEMM_ACCUM`       | Matrix  | 计算矩阵乘法，并把新结果加到原有 C。                             | A、B、C、`M/N/K`；C 必须为 INT32，bias 和右移位数必须为 0。                                                  | 已实现                       |
+|  15 | `GEMM_ZERO`        | Matrix  | 清零 C 指向的 INT32 矩阵区域，为后续部分和累加做准备。                | C 的 `LREF14` 和 `M/N`；A、B、bias、右移位数均为 0。                                                     | 已实现                       |
+|  16 | `VADD`             | Vector  | 两个张量逐元素相加。                                      | `src0`、`src1`、`dst`、`rows/length` 和广播模式；输出保持公共输入 dtype。                                     | 已实现                       |
+|  17 | `VSUB`             | Vector  | 两个张量逐元素相减。                                      | `src0`、`src1`、`dst`、`rows/length` 和广播模式。                                                    | 已实现                       |
+|  18 | `VMUL`             | Vector  | 两个张量逐元素相乘。                                      | `src0`、`src1`、`dst`、`rows/length` 和广播模式；结果保存为 INT32。                                        | 已实现                       |
+|  19 | `VFMA`             | Vector  | 计算 `src0 × src1 + src2`。                        | 三个输入、目标地址、`rows/length` 和三个广播模式；乘加结果为 INT32。                                                | 已实现                       |
+|  20 | `VMAX`             | Vector  | 逐元素选择两个输入中的较大值。                                 | `src0`、`src1`、`dst`、`rows/length` 和广播模式。                                                    | 已实现                       |
+|  21 | `VMIN`             | Vector  | 逐元素选择两个输入中的较小值。                                 | `src0`、`src1`、`dst`、`rows/length` 和广播模式。                                                    | 已实现                       |
+|  22 | `VCMP_I`           | Vector  | 按指定关系比较两个输入，并生成 INT8 mask。                      | `src0/src1` 按公共 dtype 比较；`src2[15:13]` 依次为 EQ、NE、LT、LE、GT、GE，低 13 bit 为 0；真写 1，假写 0。        | 已实现                       |
+|  23 | `VSELECT`          | Vector  | 根据 INT8 mask 在 `src0` 与 `src1` 之间逐元素选择。         | `src2` 指向 `VCMP_I` 的 mask；mask 非零选择 `src0`，mask 为 0 选择 `src1`。                              | 已实现                       |
+|  24 | `VCLAMP`           | Vector  | 把每个输入值限制到给定的最小值和最大值之间。                          | `src1`、`src2` 字段直接保存 signed16 下限和上限，不作为地址使用。                                                | 已实现                       |
+|  25 | `VRELU`            | Vector  | 计算 `max(src0, 0)`。                              | `src0`、`dst` 和 `rows/length`；未使用的输入字段必须为 0。                                                 | 已实现                       |
+|  26 | `VACT`             | Complex | 计算 Sigmoid、Tanh、GELU 或 SiLU。                    | 函数编号、输入/输出 scale 指数、目标 dtype 和输入限制区间；内部使用 FP32。                                             | 已实现                       |
+|  27 | `VSOFTMAX`         | Complex | 对每一行计算 Softmax，并支持布尔 mask 或有效长度。                | `src0`、可选 `aux`、`dst`、`rows/length`、mask 模式、scale 指数和目标 dtype；causal 模式当前返回命令字段错误。      | 已实现                       |
+|  28 | `VNORM`            | Complex | 计算 LayerNorm 或 RMSNorm。                         | 输入、gamma、可选 beta、目标地址、`rows/length`、epsilon 档位、scale 指数和目标 dtype。                           | 已实现                       |
+|  29 | `VROPE`            | Complex | 为注意力中的 Q/K 数据执行旋转位置编码。                          | 操作码和命令位置已经分配；功能寄存器未声明支持时不得启动 Complex Engine。                                                | P1，功能位关闭，返回 `ILLEGAL_OPCODE` |
+|  30 | `VSTAT`            | Complex | 按行计算 SUM、MAX 或 SUMSQ，并写出 INT32 结果。              | `src0`、`dst`、`rows/length` 和统计模式；每行输出一个值。                                                   | 已实现                       |
+|  31 | `VRECIP`           | Complex | 计算倒数，供除法类公式使用。                                  | 操作码和命令位置已经分配；功能寄存器未声明支持时不得写目标数据。                                                            | P1，功能位关闭，返回 `ILLEGAL_OPCODE` |
+|  32 | `VADD_RESCALE`     | Complex | 先按各自 scale 还原两个输入，相加后按目标 scale 写回整数。            | `src0`、`aux`、`dst`、`rows/length`、三个 scale 指数和目标 dtype。                                      | 已实现                       |
 
-ROPE 和 RECIP 的编码供后续功能使用。第一版功能寄存器未声明支持时，硬件返回
-`ILLEGAL_OPCODE`；其他表项属于第一版实现内容。
+数值 33～63 没有定义，CFE 必须返回 `ILLEGAL_OPCODE`。`DMA_GATHER_ND`、
+`VROPE` 和 `VRECIP` 只有在功能寄存器声明支持后才能执行，其余表项属于当前
+硬件功能。
 
 ### 4.3 地址引用
 
@@ -114,10 +143,15 @@ Complex 使用 16-bit `LREF16`，实际地址为 `LREF16 × 16`。Matrix bias �
 | FILL | `dst AREF28`、`count[19:0]`、`fill_value[31:0]` |
 | TRANSPOSE_2D | `src AREF28`、`dst AREF28`、`rows[7:0]`、`cols[7:0]`、目的 dtype |
 | PACK / SPLIT | `src AREF28`、`dst AREF28`、段数、每段字节数、段间隔，各 8 bit |
+| GATHER_ND | 全局源 `AREF28`、索引表和目标 `LREF16`、`block_count-1[7:0]`、`block_bytes-1[11:0]` |
 
 内联 COPY_ND 表示连续多维数组。带跨步的 COPY_ND 由编译器展开成多条
 COPY_1D，或在适用时改用 PACK、SPLIT。这样保留多维复制能力，又不需要外部
 参数块。
+
+GATHER_ND 的索引表包含 UINT32 块编号。第 $i$ 项从
+`src_base + index[i] × block_bytes` 读取一块，并写到
+`dst_base + i × block_bytes`。该指令的字段已经确定，当前功能位仍为 0。
 
 ### 4.5 Matrix payload
 
@@ -246,19 +280,3 @@ EVENT_REARM 的批次。
 | GRU | 六组 GEMM、Sigmoid、Tanh、逐元素乘法和状态组合 |
 | LSTM | 八组 GEMM、四个门函数、逐元素乘法和状态组合 |
 | CNN | im2col、DMA 搬运、GEMM、bias、激活和输出整理 |
-
-## 9. 第一版与后续功能
-
-“第一版”表示单核首次实现和回归必须覆盖的内容；“后续功能”表示已经保留编码，
-但只有功能寄存器声明支持后才能使用。第一版包括 Control、DMA、Matrix、
-Vector，以及 ACT、SOFTMAX、NORM、STAT、ADD_RESCALE。ROPE、RECIP 和更复杂
-的索引搬运属于后续功能。
-
-第一版完成条件包括：
-
-- CMD128 的 32 个操作码可正确解码，未启用功能返回明确错误；
-- 执行期间没有外部任务参数读取；
-- INT4、INT8、INT16、INT32 组合测试通过；
-- RNN、GRU、LSTM、CNN、Transformer 端到端示例分别通过；
-- CModel、RTL、Verilator 和 AXI 验证环境的结果一致；
-- 编译和静态检查没有警告。

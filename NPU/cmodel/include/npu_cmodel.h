@@ -49,7 +49,7 @@ typedef enum {
     NPU_DTYPE_INT32 = 2,
     /*
      * Descriptor dtype fields are two bits wide.  Code 3 was reserved in
-     * V1.0, so INT16 uses that code without changing the established INT32
+     * The value 3 was previously unused, so INT16 uses it without changing INT32
      * encoding.
      */
     NPU_DTYPE_INT16 = 3
@@ -132,7 +132,8 @@ typedef enum {
     NPU_DMA_FILL = 0x22,
     NPU_DMA_TRANSPOSE_2D = 0x23,
     NPU_DMA_PACK = 0x24,
-    NPU_DMA_SPLIT = 0x25
+    NPU_DMA_SPLIT = 0x25,
+    NPU_DMA_GATHER_ND = 0x28
 } npu_dma_opcode_t;
 
 typedef enum {

@@ -155,7 +155,7 @@ typedef struct {
 
 /*
  * MIF diagnostics remain stable in the NoC domain until a clear event. This
- * compact snapshot passes through two Core-domain stages before LSC uses it.
+ * packed snapshot passes through two Core-domain stages before LSC uses it.
  */
 typedef struct {
     uint8_t first_valid;

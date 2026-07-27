@@ -12,7 +12,7 @@ extern "C" {
 #define NPU_DRV_CMD128_BEATS 2u
 #define NPU_DRV_EVENT_NONE UINT8_C(0xff)
 #define NPU_DRV_MAX_EVENT_ID UINT8_C(0xfe)
-#define NPU_DRV_MAX_COMMAND_ID UINT16_C(0x07ff)
+#define NPU_DRV_MAX_COMMAND_ID UINT16_C(0x03ff)
 #define NPU_DRV_FULL_WSTRB UINT8_C(0xff)
 #define NPU_DRV_PAYLOAD_HI_MASK UINT16_C(0xffff)
 
@@ -123,27 +123,28 @@ typedef enum {
     NPU_DRV_OPCODE_DMA_TRANSPOSE_2D = 8,
     NPU_DRV_OPCODE_DMA_PACK = 9,
     NPU_DRV_OPCODE_DMA_SPLIT = 10,
-    NPU_DRV_OPCODE_MATRIX_GEMM = 11,
-    NPU_DRV_OPCODE_MATRIX_BMM = 12,
-    NPU_DRV_OPCODE_MATRIX_GEMM_ACCUM = 13,
-    NPU_DRV_OPCODE_MATRIX_GEMM_ZERO = 14,
-    NPU_DRV_OPCODE_VECTOR_ADD = 15,
-    NPU_DRV_OPCODE_VECTOR_SUB = 16,
-    NPU_DRV_OPCODE_VECTOR_MUL = 17,
-    NPU_DRV_OPCODE_VECTOR_FMA = 18,
-    NPU_DRV_OPCODE_VECTOR_MAX = 19,
-    NPU_DRV_OPCODE_VECTOR_MIN = 20,
-    NPU_DRV_OPCODE_VECTOR_CMP = 21,
-    NPU_DRV_OPCODE_VECTOR_SELECT = 22,
-    NPU_DRV_OPCODE_VECTOR_CLAMP = 23,
-    NPU_DRV_OPCODE_VECTOR_RELU = 24,
-    NPU_DRV_OPCODE_COMPLEX_ACT = 25,
-    NPU_DRV_OPCODE_COMPLEX_SOFTMAX = 26,
-    NPU_DRV_OPCODE_COMPLEX_NORM = 27,
-    NPU_DRV_OPCODE_COMPLEX_ROPE = 28,
-    NPU_DRV_OPCODE_COMPLEX_STAT = 29,
-    NPU_DRV_OPCODE_COMPLEX_RECIP = 30,
-    NPU_DRV_OPCODE_COMPLEX_ADD_RESCALE = 31
+    NPU_DRV_OPCODE_DMA_GATHER_ND = 11,
+    NPU_DRV_OPCODE_MATRIX_GEMM = 12,
+    NPU_DRV_OPCODE_MATRIX_BMM = 13,
+    NPU_DRV_OPCODE_MATRIX_GEMM_ACCUM = 14,
+    NPU_DRV_OPCODE_MATRIX_GEMM_ZERO = 15,
+    NPU_DRV_OPCODE_VECTOR_ADD = 16,
+    NPU_DRV_OPCODE_VECTOR_SUB = 17,
+    NPU_DRV_OPCODE_VECTOR_MUL = 18,
+    NPU_DRV_OPCODE_VECTOR_FMA = 19,
+    NPU_DRV_OPCODE_VECTOR_MAX = 20,
+    NPU_DRV_OPCODE_VECTOR_MIN = 21,
+    NPU_DRV_OPCODE_VECTOR_CMP = 22,
+    NPU_DRV_OPCODE_VECTOR_SELECT = 23,
+    NPU_DRV_OPCODE_VECTOR_CLAMP = 24,
+    NPU_DRV_OPCODE_VECTOR_RELU = 25,
+    NPU_DRV_OPCODE_COMPLEX_ACT = 26,
+    NPU_DRV_OPCODE_COMPLEX_SOFTMAX = 27,
+    NPU_DRV_OPCODE_COMPLEX_NORM = 28,
+    NPU_DRV_OPCODE_COMPLEX_ROPE = 29,
+    NPU_DRV_OPCODE_COMPLEX_STAT = 30,
+    NPU_DRV_OPCODE_COMPLEX_RECIP = 31,
+    NPU_DRV_OPCODE_COMPLEX_ADD_RESCALE = 32
 } npu_drv_opcode_t;
 
 typedef enum {
@@ -251,6 +252,13 @@ int npu_drv_lref_encode(uint32_t byte_address,
                         uint8_t unit_shift,
                         uint8_t width,
                         uint16_t *encoded);
+int npu_drv_dma_gather_nd_payload_encode(
+    uint32_t source_aref,
+    uint16_t index_ref,
+    uint16_t destination_ref,
+    uint16_t block_count,
+    uint16_t block_bytes,
+    npu_drv_payload80_t *payload);
 int npu_drv_matrix_gemm_payload_encode(
     uint16_t a_ref,
     npu_drv_dtype_t a_dtype,

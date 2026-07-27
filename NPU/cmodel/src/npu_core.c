@@ -424,7 +424,7 @@ npu_status_t npu_cmd_decode(uint64_t low_beat,
                             uint64_t high_beat,
                             npu_cmd_t *cmd)
 {
-    uint8_t compact_opcode;
+    uint8_t opcode_field;
     uint8_t packed_flags;
     uint8_t wait0;
     uint8_t wait1;
@@ -449,8 +449,8 @@ npu_status_t npu_cmd_decode(uint64_t low_beat,
     cmd->inline_format = 0u;
     cmd->inline_dtype = NPU_DTYPE_INT4;
 
-    compact_opcode =
-        (uint8_t)((high_beat >> 59u) & UINT64_C(0x1f));
+    opcode_field =
+        (uint8_t)((high_beat >> 58u) & UINT64_C(0x3f));
     packed_flags =
         (uint8_t)((high_beat >> 20u) & UINT64_C(0x0f));
     wait0 = (uint8_t)((high_beat >> 40u) & UINT64_C(0xff));
@@ -487,12 +487,12 @@ npu_status_t npu_cmd_decode(uint64_t low_beat,
             ? NPU_EVENT_NONE_GENERATION
             : 0u;
     cmd->command_id =
-        (uint16_t)((high_beat >> 48u) & UINT64_C(0x07ff));
+        (uint16_t)((high_beat >> 48u) & UINT64_C(0x03ff));
     if (!npu_dtype_valid(cmd->inline_dtype)) {
         return NPU_STATUS_DTYPE_UNSUPPORTED;
     }
     if (!npu_inline_opcode_decode(
-            compact_opcode, &cmd->engine, &cmd->opcode)) {
+            opcode_field, &cmd->engine, &cmd->opcode)) {
         return NPU_STATUS_ILLEGAL_OPCODE;
     }
     if (cmd->signal_event.id != NPU_EVENT_NONE_ID &&
@@ -565,12 +565,12 @@ void npu_cmd_encode(const npu_cmd_t *cmd,
         return;
     }
     if (cmd->inline_format != 0u) {
-        uint8_t compact_opcode;
+        uint8_t opcode_field;
         uint8_t packed_flags;
 
         if (!npu_inline_opcode_encode(
-                cmd->engine, cmd->opcode, &compact_opcode) ||
-            cmd->command_id > 0x07ffu ||
+                cmd->engine, cmd->opcode, &opcode_field) ||
+            cmd->command_id > 0x03ffu ||
             cmd->timeout_class > 3u ||
             !npu_dtype_valid(cmd->inline_dtype) ||
             !npu_event_ref_valid(cmd->wait_event[0]) ||
@@ -603,8 +603,8 @@ void npu_cmd_encode(const npu_cmd_t *cmd,
             ((uint64_t)cmd->signal_event.id << 24u) |
             ((uint64_t)cmd->wait_event[1].id << 32u) |
             ((uint64_t)cmd->wait_event[0].id << 40u) |
-            ((uint64_t)(cmd->command_id & 0x07ffu) << 48u) |
-            ((uint64_t)compact_opcode << 59u);
+            ((uint64_t)(cmd->command_id & 0x03ffu) << 48u) |
+            ((uint64_t)opcode_field << 58u);
         return;
     }
     flags = (uint16_t)(cmd->header_flags & 0x0fffu);
@@ -727,7 +727,7 @@ npu_status_t npu_model_submit(npu_model_t *model,
         request->cmd.engine > NPU_ENGINE_COMPLEX ||
         request->cmd.command_id >
             (request->cmd.inline_format != 0u
-                 ? 0x07ffu
+                 ? 0x03ffu
                  : 0x0fffu) ||
         request->cmd.timeout_class >= NPU_TIMEOUT_CLASS_NUM ||
         (request->cmd.header_flags & 0x0c00u) != 0u) {

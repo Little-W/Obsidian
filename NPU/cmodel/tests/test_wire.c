@@ -150,6 +150,9 @@ static npu_status_t wire_decode_descriptor_cmd_with_meta(
     if (!wire_descriptor_opcode_valid(cmd->engine, cmd->opcode)) {
         return NPU_STATUS_ILLEGAL_OPCODE;
     }
+    if ((cmd->header_flags & (1u << 5u)) != 0u) {
+        return NPU_STATUS_BAD_DESC;
+    }
     return npu_wire_validate_cmd_address(cmd, limits, meta);
 }
 

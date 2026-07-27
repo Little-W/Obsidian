@@ -1,8 +1,8 @@
 # 单核 NPU CModel
 
-本目录提供《NPU 指令与硬件架构设计 Spec》的 C11 参考模型。当前部署协议是
-CMD128 inline V2：一条 128 bit 命令包含公共头和全部执行参数，V2 没有
-`desc_addr`，不读取外部任务参数块。CFE/TS 在模型内部保存收到的 16 byte
+本目录提供《NPU 指令与硬件架构设计 Spec》的 C11 参考模型。当前部署协议使用
+CMD128：一条 128 bit 命令包含公共字段和全部执行参数，不含
+`desc_addr`，也不读取外部任务参数块。CFE/TS 在模型内部保存收到的 16 byte
 Task Context，再把字段展开给 DMA、Matrix、IVE 或 CME。
 
 模型分为三层：
@@ -18,7 +18,7 @@ Task Context，再把字段展开给 DMA、Matrix、IVE 或 CME。
 > Generic Core 是 NPU 外部的 CPU。真实 SoC 中，CPU 通过 NPU 的 64 bit
 > AXI Slave 访问固定命令地址、CSR、命令响应 FIFO 和 L1BUF 窗口。MIF 是
 > NPU 的 64 bit AXI Master，连接 SoC Fabric；DDR 是系统总线上的存储目标。
-> V2 的 MIF 请求只用于 DMA 全局张量、权重、输入输出、工作区和 KV 数据，
+> MIF 请求只用于 DMA 全局张量、权重、输入输出、工作区和 KV 数据，
 > 不用于读取任务参数。
 
 ## 1. 参考配置
@@ -59,8 +59,8 @@ workspace 都由调用者提供并保持所有权。
 | 路径 | 内容 |
 | --- | --- |
 | `include/npu_cmodel.h` | dtype、状态码、任务结构、功能模型公开 API |
-| `include/npu_wire.h` | 16 byte CMD 解码和旧诊断格式解码 API |
-| `src/npu_inline.[ch]` | CMD128 inline V2 opcode 与 payload 展开 |
+| `include/npu_wire.h` | 16 byte CMD 解码和 Descriptor 诊断 API |
+| `src/npu_inline.[ch]` | CMD128 opcode 与 payload 展开 |
 | `src/npu_wire.c` | CMD 公共头、little-endian 与严格字段检查 |
 | `src/npu_frontend.c` | 功能模型的 CMD 低/高两拍接收 |
 | `src/npu_core.c` | Task、Event、发射、timeout、查询与 ACK |
@@ -71,7 +71,7 @@ workspace 都由调用者提供并保持所有权。
 | `src/npu_math.c` | Exp、Reciprocal、Rsqrt、Sigmoid、Tanh、GELU、SiLU |
 | `src/npu_complex.c` | ACT、SOFTMAX、NORM、STAT、ADD_RESCALE |
 | `include/src/npu_cfe_cycle.*` | CFE ready/valid、两拍组装、ID 查询和接收响应 |
-| `include/src/npu_ts_cycle.*` | Task/Event、V2 inline 展开、发射、完成与旧诊断支路 |
+| `include/src/npu_ts_cycle.*` | Task/Event、CMD128 展开、发射、完成与 Descriptor 诊断支路 |
 | `include/src/npu_engine_cycle.*` | 四类执行单元周期适配器 |
 | `include/src/npu_engine_data_cycle.*` | 算子访问记录与逐 beat L1/MIF 组合 |
 | `include/src/npu_l1_cycle.*` | 13 读端口、5 写端口、16 bank、ECC |
@@ -87,9 +87,9 @@ workspace 都由调用者提供并保持所有权。
 | `include/src/npu_single_core_cycle.*` | Core/NoC 双时钟单核组合 |
 | `include/src/npu_bus_trace.*` | 功能算子的 64 bit 数据访问记录 |
 | `include/src/npu_bus_replay_cycle.*` | 访问记录到 L1/MIF ready/valid 传输 |
-| `include/src/npu_issue_adapter_cycle.*` | 外部 CPU 侧旧联合测试适配器，不是 NPU RTL 端口 |
+| `include/src/npu_issue_adapter_cycle.*` | 外部 CPU 侧联合测试适配器，不是 NPU RTL 端口 |
 | `include/src/npu_gc_axi_cycle.*` | 外部 CPU 的 AXI 测试部件 |
-| `tests/` | 数值、V2、算子、事件、AXI、TBU、MIF 和模块周期测试 |
+| `tests/` | 数值、CMD128、算子、事件、AXI、TBU、MIF 和模块周期测试 |
 | `tools/` | 固定 Keras 应用 fixture 与 Keras/TFLite 导出工具 |
 | `examples/` | RNN、GRU、LSTM、CNN 的生成、编译、驱动和 CModel 推理示例 |
 
@@ -97,16 +97,16 @@ workspace 都由调用者提供并保持所有权。
 
 | 路径 | 内容 |
 | --- | --- |
-| `../compiler/` | Keras、PyTorch、TFLite、ONNX 前端和 CMD128 V2 汇编器 |
+| `../compiler/` | Keras、PyTorch、TFLite、ONNX 前端和 CMD128 汇编器 |
 | `../driver/` | AXI 提交、WAIT、ACK、任务组同步和模型 C 包支持 |
 
 ### 2.2 关键测试
 
 | 测试 | 检查内容 |
 | --- | --- |
-| `tests/test_inline.c` | 32 个 compact opcode、V2 公共头、DMA/Matrix/Vector/Complex payload、TS 无旧参数读取 |
+| `tests/test_inline.c` | 33 个操作码、CMD128 公共字段、DMA/Matrix/Vector/Complex payload、TS 不读取外部任务参数 |
 | `tests/test_wire.c` | CMD 与诊断格式字段检查 |
-| `tests/test_wire_e2e.c` | V1 诊断兼容的旧任务参数端到端测试 |
+| `tests/test_wire_e2e.c` | Descriptor 诊断端到端测试 |
 | `tests/test_ops.c` | 功能算子基本结果 |
 | `tests/test_dma_acceptance.c` | DMA 合法/非法组合 |
 | `tests/test_matrix_acceptance.c` | Matrix dtype、shape、bias 和错误 |
@@ -122,14 +122,14 @@ workspace 都由调用者提供并保持所有权。
 | `tests/test_engine_cycle.c` | 执行单元适配器、Context/诊断 SRAM 读取和 DONE |
 | `tests/test_l1_cycle.c` | bank 仲裁、2-cycle 读、写响应和 ECC |
 | `tests/test_tbu_cycle.c` | 地址规则、权限和错误 |
-| `tests/test_mif_cycle.c` | MIF burst、AXI ID、错误及 V1 诊断 owner |
+| `tests/test_mif_cycle.c` | MIF burst、AXI ID、错误及 Descriptor 诊断 owner |
 | `tests/test_mif_cdc_cycle.c` | Core/NoC 异步 FIFO |
 | `tests/test_sys_slave_cycle.c` | AXI Slave、CMD FIFO、响应 FIFO 和 L1 窗口 |
 | `tests/test_single_core_cycle.c` | 双时钟单核组合 |
 | `tests/test_single_core_axi_target.c` | 单核连接 AXI 存储目标 |
 
 `test_main.c` 注册全部主测试，其中包含 `test_inline`。因此 `make test` 会执行
-CMD128 inline V2 检查。
+CMD128 字段和 payload 检查。
 
 ## 3. 构建与测试
 
@@ -138,8 +138,8 @@ CMD128 inline V2 检查。
 | 命令 | 作用 | TensorFlow |
 | --- | --- | ---: |
 | `make all` | 构建 `build/libnpu_cmodel.a` 和 `build/test_npu_cmodel` | 否 |
-| `make test` | 构建并运行全部主测试，包含 V2 inline | 否 |
-| `make wire-e2e` | 单独运行 V1 诊断兼容测试 | 否 |
+| `make test` | 构建并运行全部主测试，包含 CMD128 | 否 |
+| `make wire-e2e` | 单独运行 Descriptor 诊断测试 | 否 |
 | `make model-infer MODEL=all` | 运行已有 Transformer、SimpleRNN、GRU、LSTM fixture | 否 |
 | `make model-compile MODEL=all` | 导出固定应用的 `.keras`、`.tflite`、JSON | 是 |
 | `make model-compile-check MODEL=all` | 核对已有固定应用导出文件 | 是 |
@@ -186,14 +186,13 @@ Makefile 当前可用的主要变量：
 主测试和固定模型推理链接 `libm`；静态库本身的公开近似函数实现不依赖调用者
 启用 fast-math。
 
-## 4. CMD128 inline V2
+## 4. CMD128
 
 ### 4.1 公共头
 
 | bit | 字段 |
 | ---: | --- |
-| 127 | V2=1 |
-| 126:122 | compact opcode |
+| 127:122 | opcode |
 | 121:112 | command_id |
 | 111:104 | wait0 |
 | 103:96 | wait1 |
@@ -204,22 +203,25 @@ Makefile 当前可用的主要变量：
 | 84 | ordered |
 | 83:82 | timeout_class |
 | 81:80 | dtype：0 INT4、1 INT8、2 INT32、3 INT16 |
-| 79:0 | inline payload |
+| 79:0 | payload |
 
-Event ID 0xff 表示 none。V2 Event 字段只携带 ID；TS 在接收命令时从 Event
+Event ID 0xff 表示 none。Event 字段只携带 ID；TS 在接收命令时从 Event
 Table 取得 generation 并写入内部 Task Context。
 
-compact opcode 0..31 依次为：
+`opcode` 字段宽度为 6 bit。当前定义的数值 0～32 依次为：
 
 ```text
 NOP SIGNAL REARM JOIN FENCE
-COPY1D COPYND FILL TRANSPOSE PACK SPLIT
+COPY1D COPYND FILL TRANSPOSE PACK SPLIT GATHER_ND
 GEMM BMM ACCUM ZERO
 ADD SUB MUL FMA MAX MIN CMP SELECT CLAMP RELU
 ACT SOFTMAX NORM ROPE STAT RECIP ADD_RESCALE
 ```
 
-当前首版关闭 ROPE 和 RECIP，解码后返回
+数值 33～63 尚未定义，解码时返回
+`NPU_STATUS_ILLEGAL_OPCODE`。
+
+GATHER_ND、ROPE 和 RECIP 的功能位为 0，任务解码时返回
 `NPU_STATUS_ILLEGAL_OPCODE`。
 
 ### 4.2 地址引用
@@ -232,18 +234,18 @@ ACT SOFTMAX NORM ROPE STAT RECIP ADD_RESCALE
 
 Matrix bias 是 `[N]` INT32。`bias[j]` 加到输出第 `j` 列的全部 M 行。
 
-### 4.3 V2 没有外部任务参数访问
+### 4.3 CMD128 不访问外部任务参数
 
-V2 CMD 的 `inline_format` 在 `npu_wire_decode_cmd*()` 中被识别。
+`npu_wire_decode_cmd*()` 按 CMD128 公共字段解码。
 `npu_inline_decode_task()` 随后直接从 80 bit payload 建立内部
-`npu_task_request_t`。TS 的 V2 分支把收到的两个 64 bit word 放入内部
-16 byte Context 存储，并跳过旧参数读取状态。
+`npu_task_request_t`。TS 把收到的两个 64 bit word 放入内部
+16 byte Context 存储，不进入外部任务参数读取状态。
 
 这意味着：
 
-- `npu_model_submit_wire()` 提交 V2 时不需要额外字节数组；
-- `npu_wire_validate_cmd_address()` 对 V2 不检查旧地址字段；
-- `tests/test_inline.c` 的 `inline_test_ts_without_dfu` 检查 TS 不产生旧参数
+- `npu_model_submit_wire()` 提交 CMD128 时不需要额外字节数组；
+- `npu_wire_validate_cmd_address()` 不检查外部任务参数地址；
+- `tests/test_inline.c` 的 `inline_test_ts_without_dfu` 检查 TS 不产生参数
   读取请求；
 - 系统存储数组只承载 DMA 数据。
 
@@ -273,7 +275,7 @@ npu_status_t status = npu_model_init(
 
 ### 5.2 CMD 编码与提交
 
-`npu_cmd_t` 同时承载已解码 V2 和诊断兼容字段。构造 V2 时设置：
+`npu_cmd_t` 同时承载已解码 CMD128 和 Descriptor 诊断字段。构造 CMD128 时设置：
 
 ```c
 npu_cmd_t cmd = {0};
@@ -281,7 +283,6 @@ uint64_t low;
 uint64_t high;
 
 cmd.inline_format = 1u;
-cmd.header_version = NPU_WIRE_INLINE_HEADER_VERSION;
 cmd.engine = NPU_ENGINE_VECTOR;
 cmd.opcode = NPU_VECTOR_ADD;
 cmd.command_id = 7u;
@@ -296,7 +297,7 @@ npu_cmd_encode(&cmd, &low, &high);
 status = npu_model_submit_wire(&model, low, high);
 ```
 
-`npu_cmd_encode()` 根据 `engine/opcode` 写 5 bit compact opcode；
+`npu_cmd_encode()` 根据 `engine/opcode` 写入 6 bit `opcode` 字段；
 `npu_cmd_decode()` 从两个 beat 恢复字段。若需要从 16 byte 数组解码并取得
 更详细的地址错误信息，使用：
 
@@ -383,7 +384,7 @@ npu_engine_cycle_init / npu_engine_cycle_reset
 npu_engine_cycle_eval / npu_engine_cycle_step
 ```
 
-CFE 收低拍、高拍，检查 V2 公共头并查询 command_id。TS 在 V2 分支直接
+CFE 收低拍、高拍，检查 CMD128 公共字段并查询 command_id。TS 直接
 展开 Context、登记事件、等待、发射和收三拍 DONE。执行单元适配器按
 DMA/Matrix/Vector/Complex 绑定功能模型。
 
@@ -420,8 +421,8 @@ workspace、wire limits、LSC 配置、MIF SoC 配置和 TBU 模式。
 ## 7. 模型编译器与示例
 
 `../compiler/npu_model_compiler.py` 接收 Keras、PyTorch、TFLite、ONNX 或
-高层 JSON；`../compiler/npu_assembler.py` 把低层 JSON IR 编成 CMD128
-inline V2。默认生成：
+高层 JSON；`../compiler/npu_assembler.py` 把低层 JSON IR 编成 CMD128。
+默认生成：
 
 ```text
 <model>_model.h
@@ -431,7 +432,7 @@ inline V2。默认生成：
 
 C 文件包含配置、CMD128 数组、权重/常量、输入输出/操作信息和任务组同步
 信息。默认部署产物没有外部任务参数数组，也不默认生成裸二进制。编译器的
-可选 raw 输出仍只包含 CMD、常量和运行信息，不生成旧任务参数文件。
+可选 raw 输出仍只包含 CMD、常量和运行信息，不生成任务参数文件。
 
 Conv2D 会降低为 im2col/数据准备、DMA 排列和 GEMM；必要时允许 CPU 辅助。
 RNN、GRU、LSTM 与 Transformer 由 Matrix、Vector、Complex 和 DMA 组合。
@@ -453,26 +454,22 @@ make -C examples test
 
 这些示例依赖 TensorFlow 环境、`../compiler/` 和 `../driver/`。各自的
 `example.mk` 先生成 Keras/JSON 输入，再生成模型专用 `.c/.h` 和 manifest，
-构建驱动后通过固定 CMD 地址提交 V2。CNN 直接输入 `.keras`；循环网络先生成
+构建驱动后通过固定 CMD 地址提交 CMD128。CNN 直接输入 `.keras`；循环网络先生成
 单时间步高层 JSON。当前 GRU/LSTM 的部分状态乘法可由主机辅助，因为 Vector
 MUL 写 INT32，而后续状态输入为 INT8。
 
-## 8. V1 诊断兼容
+## 8. Descriptor 诊断支持
 
-源码和测试仍保留旧 CMD、外部任务参数块、旧 Descriptor Fetch Unit（DFU）、
-旧参数 SRAM 及第二个 MIF owner，用于历史 RTL 的 ECC、仲裁、错误和回归
-测试。这些内容不是 active V2 的部署要求。
+源码和测试保留外部任务参数块、Descriptor Fetch Unit（DFU）、参数 SRAM
+及相关 MIF owner，用于 ECC、仲裁和错误注入测试。这些结构只在测试显式打开
+`descriptor_diagnostic_mode` 时使用，不属于模型部署输入。
 
-具体区分：
+- `tests/test_inline.c` 检查 CMD128，其中包含 TS 不发任务参数读取请求的测试。
+- `tests/test_wire_e2e.c` 与 `make wire-e2e` 检查 Descriptor 诊断功能。
+- 编译器、驱动和 examples 的产物使用 `cmd128`，不生成外部任务参数数组。
 
-- `tests/test_inline.c` 检查 V2，其中包含 TS 不发旧参数读取请求的测试。
-- `tests/test_wire_e2e.c` 与 `make wire-e2e` 是 V1 诊断兼容测试。
-- `npu_ts_cycle.*`、`npu_engine_cycle.*`、`npu_mif_cycle.*` 中的旧字段和
-  枚举是兼容支路，不能据此为 V2 生成外部任务参数数组。
-- 编译器、驱动和 examples 的正常产物是 `cmd128-inline-v2`。
-
-若只验证部署功能，应以 `make test` 中的 inline 测试和四个 examples 为主；
-运行 `make wire-e2e` 表示额外检查旧诊断支路。
+部署功能以 `make test` 中的 CMD128 测试和各模型 example 为主；运行
+`make wire-e2e` 可额外检查 Descriptor 诊断功能。
 
 ## 9. 提交问题时的最小信息
 
@@ -485,5 +482,5 @@ MUL 写 INT32，而后续状态输入为 INT8。
 - 若为周期问题，附 ready/valid、tag、last 的相邻周期记录；
 - 若为数值问题，附 dtype、shape、scale、输入和期望整数结果。
 
-不要只提供系统存储快照并假定存在 V2 任务参数数组；V2 的执行参数就在
+不要只提供系统存储快照并假定存在任务参数数组；执行参数就在
 CMD128 中。

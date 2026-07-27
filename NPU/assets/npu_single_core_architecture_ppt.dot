@@ -14,7 +14,7 @@ digraph NPU_SINGLE_CORE_PPT {
     fontsize=26,
     fontcolor="#123B5D",
     labelloc=t,
-    label=<<B>单核 NPU 初版架构：AXI Slave 接收控制 / AXI Master 访问系统内存</B>>
+    label=<<B>单核 NPU 架构：AXI Slave 接收控制 / AXI Master 访问系统内存</B>>
   ];
 
   node [
@@ -234,8 +234,8 @@ digraph NPU_SINGLE_CORE_PPT {
           <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="7" COLOR="#2563EB">
             <TR><TD COLSPAN="4" BGCOLOR="#1D4ED8" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" COLOR="#FFFFFF" POINT-SIZE="15"><B>CMD128 指令格式：任务参数随指令提交</B></FONT></TD></TR>
             <TR>
-              <TD COLSPAN="2" BGCOLOR="#DBEAFE" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="11"><B>[127:123] opcode</B></FONT></TD>
-              <TD BGCOLOR="#DBEAFE" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="11"><B>[122:112] command_id（0～2047）</B></FONT></TD>
+              <TD COLSPAN="2" BGCOLOR="#DBEAFE" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="11"><B>[127:122] opcode</B></FONT></TD>
+              <TD BGCOLOR="#DBEAFE" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="11"><B>[121:112] command_id（0～1023）</B></FONT></TD>
               <TD BGCOLOR="#DBEAFE" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="11"><B>[111:88] wait0 / wait1 / signal</B></FONT></TD>
             </TR>
             <TR>

@@ -219,8 +219,12 @@ module npu_matrix_engine (
   );
     logic signed [127:0] product;
     logic signed [127:0] shifted;
-    logic signed [127:0] absolute_product;
-    logic signed [127:0] rounding_bias;
+    logic [127:0] magnitude;
+    logic [127:0] quotient;
+    logic [127:0] remainder;
+    logic [127:0] remainder_mask;
+    logic [127:0] halfway;
+    logic increment;
     integer shift_amount;
     begin
       product = value * $signed({1'b0, multiplier});
@@ -233,23 +237,26 @@ module npu_matrix_engine (
       else begin
         shift_amount =
           $signed({{24{shift_value[7]}}, shift_value});
-        rounding_bias = 128'd0;
-        if (rounding == 2'd0 && shift_amount > 0) begin
-          absolute_product = product < 0 ? -product : product;
-          rounding_bias = 128'sd1 <<< (shift_amount - 1);
-          absolute_product = absolute_product + rounding_bias;
-          shifted = product < 0 ?
-                    -(absolute_product >>> shift_amount) :
-                    (absolute_product >>> shift_amount);
-        end else if (rounding == 2'd2 && product > 0)
-          shifted = (product + ((128'sd1 <<< shift_amount) - 1)) >>>
-                    shift_amount;
-        else if (rounding == 2'd3 && product < 0)
-          shifted = -(((-product) +
-                      ((128'sd1 <<< shift_amount) - 1)) >>>
-                      shift_amount);
-        else
-          shifted = product >>> shift_amount;
+        magnitude = product < 0 ? $unsigned(-product) :
+                                  $unsigned(product);
+        quotient = magnitude >> shift_amount;
+        remainder_mask =
+          (128'd1 << shift_amount) - 128'd1;
+        remainder = magnitude & remainder_mask;
+        halfway = 128'd1 << (shift_amount - 1);
+        increment = 1'b0;
+        case (rounding)
+          2'd0:
+            increment =
+              remainder > halfway ||
+              (remainder == halfway && quotient[0]);
+          2'd2: increment = product >= 0 && remainder != 0;
+          2'd3: increment = product < 0 && remainder != 0;
+          default: increment = 1'b0;
+        endcase
+        quotient = quotient + {{127{1'b0}}, increment};
+        shifted = product < 0 ? -$signed(quotient) :
+                                $signed(quotient);
       end
       if (shifted[127:64] != {64{shifted[63]}})
         return shifted[127] ?

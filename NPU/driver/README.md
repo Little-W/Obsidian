@@ -2,7 +2,7 @@
 
 本目录提供单核 NPU 的 C11 驱动。主控 CPU 作为 AXI Master，通过 NPU 的 AXI Slave 寄存器窗口配置设备，并把 CMD128 写入固定地址的命令 FIFO。NPU 发起 AXI Master 请求访问系统内存。
 
-CMD128 inline V2 已把执行参数放入指令本身。驱动不再分配、填写、同步或提交外部 Descriptor。
+CMD128 已把执行参数放入指令本身。驱动不再分配、填写、同步或提交外部 Descriptor。
 
 ## 1. 文件划分
 
@@ -57,7 +57,7 @@ int rc = npu_drv_submit_batch(
 typedef struct {
     npu_drv_payload80_t payload;
     uint16_t command_id;
-    npu_drv_compact_opcode_t compact_opcode;
+    npu_drv_opcode_t opcode;
     npu_drv_dtype_t dtype;
     uint8_t timeout_class;
     uint8_t header_flags;
@@ -70,8 +70,7 @@ typedef struct {
 
 | bit | C 字段 |
 |---:|---|
-| 127 | 编码函数固定写 1 |
-| 126:122 | `compact_opcode` |
+| 127:122 | `opcode` |
 | 121:112 | `command_id` |
 | 111:104 | `wait_event[0].id` |
 | 103:96 | `wait_event[1].id` |
@@ -90,11 +89,11 @@ NPU_DRV_HEADER_STRICT_NUMERIC
 NPU_DRV_HEADER_ORDERED
 ```
 
-`npu_drv_cmd128_encode()` 检查 command ID、操作码、数据类型、超时组、事件 ID 和 signal/wait 冲突。`npu_drv_cmd128_decode()` 进行反向检查，并允许 0～31 的完整 5-bit 操作码范围。
+`opcode` 字段宽度为 6 bit。`npu_drv_cmd128_encode()` 检查 command ID、操作码、数据类型、超时组、事件 ID 和 signal/wait 冲突。`npu_drv_cmd128_decode()` 进行反向检查。当前定义的操作码数值为 0～32；33～63 会返回 `NPU_DRV_EINVAL`。
 
 ## 4. 事件
 
-V2 事件字段只有 ID：
+事件字段只保存 ID：
 
 ```c
 npu_drv_event_t event = {.id = 7u};
@@ -147,6 +146,13 @@ npu_drv_lref_encode(
 ```
 
 向量和复杂数学单元把 `unit_shift` 设为 4，字段宽度设为 16。函数检查地址对齐和字段容量。
+
+### 5.4 GATHER_ND payload
+
+`npu_drv_dma_gather_nd_payload_encode()` 把全局源 AREF28、索引表 LREF16、
+目标 LREF16、块数和每块字节数写入 80-bit payload。块数范围为 1～256，
+每块字节数范围为 1～4096。当前 GATHER_ND 功能位为 0，因此该函数用于生成
+格式检查和负向测试命令；设备会返回 `ILLEGAL_OPCODE`。
 
 ## 6. GEMM 构造示例
 
@@ -252,14 +258,16 @@ int submit_model(npu_driver_t *driver)
 
 ## 8. P1 操作码
 
-驱动枚举保留：
+驱动枚举保留以下 P1 编码：
 
 ```c
-NPU_DRV_COMPACT_COMPLEX_ROPE   /* 28 */
-NPU_DRV_COMPACT_COMPLEX_RECIP  /* 30 */
+NPU_DRV_OPCODE_DMA_GATHER_ND  /* 11 */
+NPU_DRV_OPCODE_COMPLEX_ROPE   /* 29 */
+NPU_DRV_OPCODE_COMPLEX_RECIP  /* 31 */
 ```
 
-P1 功能位关闭时，设备会对这两类指令返回 `ILLEGAL_OPCODE`。驱动仍能编码、解码并提交它们。`VSTAT=29`，`VADD_RESCALE=31`。
+P1 功能位关闭时，设备会对这三类指令返回 `ILLEGAL_OPCODE`。驱动仍能编码、
+解码并提交它们。`VSTAT=30`，`VADD_RESCALE=32`。
 
 ## 9. 构建与测试
 

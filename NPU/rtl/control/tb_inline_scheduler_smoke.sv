@@ -74,16 +74,16 @@ module tb_inline_scheduler_smoke;
   always #5 clk = ~clk;
 
   function automatic logic [127:0] make_command(
-    input logic [4:0] command_opcode,
-    input logic [10:0] command_id,
+    input logic [5:0] command_opcode,
+    input logic [9:0] command_id,
     input logic [1:0] dtype,
     input logic [79:0] payload
   );
     logic [127:0] command;
     begin
       command = 128'd0;
-      command[127:123] = command_opcode;
-      command[122:112] = command_id;
+      command[127:122] = command_opcode;
+      command[121:112] = command_id;
       command[111:104] = 8'hff;
       command[103:96] = 8'hff;
       command[95:88] = 8'hff;
@@ -94,100 +94,100 @@ module tb_inline_scheduler_smoke;
   endfunction
 
   function automatic logic [79:0] payload_for_opcode(
-    input logic [4:0] command_opcode
+    input logic [5:0] command_opcode
   );
     logic [79:0] result;
     begin
       result = 80'd0;
       unique case (command_opcode)
-        5'd4:
+        6'd4:
           result[79:76] = 4'hf;
-        5'd5, 5'd6:
+        6'd5, 6'd6:
           result = {
             28'h000_0100, 28'h000_0200, 20'd4,
             NPU_DTYPE_INT8, 1'b0, 1'b0
           };
-        5'd7:
+        6'd7:
           result = {28'h000_0200, 20'd4, 32'h1234_5678};
-        5'd8:
+        6'd8:
           result = {
             28'h000_0100, 28'h000_0200,
             8'd2, 8'd2, NPU_DTYPE_INT8, 2'd0, 4'd0
           };
-        5'd9, 5'd10:
+        6'd9, 6'd10:
           result = {
             28'h000_0100, 28'h000_0200, 8'd2, 8'd4, 8'd8
           };
-        5'd11, 5'd13:
+        6'd12, 6'd14:
           result = {
             14'h004, 14'h008, 14'h00c, 12'd0,
             6'd0, 6'd0, 6'd0,
             1'b0, NPU_DTYPE_INT32, 5'd0
           };
-        5'd14:
+        6'd15:
           result = {
             14'd0, 14'd0, 14'h00c, 12'd0,
             6'd0, 6'd0, 6'd0,
             1'b0, NPU_DTYPE_INT32, 5'd0
           };
-        5'd12:
+        6'd13:
           result = {
             14'h004, 14'h008, 14'h00c,
             6'd0, 6'd0, 6'd0, 6'd0,
             1'b0, NPU_DTYPE_INT32, 5'd0, 6'd0
           };
-        5'd15, 5'd16, 5'd17, 5'd19, 5'd20:
+        6'd16, 6'd17, 6'd18, 6'd20, 6'd21:
           result = {
             16'h0010, 16'h0020, 16'h0000,
             16'h0030, 5'd0, 5'd0, 2'd0, 2'd0, 2'd0
           };
-        5'd18:
+        6'd19:
           result = {
             16'h0010, 16'h0020, 16'h0040, 16'h0030,
             5'd0, 5'd0, 2'd0, 2'd0, 2'd0
           };
-        5'd21:
+        6'd22:
           result = {
             16'h0010, 16'h0020, 16'h4000, 16'h0030,
             5'd0, 5'd0, 2'd0, 2'd0, 2'd0
           };
-        5'd22:
+        6'd23:
           result = {
             16'h0010, 16'h0020, 16'h0040, 16'h0030,
             5'd0, 5'd0, 2'd0, 2'd0, 2'd0
           };
-        5'd23:
+        6'd24:
           result = {
             16'h0010, 16'hffff, 16'h0001, 16'h0030,
             5'd0, 5'd0, 2'd0, 2'd0, 2'd0
           };
-        5'd24:
+        6'd25:
           result = {
             16'h0010, 16'h0000, 16'h0000, 16'h0030,
             5'd0, 5'd0, 2'd0, 2'd0, 2'd0
           };
-        5'd25:
+        6'd26:
           result = {
             16'h0010, 16'h0000, 16'h0020, 5'd0, 8'd0,
             2'd0, 4'd0, 4'd0, NPU_DTYPE_INT8, 2'd0, 5'd0
           };
-        5'd26:
+        6'd27:
           result = {
             16'h0010, 16'h0000, 16'h0020, 5'd0, 8'd0,
             2'd0, 1'b0, 4'd0, 4'd0, NPU_DTYPE_INT8, 6'd0
           };
-        5'd27:
+        6'd28:
           result = {
             16'h0010, 16'h0040, 16'h0020, 5'd0, 8'd0,
             1'b0, 2'd0, 4'd0, 4'd0, 4'd0,
             NPU_DTYPE_INT8, 2'd0
           };
-        5'd29:
+        6'd30:
           result = {
             16'h0010, 16'h0000, 16'h0020, 5'd0, 8'd0,
             2'd0, 17'd0
           };
-        5'd31:
+        6'd32:
           result = {
             16'h0010, 16'h0040, 16'h0020, 5'd0, 8'd0,
             4'd0, 4'd0, 4'd0, NPU_DTYPE_INT8, 5'd0
@@ -246,7 +246,7 @@ module tb_inline_scheduler_smoke;
     .param_l1_base_i(20'h00800),
     .cmd_id_lookup_valid_i(1'b0),
     .cmd_id_lookup_ready_o(lookup_ready),
-    .cmd_id_lookup_id_i(11'd0),
+    .cmd_id_lookup_id_i(10'd0),
     .cmd_id_lookup_rsp_valid_o(lookup_rsp_valid),
     .cmd_id_busy_o(lookup_busy),
     .df_fetch_valid_o(df_fetch_valid),
@@ -373,10 +373,10 @@ module tb_inline_scheduler_smoke;
     reset_n = 1'b1;
     repeat (2) @(posedge clk);
 
-    for (int unsigned opcode_index = 0; opcode_index < 32; opcode_index++) begin
+    for (int unsigned opcode_index = 0; opcode_index <= 32; opcode_index++) begin
       decode_cmd = make_command(
-        5'(opcode_index), 11'h7ff, NPU_DTYPE_INT8,
-        payload_for_opcode(5'(opcode_index))
+        6'(opcode_index), 10'h3ff, NPU_DTYPE_INT8,
+        payload_for_opcode(6'(opcode_index))
       );
       if (opcode_index == 1 || opcode_index == 2) begin
         decode_cmd[95:88] = 8'h01;
@@ -386,26 +386,44 @@ module tb_inline_scheduler_smoke;
         decode_cmd[95:88] = 8'h03;
       end
       #1;
-      if ((opcode_index == 28) || (opcode_index == 30)) begin
-        if (decode_valid)
-          $fatal(1, "disabled opcode %0d was accepted", opcode_index);
+      if ((opcode_index == 11) || (opcode_index == 29) ||
+          (opcode_index == 31)) begin
+        if (decode_valid ||
+            npu_cmd_engine_from_opcode(6'(opcode_index)) != 4'hf ||
+            npu_cmd_expanded_opcode(6'(opcode_index)) != 8'hff) begin
+          $fatal(
+            1,
+            "disabled opcode %0d did not produce invalid decode values",
+            opcode_index
+          );
+        end
       end else begin
         if (!decode_valid ||
-            decode_engine != npu_cmd_engine_from_opcode(5'(opcode_index)) ||
-            decode_opcode != npu_cmd_expanded_opcode(5'(opcode_index)) ||
+            decode_engine != npu_cmd_engine_from_opcode(6'(opcode_index)) ||
+            decode_opcode != npu_cmd_expanded_opcode(6'(opcode_index)) ||
             decode_desc[15:8] !=
-              {4'd0, npu_cmd_engine_from_opcode(5'(opcode_index))} ||
+              {4'd0, npu_cmd_engine_from_opcode(6'(opcode_index))} ||
             decode_desc[31:16] !=
               npu_desc_bytes_for_engine(
-                npu_cmd_engine_from_opcode(5'(opcode_index))) ||
-            decode_desc[511:480] != 32'h0000_07ff) begin
+                npu_cmd_engine_from_opcode(6'(opcode_index))) ||
+            decode_desc[511:480] != 32'h0000_03ff) begin
           $fatal(1, "CMD128 expansion failed for opcode %0d", opcode_index);
         end
       end
     end
 
     decode_cmd = make_command(
-      5'd23, 11'h001, NPU_DTYPE_INT8, payload_for_opcode(5'd23)
+      6'd33, 10'h001, NPU_DTYPE_INT8, payload_for_opcode(6'd0)
+    );
+    #1;
+    if (decode_valid ||
+        npu_cmd_engine_from_opcode(6'd33) != 4'hf ||
+        npu_cmd_expanded_opcode(6'd33) != 8'hff) begin
+      $fatal(1, "opcode 33 did not produce invalid decode values");
+    end
+
+    decode_cmd = make_command(
+      6'd24, 10'h001, NPU_DTYPE_INT8, payload_for_opcode(6'd24)
     );
     decode_cmd[2] = 1'b1;
     #1;
@@ -418,7 +436,7 @@ module tb_inline_scheduler_smoke;
       1'b1, NPU_DTYPE_INT8, 5'd19
     };
     decode_cmd = make_command(
-      5'd11, 11'h001, NPU_DTYPE_INT8, requant_payload
+      6'd12, 10'h001, NPU_DTYPE_INT8, requant_payload
     );
     #1;
     if (!decode_valid ||
@@ -434,7 +452,7 @@ module tb_inline_scheduler_smoke;
     requant_payload[6:5] = NPU_DTYPE_INT32;
     requant_payload[4:0] = 5'd0;
     decode_cmd = make_command(
-      5'd11, 11'h002, NPU_DTYPE_INT16, requant_payload
+      6'd12, 10'h002, NPU_DTYPE_INT16, requant_payload
     );
     #1;
     if (decode_valid)
@@ -444,7 +462,7 @@ module tb_inline_scheduler_smoke;
     requant_payload[13:8] = 6'd0;
     requant_payload[7] = 1'b0;
     decode_cmd = make_command(
-      5'd14, 11'h003, NPU_DTYPE_INT16, requant_payload
+      6'd15, 10'h003, NPU_DTYPE_INT16, requant_payload
     );
     #1;
     if (!decode_valid ||
@@ -453,7 +471,7 @@ module tb_inline_scheduler_smoke;
       $fatal(1, "inline Matrix ZERO fields are incorrect");
     requant_payload[79:66] = 14'h004;
     decode_cmd = make_command(
-      5'd14, 11'h004, NPU_DTYPE_INT16, requant_payload
+      6'd15, 10'h004, NPU_DTYPE_INT16, requant_payload
     );
     #1;
     if (decode_valid)
@@ -464,7 +482,7 @@ module tb_inline_scheduler_smoke;
       1'b1, NPU_DTYPE_INT8, 5'd13, 6'd0
     };
     decode_cmd = make_command(
-      5'd12, 11'h005, NPU_DTYPE_INT8, matrix_payload
+      6'd13, 10'h005, NPU_DTYPE_INT8, matrix_payload
     );
     #1;
     if (!decode_valid ||
@@ -474,7 +492,7 @@ module tb_inline_scheduler_smoke;
       $fatal(1, "inline Matrix BMM fields are incorrect");
     matrix_payload[0] = 1'b1;
     decode_cmd = make_command(
-      5'd12, 11'h006, NPU_DTYPE_INT8, matrix_payload
+      6'd13, 10'h006, NPU_DTYPE_INT8, matrix_payload
     );
     #1;
     if (decode_valid)
@@ -482,14 +500,14 @@ module tb_inline_scheduler_smoke;
     decode_cmd = 128'd0;
 
     event_command = make_command(
-      5'd1, 11'h009, NPU_DTYPE_INT8, 80'd0
+      6'd1, 10'h009, NPU_DTYPE_INT8, 80'd0
     );
     event_command[95:88] = 8'h07;
     submit(event_command);
     wait (dut.event_state_q[7] == NPU_EVENT_SUCCESS);
 
     event_command = make_command(
-      5'd2, 11'h00a, NPU_DTYPE_INT8, 80'd0
+      6'd2, 10'h00a, NPU_DTYPE_INT8, 80'd0
     );
     event_command[95:88] = 8'h07;
     submit(event_command);
@@ -501,14 +519,14 @@ module tb_inline_scheduler_smoke;
       $fatal(1, "EVENT_REARM was treated as an ordinary signal");
     end
 
-    submit(make_command(5'd0, 11'h011, NPU_DTYPE_INT8, 80'd0));
+    submit(make_command(6'd0, 10'h011, NPU_DTYPE_INT8, 80'd0));
 
     dma_payload = {
       28'h000_0100, 28'h000_0200, 20'd4,
       NPU_DTYPE_INT8, 1'b0, 1'b0
     };
     submit(make_command(
-      5'd5, 11'h7ff, NPU_DTYPE_INT8, dma_payload
+      6'd5, 10'h3ff, NPU_DTYPE_INT8, dma_payload
     ));
 
     matrix_payload = {
@@ -517,7 +535,7 @@ module tb_inline_scheduler_smoke;
       1'b0, NPU_DTYPE_INT32, 5'd0
     };
     submit(make_command(
-      5'd11, 11'h013, NPU_DTYPE_INT8, matrix_payload
+      6'd12, 10'h013, NPU_DTYPE_INT8, matrix_payload
     ));
 
     vector_payload = {
@@ -525,7 +543,7 @@ module tb_inline_scheduler_smoke;
       5'd0, 5'd0, 2'd0, 2'd0, 2'd0
     };
     submit(make_command(
-      5'd15, 11'h014, NPU_DTYPE_INT8, vector_payload
+      6'd16, 10'h014, NPU_DTYPE_INT8, vector_payload
     ));
 
     complex_payload = {
@@ -534,7 +552,7 @@ module tb_inline_scheduler_smoke;
       2'd0, 4'd0, 4'd0, NPU_DTYPE_INT8, 2'd0, 5'd0
     };
     submit(make_command(
-      5'd25, 11'h015, NPU_DTYPE_INT8, complex_payload
+      6'd26, 10'h015, NPU_DTYPE_INT8, complex_payload
     ));
 
     wait (dma_task_valid && matrix_task_valid &&
@@ -544,7 +562,7 @@ module tb_inline_scheduler_smoke;
     if (dfu_request_count != 0)
       $fatal(1, "CMD128 descriptor request count is not zero");
     if (dma_task_opcode != NPU_OPCODE_DMA_COPY_1D ||
-        dma_task_command_id != 12'h7ff ||
+        dma_task_command_id != 12'h3ff ||
         dma_task_desc[15:8] != {4'd0, NPU_ENGINE_DMA} ||
         dma_task_desc[64 +: 64] != 64'h100 ||
         dma_task_desc[256 +: 64] != 64'h200 ||

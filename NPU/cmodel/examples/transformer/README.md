@@ -377,7 +377,7 @@ Q5 训练图在输入相加、注意力输出、残差结果、LayerNorm、前�
 | 第二编码器探针 | `0x24240` | 256 B | `[1,8,32]` |
 | `intent_logits` | `0x24340` | 32 B | `[1,8,4]` |
 
-每条语句开始前，runner 清空 L1 和系统内存，复制权重和两个输入，再执行缓存同步。三个输出区域保持为清零后的内容，直到 NPU CModel 根据命令写入计算结果。命令采用 `cmd128-inline-v2`，操作参数直接放在 CMD128 中，manifest 的 `external_descriptor_bytes` 为 0。
+每条语句开始前，runner 清空 L1 和系统内存，复制权重和两个输入，再执行缓存同步。三个输出区域保持为清零后的内容，直到 NPU CModel 根据命令写入计算结果。命令采用 `cmd128`，操作参数直接放在 CMD128 中，manifest 的 `external_descriptor_bytes` 为 0。
 
 ## 12. 软件与 NPU 的任务分配
 

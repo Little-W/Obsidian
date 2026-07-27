@@ -39,7 +39,7 @@
 
 /*
  * Matrix pack-format codes are layout codes, not dtype enum values.  Codes
- * 0..4 retain the V1.0 encodings.  INT16 uses the next two unused codes:
+ * Codes 0..4 cover the original integer layouts. INT16 uses two unused codes:
  * linear tensors use 5 and KT-by-NT tiled weights use 6.
  */
 #define NPU_WIRE_MATRIX_PACK_LINEAR_INT8 0u
@@ -525,7 +525,7 @@ npu_status_t npu_wire_decode_cmd_with_meta(
 {
     uint64_t low;
     uint64_t high;
-    uint8_t compact_opcode;
+    uint8_t opcode_field;
     uint8_t packed_flags;
 
     if (wire == (const uint8_t *)0 ||
@@ -540,8 +540,8 @@ npu_status_t npu_wire_decode_cmd_with_meta(
     low = npu_wire_u64(wire, 0u);
     high = npu_wire_u64(wire, 8u);
 
-    compact_opcode =
-        (uint8_t)((high >> 59u) & UINT64_C(0x1f));
+    opcode_field =
+        (uint8_t)((high >> 58u) & UINT64_C(0x3f));
     packed_flags =
         (uint8_t)((high >> 20u) & UINT64_C(0x0f));
 
@@ -566,12 +566,12 @@ npu_status_t npu_wire_decode_cmd_with_meta(
     cmd->wait_event[0] = npu_wire_inline_event(
         (uint8_t)((high >> 40u) & UINT64_C(0xff)));
     cmd->command_id =
-        (uint16_t)((high >> 48u) & UINT64_C(0x07ff));
+        (uint16_t)((high >> 48u) & UINT64_C(0x03ff));
     if (!npu_wire_dtype_valid(cmd->inline_dtype)) {
         return NPU_STATUS_DTYPE_UNSUPPORTED;
     }
     if (!npu_inline_opcode_decode(
-            compact_opcode, &cmd->engine, &cmd->opcode)) {
+            opcode_field, &cmd->engine, &cmd->opcode)) {
         return NPU_STATUS_ILLEGAL_OPCODE;
     }
     if (!npu_wire_event_is_none(cmd->signal_event) &&

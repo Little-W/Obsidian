@@ -55,6 +55,7 @@ VERILATOR_COMMON := \
 	-Itop
 
 VERILATOR_SIM := $(VERILATOR_COMMON) \
+	--x-initial 0 \
 	--output-split 10000 \
 	--output-split-cfuncs 5000
 
@@ -65,8 +66,8 @@ VERILATOR_TRANSFORMER := $(VERILATOR_SIM) \
 	-Wno-UNUSEDSIGNAL \
 	-Wno-UNUSEDPARAM
 
-.PHONY: all lint control-test memory-test module-test system-test \
-	transformer-e2e test clean
+.PHONY: all lint control-test memory-test math-reference-test frontend-test \
+	engine-test module-test system-test transformer-e2e test clean
 
 all: test
 
@@ -156,7 +157,24 @@ memory-test:
 		$(VERILATOR_MAKE_FLAGS)
 	$(BUILD_DIR)/memory_smoke/Vtb_memory_smoke
 
-module-test: control-test memory-test
+math-reference-test:
+	mkdir -p $(GEN_DIR)/math_reference
+	$(VERILATOR) --cc --exe --main $(VERILATOR_SIM) \
+		-Wno-UNUSEDPARAM \
+		--top-module tb_npu_math_reference \
+		--Mdir $(GEN_DIR)/math_reference \
+		-o Vtb_npu_math_reference \
+		engines/npu_engine_pkg.sv \
+		engines/npu_complex_math_core.sv \
+		tb/tb_npu_math_reference.sv
+	mkdir -p $(BUILD_DIR)/math_reference
+	cp -a $(GEN_DIR)/math_reference/. $(BUILD_DIR)/math_reference/
+	$(MAKE) -C $(BUILD_DIR)/math_reference \
+		-f Vtb_npu_math_reference.mk -j1 \
+		$(VERILATOR_MAKE_FLAGS)
+	$(BUILD_DIR)/math_reference/Vtb_npu_math_reference
+
+frontend-test:
 	mkdir -p $(GEN_DIR)/module_frontend
 	$(VERILATOR) --cc --exe --main $(VERILATOR_SIM) \
 		--top-module tb_npu_axi_slave_frontend \
@@ -170,6 +188,8 @@ module-test: control-test memory-test
 		-f Vtb_npu_axi_slave_frontend.mk -j1 \
 		$(VERILATOR_MAKE_FLAGS)
 	$(BUILD_DIR)/module_frontend/Vtb_npu_axi_slave_frontend
+
+engine-test:
 	mkdir -p $(GEN_DIR)/module_engines
 	$(VERILATOR) --cc --exe --main $(VERILATOR_SIM) \
 		--top-module tb_npu_engines \
@@ -191,6 +211,8 @@ module-test: control-test memory-test
 		-f Vtb_npu_engines.mk -j1 \
 		$(VERILATOR_MAKE_FLAGS)
 	$(BUILD_DIR)/module_engines/Vtb_npu_engines
+
+module-test: control-test memory-test math-reference-test frontend-test engine-test
 
 system-test:
 	mkdir -p $(GEN_DIR)/system

@@ -885,7 +885,7 @@ void npu_lsc_cycle_config_reference(npu_lsc_cycle_config_t *config)
     config->version_minor = 0u;
     config->build = 1u;
     /*
-     * V1.0 implements every P0 operation unconditionally. Optional P1
+     * The base feature set implements every P0 operation. Optional P1
      * operations and descriptor CRC are disabled in the reference build.
      */
     config->isa_feature = 0u;

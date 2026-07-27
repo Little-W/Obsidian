@@ -6,38 +6,39 @@
 #include <string.h>
 
 enum {
-    NPU_COMPACT_NOP = 0,
-    NPU_COMPACT_EVENT_SIGNAL = 1,
-    NPU_COMPACT_EVENT_REARM = 2,
-    NPU_COMPACT_EVENT_JOIN = 3,
-    NPU_COMPACT_GLOBAL_FENCE = 4,
-    NPU_COMPACT_DMA_COPY_1D = 5,
-    NPU_COMPACT_DMA_COPY_ND = 6,
-    NPU_COMPACT_DMA_FILL = 7,
-    NPU_COMPACT_DMA_TRANSPOSE_2D = 8,
-    NPU_COMPACT_DMA_PACK = 9,
-    NPU_COMPACT_DMA_SPLIT = 10,
-    NPU_COMPACT_MATRIX_GEMM = 11,
-    NPU_COMPACT_MATRIX_BMM = 12,
-    NPU_COMPACT_MATRIX_GEMM_ACCUM = 13,
-    NPU_COMPACT_MATRIX_GEMM_ZERO = 14,
-    NPU_COMPACT_VECTOR_ADD = 15,
-    NPU_COMPACT_VECTOR_SUB = 16,
-    NPU_COMPACT_VECTOR_MUL = 17,
-    NPU_COMPACT_VECTOR_FMA = 18,
-    NPU_COMPACT_VECTOR_MAX = 19,
-    NPU_COMPACT_VECTOR_MIN = 20,
-    NPU_COMPACT_VECTOR_CMP = 21,
-    NPU_COMPACT_VECTOR_SELECT = 22,
-    NPU_COMPACT_VECTOR_CLAMP = 23,
-    NPU_COMPACT_VECTOR_RELU = 24,
-    NPU_COMPACT_COMPLEX_ACT = 25,
-    NPU_COMPACT_COMPLEX_SOFTMAX = 26,
-    NPU_COMPACT_COMPLEX_NORM = 27,
-    NPU_COMPACT_COMPLEX_ROPE = 28,
-    NPU_COMPACT_COMPLEX_STAT = 29,
-    NPU_COMPACT_COMPLEX_RECIP = 30,
-    NPU_COMPACT_COMPLEX_ADD_RESCALE = 31
+    NPU_CMD_OPCODE_NOP = 0,
+    NPU_CMD_OPCODE_EVENT_SIGNAL = 1,
+    NPU_CMD_OPCODE_EVENT_REARM = 2,
+    NPU_CMD_OPCODE_EVENT_JOIN = 3,
+    NPU_CMD_OPCODE_GLOBAL_FENCE = 4,
+    NPU_CMD_OPCODE_DMA_COPY_1D = 5,
+    NPU_CMD_OPCODE_DMA_COPY_ND = 6,
+    NPU_CMD_OPCODE_DMA_FILL = 7,
+    NPU_CMD_OPCODE_DMA_TRANSPOSE_2D = 8,
+    NPU_CMD_OPCODE_DMA_PACK = 9,
+    NPU_CMD_OPCODE_DMA_SPLIT = 10,
+    NPU_CMD_OPCODE_DMA_GATHER_ND = 11,
+    NPU_CMD_OPCODE_MATRIX_GEMM = 12,
+    NPU_CMD_OPCODE_MATRIX_BMM = 13,
+    NPU_CMD_OPCODE_MATRIX_GEMM_ACCUM = 14,
+    NPU_CMD_OPCODE_MATRIX_GEMM_ZERO = 15,
+    NPU_CMD_OPCODE_VECTOR_ADD = 16,
+    NPU_CMD_OPCODE_VECTOR_SUB = 17,
+    NPU_CMD_OPCODE_VECTOR_MUL = 18,
+    NPU_CMD_OPCODE_VECTOR_FMA = 19,
+    NPU_CMD_OPCODE_VECTOR_MAX = 20,
+    NPU_CMD_OPCODE_VECTOR_MIN = 21,
+    NPU_CMD_OPCODE_VECTOR_CMP = 22,
+    NPU_CMD_OPCODE_VECTOR_SELECT = 23,
+    NPU_CMD_OPCODE_VECTOR_CLAMP = 24,
+    NPU_CMD_OPCODE_VECTOR_RELU = 25,
+    NPU_CMD_OPCODE_COMPLEX_ACT = 26,
+    NPU_CMD_OPCODE_COMPLEX_SOFTMAX = 27,
+    NPU_CMD_OPCODE_COMPLEX_NORM = 28,
+    NPU_CMD_OPCODE_COMPLEX_ROPE = 29,
+    NPU_CMD_OPCODE_COMPLEX_STAT = 30,
+    NPU_CMD_OPCODE_COMPLEX_RECIP = 31,
+    NPU_CMD_OPCODE_COMPLEX_ADD_RESCALE = 32
 };
 
 static uint64_t npu_inline_mask(uint32_t width)
@@ -410,6 +411,10 @@ static npu_status_t npu_inline_decode_dma(
             ? 16u
             : limits->dma_max_outstanding;
     meta->dma_burst_beats = desc->burst_beats;
+
+    if (cmd->opcode == NPU_DMA_GATHER_ND) {
+        return NPU_STATUS_ILLEGAL_OPCODE;
+    }
 
     if (cmd->opcode == NPU_DMA_FILL) {
         destination_ref =
@@ -1212,32 +1217,35 @@ static npu_status_t npu_inline_decode_complex(
     return NPU_STATUS_SUCCESS;
 }
 
-int npu_inline_opcode_decode(uint8_t compact_opcode,
+int npu_inline_opcode_decode(uint8_t opcode_field,
                              npu_engine_t *engine,
                              uint8_t *opcode)
 {
     if (engine == (npu_engine_t *)0 || opcode == (uint8_t *)0 ||
-        compact_opcode > NPU_COMPACT_COMPLEX_ADD_RESCALE) {
+        opcode_field > NPU_CMD_OPCODE_COMPLEX_ADD_RESCALE) {
         return 0;
     }
-    if (compact_opcode <= NPU_COMPACT_GLOBAL_FENCE) {
+    if (opcode_field <= NPU_CMD_OPCODE_GLOBAL_FENCE) {
         *engine = NPU_ENGINE_CONTROL;
-        *opcode = compact_opcode;
-    } else if (compact_opcode <= NPU_COMPACT_DMA_SPLIT) {
+        *opcode = opcode_field;
+    } else if (opcode_field <= NPU_CMD_OPCODE_DMA_SPLIT) {
         *engine = NPU_ENGINE_DMA;
         *opcode =
             (uint8_t)(NPU_DMA_COPY_1D +
-                      compact_opcode - NPU_COMPACT_DMA_COPY_1D);
-    } else if (compact_opcode <= NPU_COMPACT_MATRIX_GEMM_ZERO) {
+                      opcode_field - NPU_CMD_OPCODE_DMA_COPY_1D);
+    } else if (opcode_field == NPU_CMD_OPCODE_DMA_GATHER_ND) {
+        *engine = NPU_ENGINE_DMA;
+        *opcode = NPU_DMA_GATHER_ND;
+    } else if (opcode_field <= NPU_CMD_OPCODE_MATRIX_GEMM_ZERO) {
         *engine = NPU_ENGINE_MATRIX;
         *opcode =
             (uint8_t)(NPU_MATRIX_GEMM +
-                      compact_opcode - NPU_COMPACT_MATRIX_GEMM);
-    } else if (compact_opcode <= NPU_COMPACT_VECTOR_RELU) {
+                      opcode_field - NPU_CMD_OPCODE_MATRIX_GEMM);
+    } else if (opcode_field <= NPU_CMD_OPCODE_VECTOR_RELU) {
         *engine = NPU_ENGINE_VECTOR;
         *opcode =
             (uint8_t)(NPU_VECTOR_ADD +
-                      compact_opcode - NPU_COMPACT_VECTOR_ADD);
+                      opcode_field - NPU_CMD_OPCODE_VECTOR_ADD);
     } else {
         static const uint8_t complex_opcode[7] = {
             NPU_COMPLEX_ACT,
@@ -1250,74 +1258,79 @@ int npu_inline_opcode_decode(uint8_t compact_opcode,
         };
         *engine = NPU_ENGINE_COMPLEX;
         *opcode =
-            complex_opcode[compact_opcode - NPU_COMPACT_COMPLEX_ACT];
+            complex_opcode[opcode_field - NPU_CMD_OPCODE_COMPLEX_ACT];
     }
     return 1;
 }
 
 int npu_inline_opcode_encode(npu_engine_t engine,
                              uint8_t opcode,
-                             uint8_t *compact_opcode)
+                             uint8_t *opcode_field)
 {
-    if (compact_opcode == (uint8_t *)0) {
+    if (opcode_field == (uint8_t *)0) {
         return 0;
     }
     if (engine == NPU_ENGINE_CONTROL &&
         opcode <= NPU_CTRL_GLOBAL_FENCE) {
-        *compact_opcode = opcode;
+        *opcode_field = opcode;
         return 1;
     }
     if (engine == NPU_ENGINE_DMA &&
         opcode >= NPU_DMA_COPY_1D &&
         opcode <= NPU_DMA_SPLIT) {
-        *compact_opcode =
-            (uint8_t)(NPU_COMPACT_DMA_COPY_1D +
+        *opcode_field =
+            (uint8_t)(NPU_CMD_OPCODE_DMA_COPY_1D +
                       opcode - NPU_DMA_COPY_1D);
+        return 1;
+    }
+    if (engine == NPU_ENGINE_DMA &&
+        opcode == NPU_DMA_GATHER_ND) {
+        *opcode_field = NPU_CMD_OPCODE_DMA_GATHER_ND;
         return 1;
     }
     if (engine == NPU_ENGINE_MATRIX &&
         opcode >= NPU_MATRIX_GEMM &&
         opcode <= NPU_MATRIX_GEMM_ZERO) {
-        *compact_opcode =
-            (uint8_t)(NPU_COMPACT_MATRIX_GEMM +
+        *opcode_field =
+            (uint8_t)(NPU_CMD_OPCODE_MATRIX_GEMM +
                       opcode - NPU_MATRIX_GEMM);
         return 1;
     }
     if (engine == NPU_ENGINE_VECTOR &&
         opcode >= NPU_VECTOR_ADD &&
         opcode <= NPU_VECTOR_RELU) {
-        *compact_opcode =
-            (uint8_t)(NPU_COMPACT_VECTOR_ADD +
+        *opcode_field =
+            (uint8_t)(NPU_CMD_OPCODE_VECTOR_ADD +
                       opcode - NPU_VECTOR_ADD);
         return 1;
     }
     if (engine == NPU_ENGINE_COMPLEX) {
         if (opcode == NPU_COMPLEX_ACT) {
-            *compact_opcode = NPU_COMPACT_COMPLEX_ACT;
+            *opcode_field = NPU_CMD_OPCODE_COMPLEX_ACT;
             return 1;
         }
         if (opcode == NPU_COMPLEX_SOFTMAX) {
-            *compact_opcode = NPU_COMPACT_COMPLEX_SOFTMAX;
+            *opcode_field = NPU_CMD_OPCODE_COMPLEX_SOFTMAX;
             return 1;
         }
         if (opcode == NPU_COMPLEX_NORM) {
-            *compact_opcode = NPU_COMPACT_COMPLEX_NORM;
+            *opcode_field = NPU_CMD_OPCODE_COMPLEX_NORM;
             return 1;
         }
         if (opcode == NPU_COMPLEX_ROPE) {
-            *compact_opcode = NPU_COMPACT_COMPLEX_ROPE;
+            *opcode_field = NPU_CMD_OPCODE_COMPLEX_ROPE;
             return 1;
         }
         if (opcode == NPU_COMPLEX_STAT) {
-            *compact_opcode = NPU_COMPACT_COMPLEX_STAT;
+            *opcode_field = NPU_CMD_OPCODE_COMPLEX_STAT;
             return 1;
         }
         if (opcode == NPU_COMPLEX_RECIP) {
-            *compact_opcode = NPU_COMPACT_COMPLEX_RECIP;
+            *opcode_field = NPU_CMD_OPCODE_COMPLEX_RECIP;
             return 1;
         }
         if (opcode == NPU_COMPLEX_ADD_RESCALE) {
-            *compact_opcode = NPU_COMPACT_COMPLEX_ADD_RESCALE;
+            *opcode_field = NPU_CMD_OPCODE_COMPLEX_ADD_RESCALE;
             return 1;
         }
     }

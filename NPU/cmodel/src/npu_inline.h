@@ -10,13 +10,13 @@ extern "C" {
 #define NPU_INLINE_DESC_VERSION 1u
 #define NPU_INLINE_EVENT_NONE UINT8_C(0xff)
 
-int npu_inline_opcode_decode(uint8_t compact_opcode,
+int npu_inline_opcode_decode(uint8_t opcode_field,
                              npu_engine_t *engine,
                              uint8_t *opcode);
 
 int npu_inline_opcode_encode(npu_engine_t engine,
                              uint8_t opcode,
-                             uint8_t *compact_opcode);
+                             uint8_t *opcode_field);
 
 npu_status_t npu_inline_decode_task(
     const npu_cmd_t *cmd,

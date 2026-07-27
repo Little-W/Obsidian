@@ -21,7 +21,7 @@ static uint16_t npu_cfe_command_id(uint64_t low_beat,
     }
     (void)low_beat;
     return (uint16_t)((high_beat >> 48u) &
-                      UINT64_C(0x07ff));
+                      UINT64_C(0x03ff));
 }
 
 static uint8_t npu_cfe_free_entries(

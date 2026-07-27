@@ -327,8 +327,7 @@ module tb_npu_single_core;
                     if (dut.cmd_first || !dut.cmd_last) begin
                         $fatal(1, "CFE high word markers are incorrect");
                     end
-                    if ((dut.cmd_data[63:59] == 5'd28) ||
-                        (dut.cmd_data[63:59] == 5'd30)) begin
+                    if (!npu_cmd_opcode_valid(dut.cmd_data[63:58])) begin
                         $fatal(1, "CFE opcode is invalid");
                     end
                     cfe_high_word_count_q <= cfe_high_word_count_q + 1'b1;
@@ -448,8 +447,8 @@ module tb_npu_single_core;
     endtask
 
     function automatic logic [127:0] make_command(
-        input logic [4:0] command_opcode,
-        input logic [10:0] command_id,
+        input logic [5:0] command_opcode,
+        input logic [9:0] command_id,
         input logic [1:0] dtype,
         input logic [79:0] payload,
         input logic [7:0] wait0,
@@ -458,8 +457,8 @@ module tb_npu_single_core;
     );
         logic [127:0] command;
         command = 128'd0;
-        command[127:123] = command_opcode;
-        command[122:112] = command_id;
+        command[127:122] = command_opcode;
+        command[121:112] = command_id;
         command[111:104] = wait0;
         command[103:96] = wait1;
         command[95:88] = signal_event;
@@ -676,7 +675,7 @@ module tb_npu_single_core;
     function automatic logic [11:0] transformer_command_id(
         input logic [127:0] command
     );
-        return {1'b0, command[122:112]};
+        return {2'd0, command[121:112]};
     endfunction
 
     task automatic run_transformer_batch(
@@ -1100,7 +1099,7 @@ module tb_npu_single_core;
             1'b0, NPU_DTYPE_INT32, 5'd0
         };
         command_words[0] = make_command(
-            5'd11, 11'h101, NPU_DTYPE_INT8, command_payload,
+            6'd12, 10'h101, NPU_DTYPE_INT8, command_payload,
             8'hff, 8'hff, 8'h01
         );
         command_payload = {
@@ -1108,7 +1107,7 @@ module tb_npu_single_core;
             5'd0, 5'd7, 2'd0, 2'd0, 2'd0
         };
         command_words[1] = make_command(
-            5'd15, 11'h102, NPU_DTYPE_INT8, command_payload,
+            6'd16, 10'h102, NPU_DTYPE_INT8, command_payload,
             8'h01, 8'hff, 8'hff
         );
         dependency_check_enable_q = 1'b1;
@@ -1163,7 +1162,7 @@ module tb_npu_single_core;
             NPU_DTYPE_INT8, 1'b0, 1'b0
         };
         command_words[0] = make_command(
-            5'd5, 11'h103, NPU_DTYPE_INT8, command_payload,
+            6'd5, 10'h103, NPU_DTYPE_INT8, command_payload,
             8'hff, 8'hff, 8'hff
         );
         axi_submit_commands(1);
@@ -1192,7 +1191,7 @@ module tb_npu_single_core;
             NPU_DTYPE_INT8, 1'b0, 1'b0
         };
         command_words[0] = make_command(
-            5'd5, 11'h109, NPU_DTYPE_INT8, command_payload,
+            6'd5, 10'h109, NPU_DTYPE_INT8, command_payload,
             8'hff, 8'hff, 8'h02
         );
         axi_submit_commands(1);
@@ -1233,7 +1232,7 @@ module tb_npu_single_core;
             2'd1, 4'd0, 4'd0, NPU_DTYPE_INT8, 2'd0, 5'd0
         };
         command_words[0] = make_command(
-            5'd25, 11'h104, NPU_DTYPE_INT8, command_payload,
+            6'd26, 10'h104, NPU_DTYPE_INT8, command_payload,
             8'hff, 8'hff, 8'hff
         );
         axi_submit_commands(1);
@@ -1261,7 +1260,7 @@ module tb_npu_single_core;
             5'd0, 5'd3, 2'd0, 2'd0, 2'd0
         };
         command_words[0] = make_command(
-            5'd15, 11'h105, NPU_DTYPE_INT16, command_payload,
+            6'd16, 10'h105, NPU_DTYPE_INT16, command_payload,
             8'hff, 8'hff, 8'hff
         );
         axi_submit_commands(1);
@@ -1306,14 +1305,14 @@ module tb_npu_single_core;
             1'b0, NPU_DTYPE_INT16, 5'd1
         };
         command_words[0] = make_command(
-            5'd11, 11'h106, NPU_DTYPE_INT16, command_payload,
+            6'd12, 10'h106, NPU_DTYPE_INT16, command_payload,
             8'hff, 8'hff, 8'hff
         );
 
         // INT32 output does not accept a nonzero output shift.
         command_payload[6:5] = NPU_DTYPE_INT32;
         command_words[1] = make_command(
-            5'd11, 11'h107, NPU_DTYPE_INT16, command_payload,
+            6'd12, 10'h107, NPU_DTYPE_INT16, command_payload,
             8'hff, 8'hff, 8'hff
         );
 
@@ -1352,7 +1351,7 @@ module tb_npu_single_core;
             acknowledge_task(12'(12'h106 + index));
         end
         l1_read_word(20'h00c40, read_data);
-        check(read_data == 64'h0007_0003_0007_0001,
+        check(read_data == 64'h0006_0003_0006_0001,
               "INT16 Matrix output scaling result is incorrect");
         check(matrix_int16_valid_l1_handshakes_q == 32'd28,
               "INT16 Matrix issued an unexpected L1 request count");

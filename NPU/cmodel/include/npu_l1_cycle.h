@@ -135,7 +135,7 @@ typedef struct {
     /*
      * First uncorrectable ECC event since reset or error_clear. The payload
      * remains unchanged while valid is one. ECC is currently checked on reads,
-     * so ecc_error_write is zero in V1.0.
+     * so ecc_error_write is zero for the current interface.
      */
     uint8_t ecc_error_valid;
     uint8_t ecc_error_status;

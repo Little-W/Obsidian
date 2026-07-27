@@ -3,11 +3,11 @@
 本目录包含两个层次：
 
 - `npu_model_compiler.py` 接收 Keras、PyTorch、TFLite、ONNX 或高层 JSON 模型，完成图检查、整数张量处理、常量排布、L1 地址分配、算子拆分和任务依赖生成。
-- `npu_assembler.py` 接收低层 JSON IR，把每个任务编码成一条 CMD128 inline V2 指令。
+- `npu_assembler.py` 接收低层 JSON IR，把每个任务编码成一条 CMD128 指令。
 
-“低层 JSON IR”是保留名称。它描述已经选定执行单元、操作码、张量地址和任务事件的程序。V2 不读取外部 Descriptor；执行参数都在 128-bit 指令中。
+“低层 JSON IR”是保留名称。它描述已经选定执行单元、操作码、张量地址和任务事件的程序。执行参数都在 128-bit 指令中，不需要外部 Descriptor。
 高层编译器生成的低层 JSON IR 将 `target.name` 写为
-`single-core-v2`，运行时元数据中的 `external_descriptor_bytes` 固定为
+`single-core`，运行时元数据中的 `external_descriptor_bytes` 固定为
 0。
 
 ## 1. 编译结果
@@ -41,12 +41,11 @@
 - 每个批次的 `host_sync_before`、`host_sync_after` 和
   `contains_event_rearm` 标志。
 
-## 2. CMD128 inline V2 公共字段
+## 2. CMD128 公共字段
 
 | bit | 字段 | 说明 |
 |---:|---|---|
-| 127 | `inline_v2` | 固定为 1 |
-| 126:122 | `compact_opcode` | 5-bit 操作码 |
+| 127:122 | `opcode` | 6-bit 操作码字段；当前定义 0～32 |
 | 121:112 | `command_id` | 10-bit，范围 0～1023 |
 | 111:104 | `wait_event0` | 等待事件 ID，`0xFF` 表示不等待 |
 | 103:96 | `wait_event1` | 第二个等待事件 ID |
@@ -65,28 +64,50 @@
 已经结束，再提交 `EVENT_REARM`；还要等 `EVENT_REARM` 完成后才能提交使用同一
 ID 的新生产者。高层编译器会生成满足这一顺序要求的批次信息。
 
-## 3. 5-bit 操作码
+## 3. 操作码
 
-| 编码 | 名称 | 编码 | 名称 |
-|---:|---|---:|---|
-| 0 | NOP | 16 | VSUB |
-| 1 | EVENT_SIGNAL | 17 | VMUL |
-| 2 | EVENT_REARM | 18 | VFMA |
-| 3 | EVENT_JOIN | 19 | VMAX |
-| 4 | GLOBAL_FENCE | 20 | VMIN |
-| 5 | DMA_COPY_1D | 21 | VCMP |
-| 6 | DMA_COPY_ND | 22 | VSELECT |
-| 7 | DMA_FILL | 23 | VCLAMP |
-| 8 | DMA_TRANSPOSE_2D | 24 | VRELU |
-| 9 | DMA_PACK | 25 | VACT |
-| 10 | DMA_SPLIT | 26 | VSOFTMAX |
-| 11 | GEMM | 27 | VNORM |
-| 12 | BMM | 28 | VROPE（P1） |
-| 13 | GEMM_ACCUM | 29 | VSTAT |
-| 14 | GEMM_ZERO | 30 | VRECIP（P1） |
-| 15 | VADD | 31 | VADD_RESCALE |
+`opcode` 字段宽度为 6 bit。当前定义数值 0～32；33～63 尚未定义，汇编器、
+驱动和硬件均应拒绝。
 
-P1 功能位关闭时，VROPE 和 VRECIP 可以被编码和提交，但设备返回 `ILLEGAL_OPCODE`。保留这两个编码可使指令文件在启用 P1 后继续使用。
+| 数值 | 名称 | 状态 |
+|---:|---|---|
+| 0 | NOP | P0 |
+| 1 | EVENT_SIGNAL | P0 |
+| 2 | EVENT_REARM | P0 |
+| 3 | EVENT_JOIN | P0 |
+| 4 | GLOBAL_FENCE | P0 |
+| 5 | DMA_COPY_1D | P0 |
+| 6 | DMA_COPY_ND | P0 |
+| 7 | DMA_FILL | P0 |
+| 8 | DMA_TRANSPOSE_2D | P0 |
+| 9 | DMA_PACK | P0 |
+| 10 | DMA_SPLIT | P0 |
+| 11 | DMA_GATHER_ND | P1，功能位关闭 |
+| 12 | GEMM | P0 |
+| 13 | BMM | P0 |
+| 14 | GEMM_ACCUM | P0 |
+| 15 | GEMM_ZERO | P0 |
+| 16 | VADD | P0 |
+| 17 | VSUB | P0 |
+| 18 | VMUL | P0 |
+| 19 | VFMA | P0 |
+| 20 | VMAX | P0 |
+| 21 | VMIN | P0 |
+| 22 | VCMP | P0 |
+| 23 | VSELECT | P0 |
+| 24 | VCLAMP | P0 |
+| 25 | VRELU | P0 |
+| 26 | VACT | P0 |
+| 27 | VSOFTMAX | P0 |
+| 28 | VNORM | P0 |
+| 29 | VROPE | P1，功能位关闭 |
+| 30 | VSTAT | P0 |
+| 31 | VRECIP | P1，功能位关闭 |
+| 32 | VADD_RESCALE | P0 |
+
+P1 功能位关闭时，DMA_GATHER_ND、VROPE 和 VRECIP 可以被编码和提交，但设备
+返回 `ILLEGAL_OPCODE`。DMA_GATHER_ND 的 payload 直接保存全局源地址引用、
+L1 索引表、L1 目标地址、块数和每块字节数，不使用外部任务参数块。
 
 ## 4. 地址压缩
 
@@ -135,7 +156,7 @@ COPY 指令：
 [0]     dst_nibble
 ```
 
-`DMA_COPY_ND` 在 V2 中表示连续张量的扁平复制。高层编译器遇到带行间隔的数据时，会按行生成多条 `DMA_COPY_1D`；汇编器若直接收到不连续的 COPY_ND，会给出错误。
+`DMA_COPY_ND` 表示连续张量的扁平复制。高层编译器遇到带行间隔的数据时，会按行生成多条 `DMA_COPY_1D`；汇编器若直接收到不连续的 COPY_ND，会给出错误。
 
 FILL 指令使用 `[79:52]` 保存目标地址、`[51:32]` 保存元素数、`[31:0]` 保存填充值。
 

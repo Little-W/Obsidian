@@ -28,28 +28,21 @@ module npu_complex_math_core (
   localparam logic [3:0] MATH_DIV     = 4'd7;
   localparam logic [3:0] MATH_ADD     = 4'd8;
   localparam logic [3:0] MATH_SUB     = 4'd9;
-
-  logic [31:0] sigmoid_argument;
+  localparam logic [3:0] MATH_RECIP   = 4'd10;
 
   always_comb begin
-    sigmoid_argument = fp32_mul(operand0_i, 32'h3fd9_db23);
     case (operation_i)
       MATH_SIGMOID: result_o = fp32_sigmoid_approx(operand0_i);
       MATH_TANH:    result_o = fp32_tanh_approx(operand0_i);
-      MATH_GELU:
-        result_o = fp32_mul(
-          operand0_i, fp32_sigmoid_approx(sigmoid_argument)
-        );
-      MATH_SILU:
-        result_o = fp32_mul(
-          operand0_i, fp32_sigmoid_approx(operand0_i)
-        );
+      MATH_GELU:    result_o = fp32_gelu_approx(operand0_i);
+      MATH_SILU:    result_o = fp32_silu_approx(operand0_i);
       MATH_EXP_NEG: result_o = fp32_exp_neg_approx(operand0_i);
       MATH_RSQRT:   result_o = fp32_rsqrt_approx(operand0_i);
       MATH_MUL:     result_o = fp32_mul(operand0_i, operand1_i);
       MATH_DIV:     result_o = fp32_div(operand0_i, operand1_i);
       MATH_ADD:     result_o = fp32_add(operand0_i, operand1_i);
       MATH_SUB:     result_o = fp32_sub(operand0_i, operand1_i);
+      MATH_RECIP:   result_o = fp32_reciprocal_approx(operand0_i);
       default:      result_o = 32'h7fc0_0000;
     endcase
   end

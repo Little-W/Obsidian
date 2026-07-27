@@ -17,7 +17,8 @@ module npu_inline_desc_decode (
 );
   import npu_rtl_pkg::*;
 
-  logic [4:0]  command_opcode;
+  logic [5:0]  command_opcode_full;
+  logic [5:0]  command_opcode;
   logic [79:0] payload;
   logic [1:0]  header_dtype;
   logic [27:0] src_aref;
@@ -238,12 +239,13 @@ module npu_inline_desc_decode (
   endfunction
 
   always_comb begin
-    command_opcode = cmd_i[127:123];
+    command_opcode_full = cmd_i[127:122];
+    command_opcode = command_opcode_full;
     payload = cmd_i[79:0];
     header_dtype = cmd_i[81:80];
-    engine_o = npu_cmd_engine_from_opcode(command_opcode);
-    opcode_o = npu_cmd_expanded_opcode(command_opcode);
-    valid_o = npu_cmd_opcode_valid(command_opcode);
+    engine_o = npu_cmd_engine_from_opcode(command_opcode_full);
+    opcode_o = npu_cmd_expanded_opcode(command_opcode_full);
+    valid_o = npu_cmd_opcode_valid(command_opcode_full);
     desc_flat_o = 2048'd0;
 
     src_aref = payload[79:52];
@@ -275,10 +277,10 @@ module npu_inline_desc_decode (
     desc_flat_o[7:0] = 8'h01;
     desc_flat_o[15:8] = {4'd0, engine_o};
     desc_flat_o[31:16] = npu_desc_bytes_for_engine(engine_o);
-    desc_flat_o[511:480] = {21'd0, cmd_i[122:112]};
+    desc_flat_o[511:480] = {22'd0, cmd_i[121:112]};
 
     unique case (command_opcode)
-      5'd0, 5'd1, 5'd2, 5'd3, 5'd4: begin
+      6'd0, 6'd1, 6'd2, 6'd3, 6'd4: begin
         desc_flat_o[31:16] = 16'd64;
         desc_flat_o[64 +: 64] =
           {52'd0, npu_cmd_event_ref(cmd_i[111:104])};
@@ -290,16 +292,16 @@ module npu_inline_desc_decode (
         desc_flat_o[39:32] = {7'd0, payload[75]};
         valid_o = valid_o && (payload[74:0] == 75'd0);
         unique case (command_opcode)
-          5'd0:
+          6'd0:
             valid_o = valid_o &&
               (cmd_i[111:88] == 24'hff_ffff) &&
               (payload[79:75] == 5'd0);
-          5'd1, 5'd2:
+          6'd1, 6'd2:
             valid_o = valid_o &&
               (cmd_i[111:96] == 16'hffff) &&
               (cmd_i[95:88] != 8'hff) &&
               (payload[79:75] == 5'd0);
-          5'd3:
+          6'd3:
             valid_o = valid_o &&
               (cmd_i[111:104] != 8'hff) &&
               (cmd_i[103:96] != 8'hff) &&
@@ -314,7 +316,7 @@ module npu_inline_desc_decode (
         endcase
       end
 
-      5'd5, 5'd6: begin
+      6'd5, 6'd6: begin
         dst_dtype = payload[3:2];
         numeric_cfg[1:0] = src_dtype;
         numeric_cfg[3:2] = src_dtype;
@@ -351,7 +353,7 @@ module npu_inline_desc_decode (
           {32'd0, storage_bytes_nibble(count, dst_dtype, payload[0])};
       end
 
-      5'd7: begin
+      6'd7: begin
         count = {12'd0, payload[51:32]};
         dst_aref = payload[79:52];
         dst_addr = aref_addr(dst_aref);
@@ -375,7 +377,7 @@ module npu_inline_desc_decode (
           {32'd0, storage_bytes(count, header_dtype)};
       end
 
-      5'd8: begin
+      6'd8: begin
         dst_dtype = payload[7:6];
         rows = {24'd0, payload[23:16]};
         length = {24'd0, payload[15:8]};
@@ -414,7 +416,7 @@ module npu_inline_desc_decode (
           {32'd0, length * row_bytes_dst};
       end
 
-      5'd9, 5'd10: begin
+      6'd9, 6'd10: begin
         count = {24'd0, payload[23:16]};
         rows = {24'd0, payload[15:8]};
         length = {24'd0, payload[7:0]};
@@ -438,11 +440,11 @@ module npu_inline_desc_decode (
         desc_flat_o[16'h45 * 8 +: 8] = 8'd1;
         desc_flat_o[16'h48 * 8 +: 32] = count;
         desc_flat_o[16'h98 * 8 +: 64] =
-          command_opcode == 5'd9
+          command_opcode == 6'd9
             ? {32'd0, (count - 1'b1) * length + rows}
             : {32'd0, count * rows};
         desc_flat_o[16'ha0 * 8 +: 64] =
-          command_opcode == 5'd9
+          command_opcode == 6'd9
             ? {32'd0, count * rows}
             : {32'd0, (count - 1'b1) * length + rows};
         desc_flat_o[16'ha8 * 8 +: 16] = count[15:0];
@@ -450,7 +452,7 @@ module npu_inline_desc_decode (
         desc_flat_o[16'hac * 8 +: 32] = length;
       end
 
-      5'd11, 5'd13, 5'd14: begin
+      6'd12, 6'd14, 6'd15: begin
         matrix_m = {26'd0, payload[25:20]} + 1'b1;
         matrix_n = {26'd0, payload[19:14]} + 1'b1;
         matrix_k = {26'd0, payload[13:8]} + 1'b1;
@@ -478,11 +480,11 @@ module npu_inline_desc_decode (
         desc_flat_o[16'h54 * 8 +: 32] = matrix_tail(matrix_n, 32'd8);
         desc_flat_o[16'h58 * 8 +: 32] = matrix_tail(matrix_k, 32'd16);
         matrix_flags[2] =
-          (command_opcode == 5'd11) && (payload[37:26] != 12'd0);
+          (command_opcode == 6'd12) && (payload[37:26] != 12'd0);
         matrix_flags[5] =
-          (command_opcode == 5'd11) && (dst_dtype != NPU_DTYPE_INT32);
-        matrix_flags[6] = command_opcode == 5'd13;
-        matrix_flags[7] = command_opcode == 5'd11;
+          (command_opcode == 6'd12) && (dst_dtype != NPU_DTYPE_INT32);
+        matrix_flags[6] = command_opcode == 6'd14;
+        matrix_flags[7] = command_opcode == 6'd12;
         desc_flat_o[16'h5c * 8 +: 32] = matrix_flags;
         desc_flat_o[16'h60 * 8 +: 32] =
           storage_bytes(matrix_k, src_dtype);
@@ -517,7 +519,7 @@ module npu_inline_desc_decode (
           desc_flat_o[16'hb1 * 8 +: 8] =
             {3'd0, payload[4:0]};
         end
-        if (command_opcode == 5'd13) begin
+        if (command_opcode == 6'd14) begin
           desc_flat_o[192 +: 64] = lref14_addr(payload[51:38]);
           valid_o = valid_o && (dst_dtype == NPU_DTYPE_INT32) &&
                     (payload[37:26] == 12'd0) &&
@@ -527,7 +529,7 @@ module npu_inline_desc_decode (
                     ((src_dtype == NPU_DTYPE_INT4) ||
                      (src_dtype == NPU_DTYPE_INT8) ||
                      (src_dtype == NPU_DTYPE_INT16));
-        end else if (command_opcode == 5'd14) begin
+        end else if (command_opcode == 6'd15) begin
           valid_o = valid_o && (dst_dtype == NPU_DTYPE_INT32) &&
                     (payload[79:66] == 14'd0) &&
                     (payload[65:52] == 14'd0) &&
@@ -565,7 +567,7 @@ module npu_inline_desc_decode (
         end
       end
 
-      5'd12: begin
+      6'd13: begin
         batch_count = {26'd0, payload[37:32]} + 1'b1;
         matrix_m = {26'd0, payload[31:26]} + 1'b1;
         matrix_n = {26'd0, payload[25:20]} + 1'b1;
@@ -636,8 +638,8 @@ module npu_inline_desc_decode (
         end
       end
 
-      5'd15, 5'd16, 5'd17, 5'd18, 5'd19,
-      5'd20, 5'd21, 5'd22, 5'd23, 5'd24: begin
+      6'd16, 6'd17, 6'd18, 6'd19, 6'd20,
+      6'd21, 6'd22, 6'd23, 6'd24, 6'd25: begin
         rows = {27'd0, payload[15:11]} + 1'b1;
         length = {27'd0, payload[10:6]} + 1'b1;
         src_dtype = header_dtype;
@@ -647,12 +649,12 @@ module npu_inline_desc_decode (
         broadcast_mode = {
           2'd0, payload[1:0], payload[3:2], payload[5:4]
         };
-        if (command_opcode == 5'd17) begin
+        if (command_opcode == 6'd18) begin
           dst_dtype = NPU_DTYPE_INT32;
-        end else if (command_opcode == 5'd18) begin
+        end else if (command_opcode == 6'd19) begin
           dst_dtype = NPU_DTYPE_INT32;
           src2_dtype = NPU_DTYPE_INT32;
-        end else if (command_opcode == 5'd21) begin
+        end else if (command_opcode == 6'd22) begin
           dst_dtype = NPU_DTYPE_INT8;
         end
         numeric_cfg[1:0] = src_dtype;
@@ -686,12 +688,12 @@ module npu_inline_desc_decode (
         desc_flat_o[16'h78 * 8 +: 8] = broadcast_mode;
         desc_flat_o[16'h7a * 8 +: 8] = 8'd0;
         valid_o = valid_o &&
-          (((command_opcode == 5'd18) ||
-            (command_opcode == 5'd21) ||
-            (command_opcode == 5'd22) ||
-            (command_opcode == 5'd23)) ||
+          (((command_opcode == 6'd19) ||
+            (command_opcode == 6'd22) ||
+            (command_opcode == 6'd23) ||
+            (command_opcode == 6'd24)) ||
            (payload[47:32] == 16'd0));
-        if (command_opcode == 5'd21) begin
+        if (command_opcode == 6'd22) begin
           desc_flat_o[192 +: 64] = 64'd0;
           desc_flat_o[16'h79 * 8 +: 8] =
             {5'd0, payload[47:45]};
@@ -699,7 +701,7 @@ module npu_inline_desc_decode (
                     (payload[47:45] <= 3'd5) &&
                     (payload[1:0] == 2'd0);
         end
-        if (command_opcode == 5'd22) begin
+        if (command_opcode == 6'd23) begin
           vector_flags[0] = 1'b1;
           desc_flat_o[192 +: 64] = 64'd0;
           desc_flat_o[320 +: 64] = lref16_addr(payload[47:32]);
@@ -708,7 +710,7 @@ module npu_inline_desc_decode (
           desc_flat_o[16'h94 * 8 +: 32] = length;
           valid_o = valid_o && (payload[1:0] == 2'd0);
         end
-        if (command_opcode == 5'd23) begin
+        if (command_opcode == 6'd24) begin
           desc_flat_o[128 +: 64] = 64'd0;
           desc_flat_o[192 +: 64] = 64'd0;
           desc_flat_o[16'h70 * 8 +: 32] =
@@ -720,7 +722,7 @@ module npu_inline_desc_decode (
                     ($signed(payload[63:48]) <=
                      $signed(payload[47:32]));
         end
-        if (command_opcode == 5'd24) begin
+        if (command_opcode == 6'd25) begin
           desc_flat_o[128 +: 64] = 64'd0;
           desc_flat_o[192 +: 64] = 64'd0;
           valid_o = valid_o && (payload[63:32] == 32'd0) &&
@@ -729,7 +731,7 @@ module npu_inline_desc_decode (
         desc_flat_o[16'h4c * 8 +: 32] = vector_flags;
       end
 
-      5'd25, 5'd26, 5'd27, 5'd29, 5'd31: begin
+      6'd26, 6'd27, 6'd28, 6'd30, 6'd32: begin
         rows = {27'd0, payload[31:27]} + 1'b1;
         length = {24'd0, payload[26:19]} + 1'b1;
         src_dtype = header_dtype;
@@ -748,7 +750,7 @@ module npu_inline_desc_decode (
           storage_bytes(length, dst_dtype);
 
         unique case (command_opcode)
-          5'd25: begin
+          6'd26: begin
             function_mode = {30'd0, payload[18:17]};
             dst_dtype = payload[8:7];
             numeric_cfg[1:0] = src_dtype;
@@ -784,7 +786,7 @@ module npu_inline_desc_decode (
                       (payload[63:48] == 16'd0);
           end
 
-          5'd26: begin
+          6'd27: begin
             function_mode = 32'd4;
             mask_mode = {30'd0, payload[18:17]};
             dst_dtype = payload[7:6];
@@ -817,7 +819,7 @@ module npu_inline_desc_decode (
               (mask_mode != 32'd2);
           end
 
-          5'd27: begin
+          6'd28: begin
             function_mode = payload[18] ? 32'd6 : 32'd5;
             dst_dtype = payload[3:2];
             beta_addr =
@@ -850,7 +852,7 @@ module npu_inline_desc_decode (
                       (beta_addr[63:20] == 44'd0);
           end
 
-          5'd29: begin
+          6'd30: begin
             function_mode = 32'd7 + {30'd0, payload[18:17]};
             dst_dtype = NPU_DTYPE_INT32;
             numeric_cfg[1:0] = src_dtype;
@@ -889,7 +891,7 @@ module npu_inline_desc_decode (
         desc_flat_o[448 +: 32] = numeric_cfg;
         desc_flat_o[16'h4c * 8 +: 32] = function_mode;
         desc_flat_o[16'h5c * 8 +: 32] =
-          command_opcode == 5'd29
+          command_opcode == 6'd30
             ? 32'd4 : storage_bytes(length, dst_dtype);
         desc_flat_o[16'h6c * 8 +: 32] = mask_mode;
       end

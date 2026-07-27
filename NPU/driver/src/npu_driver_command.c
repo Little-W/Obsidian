@@ -105,6 +105,42 @@ int npu_drv_lref_encode(uint32_t byte_address,
     return NPU_DRV_OK;
 }
 
+int npu_drv_dma_gather_nd_payload_encode(
+    uint32_t source_aref,
+    uint16_t index_ref,
+    uint16_t destination_ref,
+    uint16_t block_count,
+    uint16_t block_bytes,
+    npu_drv_payload80_t *payload)
+{
+    uint8_t source_base =
+        (uint8_t)((source_aref >> 24u) & UINT32_C(0x7));
+
+    if (payload == (npu_drv_payload80_t *)0 ||
+        (source_aref & UINT32_C(0xf0000000)) != 0u ||
+        (source_aref & UINT32_C(0x08000000)) == 0u ||
+        source_base >= 6u ||
+        block_count == 0u || block_count > 256u ||
+        block_bytes == 0u || block_bytes > 4096u) {
+        return NPU_DRV_EINVAL;
+    }
+    memset(payload, 0, sizeof(*payload));
+    if (npu_drv_payload_field_set(
+            payload, 52u, 28u, source_aref) != NPU_DRV_OK ||
+        npu_drv_payload_field_set(
+            payload, 36u, 16u, index_ref) != NPU_DRV_OK ||
+        npu_drv_payload_field_set(
+            payload, 20u, 16u, destination_ref) != NPU_DRV_OK ||
+        npu_drv_payload_field_set(
+            payload, 12u, 8u, block_count - 1u) != NPU_DRV_OK ||
+        npu_drv_payload_field_set(
+            payload, 0u, 12u, block_bytes - 1u) != NPU_DRV_OK) {
+        memset(payload, 0, sizeof(*payload));
+        return NPU_DRV_EINVAL;
+    }
+    return NPU_DRV_OK;
+}
+
 static int npu_drv_matrix_type_fields(npu_drv_dtype_t a_dtype,
                                       npu_drv_dtype_t b_dtype,
                                       npu_drv_dtype_t c_dtype,
@@ -274,7 +310,7 @@ int npu_drv_cmd128_encode(const npu_drv_cmd_fields_t *fields,
         ((uint64_t)wait1 << 32u) |
         ((uint64_t)wait0 << 40u) |
         ((uint64_t)fields->command_id << 48u) |
-        ((uint64_t)fields->opcode << 59u);
+        ((uint64_t)fields->opcode << 58u);
     return NPU_DRV_OK;
 }
 
@@ -302,10 +338,10 @@ int npu_drv_cmd128_decode(const npu_drv_cmd128_t *command,
     wait1 = (uint8_t)((command->hi >> 32u) & UINT64_C(0xff));
     wait0 = (uint8_t)((command->hi >> 40u) & UINT64_C(0xff));
     fields->command_id =
-        (uint16_t)((command->hi >> 48u) & UINT64_C(0x7ff));
+        (uint16_t)((command->hi >> 48u) & UINT64_C(0x3ff));
     fields->opcode =
         (npu_drv_opcode_t)(
-            (command->hi >> 59u) & UINT64_C(0x1f));
+            (command->hi >> 58u) & UINT64_C(0x3f));
     if (fields->opcode > NPU_DRV_OPCODE_COMPLEX_ADD_RESCALE ||
         npu_drv_event_decode(wait0, &fields->wait_event[0]) != NPU_DRV_OK ||
         npu_drv_event_decode(wait1, &fields->wait_event[1]) != NPU_DRV_OK ||

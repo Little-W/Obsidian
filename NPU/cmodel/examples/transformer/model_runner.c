@@ -152,7 +152,7 @@ static int initialize_device_images(uint32_t sample)
         keras_transformer_model_config.command_format ==
             (const char *)0 ||
         strcmp(keras_transformer_model_config.command_format,
-               "cmd128-inline-v2") != 0 ||
+               "cmd128") != 0 ||
         keras_transformer_model_config.commands !=
             keras_transformer_model_commands ||
         keras_transformer_model_config.command_count !=

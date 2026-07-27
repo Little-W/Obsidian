@@ -1512,7 +1512,7 @@ int test_frontend(void)
     }
     TEST_CHECK_STATUS(npu_model_query(&test_model, 6u, 0, &result),
                       NPU_STATUS_SUCCESS);
-    TEST_CHECK(result.user_tag == 0x12345678u);
+    TEST_CHECK(result.user_tag == 6u);
     TEST_CHECK(result.end_cycle > result.start_cycle);
     TEST_CHECK_STATUS(npu_model_query(&test_model, 6u, 1, &result),
                       NPU_STATUS_SUCCESS);

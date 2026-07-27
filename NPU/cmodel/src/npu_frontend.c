@@ -25,6 +25,35 @@ static uint32_t npu_frontend_free_tasks(const npu_model_t *model)
     return free_count;
 }
 
+static int npu_frontend_descriptor_opcode_valid(
+    npu_engine_t engine,
+    uint8_t opcode)
+{
+    if (engine == NPU_ENGINE_CONTROL) {
+        return opcode <= NPU_CTRL_GLOBAL_FENCE;
+    }
+    if (engine == NPU_ENGINE_DMA) {
+        return opcode >= NPU_DMA_COPY_1D &&
+               opcode <= NPU_DMA_SPLIT;
+    }
+    if (engine == NPU_ENGINE_MATRIX) {
+        return opcode >= NPU_MATRIX_GEMM &&
+               opcode <= NPU_MATRIX_GEMM_ZERO;
+    }
+    if (engine == NPU_ENGINE_VECTOR) {
+        return opcode >= NPU_VECTOR_ADD &&
+               opcode <= NPU_VECTOR_RELU;
+    }
+    if (engine == NPU_ENGINE_COMPLEX) {
+        return opcode == NPU_COMPLEX_ACT ||
+               opcode == NPU_COMPLEX_SOFTMAX ||
+               opcode == NPU_COMPLEX_NORM ||
+               opcode == NPU_COMPLEX_STAT ||
+               opcode == NPU_COMPLEX_ADD_RESCALE;
+    }
+    return 0;
+}
+
 static uint64_t npu_frontend_response(uint16_t command_id,
                                       npu_status_t status,
                                       uint32_t free_count)
@@ -45,7 +74,7 @@ static uint16_t npu_frontend_command_id(uint64_t low_beat,
         return (uint16_t)((low_beat >> 48u) & 0x0fffu);
     }
     (void)low_beat;
-    return (uint16_t)((high_beat >> 48u) & 0x07ffu);
+    return (uint16_t)((high_beat >> 48u) & 0x03ffu);
 }
 
 npu_status_t npu_model_submit_wire(npu_model_t *model,
@@ -84,6 +113,10 @@ npu_status_t npu_model_submit_wire(npu_model_t *model,
             low_beat, high_beat, &command);
         if (status != NPU_STATUS_SUCCESS) {
             return status;
+        }
+        if (!npu_frontend_descriptor_opcode_valid(
+                command.engine, command.opcode)) {
+            return NPU_STATUS_ILLEGAL_OPCODE;
         }
         status = npu_wire_validate_cmd_address(
             &command, &limits, &meta);
