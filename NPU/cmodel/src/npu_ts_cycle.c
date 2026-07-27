@@ -59,13 +59,6 @@ static uint16_t ts_event_pack(npu_event_ref_t event)
     return (uint16_t)(((uint16_t)event.generation << 8) | event.id);
 }
 
-static int ts_event_raw_valid(uint16_t raw)
-{
-    uint8_t id = (uint8_t)(raw & 0xffu);
-
-    return id != NPU_EVENT_NONE_ID || raw == NPU_TS_EVENT_NONE;
-}
-
 static int ts_event_terminal(uint8_t state)
 {
     return state == NPU_TS_EVENT_SUCCESS ||
@@ -1737,23 +1730,20 @@ static void ts_ctl_accept(npu_ts_cycle_t *model,
         return;
     }
     if (input->op == NPU_TS_CTL_WAIT) {
-        uint16_t raw = (uint16_t)(input->rs1 & 0x0fffu);
-        uint8_t id = (uint8_t)(raw & 0xffu);
-        uint8_t generation = (uint8_t)(raw >> 8);
+        uint8_t id = (uint8_t)(input->rs1 & 0xffu);
+        uint16_t resolved;
         npu_ts_event_entry_t *event;
 
-        if ((input->rs1 >> 12) != 0u ||
+        if ((input->rs1 >> 8) != 0u ||
             (input->rs2 >> 32) != 0u ||
-            !ts_event_raw_valid(raw) ||
-            raw == NPU_TS_EVENT_NONE ||
+            id == NPU_EVENT_NONE_ID ||
             id >= NPU_TS_EVENT_COUNT) {
             ctl->rsp_data = NPU_STATUS_BAD_DESC;
             ctl->rsp_valid = 1u;
             return;
         }
         event = &model->event[id];
-        if (event->state == NPU_TS_EVENT_FREE ||
-            event->generation != generation) {
+        if (event->state == NPU_TS_EVENT_FREE) {
             ctl->rsp_data = NPU_STATUS_NOT_FOUND;
             ctl->rsp_valid = 1u;
             return;
@@ -1768,8 +1758,10 @@ static void ts_ctl_accept(npu_ts_cycle_t *model,
             ctl->rsp_valid = 1u;
             return;
         }
+        resolved = (uint16_t)id |
+                   ((uint16_t)(event->generation & 0x0fu) << 8);
         ctl->active = 1u;
-        ctl->wait_event = raw;
+        ctl->wait_event = resolved;
         if (event->waiter_count != UINT8_MAX) {
             event->waiter_count++;
             ctl->waiter_registered = 1u;

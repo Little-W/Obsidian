@@ -1569,8 +1569,28 @@ static int tc_test_internal_event_rearm(void)
     TEST_CHECK(model.event[5u].state == NPU_TS_EVENT_FREE);
     TEST_CHECK(model.event[5u].generation == 1u);
 
+    /*
+     * The software control interface supplies an 8-bit Event ID.  TS
+     * captures the event's current generation when WAIT is accepted.
+     */
+    model.event[5u].state = NPU_TS_EVENT_RESERVED;
+    model.event[5u].producer_task_id = 77u;
     tc_idle_inputs(&inputs);
+    inputs.ctl.valid = 1u;
+    inputs.ctl.op = NPU_TS_CTL_WAIT;
+    inputs.ctl.rs1 = 5u;
+    inputs.ctl.rs2 = 10u;
     tc_step(&model, &inputs, &outputs);
+    TEST_CHECK(outputs.ctl.ready == 1u);
+    TEST_CHECK(model.ctl.active == 1u);
+    TEST_CHECK(model.ctl.wait_event == event1);
+    TEST_CHECK(model.event[5u].waiter_count == 1u);
+
+    tc_idle_inputs(&inputs);
+    inputs.ctl.cancel = 1u;
+    tc_step(&model, &inputs, &outputs);
+    TEST_CHECK(model.ctl.active == 0u);
+    TEST_CHECK(model.event[5u].waiter_count == 0u);
     return 0;
 }
 

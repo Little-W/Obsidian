@@ -118,6 +118,9 @@ module tb_npu_matrix_engine;
       if (done_status !== expected_status)
         $fatal(1, "matrix status %02x expected %02x",
                done_status, expected_status);
+      if (done_fault_addr !== 48'd0)
+        $fatal(1, "matrix unexpected fault address %012x",
+               done_fault_addr);
     end
   endtask
 
@@ -132,56 +135,56 @@ module tb_npu_matrix_engine;
     repeat (4) @(posedge clk);
     reset_n = 1'b1;
 
-    l1.mem[16'h100] = 8'd1;
-    l1.mem[16'h101] = 8'd2;
-    l1.mem[16'h102] = 8'd3;
-    l1.mem[16'h103] = 8'd4;
-    l1.mem[16'h120] = 8'd5;
-    l1.mem[16'h121] = 8'd6;
-    l1.mem[16'h122] = 8'd7;
-    l1.mem[16'h123] = 8'd8;
+    l1.mem['h100] = 8'd1;
+    l1.mem['h101] = 8'd2;
+    l1.mem['h102] = 8'd3;
+    l1.mem['h103] = 8'd4;
+    l1.mem['h120] = 8'd5;
+    l1.mem['h121] = 8'd6;
+    l1.mem['h122] = 8'd7;
+    l1.mem['h123] = 8'd8;
 
-    put8(16'h00, 8'h01);
-    put8(16'h01, 8'h02);
-    put16(16'h02, 16'd256);
-    put64(16'h08, 64'h100);
-    put64(16'h10, 64'h120);
-    put64(16'h20, 64'h200);
-    put32(16'h38, 32'h0000_0085);
-    put32(16'h40, 32'd2);
-    put32(16'h44, 32'd2);
-    put32(16'h48, 32'd2);
-    put32(16'h4c, 32'd1);
-    put32(16'h50, 32'd2);
-    put32(16'h54, 32'd2);
-    put32(16'h58, 32'd2);
-    put32(16'h5c, 32'h0000_0080);
-    put32(16'h60, 32'd2);
-    put32(16'h64, 32'd2);
-    put32(16'h68, 32'd8);
-    put8(16'h90, 8'd0);
-    put8(16'h91, 8'd0);
-    put8(16'h92, 8'd4);
-    put8(16'h93, 8'd0);
-    put8(16'h94, 8'd0);
-    put8(16'h95, 8'd0);
+    put8('h00, 8'h01);
+    put8('h01, 8'h02);
+    put16('h02, 16'd256);
+    put64('h08, 64'h100);
+    put64('h10, 64'h120);
+    put64('h20, 64'h200);
+    put32('h38, 32'h0000_0085);
+    put32('h40, 32'd2);
+    put32('h44, 32'd2);
+    put32('h48, 32'd2);
+    put32('h4c, 32'd1);
+    put32('h50, 32'd2);
+    put32('h54, 32'd2);
+    put32('h58, 32'd2);
+    put32('h5c, 32'h0000_0080);
+    put32('h60, 32'd2);
+    put32('h64, 32'd2);
+    put32('h68, 32'd8);
+    put8('h90, 8'd0);
+    put8('h91, 8'd0);
+    put8('h92, 8'd4);
+    put8('h93, 8'd0);
+    put8('h94, 8'd0);
+    put8('h95, 8'd0);
 
     submit_and_expect(NPU_STATUS_SUCCESS);
     if (done_progress != 4)
       $fatal(1, "matrix progress %0d expected 4", done_progress);
-    if (read_s32(16'h200) != 19 ||
-        read_s32(16'h204) != 22 ||
-        read_s32(16'h208) != 43 ||
-        read_s32(16'h20c) != 50)
+    if (read_s32('h200) != 19 ||
+        read_s32('h204) != 22 ||
+        read_s32('h208) != 43 ||
+        read_s32('h20c) != 50)
       $fatal(1, "matrix GEMM mismatch: %0d %0d %0d %0d",
-             read_s32(16'h200), read_s32(16'h204),
-             read_s32(16'h208), read_s32(16'h20c));
+             read_s32('h200), read_s32('h204),
+             read_s32('h208), read_s32('h20c));
 
-    desc[16'h38 * 8 + 8 +: 2] = 2'd1;
+    desc['h38 * 8 + 8 +: 2] = 2'd1;
     submit_and_expect(NPU_STATUS_BAD_DESC);
 
-    desc[16'h38 * 8 + 8 +: 2] = 2'd0;
-    put8(16'h90, 8'd7);
+    desc['h38 * 8 + 8 +: 2] = 2'd0;
+    put8('h90, 8'd7);
     submit_and_expect(NPU_STATUS_BAD_DESC);
 
     l1.mem['h300] = 8'hf8;

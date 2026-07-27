@@ -8,21 +8,9 @@ module tb_scheduler_ctl_smoke;
   logic cfe_cmd_ready;
   logic [127:0] cfe_cmd;
 
-  logic df_fetch_valid;
-  logic df_fetch_ready;
-  logic [47:0] df_fetch_desc_addr;
-  logic [11:0] df_fetch_command_id;
-  logic [3:0] df_fetch_engine;
-  logic df_fetch_crc_enable;
-  logic df_fetch_rsp_valid;
-  logic [11:0] df_fetch_rsp_command_id;
-  logic [7:0] df_fetch_rsp_status;
-  logic [47:0] df_fetch_rsp_fault_addr;
-  logic [2047:0] df_fetch_rsp_desc_flat;
   logic cmd_id_lookup_ready;
   logic cmd_id_lookup_rsp_valid;
   logic cmd_id_busy;
-  logic df_fetch_rsp_ready;
 
   logic dma_task_valid;
   logic [7:0] dma_task_opcode;
@@ -148,19 +136,6 @@ module tb_scheduler_ctl_smoke;
     .cmd_id_lookup_rsp_valid_o(cmd_id_lookup_rsp_valid),
     .cmd_id_busy_o(cmd_id_busy),
 
-    .df_fetch_valid_o(df_fetch_valid),
-    .df_fetch_ready_i(df_fetch_ready),
-    .df_fetch_desc_addr_o(df_fetch_desc_addr),
-    .df_fetch_command_id_o(df_fetch_command_id),
-    .df_fetch_engine_o(df_fetch_engine),
-    .df_fetch_crc_enable_o(df_fetch_crc_enable),
-    .df_fetch_rsp_valid_i(df_fetch_rsp_valid),
-    .df_fetch_rsp_ready_o(df_fetch_rsp_ready),
-    .df_fetch_rsp_command_id_i(df_fetch_rsp_command_id),
-    .df_fetch_rsp_status_i(df_fetch_rsp_status),
-    .df_fetch_rsp_fault_addr_i(df_fetch_rsp_fault_addr),
-    .df_fetch_rsp_desc_flat_i(df_fetch_rsp_desc_flat),
-
     .dma_task_valid_o(dma_task_valid),
     .dma_task_ready_i(1'b1),
     .dma_task_opcode_o(dma_task_opcode),
@@ -260,29 +235,6 @@ module tb_scheduler_ctl_smoke;
 
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
-      df_fetch_rsp_valid        <= 1'b0;
-      df_fetch_rsp_command_id   <= 12'd0;
-      df_fetch_rsp_status       <= NPU_STATUS_SUCCESS;
-      df_fetch_rsp_fault_addr   <= 48'd0;
-      df_fetch_rsp_desc_flat    <= 2048'd0;
-    end else begin
-      df_fetch_rsp_valid <= 1'b0;
-      if (df_fetch_valid && df_fetch_ready) begin
-        $fatal(
-          1,
-          "CMD128 task requested a descriptor fetch: addr=%h id=%h engine=%h crc=%b",
-          df_fetch_desc_addr, df_fetch_command_id,
-          df_fetch_engine, df_fetch_crc_enable
-        );
-      end
-      if (df_fetch_rsp_valid && !df_fetch_rsp_ready) begin
-        $fatal(1, "scheduler did not accept a descriptor response");
-      end
-    end
-  end
-
-  always_ff @(posedge clk or negedge reset_n) begin
-    if (!reset_n) begin
       completion_count <= 0;
     end else if (completion_valid) begin
       completion_count <= completion_count + 1;
@@ -296,7 +248,13 @@ module tb_scheduler_ctl_smoke;
                 && completion_opcode == NPU_OPCODE_DMA_COPY_1D)
                || (completion_command_id == 12'h002
                    && completion_engine == NPU_ENGINE_MATRIX
-                   && completion_opcode == NPU_OPCODE_GEMM))) begin
+                   && completion_opcode == NPU_OPCODE_GEMM)
+               || (completion_command_id == 12'h003
+                   && completion_engine == NPU_ENGINE_CONTROL
+                   && completion_opcode == NPU_OPCODE_EVENT_REARM)
+               || (completion_command_id == 12'h004
+                   && completion_engine == NPU_ENGINE_CONTROL
+                   && completion_opcode == NPU_OPCODE_EVENT_SIGNAL))) begin
         $fatal(1, "completion metadata is incorrect");
       end
       if ((completion_command_id == 12'h001)
@@ -448,7 +406,6 @@ module tb_scheduler_ctl_smoke;
     reset_n                = 1'b0;
     cfe_cmd_valid          = 1'b0;
     cfe_cmd                = 128'd0;
-    df_fetch_ready         = 1'b1;
     dma_done_valid         = 1'b0;
     dma_done_command_id    = 12'd0;
     dma_done_status        = NPU_STATUS_SUCCESS;
@@ -543,8 +500,26 @@ module tb_scheduler_ctl_smoke;
       $fatal(1, "reserved QUERY selector was not rejected");
     end
 
+    submit_command(make_command(
+      6'd2, 10'h003, NPU_DTYPE_INT8, 80'd0, 8'h00));
+    wait ((completion_count == 3)
+          && (u_scheduler.event_state_q[0] == NPU_EVENT_FREE)
+          && (u_scheduler.event_generation_q[0] == 4'd1));
+
+    submit_command(make_command(
+      6'd1, 10'h004, NPU_DTYPE_INT8, 80'd0, 8'h00));
+    wait ((completion_count == 4)
+          && (u_scheduler.event_state_q[0] == NPU_EVENT_SUCCESS)
+          && (u_scheduler.event_generation_q[0] == 4'd1));
+
+    ctl_request(NPU_CTL_WAIT, 64'h000, 64'd10, response);
+    if ((response[2:0] != NPU_EVENT_SUCCESS)
+        || (response[19:8] != 12'h004)) begin
+      $fatal(1, "WAIT did not resolve the current event generation");
+    end
+
     $display(
-      "PASS: scheduler concurrency, WAIT, FENCE, QUERY and ACK signature=%0b",
+      "PASS: scheduler WAIT by event ID, FENCE, QUERY and ACK signature=%0b",
       ^{
         cmd_id_lookup_ready, cmd_id_lookup_rsp_valid, cmd_id_busy,
         dma_task_desc_flat, matrix_task_desc_flat,

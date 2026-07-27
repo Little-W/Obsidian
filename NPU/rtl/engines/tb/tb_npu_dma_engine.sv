@@ -149,6 +149,9 @@ module tb_npu_dma_engine;
       if (done_status !== expected_status)
         $fatal(1, "dma status %02x expected %02x",
                done_status, expected_status);
+      if (done_fault_addr !== 48'd0)
+        $fatal(1, "dma unexpected fault address %012x",
+               done_fault_addr);
     end
   endtask
 
@@ -163,37 +166,37 @@ module tb_npu_dma_engine;
     repeat (4) @(posedge clk);
     reset_n = 1'b1;
 
-    l1.mem[16'h100] = 8'h81;
-    l1.mem[16'h101] = 8'h02;
-    l1.mem[16'h102] = 8'h7f;
-    l1.mem[16'h103] = 8'h55;
+    l1.mem['h100] = 8'h81;
+    l1.mem['h101] = 8'h02;
+    l1.mem['h102] = 8'h7f;
+    l1.mem['h103] = 8'h55;
 
-    put8(16'h00, 8'h01);
-    put8(16'h01, 8'h01);
-    put16(16'h02, 16'd256);
-    put64(16'h08, 64'h100);
-    put64(16'h20, 64'h200);
-    put32(16'h38, 32'h0000_0041);
-    put8(16'h40, 8'd1);
-    put8(16'h41, 8'd0);
-    put8(16'h42, 8'd0);
-    put8(16'h43, 8'd0);
-    put8(16'h44, 8'd0);
-    put8(16'h45, 8'd1);
-    put32(16'h48, 32'd4);
-    put64(16'h98, 64'd4);
-    put64(16'ha0, 64'd4);
+    put8('h00, 8'h01);
+    put8('h01, 8'h01);
+    put16('h02, 16'd256);
+    put64('h08, 64'h100);
+    put64('h20, 64'h200);
+    put32('h38, 32'h0000_0041);
+    put8('h40, 8'd1);
+    put8('h41, 8'd0);
+    put8('h42, 8'd0);
+    put8('h43, 8'd0);
+    put8('h44, 8'd0);
+    put8('h45, 8'd1);
+    put32('h48, 32'd4);
+    put64('h98, 64'd4);
+    put64('ha0, 64'd4);
 
     submit_and_expect(NPU_STATUS_SUCCESS);
     if (done_progress != 4)
       $fatal(1, "DMA progress %0d expected 4", done_progress);
-    if (l1.mem[16'h200] != 8'h81 ||
-        l1.mem[16'h201] != 8'h02 ||
-        l1.mem[16'h202] != 8'h7f ||
-        l1.mem[16'h203] != 8'h55)
+    if (l1.mem['h200] != 8'h81 ||
+        l1.mem['h201] != 8'h02 ||
+        l1.mem['h202] != 8'h7f ||
+        l1.mem['h203] != 8'h55)
       $fatal(1, "DMA COPY_1D data mismatch");
 
-    desc[16'h38 * 8 + 8 +: 2] = 2'd1;
+    desc['h38 * 8 + 8 +: 2] = 2'd1;
     submit_and_expect(NPU_STATUS_BAD_DESC);
 
     l1.mem['h300] = 8'hf8;

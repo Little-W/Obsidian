@@ -67,7 +67,6 @@ package npu_rtl_pkg;
 
   typedef enum logic [3:0] {
     NPU_TASK_FREE        = 4'd0,
-    NPU_TASK_FETCH_DESC  = 4'd1,
     NPU_TASK_WAIT_EVENT  = 4'd2,
     NPU_TASK_READY       = 4'd3,
     NPU_TASK_RUNNING     = 4'd4,

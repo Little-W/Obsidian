@@ -20,13 +20,15 @@ module npu_single_beat_memory_model #(
   logic pending_q;
   logic [63:0] response_data_q;
   logic [2:0] response_status_q;
+  localparam integer MEM_ADDR_W = $clog2(MEM_BYTES);
+  logic [MEM_ADDR_W-1:0] address_index;
   integer lane;
-  integer address_value;
 
   assign req_ready_o = !pending_q;
   assign rsp_valid_o = pending_q;
   assign rsp_rdata_o = response_data_q;
   assign rsp_status_o = response_status_q;
+  assign address_index = req_addr_i[MEM_ADDR_W-1:0];
 
   always_ff @(posedge clk_i or negedge reset_n) begin
     if (!reset_n) begin
@@ -38,19 +40,17 @@ module npu_single_beat_memory_model #(
         pending_q <= 1'b0;
 
       if (req_valid_i && req_ready_o) begin
-        address_value = req_addr_i;
         pending_q <= 1'b1;
         response_data_q <= 64'd0;
-        if (address_value < 0 ||
-            address_value + 7 >= MEM_BYTES) begin
+        if (req_addr_i > ADDR_W'(MEM_BYTES - 8)) begin
           response_status_q <= 3'd2;
         end else begin
           response_status_q <= 3'd0;
           for (lane = 0; lane < 8; lane = lane + 1) begin
             response_data_q[lane * 8 +: 8] <=
-              mem[address_value + lane];
+              mem[int'(address_index) + lane];
             if (req_write_i && req_wstrb_i[lane])
-              mem[address_value + lane] <=
+              mem[int'(address_index) + lane] <=
                 req_wdata_i[lane * 8 +: 8];
           end
         end

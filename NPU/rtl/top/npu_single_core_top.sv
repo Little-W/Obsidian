@@ -171,31 +171,6 @@ module npu_single_core_top #(
     logic cfe_quiesce;
     logic ts_quiesce;
 
-    logic df_fetch_valid;
-    logic df_fetch_ready;
-    logic [47:0] df_fetch_desc_addr;
-    logic [11:0] df_fetch_command_id;
-    logic [3:0] df_fetch_engine;
-    logic df_fetch_crc_enable;
-    logic df_fetch_rsp_valid;
-    logic df_fetch_rsp_ready;
-    logic [11:0] df_fetch_rsp_command_id;
-    logic [7:0] df_fetch_rsp_status;
-    logic [47:0] df_fetch_rsp_fault_addr;
-    logic [2047:0] df_fetch_rsp_desc_flat;
-    logic dfu_idle;
-
-    logic df_mem_req_valid;
-    logic df_mem_req_ready;
-    logic df_mem_req_write;
-    logic [47:0] df_mem_req_addr;
-    logic [63:0] df_mem_req_wdata;
-    logic [7:0] df_mem_req_wstrb;
-    logic df_mem_rsp_valid;
-    logic df_mem_rsp_ready;
-    logic [63:0] df_mem_rsp_rdata;
-    logic [2:0] df_mem_rsp_status;
-
     logic dma_task_valid;
     logic dma_task_ready;
     logic [7:0] dma_task_opcode;
@@ -313,18 +288,6 @@ module npu_single_core_top #(
     logic [63:0] dma_mem_rsp_rdata;
     logic [2:0] dma_mem_rsp_status;
 
-    logic mif_arb_req_valid;
-    logic mif_arb_req_ready;
-    logic mif_arb_req_write;
-    logic [47:0] mif_arb_req_addr;
-    logic [63:0] mif_arb_req_wdata;
-    logic [7:0] mif_arb_req_wstrb;
-    logic mif_arb_rsp_valid;
-    logic mif_arb_rsp_ready;
-    logic [63:0] mif_arb_rsp_rdata;
-    logic [2:0] mif_arb_rsp_status;
-    logic mif_arb_idle;
-
     logic tbu_req_valid;
     logic tbu_req_ready;
     logic tbu_req_write;
@@ -425,8 +388,8 @@ module npu_single_core_top #(
     assign core_progress =
         cmd_accepted ||
         (completion_valid && completion_ready) ||
-        (mif_arb_req_valid && mif_arb_req_ready) ||
-        (mif_arb_rsp_valid && mif_arb_rsp_ready) ||
+        (dma_mem_req_valid && dma_mem_req_ready) ||
+        (dma_mem_rsp_valid && dma_mem_rsp_ready) ||
         (|(l1_req_valid & l1_req_ready));
 
     always_comb begin
@@ -462,7 +425,6 @@ module npu_single_core_top #(
         param_lock,
         single_step_pulse,
         tbu_idle,
-        mif_arb_idle,
         task_occupancy,
         task_query_valid,
         task_query_command_id,
@@ -673,18 +635,6 @@ module npu_single_core_top #(
         .cmd_id_lookup_id_i(lookup_id),
         .cmd_id_lookup_rsp_valid_o(lookup_rsp_valid),
         .cmd_id_busy_o(lookup_busy),
-        .df_fetch_valid_o(df_fetch_valid),
-        .df_fetch_ready_i(df_fetch_ready),
-        .df_fetch_desc_addr_o(df_fetch_desc_addr),
-        .df_fetch_command_id_o(df_fetch_command_id),
-        .df_fetch_engine_o(df_fetch_engine),
-        .df_fetch_crc_enable_o(df_fetch_crc_enable),
-        .df_fetch_rsp_valid_i(df_fetch_rsp_valid),
-        .df_fetch_rsp_ready_o(df_fetch_rsp_ready),
-        .df_fetch_rsp_command_id_i(df_fetch_rsp_command_id),
-        .df_fetch_rsp_status_i(df_fetch_rsp_status),
-        .df_fetch_rsp_fault_addr_i(df_fetch_rsp_fault_addr),
-        .df_fetch_rsp_desc_flat_i(df_fetch_rsp_desc_flat),
         .dma_task_valid_o(dma_task_valid),
         .dma_task_ready_i(dma_task_ready),
         .dma_task_opcode_o(dma_task_opcode),
@@ -776,35 +726,6 @@ module npu_single_core_top #(
     assign task_ack_valid = 1'b0;
     assign task_ack_command_id = 12'd0;
 
-    npu_descriptor_fetch u_descriptor_fetch (
-        .clk_i(core_clk_i),
-        .reset_n(functional_reset_n),
-        .abort_i(|eng_abort),
-        .fetch_valid_i(df_fetch_valid),
-        .fetch_ready_o(df_fetch_ready),
-        .fetch_desc_addr_i(df_fetch_desc_addr),
-        .fetch_command_id_i(df_fetch_command_id),
-        .fetch_engine_i(df_fetch_engine),
-        .fetch_crc_enable_i(df_fetch_crc_enable),
-        .fetch_rsp_valid_o(df_fetch_rsp_valid),
-        .fetch_rsp_ready_i(df_fetch_rsp_ready),
-        .fetch_rsp_command_id_o(df_fetch_rsp_command_id),
-        .fetch_rsp_status_o(df_fetch_rsp_status),
-        .fetch_rsp_fault_addr_o(df_fetch_rsp_fault_addr),
-        .fetch_rsp_desc_flat_o(df_fetch_rsp_desc_flat),
-        .mem_req_valid_o(df_mem_req_valid),
-        .mem_req_ready_i(df_mem_req_ready),
-        .mem_req_write_o(df_mem_req_write),
-        .mem_req_addr_o(df_mem_req_addr),
-        .mem_req_wdata_o(df_mem_req_wdata),
-        .mem_req_wstrb_o(df_mem_req_wstrb),
-        .mem_rsp_valid_i(df_mem_rsp_valid),
-        .mem_rsp_ready_o(df_mem_rsp_ready),
-        .mem_rsp_rdata_i(df_mem_rsp_rdata),
-        .mem_rsp_status_i(df_mem_rsp_status),
-        .dfu_idle_o(dfu_idle)
-    );
-
     npu_lsc u_lsc (
         .clk_i(core_clk_i),
         .reset_n(crg_core_reset_n),
@@ -831,7 +752,7 @@ module npu_single_core_top #(
         }),
         .l1_idle_i(l1_idle),
         .l1_write_idle_i(l1_idle),
-        .mif_idle_i(mif_idle && mif_arb_idle && dfu_idle),
+        .mif_idle_i(mif_idle),
         .s_axi_idle_i(s_axi_idle),
         .soft_reset_req_i(soft_reset_req_i),
         .internal_soft_reset_done_i(internal_soft_reset_done_q),
@@ -1097,58 +1018,22 @@ module npu_single_core_top #(
         .l1_idle_o(l1_idle)
     );
 
-    npu_mif_arbiter u_mif_arbiter (
-        .clk_i(core_clk_i),
-        .reset_n(functional_reset_n),
-        .df_req_valid_i(df_mem_req_valid),
-        .df_req_ready_o(df_mem_req_ready),
-        .df_req_write_i(df_mem_req_write),
-        .df_req_addr_i(df_mem_req_addr),
-        .df_req_wdata_i(df_mem_req_wdata),
-        .df_req_wstrb_i(df_mem_req_wstrb),
-        .df_rsp_valid_o(df_mem_rsp_valid),
-        .df_rsp_ready_i(df_mem_rsp_ready),
-        .df_rsp_rdata_o(df_mem_rsp_rdata),
-        .df_rsp_status_o(df_mem_rsp_status),
-        .dma_req_valid_i(dma_mem_req_valid),
-        .dma_req_ready_o(dma_mem_req_ready),
-        .dma_req_write_i(dma_mem_req_write),
-        .dma_req_addr_i(dma_mem_req_addr),
-        .dma_req_wdata_i(dma_mem_req_wdata),
-        .dma_req_wstrb_i(dma_mem_req_wstrb),
-        .dma_rsp_valid_o(dma_mem_rsp_valid),
-        .dma_rsp_ready_i(dma_mem_rsp_ready),
-        .dma_rsp_rdata_o(dma_mem_rsp_rdata),
-        .dma_rsp_status_o(dma_mem_rsp_status),
-        .mif_req_valid_o(mif_arb_req_valid),
-        .mif_req_ready_i(mif_arb_req_ready),
-        .mif_req_write_o(mif_arb_req_write),
-        .mif_req_addr_o(mif_arb_req_addr),
-        .mif_req_wdata_o(mif_arb_req_wdata),
-        .mif_req_wstrb_o(mif_arb_req_wstrb),
-        .mif_rsp_valid_i(mif_arb_rsp_valid),
-        .mif_rsp_ready_o(mif_arb_rsp_ready),
-        .mif_rsp_rdata_i(mif_arb_rsp_rdata),
-        .mif_rsp_status_i(mif_arb_rsp_status),
-        .idle_o(mif_arb_idle)
-    );
-
     npu_axi_mif_master #(
         .AXI_ADDR_W(AXI_M_ADDR_W),
         .AXI_ID_W(AXI_M_ID_W)
     ) u_axi_mif_master (
         .clk_i(core_clk_i),
         .reset_n(functional_reset_n),
-        .req_valid_i(mif_arb_req_valid),
-        .req_ready_o(mif_arb_req_ready),
-        .req_write_i(mif_arb_req_write),
-        .req_addr_i(mif_arb_req_addr),
-        .req_wdata_i(mif_arb_req_wdata),
-        .req_wstrb_i(mif_arb_req_wstrb),
-        .rsp_valid_o(mif_arb_rsp_valid),
-        .rsp_ready_i(mif_arb_rsp_ready),
-        .rsp_rdata_o(mif_arb_rsp_rdata),
-        .rsp_status_o(mif_arb_rsp_status),
+        .req_valid_i(dma_mem_req_valid),
+        .req_ready_o(dma_mem_req_ready),
+        .req_write_i(dma_mem_req_write),
+        .req_addr_i(dma_mem_req_addr),
+        .req_wdata_i(dma_mem_req_wdata),
+        .req_wstrb_i(dma_mem_req_wstrb),
+        .rsp_valid_o(dma_mem_rsp_valid),
+        .rsp_ready_i(dma_mem_rsp_ready),
+        .rsp_rdata_o(dma_mem_rsp_rdata),
+        .rsp_status_o(dma_mem_rsp_status),
         .stream_id_i(tbu_stream_id),
         .substream_id_i(tbu_substream_id),
         .tbu_req_valid_o(tbu_req_valid),

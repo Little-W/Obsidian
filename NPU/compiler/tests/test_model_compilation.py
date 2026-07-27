@@ -456,13 +456,18 @@ class EndToEndCompilerTests(unittest.TestCase):
         self.assertTrue(any(name.startswith("__event_join_") for name in names))
 
     def test_attention_initializes_and_populates_matrix_b_tiles(self) -> None:
+        tokens = 10
+        width = 36
+        heads = 2
+        head_width = width // heads
+        target = compiler.TargetConfig()
         result = compiler.compile_model_document(
-            attention_model(tokens=4, width=8),
-            compiler.TargetConfig(),
+            attention_model(tokens=tokens, width=width),
+            target,
         )
+        operation_list = result.low_ir["operations"]
         operations = {
-            operation["name"]: operation
-            for operation in result.low_ir["operations"]
+            operation["name"]: operation for operation in operation_list
         }
         k_tiles = result.tensors["__attention_k_tiles"]
         v_tiles = result.tensors["__attention_v_tiles"]
@@ -475,20 +480,6 @@ class EndToEndCompilerTests(unittest.TestCase):
                 [tensor.storage_bytes],
             )
             self.assertEqual(fill["fields"]["dma"]["fill_value"], 0)
-
-            for head in range(2):
-                split = operations[
-                    f"attention_split_{kind}_tile_{head}_0_0"
-                ]
-                fields = split["fields"]
-                self.assertEqual(split["opcode"], "SPLIT")
-                self.assertEqual(
-                    fields["common"]["dst"]["addr"],
-                    tensor.l1_addr + head * 128,
-                )
-                self.assertEqual(fields["dma"]["segment_count"], 4)
-                self.assertEqual(fields["dma"]["segment_bytes"], 4)
-                self.assertEqual(fields["dma"]["segment_stride"], 8)
 
         self.assertEqual(
             operations["attention_transpose_k_head_0"]["fields"]["common"][
@@ -506,6 +497,162 @@ class EndToEndCompilerTests(unittest.TestCase):
             ],
             "__attention_v_tiles",
         )
+
+        k_values = tuple(
+            ((row * width + column) * 5 + 3) % 101 - 50
+            for row in range(tokens)
+            for column in range(width)
+        )
+        v_values = tuple(
+            ((row * width + column) * 7 + 11) % 103 - 51
+            for row in range(tokens)
+            for column in range(width)
+        )
+
+        def reference_address(value: object) -> int:
+            if isinstance(value, str):
+                address = result.tensors[value].l1_addr
+            else:
+                self.assertIsInstance(value, dict)
+                address = value["addr"]
+            self.assertIsNotNone(address)
+            return int(address)
+
+        def execute_tile_setup(initial_byte: int) -> tuple[bytes, bytes]:
+            memory = bytearray([initial_byte] * target.l1_bytes)
+            for name, values in (
+                ("__attention_k", k_values),
+                ("__attention_v", v_values),
+            ):
+                address = result.tensors[name].l1_addr
+                self.assertIsNotNone(address)
+                memory[int(address) : int(address) + len(values)] = bytes(
+                    value & 0xFF for value in values
+                )
+
+            for operation in operation_list:
+                name = operation["name"]
+                if name in (
+                    "attention_fill_k_tiles",
+                    "attention_fill_v_tiles",
+                ):
+                    fields = operation["fields"]
+                    destination = reference_address(fields["common"]["dst"])
+                    count = math.prod(fields["dma"]["shape"])
+                    memory[destination : destination + count] = bytes(count)
+                    continue
+                if not name.startswith(
+                    (
+                        "attention_pack_k_head_",
+                        "attention_transpose_k_head_",
+                        "attention_pack_k_tile_",
+                        "attention_split_k_tile_",
+                        "attention_pack_v_head_",
+                        "attention_pack_v_tile_",
+                        "attention_split_v_tile_",
+                    )
+                ):
+                    continue
+
+                fields = operation["fields"]
+                common = fields["common"]
+                source = reference_address(common["src0"])
+                destination = reference_address(common["dst"])
+                dma = fields["dma"]
+                if operation["opcode"] == "TRANSPOSE_2D":
+                    rows, columns = dma["shape"]
+                    for row in range(rows):
+                        for column in range(columns):
+                            memory[destination + column * rows + row] = (
+                                memory[source + row * columns + column]
+                            )
+                    continue
+
+                segment_count = dma["segment_count"]
+                segment_bytes = dma["segment_bytes"]
+                segment_stride = dma["segment_stride"]
+                for segment in range(segment_count):
+                    if operation["opcode"] == "PACK":
+                        source_offset = segment * segment_stride
+                        destination_offset = segment * segment_bytes
+                    else:
+                        self.assertEqual(operation["opcode"], "SPLIT")
+                        source_offset = segment * segment_bytes
+                        destination_offset = segment * segment_stride
+                    memory[
+                        destination + destination_offset :
+                        destination + destination_offset + segment_bytes
+                    ] = memory[
+                        source + source_offset :
+                        source + source_offset + segment_bytes
+                    ]
+
+            return (
+                bytes(
+                    memory[
+                        int(k_tiles.l1_addr) :
+                        int(k_tiles.l1_addr) + k_tiles.storage_bytes
+                    ]
+                ),
+                bytes(
+                    memory[
+                        int(v_tiles.l1_addr) :
+                        int(v_tiles.l1_addr) + v_tiles.storage_bytes
+                    ]
+                ),
+            )
+
+        actual_k, actual_v = execute_tile_setup(0xA5)
+        self.assertEqual(
+            (actual_k, actual_v),
+            execute_tile_setup(0x5A),
+        )
+
+        k_head_bytes = compiler.tiled_matrix_bytes(
+            head_width, tokens, "int8", target
+        )
+        v_head_bytes = compiler.tiled_matrix_bytes(
+            tokens, head_width, "int8", target
+        )
+        for head in range(heads):
+            expected_k = compiler.pack_matrix_b_values(
+                tuple(
+                    k_values[
+                        token * width + head * head_width + feature
+                    ]
+                    for feature in range(head_width)
+                    for token in range(tokens)
+                ),
+                head_width,
+                tokens,
+                "int8",
+                target,
+            )
+            expected_v = compiler.pack_matrix_b_values(
+                tuple(
+                    v_values[
+                        token * width + head * head_width + feature
+                    ]
+                    for token in range(tokens)
+                    for feature in range(head_width)
+                ),
+                tokens,
+                head_width,
+                "int8",
+                target,
+            )
+            self.assertEqual(
+                actual_k[
+                    head * k_head_bytes : (head + 1) * k_head_bytes
+                ],
+                expected_k,
+            )
+            self.assertEqual(
+                actual_v[
+                    head * v_head_bytes : (head + 1) * v_head_bytes
+                ],
+                expected_v,
+            )
 
     def test_attention_non_power_of_two_scale_is_folded_into_q_and_k(
         self,

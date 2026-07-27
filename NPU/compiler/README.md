@@ -208,6 +208,16 @@ M、N、K 以及 BMM batch 的范围均为 1～64。B 矩阵必须按
 `KT × NT` tile 排列。`requant_shift` 直接保存 0～31，不再使用少数几个
 预设值；例如 Q5 模型可直接保存 5。C 为 INT32 时该字段必须为 0。
 
+Matrix-B 的元素位置按 `K` 外层 tile、`N` 外层 tile、`K` 内层索引和
+`N` 内层索引依次排列。以 `KT=16、NT=8、K=4、N=2` 为例，四行的起始
+元素编号是 `0、8、16、24`。连续保存的 `4×2` 数据不能直接作为 B。
+
+注意力中的 K、V 是运行时结果。编译器会先用 FILL 初始化目标 tile，再按
+head 提取数据；K 经连续 TRANSPOSE 后，用 PACK/SPLIT 写入 tile，V 也用
+PACK/SPLIT 写入 tile。这样，每个有效元素和尾部填充位置都有明确的写入来源，
+不会依赖 L1 SRAM 的上电内容。CModel 新建内存时恰好为零，不代表硬件 L1
+在复位后自动清零。
+
 `b_int4=1` 只表示“A 为 INT8、B 为 INT4”。其他组合要求 A、B 数据类型
 相同，并把该位写成 0。GEMM_ZERO 的 A、B、bias、K、`b_int4` 和
 `requant_shift` 字段均为 0。

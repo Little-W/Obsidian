@@ -109,6 +109,9 @@ module tb_npu_complex_engine;
       if (done_status !== expected_status)
         $fatal(1, "complex status %02x expected %02x",
                done_status, expected_status);
+      if (done_fault_addr !== 48'd0)
+        $fatal(1, "complex unexpected fault address %012x",
+               done_fault_addr);
     end
   endtask
 
@@ -151,6 +154,11 @@ module tb_npu_complex_engine;
       put32('h78, src2_scale);
       put32('h7c, dst_scale);
       put32('h90, epsilon);
+      if (task_opcode == NPU_COMPLEX_ACT ||
+          task_opcode == NPU_COMPLEX_SOFTMAX) begin
+        put32('h94, 32'hc180_0000);
+        put32('h98, 32'h4180_0000);
+      end
       put8('h9c, 8'd0);
       put8('h9d, 8'd0);
       put8('h9e, 8'd0);

@@ -1,6 +1,7 @@
 VERILATOR ?= verilator
 OBJ_ROOT ?= /tmp/npu_engine_verilator
-VFLAGS := --binary --timing -Wall --Wno-fatal --timescale 1ns/1ps
+VFLAGS := --binary --timing -Wall --Wno-fatal --Wno-UNUSEDPARAM \
+	--timescale 1ns/1ps
 export OBJCACHE :=
 
 PKG := npu_engine_pkg.sv
@@ -37,16 +38,25 @@ complex:
 	mkdir -p $(OBJ_ROOT)
 	$(VERILATOR) $(VFLAGS) --top-module tb_npu_complex_engine \
 		--Mdir $(OBJ_ROOT)/complex \
-		$(PKG) npu_complex_convert.sv npu_complex_math_core.sv \
+		$(PKG) npu_fp32_alu_seq.sv npu_complex_math_seq.sv \
 		npu_complex_engine.sv \
 		$(MEM) tb/tb_npu_complex_engine.sv
 	$(OBJ_ROOT)/complex/Vtb_npu_complex_engine
 
 lint:
-	$(VERILATOR) --lint-only -Wall --Wno-fatal \
-		$(PKG) npu_dma_engine.sv npu_matrix_engine.sv \
-		npu_vector_engine.sv npu_complex_convert.sv \
-		npu_complex_math_core.sv npu_complex_engine.sv
+	$(VERILATOR) --lint-only -Wall --Wno-fatal --Wno-UNUSEDPARAM \
+		--top-module npu_dma_engine \
+		$(PKG) npu_dma_engine.sv
+	$(VERILATOR) --lint-only -Wall --Wno-fatal --Wno-UNUSEDPARAM \
+		--top-module npu_matrix_engine \
+		$(PKG) npu_matrix_engine.sv
+	$(VERILATOR) --lint-only -Wall --Wno-fatal --Wno-UNUSEDPARAM \
+		--top-module npu_vector_engine \
+		$(PKG) npu_vector_engine.sv
+	$(VERILATOR) --lint-only -Wall --Wno-fatal --Wno-UNUSEDPARAM \
+		--top-module npu_complex_engine \
+		$(PKG) npu_fp32_alu_seq.sv npu_complex_math_seq.sv \
+		npu_complex_engine.sv
 
 clean:
 	rm -rf $(OBJ_ROOT)

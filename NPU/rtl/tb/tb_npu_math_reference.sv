@@ -4,16 +4,30 @@ module tb_npu_math_reference;
 
   integer checks_q;
   integer errors_q;
+  logic clk_q;
+  logic reset_n;
+  logic req_valid;
+  logic req_ready;
+  logic rsp_valid;
+  logic rsp_ready;
   logic [3:0] operation_q;
   logic [31:0] operand_q;
   logic [31:0] result;
 
-  npu_complex_math_core u_dut (
+  npu_complex_math_seq u_dut (
+    .clk_i(clk_q),
+    .reset_n(reset_n),
+    .req_valid_i(req_valid),
+    .req_ready_o(req_ready),
     .operation_i(operation_q),
     .operand0_i(operand_q),
     .operand1_i(32'd0),
+    .rsp_valid_o(rsp_valid),
+    .rsp_ready_i(rsp_ready),
     .result_o(result)
   );
+
+  always #5 clk_q = ~clk_q;
 
   task automatic check_bits(
     input string       operation,
@@ -21,10 +35,24 @@ module tb_npu_math_reference;
     input logic [31:0] operand,
     input logic [31:0] expected
   );
+    integer timeout;
     begin
+      while (!req_ready)
+        @(posedge clk_q);
+      @(negedge clk_q);
       operation_q = operation_code;
       operand_q = operand;
-      #1;
+      req_valid = 1'b1;
+      @(negedge clk_q);
+      req_valid = 1'b0;
+      timeout = 0;
+      while (!rsp_valid && timeout < 10000) begin
+        @(posedge clk_q);
+        timeout = timeout + 1;
+      end
+      if (!rsp_valid)
+        $fatal(1, "math timeout operation=%s operand=%08x",
+               operation, operand);
       checks_q = checks_q + 1;
       if (result !== expected) begin
         errors_q = errors_q + 1;
@@ -36,12 +64,21 @@ module tb_npu_math_reference;
           expected
         );
       end
+      @(posedge clk_q);
     end
   endtask
 
   initial begin
+    clk_q = 1'b0;
+    reset_n = 1'b0;
+    req_valid = 1'b0;
+    rsp_ready = 1'b1;
+    operation_q = 4'd0;
+    operand_q = 32'd0;
     checks_q = 0;
     errors_q = 0;
+    repeat (4) @(posedge clk_q);
+    reset_n = 1'b1;
 
     check_bits("exp", 4'd4, 32'hc188_0000, 32'h0000_0000);
     check_bits("exp", 4'd4, 32'hc180_0000, 32'h33f1_aade);

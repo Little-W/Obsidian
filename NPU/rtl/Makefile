@@ -75,21 +75,21 @@ lint:
 	$(VERILATOR) --lint-only $(VERILATOR_COMMON) --top-module npu_single_core_top $(RTL_SRCS)
 
 control-test:
-	mkdir -p $(GEN_DIR)/control_cmd_dfu
+	mkdir -p $(GEN_DIR)/control_cmd_frontend
 	$(VERILATOR) --cc --exe --main $(VERILATOR_SIM) \
-		--top-module tb_cmd_dfu_smoke \
-		-Mdir $(GEN_DIR)/control_cmd_dfu \
-		-o Vtb_cmd_dfu_smoke \
+		--top-module tb_cmd_frontend_smoke \
+		-Mdir $(GEN_DIR)/control_cmd_frontend \
+		-o Vtb_cmd_frontend_smoke \
 		npu_rtl_pkg.sv \
 		control/npu_cmd_frontend.sv \
-		control/npu_descriptor_fetch.sv \
-		control/tb_cmd_dfu_smoke.sv
-	mkdir -p $(BUILD_DIR)/control_cmd_dfu
-	cp -a $(GEN_DIR)/control_cmd_dfu/. $(BUILD_DIR)/control_cmd_dfu/
-	$(MAKE) -C $(BUILD_DIR)/control_cmd_dfu \
-		-f Vtb_cmd_dfu_smoke.mk -j1 \
+		control/tb_cmd_frontend_smoke.sv
+	mkdir -p $(BUILD_DIR)/control_cmd_frontend
+	cp -a $(GEN_DIR)/control_cmd_frontend/. \
+		$(BUILD_DIR)/control_cmd_frontend/
+	$(MAKE) -C $(BUILD_DIR)/control_cmd_frontend \
+		-f Vtb_cmd_frontend_smoke.mk -j1 \
 		$(VERILATOR_MAKE_FLAGS)
-	$(BUILD_DIR)/control_cmd_dfu/Vtb_cmd_dfu_smoke
+	$(BUILD_DIR)/control_cmd_frontend/Vtb_cmd_frontend_smoke
 	mkdir -p $(GEN_DIR)/control_lsc_crg_wdt
 	$(VERILATOR) --cc --exe --main $(VERILATOR_SIM) \
 		--top-module tb_lsc_crg_wdt_smoke \
@@ -165,7 +165,8 @@ math-reference-test:
 		--Mdir $(GEN_DIR)/math_reference \
 		-o Vtb_npu_math_reference \
 		engines/npu_engine_pkg.sv \
-		engines/npu_complex_math_core.sv \
+		engines/npu_fp32_alu_seq.sv \
+		engines/npu_complex_math_seq.sv \
 		tb/tb_npu_math_reference.sv
 	mkdir -p $(BUILD_DIR)/math_reference
 	cp -a $(GEN_DIR)/math_reference/. $(BUILD_DIR)/math_reference/
@@ -198,11 +199,11 @@ engine-test:
 		npu_rtl_pkg.sv \
 		engines/npu_engine_pkg.sv \
 		memory/npu_l1buf.sv \
-		engines/npu_complex_math_core.sv \
+		engines/npu_fp32_alu_seq.sv \
+		engines/npu_complex_math_seq.sv \
 		engines/npu_dma_engine.sv \
 		engines/npu_matrix_engine.sv \
 		engines/npu_vector_engine.sv \
-		engines/npu_complex_convert.sv \
 		engines/npu_complex_engine.sv \
 		tb/tb_npu_engines.sv
 	mkdir -p $(BUILD_DIR)/module_engines

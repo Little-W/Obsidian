@@ -8,12 +8,6 @@ module tb_inline_scheduler_smoke;
   logic cfe_cmd_valid;
   logic cfe_cmd_ready;
   logic [127:0] cfe_cmd;
-  logic df_fetch_valid;
-  logic df_fetch_rsp_ready;
-  logic [47:0] df_fetch_desc_addr;
-  logic [11:0] df_fetch_command_id;
-  logic [3:0] df_fetch_engine;
-  logic df_fetch_crc_enable;
   logic dma_task_valid;
   logic [7:0] dma_task_opcode;
   logic [11:0] dma_task_command_id;
@@ -69,7 +63,12 @@ module tb_inline_scheduler_smoke;
   logic [3:0] decode_engine;
   logic [7:0] decode_opcode;
   logic [2047:0] decode_desc;
-  int unsigned dfu_request_count;
+  logic [47:0] scheduler_input_base;
+  logic [47:0] scheduler_weight_base;
+  logic [47:0] scheduler_work_base;
+  logic [47:0] scheduler_output_base;
+  logic [47:0] scheduler_kv_base;
+  logic [19:0] scheduler_param_l1_base;
 
   always #5 clk = ~clk;
 
@@ -238,29 +237,17 @@ module tb_inline_scheduler_smoke;
     .cfe_cmd_valid_i(cfe_cmd_valid),
     .cfe_cmd_ready_o(cfe_cmd_ready),
     .cfe_cmd_i(cfe_cmd),
-    .input_base_i(48'h0001_0000),
-    .weight_base_i(48'h0002_0000),
-    .work_base_i(48'h0003_0000),
-    .output_base_i(48'h0004_0000),
-    .kv_base_i(48'h0005_0000),
-    .param_l1_base_i(20'h00800),
+    .input_base_i(scheduler_input_base),
+    .weight_base_i(scheduler_weight_base),
+    .work_base_i(scheduler_work_base),
+    .output_base_i(scheduler_output_base),
+    .kv_base_i(scheduler_kv_base),
+    .param_l1_base_i(scheduler_param_l1_base),
     .cmd_id_lookup_valid_i(1'b0),
     .cmd_id_lookup_ready_o(lookup_ready),
     .cmd_id_lookup_id_i(10'd0),
     .cmd_id_lookup_rsp_valid_o(lookup_rsp_valid),
     .cmd_id_busy_o(lookup_busy),
-    .df_fetch_valid_o(df_fetch_valid),
-    .df_fetch_ready_i(1'b1),
-    .df_fetch_desc_addr_o(df_fetch_desc_addr),
-    .df_fetch_command_id_o(df_fetch_command_id),
-    .df_fetch_engine_o(df_fetch_engine),
-    .df_fetch_crc_enable_o(df_fetch_crc_enable),
-    .df_fetch_rsp_valid_i(1'b0),
-    .df_fetch_rsp_ready_o(df_fetch_rsp_ready),
-    .df_fetch_rsp_command_id_i(12'd0),
-    .df_fetch_rsp_status_i(NPU_STATUS_SUCCESS),
-    .df_fetch_rsp_fault_addr_i(48'd0),
-    .df_fetch_rsp_desc_flat_i(2048'd0),
     .dma_task_valid_o(dma_task_valid),
     .dma_task_ready_i(1'b0),
     .dma_task_opcode_o(dma_task_opcode),
@@ -347,15 +334,6 @@ module tb_inline_scheduler_smoke;
     .task_occupancy_o(task_occupancy)
   );
 
-  always_ff @(posedge clk or negedge reset_n) begin
-    if (!reset_n) begin
-      dfu_request_count <= 0;
-    end else if (df_fetch_valid) begin
-      dfu_request_count <= dfu_request_count + 1;
-      $fatal(1, "CMD128 unexpectedly requested a descriptor");
-    end
-  end
-
   initial begin
     logic [79:0] dma_payload;
     logic [79:0] matrix_payload;
@@ -369,6 +347,12 @@ module tb_inline_scheduler_smoke;
     cfe_cmd_valid = 1'b0;
     cfe_cmd = 128'd0;
     decode_cmd = 128'd0;
+    scheduler_input_base = 48'h0001_0000;
+    scheduler_weight_base = 48'h0002_0000;
+    scheduler_work_base = 48'h0003_0000;
+    scheduler_output_base = 48'h0004_0000;
+    scheduler_kv_base = 48'h0005_0000;
+    scheduler_param_l1_base = 20'h00800;
     repeat (4) @(posedge clk);
     reset_n = 1'b1;
     repeat (2) @(posedge clk);
@@ -522,12 +506,18 @@ module tb_inline_scheduler_smoke;
     submit(make_command(6'd0, 10'h011, NPU_DTYPE_INT8, 80'd0));
 
     dma_payload = {
-      28'h000_0100, 28'h000_0200, 20'd4,
+      28'h900_0100, 28'hc00_0200, 20'd4,
       NPU_DTYPE_INT8, 1'b0, 1'b0
     };
     submit(make_command(
       6'd5, 10'h3ff, NPU_DTYPE_INT8, dma_payload
     ));
+    scheduler_input_base = 48'h0006_0000;
+    scheduler_weight_base = 48'h0007_0000;
+    scheduler_work_base = 48'h0008_0000;
+    scheduler_output_base = 48'h0009_0000;
+    scheduler_kv_base = 48'h000a_0000;
+    scheduler_param_l1_base = 20'h01000;
 
     matrix_payload = {
       14'h004, 14'h008, 14'h00c, 12'd0,
@@ -559,13 +549,11 @@ module tb_inline_scheduler_smoke;
           vector_task_valid && complex_task_valid);
     repeat (2) @(posedge clk);
 
-    if (dfu_request_count != 0)
-      $fatal(1, "CMD128 descriptor request count is not zero");
     if (dma_task_opcode != NPU_OPCODE_DMA_COPY_1D ||
         dma_task_command_id != 12'h3ff ||
         dma_task_desc[15:8] != {4'd0, NPU_ENGINE_DMA} ||
-        dma_task_desc[64 +: 64] != 64'h100 ||
-        dma_task_desc[256 +: 64] != 64'h200 ||
+        dma_task_desc[64 +: 64] != 64'h1_0100 ||
+        dma_task_desc[256 +: 64] != 64'h4_0200 ||
         dma_task_desc[16'h48 * 8 +: 32] != 32'd4)
       $fatal(1, "DMA command expansion mismatch");
     if (matrix_task_opcode != NPU_OPCODE_GEMM ||
@@ -590,10 +578,8 @@ module tb_inline_scheduler_smoke;
       $fatal(1, "Complex command expansion mismatch");
 
     $display(
-      "PASS: CMD128 expands all engine classes with zero DFU requests %0b",
+      "PASS: CMD128 directly expands all engine classes %0b",
       ^{
-        df_fetch_rsp_ready, df_fetch_desc_addr, df_fetch_command_id,
-        df_fetch_engine, df_fetch_crc_enable,
         dma_task_desc, matrix_task_desc, vector_task_desc,
         complex_task_desc,
         completion_valid, completion_command_id, completion_engine,

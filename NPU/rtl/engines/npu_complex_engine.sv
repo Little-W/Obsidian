@@ -54,6 +54,8 @@ module npu_complex_engine (
     ST_SRC2_REQ,
     ST_SRC2_RSP,
     ST_COMPUTE,
+    ST_MATH_REQ,
+    ST_MATH_RSP,
     ST_ADVANCE,
     ST_RMW_REQ,
     ST_RMW_RSP,
@@ -61,6 +63,41 @@ module npu_complex_engine (
     ST_WRITE_RSP,
     ST_DONE
   } state_t;
+
+  typedef enum logic [5:0] {
+    MA_SRC0_I2F,
+    MA_SRC1_I2F,
+    MA_SRC2_I2F,
+    MA_ACT_VALUE,
+    MA_ADD_VALUE,
+    MA_SOFT_DIFF,
+    MA_SOFT_EXP,
+    MA_SOFT_VALUE,
+    MA_LANE_ADD,
+    MA_NORM_SQUARE,
+    MA_NORM_CENTER,
+    MA_NORM_BASE,
+    MA_NORM_SCALED,
+    MA_NORM_VALUE,
+    MA_WELFORD_DELTA,
+    MA_WELFORD_COUNT_FP,
+    MA_WELFORD_COUNT_INV,
+    MA_WELFORD_MEAN_STEP,
+    MA_WELFORD_MEAN_NEW,
+    MA_WELFORD_X_DIFF,
+    MA_WELFORD_M2_TERM,
+    MA_WELFORD_DONE,
+    MA_TOTAL_01,
+    MA_TOTAL_23,
+    MA_TOTAL_FINAL,
+    MA_COUNT_FP,
+    MA_COUNT_INV,
+    MA_MEAN_DONE,
+    MA_VARIANCE,
+    MA_VARIANCE_EPSILON,
+    MA_INVSTD,
+    MA_F2I
+  } math_action_t;
 
   state_t state_q;
   logic [3:0] phase_q;
@@ -277,120 +314,45 @@ module npu_complex_engine (
            (dtype == NPU_DTYPE_INT16 && byte_lane > 3'd6);
   endfunction
 
-  logic [3:0] math_operation;
-  logic [31:0] math_operand0;
-  logic [31:0] math_operand1;
-  logic [31:0] math_result;
-  logic signed [63:0] src0_centered_integer;
-  logic signed [63:0] src1_centered_integer;
-  logic signed [63:0] src2_centered_integer;
-  logic [31:0] src0_fp;
-  logic [31:0] src1_fp;
-  logic [31:0] src2_fp;
-  logic [31:0] current_x_fp;
-  logic [31:0] activation_x_fp;
-  logic [31:0] softmax_difference_fp;
-  logic [31:0] active_columns_fp;
-  logic [31:0] fp_x_squared;
-  logic [31:0] fp_centered_squared;
+  localparam logic [3:0] MATH_EXP      = 4'd4;
+  localparam logic [3:0] MATH_RSQRT    = 4'd5;
+  localparam logic [3:0] MATH_MUL      = 4'd6;
+  localparam logic [3:0] MATH_ADD      = 4'd8;
+  localparam logic [3:0] MATH_SUB      = 4'd9;
+  localparam logic [3:0] MATH_RECIP    = 4'd10;
+  localparam logic [3:0] MATH_I2F_MUL  = 4'd11;
+  localparam logic [3:0] MATH_DIV_APRX = 4'd12;
+
+  logic [3:0] math_operation_q;
+  logic [31:0] math_operand0_q;
+  logic [31:0] math_operand1_q;
+  math_action_t math_action_q;
+  logic math_req_ready;
+  logic math_rsp_valid;
+  logic [31:0] math_rsp_result;
+  logic [31:0] fp_src0_q;
+  logic [31:0] fp_src1_q;
+  logic [31:0] fp_src2_q;
+  logic [31:0] fp_active_inverse_q;
+  logic [31:0] fp_tmp0_q;
+  logic [31:0] fp_tmp1_q;
+  logic [31:0] fp_tmp2_q;
   logic [31:0] fp_lane_selected;
-  logic [31:0] fp_lane_addend;
-  logic [31:0] fp_lane_next;
-  logic [31:0] fp_lane_total;
-  logic [31:0] fp_active_columns_inverse;
-  logic [31:0] fp_mean;
-  logic [31:0] fp_variance;
-  logic [31:0] fp_nonnegative_variance;
-  logic [31:0] fp_variance_plus_epsilon;
-  logic [31:0] fp_next_invstd;
-  logic [31:0] fp_welford_count;
-  logic [31:0] fp_welford_delta;
-  logic [31:0] fp_welford_mean_next;
-  logic [31:0] fp_welford_m2_next;
-  logic [31:0] fp_centered_x;
-  logic [31:0] fp_norm_base;
-  logic [31:0] fp_norm_scaled;
-  logic [31:0] fp_norm_output;
-  logic [31:0] fp_add_rescale_output;
-  logic [31:0] fp_soft_sum_plus_exp;
-  logic [31:0] fp_softmax_output;
-  logic [31:0] fp_output_value;
-  logic signed [63:0] f2i_result;
-  logic f2i_exceptional;
 
-  always_comb begin
-    src0_centered_integer =
-      src0_value_q -
-      {{32{src0_zero_point[31]}}, src0_zero_point};
-    src1_centered_integer =
-      src1_value_q -
-      {{32{src1_zero_point[31]}}, src1_zero_point};
-    src2_centered_integer =
-      src2_value_q -
-      {{32{src2_zero_point[31]}}, src2_zero_point};
-  end
-
-  npu_complex_i2f u_src0_i2f (
-    .integer_i(src0_centered_integer),
-    .scale_i(src0_scale_bits),
-    .result_o(src0_fp)
-  );
-
-  npu_complex_i2f u_src1_i2f (
-    .integer_i(src1_centered_integer),
-    .scale_i(src1_scale_bits),
-    .result_o(src1_fp)
-  );
-
-  npu_complex_i2f u_src2_i2f (
-    .integer_i(src2_centered_integer),
-    .scale_i(src2_scale_bits),
-    .result_o(src2_fp)
-  );
-
-  always_comb begin
-    current_x_fp = src0_fp;
-    activation_x_fp = current_x_fp;
-    if (fp32_less_than(activation_x_fp, input_clip_min_bits))
-      activation_x_fp = input_clip_min_bits;
-    else if (fp32_less_than(input_clip_max_bits, activation_x_fp))
-      activation_x_fp = input_clip_max_bits;
-
-    softmax_difference_fp = fp32_sub(current_x_fp, fp_row_max_q);
-    if (fp32_less_than(
-          softmax_difference_fp, input_clip_min_bits
-        ))
-      softmax_difference_fp = input_clip_min_bits;
-    else if (fp32_less_than(32'd0, softmax_difference_fp))
-      softmax_difference_fp = 32'd0;
-
-    math_operation = 4'd0;
-    math_operand0 = current_x_fp;
-    math_operand1 = 32'd0;
-    if (opcode_q == NPU_COMPLEX_ACT) begin
-      math_operation = function_mode[3:0];
-      math_operand0 = activation_x_fp;
-    end else if (opcode_q == NPU_COMPLEX_SOFTMAX &&
-                 (phase_q == PH_SOFT_SUM ||
-                  phase_q == PH_SOFT_OUT)) begin
-      math_operation = 4'd4;
-      math_operand0 = softmax_difference_fp;
-    end
-  end
-
-  npu_complex_math_core u_math_core (
-    .operation_i(math_operation),
-    .operand0_i(math_operand0),
-    .operand1_i(math_operand1),
-    .result_o(math_result)
-  );
-
-  assign active_columns_fp =
-    fp32_from_int($signed({32'd0, active_columns}));
-
-  assign fp_x_squared = fp32_mul(current_x_fp, current_x_fp);
-  assign fp_centered_squared =
-    fp32_mul(fp_centered_x, fp_centered_x);
+  wire signed [63:0] src0_centered_integer =
+    src0_value_q -
+    {{32{src0_zero_point[31]}}, src0_zero_point};
+  wire signed [63:0] src1_centered_integer =
+    src1_value_q -
+    {{32{src1_zero_point[31]}}, src1_zero_point};
+  wire signed [63:0] src2_centered_integer =
+    src2_value_q -
+    {{32{src2_zero_point[31]}}, src2_zero_point};
+  wire unused_centered_upper = ^{
+    src0_centered_integer[63:32],
+    src1_centered_integer[63:32],
+    src2_centered_integer[63:32]
+  };
 
   always_comb begin
     case (col_q[1:0])
@@ -399,90 +361,48 @@ module npu_complex_engine (
       2'd2: fp_lane_selected = fp_lane_sum_q[2];
       default: fp_lane_selected = fp_lane_sum_q[3];
     endcase
-    fp_lane_addend = current_x_fp;
-    if (phase_q == PH_SOFT_SUM)
-      fp_lane_addend = math_result;
-    else if (phase_q == PH_NORM_VAR)
-      fp_lane_addend = fp_centered_squared;
-    else if (phase_q == PH_NORM_ACC && function_mode == 6)
-      fp_lane_addend = fp_x_squared;
   end
 
-  assign fp_lane_next =
-    fp32_add(fp_lane_selected, fp_lane_addend);
-  assign fp_lane_total = fp32_add(
-    fp32_add(fp_lane_sum_q[0], fp_lane_sum_q[1]),
-    fp32_add(fp_lane_sum_q[2], fp_lane_sum_q[3])
+  npu_complex_math_seq u_math_seq (
+    .clk_i(clk_i),
+    .reset_n(reset_n),
+    .req_valid_i(state_q == ST_MATH_REQ),
+    .req_ready_o(math_req_ready),
+    .operation_i(math_operation_q),
+    .operand0_i(math_operand0_q),
+    .operand1_i(math_operand1_q),
+    .rsp_valid_o(math_rsp_valid),
+    .rsp_ready_i(state_q == ST_MATH_RSP),
+    .result_o(math_rsp_result)
   );
-  assign fp_active_columns_inverse =
-    fp32_reciprocal_approx(active_columns_fp);
-  assign fp_mean =
-    fp32_mul(fp_lane_total, fp_active_columns_inverse);
-  assign fp_variance =
-    fp32_mul(
-      stats_mode == 1 ? fp_row_sumsq_q : fp_lane_total,
-      fp_active_columns_inverse
-    );
 
-  assign fp_nonnegative_variance =
-    fp_variance[31] ? 32'd0 : fp_variance;
+  task automatic issue_math(
+    input logic [3:0]  operation,
+    input logic [31:0] operand0,
+    input logic [31:0] operand1,
+    input math_action_t action
+  );
+    begin
+      math_operation_q <= operation;
+      math_operand0_q <= operand0;
+      math_operand1_q <= operand1;
+      math_action_q <= action;
+      state_q <= ST_MATH_REQ;
+    end
+  endtask
 
-  assign fp_variance_plus_epsilon =
-    fp32_add(fp_nonnegative_variance, epsilon_bits);
-  assign fp_next_invstd =
-    fp32_rsqrt_approx(fp_variance_plus_epsilon);
-  assign fp_welford_count = fp32_from_int(
-    $signed({32'd0, col_q}) + 64'sd1
+  task automatic issue_output_conversion(
+    input logic [31:0] value
   );
-  assign fp_welford_delta =
-    fp32_sub(current_x_fp, fp_row_mean_q);
-  assign fp_welford_mean_next = fp32_add(
-    fp_row_mean_q,
-    fp32_mul(
-      fp_welford_delta,
-      fp32_reciprocal_approx(fp_welford_count)
-    )
-  );
-  assign fp_welford_m2_next = fp32_add(
-    fp_row_sumsq_q,
-    fp32_mul(
-      fp_welford_delta,
-      fp32_sub(current_x_fp, fp_welford_mean_next)
-    )
-  );
-  assign fp_centered_x = fp32_sub(current_x_fp, fp_row_mean_q);
-  assign fp_norm_base = fp32_mul(
-    src1_fp, function_mode == 5 ? fp_centered_x : current_x_fp
-  );
-  assign fp_norm_scaled =
-    fp32_mul(fp_norm_base, fp_row_invstd_q);
-  assign fp_norm_output = fp32_add(
-    fp_norm_scaled, function_mode == 5 ? src2_fp : 32'd0
-  );
-  assign fp_add_rescale_output = fp32_add(current_x_fp, src1_fp);
-  assign fp_soft_sum_plus_exp =
-    fp32_add(fp_lane_selected, math_result);
-  assign fp_softmax_output =
-    fp32_mul(math_result, fp_row_inverse_q);
-
-  always_comb begin
-    fp_output_value = math_result;
-    if (opcode_q == NPU_COMPLEX_ADD_RESCALE)
-      fp_output_value = fp_add_rescale_output;
-    else if (phase_q == PH_SOFT_OUT)
-      fp_output_value =
-        fp32_is_zero(fp_row_sum_q) ? 32'd0 : fp_softmax_output;
-    else if (phase_q == PH_NORM_OUT)
-      fp_output_value = fp_norm_output;
-  end
-
-  npu_complex_f2i u_f2i (
-    .value_i(fp_output_value),
-    .scale_i(dst_scale_bits),
-    .round_mode_i(round_mode),
-    .result_o(f2i_result),
-    .exceptional_o(f2i_exceptional)
-  );
+    begin
+      issue_math(
+        MATH_DIV_APRX,
+        value,
+        dst_scale_bits,
+        MA_F2I
+      );
+    end
+  endtask
 
   function automatic logic phase_writes_tensor(input logic [3:0] phase);
     return phase == PH_ELEMENT || phase == PH_SOFT_OUT ||
@@ -565,6 +485,10 @@ module npu_complex_engine (
     logic signed [63:0] next_stat;
     logic signed [63:0] output_integer;
     logic signed [63:0] valid_length_value;
+    logic [31:0] activation_value;
+    logic [31:0] softmax_difference;
+    logic [31:0] nonnegative_variance;
+    logic f2i_exceptional;
     logic output_overflow;
     logic current_valid;
     if (!reset_n) begin
@@ -593,6 +517,17 @@ module npu_complex_engine (
       fp_row_mean_q <= 32'd0;
       fp_row_invstd_q <= 32'd0;
       fp_row_inverse_q <= 32'd0;
+      math_operation_q <= 4'd0;
+      math_operand0_q <= 32'd0;
+      math_operand1_q <= 32'd0;
+      math_action_q <= MA_SRC0_I2F;
+      fp_src0_q <= 32'd0;
+      fp_src1_q <= 32'd0;
+      fp_src2_q <= 32'd0;
+      fp_active_inverse_q <= 32'd0;
+      fp_tmp0_q <= 32'd0;
+      fp_tmp1_q <= 32'd0;
+      fp_tmp2_q <= 32'd0;
       result_q <= '0;
       rmw_beat_q <= '0;
       status_q <= NPU_STATUS_SUCCESS;
@@ -738,6 +673,13 @@ module npu_complex_engine (
           fp_row_mean_q <= 32'd0;
           fp_row_invstd_q <= 32'd0;
           fp_row_inverse_q <= 32'd0;
+          fp_src0_q <= 32'd0;
+          fp_src1_q <= 32'd0;
+          fp_src2_q <= 32'd0;
+          fp_active_inverse_q <= 32'd0;
+          fp_tmp0_q <= 32'd0;
+          fp_tmp1_q <= 32'd0;
+          fp_tmp2_q <= 32'd0;
           if (opcode_q == NPU_COMPLEX_SOFTMAX)
             phase_q <= PH_SOFT_MAX;
           else if (opcode_q == NPU_COMPLEX_NORM)
@@ -900,143 +842,512 @@ module npu_complex_engine (
           end
 
         ST_COMPUTE: begin
-          case (phase_q)
-            PH_ELEMENT: begin
-              output_integer =
-                f2i_result +
-                {{32{dst_zero_point[31]}}, dst_zero_point};
+          if (phase_q == PH_STAT_ACC) begin
+            case (function_mode)
+              7: next_stat = stat_sum_q + src0_value_q;
+              8: next_stat =
+                   col_q == 0 || src0_value_q > stat_max_q ?
+                   src0_value_q : stat_max_q;
+              default:
+                next_stat =
+                  stat_sumsq_q + src0_value_q * src0_value_q;
+            endcase
+            if (function_mode == 7)
+              stat_sum_q <= next_stat;
+            else if (function_mode == 8)
+              stat_max_q <= next_stat;
+            else
+              stat_sumsq_q <= next_stat;
+
+            if (col_q + 1 == active_columns) begin
               output_overflow =
-                output_integer < dtype_min(dst_dtype) ||
-                output_integer > dtype_max(dst_dtype);
-              result_q <= clip_to_dtype(output_integer, dst_dtype);
-              if ((output_overflow || f2i_exceptional) &&
-                  overflow_mode == 1)
-                fail_task(NPU_STATUS_NUMERIC_EXCEPTION,
-                          current_dst_addr[47:0]);
-              else if (crosses_beat(
-                         current_dst_addr[2:0], dst_dtype
-                       ))
-                fail_task(NPU_STATUS_ADDR_FAULT,
-                          current_dst_addr[47:0]);
-              else
-                state_q <= dst_dtype == NPU_DTYPE_INT4 &&
-                           dst_high_nibble ? ST_RMW_REQ : ST_WRITE_REQ;
-            end
-
-            PH_SOFT_MAX: begin
-              if (!valid_seen_q ||
-                  fp32_less_than(fp_row_max_q, current_x_fp))
-                fp_row_max_q <= current_x_fp;
-              valid_seen_q <= 1'b1;
+                next_stat < dtype_min(NPU_DTYPE_INT32) ||
+                next_stat > dtype_max(NPU_DTYPE_INT32);
+              if (output_overflow && overflow_mode == 1)
+                fail_task(
+                  NPU_STATUS_NUMERIC_EXCEPTION,
+                  stat_dst_addr[47:0]
+                );
+              else begin
+                result_q <= overflow_mode == 2 ?
+                  wrap_to_dtype(
+                    next_stat[31:0], NPU_DTYPE_INT32
+                  ) :
+                  clip_to_dtype(next_stat, NPU_DTYPE_INT32);
+                phase_q <= PH_STAT_OUT;
+                if (crosses_beat(
+                      stat_dst_addr[2:0], NPU_DTYPE_INT32
+                    ))
+                  fail_task(
+                    NPU_STATUS_ADDR_FAULT,
+                    stat_dst_addr[47:0]
+                  );
+                else
+                  state_q <= ST_WRITE_REQ;
+              end
+            end else
               state_q <= ST_ADVANCE;
-            end
+          end else begin
+            issue_math(
+              MATH_I2F_MUL,
+              src0_centered_integer[31:0],
+              src0_scale_bits,
+              MA_SRC0_I2F
+            );
+          end
+        end
 
-            PH_SOFT_SUM: begin
-              case (col_q[1:0])
-                2'd0: fp_lane_sum_q[0] <= fp_soft_sum_plus_exp;
-                2'd1: fp_lane_sum_q[1] <= fp_soft_sum_plus_exp;
-                2'd2: fp_lane_sum_q[2] <= fp_soft_sum_plus_exp;
-                default:
-                  fp_lane_sum_q[3] <= fp_soft_sum_plus_exp;
-              endcase
-              state_q <= ST_ADVANCE;
-            end
+        ST_MATH_REQ:
+          if (math_req_ready)
+            state_q <= ST_MATH_RSP;
 
-            PH_SOFT_OUT: begin
-              output_integer =
-                f2i_result +
-                {{32{dst_zero_point[31]}}, dst_zero_point};
-              result_q <= clip_to_dtype(output_integer, dst_dtype);
-              if (crosses_beat(current_dst_addr[2:0], dst_dtype))
-                fail_task(NPU_STATUS_ADDR_FAULT,
-                          current_dst_addr[47:0]);
-              else
-                state_q <= dst_dtype == NPU_DTYPE_INT4 &&
-                           dst_high_nibble ? ST_RMW_REQ : ST_WRITE_REQ;
-            end
+        ST_MATH_RSP:
+          if (math_rsp_valid) begin
+            case (math_action_q)
+              MA_SRC0_I2F: begin
+                fp_src0_q <= math_rsp_result;
+                case (phase_q)
+                  PH_ELEMENT: begin
+                    if (opcode_q == NPU_COMPLEX_ACT) begin
+                      activation_value = math_rsp_result;
+                      if (fp32_less_than(
+                            activation_value, input_clip_min_bits
+                          ))
+                        activation_value = input_clip_min_bits;
+                      else if (fp32_less_than(
+                                 input_clip_max_bits, activation_value
+                               ))
+                        activation_value = input_clip_max_bits;
+                      issue_math(
+                        function_mode[3:0],
+                        activation_value,
+                        32'd0,
+                        MA_ACT_VALUE
+                      );
+                    end else begin
+                      issue_math(
+                        MATH_I2F_MUL,
+                        src1_centered_integer[31:0],
+                        src1_scale_bits,
+                        MA_SRC1_I2F
+                      );
+                    end
+                  end
 
-            PH_NORM_ACC: begin
-              if (function_mode == 5 && stats_mode == 1) begin
-                fp_row_mean_q <= fp_welford_mean_next;
-                fp_row_sumsq_q <= fp_welford_m2_next;
-              end else begin
-                case (col_q[1:0])
-                  2'd0: fp_lane_sum_q[0] <= fp_lane_next;
-                  2'd1: fp_lane_sum_q[1] <= fp_lane_next;
-                  2'd2: fp_lane_sum_q[2] <= fp_lane_next;
-                  default: fp_lane_sum_q[3] <= fp_lane_next;
+                  PH_SOFT_MAX: begin
+                    if (!valid_seen_q ||
+                        fp32_less_than(fp_row_max_q, math_rsp_result))
+                      fp_row_max_q <= math_rsp_result;
+                    valid_seen_q <= 1'b1;
+                    state_q <= ST_ADVANCE;
+                  end
+
+                  PH_SOFT_SUM,
+                  PH_SOFT_OUT:
+                    issue_math(
+                      MATH_SUB,
+                      math_rsp_result,
+                      fp_row_max_q,
+                      MA_SOFT_DIFF
+                    );
+
+                  PH_NORM_ACC: begin
+                    if (function_mode == 5 && stats_mode == 1)
+                      issue_math(
+                        MATH_SUB,
+                        math_rsp_result,
+                        fp_row_mean_q,
+                        MA_WELFORD_DELTA
+                      );
+                    else if (function_mode == 6)
+                      issue_math(
+                        MATH_MUL,
+                        math_rsp_result,
+                        math_rsp_result,
+                        MA_NORM_SQUARE
+                      );
+                    else
+                      issue_math(
+                        MATH_ADD,
+                        fp_lane_selected,
+                        math_rsp_result,
+                        MA_LANE_ADD
+                      );
+                  end
+
+                  PH_NORM_VAR:
+                    issue_math(
+                      MATH_SUB,
+                      math_rsp_result,
+                      fp_row_mean_q,
+                      MA_NORM_CENTER
+                    );
+
+                  PH_NORM_OUT:
+                    issue_math(
+                      MATH_I2F_MUL,
+                      src1_centered_integer[31:0],
+                      src1_scale_bits,
+                      MA_SRC1_I2F
+                    );
+
+                  default:
+                    fail_task(
+                      NPU_STATUS_BAD_DESC,
+                      current_dst_addr[47:0]
+                    );
                 endcase
               end
-              state_q <= ST_ADVANCE;
-            end
 
-            PH_NORM_VAR: begin
-              case (col_q[1:0])
-                2'd0: fp_lane_sum_q[0] <= fp_lane_next;
-                2'd1: fp_lane_sum_q[1] <= fp_lane_next;
-                2'd2: fp_lane_sum_q[2] <= fp_lane_next;
-                default: fp_lane_sum_q[3] <= fp_lane_next;
-              endcase
-              state_q <= ST_ADVANCE;
-            end
+              MA_SRC1_I2F: begin
+                fp_src1_q <= math_rsp_result;
+                if (phase_q == PH_ELEMENT)
+                  issue_math(
+                    MATH_ADD,
+                    fp_src0_q,
+                    math_rsp_result,
+                    MA_ADD_VALUE
+                  );
+                else if (function_mode == 5)
+                  issue_math(
+                    MATH_I2F_MUL,
+                    src2_centered_integer[31:0],
+                    src2_scale_bits,
+                    MA_SRC2_I2F
+                  );
+                else
+                  issue_math(
+                    MATH_MUL,
+                    math_rsp_result,
+                    fp_src0_q,
+                    MA_NORM_BASE
+                  );
+              end
 
-            PH_NORM_OUT: begin
-              output_integer =
-                f2i_result +
-                {{32{dst_zero_point[31]}}, dst_zero_point};
-              result_q <= clip_to_dtype(output_integer, dst_dtype);
-              if (crosses_beat(current_dst_addr[2:0], dst_dtype))
-                fail_task(NPU_STATUS_ADDR_FAULT,
-                          current_dst_addr[47:0]);
-              else
-                state_q <= dst_dtype == NPU_DTYPE_INT4 &&
-                           dst_high_nibble ? ST_RMW_REQ : ST_WRITE_REQ;
-            end
+              MA_SRC2_I2F: begin
+                fp_src2_q <= math_rsp_result;
+                issue_math(
+                  MATH_SUB,
+                  fp_src0_q,
+                  fp_row_mean_q,
+                  MA_NORM_CENTER
+                );
+              end
 
-            default: begin
-              case (function_mode)
-                7: next_stat = stat_sum_q + src0_value_q;
-                8: next_stat =
-                     col_q == 0 || src0_value_q > stat_max_q ?
-                     src0_value_q : stat_max_q;
-                default:
-                  next_stat =
-                    stat_sumsq_q + src0_value_q * src0_value_q;
-              endcase
-              if (function_mode == 7)
-                stat_sum_q <= next_stat;
-              else if (function_mode == 8)
-                stat_max_q <= next_stat;
-              else
-                stat_sumsq_q <= next_stat;
+              MA_ACT_VALUE,
+              MA_ADD_VALUE,
+              MA_SOFT_VALUE,
+              MA_NORM_VALUE:
+                issue_output_conversion(math_rsp_result);
 
-              if (col_q + 1 == active_columns) begin
-                output_overflow =
-                  next_stat < dtype_min(NPU_DTYPE_INT32) ||
-                  next_stat > dtype_max(NPU_DTYPE_INT32);
-                if (output_overflow && overflow_mode == 1)
-                  fail_task(NPU_STATUS_NUMERIC_EXCEPTION,
-                            stat_dst_addr[47:0]);
-                else begin
-                  result_q <= overflow_mode == 2 ?
-                    wrap_to_dtype(
-                      next_stat[31:0], NPU_DTYPE_INT32
-                    ) :
-                    clip_to_dtype(next_stat, NPU_DTYPE_INT32);
-                  phase_q <= PH_STAT_OUT;
-                  if (crosses_beat(
-                        stat_dst_addr[2:0], NPU_DTYPE_INT32
-                      ))
-                    fail_task(NPU_STATUS_ADDR_FAULT,
-                              stat_dst_addr[47:0]);
-                  else
-                    state_q <= ST_WRITE_REQ;
-                end
-              end else
+              MA_SOFT_DIFF: begin
+                softmax_difference = math_rsp_result;
+                if (fp32_less_than(
+                      softmax_difference, input_clip_min_bits
+                    ))
+                  softmax_difference = input_clip_min_bits;
+                else if (fp32_less_than(
+                           32'd0, softmax_difference
+                         ))
+                  softmax_difference = 32'd0;
+                issue_math(
+                  MATH_EXP,
+                  softmax_difference,
+                  32'd0,
+                  MA_SOFT_EXP
+                );
+              end
+
+              MA_SOFT_EXP: begin
+                if (phase_q == PH_SOFT_SUM)
+                  issue_math(
+                    MATH_ADD,
+                    fp_lane_selected,
+                    math_rsp_result,
+                    MA_LANE_ADD
+                  );
+                else if (fp32_is_zero(fp_row_sum_q))
+                  issue_output_conversion(32'd0);
+                else
+                  issue_math(
+                    MATH_MUL,
+                    math_rsp_result,
+                    fp_row_inverse_q,
+                    MA_SOFT_VALUE
+                  );
+              end
+
+              MA_LANE_ADD: begin
+                case (col_q[1:0])
+                  2'd0: fp_lane_sum_q[0] <= math_rsp_result;
+                  2'd1: fp_lane_sum_q[1] <= math_rsp_result;
+                  2'd2: fp_lane_sum_q[2] <= math_rsp_result;
+                  default: fp_lane_sum_q[3] <= math_rsp_result;
+                endcase
                 state_q <= ST_ADVANCE;
-            end
-          endcase
-        end
+              end
+
+              MA_NORM_SQUARE:
+                issue_math(
+                  MATH_ADD,
+                  fp_lane_selected,
+                  math_rsp_result,
+                  MA_LANE_ADD
+                );
+
+              MA_NORM_CENTER: begin
+                if (phase_q == PH_NORM_VAR) begin
+                  fp_tmp0_q <= math_rsp_result;
+                  issue_math(
+                    MATH_MUL,
+                    math_rsp_result,
+                    math_rsp_result,
+                    MA_NORM_SQUARE
+                  );
+                end else
+                  issue_math(
+                    MATH_MUL,
+                    fp_src1_q,
+                    math_rsp_result,
+                    MA_NORM_BASE
+                  );
+              end
+
+              MA_NORM_BASE:
+                issue_math(
+                  MATH_MUL,
+                  math_rsp_result,
+                  fp_row_invstd_q,
+                  MA_NORM_SCALED
+                );
+
+              MA_NORM_SCALED:
+                issue_math(
+                  MATH_ADD,
+                  math_rsp_result,
+                  function_mode == 5 ? fp_src2_q : 32'd0,
+                  MA_NORM_VALUE
+                );
+
+              MA_WELFORD_DELTA: begin
+                fp_tmp0_q <= math_rsp_result;
+                issue_math(
+                  MATH_I2F_MUL,
+                  col_q + 32'd1,
+                  32'h3f80_0000,
+                  MA_WELFORD_COUNT_FP
+                );
+              end
+
+              MA_WELFORD_COUNT_FP:
+                issue_math(
+                  MATH_RECIP,
+                  math_rsp_result,
+                  32'd0,
+                  MA_WELFORD_COUNT_INV
+                );
+
+              MA_WELFORD_COUNT_INV:
+                issue_math(
+                  MATH_MUL,
+                  fp_tmp0_q,
+                  math_rsp_result,
+                  MA_WELFORD_MEAN_STEP
+                );
+
+              MA_WELFORD_MEAN_STEP:
+                issue_math(
+                  MATH_ADD,
+                  fp_row_mean_q,
+                  math_rsp_result,
+                  MA_WELFORD_MEAN_NEW
+                );
+
+              MA_WELFORD_MEAN_NEW: begin
+                fp_tmp1_q <= math_rsp_result;
+                issue_math(
+                  MATH_SUB,
+                  fp_src0_q,
+                  math_rsp_result,
+                  MA_WELFORD_X_DIFF
+                );
+              end
+
+              MA_WELFORD_X_DIFF:
+                issue_math(
+                  MATH_MUL,
+                  fp_tmp0_q,
+                  math_rsp_result,
+                  MA_WELFORD_M2_TERM
+                );
+
+              MA_WELFORD_M2_TERM:
+                issue_math(
+                  MATH_ADD,
+                  fp_row_sumsq_q,
+                  math_rsp_result,
+                  MA_WELFORD_DONE
+                );
+
+              MA_WELFORD_DONE: begin
+                fp_row_mean_q <= fp_tmp1_q;
+                fp_row_sumsq_q <= math_rsp_result;
+                state_q <= ST_ADVANCE;
+              end
+
+              MA_TOTAL_01: begin
+                fp_tmp0_q <= math_rsp_result;
+                issue_math(
+                  MATH_ADD,
+                  fp_lane_sum_q[2],
+                  fp_lane_sum_q[3],
+                  MA_TOTAL_23
+                );
+              end
+
+              MA_TOTAL_23: begin
+                fp_tmp1_q <= math_rsp_result;
+                issue_math(
+                  MATH_ADD,
+                  fp_tmp0_q,
+                  math_rsp_result,
+                  MA_TOTAL_FINAL
+                );
+              end
+
+              MA_TOTAL_FINAL: begin
+                fp_tmp2_q <= math_rsp_result;
+                if (phase_q == PH_SOFT_SUM) begin
+                  fp_row_sum_q <= math_rsp_result;
+                  issue_math(
+                    MATH_RECIP,
+                    math_rsp_result,
+                    32'd0,
+                    MA_COUNT_INV
+                  );
+                end else if (phase_q == PH_NORM_VAR)
+                  issue_math(
+                    MATH_MUL,
+                    math_rsp_result,
+                    fp_active_inverse_q,
+                    MA_VARIANCE
+                  );
+                else
+                  issue_math(
+                    MATH_I2F_MUL,
+                    active_columns,
+                    32'h3f80_0000,
+                    MA_COUNT_FP
+                  );
+              end
+
+              MA_COUNT_FP:
+                issue_math(
+                  MATH_RECIP,
+                  math_rsp_result,
+                  32'd0,
+                  MA_COUNT_INV
+                );
+
+              MA_COUNT_INV: begin
+                if (phase_q == PH_SOFT_SUM) begin
+                  fp_row_inverse_q <= math_rsp_result;
+                  phase_q <= PH_SOFT_OUT;
+                  state_q <= ST_ELEMENT_BEGIN;
+                end else begin
+                  fp_active_inverse_q <= math_rsp_result;
+                  if (function_mode == 5 && stats_mode == 0)
+                    issue_math(
+                      MATH_MUL,
+                      fp_tmp2_q,
+                      math_rsp_result,
+                      MA_MEAN_DONE
+                    );
+                  else
+                    issue_math(
+                      MATH_MUL,
+                      fp_tmp2_q,
+                      math_rsp_result,
+                      MA_VARIANCE
+                    );
+                end
+              end
+
+              MA_MEAN_DONE: begin
+                fp_row_mean_q <= math_rsp_result;
+                fp_lane_sum_q[0] <= 32'd0;
+                fp_lane_sum_q[1] <= 32'd0;
+                fp_lane_sum_q[2] <= 32'd0;
+                fp_lane_sum_q[3] <= 32'd0;
+                phase_q <= PH_NORM_VAR;
+                col_q <= 32'd0;
+                state_q <= ST_ELEMENT_BEGIN;
+              end
+
+              MA_VARIANCE: begin
+                nonnegative_variance =
+                  math_rsp_result[31] ? 32'd0 : math_rsp_result;
+                issue_math(
+                  MATH_ADD,
+                  nonnegative_variance,
+                  epsilon_bits,
+                  MA_VARIANCE_EPSILON
+                );
+              end
+
+              MA_VARIANCE_EPSILON:
+                issue_math(
+                  MATH_RSQRT,
+                  math_rsp_result,
+                  32'd0,
+                  MA_INVSTD
+                );
+
+              MA_INVSTD: begin
+                fp_row_invstd_q <= math_rsp_result;
+                phase_q <= PH_NORM_OUT;
+                col_q <= 32'd0;
+                state_q <= ST_ELEMENT_BEGIN;
+              end
+
+              MA_F2I: begin
+                output_integer =
+                  fp32_to_int_round(math_rsp_result, round_mode) +
+                  {{32{dst_zero_point[31]}}, dst_zero_point};
+                f2i_exceptional =
+                  fp32_is_nan(math_rsp_result) ||
+                  fp32_is_inf(math_rsp_result);
+                output_overflow =
+                  output_integer < dtype_min(dst_dtype) ||
+                  output_integer > dtype_max(dst_dtype);
+                result_q <= clip_to_dtype(output_integer, dst_dtype);
+                if (phase_q == PH_ELEMENT &&
+                    (output_overflow || f2i_exceptional) &&
+                    overflow_mode == 1)
+                  fail_task(
+                    NPU_STATUS_NUMERIC_EXCEPTION,
+                    current_dst_addr[47:0]
+                  );
+                else if (crosses_beat(
+                           current_dst_addr[2:0], dst_dtype
+                         ))
+                  fail_task(
+                    NPU_STATUS_ADDR_FAULT,
+                    current_dst_addr[47:0]
+                  );
+                else
+                  state_q <= dst_dtype == NPU_DTYPE_INT4 &&
+                             dst_high_nibble ?
+                             ST_RMW_REQ : ST_WRITE_REQ;
+              end
+
+              default:
+                fail_task(
+                  NPU_STATUS_BAD_DESC,
+                  current_dst_addr[47:0]
+                );
+            endcase
+          end
 
         ST_ADVANCE: begin
           if (col_q + 1 < active_columns) begin
@@ -1061,30 +1372,37 @@ module npu_complex_engine (
                 end
               end
               PH_SOFT_SUM: begin
-                fp_row_sum_q <= fp_lane_total;
-                fp_row_inverse_q <=
-                  fp32_reciprocal_approx(fp_lane_total);
-                phase_q <= PH_SOFT_OUT;
-                state_q <= ST_ELEMENT_BEGIN;
+                issue_math(
+                  MATH_ADD,
+                  fp_lane_sum_q[0],
+                  fp_lane_sum_q[1],
+                  MA_TOTAL_01
+                );
               end
               PH_NORM_ACC: begin
-                if (function_mode == 5 && stats_mode == 0) begin
-                  fp_row_mean_q <= fp_mean;
-                  fp_lane_sum_q[0] <= 32'd0;
-                  fp_lane_sum_q[1] <= 32'd0;
-                  fp_lane_sum_q[2] <= 32'd0;
-                  fp_lane_sum_q[3] <= 32'd0;
-                  phase_q <= PH_NORM_VAR;
-                end else begin
-                  fp_row_invstd_q <= fp_next_invstd;
-                  phase_q <= PH_NORM_OUT;
-                end
-                state_q <= ST_ELEMENT_BEGIN;
+                if (function_mode == 5 && stats_mode == 1) begin
+                  fp_tmp2_q <= fp_row_sumsq_q;
+                  issue_math(
+                    MATH_I2F_MUL,
+                    active_columns,
+                    32'h3f80_0000,
+                    MA_COUNT_FP
+                  );
+                end else
+                  issue_math(
+                    MATH_ADD,
+                    fp_lane_sum_q[0],
+                    fp_lane_sum_q[1],
+                    MA_TOTAL_01
+                  );
               end
               PH_NORM_VAR: begin
-                fp_row_invstd_q <= fp_next_invstd;
-                phase_q <= PH_NORM_OUT;
-                state_q <= ST_ELEMENT_BEGIN;
+                issue_math(
+                  MATH_ADD,
+                  fp_lane_sum_q[0],
+                  fp_lane_sum_q[1],
+                  MA_TOTAL_01
+                );
               end
               default: state_q <= ST_ELEMENT_BEGIN;
             endcase

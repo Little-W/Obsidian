@@ -26,20 +26,6 @@ module npu_task_scheduler #(
   output logic          cmd_id_lookup_rsp_valid_o,
   output logic          cmd_id_busy_o,
 
-  output logic          df_fetch_valid_o,
-  input  logic          df_fetch_ready_i,
-  output logic [47:0]   df_fetch_desc_addr_o,
-  output logic [11:0]   df_fetch_command_id_o,
-  output logic [3:0]    df_fetch_engine_o,
-  output logic          df_fetch_crc_enable_o,
-
-  input  logic          df_fetch_rsp_valid_i,
-  output logic          df_fetch_rsp_ready_o,
-  input  logic [11:0]   df_fetch_rsp_command_id_i,
-  input  logic [7:0]    df_fetch_rsp_status_i,
-  input  logic [47:0]   df_fetch_rsp_fault_addr_i,
-  input  logic [2047:0] df_fetch_rsp_desc_flat_i,
-
   output logic          dma_task_valid_o,
   input  logic          dma_task_ready_i,
   output logic [7:0]    dma_task_opcode_o,
@@ -137,7 +123,6 @@ module npu_task_scheduler #(
   import npu_rtl_pkg::*;
 
   logic [3:0]    task_state_q        [TASK_SLOTS];
-  logic [47:0]   task_desc_addr_q    [TASK_SLOTS];
   logic [11:0]   task_command_id_q   [TASK_SLOTS];
   logic [3:0]    task_engine_q       [TASK_SLOTS];
   logic [7:0]    task_opcode_q       [TASK_SLOTS];
@@ -146,7 +131,18 @@ module npu_task_scheduler #(
   logic [11:0]   task_wait1_q        [TASK_SLOTS];
   logic [11:0]   task_signal_q       [TASK_SLOTS];
   logic [63:0]   task_submit_seq_q   [TASK_SLOTS];
-  logic [2047:0] task_desc_flat_q    [TASK_SLOTS];
+  /*
+   * Keep the submitted instruction and its address-base snapshot instead of
+   * a 2048-bit expanded descriptor per slot.  The snapshot preserves the
+   * values seen at submission even if software changes the CSRs later.
+   */
+  logic [127:0]  task_cmd_q           [TASK_SLOTS];
+  logic [47:0]   task_input_base_q    [TASK_SLOTS];
+  logic [47:0]   task_weight_base_q   [TASK_SLOTS];
+  logic [47:0]   task_work_base_q     [TASK_SLOTS];
+  logic [47:0]   task_output_base_q   [TASK_SLOTS];
+  logic [47:0]   task_kv_base_q       [TASK_SLOTS];
+  logic [19:0]   task_param_l1_base_q [TASK_SLOTS];
   logic [7:0]    task_status_q       [TASK_SLOTS];
   logic [47:0]   task_fault_addr_q   [TASK_SLOTS];
   logic [63:0]   task_progress_q     [TASK_SLOTS];
@@ -159,9 +155,6 @@ module npu_task_scheduler #(
   logic [11:0] event_producer_q  [EVENT_COUNT];
 
   logic [63:0] submit_seq_q;
-  logic        fetch_active_q;
-  logic [TASK_IDX_W-1:0] fetch_slot_q;
-
   logic        dma_active_q;
   logic        matrix_active_q;
   logic        vector_active_q;
@@ -170,6 +163,26 @@ module npu_task_scheduler #(
   logic [TASK_IDX_W-1:0] matrix_active_slot_q;
   logic [TASK_IDX_W-1:0] vector_active_slot_q;
   logic [TASK_IDX_W-1:0] complex_active_slot_q;
+  logic dma_dispatch_valid_q;
+  logic matrix_dispatch_valid_q;
+  logic vector_dispatch_valid_q;
+  logic complex_dispatch_valid_q;
+  logic [TASK_IDX_W-1:0] dma_dispatch_slot_q;
+  logic [TASK_IDX_W-1:0] matrix_dispatch_slot_q;
+  logic [TASK_IDX_W-1:0] vector_dispatch_slot_q;
+  logic [TASK_IDX_W-1:0] complex_dispatch_slot_q;
+  logic [7:0] dma_dispatch_opcode_q;
+  logic [7:0] matrix_dispatch_opcode_q;
+  logic [7:0] vector_dispatch_opcode_q;
+  logic [7:0] complex_dispatch_opcode_q;
+  logic [11:0] dma_dispatch_command_id_q;
+  logic [11:0] matrix_dispatch_command_id_q;
+  logic [11:0] vector_dispatch_command_id_q;
+  logic [11:0] complex_dispatch_command_id_q;
+  logic [2047:0] dma_dispatch_desc_q;
+  logic [2047:0] matrix_dispatch_desc_q;
+  logic [2047:0] vector_dispatch_desc_q;
+  logic [2047:0] complex_dispatch_desc_q;
 
   logic ctl_active_q;
   logic [1:0] ctl_op_q;
@@ -190,8 +203,6 @@ module npu_task_scheduler #(
   logic lookup_busy_comb;
   logic lookup_busy_q;
 
-  logic fetch_found;
-  logic [TASK_IDX_W-1:0] fetch_select;
   logic completion_found;
   logic [TASK_IDX_W-1:0] completion_select;
   logic query_found;
@@ -243,8 +254,16 @@ module npu_task_scheduler #(
   logic inline_desc_valid;
   logic [3:0] inline_engine;
   logic [7:0] inline_opcode;
-  logic [2047:0] inline_desc_flat;
-  logic [2047:0] inline_desc_resolved;
+  logic [3:0][127:0] task_decode_cmd;
+  logic [3:0][47:0] task_decode_input_base;
+  logic [3:0][47:0] task_decode_weight_base;
+  logic [3:0][47:0] task_decode_work_base;
+  logic [3:0][47:0] task_decode_output_base;
+  logic [3:0][47:0] task_decode_kv_base;
+  logic [3:0][19:0] task_decode_param_l1_base;
+  logic [3:0][2047:0] task_decode_desc_flat;
+  logic [11:0] control_rearm_current_ref;
+  logic [3:0] control_rearm_next_generation;
 
   assign cmd_command_id   = npu_cmd_command_id(cfe_cmd_i);
   assign cmd_engine       = inline_engine;
@@ -257,6 +276,7 @@ module npu_task_scheduler #(
     (cmd_engine == NPU_ENGINE_CONTROL) &&
     (cmd_opcode == NPU_OPCODE_EVENT_REARM);
 
+  /* verilator lint_off PINCONNECTEMPTY */
   npu_inline_desc_decode u_inline_desc_decode (
     .cmd_i(cfe_cmd_i),
     .input_base_i(input_base_i),
@@ -268,8 +288,64 @@ module npu_task_scheduler #(
     .valid_o(inline_desc_valid),
     .engine_o(inline_engine),
     .opcode_o(inline_opcode),
-    .desc_flat_o(inline_desc_flat)
+    .desc_flat_o()
   );
+
+  assign task_decode_cmd[0] = task_cmd_q[dma_select];
+  assign task_decode_cmd[1] = task_cmd_q[matrix_select];
+  assign task_decode_cmd[2] = task_cmd_q[vector_select];
+  assign task_decode_cmd[3] = task_cmd_q[complex_select];
+
+  assign task_decode_input_base[0] = task_input_base_q[dma_select];
+  assign task_decode_input_base[1] = task_input_base_q[matrix_select];
+  assign task_decode_input_base[2] = task_input_base_q[vector_select];
+  assign task_decode_input_base[3] = task_input_base_q[complex_select];
+
+  assign task_decode_weight_base[0] = task_weight_base_q[dma_select];
+  assign task_decode_weight_base[1] = task_weight_base_q[matrix_select];
+  assign task_decode_weight_base[2] = task_weight_base_q[vector_select];
+  assign task_decode_weight_base[3] = task_weight_base_q[complex_select];
+
+  assign task_decode_work_base[0] = task_work_base_q[dma_select];
+  assign task_decode_work_base[1] = task_work_base_q[matrix_select];
+  assign task_decode_work_base[2] = task_work_base_q[vector_select];
+  assign task_decode_work_base[3] = task_work_base_q[complex_select];
+
+  assign task_decode_output_base[0] = task_output_base_q[dma_select];
+  assign task_decode_output_base[1] = task_output_base_q[matrix_select];
+  assign task_decode_output_base[2] = task_output_base_q[vector_select];
+  assign task_decode_output_base[3] = task_output_base_q[complex_select];
+
+  assign task_decode_kv_base[0] = task_kv_base_q[dma_select];
+  assign task_decode_kv_base[1] = task_kv_base_q[matrix_select];
+  assign task_decode_kv_base[2] = task_kv_base_q[vector_select];
+  assign task_decode_kv_base[3] = task_kv_base_q[complex_select];
+
+  assign task_decode_param_l1_base[0] =
+    task_param_l1_base_q[dma_select];
+  assign task_decode_param_l1_base[1] =
+    task_param_l1_base_q[matrix_select];
+  assign task_decode_param_l1_base[2] =
+    task_param_l1_base_q[vector_select];
+  assign task_decode_param_l1_base[3] =
+    task_param_l1_base_q[complex_select];
+
+  for (genvar decode_idx = 0; decode_idx < 4; decode_idx++) begin : g_task_desc_decode
+    npu_inline_desc_decode u_task_desc_decode (
+      .cmd_i(task_decode_cmd[decode_idx]),
+      .input_base_i(task_decode_input_base[decode_idx]),
+      .weight_base_i(task_decode_weight_base[decode_idx]),
+      .work_base_i(task_decode_work_base[decode_idx]),
+      .output_base_i(task_decode_output_base[decode_idx]),
+      .kv_base_i(task_decode_kv_base[decode_idx]),
+      .param_l1_base_i(task_decode_param_l1_base[decode_idx]),
+      .valid_o(),
+      .engine_o(),
+      .opcode_o(),
+      .desc_flat_o(task_decode_desc_flat[decode_idx])
+    );
+  end
+  /* verilator lint_on PINCONNECTEMPTY */
 
   function automatic logic terminal_state(input logic [3:0] state);
     return (state == NPU_TASK_SUCCESS) || (state == NPU_TASK_ERROR);
@@ -516,27 +592,9 @@ module npu_task_scheduler #(
     end
   end
 
-  always_comb begin
-    inline_desc_resolved = inline_desc_flat;
-    if (cmd_engine == NPU_ENGINE_CONTROL) begin
-      inline_desc_resolved[64 +: 64] =
-        {52'd0, cmd_wait0_resolved};
-      inline_desc_resolved[128 +: 64] =
-        {52'd0, cmd_wait1_resolved};
-      inline_desc_resolved[256 +: 64] =
-        {52'd0, cmd_signal_resolved};
-      if (cmd_is_inline_rearm &&
-          (cmd_signal_resolved != NPU_EVENT_NONE)) begin
-        inline_desc_resolved[64 +: 64] =
-          {52'd0, cmd_signal_resolved};
-        inline_desc_resolved[256 +: 64] = {
-          52'd0,
-          cmd_signal_resolved[11:8] + 1'b1,
-          cmd_signal_resolved[7:0]
-        };
-      end
-    end
-  end
+  assign control_rearm_current_ref = task_signal_q[control_select];
+  assign control_rearm_next_generation =
+    task_signal_q[control_select][11:8] + 1'b1;
 
   always_comb begin
     for (int unsigned slot = 0; slot < TASK_SLOTS; slot++) begin
@@ -570,8 +628,6 @@ module npu_task_scheduler #(
   end
 
   always_comb begin
-    fetch_found         = 1'b0;
-    fetch_select        = '0;
     completion_found    = 1'b0;
     completion_select   = '0;
     dma_select_found    = 1'b0;
@@ -586,12 +642,6 @@ module npu_task_scheduler #(
     control_select      = '0;
 
     for (int unsigned slot = 0; slot < TASK_SLOTS; slot++) begin
-      if ((task_state_q[slot] == NPU_TASK_FETCH_DESC) &&
-          (!fetch_found ||
-           (task_submit_seq_q[slot] < task_submit_seq_q[fetch_select]))) begin
-        fetch_found  = 1'b1;
-        fetch_select = TASK_IDX_W'(slot);
-      end
       if (task_notify_q[slot] &&
           (!completion_found ||
            (task_submit_seq_q[slot] <
@@ -680,35 +730,28 @@ module npu_task_scheduler #(
   assign cmd_id_lookup_ready_o = 1'b1;
   assign cmd_id_busy_o          = lookup_busy_q;
 
-  assign df_fetch_valid_o       = fetch_found && !fetch_active_q && !abort_i;
-  assign df_fetch_desc_addr_o   = task_desc_addr_q[fetch_select];
-  assign df_fetch_command_id_o  = task_command_id_q[fetch_select];
-  assign df_fetch_engine_o      = task_engine_q[fetch_select];
-  assign df_fetch_crc_enable_o  = task_header_flags_q[fetch_select][5];
-  assign df_fetch_rsp_ready_o   = fetch_active_q;
-
-  assign dma_task_valid_o       = dma_select_found && !dma_active_q && !abort_i;
-  assign dma_task_opcode_o      = task_opcode_q[dma_select];
-  assign dma_task_command_id_o  = task_command_id_q[dma_select];
-  assign dma_task_desc_flat_o   = task_desc_flat_q[dma_select];
+  assign dma_task_valid_o       = dma_dispatch_valid_q && !abort_i;
+  assign dma_task_opcode_o      = dma_dispatch_opcode_q;
+  assign dma_task_command_id_o  = dma_dispatch_command_id_q;
+  assign dma_task_desc_flat_o   = dma_dispatch_desc_q;
   assign dma_done_ready_o       = dma_active_q;
 
-  assign matrix_task_valid_o      = matrix_select_found && !matrix_active_q && !abort_i;
-  assign matrix_task_opcode_o     = task_opcode_q[matrix_select];
-  assign matrix_task_command_id_o = task_command_id_q[matrix_select];
-  assign matrix_task_desc_flat_o  = task_desc_flat_q[matrix_select];
+  assign matrix_task_valid_o      = matrix_dispatch_valid_q && !abort_i;
+  assign matrix_task_opcode_o     = matrix_dispatch_opcode_q;
+  assign matrix_task_command_id_o = matrix_dispatch_command_id_q;
+  assign matrix_task_desc_flat_o  = matrix_dispatch_desc_q;
   assign matrix_done_ready_o      = matrix_active_q;
 
-  assign vector_task_valid_o      = vector_select_found && !vector_active_q && !abort_i;
-  assign vector_task_opcode_o     = task_opcode_q[vector_select];
-  assign vector_task_command_id_o = task_command_id_q[vector_select];
-  assign vector_task_desc_flat_o  = task_desc_flat_q[vector_select];
+  assign vector_task_valid_o      = vector_dispatch_valid_q && !abort_i;
+  assign vector_task_opcode_o     = vector_dispatch_opcode_q;
+  assign vector_task_command_id_o = vector_dispatch_command_id_q;
+  assign vector_task_desc_flat_o  = vector_dispatch_desc_q;
   assign vector_done_ready_o      = vector_active_q;
 
-  assign complex_task_valid_o      = complex_select_found && !complex_active_q && !abort_i;
-  assign complex_task_opcode_o     = task_opcode_q[complex_select];
-  assign complex_task_command_id_o = task_command_id_q[complex_select];
-  assign complex_task_desc_flat_o  = task_desc_flat_q[complex_select];
+  assign complex_task_valid_o      = complex_dispatch_valid_q && !abort_i;
+  assign complex_task_opcode_o     = complex_dispatch_opcode_q;
+  assign complex_task_command_id_o = complex_dispatch_command_id_q;
+  assign complex_task_desc_flat_o  = complex_dispatch_desc_q;
   assign complex_done_ready_o      = complex_active_q;
 
   assign completion_valid_o       = completion_found;
@@ -734,7 +777,9 @@ module npu_task_scheduler #(
   assign task_query_status_o     = task_status_q[query_select];
   assign task_query_fault_addr_o = task_fault_addr_q[query_select];
   assign task_query_progress_o   = task_progress_q[query_select];
-  assign task_query_user_tag_o   = task_desc_flat_q[query_select][511:480];
+  assign task_query_user_tag_o   = {
+    22'd0, task_cmd_q[query_select][121:112]
+  };
   assign task_query_signal_event_o = task_signal_q[query_select];
   assign task_query_error_info_o = task_error_info_q[query_select];
   assign task_query_done_flags_o = task_done_flags_q[query_select];
@@ -749,7 +794,6 @@ module npu_task_scheduler #(
     end
   end
   assign scheduler_idle_o = (task_occupancy_o == 0)
-                          && !fetch_active_q
                           && !dma_active_q
                           && !matrix_active_q
                           && !vector_active_q
@@ -758,8 +802,6 @@ module npu_task_scheduler #(
   always_ff @(posedge clk_i or negedge reset_n) begin
     if (!reset_n) begin
       submit_seq_q               <= 64'd0;
-      fetch_active_q             <= 1'b0;
-      fetch_slot_q               <= '0;
       dma_active_q               <= 1'b0;
       matrix_active_q            <= 1'b0;
       vector_active_q            <= 1'b0;
@@ -768,6 +810,22 @@ module npu_task_scheduler #(
       matrix_active_slot_q       <= '0;
       vector_active_slot_q       <= '0;
       complex_active_slot_q      <= '0;
+      dma_dispatch_valid_q       <= 1'b0;
+      matrix_dispatch_valid_q    <= 1'b0;
+      vector_dispatch_valid_q    <= 1'b0;
+      complex_dispatch_valid_q   <= 1'b0;
+      dma_dispatch_slot_q        <= '0;
+      matrix_dispatch_slot_q     <= '0;
+      vector_dispatch_slot_q     <= '0;
+      complex_dispatch_slot_q    <= '0;
+      dma_dispatch_opcode_q      <= 8'd0;
+      matrix_dispatch_opcode_q   <= 8'd0;
+      vector_dispatch_opcode_q   <= 8'd0;
+      complex_dispatch_opcode_q  <= 8'd0;
+      dma_dispatch_command_id_q     <= 12'd0;
+      matrix_dispatch_command_id_q  <= 12'd0;
+      vector_dispatch_command_id_q  <= 12'd0;
+      complex_dispatch_command_id_q <= 12'd0;
       cmd_id_lookup_rsp_valid_o  <= 1'b0;
       lookup_busy_q              <= 1'b0;
       ctl_active_q               <= 1'b0;
@@ -784,7 +842,6 @@ module npu_task_scheduler #(
       ctl_fence_failure_seq_q    <= 64'hffff_ffff_ffff_ffff;
       for (int unsigned slot = 0; slot < TASK_SLOTS; slot++) begin
         task_state_q[slot]        <= NPU_TASK_FREE;
-        task_desc_addr_q[slot]    <= 48'd0;
         task_command_id_q[slot]   <= 12'd0;
         task_engine_q[slot]       <= 4'd0;
         task_opcode_q[slot]       <= 8'd0;
@@ -793,7 +850,6 @@ module npu_task_scheduler #(
         task_wait1_q[slot]        <= NPU_EVENT_NONE;
         task_signal_q[slot]       <= NPU_EVENT_NONE;
         task_submit_seq_q[slot]   <= 64'd0;
-        task_desc_flat_q[slot]    <= '0;
         task_status_q[slot]       <= NPU_STATUS_SUCCESS;
         task_fault_addr_q[slot]   <= 48'd0;
         task_progress_q[slot]     <= 64'd0;
@@ -820,7 +876,6 @@ module npu_task_scheduler #(
         if (ctl_ack_release_q) begin
           task_state_q[ctl_ack_slot_q]      <= NPU_TASK_FREE;
           task_notify_q[ctl_ack_slot_q]     <= 1'b0;
-          task_desc_flat_q[ctl_ack_slot_q]  <= '0;
           task_progress_q[ctl_ack_slot_q]   <= 64'd0;
           task_error_info_q[ctl_ack_slot_q] <= 32'd0;
           task_done_flags_q[ctl_ack_slot_q] <= 16'd0;
@@ -859,7 +914,8 @@ module npu_task_scheduler #(
                 3'd1: begin
                   ctl_rsp_data_q <= ctl_query_found
                     ? {20'd0, task_signal_q[ctl_query_select],
-                       task_desc_flat_q[ctl_query_select][511:480]}
+                       22'd0,
+                       task_cmd_q[ctl_query_select][121:112]}
                     : 64'd0;
                 end
                 3'd2: begin
@@ -900,17 +956,14 @@ module npu_task_scheduler #(
           end
 
           NPU_CTL_WAIT: begin
-            if ((|axi_ctl_arg0_i[63:12])
+            if ((|axi_ctl_arg0_i[63:8])
                 || (|axi_ctl_arg1_i[63:32])
-                || !npu_event_ref_valid(axi_ctl_arg0_i[11:0])
-                || (axi_ctl_arg0_i[11:0] == NPU_EVENT_NONE)
+                || (axi_ctl_arg0_i[7:0] == 8'hff)
                 || (axi_ctl_arg0_i[7:0] >= 8'(EVENT_COUNT))) begin
               ctl_rsp_data_q  <= {56'd0, NPU_STATUS_BAD_DESC};
               ctl_rsp_valid_q <= 1'b1;
-            end else if ((event_generation_q[axi_ctl_arg0_i[7:0]] !=
-                          axi_ctl_arg0_i[11:8])
-                         || (event_state_q[axi_ctl_arg0_i[7:0]] ==
-                             NPU_EVENT_FREE)) begin
+            end else if (event_state_q[axi_ctl_arg0_i[7:0]] ==
+                         NPU_EVENT_FREE) begin
               ctl_rsp_data_q  <= {56'd0, NPU_STATUS_NOT_FOUND};
               ctl_rsp_valid_q <= 1'b1;
             end else if ((event_state_q[axi_ctl_arg0_i[7:0]] ==
@@ -928,6 +981,10 @@ module npu_task_scheduler #(
               ctl_rsp_data_q  <= {56'd0, NPU_STATUS_TIMEOUT};
               ctl_rsp_valid_q <= 1'b1;
             end else begin
+              ctl_arg0_q <= {
+                event_generation_q[axi_ctl_arg0_i[7:0]],
+                axi_ctl_arg0_i[7:0]
+              };
               ctl_active_q <= 1'b1;
             end
           end
@@ -1019,7 +1076,6 @@ module npu_task_scheduler #(
         task_state_q[free_slot]        <= cmd_static_valid
                                         ? NPU_TASK_WAIT_EVENT
                                         : NPU_TASK_ERROR;
-        task_desc_addr_q[free_slot]    <= 48'd0;
         task_command_id_q[free_slot]   <= cmd_command_id;
         task_engine_q[free_slot]       <= cmd_engine;
         task_opcode_q[free_slot]       <= cmd_opcode;
@@ -1030,7 +1086,13 @@ module npu_task_scheduler #(
                                         ? cmd_signal_resolved
                                         : NPU_EVENT_NONE;
         task_submit_seq_q[free_slot]   <= submit_seq_q;
-        task_desc_flat_q[free_slot]    <= inline_desc_resolved;
+        task_cmd_q[free_slot]           <= cfe_cmd_i;
+        task_input_base_q[free_slot]    <= input_base_i;
+        task_weight_base_q[free_slot]   <= weight_base_i;
+        task_work_base_q[free_slot]     <= work_base_i;
+        task_output_base_q[free_slot]   <= output_base_i;
+        task_kv_base_q[free_slot]       <= kv_base_i;
+        task_param_l1_base_q[free_slot] <= param_l1_base_i;
         task_status_q[free_slot]       <= cmd_static_valid
                                         ? NPU_STATUS_SUCCESS
                                         : NPU_STATUS_BAD_DESC;
@@ -1050,40 +1112,6 @@ module npu_task_scheduler #(
             !cmd_is_inline_rearm) begin
           event_state_q[cmd_signal_resolved[7:0]] <= NPU_EVENT_PENDING;
           event_producer_q[cmd_signal_resolved[7:0]] <= cmd_command_id;
-        end
-      end
-
-      if (df_fetch_valid_o && df_fetch_ready_i) begin
-        fetch_active_q <= 1'b1;
-        fetch_slot_q   <= fetch_select;
-      end
-
-      if (df_fetch_rsp_valid_i && df_fetch_rsp_ready_o) begin
-        fetch_active_q <= 1'b0;
-        if (terminal_state(task_state_q[fetch_slot_q])) begin
-          // An abort can make the task terminal while DFU drains its response.
-        end else if (df_fetch_rsp_command_id_i !=
-                     task_command_id_q[fetch_slot_q]) begin
-          task_state_q[fetch_slot_q]      <= NPU_TASK_ERROR;
-          task_status_q[fetch_slot_q]     <= NPU_STATUS_BAD_DESC;
-          task_fault_addr_q[fetch_slot_q] <= task_desc_addr_q[fetch_slot_q];
-          task_progress_q[fetch_slot_q]   <= 64'd0;
-          task_error_info_q[fetch_slot_q] <= make_error_info(
-            4'd2, NPU_STATUS_BAD_DESC, task_opcode_q[fetch_slot_q]);
-          task_done_flags_q[fetch_slot_q] <= 16'd0;
-          task_notify_q[fetch_slot_q]     <= 1'b1;
-        end else if (df_fetch_rsp_status_i != NPU_STATUS_SUCCESS) begin
-          task_state_q[fetch_slot_q]      <= NPU_TASK_ERROR;
-          task_status_q[fetch_slot_q]     <= df_fetch_rsp_status_i;
-          task_fault_addr_q[fetch_slot_q] <= df_fetch_rsp_fault_addr_i;
-          task_progress_q[fetch_slot_q]   <= 64'd0;
-          task_error_info_q[fetch_slot_q] <= make_error_info(
-            4'd2, df_fetch_rsp_status_i, task_opcode_q[fetch_slot_q]);
-          task_done_flags_q[fetch_slot_q] <= 16'd0;
-          task_notify_q[fetch_slot_q]     <= 1'b1;
-        end else begin
-          task_desc_flat_q[fetch_slot_q] <= df_fetch_rsp_desc_flat_i;
-          task_state_q[fetch_slot_q]     <= NPU_TASK_WAIT_EVENT;
         end
       end
 
@@ -1110,33 +1138,22 @@ module npu_task_scheduler #(
         task_done_flags_q[control_select] <= 16'd0;
         task_notify_q[control_select]     <= 1'b1;
         if (task_opcode_q[control_select] == NPU_OPCODE_EVENT_REARM) begin
-          if ((task_desc_flat_q[control_select][71:64] <
-               8'(EVENT_COUNT)) &&
-              ((event_state_q[
-                  task_desc_flat_q[control_select][71:64]
-                ] == NPU_EVENT_SUCCESS) ||
-               (event_state_q[
-                  task_desc_flat_q[control_select][71:64]
-                ] == NPU_EVENT_ERROR)) &&
-              (event_generation_q[
-                 task_desc_flat_q[control_select][71:64]
-               ] == task_desc_flat_q[control_select][75:72]) &&
-              !event_has_live_waiter(
-                task_desc_flat_q[control_select][75:64]
-              ) &&
-              (task_desc_flat_q[control_select][263:256] ==
-               task_desc_flat_q[control_select][71:64]) &&
-              (task_desc_flat_q[control_select][267:264] ==
-               (task_desc_flat_q[control_select][75:72] + 1'b1))) begin
+          if ((control_rearm_current_ref[7:0] < 8'(EVENT_COUNT)) &&
+              ((event_state_q[control_rearm_current_ref[7:0]] ==
+                NPU_EVENT_SUCCESS) ||
+               (event_state_q[control_rearm_current_ref[7:0]] ==
+                NPU_EVENT_ERROR)) &&
+              (event_generation_q[control_rearm_current_ref[7:0]] ==
+               control_rearm_current_ref[11:8]) &&
+              !event_has_live_waiter(control_rearm_current_ref)) begin
             task_status_q[control_select]     <= NPU_STATUS_SUCCESS;
             task_error_info_q[control_select] <= 32'd0;
             task_state_q[control_select]      <= NPU_TASK_SUCCESS;
-            event_state_q[task_desc_flat_q[control_select][71:64]]
+            event_state_q[control_rearm_current_ref[7:0]]
               <= NPU_EVENT_FREE;
-            event_generation_q[
-              task_desc_flat_q[control_select][71:64]
-            ] <= task_desc_flat_q[control_select][267:264];
-            event_producer_q[task_desc_flat_q[control_select][71:64]]
+            event_generation_q[control_rearm_current_ref[7:0]]
+              <= control_rearm_next_generation;
+            event_producer_q[control_rearm_current_ref[7:0]]
               <= 12'd0;
           end else begin
             task_status_q[control_select] <= NPU_STATUS_BAD_DESC;
@@ -1153,25 +1170,62 @@ module npu_task_scheduler #(
         end
       end
 
+      if (dma_select_found && !dma_active_q &&
+          !dma_dispatch_valid_q && !abort_i) begin
+        dma_dispatch_valid_q      <= 1'b1;
+        dma_dispatch_slot_q       <= dma_select;
+        dma_dispatch_opcode_q     <= task_opcode_q[dma_select];
+        dma_dispatch_command_id_q <= task_command_id_q[dma_select];
+        dma_dispatch_desc_q       <= task_decode_desc_flat[0];
+      end
+      if (matrix_select_found && !matrix_active_q &&
+          !matrix_dispatch_valid_q && !abort_i) begin
+        matrix_dispatch_valid_q      <= 1'b1;
+        matrix_dispatch_slot_q       <= matrix_select;
+        matrix_dispatch_opcode_q     <= task_opcode_q[matrix_select];
+        matrix_dispatch_command_id_q <= task_command_id_q[matrix_select];
+        matrix_dispatch_desc_q       <= task_decode_desc_flat[1];
+      end
+      if (vector_select_found && !vector_active_q &&
+          !vector_dispatch_valid_q && !abort_i) begin
+        vector_dispatch_valid_q      <= 1'b1;
+        vector_dispatch_slot_q       <= vector_select;
+        vector_dispatch_opcode_q     <= task_opcode_q[vector_select];
+        vector_dispatch_command_id_q <= task_command_id_q[vector_select];
+        vector_dispatch_desc_q       <= task_decode_desc_flat[2];
+      end
+      if (complex_select_found && !complex_active_q &&
+          !complex_dispatch_valid_q && !abort_i) begin
+        complex_dispatch_valid_q      <= 1'b1;
+        complex_dispatch_slot_q       <= complex_select;
+        complex_dispatch_opcode_q     <= task_opcode_q[complex_select];
+        complex_dispatch_command_id_q <= task_command_id_q[complex_select];
+        complex_dispatch_desc_q       <= task_decode_desc_flat[3];
+      end
+
       if (dma_task_valid_o && dma_task_ready_i) begin
+        dma_dispatch_valid_q       <= 1'b0;
         dma_active_q              <= 1'b1;
-        dma_active_slot_q         <= dma_select;
-        task_state_q[dma_select]  <= NPU_TASK_RUNNING;
+        dma_active_slot_q         <= dma_dispatch_slot_q;
+        task_state_q[dma_dispatch_slot_q] <= NPU_TASK_RUNNING;
       end
       if (matrix_task_valid_o && matrix_task_ready_i) begin
+        matrix_dispatch_valid_q      <= 1'b0;
         matrix_active_q             <= 1'b1;
-        matrix_active_slot_q        <= matrix_select;
-        task_state_q[matrix_select] <= NPU_TASK_RUNNING;
+        matrix_active_slot_q        <= matrix_dispatch_slot_q;
+        task_state_q[matrix_dispatch_slot_q] <= NPU_TASK_RUNNING;
       end
       if (vector_task_valid_o && vector_task_ready_i) begin
+        vector_dispatch_valid_q      <= 1'b0;
         vector_active_q             <= 1'b1;
-        vector_active_slot_q        <= vector_select;
-        task_state_q[vector_select] <= NPU_TASK_RUNNING;
+        vector_active_slot_q        <= vector_dispatch_slot_q;
+        task_state_q[vector_dispatch_slot_q] <= NPU_TASK_RUNNING;
       end
       if (complex_task_valid_o && complex_task_ready_i) begin
+        complex_dispatch_valid_q      <= 1'b0;
         complex_active_q             <= 1'b1;
-        complex_active_slot_q        <= complex_select;
-        task_state_q[complex_select] <= NPU_TASK_RUNNING;
+        complex_active_slot_q        <= complex_dispatch_slot_q;
+        task_state_q[complex_dispatch_slot_q] <= NPU_TASK_RUNNING;
       end
 
       if (dma_done_valid_i && dma_done_ready_o) begin
@@ -1308,7 +1362,6 @@ module npu_task_scheduler #(
       if (task_ack_valid_i && task_ack_ready_o) begin
         task_state_q[ack_select]      <= NPU_TASK_FREE;
         task_notify_q[ack_select]     <= 1'b0;
-        task_desc_flat_q[ack_select]  <= '0;
         task_progress_q[ack_select]   <= 64'd0;
         task_error_info_q[ack_select] <= 32'd0;
         task_done_flags_q[ack_select] <= 16'd0;
@@ -1329,6 +1382,10 @@ module npu_task_scheduler #(
       end
 
       if (abort_i) begin
+        dma_dispatch_valid_q     <= 1'b0;
+        matrix_dispatch_valid_q  <= 1'b0;
+        vector_dispatch_valid_q  <= 1'b0;
+        complex_dispatch_valid_q <= 1'b0;
         for (int unsigned slot = 0; slot < TASK_SLOTS; slot++) begin
           if ((task_state_q[slot] != NPU_TASK_FREE) &&
               !terminal_state(task_state_q[slot])) begin
