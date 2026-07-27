@@ -42,6 +42,8 @@ module npu_vector_engine (
     ST_KEEP_REQ,
     ST_KEEP_RSP,
     ST_EXEC,
+    ST_MUL,
+    ST_MUL_POST,
     ST_RMW_REQ,
     ST_RMW_RSP,
     ST_WRITE_REQ,
@@ -56,10 +58,19 @@ module npu_vector_engine (
   logic [31:0] col_q;
   logic signed [63:0] src0_value_q;
   logic signed [63:0] src1_value_q;
-  logic signed [63:0] src2_value_q;
+  logic signed [31:0] src2_value_q;
+  logic signed [31:0] mul_product_q;
+  logic signed [31:0] mul_addend_q;
+  logic mul_is_fma_q;
+  logic [1:0] mul_dst_dtype_q;
+  logic [7:0] mul_overflow_mode_q;
+  logic [47:0] mul_dst_addr_q;
+  logic mul_dst_high_nibble_q;
   logic signed [63:0] result_q;
   logic [63:0] rmw_beat_q;
   logic mask_value_q;
+  logic write_last_col_q;
+  logic write_last_row_q;
   logic [7:0] status_q;
   logic [47:0] fault_addr_q;
   logic [63:0] progress_q;
@@ -210,6 +221,13 @@ module npu_vector_engine (
     ({16'd0, row_q} * {16'd0, mask_row_stride}) +
     ({16'd0, col_q} * {16'd0, mask_elem_stride});
 
+  wire vector_mul_opcode =
+    opcode_q == NPU_VECTOR_MUL || opcode_q == NPU_VECTOR_FMA;
+  wire signed [15:0] mul_src0_operand = $signed(src0_value_q[15:0]);
+  wire signed [15:0] mul_src1_operand = $signed(src1_value_q[15:0]);
+  wire signed [31:0] mul_product =
+    mul_src0_operand * mul_src1_operand;
+
   wire src0_high_nibble = tensor_nibble(
     col_q[0], broadcast_mode[1:0], src0_dtype, src0_nibble
   );
@@ -327,16 +345,6 @@ module npu_vector_engine (
     logic overflow;
     if (!reset_n) begin
       state_q <= ST_IDLE;
-      desc_q <= '0;
-      opcode_q <= '0;
-      row_q <= '0;
-      col_q <= '0;
-      src0_value_q <= '0;
-      src1_value_q <= '0;
-      src2_value_q <= '0;
-      result_q <= '0;
-      rmw_beat_q <= '0;
-      mask_value_q <= 1'b1;
       status_q <= NPU_STATUS_SUCCESS;
       fault_addr_q <= '0;
       progress_q <= 64'd0;
@@ -480,16 +488,16 @@ module npu_vector_engine (
                   src1_value_q <= {{32{scalar0[31]}}, scalar0};
                   if (opcode_uses_src2(opcode_q)) begin
                     if (src2_from_scalar1) begin
-                      src2_value_q <= {{32{scalar1[31]}}, scalar1};
-                      state_q <= ST_EXEC;
+                      src2_value_q <= scalar1;
+                      state_q <= vector_mul_opcode ? ST_MUL : ST_EXEC;
                     end else
                       state_q <= ST_SRC2_REQ;
                   end else
-                    state_q <= ST_EXEC;
+                    state_q <= vector_mul_opcode ? ST_MUL : ST_EXEC;
                 end else
                   state_q <= ST_SRC1_REQ;
               end else
-                state_q <= ST_EXEC;
+                state_q <= vector_mul_opcode ? ST_MUL : ST_EXEC;
             end
           end
 
@@ -510,12 +518,12 @@ module npu_vector_engine (
               );
               if (opcode_uses_src2(opcode_q)) begin
                 if (src2_from_scalar1) begin
-                  src2_value_q <= {{32{scalar1[31]}}, scalar1};
-                  state_q <= ST_EXEC;
+                  src2_value_q <= scalar1;
+                  state_q <= vector_mul_opcode ? ST_MUL : ST_EXEC;
                 end else
                   state_q <= ST_SRC2_REQ;
               end else
-                state_q <= ST_EXEC;
+                state_q <= vector_mul_opcode ? ST_MUL : ST_EXEC;
             end
           end
 
@@ -531,10 +539,10 @@ module npu_vector_engine (
               fail_task(memory_status_to_task(l1_rsp_status_i),
                         src2_addr[47:0]);
             else begin
-              src2_value_q <= load_element(
+              src2_value_q <= 32'(load_element(
                 l1_rsp_rdata_i, src2_addr[2:0], src2_high_nibble, src2_dtype
-              );
-              state_q <= ST_EXEC;
+              ));
+              state_q <= vector_mul_opcode ? ST_MUL : ST_EXEC;
             end
           end
 
@@ -566,11 +574,6 @@ module npu_vector_engine (
               arithmetic_result = src0_value_q + src1_value_q;
             NPU_VECTOR_SUB:
               arithmetic_result = src0_value_q - src1_value_q;
-            NPU_VECTOR_MUL:
-              arithmetic_result = src0_value_q * src1_value_q;
-            NPU_VECTOR_FMA:
-              arithmetic_result =
-                src0_value_q * src1_value_q + src2_value_q;
             NPU_VECTOR_MAX:
               arithmetic_result =
                 src0_value_q > src1_value_q ? src0_value_q : src1_value_q;
@@ -627,6 +630,52 @@ module npu_vector_engine (
           end
         end
 
+        ST_MUL: begin
+          mul_product_q <= mul_product;
+          mul_addend_q <= src2_value_q;
+          mul_is_fma_q <= opcode_q == NPU_VECTOR_FMA;
+          mul_dst_dtype_q <= dst_dtype;
+          mul_overflow_mode_q <= overflow_mode;
+          mul_dst_addr_q <= dst_addr[47:0];
+          mul_dst_high_nibble_q <= dst_high_nibble;
+          state_q <= ST_MUL_POST;
+        end
+
+        ST_MUL_POST: begin
+          arithmetic_result =
+            $signed({{32{mul_product_q[31]}}, mul_product_q});
+          if (mul_is_fma_q)
+            arithmetic_result = arithmetic_result +
+              $signed({{32{mul_addend_q[31]}}, mul_addend_q});
+          overflow =
+            arithmetic_result < dtype_min(mul_dst_dtype_q) ||
+            arithmetic_result > dtype_max(mul_dst_dtype_q);
+          if (overflow && mul_overflow_mode_q == 8'd1)
+            fail_task(NPU_STATUS_NUMERIC_EXCEPTION, mul_dst_addr_q);
+          else begin
+            if (mul_overflow_mode_q == 8'd2)
+              result_q <= wrap_to_dtype(
+                arithmetic_result[31:0], mul_dst_dtype_q
+              );
+            else
+              result_q <= clip_to_dtype(
+                arithmetic_result, mul_dst_dtype_q
+              );
+            rmw_beat_q <= 64'd0;
+            if (element_crosses_beat(
+                  mul_dst_addr_q[2:0], mul_dst_dtype_q
+                ))
+              fail_task(
+                NPU_STATUS_ADDR_FAULT, mul_dst_addr_q
+              );
+            else
+              state_q <=
+                (mul_dst_dtype_q == NPU_DTYPE_INT4 &&
+                 mul_dst_high_nibble_q) ?
+                ST_RMW_REQ : ST_WRITE_REQ;
+          end
+        end
+
         ST_RMW_REQ:
           if (l1_req_ready_i)
             state_q <= ST_RMW_RSP;
@@ -643,8 +692,13 @@ module npu_vector_engine (
           end
 
         ST_WRITE_REQ:
-          if (l1_req_ready_i)
+          if (l1_req_ready_i) begin
+            write_last_col_q <=
+              col_q + 1 >=
+              ((row_q + 1 == rows) ? valid_length : length);
+            write_last_row_q <= row_q + 1 >= rows;
             state_q <= ST_WRITE_RSP;
+          end
 
         ST_WRITE_RSP:
           if (l1_rsp_valid_i) begin
@@ -653,12 +707,11 @@ module npu_vector_engine (
                         dst_addr[47:0]);
             else begin
               progress_q <= progress_q + 1;
-              if (col_q + 1 <
-                     ((row_q + 1 == rows) ? valid_length : length)) begin
+              if (!write_last_col_q) begin
                 col_q <= col_q + 1;
                 mask_value_q <= 1'b1;
                 state_q <= mask_enable ? ST_MASK_REQ : ST_SRC0_REQ;
-              end else if (row_q + 1 < rows) begin
+              end else if (!write_last_row_q) begin
                 row_q <= row_q + 1;
                 col_q <= 32'd0;
                 mask_value_q <= 1'b1;

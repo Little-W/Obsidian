@@ -40,7 +40,8 @@ module npu_matrix_engine (
     ST_A_RSP,
     ST_B_REQ,
     ST_B_RSP,
-    ST_MAC,
+    ST_MAC_MUL,
+    ST_MAC_ACC,
     ST_SRC2_REQ,
     ST_SRC2_RSP,
     ST_BIAS_REQ,
@@ -62,8 +63,13 @@ module npu_matrix_engine (
   logic [31:0] row_q;
   logic [31:0] col_q;
   logic [31:0] k_q;
-  logic signed [63:0] a_value_q;
-  logic signed [63:0] b_value_q;
+  logic signed [15:0] a_value_q;
+  logic signed [15:0] b_value_q;
+  logic signed [31:0] mac_product_q;
+  logic mac_last_q;
+  logic mac_use_src2_q;
+  logic mac_bias_enable_q;
+  logic mac_requant_enable_q;
   logic signed [63:0] accum_q;
   logic signed [63:0] result_q;
   logic [39:0] requant_entry_q;
@@ -307,6 +313,9 @@ module npu_matrix_engine (
     requant_base[47:0] +
     ((requant_mode == 8'd2) ? {13'd0, col_q, 3'b000} : 48'd0);
 
+  wire signed [31:0] mac_product =
+    a_value_q * b_value_q;
+
   wire a_high_nibble = a_dtype == NPU_DTYPE_INT4 &&
     (transpose_a ? row_q[0] : k_q[0]);
   wire b_high_nibble = b_dtype == NPU_DTYPE_INT4 &&
@@ -402,18 +411,6 @@ module npu_matrix_engine (
     logic overflow;
     if (!reset_n) begin
       state_q <= ST_IDLE;
-      desc_q <= '0;
-      opcode_q <= '0;
-      batch_q <= '0;
-      row_q <= '0;
-      col_q <= '0;
-      k_q <= '0;
-      a_value_q <= '0;
-      b_value_q <= '0;
-      accum_q <= '0;
-      result_q <= '0;
-      requant_entry_q <= '0;
-      rmw_beat_q <= '0;
       status_q <= NPU_STATUS_SUCCESS;
       fault_addr_q <= 48'd0;
       progress_q <= 64'd0;
@@ -594,9 +591,9 @@ module npu_matrix_engine (
               fail_task(memory_status_to_task(l1_rsp_status_i),
                         a_addr[47:0]);
             else begin
-              a_value_q <= load_element(
+              a_value_q <= 16'(load_element(
                 l1_rsp_rdata_i, a_addr[2:0], a_high_nibble, a_dtype
-              );
+              ));
               if (crosses_beat(b_addr[2:0], b_dtype))
                 fail_task(NPU_STATUS_ADDR_FAULT, b_addr[47:0]);
               else
@@ -614,23 +611,33 @@ module npu_matrix_engine (
               fail_task(memory_status_to_task(l1_rsp_status_i),
                         b_addr[47:0]);
             else begin
-              b_value_q <= load_element(
+              b_value_q <= 16'(load_element(
                 l1_rsp_rdata_i, b_addr[2:0], b_high_nibble, b_dtype
-              );
-              state_q <= ST_MAC;
+              ));
+              state_q <= ST_MAC_MUL;
             end
           end
 
-        ST_MAC: begin
-          accum_q <= accum_q + a_value_q * b_value_q;
-          if (k_q + 1 < matrix_k) begin
+        ST_MAC_MUL: begin
+          mac_product_q <= mac_product;
+          mac_last_q <= k_q + 1 >= matrix_k;
+          mac_use_src2_q <= accum_from_src2 || residual_enable;
+          mac_bias_enable_q <= bias_enable;
+          mac_requant_enable_q <= requant_enable;
+          state_q <= ST_MAC_ACC;
+        end
+
+        ST_MAC_ACC: begin
+          accum_q <= accum_q +
+            {{32{mac_product_q[31]}}, mac_product_q};
+          if (!mac_last_q) begin
             k_q <= k_q + 1;
             state_q <= ST_A_REQ;
-          end else if (accum_from_src2 || residual_enable)
+          end else if (mac_use_src2_q)
             state_q <= ST_SRC2_REQ;
-          else if (bias_enable)
+          else if (mac_bias_enable_q)
             state_q <= ST_BIAS_REQ;
-          else if (requant_enable)
+          else if (mac_requant_enable_q)
             state_q <= ST_REQUANT_REQ;
           else
             state_q <= ST_EPILOGUE;

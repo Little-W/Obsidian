@@ -42,6 +42,10 @@ module npu_dma_engine (
   typedef enum logic [4:0] {
     ST_IDLE,
     ST_CHECK,
+    ST_SHAPE_LOAD,
+    ST_SHAPE_MUL,
+    ST_REGION_CHECK,
+    ST_CURSOR_INIT,
     ST_PREP,
     ST_READ_REQ,
     ST_READ_RSP,
@@ -50,14 +54,13 @@ module npu_dma_engine (
     ST_RMW_RSP,
     ST_WRITE_REQ,
     ST_WRITE_RSP,
+    ST_ADVANCE,
     ST_DONE
   } state_t;
 
   state_t state_q;
   logic [2047:0] desc_q;
   logic [7:0] opcode_q;
-  logic [63:0] linear_index_q;
-  logic [63:0] total_units_q;
   logic verify_pass_q;
   logic signed [63:0] source_value_q;
   logic signed [63:0] result_q;
@@ -65,6 +68,48 @@ module npu_dma_engine (
   logic [7:0] status_q;
   logic [47:0] fault_addr_q;
   logic [63:0] progress_q;
+
+  /*
+   * Address state advances with the logical tensor indexes.  The last
+   * dimension is contiguous; dimensions 0 through rank-2 use the descriptor
+   * strides.  Keeping the current addresses and the accumulated contribution
+   * of every outer dimension removes division, remainder, and multiply
+   * operations from the per-element path.
+   */
+  logic [31:0] index_q [0:4];
+  logic [63:0] src_dim_offset_q [0:4];
+  logic [63:0] dst_dim_offset_q [0:4];
+  logic [63:0] src_inner_base_q;
+  logic [63:0] dst_inner_base_q;
+  logic [63:0] current_src_addr_q;
+  logic [63:0] current_dst_addr_q;
+  logic source_high_nibble_q;
+  logic destination_high_nibble_q;
+  logic [2:0] advance_dim_q;
+
+  logic [15:0] segment_index_q;
+  logic [15:0] segment_byte_q;
+  logic [63:0] src_segment_base_q;
+  logic [63:0] dst_segment_base_q;
+
+  logic [31:0] transpose_row_q;
+  logic [31:0] transpose_col_q;
+  logic [63:0] transpose_src_row_base_q;
+  logic [63:0] transpose_dst_inner_base_q;
+
+  /*
+   * Shape overflow checking uses a bit-serial 128-by-32 multiply.  One
+   * 128-bit add is performed per cycle, so rank 1 through 5 no longer creates
+   * a combinational cascade of wide multipliers.
+   */
+  logic [127:0] shape_product_q;
+  logic [127:0] shape_mul_accum_q;
+  logic [127:0] shape_mul_multiplicand_q;
+  logic [31:0] shape_mul_multiplier_q;
+  logic [5:0] shape_mul_bit_q;
+  logic [2:0] shape_dim_q;
+  logic shape_zero_q;
+  logic shape_overflow_q;
 
   wire [7:0] desc_version = desc_q[7:0];
   wire [7:0] desc_type = desc_q[15:8];
@@ -125,88 +170,43 @@ module npu_dma_engine (
     return opcode == NPU_DMA_PACK || opcode == NPU_DMA_SPLIT;
   endfunction
 
-  function automatic logic [63:0] shape_product(
-    input logic [7:0] rank_value,
-    input logic [159:0] shapes
+  function automatic logic [31:0] shape_at(
+    input logic [2:0] dimension
   );
-    logic [127:0] product;
-    integer dimension;
-    begin
-      product = 128'd1;
-      for (dimension = 0; dimension < 5; dimension = dimension + 1) begin
-        if (dimension < rank_value)
-          product = product * shapes[dimension * 32 +: 32];
-      end
-      if (product[127:64] != 0)
-        return 64'hffff_ffff_ffff_ffff;
-      return product[63:0];
-    end
+    case (dimension)
+      3'd0: return shape_packed[31:0];
+      3'd1: return shape_packed[63:32];
+      3'd2: return shape_packed[95:64];
+      3'd3: return shape_packed[127:96];
+      3'd4: return shape_packed[159:128];
+      default: return 32'd0;
+    endcase
   endfunction
 
-  function automatic logic [63:0] nd_byte_offset(
-    input logic [63:0] linear,
-    input logic [7:0] rank_value,
-    input logic [159:0] shapes,
-    input logic [159:0] strides,
-    input logic [1:0] dtype,
-    input logic start_nibble
+  function automatic logic [31:0] src_stride_at(
+    input logic [2:0] dimension
   );
-    logic [63:0] remainder;
-    logic [63:0] indexes [0:4];
-    logic [31:0] dimension_size;
-    logic [63:0] dimension_size_wide;
-    logic [63:0] result;
-    integer dimension;
-    begin
-      remainder = linear;
-      for (dimension = 0; dimension < 5; dimension = dimension + 1)
-        indexes[dimension] = 64'd0;
-      for (dimension = 4; dimension >= 0; dimension = dimension - 1) begin
-        if (dimension < rank_value) begin
-          dimension_size = shapes[dimension * 32 +: 32];
-          dimension_size_wide = {32'd0, dimension_size};
-          if (dimension_size != 0) begin
-            indexes[dimension] = remainder % dimension_size_wide;
-            remainder = remainder / dimension_size_wide;
-          end
-        end
-      end
-      result = 64'd0;
-      for (dimension = 0; dimension < 4; dimension = dimension + 1) begin
-        if (dimension + 1 < rank_value)
-          result = result +
-                   indexes[dimension] * strides[dimension * 32 +: 32];
-      end
-      if (rank_value >= 1 && rank_value <= 5) begin
-        if (dtype == NPU_DTYPE_INT4)
-          result = result +
-                   ((indexes[rank_value - 1] +
-                     {63'd0, start_nibble}) >> 1);
-        else
-          result = result +
-                   indexes[rank_value - 1] * dtype_bytes(dtype);
-      end
-      return result;
-    end
+    case (dimension)
+      3'd0: return src_stride_packed[31:0];
+      3'd1: return src_stride_packed[63:32];
+      3'd2: return src_stride_packed[95:64];
+      3'd3: return src_stride_packed[127:96];
+      3'd4: return src_stride_packed[159:128];
+      default: return 32'd0;
+    endcase
   endfunction
 
-  function automatic logic nd_high_nibble(
-    input logic [63:0] linear,
-    input logic [7:0] rank_value,
-    input logic [159:0] shapes,
-    input logic start_nibble,
-    input logic [1:0] dtype
+  function automatic logic [31:0] dst_stride_at(
+    input logic [2:0] dimension
   );
-    logic [31:0] inner_size;
-    begin
-      if (dtype != NPU_DTYPE_INT4 ||
-          rank_value == 0 || rank_value > 5)
-        return 1'b0;
-      inner_size = shapes[(rank_value - 1) * 32 +: 32];
-      return (inner_size == 0 ? 1'b0 :
-              1'(linear % {32'd0, inner_size})) ^
-             start_nibble;
-    end
+    case (dimension)
+      3'd0: return dst_stride_packed[31:0];
+      3'd1: return dst_stride_packed[63:32];
+      3'd2: return dst_stride_packed[95:64];
+      3'd3: return dst_stride_packed[127:96];
+      3'd4: return dst_stride_packed[159:128];
+      default: return 32'd0;
+    endcase
   endfunction
 
   function automatic logic signed [63:0] fill_as_integer(
@@ -221,91 +221,14 @@ module npu_dma_engine (
     endcase
   endfunction
 
-  wire [31:0] transpose_cols = shape_packed[63:32];
-  wire [63:0] transpose_cols_wide = {32'd0, transpose_cols};
-  wire [63:0] segment_bytes_wide = {48'd0, segment_bytes};
-  wire [63:0] segment_stride_wide = {32'd0, segment_stride};
-  wire [63:0] transpose_row =
-    transpose_cols == 0 ? 64'd0 :
-    linear_index_q / transpose_cols_wide;
-  wire [63:0] transpose_col =
-    transpose_cols == 0 ? 64'd0 :
-    linear_index_q % transpose_cols_wide;
-
-  logic [63:0] source_offset;
-  logic [63:0] destination_offset;
-  logic source_high_nibble;
-  logic destination_high_nibble;
-  logic [1:0] transfer_src_dtype;
-  logic [1:0] transfer_dst_dtype;
-
-  always_comb begin
-    source_offset = 64'd0;
-    destination_offset = 64'd0;
-    source_high_nibble = 1'b0;
-    destination_high_nibble = 1'b0;
-    transfer_src_dtype = byte_mode(opcode_q) ? NPU_DTYPE_INT8 : src_dtype;
-    transfer_dst_dtype = byte_mode(opcode_q) ? NPU_DTYPE_INT8 : dst_dtype;
-
-    case (opcode_q)
-      NPU_DMA_PACK: begin
-        if (segment_bytes != 0) begin
-          source_offset =
-            (linear_index_q / segment_bytes_wide) *
-            segment_stride_wide +
-            (linear_index_q % segment_bytes_wide);
-          destination_offset = linear_index_q;
-        end
-      end
-      NPU_DMA_SPLIT: begin
-        if (segment_bytes != 0) begin
-          source_offset = linear_index_q;
-          destination_offset =
-            (linear_index_q / segment_bytes_wide) *
-            segment_stride_wide +
-            (linear_index_q % segment_bytes_wide);
-        end
-      end
-      NPU_DMA_TRANSPOSE_2D: begin
-        if (src_dtype == NPU_DTYPE_INT4) begin
-          source_offset =
-            transpose_row * src_stride_packed[31:0] +
-            ((transpose_col + {63'd0, src_nibble}) >> 1);
-          destination_offset =
-            transpose_col * dst_stride_packed[31:0] +
-            ((transpose_row + {63'd0, dst_nibble}) >> 1);
-          source_high_nibble = transpose_col[0] ^ src_nibble;
-          destination_high_nibble = transpose_row[0] ^ dst_nibble;
-        end else begin
-          source_offset =
-            transpose_row * src_stride_packed[31:0] +
-            transpose_col * dtype_bytes(src_dtype);
-          destination_offset =
-            transpose_col * dst_stride_packed[31:0] +
-            transpose_row * dtype_bytes(dst_dtype);
-        end
-      end
-      default: begin
-        source_offset = nd_byte_offset(
-          linear_index_q, rank, shape_packed, src_stride_packed,
-          src_dtype, src_nibble
-        );
-        destination_offset = nd_byte_offset(
-          linear_index_q, rank, shape_packed, dst_stride_packed,
-          dst_dtype, dst_nibble
-        );
-        source_high_nibble = nd_high_nibble(
-          linear_index_q, rank, shape_packed, src_nibble, src_dtype
-        );
-        destination_high_nibble = nd_high_nibble(
-          linear_index_q, rank, shape_packed, dst_nibble, dst_dtype
-        );
-      end
-    endcase
-  end
-
-  wire [63:0] current_src_addr = src_base + source_offset;
-  wire [63:0] current_dst_addr = dst_base + destination_offset;
+  wire [63:0] current_src_addr = current_src_addr_q;
+  wire [63:0] current_dst_addr = current_dst_addr_q;
+  wire source_high_nibble = source_high_nibble_q;
+  wire destination_high_nibble = destination_high_nibble_q;
+  wire [1:0] transfer_src_dtype =
+    byte_mode(opcode_q) ? NPU_DTYPE_INT8 : src_dtype;
+  wire [1:0] transfer_dst_dtype =
+    byte_mode(opcode_q) ? NPU_DTYPE_INT8 : dst_dtype;
   wire [63:0] source_end_addr =
     current_src_addr +
     {61'd0, dtype_storage_bytes(transfer_src_dtype)};
@@ -332,6 +255,18 @@ module npu_dma_engine (
       status_q <= fail_status;
       fault_addr_q <= fail_addr;
       state_q <= ST_DONE;
+    end
+  endtask
+
+  task automatic finish_pass_or_task;
+    begin
+      if (verify_pass_q) begin
+        verify_pass_q <= 1'b0;
+        state_q <= ST_CURSOR_INIT;
+      end else begin
+        status_q <= NPU_STATUS_SUCCESS;
+        state_q <= ST_DONE;
+      end
     end
   endtask
 
@@ -416,26 +351,22 @@ module npu_dma_engine (
   end
 
   always_ff @(posedge clk_i or negedge reset_n) begin
-    logic [63:0] computed_total;
     logic signed [63:0] converted_value;
+    logic [127:0] shape_mul_sum;
     logic read_ready;
     logic rmw_ready;
     logic write_ready;
     logic source_in_range;
     logic destination_in_range;
+    logic [2:0] inner_dimension;
+    integer dimension;
     if (!reset_n) begin
+      /*
+       * The state is the only asynchronously reset storage.  Descriptor,
+       * datapath, address, and counter registers are initialized when a task
+       * is accepted or when its cursor is initialized.
+       */
       state_q <= ST_IDLE;
-      desc_q <= '0;
-      opcode_q <= '0;
-      linear_index_q <= '0;
-      total_units_q <= '0;
-      verify_pass_q <= 1'b0;
-      source_value_q <= '0;
-      result_q <= '0;
-      rmw_beat_q <= '0;
-      status_q <= NPU_STATUS_SUCCESS;
-      fault_addr_q <= 48'd0;
-      progress_q <= 64'd0;
     end else begin
       read_ready = src_space == 0 ? l1_req_ready_i : mif_req_ready_i;
       rmw_ready = dst_space == 0 ? l1_req_ready_i : mif_req_ready_i;
@@ -464,9 +395,6 @@ module npu_dma_engine (
         end
 
         ST_CHECK: begin
-          computed_total = byte_mode(opcode_q) ?
-            segment_count * segment_bytes :
-            shape_product(rank, shape_packed);
           if (!opcode_known(opcode_q))
             fail_task(NPU_STATUS_ILLEGAL_OPCODE, 48'd0);
           else if (desc_version != 8'h01 || desc_type != 8'h01 ||
@@ -538,27 +466,108 @@ module npu_dma_engine (
                         src_dtype == NPU_DTYPE_INT32) &&
                        dst_dtype == NPU_DTYPE_INT4))))
             fail_task(NPU_STATUS_DTYPE_UNSUPPORTED, 48'd0);
-          else if (computed_total == 64'hffff_ffff_ffff_ffff)
-            fail_task(NPU_STATUS_BAD_SHAPE, 48'd0);
-          else if (computed_total == 0) begin
-            status_q <= NPU_STATUS_SUCCESS;
-            state_q <= ST_DONE;
-          end else if (dst_region_bytes == 0 ||
-                       (opcode_q != NPU_DMA_FILL &&
-                        src_region_bytes == 0))
+          else begin
+            verify_pass_q <=
+              opcode_q != NPU_DMA_FILL && convert_mode == 8'd3;
+            if (byte_mode(opcode_q)) begin
+              state_q <= ST_REGION_CHECK;
+            end else begin
+              shape_product_q <= 128'd1;
+              shape_dim_q <= 3'd0;
+              shape_zero_q <= 1'b0;
+              shape_overflow_q <= 1'b0;
+              state_q <= ST_SHAPE_LOAD;
+            end
+          end
+        end
+
+        ST_SHAPE_LOAD: begin
+          shape_mul_accum_q <= 128'd0;
+          shape_mul_multiplicand_q <= shape_product_q;
+          shape_mul_multiplier_q <= shape_at(shape_dim_q);
+          shape_mul_bit_q <= 6'd0;
+          if (shape_at(shape_dim_q) == 0)
+            shape_zero_q <= 1'b1;
+          state_q <= ST_SHAPE_MUL;
+        end
+
+        ST_SHAPE_MUL: begin
+          shape_mul_sum =
+            shape_mul_accum_q +
+            (shape_mul_multiplier_q[0] ?
+             shape_mul_multiplicand_q : 128'd0);
+          if (shape_mul_bit_q == 6'd31) begin
+            shape_product_q <= shape_mul_sum;
+            if (shape_mul_sum[127:64] != 0)
+              shape_overflow_q <= 1'b1;
+            if ({5'd0, shape_dim_q} + 8'd1 < rank) begin
+              shape_dim_q <= shape_dim_q + 3'd1;
+              state_q <= ST_SHAPE_LOAD;
+            end else if (shape_zero_q ||
+                         shape_at(shape_dim_q) == 0) begin
+              status_q <= NPU_STATUS_SUCCESS;
+              state_q <= ST_DONE;
+            end else if (shape_overflow_q ||
+                         shape_mul_sum[127:64] != 0 ||
+                         shape_mul_sum[63:0] ==
+                           64'hffff_ffff_ffff_ffff) begin
+              fail_task(NPU_STATUS_BAD_SHAPE, 48'd0);
+            end else begin
+              state_q <= ST_REGION_CHECK;
+            end
+          end else begin
+            shape_mul_accum_q <= shape_mul_sum;
+            shape_mul_multiplicand_q <=
+              shape_mul_multiplicand_q << 1;
+            shape_mul_multiplier_q <= shape_mul_multiplier_q >> 1;
+            shape_mul_bit_q <= shape_mul_bit_q + 6'd1;
+          end
+        end
+
+        ST_REGION_CHECK: begin
+          if (dst_region_bytes == 0 ||
+              (opcode_q != NPU_DMA_FILL &&
+               src_region_bytes == 0))
             fail_task(NPU_STATUS_ADDR_FAULT, 48'd0);
           else if (opcode_q != NPU_DMA_FILL &&
                    src_space == dst_space &&
                    src_base < dst_base + dst_region_bytes &&
                    dst_base < src_base + src_region_bytes)
             fail_task(NPU_STATUS_ADDR_OVERLAP, dst_base[47:0]);
-          else begin
-            total_units_q <= computed_total;
-            linear_index_q <= 64'd0;
-            verify_pass_q <=
-              opcode_q != NPU_DMA_FILL && convert_mode == 8'd3;
-            state_q <= ST_PREP;
+          else
+            state_q <= ST_CURSOR_INIT;
+        end
+
+        ST_CURSOR_INIT: begin
+          for (dimension = 0;
+               dimension < 5;
+               dimension = dimension + 1) begin
+            index_q[dimension] <= 32'd0;
+            src_dim_offset_q[dimension] <= 64'd0;
+            dst_dim_offset_q[dimension] <= 64'd0;
           end
+          src_inner_base_q <= src_base;
+          dst_inner_base_q <= dst_base;
+          current_src_addr_q <= src_base;
+          current_dst_addr_q <= dst_base;
+          source_high_nibble_q <=
+            !byte_mode(opcode_q) && src_dtype == NPU_DTYPE_INT4 ?
+              src_nibble : 1'b0;
+          destination_high_nibble_q <=
+            !byte_mode(opcode_q) && dst_dtype == NPU_DTYPE_INT4 ?
+              dst_nibble : 1'b0;
+          advance_dim_q <= 3'd7;
+
+          segment_index_q <= 16'd0;
+          segment_byte_q <= 16'd0;
+          src_segment_base_q <= src_base;
+          dst_segment_base_q <= dst_base;
+
+          transpose_row_q <= 32'd0;
+          transpose_col_q <= 32'd0;
+          transpose_src_row_base_q <= src_base;
+          transpose_dst_inner_base_q <= dst_base;
+          state_q <= ST_PREP;
         end
 
         ST_PREP: begin
@@ -567,9 +576,11 @@ module npu_dma_engine (
             fail_task(NPU_STATUS_ADDR_FAULT, current_dst_addr[47:0]);
           else if (opcode_q == NPU_DMA_FILL) begin
             result_q <= fill_as_integer(fill_value, dst_dtype);
-            state_q <=
-              transfer_dst_dtype == NPU_DTYPE_INT4 &&
-              destination_high_nibble ? ST_RMW_REQ : ST_WRITE_REQ;
+            if (transfer_dst_dtype == NPU_DTYPE_INT4 &&
+                destination_high_nibble)
+              state_q <= ST_RMW_REQ;
+            else
+              state_q <= ST_WRITE_REQ;
           end else if (!source_in_range)
             fail_task(NPU_STATUS_ADDR_FAULT, current_src_addr[47:0]);
           else if ((transfer_src_dtype == NPU_DTYPE_INT32 &&
@@ -605,13 +616,9 @@ module npu_dma_engine (
             if (source_value_q < -64'sd8 || source_value_q > 64'sd7)
               fail_task(NPU_STATUS_NUMERIC_EXCEPTION,
                         current_src_addr[47:0]);
-            else if (linear_index_q + 1 < total_units_q) begin
-              linear_index_q <= linear_index_q + 1;
-              state_q <= ST_PREP;
-            end else begin
-              linear_index_q <= 64'd0;
-              verify_pass_q <= 1'b0;
-              state_q <= ST_PREP;
+            else begin
+              advance_dim_q <= 3'd7;
+              state_q <= ST_ADVANCE;
             end
           end else begin
             if (convert_mode == 8'd2)
@@ -623,10 +630,11 @@ module npu_dma_engine (
                 (transfer_dst_dtype == NPU_DTYPE_INT16 &&
                  current_dst_addr[2:0] > 3'd6))
               fail_task(NPU_STATUS_ADDR_FAULT, current_dst_addr[47:0]);
+            else if (transfer_dst_dtype == NPU_DTYPE_INT4 &&
+                     destination_high_nibble)
+              state_q <= ST_RMW_REQ;
             else
-              state_q <=
-                transfer_dst_dtype == NPU_DTYPE_INT4 &&
-                destination_high_nibble ? ST_RMW_REQ : ST_WRITE_REQ;
+              state_q <= ST_WRITE_REQ;
           end
         end
 
@@ -658,20 +666,201 @@ module npu_dma_engine (
             else begin
               if (transfer_dst_dtype == NPU_DTYPE_INT4) begin
                 if (!destination_high_nibble)
-                  progress_q <= progress_q + 1;
+                  progress_q <= progress_q + 64'd1;
               end else
                 progress_q <=
                   progress_q +
                   {61'd0, dtype_bytes(transfer_dst_dtype)};
-              if (linear_index_q + 1 < total_units_q) begin
-                linear_index_q <= linear_index_q + 1;
-                state_q <= ST_PREP;
-              end else begin
-                status_q <= NPU_STATUS_SUCCESS;
-                state_q <= ST_DONE;
-              end
+              advance_dim_q <= 3'd7;
+              state_q <= ST_ADVANCE;
             end
           end
+
+        ST_ADVANCE: begin
+          case (opcode_q)
+            NPU_DMA_PACK,
+            NPU_DMA_SPLIT: begin
+              if (segment_byte_q + 16'd1 < segment_bytes) begin
+                segment_byte_q <= segment_byte_q + 16'd1;
+                current_src_addr_q <= current_src_addr_q + 64'd1;
+                current_dst_addr_q <= current_dst_addr_q + 64'd1;
+                state_q <= ST_PREP;
+              end else if (segment_index_q + 16'd1 <
+                           segment_count) begin
+                segment_index_q <= segment_index_q + 16'd1;
+                segment_byte_q <= 16'd0;
+                if (opcode_q == NPU_DMA_PACK) begin
+                  src_segment_base_q <=
+                    src_segment_base_q +
+                    {32'd0, segment_stride};
+                  dst_segment_base_q <=
+                    dst_segment_base_q +
+                    {48'd0, segment_bytes};
+                  current_src_addr_q <=
+                    src_segment_base_q +
+                    {32'd0, segment_stride};
+                  current_dst_addr_q <=
+                    dst_segment_base_q +
+                    {48'd0, segment_bytes};
+                end else begin
+                  src_segment_base_q <=
+                    src_segment_base_q +
+                    {48'd0, segment_bytes};
+                  dst_segment_base_q <=
+                    dst_segment_base_q +
+                    {32'd0, segment_stride};
+                  current_src_addr_q <=
+                    src_segment_base_q +
+                    {48'd0, segment_bytes};
+                  current_dst_addr_q <=
+                    dst_segment_base_q +
+                    {32'd0, segment_stride};
+                end
+                state_q <= ST_PREP;
+              end else begin
+                finish_pass_or_task();
+              end
+            end
+
+            NPU_DMA_TRANSPOSE_2D: begin
+              if (transpose_col_q + 32'd1 < shape_at(3'd1)) begin
+                transpose_col_q <= transpose_col_q + 32'd1;
+                if (src_dtype == NPU_DTYPE_INT4) begin
+                  source_high_nibble_q <= ~source_high_nibble_q;
+                  if (source_high_nibble_q)
+                    current_src_addr_q <= current_src_addr_q + 64'd1;
+                end else begin
+                  current_src_addr_q <=
+                    current_src_addr_q +
+                    {61'd0, dtype_bytes(src_dtype)};
+                end
+                current_dst_addr_q <=
+                  current_dst_addr_q +
+                  {32'd0, dst_stride_at(3'd0)};
+                state_q <= ST_PREP;
+              end else if (transpose_row_q + 32'd1 <
+                           shape_at(3'd0)) begin
+                transpose_row_q <= transpose_row_q + 32'd1;
+                transpose_col_q <= 32'd0;
+                transpose_src_row_base_q <=
+                  transpose_src_row_base_q +
+                  {32'd0, src_stride_at(3'd0)};
+                current_src_addr_q <=
+                  transpose_src_row_base_q +
+                  {32'd0, src_stride_at(3'd0)};
+                source_high_nibble_q <=
+                  src_dtype == NPU_DTYPE_INT4 ? src_nibble : 1'b0;
+                if (dst_dtype == NPU_DTYPE_INT4) begin
+                  destination_high_nibble_q <=
+                    ~destination_high_nibble_q;
+                  if (destination_high_nibble_q) begin
+                    transpose_dst_inner_base_q <=
+                      transpose_dst_inner_base_q + 64'd1;
+                    current_dst_addr_q <=
+                      transpose_dst_inner_base_q + 64'd1;
+                  end else begin
+                    current_dst_addr_q <=
+                      transpose_dst_inner_base_q;
+                  end
+                end else begin
+                  transpose_dst_inner_base_q <=
+                    transpose_dst_inner_base_q +
+                    {61'd0, dtype_bytes(dst_dtype)};
+                  current_dst_addr_q <=
+                    transpose_dst_inner_base_q +
+                    {61'd0, dtype_bytes(dst_dtype)};
+                  destination_high_nibble_q <= 1'b0;
+                end
+                state_q <= ST_PREP;
+              end else begin
+                finish_pass_or_task();
+              end
+            end
+
+            default: begin
+              inner_dimension = rank[2:0] - 3'd1;
+              if (advance_dim_q == 3'd7) begin
+                if (index_q[inner_dimension] + 32'd1 <
+                    shape_at(inner_dimension)) begin
+                  index_q[inner_dimension] <=
+                    index_q[inner_dimension] + 32'd1;
+                  if (src_dtype == NPU_DTYPE_INT4) begin
+                    source_high_nibble_q <= ~source_high_nibble_q;
+                    if (source_high_nibble_q)
+                      current_src_addr_q <= current_src_addr_q + 64'd1;
+                  end else begin
+                    current_src_addr_q <=
+                      current_src_addr_q +
+                      {61'd0, dtype_bytes(src_dtype)};
+                  end
+                  if (dst_dtype == NPU_DTYPE_INT4) begin
+                    destination_high_nibble_q <=
+                      ~destination_high_nibble_q;
+                    if (destination_high_nibble_q)
+                      current_dst_addr_q <= current_dst_addr_q + 64'd1;
+                  end else begin
+                    current_dst_addr_q <=
+                      current_dst_addr_q +
+                      {61'd0, dtype_bytes(dst_dtype)};
+                  end
+                  state_q <= ST_PREP;
+                end else begin
+                  index_q[inner_dimension] <= 32'd0;
+                  source_high_nibble_q <=
+                    src_dtype == NPU_DTYPE_INT4 ? src_nibble : 1'b0;
+                  destination_high_nibble_q <=
+                    dst_dtype == NPU_DTYPE_INT4 ? dst_nibble : 1'b0;
+                  if (rank == 8'd1)
+                    finish_pass_or_task();
+                  else
+                    advance_dim_q <= rank[2:0] - 3'd2;
+                end
+              end else if (index_q[advance_dim_q] + 32'd1 <
+                           shape_at(advance_dim_q)) begin
+                index_q[advance_dim_q] <=
+                  index_q[advance_dim_q] + 32'd1;
+                src_dim_offset_q[advance_dim_q] <=
+                  src_dim_offset_q[advance_dim_q] +
+                  {32'd0, src_stride_at(advance_dim_q)};
+                dst_dim_offset_q[advance_dim_q] <=
+                  dst_dim_offset_q[advance_dim_q] +
+                  {32'd0, dst_stride_at(advance_dim_q)};
+                src_inner_base_q <=
+                  src_inner_base_q +
+                  {32'd0, src_stride_at(advance_dim_q)};
+                dst_inner_base_q <=
+                  dst_inner_base_q +
+                  {32'd0, dst_stride_at(advance_dim_q)};
+                current_src_addr_q <=
+                  src_inner_base_q +
+                  {32'd0, src_stride_at(advance_dim_q)};
+                current_dst_addr_q <=
+                  dst_inner_base_q +
+                  {32'd0, dst_stride_at(advance_dim_q)};
+                source_high_nibble_q <=
+                  src_dtype == NPU_DTYPE_INT4 ? src_nibble : 1'b0;
+                destination_high_nibble_q <=
+                  dst_dtype == NPU_DTYPE_INT4 ? dst_nibble : 1'b0;
+                advance_dim_q <= 3'd7;
+                state_q <= ST_PREP;
+              end else begin
+                index_q[advance_dim_q] <= 32'd0;
+                src_inner_base_q <=
+                  src_inner_base_q -
+                  src_dim_offset_q[advance_dim_q];
+                dst_inner_base_q <=
+                  dst_inner_base_q -
+                  dst_dim_offset_q[advance_dim_q];
+                src_dim_offset_q[advance_dim_q] <= 64'd0;
+                dst_dim_offset_q[advance_dim_q] <= 64'd0;
+                if (advance_dim_q == 3'd0)
+                  finish_pass_or_task();
+                else
+                  advance_dim_q <= advance_dim_q - 3'd1;
+              end
+            end
+          endcase
+        end
 
         ST_DONE:
           if (done_ready_i)

@@ -32,22 +32,22 @@
 
 ### 1.2 缩略语
 
-| 缩略语   | 含义                                   |
-| ----- | ------------------------------------ |
-| DSA   | Domain-Specific Accelerator，专用计算加速器  |
-| TS    | TaskScheduler，任务调度器                  |
-| ME    | Matrix Engine，矩阵计算单元，也称 Tensor       |
-| VE    | Vector Engine，向量计算单元，也称 VA           |
-| SU    | Statistics Unit，按指定维度求和、求最大值或求平方和的单元 |
-| SFU   | Special Function Unit，特殊函数单元         |
-| L1BUF | NPU Core 内的共享片上 SRAM                 |
-| L0BUF | Matrix Engine 内部的操作数或部分和缓存           |
-| MIF   | Core 内部模块到系统总线的接口桥                   |
-| TBU   | 地址转换单元                               |
-| LSC   | 本地系统控制器                              |
-| GADDR | 全局地址，用于 DDR 或外设空间                     |
-| LADDR | 当前 Core 的 L1BUF 字节地址                 |
-| CMD   | 任务命令头                                |
+| 缩略语   | 含义                                           |
+| ----- | -------------------------------------------- |
+| DSA   | Domain-Specific Accelerator，专用计算加速器          |
+| TS    | TaskScheduler，任务调度器                          |
+| ME    | Matrix Engine，矩阵计算单元，也称 Tensor               |
+| VE    | Vector Engine，向量计算单元，也称 VA                   |
+| SU    | Statistics Unit，按指定维度求和、求最大值或求平方和的单元         |
+| SFU   | Special Function Unit，特殊函数单元                 |
+| L1BUF | NPU Core 内的共享片上 SRAM                         |
+| L0BUF | Matrix Engine 内部的操作数或部分和缓存                   |
+| MIF   | Core 内部模块到系统总线的接口桥                           |
+| TBU   | 地址转换单元                                       |
+| LSC   | 本地系统控制器                                      |
+| GADDR | 全局地址，用于 DDR 或外设空间                            |
+| LADDR | 当前 Core 的 L1BUF 字节地址                         |
+| CMD   | 任务命令头                                        |
 | TC    | Task Context，发射时由任务表中的指令和提交时基地址快照展开的执行单元任务信息 |
 
 ### 1.3 设计范围

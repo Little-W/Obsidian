@@ -90,24 +90,6 @@ module npu_fp32_alu_seq (
 
     if (!reset_n) begin
       state_q <= ST_IDLE;
-      result_q <= 32'd0;
-      add_large_exp_q <= 9'd0;
-      add_small_exp_q <= 9'd0;
-      add_large_mant_q <= 24'd0;
-      add_small_mant_q <= 24'd0;
-      add_large_sign_q <= 1'b0;
-      add_small_sign_q <= 1'b0;
-      add_large_ext_q <= 28'd0;
-      add_small_ext_q <= 28'd0;
-      add_aligned_small_q <= 28'd0;
-      add_work_q <= 28'd0;
-      mul_sign_q <= 1'b0;
-      mul_lhs_mant_q <= 24'd0;
-      mul_rhs_mant_q <= 24'd0;
-      mul_lhs_exp_q <= 11'sd0;
-      mul_rhs_exp_q <= 11'sd0;
-      mul_result_exp_q <= 11'sd0;
-      mul_product_q <= 48'd0;
     end else begin
       case (state_q)
         ST_IDLE: begin

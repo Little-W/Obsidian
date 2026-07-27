@@ -54,6 +54,8 @@ module npu_complex_engine (
     ST_SRC2_REQ,
     ST_SRC2_RSP,
     ST_COMPUTE,
+    ST_STAT_SQUARE,
+    ST_STAT_ACCUM,
     ST_MATH_REQ,
     ST_MATH_RSP,
     ST_ADVANCE,
@@ -114,6 +116,11 @@ module npu_complex_engine (
   logic signed [63:0] stat_sum_q;
   logic signed [63:0] stat_sumsq_q;
   logic signed [63:0] stat_max_q;
+  logic signed [63:0] stat_square_q;
+  logic stat_sumsq_overflow_q;
+  logic stat_square_last_q;
+  logic [7:0] stat_square_overflow_mode_q;
+  logic [47:0] stat_square_dst_addr_q;
   logic [31:0] fp_row_sum_q;
   logic [31:0] fp_row_sumsq_q;
   logic [31:0] fp_lane_sum_q [0:3];
@@ -348,6 +355,10 @@ module npu_complex_engine (
   wire signed [63:0] src2_centered_integer =
     src2_value_q -
     {{32{src2_zero_point[31]}}, src2_zero_point};
+  wire signed [31:0] stat_square_operand =
+    $signed(src0_value_q[31:0]);
+  wire signed [63:0] stat_square_product =
+    stat_square_operand * stat_square_operand;
   wire unused_centered_upper = ^{
     src0_centered_integer[63:32],
     src1_centered_integer[63:32],
@@ -494,42 +505,6 @@ module npu_complex_engine (
     if (!reset_n) begin
       state_q <= ST_IDLE;
       phase_q <= PH_ELEMENT;
-      desc_q <= '0;
-      opcode_q <= '0;
-      row_q <= '0;
-      col_q <= '0;
-      row_key_length_q <= '0;
-      mask_value_q <= 1'b1;
-      valid_seen_q <= 1'b0;
-      src0_value_q <= '0;
-      src1_value_q <= '0;
-      src2_value_q <= '0;
-      stat_sum_q <= '0;
-      stat_sumsq_q <= '0;
-      stat_max_q <= -64'sh3fff_ffff_ffff_ffff;
-      fp_row_sum_q <= 32'd0;
-      fp_row_sumsq_q <= 32'd0;
-      fp_lane_sum_q[0] <= 32'd0;
-      fp_lane_sum_q[1] <= 32'd0;
-      fp_lane_sum_q[2] <= 32'd0;
-      fp_lane_sum_q[3] <= 32'd0;
-      fp_row_max_q <= 32'hff80_0000;
-      fp_row_mean_q <= 32'd0;
-      fp_row_invstd_q <= 32'd0;
-      fp_row_inverse_q <= 32'd0;
-      math_operation_q <= 4'd0;
-      math_operand0_q <= 32'd0;
-      math_operand1_q <= 32'd0;
-      math_action_q <= MA_SRC0_I2F;
-      fp_src0_q <= 32'd0;
-      fp_src1_q <= 32'd0;
-      fp_src2_q <= 32'd0;
-      fp_active_inverse_q <= 32'd0;
-      fp_tmp0_q <= 32'd0;
-      fp_tmp1_q <= 32'd0;
-      fp_tmp2_q <= 32'd0;
-      result_q <= '0;
-      rmw_beat_q <= '0;
       status_q <= NPU_STATUS_SUCCESS;
       fault_addr_q <= 48'd0;
       progress_q <= 64'd0;
@@ -663,6 +638,7 @@ module npu_complex_engine (
           stat_sum_q <= 64'sd0;
           stat_sumsq_q <= 64'sd0;
           stat_max_q <= -64'sh3fff_ffff_ffff_ffff;
+          stat_sumsq_overflow_q <= 1'b0;
           fp_row_sum_q <= 32'd0;
           fp_row_sumsq_q <= 32'd0;
           fp_lane_sum_q[0] <= 32'd0;
@@ -794,7 +770,10 @@ module npu_complex_engine (
                   fail_task(NPU_STATUS_ADDR_FAULT, src1_addr[47:0]);
                 else
                   state_q <= ST_SRC1_REQ;
-              end else
+              end else if (phase_q == PH_STAT_ACC &&
+                           function_mode == 9)
+                state_q <= ST_STAT_SQUARE;
+              else
                 state_q <= ST_COMPUTE;
             end
           end
@@ -843,50 +822,49 @@ module npu_complex_engine (
 
         ST_COMPUTE: begin
           if (phase_q == PH_STAT_ACC) begin
-            case (function_mode)
-              7: next_stat = stat_sum_q + src0_value_q;
-              8: next_stat =
-                   col_q == 0 || src0_value_q > stat_max_q ?
-                   src0_value_q : stat_max_q;
-              default:
+            if (function_mode == 9)
+              state_q <= ST_STAT_SQUARE;
+            else begin
+              if (function_mode == 7)
+                next_stat = stat_sum_q + src0_value_q;
+              else
                 next_stat =
-                  stat_sumsq_q + src0_value_q * src0_value_q;
-            endcase
-            if (function_mode == 7)
-              stat_sum_q <= next_stat;
-            else if (function_mode == 8)
-              stat_max_q <= next_stat;
-            else
-              stat_sumsq_q <= next_stat;
+                  col_q == 0 || src0_value_q > stat_max_q ?
+                  src0_value_q : stat_max_q;
+              if (function_mode == 7)
+                stat_sum_q <= next_stat;
+              else
+                stat_max_q <= next_stat;
 
-            if (col_q + 1 == active_columns) begin
-              output_overflow =
-                next_stat < dtype_min(NPU_DTYPE_INT32) ||
-                next_stat > dtype_max(NPU_DTYPE_INT32);
-              if (output_overflow && overflow_mode == 1)
-                fail_task(
-                  NPU_STATUS_NUMERIC_EXCEPTION,
-                  stat_dst_addr[47:0]
-                );
-              else begin
-                result_q <= overflow_mode == 2 ?
-                  wrap_to_dtype(
-                    next_stat[31:0], NPU_DTYPE_INT32
-                  ) :
-                  clip_to_dtype(next_stat, NPU_DTYPE_INT32);
-                phase_q <= PH_STAT_OUT;
-                if (crosses_beat(
-                      stat_dst_addr[2:0], NPU_DTYPE_INT32
-                    ))
+              if (col_q + 1 == active_columns) begin
+                output_overflow =
+                  next_stat < dtype_min(NPU_DTYPE_INT32) ||
+                  next_stat > dtype_max(NPU_DTYPE_INT32);
+                if (output_overflow && overflow_mode == 1)
                   fail_task(
-                    NPU_STATUS_ADDR_FAULT,
+                    NPU_STATUS_NUMERIC_EXCEPTION,
                     stat_dst_addr[47:0]
                   );
-                else
-                  state_q <= ST_WRITE_REQ;
-              end
-            end else
-              state_q <= ST_ADVANCE;
+                else begin
+                  result_q <= overflow_mode == 2 ?
+                    wrap_to_dtype(
+                      next_stat[31:0], NPU_DTYPE_INT32
+                    ) :
+                    clip_to_dtype(next_stat, NPU_DTYPE_INT32);
+                  phase_q <= PH_STAT_OUT;
+                  if (crosses_beat(
+                        stat_dst_addr[2:0], NPU_DTYPE_INT32
+                      ))
+                    fail_task(
+                      NPU_STATUS_ADDR_FAULT,
+                      stat_dst_addr[47:0]
+                    );
+                  else
+                    state_q <= ST_WRITE_REQ;
+                end
+              end else
+                state_q <= ST_ADVANCE;
+            end
           end else begin
             issue_math(
               MATH_I2F_MUL,
@@ -895,6 +873,54 @@ module npu_complex_engine (
               MA_SRC0_I2F
             );
           end
+        end
+
+        ST_STAT_SQUARE: begin
+          stat_square_q <= stat_square_product;
+          stat_square_last_q <= col_q + 1 == active_columns;
+          stat_square_overflow_mode_q <= overflow_mode;
+          stat_square_dst_addr_q <= stat_dst_addr[47:0];
+          state_q <= ST_STAT_ACCUM;
+        end
+
+        ST_STAT_ACCUM: begin
+          next_stat = stat_sumsq_q + stat_square_q;
+          stat_sumsq_q <= next_stat;
+          output_overflow =
+            stat_sumsq_overflow_q || |next_stat[63:31];
+          stat_sumsq_overflow_q <= output_overflow;
+          if (stat_square_last_q) begin
+            if (output_overflow &&
+                stat_square_overflow_mode_q == 1)
+              fail_task(
+                NPU_STATUS_NUMERIC_EXCEPTION,
+                stat_square_dst_addr_q
+              );
+            else begin
+              if (stat_square_overflow_mode_q == 2)
+                result_q <= wrap_to_dtype(
+                  next_stat[31:0], NPU_DTYPE_INT32
+                );
+              else if (output_overflow)
+                result_q <= dtype_max(NPU_DTYPE_INT32);
+              else
+                result_q <= clip_to_dtype(
+                  next_stat, NPU_DTYPE_INT32
+                );
+              phase_q <= PH_STAT_OUT;
+              if (crosses_beat(
+                    stat_square_dst_addr_q[2:0],
+                    NPU_DTYPE_INT32
+                  ))
+                fail_task(
+                  NPU_STATUS_ADDR_FAULT,
+                  stat_square_dst_addr_q
+                );
+              else
+                state_q <= ST_WRITE_REQ;
+            end
+          end else
+            state_q <= ST_ADVANCE;
         end
 
         ST_MATH_REQ:

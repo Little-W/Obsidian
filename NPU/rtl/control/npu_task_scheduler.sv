@@ -183,7 +183,6 @@ module npu_task_scheduler #(
   logic [2047:0] matrix_dispatch_desc_q;
   logic [2047:0] vector_dispatch_desc_q;
   logic [2047:0] complex_dispatch_desc_q;
-
   logic ctl_active_q;
   logic [1:0] ctl_op_q;
   logic [11:0] ctl_arg0_q;
@@ -212,16 +211,11 @@ module npu_task_scheduler #(
   logic ack_found;
   logic [TASK_IDX_W-1:0] ack_select;
 
-  logic dma_select_found;
-  logic matrix_select_found;
-  logic vector_select_found;
-  logic complex_select_found;
   logic control_select_found;
-  logic [TASK_IDX_W-1:0] dma_select;
-  logic [TASK_IDX_W-1:0] matrix_select;
-  logic [TASK_IDX_W-1:0] vector_select;
-  logic [TASK_IDX_W-1:0] complex_select;
   logic [TASK_IDX_W-1:0] control_select;
+  logic decode_select_found;
+  logic [TASK_IDX_W-1:0] decode_select;
+  logic [3:0] decode_select_engine;
 
   logic dependency_success [TASK_SLOTS];
   logic dependency_failed  [TASK_SLOTS];
@@ -254,14 +248,19 @@ module npu_task_scheduler #(
   logic inline_desc_valid;
   logic [3:0] inline_engine;
   logic [7:0] inline_opcode;
-  logic [3:0][127:0] task_decode_cmd;
-  logic [3:0][47:0] task_decode_input_base;
-  logic [3:0][47:0] task_decode_weight_base;
-  logic [3:0][47:0] task_decode_work_base;
-  logic [3:0][47:0] task_decode_output_base;
-  logic [3:0][47:0] task_decode_kv_base;
-  logic [3:0][19:0] task_decode_param_l1_base;
-  logic [3:0][2047:0] task_decode_desc_flat;
+  logic decode_pending_valid_q;
+  logic [3:0] decode_pending_engine_q;
+  logic [TASK_IDX_W-1:0] decode_pending_slot_q;
+  logic [7:0] decode_pending_opcode_q;
+  logic [11:0] decode_pending_command_id_q;
+  logic [127:0] decode_pending_cmd_q;
+  logic [47:0] decode_pending_input_base_q;
+  logic [47:0] decode_pending_weight_base_q;
+  logic [47:0] decode_pending_work_base_q;
+  logic [47:0] decode_pending_output_base_q;
+  logic [47:0] decode_pending_kv_base_q;
+  logic [19:0] decode_pending_param_l1_base_q;
+  logic [2047:0] decode_pending_desc_flat;
   logic [11:0] control_rearm_current_ref;
   logic [3:0] control_rearm_next_generation;
 
@@ -291,60 +290,25 @@ module npu_task_scheduler #(
     .desc_flat_o()
   );
 
-  assign task_decode_cmd[0] = task_cmd_q[dma_select];
-  assign task_decode_cmd[1] = task_cmd_q[matrix_select];
-  assign task_decode_cmd[2] = task_cmd_q[vector_select];
-  assign task_decode_cmd[3] = task_cmd_q[complex_select];
-
-  assign task_decode_input_base[0] = task_input_base_q[dma_select];
-  assign task_decode_input_base[1] = task_input_base_q[matrix_select];
-  assign task_decode_input_base[2] = task_input_base_q[vector_select];
-  assign task_decode_input_base[3] = task_input_base_q[complex_select];
-
-  assign task_decode_weight_base[0] = task_weight_base_q[dma_select];
-  assign task_decode_weight_base[1] = task_weight_base_q[matrix_select];
-  assign task_decode_weight_base[2] = task_weight_base_q[vector_select];
-  assign task_decode_weight_base[3] = task_weight_base_q[complex_select];
-
-  assign task_decode_work_base[0] = task_work_base_q[dma_select];
-  assign task_decode_work_base[1] = task_work_base_q[matrix_select];
-  assign task_decode_work_base[2] = task_work_base_q[vector_select];
-  assign task_decode_work_base[3] = task_work_base_q[complex_select];
-
-  assign task_decode_output_base[0] = task_output_base_q[dma_select];
-  assign task_decode_output_base[1] = task_output_base_q[matrix_select];
-  assign task_decode_output_base[2] = task_output_base_q[vector_select];
-  assign task_decode_output_base[3] = task_output_base_q[complex_select];
-
-  assign task_decode_kv_base[0] = task_kv_base_q[dma_select];
-  assign task_decode_kv_base[1] = task_kv_base_q[matrix_select];
-  assign task_decode_kv_base[2] = task_kv_base_q[vector_select];
-  assign task_decode_kv_base[3] = task_kv_base_q[complex_select];
-
-  assign task_decode_param_l1_base[0] =
-    task_param_l1_base_q[dma_select];
-  assign task_decode_param_l1_base[1] =
-    task_param_l1_base_q[matrix_select];
-  assign task_decode_param_l1_base[2] =
-    task_param_l1_base_q[vector_select];
-  assign task_decode_param_l1_base[3] =
-    task_param_l1_base_q[complex_select];
-
-  for (genvar decode_idx = 0; decode_idx < 4; decode_idx++) begin : g_task_desc_decode
-    npu_inline_desc_decode u_task_desc_decode (
-      .cmd_i(task_decode_cmd[decode_idx]),
-      .input_base_i(task_decode_input_base[decode_idx]),
-      .weight_base_i(task_decode_weight_base[decode_idx]),
-      .work_base_i(task_decode_work_base[decode_idx]),
-      .output_base_i(task_decode_output_base[decode_idx]),
-      .kv_base_i(task_decode_kv_base[decode_idx]),
-      .param_l1_base_i(task_decode_param_l1_base[decode_idx]),
-      .valid_o(),
-      .engine_o(),
-      .opcode_o(),
-      .desc_flat_o(task_decode_desc_flat[decode_idx])
-    );
-  end
+  /*
+   * Task selection writes a narrow snapshot first.  One shared decoder then
+   * expands that snapshot and writes the selected engine's dispatch register.
+   * Engine work lasts many cycles, so serializing this expansion removes four
+   * wide decoder cones without constraining concurrent engine execution.
+   */
+  npu_inline_desc_decode u_task_desc_decode (
+    .cmd_i(decode_pending_cmd_q),
+    .input_base_i(decode_pending_input_base_q),
+    .weight_base_i(decode_pending_weight_base_q),
+    .work_base_i(decode_pending_work_base_q),
+    .output_base_i(decode_pending_output_base_q),
+    .kv_base_i(decode_pending_kv_base_q),
+    .param_l1_base_i(decode_pending_param_l1_base_q),
+    .valid_o(),
+    .engine_o(),
+    .opcode_o(),
+    .desc_flat_o(decode_pending_desc_flat)
+  );
   /* verilator lint_on PINCONNECTEMPTY */
 
   function automatic logic terminal_state(input logic [3:0] state);
@@ -630,16 +594,11 @@ module npu_task_scheduler #(
   always_comb begin
     completion_found    = 1'b0;
     completion_select   = '0;
-    dma_select_found    = 1'b0;
-    matrix_select_found = 1'b0;
-    vector_select_found = 1'b0;
-    complex_select_found = 1'b0;
     control_select_found = 1'b0;
-    dma_select          = '0;
-    matrix_select       = '0;
-    vector_select       = '0;
-    complex_select      = '0;
     control_select      = '0;
+    decode_select_found  = 1'b0;
+    decode_select        = '0;
+    decode_select_engine = NPU_ENGINE_CONTROL;
 
     for (int unsigned slot = 0; slot < TASK_SLOTS; slot++) begin
       if (task_notify_q[slot] &&
@@ -660,35 +619,43 @@ module npu_task_scheduler #(
             end
           end
           NPU_ENGINE_DMA: begin
-            if (!dma_select_found ||
-                (task_submit_seq_q[slot] <
-                 task_submit_seq_q[dma_select])) begin
-              dma_select_found = 1'b1;
-              dma_select       = TASK_IDX_W'(slot);
+            if (!dma_active_q && !dma_dispatch_valid_q &&
+                (!decode_select_found ||
+                 (task_submit_seq_q[slot] <
+                  task_submit_seq_q[decode_select]))) begin
+              decode_select_found  = 1'b1;
+              decode_select        = TASK_IDX_W'(slot);
+              decode_select_engine = NPU_ENGINE_DMA;
             end
           end
           NPU_ENGINE_MATRIX: begin
-            if (!matrix_select_found ||
-                (task_submit_seq_q[slot] <
-                 task_submit_seq_q[matrix_select])) begin
-              matrix_select_found = 1'b1;
-              matrix_select       = TASK_IDX_W'(slot);
+            if (!matrix_active_q && !matrix_dispatch_valid_q &&
+                (!decode_select_found ||
+                 (task_submit_seq_q[slot] <
+                  task_submit_seq_q[decode_select]))) begin
+              decode_select_found  = 1'b1;
+              decode_select        = TASK_IDX_W'(slot);
+              decode_select_engine = NPU_ENGINE_MATRIX;
             end
           end
           NPU_ENGINE_VECTOR: begin
-            if (!vector_select_found ||
-                (task_submit_seq_q[slot] <
-                 task_submit_seq_q[vector_select])) begin
-              vector_select_found = 1'b1;
-              vector_select       = TASK_IDX_W'(slot);
+            if (!vector_active_q && !vector_dispatch_valid_q &&
+                (!decode_select_found ||
+                 (task_submit_seq_q[slot] <
+                  task_submit_seq_q[decode_select]))) begin
+              decode_select_found  = 1'b1;
+              decode_select        = TASK_IDX_W'(slot);
+              decode_select_engine = NPU_ENGINE_VECTOR;
             end
           end
           NPU_ENGINE_COMPLEX: begin
-            if (!complex_select_found ||
-                (task_submit_seq_q[slot] <
-                 task_submit_seq_q[complex_select])) begin
-              complex_select_found = 1'b1;
-              complex_select       = TASK_IDX_W'(slot);
+            if (!complex_active_q && !complex_dispatch_valid_q &&
+                (!decode_select_found ||
+                 (task_submit_seq_q[slot] <
+                  task_submit_seq_q[decode_select]))) begin
+              decode_select_found  = 1'b1;
+              decode_select        = TASK_IDX_W'(slot);
+              decode_select_engine = NPU_ENGINE_COMPLEX;
             end
           end
           default: begin
@@ -814,6 +781,7 @@ module npu_task_scheduler #(
       matrix_dispatch_valid_q    <= 1'b0;
       vector_dispatch_valid_q    <= 1'b0;
       complex_dispatch_valid_q   <= 1'b0;
+      decode_pending_valid_q     <= 1'b0;
       dma_dispatch_slot_q        <= '0;
       matrix_dispatch_slot_q     <= '0;
       vector_dispatch_slot_q     <= '0;
@@ -1170,37 +1138,64 @@ module npu_task_scheduler #(
         end
       end
 
-      if (dma_select_found && !dma_active_q &&
-          !dma_dispatch_valid_q && !abort_i) begin
-        dma_dispatch_valid_q      <= 1'b1;
-        dma_dispatch_slot_q       <= dma_select;
-        dma_dispatch_opcode_q     <= task_opcode_q[dma_select];
-        dma_dispatch_command_id_q <= task_command_id_q[dma_select];
-        dma_dispatch_desc_q       <= task_decode_desc_flat[0];
-      end
-      if (matrix_select_found && !matrix_active_q &&
-          !matrix_dispatch_valid_q && !abort_i) begin
-        matrix_dispatch_valid_q      <= 1'b1;
-        matrix_dispatch_slot_q       <= matrix_select;
-        matrix_dispatch_opcode_q     <= task_opcode_q[matrix_select];
-        matrix_dispatch_command_id_q <= task_command_id_q[matrix_select];
-        matrix_dispatch_desc_q       <= task_decode_desc_flat[1];
-      end
-      if (vector_select_found && !vector_active_q &&
-          !vector_dispatch_valid_q && !abort_i) begin
-        vector_dispatch_valid_q      <= 1'b1;
-        vector_dispatch_slot_q       <= vector_select;
-        vector_dispatch_opcode_q     <= task_opcode_q[vector_select];
-        vector_dispatch_command_id_q <= task_command_id_q[vector_select];
-        vector_dispatch_desc_q       <= task_decode_desc_flat[2];
-      end
-      if (complex_select_found && !complex_active_q &&
-          !complex_dispatch_valid_q && !abort_i) begin
-        complex_dispatch_valid_q      <= 1'b1;
-        complex_dispatch_slot_q       <= complex_select;
-        complex_dispatch_opcode_q     <= task_opcode_q[complex_select];
-        complex_dispatch_command_id_q <= task_command_id_q[complex_select];
-        complex_dispatch_desc_q       <= task_decode_desc_flat[3];
+      if (decode_pending_valid_q && !abort_i) begin
+        unique case (decode_pending_engine_q)
+          NPU_ENGINE_DMA: begin
+            if (!dma_active_q && !dma_dispatch_valid_q) begin
+              dma_dispatch_valid_q      <= 1'b1;
+              dma_dispatch_slot_q       <= decode_pending_slot_q;
+              dma_dispatch_opcode_q     <= decode_pending_opcode_q;
+              dma_dispatch_command_id_q <= decode_pending_command_id_q;
+              dma_dispatch_desc_q       <= decode_pending_desc_flat;
+              decode_pending_valid_q    <= 1'b0;
+            end
+          end
+          NPU_ENGINE_MATRIX: begin
+            if (!matrix_active_q && !matrix_dispatch_valid_q) begin
+              matrix_dispatch_valid_q      <= 1'b1;
+              matrix_dispatch_slot_q       <= decode_pending_slot_q;
+              matrix_dispatch_opcode_q     <= decode_pending_opcode_q;
+              matrix_dispatch_command_id_q <= decode_pending_command_id_q;
+              matrix_dispatch_desc_q       <= decode_pending_desc_flat;
+              decode_pending_valid_q       <= 1'b0;
+            end
+          end
+          NPU_ENGINE_VECTOR: begin
+            if (!vector_active_q && !vector_dispatch_valid_q) begin
+              vector_dispatch_valid_q      <= 1'b1;
+              vector_dispatch_slot_q       <= decode_pending_slot_q;
+              vector_dispatch_opcode_q     <= decode_pending_opcode_q;
+              vector_dispatch_command_id_q <= decode_pending_command_id_q;
+              vector_dispatch_desc_q       <= decode_pending_desc_flat;
+              decode_pending_valid_q       <= 1'b0;
+            end
+          end
+          NPU_ENGINE_COMPLEX: begin
+            if (!complex_active_q && !complex_dispatch_valid_q) begin
+              complex_dispatch_valid_q      <= 1'b1;
+              complex_dispatch_slot_q       <= decode_pending_slot_q;
+              complex_dispatch_opcode_q     <= decode_pending_opcode_q;
+              complex_dispatch_command_id_q <= decode_pending_command_id_q;
+              complex_dispatch_desc_q       <= decode_pending_desc_flat;
+              decode_pending_valid_q        <= 1'b0;
+            end
+          end
+          default: decode_pending_valid_q <= 1'b0;
+        endcase
+      end else if (decode_select_found && !abort_i) begin
+        decode_pending_valid_q         <= 1'b1;
+        decode_pending_engine_q        <= decode_select_engine;
+        decode_pending_slot_q          <= decode_select;
+        decode_pending_opcode_q        <= task_opcode_q[decode_select];
+        decode_pending_command_id_q    <= task_command_id_q[decode_select];
+        decode_pending_cmd_q           <= task_cmd_q[decode_select];
+        decode_pending_input_base_q    <= task_input_base_q[decode_select];
+        decode_pending_weight_base_q   <= task_weight_base_q[decode_select];
+        decode_pending_work_base_q     <= task_work_base_q[decode_select];
+        decode_pending_output_base_q   <= task_output_base_q[decode_select];
+        decode_pending_kv_base_q       <= task_kv_base_q[decode_select];
+        decode_pending_param_l1_base_q <=
+          task_param_l1_base_q[decode_select];
       end
 
       if (dma_task_valid_o && dma_task_ready_i) begin
@@ -1386,6 +1381,7 @@ module npu_task_scheduler #(
         matrix_dispatch_valid_q  <= 1'b0;
         vector_dispatch_valid_q  <= 1'b0;
         complex_dispatch_valid_q <= 1'b0;
+        decode_pending_valid_q   <= 1'b0;
         for (int unsigned slot = 0; slot < TASK_SLOTS; slot++) begin
           if ((task_state_q[slot] != NPU_TASK_FREE) &&
               !terminal_state(task_state_q[slot])) begin

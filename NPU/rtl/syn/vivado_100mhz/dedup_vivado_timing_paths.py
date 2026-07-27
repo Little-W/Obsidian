@@ -2,9 +2,8 @@
 """Deduplicate Vivado report_timing path reports.
 
 Vivado often emits repeated rise/fall variants for the same endpoint pair.  This
-tool keeps the first path for each key, which is also the worst one when the
-input report is sorted by slack, and annotates how many duplicates were folded
-into it.
+tool keeps the worst-slack path for each key and annotates how many duplicates
+were folded into it.  It deliberately does not rely on Vivado's input ordering.
 """
 
 from __future__ import annotations
@@ -360,7 +359,7 @@ def deduplicate_report(
     header, blocks = split_report(lines)
     timing_paths = [parse_path(block, index + 1) for index, block in enumerate(blocks)]
 
-    unique: list[TimingPath] = []
+    key_order: list[tuple[str, ...]] = []
     counts: dict[tuple[str, ...], int] = {}
     seen: dict[tuple[str, ...], TimingPath] = {}
 
@@ -369,7 +368,11 @@ def deduplicate_report(
         counts[key] = counts.get(key, 0) + 1
         if key not in seen:
             seen[key] = timing_path
-            unique.append(timing_path)
+            key_order.append(key)
+        elif sort_key(timing_path) < sort_key(seen[key]):
+            seen[key] = timing_path
+
+    unique = sorted((seen[key] for key in key_order), key=sort_key)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w") as out:
