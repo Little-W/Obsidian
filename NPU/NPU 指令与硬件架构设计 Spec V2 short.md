@@ -1,6 +1,6 @@
 # NPU 指令与硬件架构设计 Spec
 
-状态：CMD128 内联指令集
+状态：128-bit 内联指令集
 
 目标：单核整数推理 NPU
 
@@ -8,12 +8,12 @@
 
 命令宽度：128 bit
 
-本文定义部署软件与硬件共同遵守的 CMD128 内联指令集。所有执行参数都在
+本文定义部署软件与硬件共同遵守的 128-bit 内联指令集。所有执行参数都在
 128 bit 命令内；指令不含 `desc_addr`，不读取外部任务参数块，也不要求软件在
 DDR 中生成此类数组。CFE 与 Task Scheduler（TS）保存收到的 16 byte
 Task Context，执行单元可以读取内部展开字段；这些内部字段不是软件可见数组。
 
-本文中的“命令”“任务”“部署”均指本章定义的 CMD128 指令。
+本文中的“命令”“任务”“部署”均指本章定义的 128-bit 指令。
 
 ## 1. 设计范围与基准配置
 
@@ -131,7 +131,7 @@ CFE -> Task Scheduler + Event Table + 16-byte Task Context
                         |
                  16-bank 1 MiB L1BUF
 
-DMA <-> TBU <-> MIF <-> 64-bit AXI Master <-> SoC Fabric <-> DDR/other memory
+DMA <-> MIF <-> 64-bit AXI Master <-> SoC Fabric <-> DDR/other memory
 ```
 
 ### 3.2 模块职责
@@ -146,8 +146,7 @@ DMA <-> TBU <-> MIF <-> 64-bit AXI Master <-> SoC Fabric <-> DDR/other memory
 | IVE | ADD 至 RELU 的逐元素运算与 broadcast |
 | CME | ACT、SOFTMAX、NORM、STAT、ADD_RESCALE |
 | L1BUF Controller | 64 bit 多端口仲裁、bank 冲突处理、ECC |
-| TBU | 地址规则查询、读写权限、属性与错误状态 |
-| MIF | burst 拆分、未完成事务表、AXI Master 请求和响应 |
+| MIF | 物理地址检查、burst 拆分、未完成事务表、AXI Master 请求和响应 |
 | LSC | CSR、首错记录、中断、性能计数、停止接收与软复位控制 |
 | CRG/WDT | 复位同步、时钟控制、看门狗 |
 
@@ -206,7 +205,7 @@ AW/W/B、AR/R 五通道，`WDATA/RDATA=64 bit`，`WSTRB=8 bit`。支持区域：
 
 1. CSR：单 beat 读写，访问 LSC、控制、状态、性能计数和错误记录。
 2. CMD 固定地址：使用 `AWBURST=FIXED`，一次 burst 接收 2、4、6、……
-   16 个 64 bit W beat，也就是 1～8 条 CMD128。每条命令先发送
+   16 个 64 bit W beat，也就是 1～8 条 128-bit 指令。每条命令先发送
    CMD[63:0]，再发送 CMD[127:64]；`AWLEN` 分别为 1、3、5、……15。
 3. 命令接收响应 FIFO：CPU 读取 command_id、接收状态与可用 FIFO 项数。
 4. L1BUF 外部窗口：调试、权重装载、输入写入和输出读取；经 L1 Host
@@ -271,14 +270,14 @@ MIF 不接收 Task Context 地址，也不读取外部任务参数块。
 ILLEGAL_OPCODE。
 
 各操作的保留位必须为 0。命令以 little-endian 字节保存并先发送低 64 bit。
-`command_id` 在未 ACK 的 Task 表项中必须唯一。CFE 在接收前查询占用状态；
+`command_id` 不得与未 ACK 的 Task 表项重复。CFE 在接收前查询占用状态；
 重复 ID 返回 BAD_DESC。
 
 `wait0`、`wait1` 和 `signal` 只携带 8 bit ID。事件代次由 TS 在接收命令的
 那个周期从 Event Table 取得并写入 Task Context 的内部信息，因此之后的
 REARM 不会改变已经接收任务所等待的代次。
 
-### 6.2 头标志语义
+### 6.2 头标志说明
 
 - `irq_success` 只在 SUCCESS 终态产生一个脉冲。
 - `irq_error` 在任何非 SUCCESS 终态产生一个脉冲。
@@ -290,12 +289,12 @@ REARM 不会改变已经接收任务所等待的代次。
 
 ### 6.3 操作码
 
-本表的“CMD128 值”是 `opcode[127:122]` 的 6 bit 线上编码，不是 DMA、
+本表的“指令值”是 `opcode[127:122]` 的 6 bit 线上编码，不是 DMA、
 Matrix、IVE 或 CME 内部使用的操作码。每条任务的地址引用、尺寸、数据格式和
 操作选项均由命令头与 `payload` 直接给出；“直接字段”仅作索引，精确位段见第
 8～12 节。
 
-| CMD128 值 | 接口名称 | 单元 | 状态 | 直接字段 | 定义与当前限制 |
+| 指令值 | 接口名称 | 单元 | 状态 | 直接字段 | 定义与当前限制 |
 | ---: | --- | --- | --- | --- | --- |
 | 0 | `NOP` | Control | P0，已实现 | `payload=0`；三个 Event 字段均为 none | 创建占位任务，不读写数据。 |
 | 1 | `EVENT_SIGNAL` | Control | P0，已实现 | `signal`；`payload=0` | 主动把指定 Event 置为成功，不启动执行单元。 |
@@ -369,7 +368,7 @@ bits 23:0  offset24
 ```
 
 `global=0` 表示 L1 地址，此时 `base` 必须为 0，字节地址等于 `offset24`。
-`global=1` 表示系统存储虚拟地址，字节地址为 `GADDR_BASE[base]+offset24`。
+`global=1` 表示系统存储物理地址，字节地址为 `GADDR_BASE[base]+offset24`。
 
 | `base` | 全局基址 |
 | ---: | --- |
@@ -628,7 +627,7 @@ Broadcast 编码：
 | 2 | row，形状 `[rows][1]` |
 | 3 | feature，形状 `[1][length]` |
 
-### 11.2 操作语义
+### 11.2 操作定义
 
 - ADD：`dst=src0+src1`。
 - SUB：`dst=src0-src1`。
@@ -794,7 +793,7 @@ RESP_OK/RESP_ERR`。低拍握手后只接受带 `last=1` 的高拍；最多等�
 
 ### 13.2 Task Context
 
-TS 为每个任务保存原始 16 byte CMD128，以及接收时取得的三个事件代次。
+TS 为每个任务保存原始 16-byte 指令，以及接收时取得的三个事件代次。
 内部展开器从 payload 产生：
 
 - 执行单元与完整 opcode；
@@ -803,7 +802,7 @@ TS 为每个任务保存原始 16 byte CMD128，以及接收时取得的三个�
 - timeout、ordered、中断与 strict numeric；
 - 目标区域大小及错误检查信息。
 
-展开字段可放在 Task 表或执行单元本地寄存器中。它们只能从 16 byte CMD128
+展开字段可放在 Task 表或执行单元本地寄存器中。它们只能从 16-byte 指令
 产生，不能触发 MIF 任务参数读取。Task Context 读端口可以采用两拍
 64 bit ready/valid：
 
@@ -883,7 +882,7 @@ wr_rsp_valid, wr_rsp_ready, wr_rsp_tag[11:0], wr_rsp_status
 
 全局到 L1：
 
-1. DMA 解析 AREF 并向 TBU/MIF 发读请求。
+1. DMA 解析 AREF 并向 MIF 发读请求。
 2. MIF 接收 R beat，按 tag 放入返回队列。
 3. DMA 处理 dtype、半字节和排列。
 4. DMA 通过 L1 写端口提交 beat。
@@ -923,7 +922,7 @@ CME 每行分阶段运行：
 CME 私有 FP32 暂存不可由 AXI Slave 或其他执行单元寻址。任务取消时丢弃未
 提交结果并排空已握手的 L1 响应。
 
-## 15. MIF 与 TBU
+## 15. MIF 与 AXI Master
 
 ### 15.1 DMA 到 MIF 内部请求
 
@@ -932,7 +931,7 @@ CME 私有 FP32 暂存不可由 AXI Slave 或其他执行单元寻址。任务�
 ```text
 req_valid, req_ready
 req_write
-req_vaddr[63:0]
+req_addr[63:0]
 req_beats
 req_tag
 req_task_id
@@ -948,25 +947,17 @@ rsp_data[63:0], rsp_tag, rsp_last, rsp_status
 部署配置只启用 DMA owner。诊断测试使用的第二 owner 不得在部署任务中产生
 请求。
 
-### 15.2 TBU
+DMA 请求中的地址已经是物理字节地址。MIF 检查 8 字节对齐、配置的可访问
+范围和 AXI 地址位宽；任一检查失败时返回 `ADDR_FAULT`，并且不发出 AXI
+请求。
 
-TBU 最多保存 64 条页规则和 8 个查询中的请求。每条规则定义
-`vaddr[47:12]`、`paddr[39:12]`、stream ID、substream ID、读权限和写
-权限。页内低 12 bit 保持不变。请求处理：
-
-1. 用虚拟页号及 stream/substream ID 选择有效规则。
-2. 检查读写权限和地址加法溢出。
-3. 形成物理地址及 AXI 属性。
-4. 未找到规则返回 DECERR；权限失败返回 SLVERR/ADDR_FAULT。
-
-软件在停止接收新任务并等待 DMA 空闲后才能修改 TBU 规则或全局基址。
-
-### 15.3 MIF 未完成事务
+### 15.2 MIF 未完成事务
 
 每项保存 AXI ID、DMA tag、task ID、方向、起始地址、beat 数、已返回 beat
 数和首个错误。MIF 可以让多个读 burst 并行；写地址与写数据的配对必须固定。
-跨页或超过最大 burst 的请求拆成多个子请求，DMA 看到的 tag 和完成语义保持
-不变。复位、abort 和总线错误都必须释放 AXI ID，不能把迟到响应交给新任务。
+跨 4KiB 地址区段或超过最大 burst 的请求拆成多个子请求，DMA 看到的 tag
+和完成方式保持不变。复位、abort 和总线错误都必须释放 AXI ID，不能把迟到
+响应交给新任务。
 
 ## 16. LSC、CRG、WDT 与中断
 
@@ -975,7 +966,7 @@ TBU 最多保存 64 条页规则和 8 个查询中的请求。每条规则定义
 LSC 至少提供：
 
 - 能力寄存器：opcode feature、L1 大小、tile 参数、lane 数。
-- `GADDR_BASE[0..5]` 与 TBU 控制。
+- `GADDR_BASE[0..5]` 与 MIF 物理地址可访问范围。
 - 4 个 timeout class 周期值。
 - CMD FIFO 状态与接收响应。
 - Task 查询、WAIT、ACK、FENCE。
@@ -1000,7 +991,6 @@ LSC 至少提供：
 | `0x0050..0x0078` | zero/input/weight/work/output/kv 全局基址 |
 | `0x0080` | M_AXI_ADDR_BASE |
 | `0x0088` | M_AXI_ADDR_LIMIT |
-| `0x0090` | TBU_STREAM_ID |
 | `0x00a0` | IRQ_STATUS |
 | `0x00a8` | IRQ_MASK |
 | `0x00b0` | FAULT_CMD |
@@ -1014,8 +1004,8 @@ LSC 至少提供：
 | `0x0180` | PERF_CONTROL |
 | `0x0200..` | TIMEOUT_CLASS |
 
-CSR 是 64 bit little-endian 寄存器。CMD128 只选择 timeout class 0..3；实现可以
-保留更多诊断类，但不能由 CMD128 选择。`ISA_FEATURE` 的 ROPE、RECIP 与
+CSR 是 64 bit little-endian 寄存器。128-bit 指令只选择 timeout class 0..3；实现可以
+保留更多诊断类，但不能由指令选择。`ISA_FEATURE` 的 ROPE、RECIP 与
 causal softmax 位为 0。
 
 配置寄存器在 Task 或 DMA 活动时写入应返回 BUSY。首错寄存器保持第一次错误，
@@ -1034,7 +1024,7 @@ LSC 将事件置入中断状态寄存器；顶层 `irq_success`、`irq_error` �
 3. MIF 排空已发 AXI 请求，L1 写端口空闲。
 4. CRG 让各模块在有效时钟上观察 `reset_n=0`。
 5. 清除 Task/Event/队列/错误状态，保留 L1 SRAM 内容。
-6. `reset_n=1` 同步释放，软件重新写全局基址、TBU 和 timeout。
+6. `reset_n=1` 同步释放，软件重新写全局基址、MIF 可访问范围和 timeout。
 
 WDT 超时走同一受控过程；若 NoC 域独立复位丢失传输状态，活动 DMA 直接以
 ABORTED 终止。
@@ -1056,7 +1046,7 @@ Conv2D 降低为 im2col/数据准备、PACK/TRANSPOSE 和 GEMM；数据形状或
 默认输出模型专用 `.c/.h`，至少包含：
 
 - NPU 配置与要求的 feature；
-- CMD128 指令数组；
+- 128-bit 指令数组；
 - 权重和常量数组；
 - 输入、输出及操作信息；
 - 全局基址和 L1 区域信息；
@@ -1069,7 +1059,7 @@ Conv2D 降低为 im2col/数据准备、PACK/TRANSPOSE 和 GEMM；数据形状或
 ### 17.3 驱动提交次序
 
 1. 读取能力并确认所需 opcode 与数据类型均受支持。
-2. 配置 TBU、全局基址、timeout 和中断。
+2. 配置全局基址、MIF 可访问范围、timeout 和中断。
 3. 通过 L1 窗口或 DMA 装载权重、常量和输入。
 4. 逐条以 FIXED burst 写 CMD 固定地址，读取接收响应。
 5. 按生成的任务组信息 WAIT/FENCE。
@@ -1119,7 +1109,7 @@ Conv2D 降低为 im2col/数据准备、PACK/TRANSPOSE 和 GEMM；数据形状或
 4. DMA 等待 E4，把结果复制到 output 全局区，signal E5。
 5. 主机 WAIT E5，查询并 ACK 以上 command_id。
 
-每条任务的全部参数均在自己的 CMD128 内，执行过程中只有 DMA 访问系统存储。
+每条任务的全部参数均在自己的 128-bit 指令内，执行过程中只有 DMA 访问系统存储。
 
 ### 19.2 Conv2D
 

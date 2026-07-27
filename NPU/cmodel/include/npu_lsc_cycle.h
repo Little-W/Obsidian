@@ -19,7 +19,7 @@ extern "C" {
 #define NPU_LSC_REG_CME_CONFIG UINT16_C(0x0030)
 #define NPU_LSC_REG_CORE_CONTROL UINT16_C(0x0040)
 #define NPU_LSC_REG_CORE_STATUS UINT16_C(0x0048)
-#define NPU_LSC_REG_PC_BASE UINT16_C(0x0050)
+#define NPU_LSC_REG_RESERVED_0050 UINT16_C(0x0050)
 #define NPU_LSC_REG_INPUT_BASE UINT16_C(0x0058)
 #define NPU_LSC_REG_WEIGHT_BASE UINT16_C(0x0060)
 #define NPU_LSC_REG_WORK_BASE UINT16_C(0x0068)
@@ -27,7 +27,6 @@ extern "C" {
 #define NPU_LSC_REG_KV_BASE UINT16_C(0x0078)
 #define NPU_LSC_REG_M_AXI_ADDR_BASE UINT16_C(0x0080)
 #define NPU_LSC_REG_M_AXI_ADDR_LIMIT UINT16_C(0x0088)
-#define NPU_LSC_REG_TBU_STREAM_ID UINT16_C(0x0090)
 #define NPU_LSC_REG_IRQ_STATUS UINT16_C(0x00a0)
 #define NPU_LSC_REG_IRQ_MASK UINT16_C(0x00a8)
 #define NPU_LSC_REG_FAULT_CMD UINT16_C(0x00b0)
@@ -45,7 +44,7 @@ extern "C" {
 #define NPU_LSC_REG_TIMEOUT_BASE UINT16_C(0x0200)
 
 #define NPU_LSC_BUS_DATA_BITS_SHIFT 0u
-#define NPU_LSC_BUS_GVA_BITS_SHIFT 8u
+#define NPU_LSC_BUS_GADDR_BITS_SHIFT 8u
 #define NPU_LSC_BUS_PA_BITS_SHIFT 16u
 #define NPU_LSC_BUS_AXI_ID_BITS_SHIFT 24u
 
@@ -254,7 +253,6 @@ typedef struct {
     uint8_t l1_diag_enable;
     uint8_t debug_frozen;
 
-    uint64_t pc_base;
     uint64_t input_base;
     uint64_t weight_base;
     uint64_t work_base;
@@ -262,8 +260,6 @@ typedef struct {
     uint64_t kv_base;
     uint64_t m_axi_addr_base;
     uint64_t m_axi_addr_limit;
-    uint16_t tbu_stream_id;
-    uint16_t tbu_substream_id;
     uint32_t timeout_cycles[NPU_LSC_TIMEOUT_CLASS_COUNT];
 } npu_lsc_cycle_outputs_t;
 
@@ -284,7 +280,6 @@ typedef struct {
     uint8_t power_state;
     uint8_t power_request_held;
 
-    uint64_t pc_base;
     uint64_t input_base;
     uint64_t weight_base;
     uint64_t work_base;
@@ -292,8 +287,6 @@ typedef struct {
     uint64_t kv_base;
     uint64_t m_axi_addr_base;
     uint64_t m_axi_addr_limit;
-    uint16_t tbu_stream_id;
-    uint16_t tbu_substream_id;
 
     uint64_t irq_status;
     uint64_t irq_mask;

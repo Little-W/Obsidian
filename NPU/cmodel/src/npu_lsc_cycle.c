@@ -220,8 +220,8 @@ static uint64_t npu_lsc_read_register(
         return npu_lsc_core_control_value(model);
     case NPU_LSC_REG_CORE_STATUS:
         return npu_lsc_core_status_value(model, inputs);
-    case NPU_LSC_REG_PC_BASE:
-        return model->pc_base;
+    case NPU_LSC_REG_RESERVED_0050:
+        return 0u;
     case NPU_LSC_REG_INPUT_BASE:
         return model->input_base;
     case NPU_LSC_REG_WEIGHT_BASE:
@@ -236,9 +236,6 @@ static uint64_t npu_lsc_read_register(
         return model->m_axi_addr_base;
     case NPU_LSC_REG_M_AXI_ADDR_LIMIT:
         return model->m_axi_addr_limit;
-    case NPU_LSC_REG_TBU_STREAM_ID:
-        return (uint64_t)model->tbu_stream_id |
-               ((uint64_t)model->tbu_substream_id << 16u);
     case NPU_LSC_REG_IRQ_STATUS:
         return model->irq_status;
     case NPU_LSC_REG_IRQ_MASK:
@@ -269,13 +266,13 @@ static uint64_t npu_lsc_read_register(
     }
 }
 
-static uint8_t npu_lsc_address_is_gva(uint64_t address)
+static uint8_t npu_lsc_gaddr_valid(uint64_t address)
 {
-    return (uint8_t)((address & UINT64_C(0xffff000000000000)) == 0u &&
+    return (uint8_t)((address & UINT64_C(0xffffff0000000000)) == 0u &&
                      (address & 7u) == 0u);
 }
 
-static uint8_t npu_lsc_address_is_pa(uint64_t address)
+static uint8_t npu_lsc_pa_valid(uint64_t address)
 {
     return (uint8_t)((address & UINT64_C(0xffffff0000000000)) == 0u &&
                      (address & 7u) == 0u);
@@ -340,8 +337,7 @@ static uint8_t npu_lsc_write_core_control(
 static uint8_t npu_lsc_write_base(uint64_t *target,
                                   uint64_t data,
                                   uint8_t strobe,
-                                  uint8_t core_idle,
-                                  uint8_t physical)
+                                  uint8_t core_idle)
 {
     uint64_t merged;
 
@@ -349,8 +345,7 @@ static uint8_t npu_lsc_write_base(uint64_t *target,
         return NPU_LSC_REG_SLVERR;
     }
     merged = npu_lsc_merge_write(*target, data, strobe);
-    if ((physical != 0u && npu_lsc_address_is_pa(merged) == 0u) ||
-        (physical == 0u && npu_lsc_address_is_gva(merged) == 0u)) {
+    if (npu_lsc_gaddr_valid(merged) == 0u) {
         return NPU_LSC_REG_SLVERR;
     }
     *target = merged;
@@ -447,31 +442,30 @@ static uint8_t npu_lsc_write_register(
     case NPU_LSC_REG_CORE_CONTROL:
         return npu_lsc_write_core_control(model, data, strobe,
                                           core_idle);
-    case NPU_LSC_REG_PC_BASE:
-        return npu_lsc_write_base(&model->pc_base, data, strobe,
-                                  core_idle, 0u);
+    case NPU_LSC_REG_RESERVED_0050:
+        return NPU_LSC_REG_OKAY;
     case NPU_LSC_REG_INPUT_BASE:
         return npu_lsc_write_base(&model->input_base, data, strobe,
-                                  core_idle, 0u);
+                                  core_idle);
     case NPU_LSC_REG_WEIGHT_BASE:
         return npu_lsc_write_base(&model->weight_base, data, strobe,
-                                  core_idle, 0u);
+                                  core_idle);
     case NPU_LSC_REG_WORK_BASE:
         return npu_lsc_write_base(&model->work_base, data, strobe,
-                                  core_idle, 0u);
+                                  core_idle);
     case NPU_LSC_REG_OUTPUT_BASE:
         return npu_lsc_write_base(&model->output_base, data, strobe,
-                                  core_idle, 0u);
+                                  core_idle);
     case NPU_LSC_REG_KV_BASE:
         return npu_lsc_write_base(&model->kv_base, data, strobe,
-                                  core_idle, 0u);
+                                  core_idle);
     case NPU_LSC_REG_M_AXI_ADDR_BASE:
         if (core_idle == 0u) {
             return NPU_LSC_REG_SLVERR;
         }
         merged = npu_lsc_merge_write(model->m_axi_addr_base,
                                      data, strobe);
-        if (npu_lsc_address_is_pa(merged) == 0u ||
+        if (npu_lsc_pa_valid(merged) == 0u ||
             merged > model->m_axi_addr_limit) {
             return NPU_LSC_REG_SLVERR;
         }
@@ -483,25 +477,11 @@ static uint8_t npu_lsc_write_register(
         }
         merged = npu_lsc_merge_write(model->m_axi_addr_limit,
                                      data, strobe);
-        if (npu_lsc_address_is_pa(merged) == 0u ||
+        if (npu_lsc_pa_valid(merged) == 0u ||
             merged < model->m_axi_addr_base) {
             return NPU_LSC_REG_SLVERR;
         }
         model->m_axi_addr_limit = merged;
-        return NPU_LSC_REG_OKAY;
-    case NPU_LSC_REG_TBU_STREAM_ID:
-        if (core_idle == 0u) {
-            return NPU_LSC_REG_SLVERR;
-        }
-        merged = npu_lsc_merge_write(
-            (uint64_t)model->tbu_stream_id |
-                ((uint64_t)model->tbu_substream_id << 16u),
-            data, strobe);
-        if ((merged >> 32u) != 0u) {
-            return NPU_LSC_REG_SLVERR;
-        }
-        model->tbu_stream_id = (uint16_t)merged;
-        model->tbu_substream_id = (uint16_t)(merged >> 16u);
         return NPU_LSC_REG_OKAY;
     case NPU_LSC_REG_IRQ_STATUS:
         model->irq_status &=
@@ -852,7 +832,6 @@ static void npu_lsc_fill_outputs(
     outputs->l1_diag_enable = model->l1_diag_enable;
     outputs->debug_frozen = model->perf_frozen;
 
-    outputs->pc_base = model->pc_base;
     outputs->input_base = model->input_base;
     outputs->weight_base = model->weight_base;
     outputs->work_base = model->work_base;
@@ -860,8 +839,6 @@ static void npu_lsc_fill_outputs(
     outputs->kv_base = model->kv_base;
     outputs->m_axi_addr_base = model->m_axi_addr_base;
     outputs->m_axi_addr_limit = model->m_axi_addr_limit;
-    outputs->tbu_stream_id = model->tbu_stream_id;
-    outputs->tbu_substream_id = model->tbu_substream_id;
     for (index = 0u; index < NPU_LSC_TIMEOUT_CLASS_COUNT; index++) {
         outputs->timeout_cycles[index] = model->timeout_cycles[index];
     }
@@ -891,7 +868,7 @@ void npu_lsc_cycle_config_reference(npu_lsc_cycle_config_t *config)
     config->isa_feature = 0u;
     config->bus_config =
         (UINT64_C(64) << NPU_LSC_BUS_DATA_BITS_SHIFT) |
-        (UINT64_C(48) << NPU_LSC_BUS_GVA_BITS_SHIFT) |
+        (UINT64_C(48) << NPU_LSC_BUS_GADDR_BITS_SHIFT) |
         (UINT64_C(40) << NPU_LSC_BUS_PA_BITS_SHIFT) |
         (UINT64_C(8) << NPU_LSC_BUS_AXI_ID_BITS_SHIFT);
     config->l1_config =
@@ -958,6 +935,8 @@ void npu_lsc_cycle_reset(npu_lsc_cycle_t *model)
     model->stopped = 1u;
     model->irq_mask = NPU_LSC_IRQ_ALL;
     model->reset_reason = NPU_LSC_RESET_EXTERNAL;
+    model->m_axi_addr_base = 0u;
+    model->m_axi_addr_limit = UINT64_C(0x00fffffffff8);
     for (index = 0u; index < NPU_LSC_TIMEOUT_CLASS_COUNT; index++) {
         model->timeout_cycles[index] =
             model->config.timeout_reset[index];

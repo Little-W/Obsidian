@@ -1,10 +1,10 @@
-# NPU control, storage, and CMD128 RTL
+# NPU control, storage, and 128-bit instruction RTL
 
 This directory contains the synthesizable control and storage foundation for
 one NPU core. Software-visible buses and internal storage transfers use 64-bit
 beats. Every local active-low reset input is named `reset_n`.
 
-CMD128 carries an 80-bit operation payload containing task addresses, sizes,
+Each 128-bit instruction carries an 80-bit operation payload containing task addresses, sizes,
 data types, and function options. Every command uses this inline format. A
 submitted task does not fetch a parameter block from system memory.
 
@@ -12,17 +12,16 @@ submitted task does not fetch a parameter block from system memory.
 
 | File | Function |
 | --- | --- |
-| `../npu_rtl_pkg.sv` | Shared widths, status values, integer data types, six-bit command opcodes, and CMD128 field helpers |
-| `npu_cmd_frontend.sv` | Reassembles two 64-bit beats into CMD128, checks the header, checks duplicate command IDs, and holds accepted commands in an eight-entry FIFO |
+| `../npu_rtl_pkg.sv` | Shared widths, status values, integer data types, six-bit instruction opcodes, and instruction field helpers |
+| `npu_cmd_frontend.sv` | Reassembles two 64-bit beats into one instruction, checks the header, checks duplicate command IDs, and holds accepted commands in an eight-entry FIFO |
 | `npu_inline_desc_decode.sv` | Checks the inline payload and expands it into the internal engine request structure |
 | `npu_task_scheduler.sv` | Holds the task table and Event Table, resolves Event generations, dispatches ready tasks, and records terminal results |
-| `npu_descriptor_fetch.sv` | Standalone parameter-block fetch unit retained for module-level verification; CMD128 task submission does not request it |
+| `npu_descriptor_fetch.sv` | Standalone parameter-block fetch unit retained for module-level verification; inline task submission does not request it |
 | `npu_lsc.sv` | Implements 64-bit control registers, first-fault state, interrupt state, reset drain control, and exported configuration |
 | `npu_crg.sv` | Synchronizes reset release, qualifies local clock enables, and acknowledges an idle DVFS request |
 | `npu_wdt.sv` | Detects a lack of observable forward progress and holds a timeout request until software kicks or disables it |
 | `../memory/npu_l1buf.sv` | Arbitrates single-beat clients and stores data in banked 64-bit SRAM arrays |
-| `../memory/npu_tbu.sv` | Performs identity translation after stream, access-permission, alignment, and address-range checks |
-| `../memory/npu_axi_mif_master.sv` | Converts an internal 64-bit global-memory request into an AXI4 read or write |
+| `../memory/npu_axi_mif_master.sv` | Checks a physical address and converts an internal 64-bit global-memory request into an AXI4 read or write |
 
 ## CMD ingress
 
@@ -50,16 +49,16 @@ The command response contains:
 [27:20]  remaining CFE FIFO entries
 ```
 
-`command_id` comes from CMD128 bits `[121:112]`. The response places it in a
+`command_id` comes from instruction bits `[121:112]`. The response places it in a
 12-bit field whose upper two bits are zero.
 
 The CFE-to-scheduler duplicate-ID query carries `cmd_id_lookup_id[9:0]`.
 Scheduler task records and completion messages remain 12 bits wide for the
-internal interface; bits 11 and 10 are always zero for a CMD128 command.
+internal interface; bits 11 and 10 are always zero for an inline instruction.
 
-## CMD128 header
+## Instruction header
 
-| CMD128 bits | Field | Meaning |
+| Instruction bits | Field | Meaning |
 | ---: | --- | --- |
 | `[127:122]` | `opcode` | Six-bit operation selector; values 0 through 32 are assigned |
 | `[121:112]` | `command_id` | Ten-bit in-flight task ID, 0 through 1023 |
@@ -158,7 +157,7 @@ The scheduler has 16 task entries by default and 255 usable Event entries.
 
 At command acceptance, the scheduler reads each referenced Event entry and
 attaches its current four-bit generation to the local task. The generation is
-therefore not carried in CMD128.
+therefore not carried in the instruction.
 
 - a task with `wait_event0` or `wait_event1` remains waiting until both required
   Events succeed;
@@ -232,14 +231,16 @@ contents are intentionally not reset.
 The external L1 window passes AXI Slave accesses through an internal request
 adapter. Software must enable the window before use.
 
-## MIF, TBU, and AXI Master
+## MIF and AXI Master
 
 DMA is the global-memory requester. Matrix, Vector, and Complex access L1 only.
-CMD128 task submission does not use MIF for parameter-block fetches.
+Inline task submission does not use MIF for parameter-block fetches.
 
-MIF submits a translated address request to TBU before issuing an AXI request.
-The AXI Master port connects to the SoC AXI Fabric; DDR and other permitted
-targets are outside the NPU.
+Every DMA global address is a physical byte address. MIF checks 8-byte
+alignment, the configured accessible address range, and whether the address
+fits the AXI address width before issuing a request. The AXI Master port
+connects to the SoC AXI Fabric; DDR and other permitted targets are outside
+the NPU.
 
 The current AXI master uses:
 
@@ -251,18 +252,17 @@ The current AXI master uses:
 - stable payload while a valid signal waits for ready.
 
 Read data and write completion share the internal response channel. AXI
-`SLVERR`, `DECERR`, translation errors, and protocol errors produce distinct
-memory status values.
+`SLVERR`, `DECERR`, invalid physical addresses, and protocol errors produce
+distinct memory status values.
 
 ## Implemented limits
 
 - The RTL capability register disables GATHER_ND, ROPE, and RECIP.
-- CMD128 shape fields limit Matrix `M`, `N`, `K`, and BMM batch values to 1 through
+- Instruction shape fields limit Matrix `M`, `N`, `K`, and BMM batch values to 1 through
   64 per instruction. The compiler splits larger work.
 - Vector length is 1 through 32 and rows are 1 through 32 per instruction.
 - Complex length is 1 through 256 and rows are 1 through 32 per instruction.
 - MIF currently accepts one internal request at a time.
-- TBU uses a configurable identity rule instead of a page-table walker.
 - The current L1 arbiter grants one SRAM access per cycle across its clients.
 - ECC status values exist, but the SRAM arrays do not yet store ECC bits.
 - Descriptor CRC remains unsupported by the standalone fetch unit.
@@ -283,14 +283,14 @@ The regression includes:
 - atomic command-pair assembly and partial-command timeout;
 - command ID `10'h3ff`, disabled opcode values 11, 29, and 31, and illegal
   opcode values 33 through 63;
-- CMD128 decode for all engine classes;
-- zero Descriptor Fetch Unit requests during CMD128 task submission;
+- 128-bit instruction decode for all engine classes;
+- zero Descriptor Fetch Unit requests during inline task submission;
 - positive and negative payload checks;
 - Event generation resolution and EVENT_REARM;
 - INT4, INT8, INT16, and INT32 engine cases;
 - Matrix direct five-bit requant shift;
 - WAIT, QUERY, FENCE, and ACK;
-- L1, TBU, MIF, AXI, CRG, LSC, WDT, and complete single-core tests.
+- L1, MIF, AXI, CRG, LSC, WDT, and complete single-core tests.
 
 The synced AXI TVIP environment also submits an inline Vector task through
 the fixed-address AXI Slave FIFO and confirms that it creates no system-memory

@@ -325,14 +325,22 @@ static int wire_test_cmd_and_control(const npu_wire_limits_t *limits)
         TEST_CHECK(cmd.opcode == opcodes[index]);
     }
 
-    wire_make_cmd(cmd_wire, UINT64_C(0xffffffffffc0),
+    wire_make_cmd(cmd_wire, UINT64_C(0xffffffffc0),
                   0x390u, NPU_ENGINE_CONTROL, NPU_CTRL_NOP,
                   0u, WIRE_NONE, WIRE_NONE, WIRE_NONE);
     TEST_CHECK_STATUS(wire_decode_descriptor_cmd(cmd_wire,
                                           sizeof(cmd_wire),
                                           limits, &cmd),
                       NPU_STATUS_SUCCESS);
-    TEST_CHECK(cmd.desc_addr == UINT64_C(0xffffffffffc0));
+    TEST_CHECK(cmd.desc_addr == UINT64_C(0xffffffffc0));
+
+    wire_make_cmd(cmd_wire, UINT64_C(0x10000000000),
+                  0x390u, NPU_ENGINE_CONTROL, NPU_CTRL_NOP,
+                  0u, WIRE_NONE, WIRE_NONE, WIRE_NONE);
+    TEST_CHECK_STATUS(wire_decode_descriptor_cmd(
+                          cmd_wire, sizeof(cmd_wire),
+                          limits, &cmd),
+                      NPU_STATUS_ADDR_FAULT);
 
     wire_make_cmd(cmd_wire, 0x400u, 0x391u,
                   NPU_ENGINE_CONTROL, NPU_CTRL_NOP,

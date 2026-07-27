@@ -24,7 +24,7 @@ int npu_capability_config_match(
         (NPU_LSC_FIELD_U8_MASK <<
          NPU_LSC_BUS_DATA_BITS_SHIFT) |
         (NPU_LSC_FIELD_U8_MASK <<
-         NPU_LSC_BUS_GVA_BITS_SHIFT) |
+         NPU_LSC_BUS_GADDR_BITS_SHIFT) |
         (NPU_LSC_FIELD_U8_MASK <<
          NPU_LSC_BUS_PA_BITS_SHIFT) |
         (NPU_LSC_FIELD_U8_MASK <<
@@ -70,7 +70,7 @@ int npu_capability_config_match(
     if (wire->l1_bytes == 0u ||
         wire->l1_bytes > (1u << 24) ||
         wire->gaddr_limit == 0u ||
-        wire->gaddr_limit > (UINT64_C(1) << 48) ||
+        wire->gaddr_limit > (UINT64_C(1) << 40) ||
         wire->gaddr_limit > functional_model->ddr_size ||
         wire->dma_max_burst_beats == 0u ||
         wire->dma_max_burst_beats > 256u ||
@@ -111,7 +111,7 @@ int npu_capability_config_match(
             NPU_REF_BUS_DATA_BITS ||
         npu_capability_field(
             lsc->bus_config,
-            NPU_LSC_BUS_GVA_BITS_SHIFT,
+            NPU_LSC_BUS_GADDR_BITS_SHIFT,
             NPU_LSC_FIELD_U8_MASK) != 48u ||
         npu_capability_field(
             lsc->bus_config,

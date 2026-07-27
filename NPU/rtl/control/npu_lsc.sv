@@ -68,10 +68,6 @@ module npu_lsc (
   output logic [47:0] kv_base_o,
   output logic [47:0] m_axi_addr_base_o,
   output logic [47:0] m_axi_addr_limit_o,
-  output logic [15:0] tbu_stream_id_o,
-  output logic [15:0] tbu_substream_id_o,
-  output logic        tbu_allow_read_o,
-  output logic        tbu_allow_write_o,
   output logic [19:0] param_l1_base_o,
   output logic [19:0] param_l1_limit_o,
   output logic        param_lock_o,
@@ -109,8 +105,6 @@ module npu_lsc (
   logic [47:0] kv_base_q;
   logic [47:0] m_axi_addr_base_q;
   logic [47:0] m_axi_addr_limit_q;
-  logic [15:0] tbu_stream_id_q;
-  logic [15:0] tbu_substream_id_q;
   logic [19:0] param_l1_base_q;
   logic [19:0] param_l1_limit_q;
   logic param_lock_q;
@@ -210,10 +204,6 @@ module npu_lsc (
   assign kv_base_o             = kv_base_q;
   assign m_axi_addr_base_o     = m_axi_addr_base_q;
   assign m_axi_addr_limit_o    = m_axi_addr_limit_q;
-  assign tbu_stream_id_o       = tbu_stream_id_q;
-  assign tbu_substream_id_o    = tbu_substream_id_q;
-  assign tbu_allow_read_o      = 1'b1;
-  assign tbu_allow_write_o     = 1'b1;
   assign param_l1_base_o       = param_l1_base_q;
   assign param_l1_limit_o      = param_l1_limit_q;
   assign param_lock_o          = param_lock_q;
@@ -251,8 +241,6 @@ module npu_lsc (
         16'h0078: csr_read_data = {16'd0, kv_base_q};
         16'h0080: csr_read_data = {16'd0, m_axi_addr_base_q};
         16'h0088: csr_read_data = {16'd0, m_axi_addr_limit_q};
-        16'h0090: csr_read_data = {32'd0, tbu_substream_id_q,
-                                  tbu_stream_id_q};
         16'h00a0: csr_read_data = {61'd0, irq_status_q};
         16'h00a8: csr_read_data = {61'd0, irq_mask_q};
         16'h00b0: csr_read_data = fault_valid_q
@@ -297,9 +285,7 @@ module npu_lsc (
       output_base_q                <= 48'd0;
       kv_base_q                    <= 48'd0;
       m_axi_addr_base_q            <= 48'd0;
-      m_axi_addr_limit_q           <= 48'hffff_ffff_ffF8;
-      tbu_stream_id_q              <= 16'd0;
-      tbu_substream_id_q           <= 16'd0;
+      m_axi_addr_limit_q           <= 48'h00ff_ffff_fff8;
       param_l1_base_q              <= 20'd0;
       param_l1_limit_q             <= 20'd0;
       param_lock_q                 <= 1'b0;
@@ -361,7 +347,7 @@ module npu_lsc (
             end
 
             16'h0058: begin
-              if (!core_idle_o || (|reg_req_wdata_i[63:48])
+              if (!core_idle_o || (|reg_req_wdata_i[63:40])
                   || (|reg_req_wdata_i[2:0])) begin
                 rsp_status_q <= 2'b10;
               end else begin
@@ -371,7 +357,7 @@ module npu_lsc (
               end
             end
             16'h0060: begin
-              if (!core_idle_o || (|reg_req_wdata_i[63:48])
+              if (!core_idle_o || (|reg_req_wdata_i[63:40])
                   || (|reg_req_wdata_i[2:0])) begin
                 rsp_status_q <= 2'b10;
               end else begin
@@ -381,7 +367,7 @@ module npu_lsc (
               end
             end
             16'h0068: begin
-              if (!core_idle_o || (|reg_req_wdata_i[63:48])
+              if (!core_idle_o || (|reg_req_wdata_i[63:40])
                   || (|reg_req_wdata_i[2:0])) begin
                 rsp_status_q <= 2'b10;
               end else begin
@@ -391,7 +377,7 @@ module npu_lsc (
               end
             end
             16'h0070: begin
-              if (!core_idle_o || (|reg_req_wdata_i[63:48])
+              if (!core_idle_o || (|reg_req_wdata_i[63:40])
                   || (|reg_req_wdata_i[2:0])) begin
                 rsp_status_q <= 2'b10;
               end else begin
@@ -401,7 +387,7 @@ module npu_lsc (
               end
             end
             16'h0078: begin
-              if (!core_idle_o || (|reg_req_wdata_i[63:48])
+              if (!core_idle_o || (|reg_req_wdata_i[63:40])
                   || (|reg_req_wdata_i[2:0])) begin
                 rsp_status_q <= 2'b10;
               end else begin
@@ -411,7 +397,7 @@ module npu_lsc (
               end
             end
             16'h0080: begin
-              if (!core_idle_o || (|reg_req_wdata_i[63:48])
+              if (!core_idle_o || (|reg_req_wdata_i[63:40])
                   || (|reg_req_wdata_i[2:0])
                   || (reg_req_wdata_i[47:0] > m_axi_addr_limit_q)) begin
                 rsp_status_q <= 2'b10;
@@ -420,20 +406,12 @@ module npu_lsc (
               end
             end
             16'h0088: begin
-              if (!core_idle_o || (|reg_req_wdata_i[63:48])
+              if (!core_idle_o || (|reg_req_wdata_i[63:40])
                   || (|reg_req_wdata_i[2:0])
                   || (reg_req_wdata_i[47:0] < m_axi_addr_base_q)) begin
                 rsp_status_q <= 2'b10;
               end else begin
                 m_axi_addr_limit_q <= reg_req_wdata_i[47:0];
-              end
-            end
-            16'h0090: begin
-              if (!core_idle_o || (|reg_req_wdata_i[63:32])) begin
-                rsp_status_q <= 2'b10;
-              end else begin
-                tbu_stream_id_q    <= reg_req_wdata_i[15:0];
-                tbu_substream_id_q <= reg_req_wdata_i[31:16];
               end
             end
             16'h00a0: begin

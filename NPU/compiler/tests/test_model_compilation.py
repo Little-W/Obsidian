@@ -1266,6 +1266,105 @@ class EndToEndCompilerTests(unittest.TestCase):
                 compiler.TargetConfig(l1_bytes=0x1200),
             )
 
+    def test_40_bit_ddr_top_range_compiles_and_is_exported(self) -> None:
+        address_limit = 1 << 40
+        target = compiler.TargetConfig(
+            ddr_base=address_limit - 256,
+            ddr_bytes=address_limit,
+        )
+        result = compiler.compile_model_document(add_model(), target)
+        self.assertEqual(result.runtime["axi_addr_bits"], 40)
+        self.assertEqual(result.runtime["ddr_base"], address_limit - 256)
+        self.assertEqual(result.runtime["ddr_bytes"], address_limit)
+        self.assertLessEqual(
+            result.runtime["ddr_allocation_end"], address_limit
+        )
+        self.assertTrue(result.low_ir["target"]["gaddr_bases"])
+        for tensor in result.tensors.values():
+            if tensor.ddr_addr is None:
+                continue
+            self.assertLess(tensor.ddr_addr, address_limit)
+            self.assertLessEqual(
+                tensor.ddr_addr + tensor.storage_bytes,
+                address_limit,
+            )
+
+        header = model_artifacts.build_model_c_header(
+            "top_range", result
+        ).decode("ascii")
+        source = model_artifacts.build_model_c_source(
+            "top_range", result
+        ).decode("ascii")
+        self.assertIn("#define TOP_RANGE_MODEL_AXI_ADDR_BITS 40u", header)
+        selected_base = next(
+            value
+            for name, value in result.runtime["gaddr_bases"].items()
+            if name != "zero" and value != 0
+        )
+        self.assertIn(f"UINT64_C(0x{selected_base:x})", source)
+
+    def test_40_bit_target_and_allocation_overruns_are_rejected(self) -> None:
+        address_limit = 1 << 40
+        with self.assertRaisesRegex(
+            compiler.ModelCompileError, r"ddr_base.*below 2\^40"
+        ):
+            compiler.compile_model_document(
+                add_model(),
+                compiler.TargetConfig(
+                    ddr_base=address_limit,
+                    ddr_bytes=address_limit,
+                ),
+            )
+        with self.assertRaisesRegex(
+            compiler.ModelCompileError, r"ddr_bytes.*at most 2\^40"
+        ):
+            compiler.compile_model_document(
+                add_model(),
+                compiler.TargetConfig(
+                    ddr_bytes=address_limit + 1,
+                ),
+            )
+        with self.assertRaisesRegex(
+            compiler.ModelCompileError, "DDR allocation"
+        ):
+            compiler.compile_model_document(
+                add_model(),
+                compiler.TargetConfig(
+                    ddr_base=address_limit - 128,
+                    ddr_bytes=address_limit,
+                ),
+            )
+        with self.assertRaisesRegex(
+            compiler.ModelCompileError, "axi_addr_bits.*equal 40"
+        ):
+            compiler.compile_model_document(
+                add_model(),
+                compiler.TargetConfig(axi_addr_bits=48),
+            )
+
+    def test_model_artifact_rejects_bit40_binding(self) -> None:
+        result = compiler.compile_model_document(
+            add_model(), compiler.TargetConfig()
+        )
+        runtime = dict(result.runtime)
+        runtime["inputs"] = [
+            dict(result.runtime["inputs"][0], ddr_addr=1 << 40)
+        ]
+        invalid = replace(result, runtime=runtime)
+        with self.assertRaisesRegex(ValueError, r"below 2\^40"):
+            model_artifacts.build_model_c_header("invalid", invalid)
+
+    def test_model_artifact_rejects_unaligned_global_base(self) -> None:
+        result = compiler.compile_model_document(
+            add_model(), compiler.TargetConfig()
+        )
+        runtime = dict(result.runtime)
+        runtime["gaddr_bases"] = dict(result.runtime["gaddr_bases"])
+        runtime["gaddr_bases"]["input"] = 1
+        invalid = replace(result, runtime=runtime)
+        with self.assertRaisesRegex(ValueError, r"aligned to 8 bytes"):
+            model_artifacts.build_model_c_header("invalid", invalid)
+
 
 if __name__ == "__main__":
     unittest.main()

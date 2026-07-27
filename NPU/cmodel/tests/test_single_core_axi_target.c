@@ -15,10 +15,8 @@
 #define SCAT_TRACE_HASH 128u
 #define SCAT_MAX_CYCLES 30000u
 
-#define SCAT_DESC_VADDR UINT64_C(0x00002000)
-#define SCAT_DESC_PADDR UINT64_C(0x00008000)
-#define SCAT_DMA_DESC_VADDR UINT64_C(0x00003000)
-#define SCAT_DMA_DESC_PADDR UINT64_C(0x0000a000)
+#define SCAT_DESC_ADDR UINT64_C(0x00008000)
+#define SCAT_DMA_DESC_ADDR UINT64_C(0x0000a000)
 #define SCAT_GC_ADDR UINT64_C(0x00009040)
 #define SCAT_SRC0 0x00000100u
 #define SCAT_SRC1 0x00000180u
@@ -81,8 +79,6 @@ typedef struct {
     uint32_t mif_aw_handshakes;
     uint32_t mif_w_handshakes;
     uint32_t mif_b_handshakes;
-    uint32_t tbu_req_handshakes;
-    uint32_t tbu_rsp_handshakes;
     uint64_t mif_ar_addr[SCAT_AXI_LOG_ENTRIES];
     uint8_t mif_ar_len[SCAT_AXI_LOG_ENTRIES];
     uint8_t mif_ar_size[SCAT_AXI_LOG_ENTRIES];
@@ -92,15 +88,11 @@ typedef struct {
     uint64_t mif_w_data[SCAT_AXI_LOG_ENTRIES];
     uint8_t mif_w_strb[SCAT_AXI_LOG_ENTRIES];
     uint8_t mif_w_last[SCAT_AXI_LOG_ENTRIES];
-    uint64_t tbu_req_vaddr[SCAT_AXI_LOG_ENTRIES];
-    uint8_t tbu_req_write[SCAT_AXI_LOG_ENTRIES];
-    uint64_t tbu_rsp_paddr[SCAT_AXI_LOG_ENTRIES];
-    uint8_t tbu_rsp_status[SCAT_AXI_LOG_ENTRIES];
     uint32_t dfu_core_req_handshakes;
     uint32_t dfu_noc_req_handshakes;
-    uint64_t dfu_core_req_vaddr[SCAT_AXI_LOG_ENTRIES];
+    uint64_t dfu_core_req_addr[SCAT_AXI_LOG_ENTRIES];
     uint8_t dfu_core_req_beats[SCAT_AXI_LOG_ENTRIES];
-    uint64_t dfu_noc_req_vaddr[SCAT_AXI_LOG_ENTRIES];
+    uint64_t dfu_noc_req_addr[SCAT_AXI_LOG_ENTRIES];
     uint8_t dfu_noc_req_beats[SCAT_AXI_LOG_ENTRIES];
 
     uint32_t dma_core_read_req_handshakes;
@@ -118,10 +110,10 @@ typedef struct {
     uint32_t dma_l1_write_req_handshakes;
     uint32_t dma_l1_write_data_handshakes;
     uint32_t dma_l1_write_rsp_handshakes;
-    uint64_t dma_core_req_vaddr[SCAT_AXI_LOG_ENTRIES];
+    uint64_t dma_core_req_addr[SCAT_AXI_LOG_ENTRIES];
     uint8_t dma_core_req_beats[SCAT_AXI_LOG_ENTRIES];
     uint8_t dma_core_req_write[SCAT_AXI_LOG_ENTRIES];
-    uint64_t dma_noc_req_vaddr[SCAT_AXI_LOG_ENTRIES];
+    uint64_t dma_noc_req_addr[SCAT_AXI_LOG_ENTRIES];
     uint8_t dma_noc_req_beats[SCAT_AXI_LOG_ENTRIES];
     uint8_t dma_noc_req_write[SCAT_AXI_LOG_ENTRIES];
 } scat_env_t;
@@ -133,8 +125,6 @@ typedef struct {
     uint32_t mif_aw;
     uint32_t mif_w;
     uint32_t mif_b;
-    uint32_t tbu_req;
-    uint32_t tbu_rsp;
     uint32_t dfu_core_req;
     uint32_t dfu_noc_req;
 
@@ -343,8 +333,6 @@ static void scat_observe(
     observation->mif_aw = env->mif_aw_handshakes;
     observation->mif_w = env->mif_w_handshakes;
     observation->mif_b = env->mif_b_handshakes;
-    observation->tbu_req = env->tbu_req_handshakes;
-    observation->tbu_rsp = env->tbu_rsp_handshakes;
     observation->dfu_core_req =
         env->dfu_core_req_handshakes;
     observation->dfu_noc_req =
@@ -404,7 +392,7 @@ static void scat_observe_dma_core(
             0u) {
         if (env->dfu_core_req_handshakes <
             SCAT_AXI_LOG_ENTRIES) {
-            env->dfu_core_req_vaddr[
+            env->dfu_core_req_addr[
                 env->dfu_core_req_handshakes] =
                 outputs->ts.dfu.req_addr;
             env->dfu_core_req_beats[
@@ -421,8 +409,8 @@ static void scat_observe_dma_core(
             env->dma_core_write_req_handshakes;
 
         if (request_index < SCAT_AXI_LOG_ENTRIES) {
-            env->dma_core_req_vaddr[request_index] =
-                engine_mif->req_vaddr;
+            env->dma_core_req_addr[request_index] =
+                engine_mif->req_addr;
             env->dma_core_req_beats[request_index] =
                 engine_mif->req_beats;
             env->dma_core_req_write[request_index] =
@@ -601,38 +589,16 @@ static void scat_noc_tick(
         target_inputs.master.bready != 0u) {
         env->mif_b_handshakes++;
     }
-    if (outputs->mif.tbu.req_valid != 0u &&
-        outputs->tbu.req_ready != 0u) {
-        if (env->tbu_req_handshakes <
-            SCAT_AXI_LOG_ENTRIES) {
-            env->tbu_req_vaddr[env->tbu_req_handshakes] =
-                outputs->mif.tbu.req_vaddr;
-            env->tbu_req_write[env->tbu_req_handshakes] =
-                outputs->mif.tbu.req_write;
-        }
-        env->tbu_req_handshakes++;
-    }
-    if (outputs->tbu.rsp_valid != 0u &&
-        outputs->mif.tbu.rsp_ready != 0u) {
-        if (env->tbu_rsp_handshakes <
-            SCAT_AXI_LOG_ENTRIES) {
-            env->tbu_rsp_paddr[env->tbu_rsp_handshakes] =
-                outputs->tbu.rsp_paddr;
-            env->tbu_rsp_status[env->tbu_rsp_handshakes] =
-                outputs->tbu.rsp_status;
-        }
-        env->tbu_rsp_handshakes++;
-    }
     if (outputs->cdc.owner[NPU_MIF_OWNER_DFU].req_valid !=
             0u &&
         outputs->mif.owner[NPU_MIF_OWNER_DFU].req_ready !=
             0u) {
         if (env->dfu_noc_req_handshakes <
             SCAT_AXI_LOG_ENTRIES) {
-            env->dfu_noc_req_vaddr[
+            env->dfu_noc_req_addr[
                 env->dfu_noc_req_handshakes] =
                 outputs->cdc.owner[NPU_MIF_OWNER_DFU]
-                    .req_vaddr;
+                    .req_addr;
             env->dfu_noc_req_beats[
                 env->dfu_noc_req_handshakes] =
                 outputs->cdc.owner[NPU_MIF_OWNER_DFU]
@@ -649,9 +615,9 @@ static void scat_noc_tick(
             env->dma_noc_write_req_handshakes;
 
         if (request_index < SCAT_AXI_LOG_ENTRIES) {
-            env->dma_noc_req_vaddr[request_index] =
+            env->dma_noc_req_addr[request_index] =
                 outputs->cdc.owner[NPU_MIF_OWNER_DMA]
-                    .req_vaddr;
+                    .req_addr;
             env->dma_noc_req_beats[request_index] =
                 outputs->cdc.owner[NPU_MIF_OWNER_DMA]
                     .req_beats;
@@ -696,7 +662,6 @@ static int scat_env_init(scat_env_t *env)
     npu_lsc_cycle_config_t lsc_config;
     npu_mif_cycle_config_t mif_config;
     npu_axi_mem_target_config_t target_config;
-    npu_tbu_rule_t rule;
     uint32_t engine;
     uint32_t index;
 
@@ -736,15 +701,13 @@ static int scat_env_init(scat_env_t *env)
     mif_config.system_addr_enable = 1u;
     mif_config.system_addr_base = 0u;
     mif_config.system_addr_limit = SCAT_DDR_BYTES - 8u;
-    mif_config.bypass_enable = 0u;
-
     TEST_CHECK_STATUS(
         npu_single_core_cycle_init(
             &env->top, &env->functional,
             env->l1, sizeof(env->l1),
             env->l1_ecc, sizeof(env->l1_ecc),
             env->workspace, &limits, &lsc_config,
-            &mif_config, NPU_SINGLE_CORE_TBU_INTERNAL),
+            &mif_config),
         NPU_STATUS_SUCCESS);
 
     npu_axi_mem_target_config_reference(&target_config);
@@ -755,38 +718,8 @@ static int scat_env_init(scat_env_t *env)
         &env->mif_target, env->ddr, sizeof(env->ddr),
         0u, &target_config));
 
-    (void)memset(&rule, 0, sizeof(rule));
-    rule.valid = 1u;
-    rule.virtual_page = SCAT_DESC_VADDR >> 12u;
-    rule.physical_page =
-        (uint32_t)(SCAT_DESC_PADDR >> 12u);
-    rule.stream_id = 0x1234u;
-    rule.substream_id = 0x5678u;
-    rule.read_enable = 1u;
-    rule.write_enable = 1u;
-    TEST_CHECK(npu_tbu_cycle_set_rule(
-        &env->top.tbu, 0u, &rule));
-
-    rule.virtual_page = SCAT_DMA_DESC_VADDR >> 12u;
-    rule.physical_page =
-        (uint32_t)(SCAT_DMA_DESC_PADDR >> 12u);
-    TEST_CHECK(npu_tbu_cycle_set_rule(
-        &env->top.tbu, 1u, &rule));
-
-    rule.virtual_page = SCAT_DMA_DDR_SRC >> 12u;
-    rule.physical_page =
-        (uint32_t)(SCAT_DMA_DDR_SRC >> 12u);
-    TEST_CHECK(npu_tbu_cycle_set_rule(
-        &env->top.tbu, 2u, &rule));
-
-    rule.virtual_page = SCAT_DMA_DDR_DST >> 12u;
-    rule.physical_page =
-        (uint32_t)(SCAT_DMA_DDR_DST >> 12u);
-    TEST_CHECK(npu_tbu_cycle_set_rule(
-        &env->top.tbu, 3u, &rule));
-
     scat_make_vector_descriptor(
-        &env->ddr[(size_t)SCAT_DESC_PADDR]);
+        &env->ddr[(size_t)SCAT_DESC_ADDR]);
     for (index = 0u; index < 16u; index++) {
         env->l1[SCAT_SRC0 + index] =
             (uint8_t)(index + 1u);
@@ -1020,7 +953,7 @@ static int scat_descriptor_fetch(scat_env_t *env)
     uint32_t index;
 
     SCAT_CALL(scat_issue_submit(
-        env, SCAT_DESC_VADDR, SCAT_COMMAND_ID,
+        env, SCAT_DESC_ADDR, SCAT_COMMAND_ID,
         NPU_ENGINE_VECTOR, NPU_VECTOR_ADD));
 
     for (cycle = 0u;
@@ -1052,12 +985,10 @@ static int scat_descriptor_fetch(scat_env_t *env)
     TEST_CHECK(env->mif_r_handshakes ==
                NPU_WIRE_VECTOR_DESC_BYTES /
                    NPU_REF_BUS_BYTES);
-    TEST_CHECK(env->mif_ar_addr[0] == SCAT_DESC_PADDR);
+    TEST_CHECK(env->mif_ar_addr[0] == SCAT_DESC_ADDR);
     TEST_CHECK(env->mif_ar_addr[1] ==
-               SCAT_DESC_PADDR +
+               SCAT_DESC_ADDR +
                    NPU_WIRE_CONTROL_DESC_BYTES);
-    TEST_CHECK(env->tbu_req_handshakes == 2u);
-    TEST_CHECK(env->tbu_rsp_handshakes == 2u);
     TEST_CHECK(npu_axi_mem_target_cycle_is_idle(
                    &env->mif_target) != 0u);
 
@@ -1185,45 +1116,6 @@ static int scat_dma_check_transport(
         ddr_to_l1 != 0u ? SCAT_DMA_DDR_SRC
                         : SCAT_DMA_DDR_DST;
 
-    TEST_CHECK(env->tbu_req_handshakes -
-                   before->tbu_req ==
-               3u);
-    TEST_CHECK(env->tbu_rsp_handshakes -
-                   before->tbu_rsp ==
-               3u);
-    TEST_CHECK(before->tbu_req + 2u <
-               SCAT_AXI_LOG_ENTRIES);
-    TEST_CHECK(before->tbu_rsp + 2u <
-               SCAT_AXI_LOG_ENTRIES);
-    TEST_CHECK(env->tbu_req_vaddr[before->tbu_req] ==
-               SCAT_DMA_DESC_VADDR);
-    TEST_CHECK(env->tbu_req_vaddr[before->tbu_req + 1u] ==
-               SCAT_DMA_DESC_VADDR +
-                   NPU_WIRE_CONTROL_DESC_BYTES);
-    TEST_CHECK(env->tbu_req_vaddr[before->tbu_req + 2u] ==
-               data_addr);
-    TEST_CHECK(env->tbu_req_write[before->tbu_req] == 0u);
-    TEST_CHECK(
-        env->tbu_req_write[before->tbu_req + 1u] == 0u);
-    TEST_CHECK(
-        env->tbu_req_write[before->tbu_req + 2u] ==
-        (uint8_t)(ddr_to_l1 == 0u));
-    TEST_CHECK(env->tbu_rsp_paddr[before->tbu_rsp] ==
-               SCAT_DMA_DESC_PADDR);
-    TEST_CHECK(env->tbu_rsp_paddr[before->tbu_rsp + 1u] ==
-               SCAT_DMA_DESC_PADDR +
-                   NPU_WIRE_CONTROL_DESC_BYTES);
-    TEST_CHECK(env->tbu_rsp_paddr[before->tbu_rsp + 2u] ==
-               data_addr);
-    TEST_CHECK(env->tbu_rsp_status[before->tbu_rsp] ==
-               NPU_STATUS_SUCCESS);
-    TEST_CHECK(
-        env->tbu_rsp_status[before->tbu_rsp + 1u] ==
-        NPU_STATUS_SUCCESS);
-    TEST_CHECK(
-        env->tbu_rsp_status[before->tbu_rsp + 2u] ==
-        NPU_STATUS_SUCCESS);
-
     TEST_CHECK(env->dfu_core_req_handshakes -
                    before->dfu_core_req ==
                2u);
@@ -1234,11 +1126,11 @@ static int scat_dma_check_transport(
                SCAT_AXI_LOG_ENTRIES);
     TEST_CHECK(dfu_noc_index + 1u <
                SCAT_AXI_LOG_ENTRIES);
-    TEST_CHECK(env->dfu_core_req_vaddr[dfu_core_index] ==
-               SCAT_DMA_DESC_VADDR);
+    TEST_CHECK(env->dfu_core_req_addr[dfu_core_index] ==
+               SCAT_DMA_DESC_ADDR);
     TEST_CHECK(
-        env->dfu_core_req_vaddr[dfu_core_index + 1u] ==
-        SCAT_DMA_DESC_VADDR +
+        env->dfu_core_req_addr[dfu_core_index + 1u] ==
+        SCAT_DMA_DESC_ADDR +
             NPU_WIRE_CONTROL_DESC_BYTES);
     TEST_CHECK(env->dfu_core_req_beats[dfu_core_index] ==
                NPU_WIRE_CONTROL_DESC_BYTES /
@@ -1250,11 +1142,11 @@ static int scat_dma_check_transport(
          NPU_WIRE_CONTROL_DESC_BYTES) /
                 NPU_REF_BUS_BYTES -
             1u);
-    TEST_CHECK(env->dfu_noc_req_vaddr[dfu_noc_index] ==
-               SCAT_DMA_DESC_VADDR);
+    TEST_CHECK(env->dfu_noc_req_addr[dfu_noc_index] ==
+               SCAT_DMA_DESC_ADDR);
     TEST_CHECK(
-        env->dfu_noc_req_vaddr[dfu_noc_index + 1u] ==
-        SCAT_DMA_DESC_VADDR +
+        env->dfu_noc_req_addr[dfu_noc_index + 1u] ==
+        SCAT_DMA_DESC_ADDR +
             NPU_WIRE_CONTROL_DESC_BYTES);
     TEST_CHECK(env->dfu_noc_req_beats[dfu_noc_index] ==
                NPU_WIRE_CONTROL_DESC_BYTES /
@@ -1269,13 +1161,13 @@ static int scat_dma_check_transport(
 
     TEST_CHECK(core_req_index < SCAT_AXI_LOG_ENTRIES);
     TEST_CHECK(noc_req_index < SCAT_AXI_LOG_ENTRIES);
-    TEST_CHECK(env->dma_core_req_vaddr[core_req_index] ==
+    TEST_CHECK(env->dma_core_req_addr[core_req_index] ==
                data_addr);
     TEST_CHECK(env->dma_core_req_beats[core_req_index] ==
                SCAT_DMA_BYTES / NPU_REF_BUS_BYTES - 1u);
     TEST_CHECK(env->dma_core_req_write[core_req_index] ==
                (uint8_t)(ddr_to_l1 == 0u));
-    TEST_CHECK(env->dma_noc_req_vaddr[noc_req_index] ==
+    TEST_CHECK(env->dma_noc_req_addr[noc_req_index] ==
                data_addr);
     TEST_CHECK(env->dma_noc_req_beats[noc_req_index] ==
                SCAT_DMA_BYTES / NPU_REF_BUS_BYTES - 1u);
@@ -1284,12 +1176,12 @@ static int scat_dma_check_transport(
 
     TEST_CHECK(ar_index + 2u < SCAT_AXI_LOG_ENTRIES);
     TEST_CHECK(env->mif_ar_addr[ar_index] ==
-               SCAT_DMA_DESC_PADDR);
+               SCAT_DMA_DESC_ADDR);
     TEST_CHECK(env->mif_ar_addr[ar_index + 1u] ==
-               SCAT_DMA_DESC_PADDR +
+               SCAT_DMA_DESC_ADDR +
                    NPU_WIRE_CONTROL_DESC_BYTES);
     TEST_CHECK(env->mif_ar_addr[ar_index + 2u] ==
-               SCAT_DMA_DESC_PADDR +
+               SCAT_DMA_DESC_ADDR +
                    NPU_WIRE_CONTROL_DESC_BYTES +
                    NPU_MIF_AXI_MAX_BURST_BEATS *
                        NPU_REF_BUS_BYTES);
@@ -1505,11 +1397,11 @@ static int scat_dma_copy(scat_env_t *env,
 
     TEST_CHECK(env->top.engine[0].data_pending == 0u);
     scat_make_dma_descriptor(
-        &env->ddr[(size_t)SCAT_DMA_DESC_PADDR],
+        &env->ddr[(size_t)SCAT_DMA_DESC_ADDR],
         src_space, dst_space, src_addr, dst_addr);
     scat_observe(env, &before);
     SCAT_CALL(scat_issue_submit(
-        env, SCAT_DMA_DESC_VADDR, command_id,
+        env, SCAT_DMA_DESC_ADDR, command_id,
         NPU_ENGINE_DMA, NPU_DMA_COPY_1D));
 
     for (cycle = 0u;
@@ -1637,8 +1529,7 @@ static int scat_mif_reset_stale_read_wait_rlast(
     old_axi->axi_id = old_id;
     old_axi->req_slot = 0u;
     old_axi->beats = 1u;
-    old_axi->vaddr = SCAT_DESC_VADDR;
-    old_axi->paddr = SCAT_DESC_PADDR;
+    old_axi->addr = SCAT_DESC_ADDR;
 
     SCAT_CALL(scat_core_only_reset_release(env));
     for (cycle = 0u; cycle < 8u; cycle++) {
@@ -1753,8 +1644,7 @@ static int scat_mif_reset_stale_write_drain(
     old_axi->req_slot = 0u;
     old_axi->beats = 3u;
     old_axi->beats_done = 1u;
-    old_axi->vaddr = SCAT_DMA_DESC_VADDR;
-    old_axi->paddr = SCAT_DMA_DESC_PADDR;
+    old_axi->addr = SCAT_DMA_DESC_ADDR;
     env->top.mif.write_fifo[0] = 0u;
     env->top.mif.write_fifo_head = 0u;
     env->top.mif.write_fifo_tail = 1u;
@@ -1838,9 +1728,6 @@ int test_single_core_axi_target(void)
     SCAT_CALL(scat_system_write(
         env, NPU_LSC_REG_M_AXI_ADDR_LIMIT,
         UINT64_C(0x00000000000ffff8), 0x61u));
-    SCAT_CALL(scat_system_write(
-        env, NPU_LSC_REG_TBU_STREAM_ID,
-        UINT64_C(0x56781234), 0x62u));
     SCAT_CALL(scat_system_write(
         env, NPU_LSC_REG_CORE_CONTROL,
         NPU_LSC_CORE_CONTROL_START, 0x63u));

@@ -48,10 +48,6 @@ module tb_lsc_crg_wdt_smoke;
   logic [47:0] kv_base;
   logic [47:0] m_axi_addr_base;
   logic [47:0] m_axi_addr_limit;
-  logic [15:0] tbu_stream_id;
-  logic [15:0] tbu_substream_id;
-  logic tbu_allow_read;
-  logic tbu_allow_write;
   logic [19:0] param_l1_base;
   logic [19:0] param_l1_limit;
   logic param_lock;
@@ -140,10 +136,6 @@ module tb_lsc_crg_wdt_smoke;
     .kv_base_o(kv_base),
     .m_axi_addr_base_o(m_axi_addr_base),
     .m_axi_addr_limit_o(m_axi_addr_limit),
-    .tbu_stream_id_o(tbu_stream_id),
-    .tbu_substream_id_o(tbu_substream_id),
-    .tbu_allow_read_o(tbu_allow_read),
-    .tbu_allow_write_o(tbu_allow_write),
     .param_l1_base_o(param_l1_base),
     .param_l1_limit_o(param_l1_limit),
     .param_lock_o(param_lock),
@@ -263,6 +255,26 @@ module tb_lsc_crg_wdt_smoke;
         || (read_data != 64'h0000_0000_0000_1000)) begin
       $fatal(1, "LSC input base readback failed");
     end
+    csr_access(1'b1, 16'h0058, 64'h0000_0100_0000_0000,
+               read_data, response_status);
+    if ((response_status != 2'b10) || (input_base != 48'h1000)) begin
+      $fatal(1, "LSC accepted a physical base address with bit 40 set");
+    end
+    if (m_axi_addr_limit != 48'h00ff_ffff_fff8) begin
+      $fatal(1, "LSC physical address limit reset value is incorrect");
+    end
+    csr_access(1'b1, 16'h0090, 64'hdead_beef_cafe_5a5a,
+               read_data, response_status);
+    if ((response_status != 2'b00)
+        || (input_base != 48'h1000)
+        || (m_axi_addr_base != 48'd0)
+        || (m_axi_addr_limit != 48'h00ff_ffff_fff8)) begin
+      $fatal(1, "LSC reserved CSR 0x0090 write changed state");
+    end
+    csr_access(1'b0, 16'h0090, 64'd0, read_data, response_status);
+    if ((response_status != 2'b00) || (read_data != 64'd0)) begin
+      $fatal(1, "LSC reserved CSR 0x0090 read behavior is incorrect");
+    end
 
     csr_access(1'b1, 16'h0040, 64'h1, read_data, response_status);
     if ((response_status != 2'b00) || !accept_new_cmd) begin
@@ -338,8 +350,6 @@ module tb_lsc_crg_wdt_smoke;
         lsc_wdt_kick, irq_done, irq_exception,
         weight_base, work_base, output_base, kv_base,
         m_axi_addr_base, m_axi_addr_limit,
-        tbu_stream_id, tbu_substream_id,
-        tbu_allow_read, tbu_allow_write,
         param_l1_base, param_l1_limit, param_lock,
         l1_host_access_enable, lsc_module_clk_enable,
         wdt_reset_req, core_clk_gated, noc_clk_gated

@@ -1,9 +1,9 @@
 # Keras 双编码器 Transformer 端到端测试
 
-本目录提供一个面向房间设备命令分类的完整示例。`build_model.py` 使用 Keras `model.fit()` 训练模型，导出含两个 Transformer 编码器的 `.keras` 文件；通用模型编译器生成 C 配置、参数内嵌的 CMD128 数组、权重和输入输出信息；C runner 通过 NPU 驱动提交命令，再从 CModel 的系统内存读取三个输出。
+本目录提供一个面向房间设备命令分类的完整示例。`build_model.py` 使用 Keras `model.fit()` 训练模型，导出含两个 Transformer 编码器的 `.keras` 文件；通用模型编译器生成 C 配置、参数内嵌的 128-bit 指令数组、权重和输入输出信息；C runner 通过 NPU 驱动提交命令，再从 CModel 的系统内存读取三个输出。
 
 > [!important] 参考结果不会写入 CModel 输出
-> `keras_transformer_test_data.h` 中的 Keras 探针值和分类分数只供主控程序比较。runner 初始化系统内存时只复制训练得到的权重、当前语句的词特征和位置特征，绝不把 Keras 预期数据复制到三个 CModel 输出地址。输出必须由本次生成的 CMD128 全部执行后产生。
+> `keras_transformer_test_data.h` 中的 Keras 探针值和分类分数只供主控程序比较。runner 初始化系统内存时只复制训练得到的权重、当前语句的词特征和位置特征，绝不把 Keras 预期数据复制到三个 CModel 输出地址。输出必须由本次生成的 128-bit 指令全部执行后产生。
 
 ## 1. 应用目标
 
@@ -329,7 +329,7 @@ Q5 训练图在输入相加、注意力输出、残差结果、LayerNorm、前�
 | 训练语句整句 accuracy | 192 / 192 |
 | 留出语句整句 accuracy | 24 / 24 |
 
-## 10. 编译后的算子和 CMD128
+## 10. 编译后的算子和 128-bit 指令
 
 编译器读取 `.keras` 后识别 33 个高层算子：
 
@@ -344,7 +344,7 @@ Q5 训练图在输入相加、注意力输出、残差结果、LayerNorm、前�
 
 它们被展开为：
 
-| CMD128 操作 | 数量 | 主要用途 |
+| 128-bit 指令操作 | 数量 | 主要用途 |
 | --- | ---: | --- |
 | `GEMM` | 13 | Q/K/V、注意力输出、两组前馈网络和分类层 |
 | `BMM` | 4 | 两次 $QK^\mathsf{T}$ 与两次 $AV$ |
@@ -360,7 +360,7 @@ Q5 训练图在输入相加、注意力输出、残差结果、LayerNorm、前�
 | `EVENT_REARM` | 54 | 事件编号再次使用前清除旧状态 |
 | 合计 | 366 |  |
 
-每组最多提交 8 条命令。当前有 43 组包含 8 条、2 组包含 7 条、1 组包含 6 条、2 组包含 1 条，共 48 个 64-bit FIXED burst。每条 CMD128 使用低 64 bit 和高 64 bit 两个 beat，所以一条语句提交 732 个 beat。
+每组最多提交 8 条命令。当前有 43 组包含 8 条、2 组包含 7 条、1 组包含 6 条、2 组包含 1 条，共 48 个 64-bit FIXED burst。每条 128-bit 指令使用低 64 bit 和高 64 bit 两个 beat，所以一条语句提交 732 个 beat。
 
 第一条留出语句会打印 366 条任务的名称、命令编号、两个 wait event、signal event、提交响应、完成状态和 ACK。后续 23 条语句执行相同命令，为避免重复大量文字，只打印输入、探针比较和分类结果。
 
@@ -377,7 +377,7 @@ Q5 训练图在输入相加、注意力输出、残差结果、LayerNorm、前�
 | 第二编码器探针 | `0x24240` | 256 B | `[1,8,32]` |
 | `intent_logits` | `0x24340` | 32 B | `[1,8,4]` |
 
-每条语句开始前，runner 清空 L1 和系统内存，复制权重和两个输入，再执行缓存同步。三个输出区域保持为清零后的内容，直到 NPU CModel 根据命令写入计算结果。命令采用 `cmd128`，操作参数直接放在 CMD128 中，manifest 的 `external_descriptor_bytes` 为 0。
+每条语句开始前，runner 清空 L1 和系统内存，复制权重和两个输入，再执行缓存同步。三个输出区域保持为清零后的内容，直到 NPU CModel 根据命令写入计算结果。命令格式标识为 `cmd128`，操作参数直接放在 128-bit 指令中，manifest 的 `external_descriptor_bytes` 为 0。
 
 ## 12. 软件与 NPU 的任务分配
 
@@ -465,7 +465,7 @@ CModel 输出分布为：
 
 | 项目 | 每条语句 | 24 条语句合计 |
 | --- | ---: | ---: |
-| CMD128 | 366 | 8784 |
+| 128-bit 指令 | 366 | 8784 |
 | 64-bit beat | 732 | 17568 |
 | 提交批次 | 48 | 1152 |
 | 完成响应 | 366 | 8784 |
@@ -491,7 +491,7 @@ PASS model=keras_transformer_intent_classifier commands_per_sample=366 cmd_bits=
 | `build/generated/keras_transformer_report.json` | 语料、训练指标、Keras 三输出和分布统计 |
 | `build/generated/keras_transformer_test_data.h` | 两个输入、三个 Keras INT8 参考输出、token、有效长度和标签 |
 | `build/generated/keras_transformer_model.h` | 编译器生成的类型、尺寸、地址和数组声明 |
-| `build/generated/keras_transformer_model.c` | 参数内嵌的 CMD128、权重、输入输出信息和提交分组 |
+| `build/generated/keras_transformer_model.c` | 参数内嵌的 128-bit 指令、权重、输入输出信息和提交分组 |
 | `build/generated/keras_transformer.manifest.json` | 高层算子、低层操作、命令组、字节数和文件摘要 |
 | `build/transformer_runner` | C 驱动加 CModel 的端到端程序 |
 

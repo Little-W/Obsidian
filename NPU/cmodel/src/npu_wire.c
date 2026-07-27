@@ -258,7 +258,7 @@ static int npu_wire_limits_valid(const npu_wire_limits_t *limits)
         limits->l1_bytes == 0u ||
         limits->l1_bytes > (1u << 24) ||
         limits->gaddr_limit == 0u ||
-        limits->gaddr_limit > (UINT64_C(1) << 48) ||
+        limits->gaddr_limit > (UINT64_C(1) << 40) ||
         limits->dma_max_burst_beats == 0u ||
         limits->dma_max_burst_beats > 256u ||
         limits->dma_max_outstanding == 0u ||
@@ -284,7 +284,7 @@ void npu_wire_limits_reference(npu_wire_limits_t *limits)
     }
     npu_wire_clear(limits, sizeof(*limits));
     limits->l1_bytes = NPU_REF_L1_BYTES;
-    limits->gaddr_limit = UINT64_C(1) << 48;
+    limits->gaddr_limit = UINT64_C(1) << 40;
     limits->dma_max_burst_beats = NPU_REF_DMA_MAX_BURST_BEATS;
     limits->dma_max_outstanding = NPU_REF_DMA_OUTSTANDING;
     limits->mt = NPU_REF_MT;
@@ -327,7 +327,7 @@ static int npu_wire_address_valid(npu_space_t space,
         }
         limit = limits->l1_bytes;
     } else if (space == NPU_SPACE_DDR) {
-        if ((address >> 48) != 0u) {
+        if ((address >> 40) != 0u) {
             return 0;
         }
         limit = limits->gaddr_limit;
@@ -371,7 +371,7 @@ static uint64_t npu_wire_first_invalid_address(
     uint64_t limit = npu_wire_space_limit(space, limits);
 
     if ((space == NPU_SPACE_L1 && (address >> 24u) != 0u) ||
-        (space == NPU_SPACE_DDR && (address >> 48u) != 0u) ||
+        (space == NPU_SPACE_DDR && (address >> 40u) != 0u) ||
         address > limit) {
         return address;
     }
@@ -407,7 +407,7 @@ static void npu_wire_record_unbounded_span_fault(
     uint64_t limit = npu_wire_space_limit(space, limits);
 
     if ((space == NPU_SPACE_L1 && (address >> 24u) != 0u) ||
-        (space == NPU_SPACE_DDR && (address >> 48u) != 0u) ||
+        (space == NPU_SPACE_DDR && (address >> 40u) != 0u) ||
         address > limit) {
         npu_wire_record_fault(meta, space, address);
     } else {
@@ -427,7 +427,7 @@ static void npu_wire_record_region_fault(
     uint64_t offset;
 
     if ((space == NPU_SPACE_L1 && (address >> 24u) != 0u) ||
-        (space == NPU_SPACE_DDR && (address >> 48u) != 0u) ||
+        (space == NPU_SPACE_DDR && (address >> 40u) != 0u) ||
         address > limit) {
         npu_wire_record_fault(meta, space, address);
         return;

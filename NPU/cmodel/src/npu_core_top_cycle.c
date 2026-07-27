@@ -56,8 +56,8 @@ static void npu_core_top_build_lsc_inputs(
     lsc_inputs->reg_rsp_ready = inputs->reg_rsp_ready_i;
     lsc_inputs->soft_reset_req = inputs->soft_reset_req_i;
     /*
-     * This control-only composition has no independently clocked MIF/TBU
-     * state. Reaching WAIT_RESET therefore means every contained module
+     * This control-only composition has no independently clocked MIF state.
+     * Reaching WAIT_RESET therefore means every contained module
      * completed its one-cycle internal reset.
      */
     lsc_inputs->internal_soft_reset_done = 1u;

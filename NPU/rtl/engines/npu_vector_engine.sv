@@ -59,7 +59,7 @@ module npu_vector_engine (
   logic signed [63:0] src0_value_q;
   logic signed [63:0] src1_value_q;
   logic signed [31:0] src2_value_q;
-  logic signed [31:0] mul_product_q;
+  logic signed [47:0] mul_product_q;
   logic signed [31:0] mul_addend_q;
   logic mul_is_fma_q;
   logic [1:0] mul_dst_dtype_q;
@@ -224,8 +224,8 @@ module npu_vector_engine (
   wire vector_mul_opcode =
     opcode_q == NPU_VECTOR_MUL || opcode_q == NPU_VECTOR_FMA;
   wire signed [15:0] mul_src0_operand = $signed(src0_value_q[15:0]);
-  wire signed [15:0] mul_src1_operand = $signed(src1_value_q[15:0]);
-  wire signed [31:0] mul_product =
+  wire signed [31:0] mul_src1_operand = $signed(src1_value_q[31:0]);
+  wire signed [47:0] mul_product =
     mul_src0_operand * mul_src1_operand;
 
   wire src0_high_nibble = tensor_nibble(
@@ -643,7 +643,7 @@ module npu_vector_engine (
 
         ST_MUL_POST: begin
           arithmetic_result =
-            $signed({{32{mul_product_q[31]}}, mul_product_q});
+            $signed({{16{mul_product_q[47]}}, mul_product_q});
           if (mul_is_fma_q)
             arithmetic_result = arithmetic_result +
               $signed({{32{mul_addend_q[31]}}, mul_addend_q});

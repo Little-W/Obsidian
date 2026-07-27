@@ -50,7 +50,7 @@ static void cdc_test_set_request(
 {
     input->req_valid = 1u;
     input->req_write = write;
-    input->req_vaddr = address;
+    input->req_addr = address;
     input->req_beats = beats;
     input->req_tag = tag;
     input->req_owner = owner;
@@ -101,7 +101,7 @@ static int cdc_test_request_latency_and_hold(void)
 
     held = &noc_outputs.owner[NPU_MIF_OWNER_DMA];
     TEST_CHECK(held->req_write == 1u);
-    TEST_CHECK(held->req_vaddr == UINT64_C(0x0000abcdeff0));
+    TEST_CHECK(held->req_addr == UINT64_C(0x0000abcdeff0));
     TEST_CHECK(held->req_beats == 7u);
     TEST_CHECK(held->req_tag == 0x345u);
     TEST_CHECK(held->req_owner == NPU_MIF_OWNER_DMA);
@@ -111,7 +111,7 @@ static int cdc_test_request_latency_and_hold(void)
     npu_mif_cdc_noc_tick(&model, &noc_inputs, &noc_outputs);
     TEST_CHECK(noc_outputs.owner[NPU_MIF_OWNER_DMA].req_valid !=
                0u);
-    TEST_CHECK(noc_outputs.owner[NPU_MIF_OWNER_DMA].req_vaddr ==
+    TEST_CHECK(noc_outputs.owner[NPU_MIF_OWNER_DMA].req_addr ==
                UINT64_C(0x0000abcdeff0));
     TEST_CHECK(noc_outputs.owner[NPU_MIF_OWNER_DMA].req_tag ==
                0x345u);
@@ -193,7 +193,7 @@ static int cdc_test_request_full_and_order(void)
             noc_outputs.owner[NPU_MIF_OWNER_DMA].req_tag ==
             (uint16_t)(0x100u + index));
         TEST_CHECK(
-            noc_outputs.owner[NPU_MIF_OWNER_DMA].req_vaddr ==
+            noc_outputs.owner[NPU_MIF_OWNER_DMA].req_addr ==
             UINT64_C(0x1000) + (uint64_t)index * 8u);
     }
     TEST_CHECK(npu_mif_cdc_req_level(
@@ -281,13 +281,13 @@ static int cdc_test_write_owner_and_tag_association(void)
                0u);
     TEST_CHECK(noc_outputs.owner[NPU_MIF_OWNER_DMA].wvalid !=
                0u);
-    TEST_CHECK(noc_outputs.owner[NPU_MIF_OWNER_DFU].req_vaddr ==
+    TEST_CHECK(noc_outputs.owner[NPU_MIF_OWNER_DFU].req_addr ==
                UINT64_C(0x4000));
     TEST_CHECK(noc_outputs.owner[NPU_MIF_OWNER_DFU].wdata ==
                UINT64_C(0x1111222233334444));
     TEST_CHECK(noc_outputs.owner[NPU_MIF_OWNER_DFU].wtag ==
                0x55u);
-    TEST_CHECK(noc_outputs.owner[NPU_MIF_OWNER_DMA].req_vaddr ==
+    TEST_CHECK(noc_outputs.owner[NPU_MIF_OWNER_DMA].req_addr ==
                UINT64_C(0x8000));
     TEST_CHECK(noc_outputs.owner[NPU_MIF_OWNER_DMA].wdata ==
                UINT64_C(0xaaaabbbbccccdddd));
@@ -297,7 +297,7 @@ static int cdc_test_write_owner_and_tag_association(void)
     noc_inputs.owner[NPU_MIF_OWNER_DMA].req_ready = 1u;
     noc_inputs.owner[NPU_MIF_OWNER_DMA].wready = 1u;
     npu_mif_cdc_noc_tick(&model, &noc_inputs, &noc_outputs);
-    TEST_CHECK(noc_outputs.owner[NPU_MIF_OWNER_DFU].req_vaddr ==
+    TEST_CHECK(noc_outputs.owner[NPU_MIF_OWNER_DFU].req_addr ==
                UINT64_C(0x4000));
     TEST_CHECK(noc_outputs.owner[NPU_MIF_OWNER_DFU].wdata ==
                UINT64_C(0x1111222233334444));
@@ -618,7 +618,7 @@ static int cdc_test_reset_flushes_all_channels(void)
     npu_mif_cdc_noc_tick(&model, &noc_inputs, &noc_outputs);
     TEST_CHECK(noc_outputs.owner[NPU_MIF_OWNER_DMA].req_valid !=
                0u);
-    TEST_CHECK(noc_outputs.owner[NPU_MIF_OWNER_DMA].req_vaddr ==
+    TEST_CHECK(noc_outputs.owner[NPU_MIF_OWNER_DMA].req_addr ==
                UINT64_C(0xa000));
 
     noc_inputs.reset_n = 0u;
@@ -732,7 +732,7 @@ static int cdc_test_unusual_values_and_null_safety(void)
                0u);
     TEST_CHECK(noc_outputs.owner[NPU_MIF_OWNER_DMA].req_owner ==
                UINT8_MAX);
-    TEST_CHECK(noc_outputs.owner[NPU_MIF_OWNER_DMA].req_vaddr ==
+    TEST_CHECK(noc_outputs.owner[NPU_MIF_OWNER_DMA].req_addr ==
                UINT64_MAX);
     TEST_CHECK(noc_outputs.owner[NPU_MIF_OWNER_DMA].req_tag ==
                UINT16_MAX);

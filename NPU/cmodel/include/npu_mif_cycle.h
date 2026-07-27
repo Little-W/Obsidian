@@ -12,15 +12,12 @@ extern "C" {
 #define NPU_MIF_OWNER_COUNT 2u
 #define NPU_MIF_MAX_REQUESTS 16u
 #define NPU_MIF_MAX_AXI_OUTSTANDING 16u
-#define NPU_MIF_MAX_TBU_OUTSTANDING 8u
 #define NPU_MIF_AXI_MAX_BURST_BEATS 16u
 #define NPU_MIF_INVALID_SLOT 0xffu
 #define NPU_MIF_INVALID_OWNER 0xffu
 #define NPU_MIF_INVALID_AXI_ID 0xffu
-#define NPU_MIF_GVA_MASK UINT64_C(0x0000ffffffffffff)
-#define NPU_MIF_PA_MASK UINT64_C(0x000000ffffffffff)
+#define NPU_MIF_ADDR_MASK UINT64_C(0x000000ffffffffff)
 
-#define NPU_MIF_ATTR_TBU_BYPASS 0x01u
 #define NPU_MIF_ATTR_CACHE_MASK 0x06u
 #define NPU_MIF_ATTR_CACHE_SHIFT 1u
 #define NPU_MIF_ATTR_PRIVILEGED 0x08u
@@ -46,24 +43,22 @@ typedef enum {
     NPU_MIF_PROTOCOL_REQUEST_OWNER = 1,
     NPU_MIF_PROTOCOL_REQUEST_TAG_RANGE = 2,
     NPU_MIF_PROTOCOL_REQUEST_TAG_DUPLICATE = 3,
-    NPU_MIF_PROTOCOL_TBU_TAG = 4,
-    NPU_MIF_PROTOCOL_TBU_STATUS = 5,
-    NPU_MIF_PROTOCOL_AXI_RID = 6,
-    NPU_MIF_PROTOCOL_AXI_BID = 7,
-    NPU_MIF_PROTOCOL_AXI_RLAST = 8,
-    NPU_MIF_PROTOCOL_WRITE_LAST = 9,
-    NPU_MIF_PROTOCOL_WRITE_TAG = 10,
-    NPU_MIF_PROTOCOL_AXI_RRESP = 11,
-    NPU_MIF_PROTOCOL_AXI_BRESP = 12,
-    NPU_MIF_PROTOCOL_AXI_EARLY_B = 13,
-    NPU_MIF_PROTOCOL_AXI_ENTRY = 14,
-    NPU_MIF_PROTOCOL_CONFIG = 15
+    NPU_MIF_PROTOCOL_AXI_RID = 4,
+    NPU_MIF_PROTOCOL_AXI_BID = 5,
+    NPU_MIF_PROTOCOL_AXI_RLAST = 6,
+    NPU_MIF_PROTOCOL_WRITE_LAST = 7,
+    NPU_MIF_PROTOCOL_WRITE_TAG = 8,
+    NPU_MIF_PROTOCOL_AXI_RRESP = 9,
+    NPU_MIF_PROTOCOL_AXI_BRESP = 10,
+    NPU_MIF_PROTOCOL_AXI_EARLY_B = 11,
+    NPU_MIF_PROTOCOL_AXI_ENTRY = 12,
+    NPU_MIF_PROTOCOL_CONFIG = 13
 } npu_mif_protocol_kind_t;
 
 typedef struct {
     uint8_t req_valid;
     uint8_t req_write;
-    uint64_t req_vaddr;
+    uint64_t req_addr;
     uint8_t req_beats;
     uint16_t req_tag;
     uint8_t req_owner;
@@ -90,26 +85,6 @@ typedef struct {
     uint8_t rsp_last;
     uint8_t rsp_status;
 } npu_mif_owner_outputs_t;
-
-typedef struct {
-    uint8_t req_ready;
-
-    uint8_t rsp_valid;
-    uint64_t rsp_paddr;
-    uint16_t rsp_tag;
-    uint8_t rsp_status;
-} npu_mif_tbu_inputs_t;
-
-typedef struct {
-    uint8_t req_valid;
-    uint64_t req_vaddr;
-    uint8_t req_write;
-    uint16_t req_stream_id;
-    uint16_t req_substream_id;
-    uint16_t req_tag;
-
-    uint8_t rsp_ready;
-} npu_mif_tbu_outputs_t;
 
 typedef struct {
     uint8_t awready;
@@ -175,26 +150,18 @@ typedef struct {
     uint8_t system_addr_enable;
     uint64_t system_addr_base;
     uint64_t system_addr_limit;
-    uint8_t bypass_enable;
-    uint64_t bypass_base;
-    uint64_t bypass_limit;
-    uint16_t tbu_stream_id;
-    uint16_t tbu_substream_id;
 
     npu_mif_owner_inputs_t owner[NPU_MIF_OWNER_COUNT];
-    npu_mif_tbu_inputs_t tbu;
     npu_mif_axi_inputs_t axi;
 } npu_mif_cycle_inputs_t;
 
 typedef struct {
     npu_mif_owner_outputs_t owner[NPU_MIF_OWNER_COUNT];
-    npu_mif_tbu_outputs_t tbu;
     npu_mif_axi_outputs_t axi;
 
     uint8_t mif_idle;
     uint16_t rd_outstanding;
     uint16_t wr_outstanding;
-    uint16_t tbu_outstanding;
     uint8_t axi_slots_used;
 
     uint8_t first_error_valid;
@@ -202,8 +169,7 @@ typedef struct {
     uint8_t first_error_owner;
     uint16_t first_error_tag;
     uint16_t first_error_task_id;
-    uint64_t first_error_vaddr;
-    uint64_t first_error_paddr;
+    uint64_t first_error_addr;
     uint8_t first_error_axi_id;
     uint8_t first_error_axi_id_valid;
     uint8_t first_error_axi_resp;
@@ -229,13 +195,6 @@ typedef struct {
      */
     uint64_t system_addr_limit;
 
-    uint8_t bypass_enable;
-    uint64_t bypass_base;
-    uint64_t bypass_limit;
-
-    uint16_t tbu_stream_id;
-    uint16_t tbu_substream_id;
-
     uint8_t axi_cache_device;
     uint8_t axi_cache_normal_noncache;
     uint8_t axi_cache_normal_cacheable;
@@ -243,13 +202,10 @@ typedef struct {
 
 typedef enum {
     NPU_MIF_REQ_FREE = 0,
-    NPU_MIF_REQ_NEED_TRANSLATION = 1,
-    NPU_MIF_REQ_TBU_QUEUED = 2,
-    NPU_MIF_REQ_TBU_WAIT = 3,
-    NPU_MIF_REQ_READY_BURST = 4,
-    NPU_MIF_REQ_AXI = 5,
-    NPU_MIF_REQ_RESPONSE_PENDING = 6,
-    NPU_MIF_REQ_RESPONSE_HELD = 7
+    NPU_MIF_REQ_READY_BURST = 1,
+    NPU_MIF_REQ_AXI = 2,
+    NPU_MIF_REQ_RESPONSE_PENDING = 3,
+    NPU_MIF_REQ_RESPONSE_HELD = 4
 } npu_mif_request_phase_t;
 
 typedef struct {
@@ -262,18 +218,15 @@ typedef struct {
     uint8_t attr;
     uint8_t status;
 
-    uint64_t first_vaddr;
-    uint64_t first_paddr;
-    uint64_t next_vaddr;
-    uint64_t next_paddr;
+    uint64_t first_addr;
+    uint64_t next_addr;
     uint16_t total_beats;
     uint16_t remaining_beats;
-    uint16_t page_beats;
     uint16_t write_beats_accepted;
 
     /*
-     * The system address range and TBU identifiers are sampled with the owner
-     * request. Later configuration writes cannot alter this transaction.
+     * The system address range is sampled with the owner request. Later
+     * configuration writes cannot alter this transaction.
      */
     npu_mif_cycle_config_t request_config;
 } npu_mif_request_entry_t;
@@ -287,18 +240,9 @@ typedef struct {
     uint8_t w_done;
     uint16_t beats;
     uint16_t beats_done;
-    uint64_t vaddr;
-    uint64_t paddr;
+    uint64_t addr;
     uint8_t attr;
 } npu_mif_axi_entry_t;
-
-typedef struct {
-    uint8_t valid;
-    uint8_t req_slot;
-    uint64_t vaddr;
-    uint8_t write;
-    uint16_t tag;
-} npu_mif_tbu_hold_t;
 
 typedef struct {
     uint8_t valid;
@@ -361,7 +305,6 @@ typedef struct {
     npu_mif_request_entry_t requests[NPU_MIF_MAX_REQUESTS];
     npu_mif_axi_entry_t axi_entries[NPU_MIF_MAX_AXI_OUTSTANDING];
 
-    npu_mif_tbu_hold_t tbu_hold;
     npu_mif_response_hold_t rsp_hold[NPU_MIF_OWNER_COUNT];
     npu_mif_w_input_t w_input;
     npu_mif_w_hold_t w_hold;
@@ -378,15 +321,13 @@ typedef struct {
     uint8_t next_axi_id;
     uint8_t request_rr_owner;
     uint8_t schedule_rr;
-    uint8_t tbu_count;
 
     uint8_t first_error_valid;
     uint8_t first_error_status;
     uint8_t first_error_owner;
     uint16_t first_error_tag;
     uint16_t first_error_task_id;
-    uint64_t first_error_vaddr;
-    uint64_t first_error_paddr;
+    uint64_t first_error_addr;
     uint8_t first_error_axi_id;
     uint8_t first_error_axi_id_valid;
     uint8_t first_error_axi_resp;

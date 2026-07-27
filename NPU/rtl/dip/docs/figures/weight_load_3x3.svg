@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="650" viewBox="0 0 1400 650" role="img" aria-labelledby="title desc">
+  <title id="title">3×3 DiP 权重装载过程</title>
+  <desc id="desc">预排列后的权重按最后一行到第一行发送，经过三个时钟沿填满三行 PE，最后一个权重拍可与第一行 A 同时接收。</desc>
+  <defs>
+    <style>
+      .title { font: 700 28px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #0f172a; }
+      .h2 { font: 700 20px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #0f172a; text-anchor: middle; }
+      .label { font: 600 16px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #334155; text-anchor: middle; }
+      .small { font: 500 14px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #475569; text-anchor: middle; }
+      .left { text-anchor: start; }
+      .mono { font: 700 18px "JetBrains Mono", "DejaVu Sans Mono", monospace; fill: #0f172a; text-anchor: middle; dominant-baseline: middle; }
+      .row { fill: #fff7ed; stroke: #d97706; stroke-width: 2; rx: 8; }
+      .empty { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 1.5; stroke-dasharray: 5 4; rx: 8; }
+      .arrow { fill: none; stroke: #d97706; stroke-width: 3; }
+      .data { fill: none; stroke: #2563eb; stroke-width: 3; }
+      .panel { fill: #ffffff; stroke: #e2e8f0; stroke-width: 1.5; rx: 12; }
+    </style>
+    <marker id="arrow-w" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#d97706"/>
+    </marker>
+    <marker id="arrow-d" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#2563eb"/>
+    </marker>
+  </defs>
+
+  <rect width="1400" height="650" fill="#ffffff"/>
+  <text x="40" y="48" class="title">3×3 权重装载：按 P[2]、P[1]、P[0] 的顺序发送</text>
+  <text x="40" y="78" class="small left">每个橙色框是一拍的三列权重；同一拍内三列并行，拍与拍之间向下一行移动。</text>
+
+  <g transform="translate(55 110)">
+    <rect class="panel" x="0" y="0" width="295" height="455"/>
+    <text class="h2" x="147" y="35">Cycle -2</text>
+    <text class="small" x="147" y="65">输入 P[2] = [c,d,h]</text>
+    <path class="arrow" d="M147 78V108" marker-end="url(#arrow-w)"/>
+    <rect class="row" x="55" y="115" width="185" height="72"/>
+    <text class="mono" x="86" y="151">c</text><text class="mono" x="147" y="151">d</text><text class="mono" x="208" y="151">h</text>
+    <rect class="empty" x="55" y="220" width="185" height="72"/>
+    <text class="small" x="147" y="256">空</text>
+    <rect class="empty" x="55" y="325" width="185" height="72"/>
+    <text class="small" x="147" y="361">空</text>
+    <text class="small" x="147" y="425">PE row 0 / 1 / 2</text>
+  </g>
+
+  <path class="arrow" d="M365 337H415" marker-end="url(#arrow-w)"/>
+
+  <g transform="translate(430 110)">
+    <rect class="panel" x="0" y="0" width="295" height="455"/>
+    <text class="h2" x="147" y="35">Cycle -1</text>
+    <text class="small" x="147" y="65">输入 P[1] = [b,f,g]</text>
+    <path class="arrow" d="M147 78V108" marker-end="url(#arrow-w)"/>
+    <rect class="row" x="55" y="115" width="185" height="72"/>
+    <text class="mono" x="86" y="151">b</text><text class="mono" x="147" y="151">f</text><text class="mono" x="208" y="151">g</text>
+    <path class="arrow" d="M147 190V213" marker-end="url(#arrow-w)"/>
+    <rect class="row" x="55" y="220" width="185" height="72"/>
+    <text class="mono" x="86" y="256">c</text><text class="mono" x="147" y="256">d</text><text class="mono" x="208" y="256">h</text>
+    <rect class="empty" x="55" y="325" width="185" height="72"/>
+    <text class="small" x="147" y="361">空</text>
+    <text class="small" x="147" y="425">PE row 0 / 1 / 2</text>
+  </g>
+
+  <path class="arrow" d="M740 337H790" marker-end="url(#arrow-w)"/>
+
+  <g transform="translate(805 110)">
+    <rect class="panel" x="0" y="0" width="295" height="455"/>
+    <text class="h2" x="147" y="35">Cycle 0</text>
+    <text class="small" x="147" y="65">输入 P[0] = [a,e,i]</text>
+    <path class="arrow" d="M147 78V108" marker-end="url(#arrow-w)"/>
+    <rect class="row" x="55" y="115" width="185" height="72"/>
+    <text class="mono" x="86" y="151">a</text><text class="mono" x="147" y="151">e</text><text class="mono" x="208" y="151">i</text>
+    <path class="arrow" d="M147 190V213" marker-end="url(#arrow-w)"/>
+    <rect class="row" x="55" y="220" width="185" height="72"/>
+    <text class="mono" x="86" y="256">b</text><text class="mono" x="147" y="256">f</text><text class="mono" x="208" y="256">g</text>
+    <path class="arrow" d="M147 295V318" marker-end="url(#arrow-w)"/>
+    <rect class="row" x="55" y="325" width="185" height="72"/>
+    <text class="mono" x="86" y="361">c</text><text class="mono" x="147" y="361">d</text><text class="mono" x="208" y="361">h</text>
+    <text class="small" x="147" y="425">装载完成</text>
+  </g>
+
+  <g transform="translate(1135 150)">
+    <rect x="0" y="0" width="225" height="315" rx="12" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+    <text class="h2" x="112" y="38">同一个 Cycle 0</text>
+    <rect x="12" y="62" width="92" height="82" rx="8" fill="#fff7ed" stroke="#d97706" stroke-width="1.5"/>
+    <text class="small" x="58" y="87">最后一拍权重</text>
+    <text class="small" x="58" y="112">写入 weight_q</text>
+    <rect x="121" y="62" width="92" height="82" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+    <text class="small" x="167" y="87">第一行 A</text>
+    <text class="small" x="167" y="112">写入 data_q</text>
+    <path class="arrow" d="M58 145 C58 180 100 172 110 202" marker-end="url(#arrow-w)"/>
+    <path class="data" d="M167 145 C167 180 125 172 115 202" marker-end="url(#arrow-d)"/>
+    <rect x="45" y="212" width="135" height="68" rx="8" fill="#ffffff" stroke="#64748b" stroke-width="1.5"/>
+    <text class="small" x="112" y="237">Cycle 1 锁存</text>
+    <text class="small" x="112" y="263">product_q</text>
+  </g>
+
+  <rect x="55" y="590" width="1045" height="38" rx="8" fill="#fff7ed"/>
+  <text x="577" y="615" class="label">逆序发送的原因：串行移位结束后，P[0] 留在第 0 行，P[1] 留在第 1 行，P[2] 留在第 2 行。</text>
+</svg>

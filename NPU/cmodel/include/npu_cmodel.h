@@ -595,7 +595,7 @@ npu_status_t npu_cmd_decode(uint64_t low_beat,
                             npu_cmd_t *cmd);
 /*
  * Explicit decoder for descriptor-based diagnostic tests.  Runtime command
- * submission always uses npu_cmd_decode() and the current CMD128 format.
+ * submission always uses npu_cmd_decode() and the current 128-bit instruction format.
  */
 npu_status_t npu_cmd_decode_descriptor(uint64_t low_beat,
                                        uint64_t high_beat,

@@ -14,6 +14,16 @@ class axi_tvip_npu_single_core_sequence
     extends tvip_axi_master_sequence_base;
   localparam tvip_axi_address CSR_CORE_CONTROL =
       64'h0000_0040;
+  localparam tvip_axi_address CSR_INPUT_BASE =
+      64'h0000_0058;
+  localparam tvip_axi_address CSR_M_AXI_ADDR_BASE =
+      64'h0000_0080;
+  localparam tvip_axi_address CSR_M_AXI_ADDR_LIMIT =
+      64'h0000_0088;
+  localparam tvip_axi_address CSR_RESERVED_0090 =
+      64'h0000_0090;
+  localparam tvip_axi_address CSR_FAULT_CLEAR =
+      64'h0000_00c8;
   localparam tvip_axi_address CSR_L1_EXTERNAL_CONTROL =
       64'h0000_00f0;
   localparam tvip_axi_address CMD_FIFO_DATA =
@@ -35,24 +45,24 @@ class axi_tvip_npu_single_core_sequence
   localparam tvip_axi_address L1_AXI_BASE =
       64'h0010_0000;
 
-  localparam bit [3:0] ENGINE_DMA     = 4'h1;
-  localparam bit [3:0] ENGINE_MATRIX  = 4'h2;
-  localparam bit [3:0] ENGINE_VECTOR  = 4'h3;
-  localparam bit [3:0] ENGINE_COMPLEX = 4'h4;
+  localparam bit [5:0] OPCODE_FIELD_DMA_COPY_1D = 6'd5;
+  localparam bit [5:0] OPCODE_FIELD_GEMM        = 6'd12;
+  localparam bit [5:0] OPCODE_FIELD_VADD_I      = 6'd16;
+  localparam bit [5:0] OPCODE_FIELD_VACT_I      = 6'd26;
 
-  localparam bit [7:0] OPCODE_DMA_COPY_1D = 8'h20;
-  localparam bit [7:0] OPCODE_GEMM        = 8'h40;
-  localparam bit [7:0] OPCODE_VADD_I      = 8'h60;
-  localparam bit [7:0] OPCODE_VACT_I      = 8'h80;
+  localparam bit [1:0] DTYPE_INT8  = 2'd1;
+  localparam bit [1:0] DTYPE_INT32 = 2'd2;
+  localparam bit [1:0] DTYPE_INT16 = 2'd3;
 
   localparam bit [1:0] CTL_WAIT  = 2'd1;
   localparam bit [1:0] CTL_QUERY = 2'd2;
   localparam bit [1:0] CTL_FENCE = 2'd3;
 
-  localparam bit [11:0] EVENT_NONE = 12'hfff;
+  localparam bit [7:0] EVENT_NONE = 8'hff;
 
   localparam bit [7:0] STATUS_SUCCESS   = 8'h00;
   localparam bit [7:0] STATUS_BAD_DESC  = 8'h02;
+  localparam bit [7:0] STATUS_ADDR_FAULT = 8'h04;
   localparam bit [7:0] STATUS_ABORTED   = 8'h0a;
   localparam bit [7:0] STATUS_NOT_FOUND = 8'h81;
 
@@ -124,99 +134,26 @@ class axi_tvip_npu_single_core_sequence
   endtask
 
   function automatic bit [127:0] make_command(
-      input bit [47:0] descriptor_address,
-      input bit [11:0] command_id,
-      input bit [3:0] engine,
-      input bit [7:0] opcode,
-      input bit [11:0] wait0,
-      input bit [11:0] wait1,
-      input bit [11:0] signal_event
+      input bit [5:0] opcode,
+      input bit [9:0] command_id,
+      input bit [1:0] dtype,
+      input bit [79:0] payload,
+      input bit [7:0] wait0,
+      input bit [7:0] wait1,
+      input bit [7:0] signal_event
   );
-    bit [63:0] low_word;
-    bit [63:0] high_word;
+    bit [127:0] command;
 
-    low_word = 64'd0;
-    low_word[47:0] = descriptor_address;
-    low_word[59:48] = command_id;
-    low_word[63:60] = engine;
-
-    high_word = 64'd0;
-    high_word[7:0] = opcode;
-    high_word[31:20] = wait0;
-    high_word[43:32] = wait1;
-    high_word[55:44] = signal_event;
-    high_word[63:56] = 8'h01;
-
-    return {high_word, low_word};
+    command = 128'd0;
+    command[127:122] = opcode;
+    command[121:112] = command_id;
+    command[111:104] = wait0;
+    command[103:96] = wait1;
+    command[95:88] = signal_event;
+    command[81:80] = dtype;
+    command[79:0] = payload;
+    return command;
   endfunction
-
-  function automatic void put_u8(
-      ref bit [2047:0] descriptor,
-      input int unsigned offset,
-      input bit [7:0] value
-  );
-    descriptor[offset*8 +: 8] = value;
-  endfunction
-
-  function automatic void put_u16(
-      ref bit [2047:0] descriptor,
-      input int unsigned offset,
-      input bit [15:0] value
-  );
-    descriptor[offset*8 +: 16] = value;
-  endfunction
-
-  function automatic void put_u32(
-      ref bit [2047:0] descriptor,
-      input int unsigned offset,
-      input bit [31:0] value
-  );
-    descriptor[offset*8 +: 32] = value;
-  endfunction
-
-  function automatic void put_u64(
-      ref bit [2047:0] descriptor,
-      input int unsigned offset,
-      input bit [63:0] value
-  );
-    descriptor[offset*8 +: 64] = value;
-  endfunction
-
-  function automatic void init_common(
-      ref bit [2047:0] descriptor,
-      input bit [7:0] engine,
-      input bit [15:0] descriptor_bytes,
-      input bit [63:0] src0,
-      input bit [63:0] src1,
-      input bit [63:0] src2,
-      input bit [63:0] dst,
-      input bit [31:0] numeric
-  );
-    descriptor = '0;
-    put_u8(descriptor, 16'h00, 8'h01);
-    put_u8(descriptor, 16'h01, engine);
-    put_u16(descriptor, 16'h02, descriptor_bytes);
-    put_u64(descriptor, 16'h08, src0);
-    put_u64(descriptor, 16'h10, src1);
-    put_u64(descriptor, 16'h18, src2);
-    put_u64(descriptor, 16'h20, dst);
-    put_u32(descriptor, 16'h38, numeric);
-  endfunction
-
-  task automatic store_descriptor(
-      input longint unsigned address,
-      input bit [2047:0] descriptor,
-      input int unsigned descriptor_bytes
-  );
-    for (int unsigned index = 0;
-         index < descriptor_bytes;
-         index++) begin
-      system_vif.write_byte(
-        address + index,
-        descriptor[index*8 +: 8]
-      );
-    end
-  endtask
 
   task automatic do_write(
       input tvip_axi_address address,
@@ -510,6 +447,8 @@ class axi_tvip_npu_single_core_sequence
       UVM_LOW
     )
 
+    check_physical_address_configuration();
+
     write_word(CSR_CORE_CONTROL, 64'h1);
     write_word(CSR_L1_EXTERNAL_CONTROL, 64'h1);
     repeat (4) @(system_vif.monitor_cb);
@@ -518,6 +457,7 @@ class axi_tvip_npu_single_core_sequence
       system_vif.monitor_cb.accept_new_cmd === 1'b1
     );
 
+    check_invalid_global_addresses();
     check_matrix_event_vector();
     check_dma();
     check_dma_writeback();
@@ -537,9 +477,165 @@ class axi_tvip_npu_single_core_sequence
     )
   endtask
 
+  task automatic check_physical_address_configuration();
+    bit [63:0] input_base_before;
+    bit [63:0] m_axi_base_before;
+    bit [63:0] m_axi_limit_before;
+    bit [63:0] result;
+
+    `uvm_info(
+      "NPU_CORE",
+      "case: reserved CSR and physical-address configuration",
+      UVM_LOW
+    )
+
+    write_word(CSR_INPUT_BASE, 64'h0000_00ff_ffff_fff8);
+    write_word(CSR_M_AXI_ADDR_BASE, 64'h0000_0000_0000_1000);
+    write_word(CSR_M_AXI_ADDR_LIMIT, 64'h0000_0000_0000_3ff8);
+
+    do_read(CSR_INPUT_BASE, input_base_before);
+    do_read(CSR_M_AXI_ADDR_BASE, m_axi_base_before);
+    do_read(CSR_M_AXI_ADDR_LIMIT, m_axi_limit_before);
+    check_equal64(
+      "input physical base configuration",
+      input_base_before,
+      64'h0000_00ff_ffff_fff8
+    );
+    check_equal64(
+      "M_AXI physical-address base configuration",
+      m_axi_base_before,
+      64'h0000_0000_0000_1000
+    );
+    check_equal64(
+      "M_AXI physical-address limit configuration",
+      m_axi_limit_before,
+      64'h0000_0000_0000_3ff8
+    );
+
+    do_read(CSR_RESERVED_0090, result);
+    check_equal64("reserved CSR 0x0090 reset value", result, 64'd0);
+    write_word(CSR_RESERVED_0090, 64'hdead_beef_cafe_5a5a);
+    do_read(CSR_RESERVED_0090, result);
+    check_equal64("reserved CSR 0x0090 read value", result, 64'd0);
+
+    do_read(CSR_INPUT_BASE, result);
+    check_equal64(
+      "reserved CSR write changed input base",
+      result,
+      input_base_before
+    );
+    do_read(CSR_M_AXI_ADDR_BASE, result);
+    check_equal64(
+      "reserved CSR write changed M_AXI address base",
+      result,
+      m_axi_base_before
+    );
+    do_read(CSR_M_AXI_ADDR_LIMIT, result);
+    check_equal64(
+      "reserved CSR write changed M_AXI address limit",
+      result,
+      m_axi_limit_before
+    );
+  endtask
+
+  task automatic check_invalid_global_addresses();
+    bit [79:0] command_payload;
+    bit [63:0] result;
+    bit [31:0] ar_count_before;
+    bit [31:0] aw_count_before;
+
+    `uvm_info(
+      "NPU_CORE",
+      "case: M_AXI range and 40-bit address rejection",
+      UVM_LOW
+    )
+
+    ar_count_before =
+      system_vif.monitor_cb.system_memory_read_handshakes;
+    aw_count_before =
+      system_vif.monitor_cb.system_memory_aw_handshakes;
+    command_payload = {
+      28'h800_4000, 28'h000_0e00, 20'd8,
+      DTYPE_INT8, 1'b0, 1'b0
+    };
+    command_words[0] = make_command(
+      OPCODE_FIELD_DMA_COPY_1D,
+      10'h10a,
+      DTYPE_INT8,
+      command_payload,
+      EVENT_NONE,
+      EVENT_NONE,
+      EVENT_NONE
+    );
+    submit_commands(1);
+    read_command_response(12'h10a);
+    ctl_request(CTL_FENCE, 64'h1, 64'd50000, result);
+    check_true(
+      "DMA address beyond configured M_AXI range was not rejected",
+      result[7:0] == STATUS_ADDR_FAULT
+    );
+    check_task_status(12'h10a, STATUS_ADDR_FAULT);
+    query_task(12'h10a, 3'd3, result);
+    check_equal64("out-of-range DMA progress", result, 64'd0);
+    repeat (2) @(system_vif.monitor_cb);
+    check_true(
+      "out-of-range DMA issued a system AXI AR transaction",
+      system_vif.monitor_cb.system_memory_read_handshakes ==
+        ar_count_before
+    );
+    check_true(
+      "out-of-range DMA issued a system AXI AW transaction",
+      system_vif.monitor_cb.system_memory_aw_handshakes ==
+        aw_count_before
+    );
+    acknowledge_task(12'h10a);
+    write_word(CSR_FAULT_CLEAR, 64'd1);
+
+    l1_write_word(20'h00e40, 64'h8877_6655_4433_2211);
+    ar_count_before =
+      system_vif.monitor_cb.system_memory_read_handshakes;
+    aw_count_before =
+      system_vif.monitor_cb.system_memory_aw_handshakes;
+    command_payload = {
+      28'h000_0e40, 28'h900_0008, 20'd8,
+      DTYPE_INT8, 1'b0, 1'b0
+    };
+    command_words[0] = make_command(
+      OPCODE_FIELD_DMA_COPY_1D,
+      10'h10b,
+      DTYPE_INT8,
+      command_payload,
+      EVENT_NONE,
+      EVENT_NONE,
+      EVENT_NONE
+    );
+    submit_commands(1);
+    read_command_response(12'h10b);
+    ctl_request(CTL_FENCE, 64'h1, 64'd50000, result);
+    check_true(
+      "DMA address with bit 40 set was not rejected",
+      result[7:0] == STATUS_ADDR_FAULT
+    );
+    check_task_status(12'h10b, STATUS_ADDR_FAULT);
+    query_task(12'h10b, 3'd3, result);
+    check_equal64("bit-40 DMA progress", result, 64'd0);
+    repeat (2) @(system_vif.monitor_cb);
+    check_true(
+      "bit-40 DMA issued a system AXI AR transaction",
+      system_vif.monitor_cb.system_memory_read_handshakes ==
+        ar_count_before
+    );
+    check_true(
+      "bit-40 DMA issued a system AXI AW transaction",
+      system_vif.monitor_cb.system_memory_aw_handshakes ==
+        aw_count_before
+    );
+    acknowledge_task(12'h10b);
+    write_word(CSR_FAULT_CLEAR, 64'd1);
+  endtask
+
   task automatic check_matrix_event_vector();
-    bit [2047:0] matrix_desc;
-    bit [2047:0] vector_desc;
+    bit [79:0] command_payload;
     bit [63:0] result;
 
     `uvm_info(
@@ -549,72 +645,36 @@ class axi_tvip_npu_single_core_sequence
     )
 
     l1_write_word(20'h00100, 64'h0000_0204_ff03_0201, 8'h3f);
-    l1_write_word(20'h00200, 64'h0000_04fe_0103_ff02, 8'h3f);
+    l1_write_word(20'h00200, 64'h0000_0000_0000_ff02, 8'h03);
+    l1_write_word(20'h00208, 64'h0000_0000_0000_0103, 8'h03);
+    l1_write_word(20'h00210, 64'h0000_0000_0000_04fe, 8'h03);
     l1_write_word(20'h00300, 64'h0a07_0301_00ff_fcf8);
     l1_write_word(20'h00400, 64'h0101_0101_0101_0101);
 
-    init_common(
-      matrix_desc,
-      8'h02,
-      16'd256,
-      64'h0100,
-      64'h0200,
-      64'd0,
-      64'h0600,
-      32'h0000_00a5
-    );
-    put_u32(matrix_desc, 16'h40, 32'd2);
-    put_u32(matrix_desc, 16'h44, 32'd2);
-    put_u32(matrix_desc, 16'h48, 32'd3);
-    put_u32(matrix_desc, 16'h4c, 32'd1);
-    put_u32(matrix_desc, 16'h50, 32'd2);
-    put_u32(matrix_desc, 16'h54, 32'd2);
-    put_u32(matrix_desc, 16'h58, 32'd3);
-    put_u32(matrix_desc, 16'h5c, 32'h0000_0080);
-    put_u32(matrix_desc, 16'h60, 32'd3);
-    put_u32(matrix_desc, 16'h64, 32'd2);
-    put_u32(matrix_desc, 16'h68, 32'd8);
-    put_u8(matrix_desc, 16'h90, 8'd0);
-    put_u8(matrix_desc, 16'h91, 8'd0);
-    put_u8(matrix_desc, 16'h92, 8'd4);
-    store_descriptor(64'h1000, matrix_desc, 256);
-
-    init_common(
-      vector_desc,
-      8'h03,
-      16'd192,
-      64'h0300,
-      64'h0400,
-      64'd0,
-      64'h0500,
-      32'h0000_0055
-    );
-    put_u32(vector_desc, 16'h40, 32'd1);
-    put_u32(vector_desc, 16'h44, 32'd8);
-    put_u32(vector_desc, 16'h48, 32'd8);
-    put_u32(vector_desc, 16'h50, 32'd1);
-    put_u32(vector_desc, 16'h54, 32'd8);
-    put_u32(vector_desc, 16'h58, 32'd1);
-    put_u32(vector_desc, 16'h5c, 32'd8);
-    put_u32(vector_desc, 16'h68, 32'd1);
-    put_u32(vector_desc, 16'h6c, 32'd8);
-    store_descriptor(64'h1100, vector_desc, 192);
-
+    command_payload = {
+      14'h004, 14'h008, 14'h018, 12'd0,
+      6'd1, 6'd1, 6'd2,
+      1'b0, DTYPE_INT32, 5'd0
+    };
     command_words[0] = make_command(
-      48'h1000,
-      12'h101,
-      ENGINE_MATRIX,
-      OPCODE_GEMM,
+      OPCODE_FIELD_GEMM,
+      10'h101,
+      DTYPE_INT8,
+      command_payload,
       EVENT_NONE,
       EVENT_NONE,
-      12'h001
+      8'h01
     );
+    command_payload = {
+      16'h0030, 16'h0040, 16'h0000, 16'h0050,
+      5'd0, 5'd7, 2'd0, 2'd0, 2'd0
+    };
     command_words[1] = make_command(
-      48'h1100,
-      12'h102,
-      ENGINE_VECTOR,
-      OPCODE_VADD_I,
-      12'h001,
+      OPCODE_FIELD_VADD_I,
+      10'h102,
+      DTYPE_INT8,
+      command_payload,
+      8'h01,
       EVENT_NONE,
       EVENT_NONE
     );
@@ -671,7 +731,7 @@ class axi_tvip_npu_single_core_sequence
   endtask
 
   task automatic check_dma();
-    bit [2047:0] descriptor;
+    bit [79:0] command_payload;
     bit [63:0] result;
 
     `uvm_info(
@@ -684,32 +744,16 @@ class axi_tvip_npu_single_core_sequence
       64'h3000,
       64'h0a07_0301_00ff_fcf8
     );
-    init_common(
-      descriptor,
-      8'h01,
-      16'd256,
-      64'h3000,
-      64'd0,
-      64'd0,
-      64'h0900,
-      32'h0000_0055
-    );
-    put_u8(descriptor, 16'h40, 8'd1);
-    put_u8(descriptor, 16'h41, 8'd1);
-    put_u8(descriptor, 16'h42, 8'd0);
-    put_u8(descriptor, 16'h43, 8'd0);
-    put_u8(descriptor, 16'h44, 8'd15);
-    put_u8(descriptor, 16'h45, 8'd8);
-    put_u32(descriptor, 16'h48, 32'd8);
-    put_u64(descriptor, 16'h98, 64'd8);
-    put_u64(descriptor, 16'ha0, 64'd8);
-    store_descriptor(64'h1200, descriptor, 256);
 
+    command_payload = {
+      28'h800_3000, 28'h000_0900, 20'd8,
+      DTYPE_INT8, 1'b0, 1'b0
+    };
     command_words[0] = make_command(
-      48'h1200,
-      12'h103,
-      ENGINE_DMA,
-      OPCODE_DMA_COPY_1D,
+      OPCODE_FIELD_DMA_COPY_1D,
+      10'h103,
+      DTYPE_INT8,
+      command_payload,
       EVENT_NONE,
       EVENT_NONE,
       EVENT_NONE
@@ -733,7 +777,7 @@ class axi_tvip_npu_single_core_sequence
   endtask
 
   task automatic check_dma_writeback();
-    bit [2047:0] descriptor;
+    bit [79:0] command_payload;
     bit [63:0] result;
 
     `uvm_info(
@@ -744,42 +788,27 @@ class axi_tvip_npu_single_core_sequence
 
     l1_write_word(20'h00d00, 64'h8877_6655_4433_2211);
     system_vif.write_u64(64'h3100, 64'hdead_beef_cafe_5eed);
-    init_common(
-      descriptor,
-      8'h01,
-      16'd256,
-      64'h0d00,
-      64'd0,
-      64'd0,
-      64'h3100,
-      32'h0000_0055
-    );
-    put_u8(descriptor, 16'h40, 8'd1);
-    put_u8(descriptor, 16'h41, 8'd0);
-    put_u8(descriptor, 16'h42, 8'd1);
-    put_u8(descriptor, 16'h43, 8'd0);
-    put_u8(descriptor, 16'h44, 8'd15);
-    put_u8(descriptor, 16'h45, 8'd8);
-    put_u32(descriptor, 16'h48, 32'd8);
-    put_u64(descriptor, 16'h98, 64'd8);
-    put_u64(descriptor, 16'ha0, 64'd8);
-    store_descriptor(64'h1800, descriptor, 256);
 
+    command_payload = {
+      28'h000_0d00, 28'h800_3100, 20'd8,
+      DTYPE_INT8, 1'b0, 1'b0
+    };
     command_words[0] = make_command(
-      48'h1800,
-      12'h109,
-      ENGINE_DMA,
-      OPCODE_DMA_COPY_1D,
+      OPCODE_FIELD_DMA_COPY_1D,
+      10'h109,
+      DTYPE_INT8,
+      command_payload,
       EVENT_NONE,
       EVENT_NONE,
-      EVENT_NONE
+      8'h02
     );
     submit_commands(1);
     read_command_response(12'h109);
-    ctl_request(CTL_FENCE, 64'h1, 64'd50000, result);
+    ctl_request(CTL_WAIT, 64'h002, 64'd50000, result);
     check_true(
-      "DMA writeback FENCE failed",
-      result[7:0] == STATUS_SUCCESS
+      "DMA writeback event did not report success",
+      (result[2:0] == EVENT_SUCCESS) &&
+      (result[19:8] == 12'h109)
     );
     query_task(12'h109, 3'd3, result);
     check_equal64("DMA writeback progress", result, 64'd8);
@@ -792,7 +821,7 @@ class axi_tvip_npu_single_core_sequence
   endtask
 
   task automatic check_complex();
-    bit [2047:0] descriptor;
+    bit [79:0] command_payload;
     bit [63:0] result;
 
     `uvm_info(
@@ -802,33 +831,17 @@ class axi_tvip_npu_single_core_sequence
     )
 
     l1_write_word(20'h00700, 64'h0000_0000_0400_fffc, 8'h0f);
-    init_common(
-      descriptor,
-      8'h04,
-      16'd256,
-      64'h0700,
-      64'd0,
-      64'd0,
-      64'h0800,
-      32'h0001_3055
-    );
-    put_u32(descriptor, 16'h40, 32'd1);
-    put_u32(descriptor, 16'h44, 32'd4);
-    put_u32(descriptor, 16'h48, 32'd4);
-    put_u32(descriptor, 16'h4c, 32'd1);
-    put_u32(descriptor, 16'h50, 32'd4);
-    put_u32(descriptor, 16'h5c, 32'd4);
-    put_u32(descriptor, 16'h70, 32'h3f80_0000);
-    put_u32(descriptor, 16'h74, 32'h3f80_0000);
-    put_u32(descriptor, 16'h78, 32'h3f80_0000);
-    put_u32(descriptor, 16'h7c, 32'h3f80_0000);
-    store_descriptor(64'h1300, descriptor, 256);
 
+    command_payload = {
+      16'h0070, 16'h0000, 16'h0080,
+      5'd0, 8'd3,
+      2'd1, 4'd0, 4'd0, DTYPE_INT8, 2'd0, 5'd0
+    };
     command_words[0] = make_command(
-      48'h1300,
-      12'h104,
-      ENGINE_COMPLEX,
-      OPCODE_VACT_I,
+      OPCODE_FIELD_VACT_I,
+      10'h104,
+      DTYPE_INT8,
+      command_payload,
       EVENT_NONE,
       EVENT_NONE,
       EVENT_NONE
@@ -851,7 +864,7 @@ class axi_tvip_npu_single_core_sequence
   endtask
 
   task automatic check_int16_vector();
-    bit [2047:0] descriptor;
+    bit [79:0] command_payload;
     bit [63:0] result;
 
     `uvm_info(
@@ -862,35 +875,16 @@ class axi_tvip_npu_single_core_sequence
 
     l1_write_word(20'h00a00, 64'hfc70_012c_fffe_0001);
     l1_write_word(20'h00a10, 64'h0008_fff9_0006_0005);
-    init_common(
-      descriptor,
-      8'h03,
-      16'd192,
-      64'h0a00,
-      64'h0a10,
-      64'd0,
-      64'h0a20,
-      32'h0000_00ff
-    );
-    put_u32(descriptor, 16'h40, 32'd1);
-    put_u32(descriptor, 16'h44, 32'd4);
-    put_u32(descriptor, 16'h48, 32'd4);
-    put_u32(descriptor, 16'h4c, 32'd0);
-    put_u32(descriptor, 16'h50, 32'd2);
-    put_u32(descriptor, 16'h54, 32'd8);
-    put_u32(descriptor, 16'h58, 32'd2);
-    put_u32(descriptor, 16'h5c, 32'd8);
-    put_u32(descriptor, 16'h60, 32'd2);
-    put_u32(descriptor, 16'h64, 32'd8);
-    put_u32(descriptor, 16'h68, 32'd2);
-    put_u32(descriptor, 16'h6c, 32'd8);
-    store_descriptor(64'h1400, descriptor, 192);
 
+    command_payload = {
+      16'h00a0, 16'h00a1, 16'h0000, 16'h00a2,
+      5'd0, 5'd3, 2'd0, 2'd0, 2'd0
+    };
     command_words[0] = make_command(
-      48'h1400,
-      12'h105,
-      ENGINE_VECTOR,
-      OPCODE_VADD_I,
+      OPCODE_FIELD_VADD_I,
+      10'h105,
+      DTYPE_INT16,
+      command_payload,
       EVENT_NONE,
       EVENT_NONE,
       EVENT_NONE
@@ -915,87 +909,50 @@ class axi_tvip_npu_single_core_sequence
   endtask
 
   task automatic check_int16_matrix_pack();
-    bit [2047:0] descriptors [0:2];
+    bit [79:0] command_payload;
     bit [63:0] result;
     bit [63:0] control_status;
 
     `uvm_info(
       "NPU_CORE",
-      "case: INT16 Matrix pack 5/6 and reserved pack 7",
+      "case: INT16 Matrix and invalid output shift",
       UVM_LOW
     )
 
     l1_write_word(20'h00b00, 64'hffff_0003_0002_0001);
     l1_write_word(20'h00b08, 64'h0000_0000_0002_0004, 8'h0f);
-    l1_write_word(20'h00b20, 64'h0001_0003_ffff_0002);
-    l1_write_word(20'h00b28, 64'h0000_0000_0004_fffe, 8'h0f);
     l1_write_word(20'h00b40, 64'h0000_0000_ffff_0002, 8'h0f);
     l1_write_word(20'h00b50, 64'h0000_0000_0001_0003, 8'h0f);
     l1_write_word(20'h00b60, 64'h0000_0000_0004_fffe, 8'h0f);
 
-    for (int unsigned index = 0; index < 2; index++) begin
-      init_common(
-        descriptors[index],
-        8'h02,
-        16'd256,
-        64'h0b00,
-        index == 0 ? 64'h0b20 : 64'h0b40,
-        64'd0,
-        index == 0 ? 64'h0c00 : 64'h0c20,
-        32'h0000_00af
-      );
-      put_u32(descriptors[index], 16'h40, 32'd2);
-      put_u32(descriptors[index], 16'h44, 32'd2);
-      put_u32(descriptors[index], 16'h48, 32'd3);
-      put_u32(descriptors[index], 16'h4c, 32'd1);
-      put_u32(descriptors[index], 16'h50, 32'd2);
-      put_u32(descriptors[index], 16'h54, 32'd2);
-      put_u32(descriptors[index], 16'h58, 32'd3);
-      put_u32(descriptors[index], 16'h5c, 32'h0000_0080);
-      put_u32(descriptors[index], 16'h60, 32'd6);
-      put_u32(descriptors[index], 16'h64, 32'd4);
-      put_u32(descriptors[index], 16'h68, 32'd8);
-      put_u8(descriptors[index], 16'h90, 8'd5);
-      put_u8(
-        descriptors[index],
-        16'h91,
-        index == 0 ? 8'd5 : 8'd6
-      );
-      put_u8(descriptors[index], 16'h92, 8'd4);
-      store_descriptor(
-        64'h1500 + index * 64'h100,
-        descriptors[index],
-        256
-      );
-      command_words[index] = make_command(
-        48'(64'h1500 + index * 64'h100),
-        12'(12'h106 + index),
-        ENGINE_MATRIX,
-        OPCODE_GEMM,
-        EVENT_NONE,
-        EVENT_NONE,
-        EVENT_NONE
-      );
-    end
-
-    descriptors[2] = descriptors[0];
-    put_u64(descriptors[2], 16'h20, 64'h0c40);
-    put_u8(descriptors[2], 16'h90, 8'd7);
-    store_descriptor(64'h1700, descriptors[2], 256);
-    command_words[2] = make_command(
-      48'h1700,
-      12'h108,
-      ENGINE_MATRIX,
-      OPCODE_GEMM,
+    command_payload = {
+      14'h02c, 14'h02d, 14'h031, 12'd0,
+      6'd1, 6'd1, 6'd2,
+      1'b0, DTYPE_INT16, 5'd1
+    };
+    command_words[0] = make_command(
+      OPCODE_FIELD_GEMM,
+      10'h106,
+      DTYPE_INT16,
+      command_payload,
+      EVENT_NONE,
+      EVENT_NONE,
+      EVENT_NONE
+    );
+    command_payload[6:5] = DTYPE_INT32;
+    command_words[1] = make_command(
+      OPCODE_FIELD_GEMM,
+      10'h107,
+      DTYPE_INT16,
+      command_payload,
       EVENT_NONE,
       EVENT_NONE,
       EVENT_NONE
     );
 
-    submit_commands(3);
+    submit_commands(2);
     read_command_response(12'h106);
     read_command_response(12'h107);
-    read_command_response(12'h108);
 
     write_word(CTL_ARG0, 64'h2);
     write_word(CTL_ARG1, 64'd50000);
@@ -1016,14 +973,14 @@ class axi_tvip_npu_single_core_sequence
 
     ctl_request(CTL_FENCE, 64'h2, 64'd50000, result);
     check_true(
-      "Matrix FENCE did not report reserved pack failure",
+      "Matrix FENCE did not report invalid payload failure",
       result[7:0] == STATUS_BAD_DESC
     );
 
-    for (int unsigned index = 0; index < 3; index++) begin
+    for (int unsigned index = 0; index < 2; index++) begin
       check_task_status(
         12'(12'h106 + index),
-        index < 2 ? STATUS_SUCCESS : STATUS_BAD_DESC
+        index == 0 ? STATUS_SUCCESS : STATUS_BAD_DESC
       );
       query_task(12'(12'h106 + index), 3'd3, result);
       check_equal64(
@@ -1032,40 +989,16 @@ class axi_tvip_npu_single_core_sequence
           12'h106 + index
         ),
         result,
-        index < 2 ? 64'd4 : 64'd0
+        index == 0 ? 64'd4 : 64'd0
       );
       acknowledge_task(12'(12'h106 + index));
     end
 
-    l1_read_word(20'h00c00, result);
-    check_equal64(
-      "linear INT16 Matrix row 0",
-      result,
-      64'h0000_000d_0000_0002
-    );
-    l1_read_word(20'h00c08, result);
-    check_equal64(
-      "linear INT16 Matrix row 1",
-      result,
-      64'h0000_000d_0000_0006
-    );
-    l1_read_word(20'h00c20, result);
-    check_equal64(
-      "tiled INT16 Matrix row 0",
-      result,
-      64'h0000_000d_0000_0002
-    );
-    l1_read_word(20'h00c28, result);
-    check_equal64(
-      "tiled INT16 Matrix row 1",
-      result,
-      64'h0000_000d_0000_0006
-    );
     l1_read_word(20'h00c40, result);
     check_equal64(
-      "reserved pack 7 destination",
+      "INT16 Matrix output scaling result",
       result,
-      64'd0
+      64'h0006_0003_0006_0001
     );
   endtask
 

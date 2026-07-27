@@ -11,7 +11,7 @@
 > | 非矩阵计算 | Vector/Statistics/SFU 执行 Norm、Softmax、激活、残差和循环状态更新 |
 > | 数据移动 | DMA 按 shape 与 stride 搬运 tile；L1BUF 保存活跃 tile、循环状态和在线 Softmax 统计量 |
 > | 调度 | 硬件执行短且固定的事件依赖；编译器与 Runtime 决定分块、融合、门顺序和缓存地址 |
-> | 第一版重点 | 完成 P0 基础指令、Batch Size 为 1 时的小矩阵调度、非整 tile 处理和明确的异常语义 |
+> | 第一版重点 | 完成 P0 基础指令、Batch Size 为 1 时的小矩阵调度、非整 tile 处理和明确的异常处理规则 |
 > | 暂不配置专用大模块 | tokenizer、采样、复杂搜索、页表管理和任务专用后处理继续由 CPU 或 Runtime 执行 |
 
 ## 1. 需求范围与设计约束
@@ -36,7 +36,7 @@
 | 小任务效率 | Batch Size 为 1、Decoder 单 token 和小隐藏宽度循环层不因命令启动而长期空转 | 记录发射周期、Matrix 空闲周期和每时间步延迟 |
 | 片上复用 | QKV tile、Norm/Softmax 统计量、$h_t$、$c_t$ 在消费完成前不默认回写 DDR | 统计 DDR 字节数与状态回写次数 |
 | 形状适配 | shape、stride、tail mask 和 Head 数由描述符给出，不为常见尺寸复制 RTL | 覆盖随机形状、非整 tile 与多种布局 |
-| 数值明确 | 输入、累加、输出格式以及特殊函数近似模式都有确定语义 | 与高精度参考结果比较，并执行长序列状态测试 |
+| 数值明确 | 输入、累加、输出格式以及特殊函数近似模式都有明确定义 | 与高精度参考结果比较，并执行长序列状态测试 |
 | 可观测 | 地址错误、非法 opcode、dtype 不被接受和任务超时可被软件识别 | 注入异常描述符并检查状态寄存器与事件 |
 
 吞吐、时延、利用率和误差的具体记录方式见第 11 章。这里先定义“必须能做什么”，避免只用峰值 TOPS 描述设计目标。
@@ -712,7 +712,7 @@ flowchart TD
 | 融合后处理 | bias、缩放、残差、激活可选融合 | 减少中间张量往返 |
 | 尾部处理 | 对非整 tile 尺寸提供 mask | 处理可变 Batch Size 和非整 tile 形状 |
 
-Matrix 单元无需区分 QKV、FFN、LSTM 门控、GRU 门控或 RNN 递推；它只执行描述符定义的 GEMM。模型语义、权重拼接和输出切分由编译器决定。
+Matrix 单元无需区分 QKV、FFN、LSTM 门控、GRU 门控或 RNN 递推；它只执行描述符定义的 GEMM。模型功能、权重拼接和输出切分由编译器决定。
 
 这里 $M_t,K_t,N_t$ 是一个 tile 的行数、公共维度长度和列数；下标 $t$ 在这里表示 tile 标记，不表示时间步。完整矩阵会被切成多个 tile，由 Matrix 逐块读取、计算、累加和写回。
 
@@ -1075,7 +1075,7 @@ PyTorch 通常分别保存输入侧 bias 和状态侧 bias。对 $r_t,z_t$，两
 
 若沿门维拼接，PyTorch 的输入侧与状态侧 bias 各为 $\mathbb R^{3H}$；六个单门 bias 各为 $\mathbb R^H$。Keras 在 `reset_after=True` 且启用 bias 时常把两组 bias 保存为 shape $[2,3H]$。导入器应按框架权重格式读取，不能仅依据元素总数判断两组 bias 的位置。
 
-> [!warning] GRU 的 reset 位置存在两种语义
+> [!warning] GRU 的 reset 位置存在两种计算规则
 > 本节采用 PyTorch GRU 的计算次序：$r_t$ 作用在隐藏侧仿射结果 $\mathbf R_{h,n}$ 上。Keras 的 `reset_after=True` 也把 reset 放在隐藏侧矩阵乘之后，但 bias 的保存形式由 `use_bias` 和框架权重格式共同决定。另一种定义先计算 $r_t\odot h_{t-1}$，再执行候选门隐藏侧矩阵乘；两种次序在一般情况下不等价。模型导入器必须把 `gru_reset_mode`、门顺序和两组 bias 的位置写入图或描述符，不能只根据算子名“GRU”选择固定任务序列。
 
 | GRU 阶段 | 输入 | 输出 | 硬件重点 |
@@ -1111,7 +1111,7 @@ PyTorch 普通 RNN 的输入权重 shape 为 $[H,I]$，GRU 的输入权重 shape
 5. 双向网络的两个方向独立发射；
 6. 变长序列的有效长度信息，由软件生成每个样本的有效时间范围。
 
-对 Batch 中第 $b$ 个样本，令有效长度为 $L_b$。P0 语义固定为：
+对 Batch 中第 $b$ 个样本，令有效长度为 $L_b$。P0 计算规则固定为：
 
 - 当 $t<L_b$ 时，正常计算并更新状态；
 - 当 $t\ge L_b$ 时，$h_t$ 与 $c_t$ 保持最后一个有效时间步的值，序列输出位置写 $0$；
@@ -1157,7 +1157,7 @@ P1 `RECURRENT_DESC` 若未列出 `proj_size`、投影权重地址和 peephole �
 | Norm、Softmax、激活 | 下发任务 | Vector/Statistics/SFU 执行 | 沿指定维度求和或求最大值、函数近似与逐元素运算 |
 | 循环层权重整理 | 按门顺序和物理布局保存权重 | 读取指定地址 | RNN、GRU、LSTM 的门数和次序不同 |
 | 循环层时间步控制 | 给出层数、方向、每个样本的有效长度和初始状态 | 检查事件并更新状态槽 | 每一步读取前一步的状态 |
-| RNN/GRU/LSTM 门控计算 | 下发描述符 | Matrix 计算仿射项，Vector 计算门与状态 | GRU 描述符必须给出 reset 语义 |
+| RNN/GRU/LSTM 门控计算 | 下发描述符 | Matrix 计算仿射项，Vector 计算门与状态 | GRU 描述符必须给出 reset 计算规则 |
 | 隐藏状态和记忆状态保存 | 分配状态区 | 执行片上读写与最终回写 | RNN/GRU 保存 $h_t$，LSTM 还保存 $c_t$ |
 | 张量布局转换 | 选择方式 | DMA / Vector 执行 | 简单转置和搬运优先 DMA |
 | KV Cache 地址管理 | 分配块表和容量 | 按地址与 stride 读写 | NPU 不解析页管理策略 |
@@ -1169,7 +1169,7 @@ P1 `RECURRENT_DESC` 若未列出 `proj_size`、投影权重地址和 peephole �
 
 ### 7.3 采用通用基础指令的原因
 
-硬件提供 GEMM、BMM、向量求和/求最大值、特殊函数、DMA 和片上存储，编译器把模型拆成这些任务。LayerNorm/RMSNorm、MHA/GQA、位置编码、FFN 激活或 KV Cache 布局发生变化时，只调整任务序列和描述符；P0 指令仍按相同数值语义执行。
+硬件提供 GEMM、BMM、向量求和/求最大值、特殊函数、DMA 和片上存储，编译器把模型拆成这些任务。LayerNorm/RMSNorm、MHA/GQA、位置编码、FFN 激活或 KV Cache 布局发生变化时，只调整任务序列和描述符；P0 指令仍按相同数值规则执行。
 
 ---
 
@@ -1227,7 +1227,7 @@ Exp、倒数、倒数平方根、Sigmoid 和 Tanh 可采用：
 | P2 | 由具体部署场景决定的功能 | 只有目标模型、应用或产品规格明确要求时才加入 | 对本文规定的第一版模型没有影响 |
 
 > [!important] P0 不是“临时能跑的版本”
-> P0 仍需定义完整的数值语义、bias shape、数据格式、异常状态、非整 tile
+> P0 仍需定义完整的数值规则、bias shape、数据格式、异常状态、非整 tile
 > 处理和测试要求。P1 也不是永远可有可无：如果某个产品把 Paged KV Cache
 > 或特定宏任务写入第一版要求，该项目就应把对应功能提升为 P0。
 
@@ -1247,7 +1247,7 @@ Exp、倒数、倒数平方根、Sigmoid 和 Tanh 可采用：
 | RNN、GRU、LSTM | 编译器展开每个时间步，发射 `STATE_LOAD`、GEMM、Vector 和 `STATE_STORE` | `RECURRENT_DESC` 表示重复的时间步模板 | 递推公式不变，但命令队列更长 |
 | Attention | 使用 BMM、Vector/Statistics 和 DMA 分块执行 | Attention Pipeline 连续处理分数、在线 Softmax 与 Value 加权 | 仍能计算 Attention，但中间任务和片上读写次数增加 |
 
-因此，确定一项功能的优先度时，必须检查是否存在结果相同的 P0 指令序列，不能只看某个组合任务是否常用。若标为 P1 的功能是得到正确结果的唯一方式，就应将它调整为 P0。
+因此，确定一项功能的优先度时，必须检查是否存在结果相同的 P0 指令序列，不能只看某个组合任务是否常用。若标为 P1 的功能是得到正确结果的必需方式，就应将它调整为 P0。
 
 ### 9.2 指令执行模型
 
@@ -1271,7 +1271,7 @@ $$
 
 | 对象 | 硬件结构 | 软件动作 | 使用场景 |
 | --- | --- | --- | --- |
-| 全局地址（GADDR） | 64-bit IOVA 或等价虚拟地址 | Runtime 分配输入、权重、输出、KV Cache 的大块存储 | DDR/HBM 数据搬运 |
+| 全局地址（GADDR） | 软件提供的物理字节地址 | Runtime 分配输入、权重、输出、KV Cache 的大块存储，并保证地址位宽与可访问范围有效 | DDR/HBM 数据搬运 |
 | 本地地址（LADDR） | L1BUF bank 内的字节地址 + bank/region 标记 | 编译器分配 tile、状态和双缓冲槽 | DMA、Matrix、Vector 的主要操作数 |
 | 标量寄存器（SREG） | 少量 FP32/INT32 标量寄存器 | 保存求和/最大值结果、缩放系数、循环计数或地址偏移 | Norm、Softmax、循环层控制 |
 | 向量寄存器（VREG） | 可选；也可由 L1BUF 向量段替代 | 保存只在相邻任务间使用的门值、激活和 mask | LSTM/GRU/RNN 后处理 |
@@ -1283,7 +1283,7 @@ $$
 带尾块的 tile 还需记录有效元素范围。地址计算必须以字节为单位定义，使
 INT4、INT8 和 INT32 使用同一描述符时仍能得到一致的地址。
 
-### 9.4 公共字段、完成语义和精度控制
+### 9.4 公共字段、完成规则和精度控制
 
 所有异步指令至少应具有以下公共字段：
 
@@ -1297,7 +1297,7 @@ INT4、INT8 和 INT32 使用同一描述符时仍能得到一致的地址。
 | `valid_shape` | 当前 tile 各维的有效长度 | 无效 lane 不能读写地址范围外的数据，也不能参与求和、求最大值或求平均值 |
 | `exception_policy` | 地址、形状、数值异常的处理方式 | 可选任务失败、计数或状态回报；不得静默写入错误结果 |
 
-`valid_shape` 是公共语义，不要求所有描述符使用同一个位图字段。`GEMM_DESC` 将其展开为 `valid_m/valid_n/valid_k`，`REDUCE_DESC` 使用 `valid_length`，Vector 任务使用 `rows/length` 与可选 predicate mask。
+`valid_shape` 是公共计算规则，不要求所有描述符使用同一个位图字段。`GEMM_DESC` 将其展开为 `valid_m/valid_n/valid_k`，`REDUCE_DESC` 使用 `valid_length`，Vector 任务使用 `rows/length` 与可选 predicate mask。
 
 对两个任务 $A$ 和 $B$，若 $B$ 的 `wait_event_list` 包含 $A$ 的 `signal_event` 及对应代次，则必须满足：
 
@@ -1358,7 +1358,7 @@ DMA 不只是连续复制器，它还向 Matrix 与 Vector 提供 tile。P0/P1 �
 | `DMA_GATHER_ND` | P1 | GADDR $\to$ LADDR | 块表地址、索引、块大小 | paged KV Cache、Embedding；第一版可由多个 `DMA_COPY_ND` 替代 |
 | `DMA_FILL` | P0 | 常量 $\to$ LADDR | 常量值、shape、dtype | 清零累加器、初始化 mask 或状态 |
 
-对秩为 $R$ 的 `DMA_COPY_ND`，令索引向量为 $\mathbf i=(i_0,\ldots,i_{R-1})$，则其语义应为：
+对秩为 $R$ 的 `DMA_COPY_ND`，令索引向量为 $\mathbf i=(i_0,\ldots,i_{R-1})$，则其计算定义应为：
 
 $$
 \operatorname{dst}[\mathbf i]
@@ -1384,7 +1384,7 @@ P0 `DMA_COPY_ND` 的最大 rank 记为 $R_{\max}$，且 $R_{\max}\ge5$，以容�
 
 ### 9.6 Matrix 指令与 Matrix Engine
 
-P0 Matrix 指令集的核心语义是一个可参数化的 `GEMM`；芯片可按面积与吞吐目标实例化一个或多个 Matrix Engine。`BMM` 在同一 GEMM 语义外增加 Batch/Head 计数和 stride。计算式为：
+P0 Matrix 指令集的核心计算是一个可参数化的 `GEMM`；芯片可按面积与吞吐目标实例化一个或多个 Matrix Engine。`BMM` 在同一 GEMM 定义外增加 Batch/Head 计数和 stride。计算式为：
 
 $$
 C\leftarrow
@@ -1439,7 +1439,7 @@ Softmax、LayerNorm、Sigmoid 和 Tanh 由 Vector/Statistics/SFU 执行。Matrix
 
 Vector Engine 以“一个或多个 L1 向量段输入，逐 lane 生成一个向量段输出”为基本粒度。公共字段包括 `rows`、`length`、`src0/src1/src2`、`dst`、各操作数的元素 stride 与行 stride、`scalar`、`mask`、`dtype` 和 `round_mode`。`rows=M,length=N` 可在一个任务中处理 $[M,N]$；bias 输入的行 stride 设为 $0$ 时，同一组 $N$ 个 bias 会被全部 $M$ 行重复读取。
 
-| 指令族 | 具体 opcode | 逐元素语义 | 硬件单元 | 模型中的直接用途 |
+| 指令族 | 具体 opcode | 逐元素计算 | 硬件单元 | 模型中的直接用途 |
 | --- | --- | --- | --- | --- |
 | 二元算术 | `VADD`、`VSUB`、`VMUL`、`VDIV` | $y_i=a_i\pm b_i$、$y_i=a_ib_i$、$y_i=a_i/b_i$ | Vector ALU；`VDIV` 可由倒数乘法实现 | 残差、门控、缩放、Norm |
 | 融合乘加 | `VFMA`、`VFMS` | $y_i=a_ib_i+c_i$ 或 $a_ib_i-c_i$ | FMA lane | $f_t\odot c_{t-1}+i_t\odot g_t$、残差融合 |
@@ -1460,7 +1460,7 @@ $$
 
 `VREDUCE_MAX` 把求和替换为求最大值，`VREDUCE_SUMSQ` 则先计算每个元素的平方再求和。每个 tile 的局部结果以 FP32 或等效精度写入 SREG/L1，再由第二级统计任务合并所有 tile；最后一个不完整 tile 的无效 lane 不能影响最大值或总和。
 
-P1 可增加行级组合指令 `VSOFTMAX_ROW`，依次执行 ReduceMax、减最大值、Exp、ReduceSum、Reciprocal 和乘法。它一次处理完整逻辑行，其数学语义必须等价于：
+P1 可增加行级组合指令 `VSOFTMAX_ROW`，依次执行 ReduceMax、减最大值、Exp、ReduceSum、Reciprocal 和乘法。它一次处理完整逻辑行，其数学定义必须等价于：
 
 $$
 y_i=\frac{\exp(x_i-m)}{\sum_j\exp(x_j-m)},
@@ -1471,7 +1471,7 @@ P0 编译器用基础 `VREDUCE_*`、`VEXP`、`VRECIP`、`VMUL` 指令得到相�
 
 ### 9.8 控制、循环、同步和异常指令
 
-| 指令 | 优先度 | 语义 | 必需原因 |
+| 指令 | 优先度 | 计算定义 | 必需原因 |
 | --- | --- | --- | --- |
 | `EVENT_WAIT` | P0 | 当前队列或指定 engine 等待一个或多个事件 | 连接 DMA、Matrix、Vector |
 | `EVENT_SIGNAL` | P0 | 显式置位软件可见事件 | 处理不产生数据的控制任务 |
@@ -1501,7 +1501,7 @@ NaN/Inf、Exp 输入裁剪、除零和全 mask 行默认记录 `nan_count`、`in
 | 普通 RNN 一个时间步 | `GEMM(BIAS)` $\to$ `VTANH` 或 `VRELU` $\to$ `STATE_STORE` | $h_{t-1},h_t$ | $t+1$ 步等待 $h_t$ |
 
 > [!note] 指令序列中的融合范围
-> 融合的首要目标是减少 L1BUF 与 DDR 之间的读写。`GEMM(BIAS)`、`VFMA`、`VREDUCE_SUMSQ` 的输入输出局部且步骤固定，可放在同一任务内；长序列在线统计、复杂 mask、不同 GRU 语义和动态 KV 块表继续由多条 Vector/DMA 任务表达。
+> 融合的首要目标是减少 L1BUF 与 DDR 之间的读写。`GEMM(BIAS)`、`VFMA`、`VREDUCE_SUMSQ` 的输入输出局部且步骤固定，可放在同一任务内；长序列在线统计、复杂 mask、不同 GRU 计算规则和动态 KV 块表继续由多条 Vector/DMA 任务表达。
 
 ### 9.10 描述符与字段
 
@@ -1749,7 +1749,7 @@ $$
 
 ---
 
-## 14. 框架语义参考
+## 14. 框架计算规则参考
 
 - [PyTorch GRU](https://docs.pytorch.org/docs/stable/generated/torch.nn.GRU.html)：门公式、两组 bias 和输出说明。
 - [PyTorch LSTM](https://docs.pytorch.org/docs/stable/generated/torch.nn.LSTM.html)：标准 LSTM、`proj_size`、双向输出和参数 shape。

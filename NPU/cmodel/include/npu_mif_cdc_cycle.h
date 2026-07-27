@@ -27,7 +27,7 @@ extern "C" {
 
 typedef struct {
     uint8_t write;
-    uint64_t vaddr;
+    uint64_t addr;
     uint8_t beats;
     uint16_t tag;
     uint8_t owner;

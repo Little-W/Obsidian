@@ -255,7 +255,7 @@ static void cdc_core_apply_handshakes(
                     req_fifo->control.write_seq %
                     NPU_MIF_CDC_REQ_FIFO_DEPTH];
             payload->write = input->req_write;
-            payload->vaddr = input->req_vaddr;
+            payload->addr = input->req_addr;
             payload->beats = input->req_beats;
             payload->tag = input->req_tag;
             payload->owner = input->req_owner;
@@ -366,7 +366,7 @@ static void cdc_noc_fill_outputs(
                     NPU_MIF_CDC_REQ_FIFO_DEPTH];
             output->req_valid = 1u;
             output->req_write = payload->write;
-            output->req_vaddr = payload->vaddr;
+            output->req_addr = payload->addr;
             output->req_beats = payload->beats;
             output->req_tag = payload->tag;
             output->req_owner = payload->owner;

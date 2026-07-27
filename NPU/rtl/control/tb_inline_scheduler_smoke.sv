@@ -9,9 +9,12 @@ module tb_inline_scheduler_smoke;
   logic cfe_cmd_ready;
   logic [127:0] cfe_cmd;
   logic dma_task_valid;
+  logic dma_task_ready;
   logic [7:0] dma_task_opcode;
   logic [11:0] dma_task_command_id;
   logic [2047:0] dma_task_desc;
+  logic dma_done_valid;
+  logic [11:0] dma_done_command_id;
   logic matrix_task_valid;
   logic [7:0] matrix_task_opcode;
   logic [11:0] matrix_task_command_id;
@@ -25,6 +28,7 @@ module tb_inline_scheduler_smoke;
   logic [11:0] complex_task_command_id;
   logic [2047:0] complex_task_desc;
   logic completion_valid;
+  logic completion_ready;
   logic [11:0] completion_command_id;
   logic [3:0] completion_engine;
   logic [7:0] completion_opcode;
@@ -226,7 +230,7 @@ module tb_inline_scheduler_smoke;
   );
 
   npu_task_scheduler #(
-    .TASK_SLOTS(8),
+    .TASK_SLOTS(16),
     .EVENT_COUNT(255)
   ) dut (
     .clk_i(clk),
@@ -249,13 +253,13 @@ module tb_inline_scheduler_smoke;
     .cmd_id_lookup_rsp_valid_o(lookup_rsp_valid),
     .cmd_id_busy_o(lookup_busy),
     .dma_task_valid_o(dma_task_valid),
-    .dma_task_ready_i(1'b0),
+    .dma_task_ready_i(dma_task_ready),
     .dma_task_opcode_o(dma_task_opcode),
     .dma_task_command_id_o(dma_task_command_id),
     .dma_task_desc_flat_o(dma_task_desc),
-    .dma_done_valid_i(1'b0),
+    .dma_done_valid_i(dma_done_valid),
     .dma_done_ready_o(dma_done_ready),
-    .dma_done_command_id_i(12'd0),
+    .dma_done_command_id_i(dma_done_command_id),
     .dma_done_status_i(NPU_STATUS_SUCCESS),
     .dma_done_fault_addr_i(48'd0),
     .dma_done_progress_i(64'd0),
@@ -293,7 +297,7 @@ module tb_inline_scheduler_smoke;
     .complex_done_fault_addr_i(48'd0),
     .complex_done_progress_i(64'd0),
     .completion_valid_o(completion_valid),
-    .completion_ready_i(1'b1),
+    .completion_ready_i(completion_ready),
     .completion_command_id_o(completion_command_id),
     .completion_engine_o(completion_engine),
     .completion_opcode_o(completion_opcode),
@@ -345,6 +349,10 @@ module tb_inline_scheduler_smoke;
     clk = 1'b0;
     reset_n = 1'b0;
     cfe_cmd_valid = 1'b0;
+    completion_ready = 1'b1;
+    dma_task_ready = 1'b0;
+    dma_done_valid = 1'b0;
+    dma_done_command_id = 12'd0;
     cfe_cmd = 128'd0;
     decode_cmd = 128'd0;
     scheduler_input_base = 48'h0001_0000;
@@ -391,7 +399,7 @@ module tb_inline_scheduler_smoke;
               npu_desc_bytes_for_engine(
                 npu_cmd_engine_from_opcode(6'(opcode_index))) ||
             decode_desc[511:480] != 32'h0000_03ff) begin
-          $fatal(1, "CMD128 expansion failed for opcode %0d", opcode_index);
+          $fatal(1, "128-bit instruction expansion failed for opcode %0d", opcode_index);
         end
       end
     end
@@ -483,12 +491,63 @@ module tb_inline_scheduler_smoke;
       $fatal(1, "inline Matrix BMM accepted a reserved payload bit");
     decode_cmd = 128'd0;
 
+    dma_payload = payload_for_opcode(6'd5);
     event_command = make_command(
-      6'd1, 10'h009, NPU_DTYPE_INT8, 80'd0
+      6'd5, 10'h007, NPU_DTYPE_INT8, dma_payload
     );
     event_command[95:88] = 8'h07;
     submit(event_command);
+    wait (dma_task_valid);
+    if (dma_task_command_id != 12'h007)
+      $fatal(1, "unexpected DMA producer %03x", dma_task_command_id);
+    @(negedge clk);
+    dma_task_ready = 1'b1;
+    @(posedge clk);
+    @(negedge clk);
+    dma_task_ready = 1'b0;
+
+    event_command = make_command(
+      6'd5, 10'h008, NPU_DTYPE_INT8, dma_payload
+    );
+    event_command[111:104] = 8'h07;
+    submit(event_command);
+
+    completion_ready = 1'b0;
+    submit(make_command(6'd0, 10'h009, NPU_DTYPE_INT8, 80'd0));
+    wait (completion_valid);
+    if (completion_command_id != 12'h009)
+      $fatal(1, "unexpected held completion %03x",
+             completion_command_id);
+
+    wait (dma_done_ready);
+    @(negedge clk);
+    dma_done_command_id = 12'h007;
+    dma_done_valid = 1'b1;
+    @(posedge clk);
+    @(negedge clk);
+    dma_done_valid = 1'b0;
     wait (dut.event_state_q[7] == NPU_EVENT_SUCCESS);
+    wait (dma_task_valid && dma_task_command_id == 12'h008);
+    @(negedge clk);
+    dma_task_ready = 1'b1;
+    @(posedge clk);
+    @(negedge clk);
+    dma_task_ready = 1'b0;
+    wait (dma_done_ready);
+    @(negedge clk);
+    dma_done_command_id = 12'h008;
+    dma_done_valid = 1'b1;
+    @(posedge clk);
+    @(negedge clk);
+    dma_done_valid = 1'b0;
+    repeat (6) @(posedge clk);
+    if (!completion_valid || completion_command_id != 12'h009 ||
+        completion_engine != NPU_ENGINE_CONTROL ||
+        completion_opcode != NPU_OPCODE_NOP ||
+        completion_status != NPU_STATUS_SUCCESS ||
+        completion_fault_addr != 48'd0 ||
+        completion_progress != 64'd0)
+      $fatal(1, "completion changed while ready was low");
 
     event_command = make_command(
       6'd2, 10'h00a, NPU_DTYPE_INT8, 80'd0
@@ -502,6 +561,105 @@ module tb_inline_scheduler_smoke;
         (dut.event_generation_q[7] != 4'd1)) begin
       $fatal(1, "EVENT_REARM was treated as an ordinary signal");
     end
+    if (!completion_valid || completion_command_id != 12'h009)
+      $fatal(1, "held completion changed during EVENT_REARM");
+    completion_ready = 1'b1;
+    repeat (10) @(posedge clk);
+
+    /*
+     * Build a terminal Event, enqueue EVENT_REARM, then accept a new waiter
+     * on the exact cycle that the control task executes.  The waiter has
+     * priority over rearming: EVENT_REARM must fail, the Event must remain
+     * successful at its current generation, and the waiter must dispatch.
+     */
+    event_command = make_command(
+      6'd5, 10'h00b, NPU_DTYPE_INT8, dma_payload
+    );
+    event_command[95:88] = 8'h08;
+    submit(event_command);
+    wait (dma_task_valid && dma_task_command_id == 12'h00b);
+    @(negedge clk);
+    dma_task_ready = 1'b1;
+    @(posedge clk);
+    @(negedge clk);
+    dma_task_ready = 1'b0;
+    wait (dma_done_ready);
+    @(negedge clk);
+    dma_done_command_id = 12'h00b;
+    dma_done_valid = 1'b1;
+    @(posedge clk);
+    @(negedge clk);
+    dma_done_valid = 1'b0;
+    wait ((dut.event_state_q[8] == NPU_EVENT_SUCCESS) &&
+          (dut.event_generation_q[8] == 4'd0));
+
+    event_command = make_command(
+      6'd2, 10'h00c, NPU_DTYPE_INT8, 80'd0
+    );
+    event_command[95:88] = 8'h08;
+    submit(event_command);
+
+    event_command = make_command(
+      6'd5, 10'h00d, NPU_DTYPE_INT8, dma_payload
+    );
+    event_command[111:104] = 8'h08;
+    @(negedge clk);
+    cfe_cmd = event_command;
+    cfe_cmd_valid = 1'b1;
+    if (!cfe_cmd_ready)
+      $fatal(1, "scheduler was not ready for the concurrent Event waiter");
+    @(posedge clk);
+    if (!dut.cmd_accept || !dut.cmd_static_valid ||
+        !dut.control_select_found ||
+        (dut.task_opcode_q[dut.control_select] !=
+         NPU_OPCODE_EVENT_REARM) ||
+        (dut.control_rearm_current_ref != 12'h008) ||
+        (dut.cmd_wait0_resolved != 12'h008)) begin
+      $fatal(
+        1,
+        "EVENT_REARM and the new waiter did not execute on the same cycle"
+      );
+    end
+    @(negedge clk);
+    cfe_cmd_valid = 1'b0;
+    cfe_cmd = 128'd0;
+
+    wait (completion_valid && completion_command_id == 12'h00c);
+    if ((completion_engine != NPU_ENGINE_CONTROL) ||
+        (completion_opcode != NPU_OPCODE_EVENT_REARM) ||
+        (completion_status != NPU_STATUS_BAD_DESC)) begin
+      $fatal(
+        1,
+        "concurrent EVENT_REARM did not return BAD_DESC: status=%0d",
+        completion_status
+      );
+    end
+    if ((dut.event_state_q[8] != NPU_EVENT_SUCCESS) ||
+        (dut.event_generation_q[8] != 4'd0)) begin
+      $fatal(1, "failed EVENT_REARM changed Event 8");
+    end
+
+    wait (dma_task_valid && dma_task_command_id == 12'h00d);
+    if ((dut.event_state_q[8] != NPU_EVENT_SUCCESS) ||
+        (dut.event_generation_q[8] != 4'd0)) begin
+      $fatal(1, "Event 8 changed before the waiter dispatched");
+    end
+    @(negedge clk);
+    dma_task_ready = 1'b1;
+    @(posedge clk);
+    @(negedge clk);
+    dma_task_ready = 1'b0;
+    wait (dma_done_ready);
+    @(negedge clk);
+    dma_done_command_id = 12'h00d;
+    dma_done_valid = 1'b1;
+    @(posedge clk);
+    @(negedge clk);
+    dma_done_valid = 1'b0;
+    wait (completion_valid && completion_command_id == 12'h00d);
+    if (completion_status != NPU_STATUS_SUCCESS)
+      $fatal(1, "Event waiter completed with status %0d",
+             completion_status);
 
     submit(make_command(6'd0, 10'h011, NPU_DTYPE_INT8, 80'd0));
 
@@ -578,7 +736,7 @@ module tb_inline_scheduler_smoke;
       $fatal(1, "Complex command expansion mismatch");
 
     $display(
-      "PASS: CMD128 directly expands all engine classes %0b",
+      "PASS: 128-bit instructions directly expand all engine classes %0b",
       ^{
         dma_task_desc, matrix_task_desc, vector_task_desc,
         complex_task_desc,

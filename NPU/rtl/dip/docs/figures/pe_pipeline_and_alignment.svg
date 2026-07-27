@@ -1,0 +1,136 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="790" viewBox="0 0 1500 790" role="img" aria-labelledby="title desc">
+  <title id="title">当前 PE 的三级算术流水与跨行对齐</title>
+  <desc id="desc">展示输入和权重寄存器、基础乘法结果寄存器、局部求和寄存器、分段累加寄存器，以及同一个输入 token 在相邻物理行中的错一拍执行。</desc>
+  <defs>
+    <style>
+      .title { font: 700 28px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #0f172a; }
+      .h2 { font: 700 20px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #0f172a; text-anchor: middle; }
+      .label { font: 600 16px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #334155; text-anchor: middle; }
+      .small { font: 500 14px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #475569; text-anchor: middle; }
+      .left { text-anchor: start; }
+      .mono { font: 600 15px "JetBrains Mono", "DejaVu Sans Mono", monospace; fill: #0f172a; text-anchor: middle; }
+      .reg { fill: #eff6ff; stroke: #2563eb; stroke-width: 2; rx: 9; }
+      .comb { fill: #fff7ed; stroke: #d97706; stroke-width: 2; rx: 9; }
+      .acc { fill: #f5f3ff; stroke: #7c3aed; stroke-width: 2; rx: 9; }
+      .weight { fill: #fffbeb; stroke: #ca8a04; stroke-width: 2; rx: 9; }
+      .arrow { fill: none; stroke: #475569; stroke-width: 2.5; }
+      .valid { fill: none; stroke: #059669; stroke-width: 2.5; }
+      .weightline { fill: none; stroke: #ca8a04; stroke-width: 2.5; }
+      .grid { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.2; }
+      .active0 { fill: #dbeafe; stroke: #60a5fa; stroke-width: 1.2; }
+      .active1 { fill: #ffedd5; stroke: #fb923c; stroke-width: 1.2; }
+      .active2 { fill: #fef3c7; stroke: #f59e0b; stroke-width: 1.2; }
+      .active3 { fill: #ede9fe; stroke: #8b5cf6; stroke-width: 1.2; }
+    </style>
+    <marker id="arrow-gray" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#475569"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#059669"/>
+    </marker>
+    <marker id="arrow-yellow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#ca8a04"/>
+    </marker>
+  </defs>
+
+  <rect width="1500" height="790" fill="#ffffff"/>
+  <text x="40" y="48" class="title">当前 PE：三级算术流水，物理行之间错开一拍</text>
+  <text x="40" y="78" class="small left">从 data_q 接收一个 token 的上升沿算起，product_q、contribution_o、psum_q 分别在随后三个上升沿更新。</text>
+
+  <g transform="translate(45 125)">
+    <rect class="reg" x="0" y="65" width="165" height="90"/>
+    <text class="h2" x="82" y="96">输入寄存器</text>
+    <text class="mono" x="82" y="123">data_q[15:0]</text>
+    <text class="mono" x="82" y="144">data_mode_q</text>
+    <text class="small" x="82" y="181">e0 / pe_en</text>
+
+    <rect class="reg" x="0" y="190" width="165" height="72"/>
+    <text class="label" x="82" y="218">同一行右邻</text>
+    <text class="mono" x="82" y="244">data_neighbor</text>
+
+    <rect class="weight" x="0" y="-20" width="165" height="65"/>
+    <text class="label" x="82" y="7">预装权重</text>
+    <text class="mono" x="82" y="30">weight_q[0:3]</text>
+
+    <path class="arrow" d="M165 110H235" marker-end="url(#arrow-gray)"/>
+    <path class="arrow" d="M165 225 C205 225 195 145 235 145" marker-end="url(#arrow-gray)"/>
+    <path class="weightline" d="M165 12 C205 12 195 78 235 78" marker-end="url(#arrow-yellow)"/>
+
+    <rect class="comb" x="245" y="45" width="205" height="130"/>
+    <text class="h2" x="347" y="80">Stage 1</text>
+    <text class="label" x="347" y="111">16 个 4×4</text>
+    <text class="label" x="347" y="136">基础乘法器</text>
+    <text class="small" x="347" y="160">组合计算</text>
+
+    <path class="arrow" d="M450 110H500" marker-end="url(#arrow-gray)"/>
+    <rect class="reg" x="510" y="45" width="190" height="130"/>
+    <text class="h2" x="605" y="80">乘积寄存</text>
+    <text class="mono" x="605" y="110">product_q[0:15]</text>
+    <text class="mono" x="605" y="136">16 × 8 bit</text>
+    <text class="small" x="605" y="160">e1 / mul_en</text>
+
+    <path class="arrow" d="M700 110H750" marker-end="url(#arrow-gray)"/>
+    <rect class="comb" x="760" y="45" width="220" height="130"/>
+    <text class="h2" x="870" y="80">Stage 2</text>
+    <text class="label" x="870" y="111">radix 部分乘积重组</text>
+    <text class="label" x="870" y="136">及局部 K 求和</text>
+    <text class="small" x="870" y="160">组合计算</text>
+
+    <path class="arrow" d="M980 110H1030" marker-end="url(#arrow-gray)"/>
+    <rect class="reg" x="1040" y="45" width="190" height="130"/>
+    <text class="h2" x="1135" y="80">贡献寄存</text>
+    <text class="mono" x="1135" y="110">contribution_o</text>
+    <text class="mono" x="1135" y="136">+ mode_o</text>
+    <text class="small" x="1135" y="160">e2 / reduce_en</text>
+
+    <path class="arrow" d="M1230 110H1280" marker-end="url(#arrow-gray)"/>
+    <rect class="acc" x="1290" y="30" width="160" height="160"/>
+    <text class="h2" x="1370" y="66">Stage 3</text>
+    <text class="label" x="1370" y="96">分段 64-bit</text>
+    <text class="label" x="1370" y="121">加法器</text>
+    <text class="mono" x="1370" y="148">psum_q</text>
+    <text class="small" x="1370" y="174">e3 / adder_en</text>
+
+    <path class="arrow" d="M1370 235V192" marker-end="url(#arrow-gray)"/>
+    <text class="mono" x="1370" y="258">psum_i（上一物理行）</text>
+
+    <path class="valid" d="M82 310H605H1135H1370" marker-end="url(#arrow-green)"/>
+    <circle cx="82" cy="310" r="5" fill="#059669"/><circle cx="605" cy="310" r="5" fill="#059669"/><circle cx="1135" cy="310" r="5" fill="#059669"/>
+    <text class="small" x="82" y="338">data_valid_q</text>
+    <text class="small" x="605" y="338">product_valid_q</text>
+    <text class="small" x="1135" y="338">contribution_valid_q</text>
+    <text class="small" x="1370" y="338">psum_valid_q</text>
+  </g>
+
+  <line x1="40" y1="492" x2="1460" y2="492" stroke="#e2e8f0" stroke-width="2"/>
+  <text x="40" y="532" class="h2 left">同一个 A 行 token 的跨物理行时序</text>
+
+  <g transform="translate(210 555)">
+    <text class="label" x="-75" y="31">PE row 0</text>
+    <text class="label" x="-75" y="81">PE row 1</text>
+    <text class="label" x="-75" y="131">PE row 2</text>
+
+    <g>
+      <rect class="grid" x="0" y="0" width="150" height="45"/><rect class="grid" x="150" y="0" width="150" height="45"/><rect class="grid" x="300" y="0" width="150" height="45"/><rect class="grid" x="450" y="0" width="150" height="45"/><rect class="grid" x="600" y="0" width="150" height="45"/><rect class="grid" x="750" y="0" width="150" height="45"/>
+      <rect class="grid" x="0" y="50" width="150" height="45"/><rect class="grid" x="150" y="50" width="150" height="45"/><rect class="grid" x="300" y="50" width="150" height="45"/><rect class="grid" x="450" y="50" width="150" height="45"/><rect class="grid" x="600" y="50" width="150" height="45"/><rect class="grid" x="750" y="50" width="150" height="45"/>
+      <rect class="grid" x="0" y="100" width="150" height="45"/><rect class="grid" x="150" y="100" width="150" height="45"/><rect class="grid" x="300" y="100" width="150" height="45"/><rect class="grid" x="450" y="100" width="150" height="45"/><rect class="grid" x="600" y="100" width="150" height="45"/><rect class="grid" x="750" y="100" width="150" height="45"/>
+    </g>
+
+    <rect class="active0" x="0" y="0" width="150" height="45"/><rect class="active1" x="150" y="0" width="150" height="45"/><rect class="active2" x="300" y="0" width="150" height="45"/><rect class="active3" x="450" y="0" width="150" height="45"/>
+    <rect class="active0" x="150" y="50" width="150" height="45"/><rect class="active1" x="300" y="50" width="150" height="45"/><rect class="active2" x="450" y="50" width="150" height="45"/><rect class="active3" x="600" y="50" width="150" height="45"/>
+    <rect class="active0" x="300" y="100" width="150" height="45"/><rect class="active1" x="450" y="100" width="150" height="45"/><rect class="active2" x="600" y="100" width="150" height="45"/><rect class="active3" x="750" y="100" width="150" height="45"/>
+
+    <text class="label" x="75" y="28">data_q</text><text class="label" x="225" y="28">product_q</text><text class="label" x="375" y="28">contribution_o</text><text class="label" x="525" y="28">psum_q</text>
+    <text class="label" x="225" y="78">data_q</text><text class="label" x="375" y="78">product_q</text><text class="label" x="525" y="78">contribution_o</text><text class="label" x="675" y="78">psum_q</text>
+    <text class="label" x="375" y="128">data_q</text><text class="label" x="525" y="128">product_q</text><text class="label" x="675" y="128">contribution_o</text><text class="label" x="825" y="128">psum_q</text>
+
+    <text class="small" x="75" y="178">e0</text><text class="small" x="225" y="178">e1</text><text class="small" x="375" y="178">e2</text><text class="small" x="525" y="178">e3</text><text class="small" x="675" y="178">e4</text><text class="small" x="825" y="178">e5</text>
+  </g>
+
+  <rect x="1140" y="555" width="315" height="180" rx="12" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
+  <text x="1297" y="590" class="h2">对齐条件</text>
+  <text x="1297" y="626" class="small">本行 contribution_valid_q</text>
+  <text x="1297" y="651" class="small">与上一行 psum_valid_q</text>
+  <text x="1297" y="676" class="small">同时为 1 才更新 psum_q</text>
+  <text x="1297" y="714" class="mono">first C: e(N+2)</text>
+</svg>

@@ -465,6 +465,22 @@ static int test_driver(void)
     CHECK(npu_drv_set_base(
               &driver, NPU_DRV_REG_INPUT_BASE, UINT64_C(0x400001)) ==
           NPU_DRV_EINVAL);
+    CHECK(npu_drv_set_base(
+              &driver,
+              NPU_DRV_REG_M_AXI_ADDR_LIMIT,
+              UINT64_C(0x000000fffffffff8)) == NPU_DRV_OK);
+    CHECK(npu_drv_set_base(
+              &driver,
+              NPU_DRV_REG_M_AXI_ADDR_LIMIT,
+              UINT64_C(0x0000010000000000)) == NPU_DRV_ERANGE);
+    CHECK(npu_drv_set_base(
+              &driver,
+              NPU_DRV_REG_PARAM_L1_LIMIT,
+              UINT64_C(0x00000000000ffff8)) == NPU_DRV_OK);
+    CHECK(npu_drv_set_base(
+              &driver,
+              NPU_DRV_REG_PARAM_L1_LIMIT,
+              UINT64_C(0x0000000000100000)) == NPU_DRV_ERANGE);
     CHECK(npu_drv_irq_enable(
               &driver, NPU_DRV_IRQ_DONE | NPU_DRV_IRQ_ERROR) ==
           NPU_DRV_OK);
@@ -511,6 +527,6 @@ int main(void)
     CHECK(test_command() == 0);
     CHECK(test_fixed_burst_batch() == 0);
     CHECK(test_driver() == 0);
-    puts("npu_driver CMD128 tests: PASS");
+    puts("npu_driver 128-bit instruction tests: PASS");
     return 0;
 }

@@ -145,6 +145,7 @@ module npu_axi_system_memory_model #(
             s_axi_rvalid <= 1'b0;
 
             system_if.system_memory_read_handshakes <= 32'd0;
+            system_if.system_memory_aw_handshakes <= 32'd0;
             system_if.system_memory_write_handshakes <= 32'd0;
             system_if.system_memory_protocol_error <= 1'b0;
         end
@@ -159,6 +160,8 @@ module npu_axi_system_memory_model #(
             end
 
             if (s_axi_awvalid && s_axi_awready) begin
+                system_if.system_memory_aw_handshakes <=
+                    system_if.system_memory_aw_handshakes + 1'b1;
                 aw_hold_valid_q <= 1'b1;
                 aw_hold_id_q <= s_axi_awid;
                 aw_hold_addr_q <=

@@ -92,8 +92,6 @@ int main(void)
         {"l1_cycle", test_l1_cycle},
         {"l1_diag_bridge", test_l1_diag_bridge},
         {"lsc_cycle", test_lsc_cycle},
-        {"tbu_cycle", test_tbu_cycle},
-        {"mif_tbu_cycle", test_mif_tbu_cycle},
         {"gc_axi_cycle", test_gc_axi_cycle},
         {"axi_mem_target_cycle", test_axi_mem_target_cycle},
         {"mif_cycle", test_mif_cycle},

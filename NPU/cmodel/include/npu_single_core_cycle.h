@@ -10,7 +10,6 @@
 #include "npu_lsc_cycle.h"
 #include "npu_mif_cdc_cycle.h"
 #include "npu_sys_slave_cycle.h"
-#include "npu_tbu_cycle.h"
 #include "npu_ts_cycle.h"
 
 #include <stddef.h>
@@ -42,13 +41,6 @@ extern "C" {
 #define NPU_SINGLE_CORE_CLK_ALL UINT8_C(0xff)
 #define NPU_SINGLE_CORE_AXI_ID_COUNT 256u
 #define NPU_SINGLE_CORE_STALE_WRITE_DEPTH 256u
-#define NPU_SINGLE_CORE_STALE_TBU_COUNT \
-    (NPU_MIF_MAX_TBU_OUTSTANDING + 1u)
-
-typedef enum {
-    NPU_SINGLE_CORE_TBU_EXTERNAL = 0,
-    NPU_SINGLE_CORE_TBU_INTERNAL = 1
-} npu_single_core_tbu_mode_t;
 
 typedef enum {
     NPU_SINGLE_CORE_CMD_SOURCE_NONE = 0,
@@ -137,8 +129,6 @@ typedef struct {
     uint8_t dvfs_prepare_req_i;
     uint8_t scan_mode_i;
 
-    /* Consumed only when tbu_mode is EXTERNAL. */
-    npu_mif_tbu_inputs_t tbu;
     npu_mif_axi_inputs_t axi;
 } npu_single_core_cycle_noc_inputs_t;
 
@@ -146,7 +136,6 @@ typedef struct {
     npu_crg_outputs_t crg;
     npu_mif_cdc_noc_outputs_t cdc;
     npu_mif_cycle_outputs_t mif;
-    npu_tbu_cycle_outputs_t tbu;
 
     uint8_t noc_reset_n;
     uint8_t module_clk_active_o;
@@ -163,8 +152,7 @@ typedef struct {
     uint8_t first_owner;
     uint16_t first_tag;
     uint16_t first_task_id;
-    uint64_t first_vaddr;
-    uint64_t first_paddr;
+    uint64_t first_addr;
     uint8_t first_axi_id;
     uint8_t first_axi_id_valid;
     uint8_t first_axi_resp;
@@ -199,7 +187,6 @@ typedef struct {
     npu_gc_axi_cycle_t gc_axi;
     npu_mif_cdc_cycle_t cdc;
     npu_mif_cycle_t mif;
-    npu_tbu_cycle_t tbu;
     npu_crg_model_t crg;
     npu_wdt_model_t wdt;
 
@@ -259,9 +246,9 @@ typedef struct {
     uint32_t cdc_reset_epoch_seen_noc;
 
     /*
-     * Responses from AXI or an external TBU can outlive a Core-only reset.
-     * Their identifiers remain unavailable to new MIF transactions until
-     * those old responses are accepted and discarded at the top-level gate.
+     * Responses from AXI can outlive a Core-only reset. Their identifiers
+     * remain unavailable to new MIF transactions until those old responses
+     * are accepted and discarded at the top-level gate.
      */
     uint8_t stale_axi_read_beats[NPU_SINGLE_CORE_AXI_ID_COUNT];
     uint8_t stale_axi_read_wait_rlast[NPU_SINGLE_CORE_AXI_ID_COUNT];
@@ -271,12 +258,9 @@ typedef struct {
     uint16_t stale_axi_write_drain_head;
     uint16_t stale_axi_write_drain_tail;
     uint16_t stale_axi_write_drain_count;
-    uint16_t stale_tbu_tag[NPU_SINGLE_CORE_STALE_TBU_COUNT];
-    uint8_t stale_tbu_tag_valid[NPU_SINGLE_CORE_STALE_TBU_COUNT];
     uint64_t stale_axi_read_drop_count;
     uint64_t stale_axi_write_drop_count;
     uint64_t stale_axi_w_drain_count;
-    uint64_t stale_tbu_drop_count;
 
     /*
      * Generic Core AXI uses the Core clock but its target is not reset by a
@@ -300,20 +284,14 @@ typedef struct {
     uint64_t last_engine_confirmed[NPU_TS_ENGINE_COUNT];
     uint64_t core_cycle;
     uint64_t noc_cycle;
-    uint8_t tbu_mode;
     uint8_t initialized;
 } npu_single_core_cycle_t;
 
 /*
  * The functional model and L1 controller must use the same 1 MiB byte array.
  * The caller also owns the ECC array and all four trace workspaces.
- * mif_soc_config supplies the fixed system address and bypass ranges. LSC
- * subsequently supplies the system address range and TBU identifiers.
- *
- * tbu_mode is selected at initialization and is immutable for the lifetime
- * of this object. External mode consumes noc_inputs.tbu. Internal mode
- * ignores those pins and connects top->tbu to MIF; callers configure its
- * static test rules with npu_tbu_cycle_set_rule(&top->tbu, ...).
+ * mif_soc_config supplies the system physical address range. LSC can
+ * subsequently update that range while the core is idle.
  *
  * All four workspace descriptions are validated before top, the ECC array,
  * or workspace storage is changed. A workspace validation failure returns
@@ -333,8 +311,7 @@ npu_status_t npu_single_core_cycle_init(
         workspace[NPU_TS_ENGINE_COUNT],
     const npu_wire_limits_t *wire_limits,
     const npu_lsc_cycle_config_t *lsc_config,
-    const npu_mif_cycle_config_t *mif_soc_config,
-    npu_single_core_tbu_mode_t tbu_mode);
+    const npu_mif_cycle_config_t *mif_soc_config);
 
 /*
  * Clears all sequential module state while preserving caller-owned memory,

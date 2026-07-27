@@ -9,7 +9,7 @@ extern "C" {
 
 /*
  * Compatibility model for an external host-CPU test harness. It is not an NPU
- * RTL block. Production software submits the same CMD128 and control requests
+ * RTL block. Production software submits the same 128-bit instructions and control requests
  * by writing the NPU AXI Slave windows.
  */
 

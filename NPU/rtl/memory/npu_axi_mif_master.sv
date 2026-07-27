@@ -17,18 +17,8 @@ module npu_axi_mif_master #(
   output logic [63:0]           rsp_rdata_o,
   output logic [2:0]            rsp_status_o,
 
-  input  logic [15:0]           stream_id_i,
-  input  logic [15:0]           substream_id_i,
-  output logic                  tbu_req_valid_o,
-  input  logic                  tbu_req_ready_i,
-  output logic                  tbu_req_write_o,
-  output logic [47:0]           tbu_req_addr_o,
-  output logic [15:0]           tbu_req_stream_id_o,
-  output logic [15:0]           tbu_req_substream_id_o,
-  input  logic                  tbu_rsp_valid_i,
-  output logic                  tbu_rsp_ready_o,
-  input  logic [47:0]           tbu_rsp_addr_i,
-  input  logic [2:0]            tbu_rsp_status_i,
+  input  logic [47:0]           addr_base_i,
+  input  logic [47:0]           addr_limit_i,
 
   output logic [AXI_ID_W-1:0]   m_axi_awid_o,
   output logic [AXI_ADDR_W-1:0] m_axi_awaddr_o,
@@ -82,8 +72,6 @@ module npu_axi_mif_master #(
 
   typedef enum logic [2:0] {
     MIF_IDLE,
-    MIF_TBU_REQ,
-    MIF_TBU_RSP,
     MIF_READ_ADDR,
     MIF_READ_DATA,
     MIF_WRITE_ISSUE,
@@ -92,13 +80,10 @@ module npu_axi_mif_master #(
   } mif_state_e;
 
   mif_state_e state_q;
-  logic req_write_q;
   logic [47:0] req_addr_q;
   logic [63:0] req_wdata_q;
   logic [7:0] req_wstrb_q;
-  logic [15:0] stream_id_q;
-  logic [15:0] substream_id_q;
-  logic [AXI_ADDR_W-1:0] translated_addr_q;
+  logic [AXI_ADDR_W-1:0] axi_addr_q;
   logic aw_done_q;
   logic w_done_q;
   logic [63:0] rsp_rdata_q;
@@ -109,7 +94,8 @@ module npu_axi_mif_master #(
 
   logic aw_handshake;
   logic w_handshake;
-  logic translated_addr_fits;
+  logic request_addr_fits;
+  logic request_range_valid;
   logic write_channels_done;
 
   function automatic logic [2:0] axi_resp_status(input logic [1:0] response);
@@ -126,15 +112,8 @@ module npu_axi_mif_master #(
   assign rsp_rdata_o = rsp_rdata_q;
   assign rsp_status_o = rsp_status_q;
 
-  assign tbu_req_valid_o        = state_q == MIF_TBU_REQ;
-  assign tbu_req_write_o        = req_write_q;
-  assign tbu_req_addr_o         = req_addr_q;
-  assign tbu_req_stream_id_o    = stream_id_q;
-  assign tbu_req_substream_id_o = substream_id_q;
-  assign tbu_rsp_ready_o        = state_q == MIF_TBU_RSP;
-
   assign m_axi_awid_o    = '0;
-  assign m_axi_awaddr_o  = translated_addr_q;
+  assign m_axi_awaddr_o  = axi_addr_q;
   assign m_axi_awlen_o   = 8'd0;
   assign m_axi_awsize_o  = 3'd3;
   assign m_axi_awburst_o = 2'b01;
@@ -151,7 +130,7 @@ module npu_axi_mif_master #(
   assign m_axi_bready_o = state_q == MIF_WRITE_RESP;
 
   assign m_axi_arid_o    = '0;
-  assign m_axi_araddr_o  = translated_addr_q;
+  assign m_axi_araddr_o  = axi_addr_q;
   assign m_axi_arlen_o   = 8'd0;
   assign m_axi_arsize_o  = 3'd3;
   assign m_axi_arburst_o = 2'b01;
@@ -166,7 +145,10 @@ module npu_axi_mif_master #(
   assign w_handshake  = m_axi_wvalid_o && m_axi_wready_i;
   assign write_channels_done = (aw_done_q || aw_handshake)
                             && (w_done_q || w_handshake);
-  assign translated_addr_fits = (tbu_rsp_addr_i >> AXI_ADDR_W) == 0;
+  assign request_addr_fits = (req_addr_i >> AXI_ADDR_W) == 0;
+  assign request_range_valid = (addr_limit_i >= addr_base_i)
+                            && (req_addr_i >= addr_base_i)
+                            && (req_addr_i <= addr_limit_i);
 
   assign error_valid_o  = error_valid_q;
   assign error_addr_o   = error_addr_q;
@@ -176,13 +158,10 @@ module npu_axi_mif_master #(
   always_ff @(posedge clk_i or negedge reset_n) begin
     if (!reset_n) begin
       state_q             <= MIF_IDLE;
-      req_write_q         <= 1'b0;
       req_addr_q          <= 48'd0;
       req_wdata_q         <= 64'd0;
       req_wstrb_q         <= 8'd0;
-      stream_id_q         <= 16'd0;
-      substream_id_q      <= 16'd0;
-      translated_addr_q   <= '0;
+      axi_addr_q          <= '0;
       aw_done_q           <= 1'b0;
       w_done_q            <= 1'b0;
       rsp_rdata_q         <= 64'd0;
@@ -198,49 +177,22 @@ module npu_axi_mif_master #(
       unique case (state_q)
         MIF_IDLE: begin
           if (req_valid_i && req_ready_o) begin
-            req_write_q <= req_write_i;
             req_addr_q  <= req_addr_i;
             req_wdata_q <= req_wdata_i;
             req_wstrb_q <= req_wstrb_i;
-            stream_id_q <= stream_id_i;
-            substream_id_q <= substream_id_i;
             rsp_rdata_q <= 64'd0;
-            if (req_addr_i[2:0] != 3'd0) begin
+            if ((req_addr_i[2:0] != 3'd0)
+                || !request_addr_fits
+                || !request_range_valid) begin
               rsp_status_q <= NPU_MEM_ADDR;
               state_q      <= MIF_INTERNAL_RESP;
+            end else if (req_write_i) begin
+              axi_addr_q <= req_addr_i[AXI_ADDR_W-1:0];
+              aw_done_q  <= 1'b0;
+              w_done_q   <= 1'b0;
+              state_q    <= MIF_WRITE_ISSUE;
             end else begin
-              state_q <= MIF_TBU_REQ;
-            end
-          end
-        end
-
-        MIF_TBU_REQ: begin
-          if (tbu_req_valid_o && tbu_req_ready_i) begin
-            state_q <= MIF_TBU_RSP;
-          end
-        end
-
-        MIF_TBU_RSP: begin
-          if (tbu_rsp_valid_i && tbu_rsp_ready_o) begin
-            translated_addr_q <= tbu_rsp_addr_i[AXI_ADDR_W-1:0];
-            if (tbu_rsp_status_i != NPU_MEM_OK) begin
-              unique case (tbu_rsp_status_i)
-                NPU_MEM_ADDR,
-                NPU_MEM_PERM,
-                NPU_MEM_SLVERR,
-                NPU_MEM_DECERR,
-                NPU_MEM_PROTOCOL: rsp_status_q <= tbu_rsp_status_i;
-                default:          rsp_status_q <= NPU_MEM_PROTOCOL;
-              endcase
-              state_q      <= MIF_INTERNAL_RESP;
-            end else if (!translated_addr_fits) begin
-              rsp_status_q <= NPU_MEM_ADDR;
-              state_q      <= MIF_INTERNAL_RESP;
-            end else if (req_write_q) begin
-              aw_done_q <= 1'b0;
-              w_done_q  <= 1'b0;
-              state_q   <= MIF_WRITE_ISSUE;
-            end else begin
+              axi_addr_q <= req_addr_i[AXI_ADDR_W-1:0];
               state_q <= MIF_READ_ADDR;
             end
           end

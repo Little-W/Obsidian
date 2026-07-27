@@ -183,7 +183,7 @@ module tb_cmd_frontend_smoke;
     repeat (3) begin
       @(posedge clk);
       if (ts_cmd_valid || cmd_rsp_valid) begin
-        $fatal(1, "CFE exposed a partial CMD128");
+        $fatal(1, "CFE exposed a partial 128-bit instruction");
       end
     end
     send_cmd_beat(high_word, 1'b0, 1'b1);
@@ -193,7 +193,7 @@ module tb_cmd_frontend_smoke;
     check_cmd_response(12'h001, NPU_STATUS_SUCCESS);
     wait (ts_cmd_valid);
     if (ts_cmd != {high_word, low_word}) begin
-      $fatal(1, "CFE changed CMD128 data");
+      $fatal(1, "CFE changed 128-bit instruction data");
     end
     ts_cmd_ready = 1'b1;
     @(posedge clk);
@@ -210,7 +210,7 @@ module tb_cmd_frontend_smoke;
         (npu_cmd_wait0(command) != NPU_EVENT_NONE) ||
         (npu_cmd_wait1(command) != NPU_EVENT_NONE) ||
         (npu_cmd_signal(command) != NPU_EVENT_NONE)) begin
-      $fatal(1, "CMD128 header fields decode incorrectly");
+      $fatal(1, "128-bit instruction header fields decode incorrectly");
     end
     expected_lookup_id = 10'h3ff;
     send_cmd_beat(command[63:0], 1'b1, 1'b0);
@@ -219,7 +219,7 @@ module tb_cmd_frontend_smoke;
     check_cmd_response(12'h3ff, NPU_STATUS_SUCCESS);
     wait (ts_cmd_valid);
     if (ts_cmd != command) begin
-      $fatal(1, "CFE changed CMD128 data");
+      $fatal(1, "CFE changed 128-bit instruction data");
     end
     ts_cmd_ready = 1'b1;
     @(posedge clk);

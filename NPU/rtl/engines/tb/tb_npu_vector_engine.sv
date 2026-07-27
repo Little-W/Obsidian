@@ -385,6 +385,17 @@ module tb_npu_vector_engine;
         read_s32('h388) != 9 || read_s32('h38c) != 72)
       $fatal(1, "vector FMA mismatch");
 
+    setup_int8_vector_task(
+      NPU_VECTOR_MUL, 64'h400, 32'h0000_0085, 32'd4,
+      64'd0, 64'd0, 32'sd70000, 32'sd0, 8'd0, 8'd0
+    );
+    submit_and_expect(NPU_STATUS_SUCCESS);
+    if (read_s32('h400) != 70000 ||
+        read_s32('h404) != 140000 ||
+        read_s32('h408) != -210000 ||
+        read_s32('h40c) != 280000)
+      $fatal(1, "vector scalar MUL mismatch");
+
     l1.mem['h100] = 8'h2c;
     l1.mem['h101] = 8'h01;
     l1.mem['h102] = 8'h38;

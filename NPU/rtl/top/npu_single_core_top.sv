@@ -288,17 +288,6 @@ module npu_single_core_top #(
     logic [63:0] dma_mem_rsp_rdata;
     logic [2:0] dma_mem_rsp_status;
 
-    logic tbu_req_valid;
-    logic tbu_req_ready;
-    logic tbu_req_write;
-    logic [47:0] tbu_req_addr;
-    logic [15:0] tbu_req_stream_id;
-    logic [15:0] tbu_req_substream_id;
-    logic tbu_rsp_valid;
-    logic tbu_rsp_ready;
-    logic [47:0] tbu_rsp_addr;
-    logic [2:0] tbu_rsp_status;
-    logic tbu_idle;
     logic mif_idle;
     logic mif_error_valid;
     logic [47:0] mif_error_addr;
@@ -352,10 +341,6 @@ module npu_single_core_top #(
     logic [47:0] kv_base;
     logic [47:0] m_axi_addr_base;
     logic [47:0] m_axi_addr_limit;
-    logic [15:0] tbu_stream_id;
-    logic [15:0] tbu_substream_id;
-    logic tbu_allow_read;
-    logic tbu_allow_write;
     logic [19:0] param_l1_base;
     logic [19:0] param_l1_limit;
     logic param_lock;
@@ -424,7 +409,6 @@ module npu_single_core_top #(
         param_l1_limit,
         param_lock,
         single_step_pulse,
-        tbu_idle,
         task_occupancy,
         task_query_valid,
         task_query_command_id,
@@ -793,10 +777,6 @@ module npu_single_core_top #(
         .kv_base_o(kv_base),
         .m_axi_addr_base_o(m_axi_addr_base),
         .m_axi_addr_limit_o(m_axi_addr_limit),
-        .tbu_stream_id_o(tbu_stream_id),
-        .tbu_substream_id_o(tbu_substream_id),
-        .tbu_allow_read_o(tbu_allow_read),
-        .tbu_allow_write_o(tbu_allow_write),
         .param_l1_base_o(param_l1_base),
         .param_l1_limit_o(param_l1_limit),
         .param_lock_o(param_lock),
@@ -1034,18 +1014,8 @@ module npu_single_core_top #(
         .rsp_ready_i(dma_mem_rsp_ready),
         .rsp_rdata_o(dma_mem_rsp_rdata),
         .rsp_status_o(dma_mem_rsp_status),
-        .stream_id_i(tbu_stream_id),
-        .substream_id_i(tbu_substream_id),
-        .tbu_req_valid_o(tbu_req_valid),
-        .tbu_req_ready_i(tbu_req_ready),
-        .tbu_req_write_o(tbu_req_write),
-        .tbu_req_addr_o(tbu_req_addr),
-        .tbu_req_stream_id_o(tbu_req_stream_id),
-        .tbu_req_substream_id_o(tbu_req_substream_id),
-        .tbu_rsp_valid_i(tbu_rsp_valid),
-        .tbu_rsp_ready_o(tbu_rsp_ready),
-        .tbu_rsp_addr_i(tbu_rsp_addr),
-        .tbu_rsp_status_i(tbu_rsp_status),
+        .addr_base_i(m_axi_addr_base),
+        .addr_limit_i(m_axi_addr_limit),
         .m_axi_awid_o(m_axi_awid_o),
         .m_axi_awaddr_o(m_axi_awaddr_o),
         .m_axi_awlen_o(m_axi_awlen_o),
@@ -1088,29 +1058,6 @@ module npu_single_core_top #(
         .error_addr_o(mif_error_addr),
         .error_status_o(mif_error_status),
         .mif_idle_o(mif_idle)
-    );
-
-    npu_tbu u_tbu (
-        .clk_i(core_clk_i),
-        .reset_n(functional_reset_n),
-        .enable_i(1'b1),
-        .allowed_stream_id_i(tbu_stream_id),
-        .allowed_substream_id_i(tbu_substream_id),
-        .allow_read_i(tbu_allow_read),
-        .allow_write_i(tbu_allow_write),
-        .allowed_base_i(m_axi_addr_base),
-        .allowed_limit_i(m_axi_addr_limit),
-        .req_valid_i(tbu_req_valid),
-        .req_ready_o(tbu_req_ready),
-        .req_write_i(tbu_req_write),
-        .req_addr_i(tbu_req_addr),
-        .req_stream_id_i(tbu_req_stream_id),
-        .req_substream_id_i(tbu_req_substream_id),
-        .rsp_valid_o(tbu_rsp_valid),
-        .rsp_ready_i(tbu_rsp_ready),
-        .rsp_addr_o(tbu_rsp_addr),
-        .rsp_status_o(tbu_rsp_status),
-        .tbu_idle_o(tbu_idle)
     );
 
 endmodule

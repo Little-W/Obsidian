@@ -53,8 +53,6 @@ int test_issue_adapter_cycle(void);
 int test_l1_cycle(void);
 int test_l1_diag_bridge(void);
 int test_lsc_cycle(void);
-int test_tbu_cycle(void);
-int test_mif_tbu_cycle(void);
 int test_gc_axi_cycle(void);
 int test_axi_mem_target_cycle(void);
 int test_mif_cycle(void);

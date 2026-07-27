@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="690" viewBox="0 0 1500 690" role="img" aria-labelledby="title desc">
+  <title id="title">多精度 DiP RTL 总体结构</title>
+  <desc id="desc">展示 GEMM 顶层、权重预处理、物理脉动阵列、固定宽度输入输出总线和三种精度下的逻辑尺寸。</desc>
+  <defs>
+    <style>
+      .title { font: 700 28px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #0f172a; }
+      .h2 { font: 700 20px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #0f172a; text-anchor: middle; }
+      .label { font: 600 16px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #334155; text-anchor: middle; }
+      .small { font: 500 14px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #475569; text-anchor: middle; }
+      .left { text-anchor: start; }
+      .mono { font: 600 15px "JetBrains Mono", "DejaVu Sans Mono", monospace; fill: #0f172a; text-anchor: middle; }
+      .module { fill: #f8fafc; stroke: #334155; stroke-width: 2; rx: 12; }
+      .pre { fill: #fff7ed; stroke: #d97706; stroke-width: 2; rx: 12; }
+      .array { fill: #eff6ff; stroke: #2563eb; stroke-width: 2; rx: 12; }
+      .state { fill: #f0fdf4; stroke: #059669; stroke-width: 1.7; rx: 10; }
+      .busb { fill: none; stroke: #d97706; stroke-width: 4; }
+      .busa { fill: none; stroke: #2563eb; stroke-width: 4; }
+      .busc { fill: none; stroke: #7c3aed; stroke-width: 4; }
+      .ctrl { fill: none; stroke: #059669; stroke-width: 2.5; }
+      .pe { fill: #ffffff; stroke: #64748b; stroke-width: 1.3; rx: 5; }
+      .diag { fill: none; stroke: #60a5fa; stroke-width: 2; }
+      .vertical { fill: none; stroke: #a78bfa; stroke-width: 2; }
+    </style>
+    <marker id="arr-b" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#d97706"/></marker>
+    <marker id="arr-a" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#2563eb"/></marker>
+    <marker id="arr-c" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#7c3aed"/></marker>
+    <marker id="arr-g" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#059669"/></marker>
+  </defs>
+
+  <rect width="1500" height="690" fill="#ffffff"/>
+  <text x="40" y="48" class="title">多精度 DiP RTL 总体结构</text>
+  <text x="40" y="78" class="small left">物理阵列尺寸始终为 N×N；lanes=1/2/4 时逻辑矩阵边长分别为 L=N、2N、4N。</text>
+
+  <rect class="module" x="35" y="110" width="1430" height="455"/>
+  <text x="750" y="143" class="h2">dip_gemm_core</text>
+
+  <g transform="translate(80 185)">
+    <rect class="pre" x="0" y="0" width="390" height="270"/>
+    <text class="h2" x="195" y="42">dip_data_preprocess</text>
+    <text class="label" x="195" y="82">接收 L 行原始 B</text>
+    <text class="mono" x="195" y="112">P[r,c] = B[(r+c) mod L,c]</text>
+    <text class="label" x="195" y="151">按 P[L-1] ... P[0] 发出</text>
+    <rect x="55" y="180" width="280" height="58" rx="8" fill="#ffffff" stroke="#fdba74" stroke-width="1.5"/>
+    <text class="mono" x="195" y="215">L × (N·16 bit) buffer</text>
+    <text class="small" x="195" y="257">可由 SRAM bank 及读地址控制替换</text>
+  </g>
+
+  <path class="busb" d="M5 255H70" marker-end="url(#arr-b)"/>
+  <text x="38" y="225" class="small">B raw</text>
+  <text x="38" y="244" class="small">N·16 bit</text>
+
+  <path class="busb" d="M470 320H570" marker-end="url(#arr-b)"/>
+  <text x="520" y="292" class="small">weight beat</text>
+  <text x="520" y="311" class="small">N·16 bit</text>
+
+  <g transform="translate(580 185)">
+    <rect class="array" x="0" y="0" width="570" height="270"/>
+    <text class="h2" x="285" y="37">dip_systolic_array：N×N 物理 PE</text>
+    <g transform="translate(120 62)">
+      <rect class="pe" x="0" y="0" width="82" height="52"/><rect class="pe" x="102" y="0" width="82" height="52"/><rect class="pe" x="204" y="0" width="82" height="52"/><rect class="pe" x="306" y="0" width="82" height="52"/>
+      <rect class="pe" x="0" y="72" width="82" height="52"/><rect class="pe" x="102" y="72" width="82" height="52"/><rect class="pe" x="204" y="72" width="82" height="52"/><rect class="pe" x="306" y="72" width="82" height="52"/>
+      <rect class="pe" x="0" y="144" width="82" height="52"/><rect class="pe" x="102" y="144" width="82" height="52"/><rect class="pe" x="204" y="144" width="82" height="52"/><rect class="pe" x="306" y="144" width="82" height="52"/>
+      <text class="small" x="41" y="32">PE</text><text class="small" x="143" y="32">PE</text><text class="small" x="245" y="32">…</text><text class="small" x="347" y="32">PE</text>
+      <text class="small" x="41" y="104">PE</text><text class="small" x="143" y="104">PE</text><text class="small" x="245" y="104">…</text><text class="small" x="347" y="104">PE</text>
+      <text class="small" x="41" y="176">PE</text><text class="small" x="143" y="176">PE</text><text class="small" x="245" y="176">…</text><text class="small" x="347" y="176">PE</text>
+      <path class="diag" d="M41 52L347 72 M143 52L41 72 M347 52L245 72 M41 124L347 144 M143 124L41 144 M347 124L245 144"/>
+      <path class="vertical" d="M70 52V72 M172 52V72 M376 52V72 M70 124V144 M172 124V144 M376 124V144"/>
+    </g>
+  </g>
+
+  <path class="busa" d="M480 230H685" marker-end="url(#arr-a)"/>
+  <text x="575" y="207" class="small">A row：N·16 bit</text>
+  <path class="busa" d="M700 232H1088"/>
+  <path class="busa" d="M741 232V246 M843 232V246 M945 232V246 M1047 232V246"/>
+  <path class="busc" d="M1080 458V507" marker-end="url(#arr-c)"/>
+  <text x="1080" y="540" class="small">C row：N·32 bit</text>
+
+  <g transform="translate(1190 185)">
+    <rect x="0" y="0" width="230" height="270" rx="12" fill="#faf5ff" stroke="#c4b5fd" stroke-width="1.5"/>
+    <text class="h2" x="115" y="38">固定物理带宽</text>
+    <text class="label" x="115" y="82">INT16：N×N</text>
+    <text class="small" x="115" y="106">1 lane / PE</text>
+    <text class="label" x="115" y="145">INT8：2N×2N</text>
+    <text class="small" x="115" y="169">2 lanes / PE</text>
+    <text class="label" x="115" y="208">INT4：4N×4N</text>
+    <text class="small" x="115" y="232">4 lanes / PE</text>
+  </g>
+
+  <text x="80" y="595" class="h2 left">单 tile 状态次序</text>
+  <g transform="translate(285 575)">
+    <rect class="state" x="0" y="0" width="225" height="65"/><text class="label" x="112" y="29">接收 L 行 B</text><text class="small" x="112" y="51">mode 在首拍锁存</text>
+    <path class="ctrl" d="M225 32H285" marker-end="url(#arr-g)"/>
+    <rect class="state" x="295" y="0" width="225" height="65"/><text class="label" x="407" y="29">装载 L 拍权重</text><text class="small" x="407" y="51">最后一拍可同时接收 A</text>
+    <path class="ctrl" d="M520 32H580" marker-end="url(#arr-g)"/>
+    <rect class="state" x="590" y="0" width="225" height="65"/><text class="label" x="702" y="29">接收 L 行 A</text><text class="small" x="702" y="51">允许 valid 气泡</text>
+    <path class="ctrl" d="M815 32H875" marker-end="url(#arr-g)"/>
+    <rect class="state" x="885" y="0" width="225" height="65"/><text class="label" x="997" y="29">排出 L 行 C</text><text class="small" x="997" y="51">末行产生 tile_done</text>
+  </g>
+</svg>

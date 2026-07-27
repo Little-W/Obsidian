@@ -30,7 +30,6 @@ sync:
 	cp -a "$(SOURCE_RTL)"/engines/npu_*.sv \
 		"$(NPU_SYN_DIR)/rtl_snapshot/engines/"
 	cp -a "$(SOURCE_RTL)"/memory/npu_axi_mif_master.sv \
-		"$(SOURCE_RTL)"/memory/npu_tbu.sv \
 		"$(NPU_SYN_DIR)/rtl_snapshot/memory/"
 	cp -a "$(SOURCE_RTL)"/top/npu_*.sv \
 		"$(NPU_SYN_DIR)/rtl_snapshot/top/"

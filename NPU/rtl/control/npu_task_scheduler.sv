@@ -149,6 +149,7 @@ module npu_task_scheduler #(
   logic [31:0]   task_error_info_q   [TASK_SLOTS];
   logic [15:0]   task_done_flags_q   [TASK_SLOTS];
   logic          task_notify_q       [TASK_SLOTS];
+  logic          task_event_published_q [TASK_SLOTS];
 
   logic [2:0] event_state_q      [EVENT_COUNT];
   logic [3:0] event_generation_q [EVENT_COUNT];
@@ -204,6 +205,12 @@ module npu_task_scheduler #(
 
   logic completion_found;
   logic [TASK_IDX_W-1:0] completion_select;
+  logic completion_hold_valid_q;
+  logic [TASK_IDX_W-1:0] completion_hold_slot_q;
+  logic event_publish_found;
+  logic [TASK_IDX_W-1:0] event_publish_select;
+  logic event_publish_pending_valid_q;
+  logic [TASK_IDX_W-1:0] event_publish_pending_slot_q;
   logic query_found;
   logic [TASK_IDX_W-1:0] query_select;
   logic ctl_query_found;
@@ -392,8 +399,11 @@ module npu_task_scheduler #(
     if (event_ref[7:0] >= 8'(EVENT_COUNT)) begin
       return 1'b1;
     end
-    return (event_generation_q[event_ref[7:0]] == event_ref[11:8])
-        && (event_state_q[event_ref[7:0]] == NPU_EVENT_ERROR);
+    if (event_generation_q[event_ref[7:0]] != event_ref[11:8]) begin
+      return 1'b1;
+    end
+    return (event_state_q[event_ref[7:0]] == NPU_EVENT_FREE)
+        || (event_state_q[event_ref[7:0]] == NPU_EVENT_ERROR);
   endfunction
 
   always_comb begin
@@ -594,6 +604,8 @@ module npu_task_scheduler #(
   always_comb begin
     completion_found    = 1'b0;
     completion_select   = '0;
+    event_publish_found = 1'b0;
+    event_publish_select = '0;
     control_select_found = 1'b0;
     control_select      = '0;
     decode_select_found  = 1'b0;
@@ -607,6 +619,18 @@ module npu_task_scheduler #(
             task_submit_seq_q[completion_select]))) begin
         completion_found  = 1'b1;
         completion_select = TASK_IDX_W'(slot);
+      end
+      if (task_notify_q[slot] && !task_event_published_q[slot] &&
+          !(event_publish_pending_valid_q &&
+            (event_publish_pending_slot_q == TASK_IDX_W'(slot))) &&
+          (task_signal_q[slot] != NPU_EVENT_NONE) &&
+          !((task_engine_q[slot] == NPU_ENGINE_CONTROL) &&
+            (task_opcode_q[slot] == NPU_OPCODE_EVENT_REARM)) &&
+          (!event_publish_found ||
+           (task_submit_seq_q[slot] <
+            task_submit_seq_q[event_publish_select]))) begin
+        event_publish_found  = 1'b1;
+        event_publish_select = TASK_IDX_W'(slot);
       end
       if ((task_state_q[slot] == NPU_TASK_READY) && !order_blocked[slot]) begin
         unique case (task_engine_q[slot])
@@ -721,19 +745,22 @@ module npu_task_scheduler #(
   assign complex_task_desc_flat_o  = complex_dispatch_desc_q;
   assign complex_done_ready_o      = complex_active_q;
 
-  assign completion_valid_o       = completion_found;
-  assign completion_command_id_o  = task_command_id_q[completion_select];
-  assign completion_engine_o      = task_engine_q[completion_select];
-  assign completion_opcode_o      = task_opcode_q[completion_select];
-  assign completion_status_o      = task_status_q[completion_select];
-  assign completion_fault_addr_o  = task_fault_addr_q[completion_select];
-  assign completion_progress_o    = task_progress_q[completion_select];
-  assign completion_irq_success_o = task_header_flags_q[completion_select][0]
-                                  && (task_status_q[completion_select] ==
-                                      NPU_STATUS_SUCCESS);
-  assign completion_irq_error_o   = task_header_flags_q[completion_select][1]
-                                  && (task_status_q[completion_select] !=
-                                      NPU_STATUS_SUCCESS);
+  assign completion_valid_o       = completion_hold_valid_q;
+  assign completion_command_id_o  =
+    task_command_id_q[completion_hold_slot_q];
+  assign completion_engine_o      = task_engine_q[completion_hold_slot_q];
+  assign completion_opcode_o      = task_opcode_q[completion_hold_slot_q];
+  assign completion_status_o      = task_status_q[completion_hold_slot_q];
+  assign completion_fault_addr_o  =
+    task_fault_addr_q[completion_hold_slot_q];
+  assign completion_progress_o    =
+    task_progress_q[completion_hold_slot_q];
+  assign completion_irq_success_o =
+    task_header_flags_q[completion_hold_slot_q][0] &&
+    (task_status_q[completion_hold_slot_q] == NPU_STATUS_SUCCESS);
+  assign completion_irq_error_o =
+    task_header_flags_q[completion_hold_slot_q][1] &&
+    (task_status_q[completion_hold_slot_q] != NPU_STATUS_SUCCESS);
 
   assign axi_ctl_ready_o    = !ctl_active_q && !ctl_rsp_valid_q;
   assign axi_ctl_rsp_valid_o = ctl_rsp_valid_q;
@@ -782,6 +809,10 @@ module npu_task_scheduler #(
       vector_dispatch_valid_q    <= 1'b0;
       complex_dispatch_valid_q   <= 1'b0;
       decode_pending_valid_q     <= 1'b0;
+      completion_hold_valid_q    <= 1'b0;
+      completion_hold_slot_q     <= '0;
+      event_publish_pending_valid_q <= 1'b0;
+      event_publish_pending_slot_q  <= '0;
       dma_dispatch_slot_q        <= '0;
       matrix_dispatch_slot_q     <= '0;
       vector_dispatch_slot_q     <= '0;
@@ -824,6 +855,7 @@ module npu_task_scheduler #(
         task_error_info_q[slot]   <= 32'd0;
         task_done_flags_q[slot]   <= 16'd0;
         task_notify_q[slot]       <= 1'b0;
+        task_event_published_q[slot] <= 1'b0;
         ctl_fence_target_seq_q[slot] <= 64'd0;
       end
       for (int unsigned event_idx = 0;
@@ -847,6 +879,7 @@ module npu_task_scheduler #(
           task_progress_q[ctl_ack_slot_q]   <= 64'd0;
           task_error_info_q[ctl_ack_slot_q] <= 32'd0;
           task_done_flags_q[ctl_ack_slot_q] <= 16'd0;
+          task_event_published_q[ctl_ack_slot_q] <= 1'b0;
           ctl_ack_release_q                 <= 1'b0;
         end
       end
@@ -1074,6 +1107,10 @@ module npu_task_scheduler #(
                                             cmd_opcode);
         task_done_flags_q[free_slot]   <= 16'd0;
         task_notify_q[free_slot]       <= !cmd_static_valid;
+        task_event_published_q[free_slot] <=
+          !cmd_static_valid ||
+          (cmd_signal_resolved == NPU_EVENT_NONE) ||
+          cmd_is_inline_rearm;
         submit_seq_q                   <= submit_seq_q + 1'b1;
         if (cmd_static_valid &&
             (cmd_signal_resolved != NPU_EVENT_NONE) &&
@@ -1113,7 +1150,10 @@ module npu_task_scheduler #(
                 NPU_EVENT_ERROR)) &&
               (event_generation_q[control_rearm_current_ref[7:0]] ==
                control_rearm_current_ref[11:8]) &&
-              !event_has_live_waiter(control_rearm_current_ref)) begin
+              !event_has_live_waiter(control_rearm_current_ref) &&
+              !(cmd_accept && cmd_static_valid &&
+                ((cmd_wait0_resolved == control_rearm_current_ref) ||
+                 (cmd_wait1_resolved == control_rearm_current_ref)))) begin
             task_status_q[control_select]     <= NPU_STATUS_SUCCESS;
             task_error_info_q[control_select] <= 32'd0;
             task_state_q[control_select]      <= NPU_TASK_SUCCESS;
@@ -1350,8 +1390,15 @@ module npu_task_scheduler #(
         end
       end
 
-      if (completion_valid_o && completion_ready_i) begin
-        task_notify_q[completion_select] <= 1'b0;
+      if (completion_hold_valid_q) begin
+        if (completion_ready_i) begin
+          task_notify_q[completion_hold_slot_q] <= 1'b0;
+          completion_hold_valid_q <= 1'b0;
+        end
+      end else if (completion_found &&
+                   task_event_published_q[completion_select]) begin
+        completion_hold_valid_q <= 1'b1;
+        completion_hold_slot_q  <= completion_select;
       end
 
       if (task_ack_valid_i && task_ack_ready_o) begin
@@ -1360,20 +1407,29 @@ module npu_task_scheduler #(
         task_progress_q[ack_select]   <= 64'd0;
         task_error_info_q[ack_select] <= 32'd0;
         task_done_flags_q[ack_select] <= 16'd0;
+        task_event_published_q[ack_select] <= 1'b0;
       end
 
-      // Event state changes only after a task has a complete terminal record.
-      for (int unsigned slot = 0; slot < TASK_SLOTS; slot++) begin
-        if (task_notify_q[slot] &&
-            (task_signal_q[slot] != NPU_EVENT_NONE) &&
-            !((task_engine_q[slot] == NPU_ENGINE_CONTROL) &&
-              (task_opcode_q[slot] == NPU_OPCODE_EVENT_REARM))) begin
-          if (task_status_q[slot] == NPU_STATUS_SUCCESS) begin
-            event_state_q[task_signal_q[slot][7:0]] <= NPU_EVENT_SUCCESS;
-          end else begin
-            event_state_q[task_signal_q[slot][7:0]] <= NPU_EVENT_ERROR;
-          end
+      if (event_publish_pending_valid_q) begin
+        if (task_status_q[event_publish_pending_slot_q] ==
+            NPU_STATUS_SUCCESS)
+          event_state_q[
+            task_signal_q[event_publish_pending_slot_q][7:0]
+          ] <= NPU_EVENT_SUCCESS;
+        else
+          event_state_q[
+            task_signal_q[event_publish_pending_slot_q][7:0]
+          ] <= NPU_EVENT_ERROR;
+        task_event_published_q[event_publish_pending_slot_q] <= 1'b1;
+        if (event_publish_found) begin
+          event_publish_pending_valid_q <= 1'b1;
+          event_publish_pending_slot_q  <= event_publish_select;
+        end else begin
+          event_publish_pending_valid_q <= 1'b0;
         end
+      end else if (event_publish_found) begin
+        event_publish_pending_valid_q <= 1'b1;
+        event_publish_pending_slot_q  <= event_publish_select;
       end
 
       if (abort_i) begin

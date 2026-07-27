@@ -29,6 +29,114 @@ import npu_assembler
 MAX_MODEL_RANK = 5
 
 
+def _artifact_integer(value: Any, location: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(f"{location} must be an integer")
+    return value
+
+
+def _check_global_region(
+    address: Any,
+    size: Any,
+    location: str,
+    address_limit: int,
+) -> None:
+    parsed_address = _artifact_integer(address, f"{location}.address")
+    parsed_size = _artifact_integer(size, f"{location}.bytes")
+    if parsed_address < 0 or parsed_address >= address_limit:
+        raise ValueError(
+            f"{location}.address must be below "
+            f"2^{npu_assembler.AXI_ADDR_BITS}"
+        )
+    if parsed_size < 0:
+        raise ValueError(f"{location}.bytes must be nonnegative")
+    if parsed_size > address_limit - parsed_address:
+        raise ValueError(
+            f"{location} ends at 0x{parsed_address + parsed_size:x}, "
+            f"outside the {npu_assembler.AXI_ADDR_BITS}-bit AXI "
+            "address range"
+        )
+
+
+def validate_model_global_addresses(result: Any) -> None:
+    runtime = result.runtime
+    bits = _artifact_integer(
+        runtime.get("axi_addr_bits"), "runtime.axi_addr_bits"
+    )
+    if bits != npu_assembler.AXI_ADDR_BITS:
+        raise ValueError(
+            "runtime.axi_addr_bits must equal "
+            f"{npu_assembler.AXI_ADDR_BITS}"
+        )
+    address_limit = 1 << bits
+    ddr_base = _artifact_integer(runtime.get("ddr_base"), "runtime.ddr_base")
+    ddr_bytes = _artifact_integer(
+        runtime.get("ddr_bytes"), "runtime.ddr_bytes"
+    )
+    allocation_end = _artifact_integer(
+        runtime.get("ddr_allocation_end"),
+        "runtime.ddr_allocation_end",
+    )
+    if ddr_base < 0 or ddr_base >= address_limit:
+        raise ValueError(
+            f"runtime.ddr_base must be below 2^{bits}"
+        )
+    if ddr_bytes <= ddr_base or ddr_bytes > address_limit:
+        raise ValueError(
+            f"runtime.ddr_bytes must be above ddr_base and at most 2^{bits}"
+        )
+    if allocation_end < ddr_base or allocation_end > ddr_bytes:
+        raise ValueError(
+            "runtime.ddr_allocation_end must be within the configured "
+            "DDR range"
+        )
+
+    _check_global_region(
+        runtime["constant_base_ddr"],
+        runtime["constant_bytes"],
+        "runtime.constants",
+        address_limit,
+    )
+    for group_name in ("inputs", "outputs"):
+        for index, binding in enumerate(runtime[group_name]):
+            _check_global_region(
+                binding["ddr_addr"],
+                binding["bytes"],
+                f"runtime.{group_name}[{index}]",
+                address_limit,
+            )
+    for index, entry in enumerate(runtime.get("memory_plan", [])):
+        if entry.get("ddr_addr") is None:
+            continue
+        _check_global_region(
+            entry["ddr_addr"],
+            entry["bytes"],
+            f"runtime.memory_plan[{index}]",
+            address_limit,
+        )
+
+    bases = runtime.get("gaddr_bases")
+    if not isinstance(bases, dict):
+        raise ValueError("runtime.gaddr_bases must be an object")
+    expected_names = set(npu_assembler.GADDR_BASE_CODES)
+    if set(bases) != expected_names:
+        raise ValueError(
+            "runtime.gaddr_bases must contain zero, input, weight, work, "
+            "output, and kv"
+        )
+    for name in npu_assembler.GADDR_BASE_CODES:
+        _check_global_region(
+            bases[name],
+            0,
+            f"runtime.gaddr_bases.{name}",
+            address_limit,
+        )
+        if int(bases[name]) & 0x7:
+            raise ValueError(
+                f"runtime.gaddr_bases.{name} must be aligned to 8 bytes"
+            )
+
+
 def sha256_bytes(content: bytes) -> str:
     return hashlib.sha256(content).hexdigest()
 
@@ -90,7 +198,7 @@ def _byte_initializer(content: bytes, *, indent: str = "    ") -> str:
 def _command_rows(content: bytes) -> str:
     if len(content) % 16 != 0:
         raise ValueError(
-            "CMD128 image size must be an integer multiple of 16 bytes"
+            "The instruction image size must be an integer multiple of 16 bytes"
         )
     if not content:
         return "    {UINT64_C(0), UINT64_C(0)},"
@@ -181,6 +289,7 @@ def build_model_c_header(
     *,
     max_rank: int = MAX_MODEL_RANK,
 ) -> bytes:
+    validate_model_global_addresses(result)
     package_stem = c_package_stem(stem)
     symbol = c_identifier(package_stem)
     upper = symbol.upper()
@@ -235,6 +344,8 @@ def build_model_c_header(
         "    uint32_t weight_bytes;\n"
         "    uint64_t weight_base_ddr;\n"
         "    uint64_t weight_base_l1;\n"
+        "    uint64_t gaddr_bases[6];\n"
+        "    uint8_t axi_addr_bits;\n"
         f"    const {symbol}_binding_t *inputs;\n"
         "    uint32_t input_count;\n"
         f"    const {symbol}_binding_t *outputs;\n"
@@ -247,6 +358,8 @@ def build_model_c_header(
         "    uint32_t batch_command_id_count;\n"
         f"}} {symbol}_config_t;\n\n"
         f"#define {upper}_COMMAND_BITS 128u\n"
+        f"#define {upper}_AXI_ADDR_BITS "
+        f"{npu_assembler.AXI_ADDR_BITS}u\n"
         f"#define {upper}_COMMAND_COUNT {command_count}u\n"
         f"#define {upper}_COMMAND_STORAGE_COUNT "
         f"{_storage_count(command_count)}u\n"
@@ -299,6 +412,7 @@ def build_model_c_source(
     *,
     max_rank: int = MAX_MODEL_RANK,
 ) -> bytes:
+    validate_model_global_addresses(result)
     package_stem = c_package_stem(stem)
     symbol = c_identifier(package_stem)
     upper = symbol.upper()
@@ -308,6 +422,20 @@ def build_model_c_source(
     batches = result.runtime["batches"]
     batch_execution = result.runtime["batch_execution"]
     batch_rows, batch_ids = _batch_metadata(batches, batch_execution)
+    gaddr_bases = [
+        int(result.runtime["gaddr_bases"][name])
+        for name, _selector in sorted(
+            npu_assembler.GADDR_BASE_CODES.items(),
+            key=lambda item: item[1],
+        )
+    ]
+    gaddr_base_row = (
+        "    {"
+        + ", ".join(
+            f"UINT64_C(0x{address:x})" for address in gaddr_bases
+        )
+        + "},\n"
+    )
     command_batches = (
         "\n".join(
             (
@@ -378,6 +506,8 @@ def build_model_c_source(
         f"    {upper}_WEIGHT_BYTES,\n"
         f"    {upper}_WEIGHT_BASE_DDR,\n"
         f"    {upper}_WEIGHT_BASE_L1,\n"
+        + gaddr_base_row
+        + f"    {upper}_AXI_ADDR_BITS,\n"
         f"    {symbol}_inputs,\n"
         f"    {upper}_INPUT_COUNT,\n"
         f"    {symbol}_outputs,\n"
@@ -398,6 +528,7 @@ def build_model_manifest(
     result: Any,
     file_contents: Mapping[str, bytes],
 ) -> bytes:
+    validate_model_global_addresses(result)
     return canonical_json(
         {
             "artifact_version": 2,
@@ -413,6 +544,13 @@ def build_model_manifest(
                 "c-model-package",
             ],
             "command_format": npu_assembler.COMMAND_FORMAT,
+            "axi_addr_bits": result.runtime["axi_addr_bits"],
+            "gaddr_bases": result.runtime["gaddr_bases"],
+            "ddr_base": result.runtime["ddr_base"],
+            "ddr_bytes": result.runtime["ddr_bytes"],
+            "ddr_allocation_end": result.runtime[
+                "ddr_allocation_end"
+            ],
             "command_count": len(result.assembled_operations),
             "external_descriptor_bytes": 0,
             "weight_bytes": len(result.constant_image),
@@ -524,7 +662,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
             "Compile Keras, PyTorch, TFLite, ONNX, or high-level JSON input "
-            "through low-level JSON IR and the CMD128 assembler, then "
+            "through low-level JSON IR and the 128-bit instruction assembler, then "
             "generate a deployable C model package."
         )
     )
@@ -631,6 +769,7 @@ def run_cli(
         l1_bytes=args.l1_bytes,
         ddr_base=args.ddr_base,
         ddr_bytes=args.ddr_bytes,
+        axi_addr_bits=npu_assembler.AXI_ADDR_BITS,
         mt=args.mt,
         kt=args.kt,
         nt=args.nt,

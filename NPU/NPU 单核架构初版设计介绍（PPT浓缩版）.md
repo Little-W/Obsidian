@@ -1,7 +1,7 @@
 # NPU 单核架构设计介绍
 
 > [!summary]
-> 本设计从单核开始。外部 Generic Core 负责模型调度，NPU 通过 64-bit AXI Slave 接收控制访问和 CMD128，通过 64-bit AXI Master 访问系统内存。CMD128 把任务参数直接放入指令，不再从外部内存读取 Descriptor。
+> 本设计从单核开始。外部 Generic Core 负责模型调度，NPU 通过 64-bit AXI Slave 接收控制访问和由两个 beat 组成的 128-bit 指令，通过 64-bit AXI Master 访问系统内存。任务参数直接放入指令，不再从外部内存读取 Descriptor。
 
 ## 1. 设计目标
 
@@ -27,11 +27,11 @@ NPU AXI Slave 提供三类访问入口：
 
 | 入口 | 访问方式 | 用途 |
 | --- | --- | --- |
-| `CMD_FIFO_DATA` | 固定地址、`AWBURST=FIXED` | 提交 CMD128 |
+| `CMD_FIFO_DATA` | 固定地址、`AWBURST=FIXED` | 提交 128-bit 指令 |
 | LSC 控制寄存器 | 普通 AXI 读写 | 启动、停止、状态、中断、基地址和计数器 |
 | L1BUF 外部窗口 | 普通 AXI 读写 | 调试或软件准备少量片上数据 |
 
-驱动把每条 CMD128 排成 low word、high word。一次 FIXED burst 包含 2～16 个偶数 beat，可提交 1～8 条完整指令。NPU 先检查 burst 长度、beat 次序和写响应，再把完整指令交给 Command Front End。
+驱动把每条 128-bit 指令排成 low word、high word。一次 FIXED burst 包含 2～16 个偶数 beat，可提交 1～8 条完整指令。NPU 先检查 burst 长度、beat 次序和写响应，再把完整指令交给 Command Front End。
 
 > [!warning]
 > low word 与 high word 不得被另一条指令插入。外部 CPU 不直接连接 Task Scheduler，也不能绕过 Command Front End 写任务表。
@@ -57,7 +57,7 @@ NPU AXI Slave 提供三类访问入口：
 
 `opcode` 占用最高 6 bit。数值 0～32 的含义见下表；33～63 返回 `ILLEGAL_OPCODE`。
 
-CFE 和 TS 保存收到的 16 字节 CMD128，内联解码器从 `payload` 直接得到地址引用、尺寸、数据格式和函数选项。`opcode[127:122]` 是线上 6-bit 值，不是执行单元内部枚举；全部任务操作数都在命令头和 `payload` 内。
+CFE 和 TS 保存收到的 16 字节指令，内联解码器从 `payload` 直接得到地址引用、尺寸、数据格式和函数选项。`opcode[127:122]` 是线上 6-bit 值，不是执行单元内部枚举；全部任务操作数都在命令头和 `payload` 内。
 
 ### 4.2 操作码
 
@@ -166,7 +166,7 @@ Complex 公共格式为 `src0 LREF16`、`aux LREF16`、`dst LREF16`、`rows-1`�
 
 ## 5. Event 是什么
 
-Event 是硬件任务之间的完成状态记录，不是数据缓冲区，也不是中断编号。每个 Event Table 表项保存状态、当前代次、生产者和等待者数量。CMD128 只写 8-bit Event ID；TS 在接收指令时读取该表项的当前代次。
+Event 是硬件任务之间的完成状态记录，不是数据缓冲区，也不是中断编号。每个 Event Table 表项保存状态、当前代次、生产者和等待者数量。指令只写 8-bit Event ID；TS 在接收指令时读取该表项的当前代次。
 
 - `signal_event=x`：任务被接收后保留 Event x；任务结束时写入成功或失败。
 - `wait_event0/1=x`：任务只有在 Event x 成功后才能发射。
@@ -185,21 +185,21 @@ Event ID 可以复用。编译器只有在旧生产者及全部消费者完成�
 | 模块 | 主要功能 |
 | --- | --- |
 | AXI Slave Front End | 接收命令 burst、控制寄存器和 L1BUF 窗口访问 |
-| CFE | 将两个 64-bit beat 组成 CMD128，检查格式和重复 command_id |
-| Task Scheduler | 保存 CMD128、检查 Event、选择可发射任务、记录终态 |
-| Task Context | 每项保存 16 字节 CMD128，供内联解码与执行单元读取 |
+| CFE | 将两个 64-bit beat 组成一条 128-bit 指令，检查格式和重复 command_id |
+| Task Scheduler | 保存完整指令、检查 Event、选择可发射任务、记录终态 |
+| Task Context | 每项保存 16 字节指令，供内联解码与执行单元读取 |
 | DMA Engine | 全局内存与 L1BUF 搬运、填充、转置、PACK、SPLIT |
 | Matrix Engine | GEMM/BMM、INT32 部分和、bias 和整数写回 |
 | Vector Engine | 整数逐元素运算、比较、mask 选择和广播 |
 | Complex Engine | 激活、Softmax、Norm、统计和不同 scale 的加法 |
 | L1BUF | 多 Bank 片上张量存储，连接四个执行单元和外部窗口 |
-| MIF / TBU | DMA 全局访问、地址转换服务、AXI burst 与响应处理 |
+| MIF / AXI Master | 检查 DMA 提供的物理地址，生成 AXI burst 并处理响应 |
 | LSC / CRG / WDT | 状态、中断、错误、时钟复位和超时控制 |
 
 一条任务按以下次序推进：
 
 1. AXI Slave 接收 low、high 两个 beat。
-2. CFE 组成 CMD128，检查操作码和 command_id。
+2. CFE 组成完整指令，检查操作码和 command_id。
 3. TS 分配任务项和 16 字节 Task Context，当拍不产生参数读取请求。
 4. 内联解码器检查 payload、地址范围、尺寸和数据格式。
 5. 前置 Event 成功且执行单元可接收时，TS 发射任务。
@@ -209,12 +209,12 @@ Event ID 可以复用。编译器只有在旧生产者及全部消费者完成�
 
 ## 7. 软件与硬件分工
 
-模型编译器接收 Keras、PyTorch、TFLite 或 ONNX 模型，执行图检查、常量整理、算子拆分、L1BUF 分配、Event 安排和 CMD128 编码。部署结果是可参加 C/C++ 构建的模型专用 `.c`、`.h`：
+模型编译器接收 Keras、PyTorch、TFLite 或 ONNX 模型，执行图检查、常量整理、算子拆分、L1BUF 分配、Event 安排和 128-bit 指令编码。部署结果是可参加 C/C++ 构建的模型专用 `.c`、`.h`：
 
 ```text
 模型专用 C 源码包
 ├─ 配置结构体
-├─ CMD128 指令数组
+├─ 128-bit 指令数组
 ├─ 权重与常量数组
 ├─ 输入输出和操作信息
 ├─ 命令批次与主机等待要求

@@ -1,15 +1,15 @@
 # NPU C 驱动库
 
-本目录提供单核 NPU 的 C11 驱动。主控 CPU 作为 AXI Master，通过 NPU 的 AXI Slave 寄存器窗口配置设备，并把 CMD128 写入固定地址的命令 FIFO。NPU 发起 AXI Master 请求访问系统内存。
+本目录提供单核 NPU 的 C11 驱动。主控 CPU 作为 AXI Master，通过 NPU 的 AXI Slave 寄存器窗口配置设备，并把 128-bit 指令写入固定地址的命令 FIFO。NPU 发起 AXI Master 请求访问系统内存。
 
-CMD128 已把执行参数放入指令本身。驱动不再分配、填写、同步或提交外部 Descriptor。
+执行参数已经放入指令本身。驱动不再分配、填写、同步或提交外部 Descriptor。权重、输入、输出和 DMA 访问地址都是 SoC 物理字节地址。
 
 ## 1. 文件划分
 
 | 文件 | 作用 |
 |---|---|
 | `include/npu_driver.h` | 公共类型、寄存器、指令字段和函数声明 |
-| `src/npu_driver_command.c` | 80-bit payload、CMD128 编解码和 FIFO 提交 |
+| `src/npu_driver_command.c` | 80-bit payload、128-bit 指令编解码和 FIFO 提交 |
 | `src/npu_driver_device.c` | 初始化、寄存器、启动、停止、中断和故障处理 |
 | `src/npu_driver_memory.c` | 权重、输入和输出的 cache 同步 |
 | `src/npu_driver_runtime.c` | 查询、等待、确认任务和 engine fence |
@@ -37,7 +37,7 @@ int rc = npu_drv_submit_batch(
     &summary);
 ```
 
-一次批量提交包含 1～8 条 CMD128，对应 2～16 个 64-bit beat。平台回调必须满足：
+一次批量提交包含 1～8 条 128-bit 指令，对应 2～16 个 64-bit beat。平台回调必须满足：
 
 - `AWADDR` 保持为 `NPU_DRV_CMD_FIFO_DATA`；
 - `AWBURST=FIXED`；
@@ -49,7 +49,30 @@ int rc = npu_drv_submit_batch(
 
 驱动在发送命令前调用 `write_barrier`，但不会清理 Descriptor cache。权重和输入仍需在 CPU 修改后调用 `npu_drv_sync_for_device()`；输出由 NPU 写回后，CPU 读取前调用 `npu_drv_sync_for_cpu()`。
 
-## 3. CMD128 字段
+### 2.1 物理地址寄存器
+
+`NPU_DRV_REG_INPUT_BASE`、`NPU_DRV_REG_WEIGHT_BASE`、`NPU_DRV_REG_WORK_BASE`、`NPU_DRV_REG_OUTPUT_BASE`、`NPU_DRV_REG_KV_BASE`、`NPU_DRV_REG_M_AXI_ADDR_BASE` 和 `NPU_DRV_REG_M_AXI_ADDR_LIMIT` 保存 40-bit SoC 物理地址。地址必须按 8 byte 对齐。`npu_drv_set_base()` 会在 MMIO 写入前检查位宽和对齐要求。
+
+下面的示例允许 NPU 的 AXI Master 访问从 `0x8000_0000` 到 `0x8fff_fff8` 的 64-bit beat 起始地址：
+
+```c
+int rc;
+
+rc = npu_drv_set_base(
+    &driver,
+    NPU_DRV_REG_M_AXI_ADDR_BASE,
+    UINT64_C(0x80000000));
+if (rc == NPU_DRV_OK) {
+    rc = npu_drv_set_base(
+        &driver,
+        NPU_DRV_REG_M_AXI_ADDR_LIMIT,
+        UINT64_C(0x8ffffff8));
+}
+```
+
+指令中的全局地址引用使用“基址寄存器加 24-bit byte offset”。相加结果必须仍在 40-bit 物理地址范围内，并且位于上述 AXI Master 允许访问的地址范围。驱动把检查通过的物理地址交给硬件，DMA 使用的地址保持不变。
+
+## 3. 指令字段
 
 `npu_drv_cmd_fields_t` 包含：
 
@@ -117,7 +140,7 @@ int rc = npu_drv_payload_field_set(
     a_ref);
 ```
 
-函数检查 80-bit 范围、数值宽度和重复写入。模型部署通常直接使用编译器生成的 CMD128 数组；手写测试可用此函数逐段构造 payload。
+函数检查 80-bit 范围、数值宽度和重复写入。模型部署通常直接使用编译器生成的指令数组；手写测试可用此函数逐段构造 payload。
 
 ### 5.2 AREF28
 

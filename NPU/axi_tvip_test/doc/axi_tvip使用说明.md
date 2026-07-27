@@ -122,7 +122,7 @@ TVIP 和 DUT 使用同一组参数：
 | AXI ID width | 8 bit | `AWID/BID/ARID/RID` |
 | AXI address width | 24 bit | NPU 本地地址 |
 | AXI data width | 64 bit | 每拍 8 Byte |
-| 最大 burst 长度 | 16 beat | 最多携带 8 条 CMD128 |
+| 最大 burst 长度 | 16 beat | 最多携带 8 条 128-bit 指令 |
 | ingress FIFO 深度 | 16 beat | 至少保存一次最大命令 burst |
 | 命令响应 FIFO 深度 | 8 项 | 至少保存一次最大 burst 的全部响应 |
 | 同方向未完成事务数 | 1 | 第一版串行处理 |
@@ -277,7 +277,7 @@ high word 完成握手后，当前命令仍占用 ingress 的两个 beat。只�
 
 ## 7. 命令响应 FIFO
 
-CFE 每接受一条完整 CMD128，返回一项 64-bit 响应。DUT按收到顺序把响应写入
+CFE 每接受一条完整 128-bit 指令，返回一项 64-bit 响应。DUT按收到顺序把响应写入
 8 项 FIFO。
 
 主控读取 `0x020008` 时：
@@ -493,7 +493,7 @@ tc 文件：
 
 1. 写 `CORE_CONTROL`，允许 NPU 接收命令；
 2. 通过主机 `s_axi_*` 启用并访问 L1 外部窗口；
-3. 使用 FIXED burst 提交 CMD128；
+3. 使用 FIXED burst 提交 128-bit 指令；
 4. Matrix 产生 Event，Vector 等待同一 Event 后执行；
 5. `WAIT` 读取 Event 状态和生产者命令编号；
 6. `QUERY` 读取任务状态与进度，`ACK` 释放任务项；
@@ -622,7 +622,7 @@ rg -n "NpuAxiCmdFifoEpilog|TvipAxiTestEpilog|UVM_ERROR|UVM_FATAL|TEST_" \
 > - `UVM_ERROR`：0
 > - `UVM_FATAL`：0
 > - 命令数据拍数：96
-> - 完整 CMD128 数：48
+> - 完整 128-bit 指令数：48
 > - 后端响应数：48
 > - 结束标志：`NpuAxiCmdFifoEpilog: Passed`、
 >   `TvipAxiTestEpilog: Passed`
@@ -630,7 +630,7 @@ rg -n "NpuAxiCmdFifoEpilog|TvipAxiTestEpilog|UVM_ERROR|UVM_FATAL|TEST_" \
 >   `/home/yusen/opt/axi_tvip_test/test_lib/debug/root_tvip`
 > - 仿真结束时间：5,935,000 ps
 >
-> 本轮测试包含 1～8 条 CMD128 的合法 FIXED burst、不同 AXI ID、写数据暂停、
+> 本轮测试包含 1～8 条 128-bit 指令的合法 FIXED burst、不同 AXI ID、写数据暂停、
 > low/high 暂存状态、命令入口暂停、响应 FIFO 满与空读等待、非法 burst、
 > `WSTRB` 错误、较早或缺少 `WLAST`、错误状态清除以及 reset 清理。
 

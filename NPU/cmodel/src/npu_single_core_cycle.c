@@ -93,16 +93,6 @@ static void single_eval_mif(
     npu_mif_cycle_step(&preview, inputs, outputs);
 }
 
-static void single_eval_tbu(
-    const npu_tbu_cycle_t *model,
-    const npu_tbu_cycle_inputs_t *inputs,
-    npu_tbu_cycle_outputs_t *outputs)
-{
-    npu_tbu_cycle_t preview = *model;
-
-    npu_tbu_cycle_step(&preview, inputs, outputs);
-}
-
 static uint8_t single_popcount8(uint8_t value)
 {
     uint8_t count = 0u;
@@ -194,21 +184,6 @@ static uint8_t single_cdc_noc_idle(
     return 1u;
 }
 
-static uint8_t single_internal_tbu_idle(
-    const npu_single_core_cycle_t *top)
-{
-    npu_tbu_cycle_inputs_t inputs;
-    npu_tbu_cycle_outputs_t outputs;
-
-    if (top->tbu_mode != NPU_SINGLE_CORE_TBU_INTERNAL) {
-        return 1u;
-    }
-    (void)memset(&inputs, 0, sizeof(inputs));
-    inputs.reset_n = 1u;
-    npu_tbu_cycle_eval(&top->tbu, &inputs, &outputs);
-    return outputs.idle;
-}
-
 static uint8_t single_clock_active(uint8_t active_mask,
                                    uint8_t bit)
 {
@@ -278,7 +253,6 @@ static uint8_t single_stale_mif_transport_idle(
     const npu_single_core_cycle_t *top)
 {
     uint32_t id;
-    uint32_t index;
 
     if (top->stale_axi_write_drain_count != 0u) {
         return 0u;
@@ -287,13 +261,6 @@ static uint8_t single_stale_mif_transport_idle(
         if (top->stale_axi_read_beats[id] != 0u ||
             top->stale_axi_read_wait_rlast[id] != 0u ||
             top->stale_axi_write_pending[id] != 0u) {
-            return 0u;
-        }
-    }
-    for (index = 0u;
-         index < NPU_SINGLE_CORE_STALE_TBU_COUNT;
-         index++) {
-        if (top->stale_tbu_tag_valid[index] != 0u) {
             return 0u;
         }
     }
@@ -348,7 +315,6 @@ static uint8_t single_module_idle_mask(
     }
     if (npu_mif_cycle_is_idle(&top->mif) != 0u &&
         single_cdc_noc_idle(&top->cdc) != 0u &&
-        single_internal_tbu_idle(top) != 0u &&
         single_stale_mif_transport_idle(top) != 0u) {
         mask |= (uint8_t)(1u << NPU_SINGLE_CORE_CLK_MIF);
     }
@@ -815,7 +781,7 @@ static void single_build_cdc_core_inputs(
     inputs->owner[NPU_MIF_OWNER_DFU].req_valid =
         ts->dfu.req_valid;
     inputs->owner[NPU_MIF_OWNER_DFU].req_write = 0u;
-    inputs->owner[NPU_MIF_OWNER_DFU].req_vaddr =
+    inputs->owner[NPU_MIF_OWNER_DFU].req_addr =
         ts->dfu.req_addr;
     inputs->owner[NPU_MIF_OWNER_DFU].req_beats =
         ts->dfu.req_beats;
@@ -1400,7 +1366,7 @@ static void single_build_lsc_inputs(
 
         inputs->mif_first_error.valid = mif->first_valid;
         inputs->mif_first_error.status = mif->first_status;
-        inputs->mif_first_error.addr = mif->first_vaddr;
+        inputs->mif_first_error.addr = mif->first_addr;
         inputs->mif_first_error.detail =
             mif->first_owner;
         inputs->mif_first_error.aux =
@@ -1472,10 +1438,6 @@ static void single_update_mif_core_config(
         lsc->m_axi_addr_base;
     top->mif_config_core.system_addr_limit =
         lsc->m_axi_addr_limit;
-    top->mif_config_core.tbu_stream_id =
-        lsc->tbu_stream_id;
-    top->mif_config_core.tbu_substream_id =
-        lsc->tbu_substream_id;
 }
 
 static void single_capture_mif_diag(
@@ -1488,8 +1450,7 @@ static void single_capture_mif_diag(
     diag->first_owner = mif->first_error_owner;
     diag->first_tag = mif->first_error_tag;
     diag->first_task_id = mif->first_error_task_id;
-    diag->first_vaddr = mif->first_error_vaddr;
-    diag->first_paddr = mif->first_error_paddr;
+    diag->first_addr = mif->first_error_addr;
     diag->first_axi_id = mif->first_error_axi_id;
     diag->first_axi_id_valid =
         mif->first_error_axi_id_valid;
@@ -1503,61 +1464,6 @@ static void single_capture_mif_diag(
         mif->protocol_error_has_task_identity;
     diag->protocol_task_id =
         mif->protocol_error_task_id;
-}
-
-static uint8_t single_stale_tbu_tag_present(
-    const npu_single_core_cycle_t *top,
-    uint16_t tag)
-{
-    uint32_t index;
-
-    for (index = 0u;
-         index < NPU_SINGLE_CORE_STALE_TBU_COUNT;
-         index++) {
-        if (top->stale_tbu_tag_valid[index] != 0u &&
-            top->stale_tbu_tag[index] == tag) {
-            return 1u;
-        }
-    }
-    return 0u;
-}
-
-static void single_add_stale_tbu_tag(
-    npu_single_core_cycle_t *top,
-    uint16_t tag)
-{
-    uint32_t index;
-
-    if (single_stale_tbu_tag_present(top, tag) != 0u) {
-        return;
-    }
-    for (index = 0u;
-         index < NPU_SINGLE_CORE_STALE_TBU_COUNT;
-         index++) {
-        if (top->stale_tbu_tag_valid[index] == 0u) {
-            top->stale_tbu_tag[index] = tag;
-            top->stale_tbu_tag_valid[index] = 1u;
-            return;
-        }
-    }
-}
-
-static void single_remove_stale_tbu_tag(
-    npu_single_core_cycle_t *top,
-    uint16_t tag)
-{
-    uint32_t index;
-
-    for (index = 0u;
-         index < NPU_SINGLE_CORE_STALE_TBU_COUNT;
-         index++) {
-        if (top->stale_tbu_tag_valid[index] != 0u &&
-            top->stale_tbu_tag[index] == tag) {
-            top->stale_tbu_tag_valid[index] = 0u;
-            top->stale_tbu_tag[index] = 0u;
-            return;
-        }
-    }
 }
 
 static uint8_t single_mif_read_buffered(
@@ -1621,24 +1527,6 @@ static void single_capture_stale_transport(
     npu_single_core_cycle_t *top)
 {
     uint32_t index;
-
-    if (top->tbu_mode == NPU_SINGLE_CORE_TBU_EXTERNAL) {
-        for (index = 0u; index < NPU_MIF_MAX_REQUESTS;
-             index++) {
-            const npu_mif_request_entry_t *request =
-                &top->mif.requests[index];
-
-            if (request->valid != 0u &&
-                request->phase == NPU_MIF_REQ_TBU_WAIT) {
-                uint16_t tag =
-                    (uint16_t)(
-                        ((uint16_t)request->owner << 12u) |
-                        (request->tag & 0x0fffu));
-
-                single_add_stale_tbu_tag(top, tag);
-            }
-        }
-    }
 
     for (index = 0u;
          index < NPU_MIF_MAX_AXI_OUTSTANDING;
@@ -1743,16 +1631,9 @@ static void single_clear_stale_transport(
     (void)memset(
         top->stale_axi_write_drain, 0,
         sizeof(top->stale_axi_write_drain));
-    (void)memset(
-        top->stale_tbu_tag, 0,
-        sizeof(top->stale_tbu_tag));
-    (void)memset(
-        top->stale_tbu_tag_valid, 0,
-        sizeof(top->stale_tbu_tag_valid));
     top->stale_axi_read_drop_count = 0u;
     top->stale_axi_write_drop_count = 0u;
     top->stale_axi_w_drain_count = 0u;
-    top->stale_tbu_drop_count = 0u;
     top->stale_axi_write_drain_head = 0u;
     top->stale_axi_write_drain_tail = 0u;
     top->stale_axi_write_drain_count = 0u;
@@ -2147,8 +2028,7 @@ npu_status_t npu_single_core_cycle_init(
         workspace[NPU_TS_ENGINE_COUNT],
     const npu_wire_limits_t *wire_limits,
     const npu_lsc_cycle_config_t *lsc_config,
-    const npu_mif_cycle_config_t *mif_soc_config,
-    npu_single_core_tbu_mode_t tbu_mode)
+    const npu_mif_cycle_config_t *mif_soc_config)
 {
     npu_mif_cycle_config_t default_mif;
     npu_mif_cycle_config_t resolved_mif;
@@ -2166,9 +2046,7 @@ npu_status_t npu_single_core_cycle_init(
         functional_model->l1 != l1_memory ||
         functional_model->l1_size != l1_memory_bytes ||
         l1_memory_bytes != NPU_L1_CYCLE_BYTES ||
-        l1_ecc_bytes < NPU_L1_CYCLE_WORDS ||
-        (tbu_mode != NPU_SINGLE_CORE_TBU_EXTERNAL &&
-         tbu_mode != NPU_SINGLE_CORE_TBU_INTERNAL)) {
+        l1_ecc_bytes < NPU_L1_CYCLE_WORDS) {
         return NPU_STATUS_BAD_DESC;
     }
 
@@ -2239,8 +2117,6 @@ npu_status_t npu_single_core_cycle_init(
         (void)memset(top, 0, sizeof(*top));
         return NPU_STATUS_BAD_DESC;
     }
-    npu_tbu_cycle_init(&top->tbu);
-    top->tbu_mode = (uint8_t)tbu_mode;
     npu_crg_reset(&top->crg);
     npu_wdt_reset(&top->wdt);
 
@@ -2290,7 +2166,6 @@ void npu_single_core_cycle_reset(
     npu_gc_axi_cycle_reset(&top->gc_axi);
     npu_mif_cdc_cycle_reset(&top->cdc);
     npu_mif_cycle_reset(&top->mif);
-    npu_tbu_cycle_reset(&top->tbu);
     npu_crg_reset(&top->crg);
     npu_wdt_reset(&top->wdt);
     npu_model_reset(top->functional_model);
@@ -2956,7 +2831,6 @@ void npu_single_core_cycle_core_tick(
 static void single_build_mif_inputs(
     const npu_single_core_cycle_noc_inputs_t *external,
     const npu_mif_cdc_noc_outputs_t *cdc,
-    const npu_mif_tbu_inputs_t *tbu,
     const npu_mif_cycle_config_t *config,
     uint8_t error_clear,
     uint8_t reset_n,
@@ -2971,44 +2845,10 @@ static void single_build_mif_inputs(
     inputs->system_addr_enable = config->system_addr_enable;
     inputs->system_addr_base = config->system_addr_base;
     inputs->system_addr_limit = config->system_addr_limit;
-    inputs->bypass_enable = config->bypass_enable;
-    inputs->bypass_base = config->bypass_base;
-    inputs->bypass_limit = config->bypass_limit;
-    inputs->tbu_stream_id = config->tbu_stream_id;
-    inputs->tbu_substream_id = config->tbu_substream_id;
     for (owner = 0u; owner < NPU_MIF_OWNER_COUNT; owner++) {
         inputs->owner[owner] = cdc->owner[owner];
     }
-    inputs->tbu = *tbu;
     inputs->axi = external->axi;
-}
-
-static void single_build_internal_tbu_inputs(
-    const npu_mif_cycle_outputs_t *mif,
-    uint8_t reset_n,
-    npu_tbu_cycle_inputs_t *inputs)
-{
-    (void)memset(inputs, 0, sizeof(*inputs));
-    inputs->reset_n = reset_n;
-    inputs->req_valid = mif->tbu.req_valid;
-    inputs->req_vaddr = mif->tbu.req_vaddr;
-    inputs->req_write = mif->tbu.req_write;
-    inputs->req_stream_id = mif->tbu.req_stream_id;
-    inputs->req_substream_id = mif->tbu.req_substream_id;
-    inputs->req_tag = mif->tbu.req_tag;
-    inputs->rsp_ready = mif->tbu.rsp_ready;
-}
-
-static void single_tbu_to_mif_inputs(
-    const npu_tbu_cycle_outputs_t *tbu,
-    npu_mif_tbu_inputs_t *inputs)
-{
-    (void)memset(inputs, 0, sizeof(*inputs));
-    inputs->req_ready = tbu->req_ready;
-    inputs->rsp_valid = tbu->rsp_valid;
-    inputs->rsp_paddr = tbu->rsp_paddr;
-    inputs->rsp_tag = tbu->rsp_tag;
-    inputs->rsp_status = tbu->rsp_status;
 }
 
 static void single_build_cdc_noc_inputs(
@@ -3030,15 +2870,13 @@ static void single_filter_stale_noc_inputs(
     const npu_single_core_cycle_noc_inputs_t *external,
     npu_single_core_cycle_noc_inputs_t *filtered,
     uint8_t *stale_read,
-    uint8_t *stale_write,
-    uint8_t *stale_tbu)
+    uint8_t *stale_write)
 {
     const npu_mif_axi_inputs_t *axi = &external->axi;
 
     *filtered = *external;
     *stale_read = 0u;
     *stale_write = 0u;
-    *stale_tbu = 0u;
 
     if (axi->rvalid != 0u &&
         (top->stale_axi_read_beats[axi->rid] != 0u ||
@@ -3052,13 +2890,6 @@ static void single_filter_stale_noc_inputs(
         *stale_write = 1u;
     }
 
-    if (top->tbu_mode == NPU_SINGLE_CORE_TBU_EXTERNAL &&
-        external->tbu.rsp_valid != 0u &&
-        single_stale_tbu_tag_present(
-            top, external->tbu.rsp_tag) != 0u) {
-        filtered->tbu.rsp_valid = 0u;
-        *stale_tbu = 1u;
-    }
 }
 
 static void single_apply_stale_mif_write_drain(
@@ -3084,8 +2915,7 @@ static void single_apply_stale_mif_write_drain(
         top->stale_axi_write_drain_count;
 }
 
-static uint8_t single_gate_stale_tbu_requests(
-    const npu_single_core_cycle_t *top,
+static uint8_t single_gate_new_requests(
     uint8_t allow_new_requests,
     npu_mif_cdc_noc_outputs_t *cdc)
 {
@@ -3095,14 +2925,9 @@ static uint8_t single_gate_stale_tbu_requests(
     for (owner = 0u; owner < NPU_MIF_OWNER_COUNT; owner++) {
         npu_mif_owner_inputs_t *request =
             &cdc->owner[owner];
-        uint16_t tbu_tag =
-            (uint16_t)(((uint16_t)owner << 12u) |
-                       (request->req_tag & 0x0fffu));
 
         if (request->req_valid != 0u &&
-            (allow_new_requests == 0u ||
-             single_stale_tbu_tag_present(
-                 top, tbu_tag) != 0u)) {
+            allow_new_requests == 0u) {
             request->req_valid = 0u;
             blocked |= (uint8_t)(1u << owner);
         }
@@ -3113,7 +2938,6 @@ static uint8_t single_gate_stale_tbu_requests(
 static void single_apply_noc_response_gates(
     uint8_t stale_read,
     uint8_t stale_write,
-    uint8_t stale_tbu,
     uint8_t blocked_owner_mask,
     npu_mif_cycle_outputs_t *mif)
 {
@@ -3124,9 +2948,6 @@ static void single_apply_noc_response_gates(
     }
     if (stale_write != 0u) {
         mif->axi.bready = 1u;
-    }
-    if (stale_tbu != 0u) {
-        mif->tbu.rsp_ready = 1u;
     }
     for (owner = 0u; owner < NPU_MIF_OWNER_COUNT; owner++) {
         if ((blocked_owner_mask & (uint8_t)(1u << owner)) !=
@@ -3141,8 +2962,7 @@ static void single_consume_stale_noc_responses(
     const npu_single_core_cycle_noc_inputs_t *external,
     const npu_mif_cycle_outputs_t *mif,
     uint8_t stale_read,
-    uint8_t stale_write,
-    uint8_t stale_tbu)
+    uint8_t stale_write)
 {
     const npu_mif_axi_inputs_t *axi = &external->axi;
 
@@ -3180,14 +3000,6 @@ static void single_consume_stale_noc_responses(
             }
         }
     }
-
-    if (stale_tbu != 0u &&
-        external->tbu.rsp_valid != 0u &&
-        mif->tbu.rsp_ready != 0u) {
-        single_remove_stale_tbu_tag(
-            top, external->tbu.rsp_tag);
-        top->stale_tbu_drop_count++;
-    }
 }
 
 void npu_single_core_cycle_noc_tick(
@@ -3202,10 +3014,6 @@ void npu_single_core_cycle_noc_tick(
     npu_mif_cycle_inputs_t mif_inputs;
     npu_mif_cycle_outputs_t mif_outputs;
     npu_mif_cycle_outputs_t ignored_mif;
-    npu_mif_tbu_inputs_t mif_tbu_inputs;
-    npu_tbu_cycle_inputs_t tbu_inputs;
-    npu_tbu_cycle_outputs_t tbu_outputs;
-    npu_tbu_cycle_outputs_t ignored_tbu;
     npu_mif_cdc_noc_outputs_t ignored_cdc;
     uint8_t reset_n;
     uint8_t mif_clock;
@@ -3218,7 +3026,6 @@ void npu_single_core_cycle_noc_tick(
     uint8_t blocked_owner_mask;
     uint8_t stale_read;
     uint8_t stale_write;
-    uint8_t stale_tbu;
     uint8_t requested_module_clocks;
     uint32_t iteration;
 
@@ -3264,7 +3071,7 @@ void npu_single_core_cycle_noc_tick(
     }
     single_filter_stale_noc_inputs(
         top, external, &filtered_external, &stale_read,
-        &stale_write, &stale_tbu);
+        &stale_write);
     mif_reset_n =
         (uint8_t)(reset_n != 0u &&
                   soft_reset_event == 0u &&
@@ -3281,35 +3088,21 @@ void npu_single_core_cycle_noc_tick(
                   single_prepare_clean_axi_ids(top) != 0u);
 
     /*
-     * Resolve CDC, MIF, and the optional internal TBU from one pre-edge
-     * snapshot. Three passes settle both request and response directions
-     * without advancing any sequential state.
+     * Resolve CDC and MIF from one pre-edge snapshot. Three passes settle
+     * both request and response directions without advancing sequential
+     * state.
      */
     (void)memset(&mif_outputs, 0, sizeof(mif_outputs));
-    (void)memset(&tbu_outputs, 0, sizeof(tbu_outputs));
-    tbu_outputs.idle = 1u;
     for (iteration = 0u; iteration < 3u; iteration++) {
         single_build_cdc_noc_inputs(
             &mif_outputs, reset_n, &cdc_inputs);
         single_eval_cdc_noc(
             &top->cdc, &cdc_inputs, &cdc_outputs);
         blocked_owner_mask =
-            single_gate_stale_tbu_requests(
-                top, allow_new_requests, &cdc_outputs);
-        if (top->tbu_mode ==
-            NPU_SINGLE_CORE_TBU_INTERNAL) {
-            single_build_internal_tbu_inputs(
-                &mif_outputs, mif_reset_n, &tbu_inputs);
-            single_eval_tbu(
-                &top->tbu, &tbu_inputs, &tbu_outputs);
-            single_tbu_to_mif_inputs(
-                &tbu_outputs, &mif_tbu_inputs);
-        } else {
-            mif_tbu_inputs = filtered_external.tbu;
-        }
+            single_gate_new_requests(
+                allow_new_requests, &cdc_outputs);
         single_build_mif_inputs(
             &filtered_external, &cdc_outputs,
-            &mif_tbu_inputs,
             &top->mif_config_sync1, clear_event,
             mif_reset_n, &mif_inputs);
         single_eval_mif(
@@ -3319,7 +3112,7 @@ void npu_single_core_cycle_noc_tick(
                 &top->mif, &mif_outputs);
         }
         single_apply_noc_response_gates(
-            stale_read, stale_write, stale_tbu,
+            stale_read, stale_write,
             blocked_owner_mask, &mif_outputs);
         single_apply_stale_mif_write_drain(
             top, &mif_outputs);
@@ -3329,18 +3122,11 @@ void npu_single_core_cycle_noc_tick(
         npu_mif_cycle_step(
             &top->mif, &mif_inputs, &ignored_mif);
     }
-    if (top->tbu_mode == NPU_SINGLE_CORE_TBU_INTERNAL &&
-        (mif_reset_n == 0u || mif_run_clock != 0u)) {
-        npu_tbu_cycle_step(
-            &top->tbu, &tbu_inputs, &ignored_tbu);
-    } else if (reset_n == 0u) {
-        npu_tbu_cycle_reset(&top->tbu);
-    }
     npu_mif_cdc_noc_tick(
         &top->cdc, &cdc_inputs, &ignored_cdc);
     single_consume_stale_noc_responses(
         top, external, &mif_outputs, stale_read,
-        stale_write, stale_tbu);
+        stale_write);
 
     top->mif_config_sync1 = top->mif_config_sync0;
     top->mif_config_sync0 = top->mif_config_core;
@@ -3394,7 +3180,6 @@ void npu_single_core_cycle_noc_tick(
         top->mif_idle_source_noc =
             (uint8_t)(
                 npu_mif_cycle_is_idle(&top->mif) != 0u &&
-                single_internal_tbu_idle(top) != 0u &&
                 single_stale_mif_transport_idle(top) != 0u);
         if (cdc_epoch_event != 0u) {
             top->cdc_reset_epoch_seen_noc =
@@ -3405,7 +3190,6 @@ void npu_single_core_cycle_noc_tick(
     outputs->crg = crg_outputs;
     outputs->cdc = cdc_outputs;
     outputs->mif = mif_outputs;
-    outputs->tbu = tbu_outputs;
     outputs->noc_reset_n = reset_n;
     outputs->module_clk_active_o =
         crg_outputs.module_clk_active_o;

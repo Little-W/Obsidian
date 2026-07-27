@@ -940,7 +940,7 @@ static int data_test_update_mif(
         TEST_CHECK(mif->read_valid == 0u);
         mif->read_valid = 1u;
         mif->read_tag = outputs->mif.req_tag;
-        mif->read_addr = outputs->mif.req_vaddr;
+        mif->read_addr = outputs->mif.req_addr;
         mif->read_beats =
             (uint16_t)outputs->mif.req_beats + 1u;
         mif->read_beat = 0u;
@@ -3055,13 +3055,13 @@ static int data_test_mif_error_and_hold(void)
             &model, &inputs, &outputs);
         TEST_CHECK(outputs.mif.req_valid != 0u);
         TEST_CHECK(outputs.mif.req_write == 0u);
-        TEST_CHECK(outputs.mif.req_vaddr ==
+        TEST_CHECK(outputs.mif.req_addr ==
                    DATA_TEST_DDR_SRC);
         if (cycle == 0u) {
-            held_addr = outputs.mif.req_vaddr;
+            held_addr = outputs.mif.req_addr;
             held_tag = outputs.mif.req_tag;
         } else {
-            TEST_CHECK(outputs.mif.req_vaddr == held_addr);
+            TEST_CHECK(outputs.mif.req_addr == held_addr);
             TEST_CHECK(outputs.mif.req_tag == held_tag);
         }
         TEST_CHECK(outputs.engine.eng_done_valid_o == 0u);

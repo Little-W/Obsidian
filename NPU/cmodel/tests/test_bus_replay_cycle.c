@@ -275,7 +275,7 @@ static int replay_test_success(void)
     npu_bus_replay_cycle_step(&replay, &inputs, &outputs);
     TEST_CHECK(outputs.mif.req_valid == 1u);
     TEST_CHECK(outputs.mif.req_write == 0u);
-    TEST_CHECK(outputs.mif.req_vaddr == UINT64_C(0x200));
+    TEST_CHECK(outputs.mif.req_addr == UINT64_C(0x200));
     TEST_CHECK(outputs.mif.req_tag == 6u);
     inputs.mif.req_ready = 1u;
     npu_bus_replay_cycle_step(&replay, &inputs, &outputs);

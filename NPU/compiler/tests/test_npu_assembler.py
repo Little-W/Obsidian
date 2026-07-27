@@ -501,6 +501,97 @@ class AssemblerTests(unittest.TestCase):
         ):
             npu_assembler.compile_document(document)
 
+    def test_global_address_accepts_last_40_bit_byte(self) -> None:
+        address_limit = 1 << npu_assembler.AXI_ADDR_BITS
+        window_base = address_limit - (1 << 24)
+        document = {
+            "schema_version": 1,
+            "target": {
+                "command_format": npu_assembler.COMMAND_FORMAT,
+                "axi_addr_bits": 40,
+                "gaddr_bases": {"output": window_base},
+            },
+            "tensors": {
+                "destination": {
+                    "addr": address_limit - 1,
+                    "space": "ddr",
+                    "base_select": "output",
+                    "dtype": "int8",
+                    "region_bytes": 1,
+                },
+            },
+            "operations": [
+                {
+                    "name": "fill",
+                    "engine": "dma",
+                    "opcode": "FILL",
+                    "fields": {
+                        "common": {"dst": "destination"},
+                        "dma": {"shape": [1], "fill_value": 0},
+                    },
+                },
+            ],
+        }
+        operations, _commands = npu_assembler.compile_document(document)
+        encoded_reference = (operations[0].payload >> 52) & 0x0FFFFFFF
+        self.assertEqual(
+            encoded_reference,
+            (1 << 27) | (4 << 24) | 0xFFFFFF,
+        )
+
+    def test_global_address_rejects_bit40_and_region_overrun(self) -> None:
+        address_limit = 1 << npu_assembler.AXI_ADDR_BITS
+        base_document = {
+            "schema_version": 1,
+            "target": {
+                "command_format": npu_assembler.COMMAND_FORMAT,
+                "axi_addr_bits": 40,
+            },
+            "tensors": {
+                "unused": {
+                    "addr": address_limit,
+                    "space": "ddr",
+                    "dtype": "int8",
+                    "region_bytes": 1,
+                },
+            },
+            "operations": [],
+        }
+        with self.assertRaisesRegex(
+            npu_assembler.CompileError, r"below 2\^40"
+        ):
+            npu_assembler.compile_document(base_document)
+
+        base_document["tensors"]["unused"]["addr"] = address_limit - 1
+        base_document["tensors"]["unused"]["region_bytes"] = 2
+        with self.assertRaisesRegex(
+            npu_assembler.CompileError, "exceeds the 40-bit"
+        ):
+            npu_assembler.compile_document(base_document)
+
+        base_document["tensors"]["unused"]["region_bytes"] = 1
+        base_document["target"]["axi_addr_bits"] = 48
+        with self.assertRaisesRegex(
+            npu_assembler.CompileError, "outside 40..40"
+        ):
+            npu_assembler.compile_document(base_document)
+
+        base_document["target"]["axi_addr_bits"] = 40
+        base_document["target"]["gaddr_bases"] = {
+            "input": address_limit
+        }
+        base_document["tensors"] = {}
+        with self.assertRaisesRegex(
+            npu_assembler.CompileError, r"gaddr_bases\.input"
+        ):
+            npu_assembler.compile_document(base_document)
+
+        base_document["target"]["gaddr_bases"] = {"input": 1}
+        with self.assertRaisesRegex(
+            npu_assembler.CompileError, r"aligned to 8 bytes"
+        ):
+            npu_assembler.compile_document(base_document)
+
     def test_matrix_shift_and_dimensions_are_checked(self) -> None:
         document = self.example("int8_regression.json")
         matrix = document["operations"][1]["fields"]["matrix"]

@@ -575,7 +575,7 @@ static void npu_bus_replay_fill_read_outputs(
 
         outputs->mif.req_valid = 1u;
         outputs->mif.req_write = 0u;
-        outputs->mif.req_vaddr = entry->addr;
+        outputs->mif.req_addr = entry->addr;
         outputs->mif.req_beats =
             (uint8_t)(lane->beats - 1u);
         outputs->mif.req_tag = lane->tag;
@@ -638,7 +638,7 @@ static void npu_bus_replay_fill_write_outputs(
         if (replay->write_request_sent == 0u) {
             outputs->mif.req_valid = 1u;
             outputs->mif.req_write = 1u;
-            outputs->mif.req_vaddr = first->addr;
+            outputs->mif.req_addr = first->addr;
             outputs->mif.req_beats =
                 (uint8_t)(
                     replay->write_group_beats - 1u);

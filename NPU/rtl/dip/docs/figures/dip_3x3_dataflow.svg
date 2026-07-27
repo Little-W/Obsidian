@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="820" viewBox="0 0 1400 820" role="img" aria-labelledby="title desc">
+  <title id="title">3×3 DiP 权重预排列与对角输入示例</title>
+  <desc id="desc">使用论文中的一到九及 a 到 i，展示权重列循环移动、三行 PE 的对角输入以及第一行输出公式。</desc>
+  <defs>
+    <style>
+      .title { font: 700 28px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #0f172a; }
+      .h2 { font: 700 20px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #0f172a; }
+      .label { font: 600 16px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #334155; }
+      .small { font: 500 14px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; fill: #475569; }
+      .left { text-anchor: start; }
+      .celltext { font: 700 18px "JetBrains Mono", "DejaVu Sans Mono", monospace; fill: #0f172a; text-anchor: middle; dominant-baseline: middle; }
+      .formula { font: 600 16px "JetBrains Mono", "DejaVu Sans Mono", monospace; fill: #4c1d95; text-anchor: middle; }
+      .matrix { fill: #ffffff; stroke: #94a3b8; stroke-width: 1.5; }
+      .pe { fill: #f8fafc; stroke: #334155; stroke-width: 2; rx: 8; }
+      .data { fill: none; stroke: #2563eb; stroke-width: 3; }
+      .weight { fill: none; stroke: #d97706; stroke-width: 3; }
+      .psum { fill: none; stroke: #7c3aed; stroke-width: 3; }
+      .guide { fill: none; stroke: #cbd5e1; stroke-width: 1.5; stroke-dasharray: 5 5; }
+    </style>
+    <marker id="arrow-data" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#2563eb"/>
+    </marker>
+    <marker id="arrow-weight" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#d97706"/>
+    </marker>
+    <marker id="arrow-psum" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#7c3aed"/>
+    </marker>
+  </defs>
+
+  <rect width="1400" height="820" fill="#ffffff"/>
+  <text x="40" y="46" class="title">3×3 DiP：权重预排列、对角输入与第一行输出</text>
+  <text x="40" y="75" class="small left">符号和数值取自论文 Fig. 3，本图按当前文档风格重新绘制。</text>
+
+  <text x="120" y="125" class="h2" text-anchor="middle">A</text>
+  <text x="335" y="125" class="h2" text-anchor="middle">原始 B</text>
+  <text x="590" y="125" class="h2" text-anchor="middle">预排列 P</text>
+
+  <g transform="translate(45 145)">
+    <rect class="matrix" x="0" y="0" width="150" height="150" rx="8"/>
+    <path class="guide" d="M50 0V150 M100 0V150 M0 50H150 M0 100H150"/>
+    <text class="celltext" x="25" y="25">1</text><text class="celltext" x="75" y="25">2</text><text class="celltext" x="125" y="25">3</text>
+    <text class="celltext" x="25" y="75">4</text><text class="celltext" x="75" y="75">5</text><text class="celltext" x="125" y="75">6</text>
+    <text class="celltext" x="25" y="125">7</text><text class="celltext" x="75" y="125">8</text><text class="celltext" x="125" y="125">9</text>
+  </g>
+
+  <g transform="translate(260 145)">
+    <rect class="matrix" x="0" y="0" width="150" height="150" rx="8"/>
+    <path class="guide" d="M50 0V150 M100 0V150 M0 50H150 M0 100H150"/>
+    <text class="celltext" x="25" y="25">a</text><text class="celltext" x="75" y="25">d</text><text class="celltext" x="125" y="25">g</text>
+    <text class="celltext" x="25" y="75">b</text><text class="celltext" x="75" y="75">e</text><text class="celltext" x="125" y="75">h</text>
+    <text class="celltext" x="25" y="125">c</text><text class="celltext" x="75" y="125">f</text><text class="celltext" x="125" y="125">i</text>
+  </g>
+
+  <path class="weight" d="M430 220H495" marker-end="url(#arrow-weight)"/>
+  <text x="462" y="195" class="small" text-anchor="middle">第 c 列</text>
+  <text x="462" y="214" class="small" text-anchor="middle">循环上移 c 位</text>
+
+  <g transform="translate(515 145)">
+    <rect class="matrix" x="0" y="0" width="150" height="150" rx="8"/>
+    <path class="guide" d="M50 0V150 M100 0V150 M0 50H150 M0 100H150"/>
+    <text class="celltext" x="25" y="25">a</text><text class="celltext" x="75" y="25">e</text><text class="celltext" x="125" y="25">i</text>
+    <text class="celltext" x="25" y="75">b</text><text class="celltext" x="75" y="75">f</text><text class="celltext" x="125" y="75">g</text>
+    <text class="celltext" x="25" y="125">c</text><text class="celltext" x="75" y="125">d</text><text class="celltext" x="125" y="125">h</text>
+  </g>
+  <text x="590" y="324" class="label" text-anchor="middle">P[r,c] = B[(r+c) mod 3,c]</text>
+
+  <line x1="710" y1="105" x2="710" y2="610" stroke="#e2e8f0" stroke-width="2"/>
+  <text x="1050" y="115" class="h2" text-anchor="middle">装载完成后的 3×3 PE 阵列</text>
+
+  <text x="776" y="191" class="label">R0 输入 [1,2,3]</text>
+  <text x="776" y="341" class="label">R1 输入 [2,3,1]</text>
+  <text x="776" y="491" class="label">R2 输入 [3,1,2]</text>
+
+  <g>
+    <rect class="pe" x="930" y="145" width="100" height="82"/><rect class="pe" x="1050" y="145" width="100" height="82"/><rect class="pe" x="1170" y="145" width="100" height="82"/>
+    <rect class="pe" x="930" y="295" width="100" height="82"/><rect class="pe" x="1050" y="295" width="100" height="82"/><rect class="pe" x="1170" y="295" width="100" height="82"/>
+    <rect class="pe" x="930" y="445" width="100" height="82"/><rect class="pe" x="1050" y="445" width="100" height="82"/><rect class="pe" x="1170" y="445" width="100" height="82"/>
+
+    <text class="celltext" x="980" y="169">PE00</text><text class="small" x="980" y="207" text-anchor="middle">weight a</text>
+    <text class="celltext" x="1100" y="169">PE01</text><text class="small" x="1100" y="207" text-anchor="middle">weight e</text>
+    <text class="celltext" x="1220" y="169">PE02</text><text class="small" x="1220" y="207" text-anchor="middle">weight i</text>
+    <text class="celltext" x="980" y="319">PE10</text><text class="small" x="980" y="357" text-anchor="middle">weight b</text>
+    <text class="celltext" x="1100" y="319">PE11</text><text class="small" x="1100" y="357" text-anchor="middle">weight f</text>
+    <text class="celltext" x="1220" y="319">PE12</text><text class="small" x="1220" y="357" text-anchor="middle">weight g</text>
+    <text class="celltext" x="980" y="469">PE20</text><text class="small" x="980" y="507" text-anchor="middle">weight c</text>
+    <text class="celltext" x="1100" y="469">PE21</text><text class="small" x="1100" y="507" text-anchor="middle">weight d</text>
+    <text class="celltext" x="1220" y="469">PE22</text><text class="small" x="1220" y="507" text-anchor="middle">weight h</text>
+  </g>
+
+  <path class="data" d="M980 227 C980 262 1220 255 1220 292" marker-end="url(#arrow-data)"/>
+  <path class="data" d="M1100 227 L980 292" marker-end="url(#arrow-data)"/>
+  <path class="data" d="M1220 227 L1100 292" marker-end="url(#arrow-data)"/>
+  <path class="data" d="M980 377 C980 412 1220 405 1220 442" marker-end="url(#arrow-data)"/>
+  <path class="data" d="M1100 377 L980 442" marker-end="url(#arrow-data)"/>
+  <path class="data" d="M1220 377 L1100 442" marker-end="url(#arrow-data)"/>
+
+  <path class="psum" d="M1016 227V292" marker-end="url(#arrow-psum)"/>
+  <path class="psum" d="M1136 227V292" marker-end="url(#arrow-psum)"/>
+  <path class="psum" d="M1256 227V292" marker-end="url(#arrow-psum)"/>
+  <path class="psum" d="M1016 377V442" marker-end="url(#arrow-psum)"/>
+  <path class="psum" d="M1136 377V442" marker-end="url(#arrow-psum)"/>
+  <path class="psum" d="M1256 377V442" marker-end="url(#arrow-psum)"/>
+
+  <g transform="translate(760 560)">
+    <line class="data" x1="0" y1="0" x2="52" y2="0" marker-end="url(#arrow-data)"/><text class="small" x="65" y="5">A 对角移动</text>
+    <line class="weight" x1="210" y1="0" x2="262" y2="0" marker-end="url(#arrow-weight)"/><text class="small" x="275" y="5">B 预装后保持</text>
+    <line class="psum" x1="465" y1="0" x2="517" y2="0" marker-end="url(#arrow-psum)"/><text class="small" x="530" y="5">psum 向下累加</text>
+  </g>
+
+  <rect x="40" y="635" width="1320" height="145" rx="12" fill="#faf5ff" stroke="#c4b5fd" stroke-width="1.5"/>
+  <text x="700" y="669" class="h2" text-anchor="middle">A 的第一行经过三组权重后得到 C 的第一行</text>
+  <text x="255" y="716" class="formula">C[0,0] = 1a + 2b + 3c</text>
+  <text x="700" y="716" class="formula">C[0,1] = 2e + 3f + 1d</text>
+  <text x="1145" y="716" class="formula">C[0,2] = 3i + 1g + 2h</text>
+  <text x="700" y="753" class="small" text-anchor="middle">每个输出列虽然看到不同的循环顺序，但三个 K 项均恰好出现一次。</text>
+</svg>

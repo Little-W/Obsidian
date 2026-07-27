@@ -251,7 +251,7 @@ static int top_test_rejects_inconsistent_capabilities(void)
                    top_test_top_snapshot, &top_test_env.top,
                    sizeof(top_test_env.top)) == 0);
 
-    limits.gaddr_limit = (UINT64_C(1) << 48) + 1u;
+    limits.gaddr_limit = (UINT64_C(1) << 40) + 1u;
     TEST_CHECK_STATUS(
         npu_core_top_cycle_init(
             &top_test_env.top, &top_test_env.functional,

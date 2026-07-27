@@ -1,9 +1,9 @@
-# NPU 模型编译器与 CMD128 汇编器
+# NPU 模型编译器与 128-bit 指令汇编器
 
 本目录包含两个层次：
 
 - `npu_model_compiler.py` 接收 Keras、PyTorch、TFLite、ONNX 或高层 JSON 模型，完成图检查、整数张量处理、常量排布、L1 地址分配、算子拆分和任务依赖生成。
-- `npu_assembler.py` 接收低层 JSON IR，把每个任务编码成一条 CMD128 指令。
+- `npu_assembler.py` 接收低层 JSON IR，把每个任务编码成一条 128-bit 指令。
 
 “低层 JSON IR”是保留名称。它描述已经选定执行单元、操作码、张量地址和任务事件的程序。执行参数都在 128-bit 指令中，不需要外部 Descriptor。
 高层编译器生成的低层 JSON IR 将 `target.name` 写为
@@ -17,7 +17,7 @@
 | 文件 | 内容 |
 |---|---|
 | `<model>_model.h` | C 类型、数组声明、模型配置和尺寸宏 |
-| `<model>_model.c` | CMD128 指令数组、权重/常量数组、输入输出信息和批次信息 |
+| `<model>_model.c` | 128-bit 指令数组、权重/常量数组、输入输出信息和批次信息 |
 | `<model>.manifest.json` | 输入摘要、文件摘要、算子列表和指令批次 |
 
 使用 `--emit-raw` 后还会输出：
@@ -25,7 +25,7 @@
 | 文件 | 内容 |
 |---|---|
 | `<model>.npuasm.json` | 低层 JSON IR |
-| `<model>.cmd.bin` | 每条 16 byte 的 CMD128 数据 |
+| `<model>.cmd.bin` | 每条 16 byte 的指令数据 |
 | `<model>.const.bin` | 权重和常量数据 |
 | `<model>.runtime.json` | 运行时张量、地址、指令批次和内存计划 |
 
@@ -41,7 +41,9 @@
 - 每个批次的 `host_sync_before`、`host_sync_after` 和
   `contains_event_rearm` 标志。
 
-## 2. CMD128 公共字段
+模型配置还给出 `axi_addr_bits=40`、六个 `gaddr_bases`、DDR 起始地址、DDR 可用末端和本次分配末端。编译器把权重、输入、输出和工作区地址视为 SoC 物理字节地址，并检查每个存储区的最后一个字节没有超出 40-bit AXI 地址范围。生成的 C 配置通过 `axi_addr_bits` 与 `gaddr_bases[6]` 把这些信息交给 Runtime；这些物理地址原样交给硬件，DMA 使用的地址保持不变。
+
+## 2. 指令公共字段
 
 | bit | 字段 | 说明 |
 |---:|---|---|
@@ -132,7 +134,7 @@ L1 地址要求 `base_select=0`。系统地址的基地址编号为：
 | 4 | output |
 | 5 | kv |
 
-实际地址等于所选基地址加 `byte_offset`。当前高层编译器在默认 2 MiB DDR 配置中使用 zero 基地址，因此无需额外修正地址。
+实际地址等于所选基地址加 `byte_offset`。DDR/global 地址均按系统物理字节地址解释，AXI Master 地址宽度固定为 40 bit，因此首地址必须满足 `0 <= addr < 2^40`，存储区末端不得超过 `2^40`。高层编译器会根据模型使用的物理地址选择所需基地址，并把 6 个基地址写入运行信息和生成的 C 配置。
 
 ### 4.2 LREF12、LREF14 与 LREF16
 
@@ -261,7 +263,7 @@ LayerNorm 的 gamma 地址按 16 byte 保存。beta 必须位于 gamma 数据之
 - Matrix 的 M 超过 64 时，编译器按连续的 64 行拆分，并为每条指令修正
   A、C 地址。BMM batch 超过 64 时按最多 64 个 batch 拆分；若 M 和
   batch 都超出字段容量，则先选中一个 batch，再拆 M。N 或 K 超过 64
-  时不直接拆分，因为 B 使用 tile 排列，而 CMD128 中没有保存子块所需的
+  时不直接拆分，因为 B 使用 tile 排列，而指令中没有保存子块所需的
   B 跨距；编译器会指出不能安全拆分的维度。
 - Vector 的行数和每行元素数都可超出 32。行数按最多 32 行拆分；每行元素
   数按 `32 + 32 + … + 尾部元素` 拆分。由于指令不保存原张量的行跨距，

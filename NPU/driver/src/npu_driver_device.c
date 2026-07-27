@@ -61,17 +61,20 @@ int npu_drv_set_timeout(npu_driver_t *driver,
         cycles);
 }
 
-static int npu_drv_base_register(uint32_t offset)
+static int npu_drv_global_address_register(uint32_t offset)
 {
-    return offset == NPU_DRV_REG_PC_BASE ||
-           offset == NPU_DRV_REG_INPUT_BASE ||
+    return offset == NPU_DRV_REG_INPUT_BASE ||
            offset == NPU_DRV_REG_WEIGHT_BASE ||
            offset == NPU_DRV_REG_WORK_BASE ||
            offset == NPU_DRV_REG_OUTPUT_BASE ||
            offset == NPU_DRV_REG_KV_BASE ||
-           offset == NPU_DRV_REG_DDR_LOCAL_BASE ||
-           offset == NPU_DRV_REG_DDR_LOCAL_LIMIT ||
-           offset == NPU_DRV_REG_PARAM_L1_BASE ||
+           offset == NPU_DRV_REG_M_AXI_ADDR_BASE ||
+           offset == NPU_DRV_REG_M_AXI_ADDR_LIMIT;
+}
+
+static int npu_drv_l1_address_register(uint32_t offset)
+{
+    return offset == NPU_DRV_REG_PARAM_L1_BASE ||
            offset == NPU_DRV_REG_PARAM_L1_LIMIT;
 }
 
@@ -79,9 +82,18 @@ int npu_drv_set_base(npu_driver_t *driver,
                      uint32_t register_offset,
                      uint64_t address)
 {
-    if (!npu_drv_base_register(register_offset) ||
-        (address & ~NPU_DRV_ADDR48_MASK) != 0u ||
-        (address & 0xfffu) != 0u) {
+    if ((address & 7u) != 0u) {
+        return NPU_DRV_EINVAL;
+    }
+    if (npu_drv_global_address_register(register_offset)) {
+        if ((address & ~NPU_DRV_PHYS_ADDR_MASK) != 0u) {
+            return NPU_DRV_ERANGE;
+        }
+    } else if (npu_drv_l1_address_register(register_offset)) {
+        if ((address & ~NPU_DRV_L1_ADDR_MASK) != 0u) {
+            return NPU_DRV_ERANGE;
+        }
+    } else {
         return NPU_DRV_EINVAL;
     }
     return npu_drv_reg_write(driver, register_offset, address);

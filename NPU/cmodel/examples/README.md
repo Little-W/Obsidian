@@ -16,15 +16,15 @@ npu_model_compiler.py
     │
     ├─ 高层算子拆分
     ├─ 低层 JSON IR
-    ├─ 生成参数内嵌的 CMD128
-    └─ 生成 C 配置、CMD128 数组、权重和输入输出信息
+    ├─ 生成参数内嵌的 128-bit 指令
+    └─ 生成 C 配置、128-bit 指令数组、权重和输入输出信息
     │
     ▼
 NPU C 驱动
     │
     ├─ 固定地址命令 FIFO
     ├─ 64-bit FIXED burst
-    └─ 每条 CMD128 使用低 64 bit、高 64 bit 两个 beat
+    └─ 每条 128-bit 指令使用低 64 bit、高 64 bit 两个 beat
     │
     ▼
 单核 NPU CModel
@@ -195,7 +195,7 @@ $x_t$ 和 $h_{t-1}$ 都是 `[1,3]`，两次矩阵乘法的结果也都是 `[1,3]
 
 构建脚本用固定随机种子生成 128 条训练序列和 48 条测试序列，输入从 $[-0.85,0.85]$ 均匀抽取，监督目标由本章开头的三个递推式计算。训练使用 Adam、MSE、120 个 epoch 和 16 个样本一组；固定检查再使用 3 条人工指定的序列，共 12 个时刻。
 
-NPU 负责两个 `MatMul`、两个 `Add` 和一个 `Tanh`。现有生成物把它们转换为 2 条 `GEMM`、2 条 `ADD`、1 条 `ACT`，并配合 4 条 `COPY_1D` 和 4 条 `EVENT_JOIN`，合计 13 条 CMD128、2 组提交。C 程序负责把初始隐藏状态清零，在每个时刻把 NPU 输出作为下一时刻的 `h_prev`，并统计相对监督目标及 Keras 输出的误差；它不重新计算 SimpleRNN 公式。
+NPU 负责两个 `MatMul`、两个 `Add` 和一个 `Tanh`。现有生成物把它们转换为 2 条 `GEMM`、2 条 `ADD`、1 条 `ACT`，并配合 4 条 `COPY_1D` 和 4 条 `EVENT_JOIN`，合计 13 条 128-bit 指令、2 组提交。C 程序负责把初始隐藏状态清零，在每个时刻把 NPU 输出作为下一时刻的 `h_prev`，并统计相对监督目标及 Keras 输出的误差；它不重新计算 SimpleRNN 公式。
 
 这个例子同时检查输入投影、循环投影、bias 加法、两路结果相加、Tanh、隐藏状态回送以及连续 12 次单时刻提交。若循环状态没有参与计算，后几个时刻会首先出现明显误差。
 
@@ -264,7 +264,7 @@ $\sigma(v)=1/(1+e^{-v})$ 是 Sigmoid。更新门接近 1 时更重视旧状态�
 
 GRU 使用与 3.1 节相同的 128 条训练序列、48 条测试序列、3 条固定序列和三个监督目标递推式，训练配置同样是 Adam、MSE、120 个 epoch 和 16 个样本一组。
 
-NPU 计算 6 个 `MatMul`、8 个 `Add` 和 2 个 `Sigmoid`。现有生成物对应 6 条 `GEMM`、8 条 `ADD`、2 条 `ACT`，再加数据复制和事件等待所需指令，共 43 条 CMD128、6 组提交。NPU 把 `z`、`r`、$p_t^{(x)}$、$p_t^{(h)}$ 四个中间结果写回。
+NPU 计算 6 个 `MatMul`、8 个 `Add` 和 2 个 `Sigmoid`。现有生成物对应 6 条 `GEMM`、8 条 `ADD`、2 条 `ACT`，再加数据复制和事件等待所需指令，共 43 条 128-bit 指令、6 组提交。NPU 把 `z`、`r`、$p_t^{(x)}$、$p_t^{(h)}$ 四个中间结果写回。
 
 当前 Vector `MUL` 产生 INT32，而下一个时刻的 `h_prev` 需要 INT8 Q5，所以 C 程序暂时用 FP32 完成 $r_t\odot p_t^{(h)}$、候选值 Tanh 和最后的状态组合，再把 $h_t$ 编成 INT8 Q5。测试会逐时刻打印 `z` 与 `r`，并检查 3 条序列的全部 12 个时刻。这样既覆盖两组门值的 Sigmoid，也覆盖输入侧与循环侧两组 bias、四个 NPU 输出、软件状态组合和下一时刻状态输入。
 
@@ -312,7 +312,7 @@ $$
 
 LSTM 使用与 3.1 节相同的训练、测试和固定序列，监督目标仍由本章开头的三个递推式生成；训练使用 Adam、MSE、120 个 epoch 和 16 个样本一组。
 
-NPU 负责 8 个 `MatMul`、8 个 `Add`、3 个 `Sigmoid` 和 1 个 `Tanh`。现有生成物把这些工作转换为 8 条 `GEMM`、8 条 `ADD`、4 条 `ACT`，配合数据复制和事件等待后合计 55 条 CMD128、7 组提交。C 程序把 $c_0$ 和 $h_0$ 清零，用 FP32 临时值完成 $c_t$、$\tanh(c_t)$ 和 $h_t$ 的状态更新，再把 $h_t$ 编成 INT8 Q5 交给下一个时刻。
+NPU 负责 8 个 `MatMul`、8 个 `Add`、3 个 `Sigmoid` 和 1 个 `Tanh`。现有生成物把这些工作转换为 8 条 `GEMM`、8 条 `ADD`、4 条 `ACT`，配合数据复制和事件等待后合计 55 条 128-bit 指令、7 组提交。C 程序把 $c_0$ 和 $h_0$ 清零，用 FP32 临时值完成 $c_t$、$\tanh(c_t)$ 和 $h_t$ 的状态更新，再把 $h_t$ 编成 INT8 Q5 交给下一个时刻。
 
 测试在 12 次单时刻运行中分别读取四个门值，打印输入门、遗忘门和输出门，并把最终隐藏状态同时与监督目标和 Keras 结果比较。因此，一个示例就能检查 8 次矩阵乘法、四类激活输出、单元状态记忆、隐藏状态回送以及多时刻误差变化。
 
@@ -365,9 +365,9 @@ $d_0$、$d_1$、$d_2$ 分别加到竖向、横向和斜向三个分数；每处�
 
 底层暂时没有专用卷积指令。编译器先按 3×3 的九个采样位置建立 im2col 数据，再用 `GEMM` 完成卷积。一个 3×3 卷积窗口有 9 个元素，4×4 输出平面有 16 个位置，因此 im2col 要写入 $9\times16=144$ 个 INT8 元素。参数内嵌格式的连续复制指令不能在一条命令中同时表达这里的源步长和目标步长，所以编译器把它们展开成 144 条 `COPY_1D`。输入的 36 个像素也逐元素装入 L1，加上常量、Flatten、输出等复制后，共有 184 条 `COPY_1D`。
 
-后续依次执行卷积 `GEMM`、`RELU`、用于 Flatten 的复制、Dense `GEMM`、bias `ADD`、形状整理、Tanh `ACT` 和输出复制。当前生成物共有 418 条 CMD128、54 组提交，其中还包括 148 条 `EVENT_JOIN` 和 81 条 `EVENT_REARM`。事件编号再次使用前必须先执行 `EVENT_REARM`；81 条该指令按每组最多 8 条组成 11 组，其余命令也按事件依赖关系成组，不再让每条 `EVENT_REARM` 分别占用一个 burst。
+后续依次执行卷积 `GEMM`、`RELU`、用于 Flatten 的复制、Dense `GEMM`、bias `ADD`、形状整理、Tanh `ACT` 和输出复制。当前生成物共有 418 条 128-bit 指令、54 组提交，其中还包括 148 条 `EVENT_JOIN` 和 81 条 `EVENT_REARM`。事件编号再次使用前必须先执行 `EVENT_REARM`；81 条该指令按每组最多 8 条组成 11 组，其余命令也按事件依赖关系成组，不再让每条 `EVENT_REARM` 分别占用一个 burst。
 
-C 程序只复制权重和当前图像，完成缓存同步、CMD128 提交、等待、查询、回收与结果读取，再对 3 个分数执行 `argmax`。每条 CMD128 已带有执行该操作所需的参数，不需要另外准备任务描述数据。卷积、Flatten、全连接和激活都由 NPU CModel 执行。Keras 分数和真实类别只用于比较，不会写入 CModel 输出存储区。六张固定图覆盖三个类别、两种对角线方向、变化的行列位置、九个卷积采样位置、ReLU、Flatten 和 Dense，因此不仅检查分类结果，也检查 Conv2D 经 im2col 拆分后的数据次序。
+C 程序只复制权重和当前图像，完成缓存同步、指令提交、等待、查询、回收与结果读取，再对 3 个分数执行 `argmax`。每条 128-bit 指令已带有执行该操作所需的参数，不需要另外准备任务描述数据。卷积、Flatten、全连接和激活都由 NPU CModel 执行。Keras 分数和真实类别只用于比较，不会写入 CModel 输出存储区。六张固定图覆盖三个类别、两种对角线方向、变化的行列位置、九个卷积采样位置、ReLU、Flatten 和 Dense，因此不仅检查分类结果，也检查 Conv2D 经 im2col 拆分后的数据次序。
 
 > [!note] 为什么循环层不直接把 `.keras` 交给编译器
 > 当前 Keras 前端可以直接处理本示例的 CNN 和 Transformer，但尚未直接展开 Keras 的 SimpleRNN、GRU 和 LSTM 层。三个循环模型的构建脚本读取训练完成后的权重，生成只含 MatMul、Add、Sigmoid 和 Tanh 等基础算子的高层 JSON，再交给同一个 `npu_model_compiler.py`。
@@ -492,7 +492,7 @@ $c^\ast$ 是真实类别，$c$ 是其他类别编号，$p$ 是 token 位置。�
 
 #### 软件与 NPU 的任务及验证内容
 
-软件生成两个输入张量，复制权重和输入，直接提交编译器给出的 CMD128 数组，等待并读取三个输出；分类时只平均有效 token。NPU 执行词特征与位置特征相加、两组多头注意力、四次 LayerNorm、两组前馈网络和线性分类层。当前编译结果使用的主要指令类别包括 `GEMM`、`BMM`、`SPLIT`、`TRANSPOSE_2D`、`PACK`、`SOFTMAX`、`NORM`、`ACT`、`ADD`、`COPY_1D`、`EVENT_JOIN` 和 `EVENT_REARM`。
+软件生成两个输入张量，复制权重和输入，直接提交编译器给出的 128-bit 指令数组，等待并读取三个输出；分类时只平均有效 token。NPU 执行词特征与位置特征相加、两组多头注意力、四次 LayerNorm、两组前馈网络和线性分类层。当前编译结果使用的主要指令类别包括 `GEMM`、`BMM`、`SPLIT`、`TRANSPOSE_2D`、`PACK`、`SOFTMAX`、`NORM`、`ACT`、`ADD`、`COPY_1D`、`EVENT_JOIN` 和 `EVENT_REARM`。
 
 > [!note] 参数放在哪里
 > 当前 C 包采用 `cmd128`。每条命令的 80-bit 操作参数与命令编号、数据类型、等待事件和完成事件一起放在 128-bit 命令中，`external_descriptor_bytes` 必须为 0。指令数量会受任务拆分和事件重复使用方式影响，每次编译后的准确数值应读取 `transformer/build/generated/keras_transformer.manifest.json`。
@@ -650,7 +650,7 @@ Clang 的普通构建。
 | `build/model.keras` | RNN、GRU、LSTM、CNN 训练完成的 Keras 模型 |
 | `build/model.json` | RNN、GRU、LSTM 的单时刻高层模型；CNN 没有此文件 |
 | `build/generated/model_model.h` | C 类型、尺寸、地址、输入输出和数组声明 |
-| `build/generated/model_model.c` | C 配置、参数内嵌的 CMD128 数组、权重数组和命令分组 |
+| `build/generated/model_model.c` | C 配置、参数内嵌的 128-bit 指令数组、权重数组和命令分组 |
 | `build/generated/model.manifest.json` | 算子、指令数、外部任务描述字节数、权重字节数和生成文件摘要 |
 | `build/generated/model_fixture.h` | 固定输入、目标值和 Keras 参考输出 |
 | `build/generated/model_report.json` | TensorFlow/Keras 版本、训练配置和训练指标 |
@@ -680,7 +680,7 @@ C 驱动调用：
 npu_drv_submit_batch(...)
 ```
 
-驱动把一组 CMD128 展开为：
+驱动把一组 128-bit 指令展开为：
 
 ```text
 command 0 low
@@ -700,7 +700,7 @@ command_batch[0]: commands=8 beats=16 responses=8 rc=0
 
 字段含义如下：
 
-- `commands`：本次提交的 CMD128 数量；
+- `commands`：本次提交的 128-bit 指令数量；
 - `beats`：64-bit beat 数量，恒等于 `2 × commands`；
 - `responses`：收到的命令响应数量；
 - `rc=0`：本次提交和所有响应均成功。
@@ -781,7 +781,7 @@ true_intent=light_on Keras_prediction=light_on CModel_prediction=light_on
 
 ### 10.3 编译产物规模
 
-| 模型 | CMD128 数量 | 命令组数 | 外部任务描述数据 | 权重 |
+| 模型 | 128-bit 指令数量 | 命令组数 | 外部任务描述数据 | 权重 |
 | --- | ---: | ---: | ---: | ---: |
 | RNN | 13 | 2 | 0 B | 448 B |
 | GRU | 43 | 6 | 0 B | 1472 B |

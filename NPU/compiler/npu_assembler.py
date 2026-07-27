@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Assemble the NPU low-level JSON IR into CMD128 records.
+"""Assemble the NPU low-level JSON IR into 128-bit instruction records.
 
 Every executable parameter is encoded in the 128-bit command.  The assembler
 therefore emits a command image and metadata, but never emits a separate
@@ -27,6 +27,8 @@ EVENT_NONE = 0xFF
 MAX_EVENT_ID = 0xFE
 MAX_COMMAND_ID = 0x3FF
 PAYLOAD_BITS = 80
+AXI_ADDR_BITS = 40
+AXI_ADDR_LIMIT = 1 << AXI_ADDR_BITS
 
 ENGINE_CODES = {"control": 0, "dma": 1, "matrix": 2, "vector": 3, "complex": 4}
 OPCODES = {
@@ -261,7 +263,7 @@ def parse_event(value: Any, location: str) -> int:
     if generation != 0:
         raise fail(
             f"{location}.generation",
-            "CMD128 carries an 8-bit event ID and requires generation 0",
+            "The instruction carries an 8-bit event ID and requires generation 0",
         )
     return event_id
 
@@ -281,7 +283,7 @@ def header_flags(fields: Mapping[str, Any], location: str) -> tuple[int, int]:
     if unsupported:
         raise fail(
             location,
-            "CMD128 flag object does not support "
+            "The instruction flag object does not support "
             + ", ".join(sorted(unsupported)),
         )
     packed = 0
@@ -339,7 +341,50 @@ def encode_command128(
     return struct.pack("<QQ", low, high)
 
 
-def normalize_tensors(document: Mapping[str, Any]) -> dict[str, Mapping[str, Any]]:
+def target_axi_addr_bits(target: Mapping[str, Any]) -> int:
+    return parse_int(
+        target.get("axi_addr_bits", AXI_ADDR_BITS),
+        "target.axi_addr_bits",
+        AXI_ADDR_BITS,
+        AXI_ADDR_BITS,
+    )
+
+
+def validate_tensor_address(
+    tensor: Mapping[str, Any],
+    target: Mapping[str, Any],
+    location: str,
+) -> None:
+    address = tensor_addr(tensor, location)
+    space = str(tensor.get("space", "l1")).lower()
+    if space != "ddr":
+        return
+    address_limit = 1 << target_axi_addr_bits(target)
+    if address >= address_limit:
+        raise fail(
+            f"{location}.addr",
+            f"must be below 2^{AXI_ADDR_BITS}",
+        )
+    if "region_bytes" not in tensor:
+        return
+    region_bytes = parse_int(
+        tensor["region_bytes"],
+        f"{location}.region_bytes",
+        0,
+        address_limit,
+    )
+    if region_bytes > address_limit - address:
+        raise fail(
+            f"{location}.region_bytes",
+            f"region ending at 0x{address + region_bytes:x} "
+            f"exceeds the {AXI_ADDR_BITS}-bit AXI address range",
+        )
+
+
+def normalize_tensors(
+    document: Mapping[str, Any],
+    target: Mapping[str, Any],
+) -> dict[str, Mapping[str, Any]]:
     source = object_value(document.get("tensors", {}), "tensors")
     result: dict[str, Mapping[str, Any]] = {}
     for name, value in source.items():
@@ -358,6 +403,7 @@ def normalize_tensors(document: Mapping[str, Any]) -> dict[str, Mapping[str, Any
                 0,
                 (1 << 48) - 1,
             )
+        validate_tensor_address(tensor, target, f"tensors.{name}")
         result[name] = tensor
     return result
 
@@ -394,7 +440,7 @@ def operation_fields(
     if "descriptor" in operation:
         raise fail(
             f"{location}.descriptor",
-            "CMD128 uses the fields object; external Descriptor input is not accepted",
+            "The instruction uses the fields object; external Descriptor input is not accepted",
         )
     fields = object_value(operation.get("fields", {}), f"{location}.fields")
     common = object_value(fields.get("common", {}), f"{location}.fields.common")
@@ -411,6 +457,7 @@ def operation_fields(
 
 
 def gaddr_bases(target: Mapping[str, Any]) -> dict[int, int]:
+    address_limit = 1 << target_axi_addr_bits(target)
     raw = object_value(target.get("gaddr_bases", {}), "target.gaddr_bases")
     result = {index: 0 for index in range(6)}
     for name, value in raw.items():
@@ -418,9 +465,18 @@ def gaddr_bases(target: Mapping[str, Any]) -> dict[int, int]:
             selector = GADDR_BASE_CODES[name.lower()]
         else:
             selector = parse_int(name, f"target.gaddr_bases.{name}", 0, 5)
-        result[selector] = parse_int(
-            value, f"target.gaddr_bases.{name}", 0, (1 << 48) - 1
+        base = parse_int(
+            value,
+            f"target.gaddr_bases.{name}",
+            0,
+            address_limit - 1,
         )
+        if base & 0x7:
+            raise fail(
+                f"target.gaddr_bases.{name}",
+                "must be aligned to 8 bytes",
+            )
+        result[selector] = base
     return result
 
 
@@ -439,6 +495,7 @@ def encode_aref(
         return address
     if space != "ddr":
         raise fail(f"{location}.space", "use l1 or ddr")
+    validate_tensor_address(tensor, target, location)
     bases = gaddr_bases(target)
     selector_value = tensor.get("base_select")
     if selector_value is None:
@@ -696,7 +753,7 @@ def encode_dma_payload(
                     if parsed != expected:
                         raise fail(
                             f"{location}.{key}",
-                            "CMD128 COPY_ND accepts contiguous tensors only; "
+                            "The COPY_ND instruction accepts contiguous tensors only; "
                             "split strided rows into COPY_1D operations",
                         )
         payload = pack_field(payload, count, 4, 20, f"{location}.count")
@@ -1199,7 +1256,7 @@ def allocate_dependency_events(
         if len(values) > 2:
             raise fail(
                 f"operations[{index}].depends_on",
-                "CMD128 supports at most two direct dependencies",
+                "Each instruction supports at most two direct dependencies",
             )
         dependencies[name] = values
     signal_by_name: dict[str, int] = {}
@@ -1277,7 +1334,9 @@ def compile_document(
     target = object_value(document.get("target", {}), "target")
     if target.get("command_format", COMMAND_FORMAT) != COMMAND_FORMAT:
         raise fail("target.command_format", f"must be {COMMAND_FORMAT!r}")
-    tensors = normalize_tensors(document)
+    target_axi_addr_bits(target)
+    gaddr_bases(target)
+    tensors = normalize_tensors(document, target)
     raw_operations = list_value(document.get("operations"), "operations")
     operations = [
         object_value(value, f"operations[{index}]")
@@ -1296,7 +1355,7 @@ def compile_document(
         engine = engine_value.lower()
         opcode_value = operation.get("opcode")
         if not isinstance(opcode_value, str):
-            raise fail(f"{location}.opcode", "CMD128 requires an opcode name")
+            raise fail(f"{location}.opcode", "the instruction requires an opcode name")
         opcode_name = opcode_value.upper()
         if opcode_name not in OPCODES[engine]:
             raise fail(
@@ -1425,11 +1484,13 @@ def build_output_manifest(
     command_name: str,
     command_image: bytes,
 ) -> bytes:
+    target = dict(source_document["target"])
+    target.setdefault("axi_addr_bits", AXI_ADDR_BITS)
     output = {
         "artifact_version": 2,
         "source": source_path.name,
         "source_sha256": sha256_bytes(source_path.read_bytes()),
-        "target": source_document["target"],
+        "target": target,
         "command_format": COMMAND_FORMAT,
         "command_record_bytes": 16,
         "command_count": len(operations),
@@ -1532,7 +1593,7 @@ def output_artifacts(
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Assemble the NPU low-level JSON IR into an inline CMD128 stream "
+            "Assemble the NPU low-level JSON IR into an inline 128-bit instruction stream "
             "and artifact metadata."
         )
     )

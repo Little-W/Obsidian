@@ -40,15 +40,6 @@ typedef struct {
     uint8_t active;
     uint8_t response_asserted;
     uint8_t delay;
-    uint64_t vaddr;
-    uint64_t paddr;
-    uint16_t tag;
-} single_test_tbu_t;
-
-typedef struct {
-    uint8_t active;
-    uint8_t response_asserted;
-    uint8_t delay;
     uint8_t id;
     uint8_t beats;
     uint8_t beat;
@@ -56,28 +47,16 @@ typedef struct {
 } single_test_axi_read_t;
 
 typedef struct {
-    single_test_tbu_t tbu;
     single_test_axi_read_t read;
-    uint8_t tbu_hold;
-    uint64_t tbu_hold_vaddr;
-    uint8_t tbu_hold_write;
-    uint16_t tbu_hold_tag;
     uint8_t ar_hold;
     uint8_t ar_hold_id;
     uint64_t ar_hold_addr;
     uint8_t ar_hold_len;
     uint32_t random_state;
     uint32_t cdc_request_cycles;
-    uint32_t tbu_requests;
-    uint32_t tbu_request_stalls;
     uint32_t axi_reads;
     uint32_t axi_ar_stalls;
     uint32_t axi_read_beats;
-    uint32_t internal_tbu_requests;
-    uint32_t internal_tbu_responses;
-    uint32_t internal_tbu_response_stalls;
-    uint64_t internal_tbu_first_request_tick;
-    uint64_t internal_tbu_first_response_tick;
 } single_test_noc_server_t;
 
 typedef struct {
@@ -507,26 +486,6 @@ static void single_test_server_drive(
     uint32_t random_value =
         single_test_random(&server->random_state);
 
-    if (env->top.tbu_mode ==
-        NPU_SINGLE_CORE_TBU_EXTERNAL) {
-        if (server->tbu.active == 0u) {
-            inputs->tbu.req_ready =
-                (uint8_t)(
-                    server->tbu_request_stalls != 0u &&
-                    (random_value & 3u) != 0u);
-        } else if (server->tbu.delay != 0u) {
-            server->tbu.delay--;
-        } else {
-            server->tbu.response_asserted = 1u;
-        }
-        if (server->tbu.response_asserted != 0u) {
-            inputs->tbu.rsp_valid = 1u;
-            inputs->tbu.rsp_paddr = server->tbu.paddr;
-            inputs->tbu.rsp_tag = server->tbu.tag;
-            inputs->tbu.rsp_status = NPU_STATUS_SUCCESS;
-        }
-    }
-
     if (server->read.active == 0u) {
         inputs->axi.arready =
             (uint8_t)(server->axi_ar_stalls != 0u &&
@@ -564,79 +523,11 @@ static int single_test_server_observe(
     const npu_single_core_cycle_noc_outputs_t *outputs)
 {
     single_test_noc_server_t *server = &env->noc_server;
-    const npu_mif_tbu_outputs_t *tbu = &outputs->mif.tbu;
     const npu_mif_axi_outputs_t *axi =
         &outputs->mif.axi;
 
     if (outputs->cdc.owner[NPU_MIF_OWNER_DFU].req_valid != 0u) {
         server->cdc_request_cycles++;
-    }
-
-    if (env->top.tbu_mode ==
-        NPU_SINGLE_CORE_TBU_EXTERNAL) {
-        if (server->tbu_hold != 0u) {
-            TEST_CHECK(tbu->req_valid != 0u);
-            TEST_CHECK(
-                tbu->req_vaddr == server->tbu_hold_vaddr);
-            TEST_CHECK(
-                tbu->req_write == server->tbu_hold_write);
-            TEST_CHECK(tbu->req_tag ==
-                       server->tbu_hold_tag);
-        }
-        if (tbu->req_valid != 0u &&
-            inputs->tbu.req_ready == 0u) {
-            server->tbu_request_stalls++;
-            if (server->tbu_hold == 0u) {
-                server->tbu_hold = 1u;
-                server->tbu_hold_vaddr = tbu->req_vaddr;
-                server->tbu_hold_write = tbu->req_write;
-                server->tbu_hold_tag = tbu->req_tag;
-            }
-        }
-        if (tbu->req_valid != 0u &&
-            inputs->tbu.req_ready != 0u) {
-            TEST_CHECK(server->tbu.active == 0u);
-            TEST_CHECK(tbu->req_write == 0u);
-            TEST_CHECK(tbu->req_stream_id == 0x1234u);
-            TEST_CHECK(
-                tbu->req_substream_id == 0x5678u);
-            server->tbu.active = 1u;
-            server->tbu.response_asserted = 0u;
-            server->tbu.delay = 2u;
-            server->tbu.vaddr = tbu->req_vaddr;
-            server->tbu.paddr = tbu->req_vaddr;
-            server->tbu.tag = tbu->req_tag;
-            server->tbu_requests++;
-            server->tbu_hold = 0u;
-        }
-        if (inputs->tbu.rsp_valid != 0u &&
-            tbu->rsp_ready != 0u) {
-            TEST_CHECK(server->tbu.active != 0u);
-            server->tbu.active = 0u;
-            server->tbu.response_asserted = 0u;
-        }
-    } else {
-        if (tbu->req_valid != 0u &&
-            outputs->tbu.req_ready != 0u) {
-            server->internal_tbu_requests++;
-            if (server->internal_tbu_first_request_tick ==
-                0u) {
-                server->internal_tbu_first_request_tick =
-                    env->noc_ticks;
-            }
-        }
-        if (outputs->tbu.rsp_valid != 0u) {
-            if (tbu->rsp_ready != 0u) {
-                server->internal_tbu_responses++;
-                if (server->internal_tbu_first_response_tick ==
-                    0u) {
-                    server->internal_tbu_first_response_tick =
-                        env->noc_ticks;
-                }
-            } else {
-                server->internal_tbu_response_stalls++;
-            }
-        }
     }
 
     TEST_CHECK(axi->awvalid == 0u);
@@ -737,9 +628,8 @@ static int single_test_noc_tick(
         env, NPU_SINGLE_CORE_CLK_ALL, outputs);
 }
 
-static int single_test_env_init_mode(
-    single_test_env_t *env,
-    npu_single_core_tbu_mode_t tbu_mode)
+static int single_test_env_init(
+    single_test_env_t *env)
 {
     npu_config_t config;
     npu_wire_limits_t limits;
@@ -785,28 +675,19 @@ static int single_test_env_init_mode(
     mif_config.system_addr_enable = 1u;
     mif_config.system_addr_base = 0u;
     mif_config.system_addr_limit = SINGLE_TEST_DDR_BYTES - 8u;
-    mif_config.bypass_enable = 0u;
-
     TEST_CHECK_STATUS(
         npu_single_core_cycle_init(
             &env->top, &env->functional,
             env->l1, sizeof(env->l1),
             env->l1_ecc, sizeof(env->l1_ecc),
             env->workspace, &limits, &lsc_config,
-            &mif_config, tbu_mode),
+            &mif_config),
         NPU_STATUS_SUCCESS);
-    TEST_CHECK(env->top.tbu_mode == (uint8_t)tbu_mode);
     single_test_make_vector_descriptor(descriptor);
     single_test_server_reset(&env->noc_server);
     env->core_rst_ni = 0u;
     env->noc_rst_ni = 0u;
     return 0;
-}
-
-static int single_test_env_init(single_test_env_t *env)
-{
-    return single_test_env_init_mode(
-        env, NPU_SINGLE_CORE_TBU_EXTERNAL);
 }
 
 static int single_test_workspace_preflight_transaction(
@@ -860,8 +741,7 @@ static int single_test_workspace_preflight_transaction(
             &env->top, &env->functional,
             env->l1, sizeof(env->l1),
             env->l1_ecc, sizeof(env->l1_ecc),
-            env->workspace, &wire, &lsc, &mif,
-            NPU_SINGLE_CORE_TBU_EXTERNAL),
+            env->workspace, &wire, &lsc, &mif),
         NPU_STATUS_BAD_DESC);
     TEST_CHECK(memcmp(
                    &env->top,
@@ -909,7 +789,7 @@ static int single_test_default_wire_uses_ddr(
             env->workspace,
             (const npu_wire_limits_t *)0,
             (const npu_lsc_cycle_config_t *)0,
-            &mif, NPU_SINGLE_CORE_TBU_EXTERNAL),
+            &mif),
         NPU_STATUS_SUCCESS);
     TEST_CHECK(
         env->top.wire_limits.gaddr_limit ==
@@ -944,8 +824,7 @@ static int single_test_capability_consistency(
             &env->top, &env->functional,
             env->l1, sizeof(env->l1),
             env->l1_ecc, sizeof(env->l1_ecc),
-            env->workspace, &wire, &lsc, &mif,
-            NPU_SINGLE_CORE_TBU_EXTERNAL),
+            env->workspace, &wire, &lsc, &mif),
         NPU_STATUS_BAD_DESC);
     TEST_CHECK(env->top.core_cycle == preserved_cycle);
     wire.mt--;
@@ -956,8 +835,7 @@ static int single_test_capability_consistency(
             &env->top, &env->functional,
             env->l1, sizeof(env->l1),
             env->l1_ecc, sizeof(env->l1_ecc),
-            env->workspace, &wire, &lsc, &mif,
-            NPU_SINGLE_CORE_TBU_EXTERNAL),
+            env->workspace, &wire, &lsc, &mif),
         NPU_STATUS_BAD_DESC);
     TEST_CHECK(env->top.core_cycle == preserved_cycle);
     lsc.vector_config ^= UINT64_C(1);
@@ -968,8 +846,7 @@ static int single_test_capability_consistency(
             &env->top, &env->functional,
             env->l1, sizeof(env->l1),
             env->l1_ecc, sizeof(env->l1_ecc),
-            env->workspace, &wire, &lsc, &mif,
-            NPU_SINGLE_CORE_TBU_EXTERNAL),
+            env->workspace, &wire, &lsc, &mif),
         NPU_STATUS_BAD_DESC);
     TEST_CHECK(env->top.core_cycle == preserved_cycle);
     mif.system_addr_enable = 1u;
@@ -980,8 +857,7 @@ static int single_test_capability_consistency(
             &env->top, &env->functional,
             env->l1, sizeof(env->l1),
             env->l1_ecc, sizeof(env->l1_ecc),
-            env->workspace, &wire, &lsc, &mif,
-            NPU_SINGLE_CORE_TBU_EXTERNAL),
+            env->workspace, &wire, &lsc, &mif),
         NPU_STATUS_BAD_DESC);
     TEST_CHECK(env->top.core_cycle == preserved_cycle);
     lsc.timeout_reset[3]--;
@@ -992,8 +868,7 @@ static int single_test_capability_consistency(
             &env->top, &env->functional,
             env->l1, sizeof(env->l1),
             env->l1_ecc, sizeof(env->l1_ecc),
-            env->workspace, &wire, &lsc, &mif,
-            NPU_SINGLE_CORE_TBU_EXTERNAL),
+            env->workspace, &wire, &lsc, &mif),
         NPU_STATUS_BAD_DESC);
     TEST_CHECK(env->top.core_cycle == preserved_cycle);
     env->functional.config = saved_functional;
@@ -1004,8 +879,7 @@ static int single_test_capability_consistency(
             &env->top, &env->functional,
             env->l1, sizeof(env->l1),
             env->l1_ecc, sizeof(env->l1_ecc),
-            env->workspace, &wire, &lsc, &mif,
-            NPU_SINGLE_CORE_TBU_EXTERNAL),
+            env->workspace, &wire, &lsc, &mif),
         NPU_STATUS_BAD_DESC);
     TEST_CHECK(env->top.core_cycle == preserved_cycle);
     wire.gaddr_limit = SINGLE_TEST_DDR_BYTES;
@@ -1016,8 +890,7 @@ static int single_test_capability_consistency(
             &env->top, &env->functional,
             env->l1, sizeof(env->l1),
             env->l1_ecc, sizeof(env->l1_ecc),
-            env->workspace, &wire, &lsc, &mif,
-            NPU_SINGLE_CORE_TBU_EXTERNAL),
+            env->workspace, &wire, &lsc, &mif),
         NPU_STATUS_BAD_DESC);
     TEST_CHECK(env->top.core_cycle == preserved_cycle);
     lsc.isa_feature = NPU_LSC_IMPLEMENTED_ISA_FEATURES;
@@ -1034,8 +907,7 @@ static int single_test_capability_consistency(
                 &env->top, &env->functional,
                 env->l1, sizeof(env->l1),
                 env->l1_ecc, sizeof(env->l1_ecc),
-                env->workspace, &wire, &lsc, &mif,
-                NPU_SINGLE_CORE_TBU_EXTERNAL),
+                env->workspace, &wire, &lsc, &mif),
             NPU_STATUS_BAD_DESC);
         TEST_CHECK(env->top.core_cycle == preserved_cycle);
         *lsc_packed_field[field] &= ~(UINT64_C(1) << 63u);
@@ -1059,8 +931,7 @@ static int single_test_capability_consistency(
             &env->top, &env->functional,
             env->l1, sizeof(env->l1),
             env->l1_ecc, sizeof(env->l1_ecc),
-            env->workspace, &wire, &lsc, &mif,
-            NPU_SINGLE_CORE_TBU_EXTERNAL),
+            env->workspace, &wire, &lsc, &mif),
         NPU_STATUS_SUCCESS);
     TEST_CHECK(env->top.wire_limits.mt == 4u);
     TEST_CHECK(
@@ -1070,26 +941,6 @@ static int single_test_capability_consistency(
         ((env->top.lsc.config.matrix_config >>
           NPU_LSC_MATRIX_KT_SHIFT) &
          NPU_LSC_FIELD_U8_MASK) == 8u);
-    return 0;
-}
-
-static int single_test_set_descriptor_rule(
-    single_test_env_t *env,
-    uint8_t read_enable)
-{
-    npu_tbu_rule_t rule;
-
-    (void)memset(&rule, 0, sizeof(rule));
-    rule.valid = 1u;
-    rule.virtual_page = SINGLE_TEST_DESC_ADDR >> 12u;
-    rule.physical_page =
-        (uint32_t)(SINGLE_TEST_DESC_ADDR >> 12u);
-    rule.stream_id = 0x1234u;
-    rule.substream_id = 0x5678u;
-    rule.read_enable = read_enable;
-    rule.write_enable = 1u;
-    TEST_CHECK(npu_tbu_cycle_set_rule(
-                   &env->top.tbu, 0u, &rule) != 0);
     return 0;
 }
 
@@ -1505,9 +1356,6 @@ static int single_test_system_and_debug(single_test_env_t *env)
         env, NPU_LSC_REG_M_AXI_ADDR_LIMIT,
         UINT64_C(0x00000000000ffff8), 0x11u));
     SINGLE_TEST_CALL(single_test_system_write(
-        env, NPU_LSC_REG_TBU_STREAM_ID,
-        UINT64_C(0x56781234), 0x12u));
-    SINGLE_TEST_CALL(single_test_system_write(
         env, NPU_LSC_REG_L1_DIAG_CONTROL,
         NPU_LSC_L1_DIAG_ENABLE, 0x13u));
     TEST_CHECK(env->top.lsc.l1_diag_enable != 0u);
@@ -1546,9 +1394,6 @@ static int single_test_axi_command_fifo(
     SINGLE_TEST_CALL(single_test_system_write(
         env, NPU_LSC_REG_M_AXI_ADDR_LIMIT,
         UINT64_C(0x00000000000ffff8), 0x6eu));
-    SINGLE_TEST_CALL(single_test_system_write(
-        env, NPU_LSC_REG_TBU_STREAM_ID,
-        UINT64_C(0x56781234), 0x6fu));
     SINGLE_TEST_CALL(single_test_system_write(
         env, NPU_LSC_REG_CORE_CONTROL,
         NPU_LSC_CORE_CONTROL_START, 0x70u));
@@ -2601,7 +2446,7 @@ static int single_test_external_error_sync(
     single_test_env_t *env)
 {
     const uint16_t task_id = UINT16_C(0x345);
-    const uint64_t vaddr = UINT64_C(0x0000000012340);
+    const uint64_t addr = UINT64_C(0x0000000012340);
     npu_single_core_cycle_core_inputs_t core_inputs;
     npu_single_core_cycle_core_outputs_t core_outputs;
     npu_single_core_cycle_noc_outputs_t noc_outputs;
@@ -2615,9 +2460,7 @@ static int single_test_external_error_sync(
     env->top.mif.first_error_owner = NPU_MIF_OWNER_DMA;
     env->top.mif.first_error_tag = 0x62au;
     env->top.mif.first_error_task_id = task_id;
-    env->top.mif.first_error_vaddr = vaddr;
-    env->top.mif.first_error_paddr =
-        UINT64_C(0x0000000022340);
+    env->top.mif.first_error_addr = addr;
     env->top.mif.first_error_axi_id = 0x2du;
     env->top.mif.first_error_axi_id_valid = 1u;
     env->top.mif.first_error_axi_resp =
@@ -2658,7 +2501,7 @@ static int single_test_external_error_sync(
                NPU_LSC_FAULT_SOURCE_MIF_FIRST);
     TEST_CHECK(env->top.lsc.fault_status ==
                NPU_STATUS_BUS_SLVERR);
-    TEST_CHECK(env->top.lsc.fault_addr == vaddr);
+    TEST_CHECK(env->top.lsc.fault_addr == addr);
     TEST_CHECK(env->top.lsc.fault_command_id == task_id);
     TEST_CHECK(env->top.lsc.fault_engine == NPU_ENGINE_DMA);
     TEST_CHECK(env->top.lsc.fault_error_info ==
@@ -2679,7 +2522,7 @@ static int single_test_external_error_sync(
 
     env->top.mif.protocol_error_valid = 1u;
     env->top.mif.protocol_error_kind =
-        NPU_MIF_PROTOCOL_TBU_STATUS;
+        NPU_MIF_PROTOCOL_AXI_RRESP;
     env->top.mif.protocol_error_addr =
         UINT64_C(0x0000000034560);
     env->top.mif.protocol_error_owner = NPU_MIF_OWNER_DFU;
@@ -2698,7 +2541,7 @@ static int single_test_external_error_sync(
         env, &core_inputs, &core_outputs);
     expected_info = single_test_external_error_info(
         NPU_LSC_FAULT_SOURCE_MIF_PROTOCOL,
-        NPU_MIF_PROTOCOL_TBU_STATUS,
+        NPU_MIF_PROTOCOL_AXI_RRESP,
         NPU_MIF_OWNER_DFU, NPU_STATUS_BAD_DESC);
     TEST_CHECK(env->top.lsc.fault_source ==
                NPU_LSC_FAULT_SOURCE_MIF_PROTOCOL);
@@ -3014,7 +2857,6 @@ static int single_test_soft_reset_cross_domain(
     single_test_env_t *env)
 {
     const uint64_t ddr_limit = UINT64_C(0x0000000007fff8);
-    const uint64_t tbu_ids = UINT64_C(0x24681357);
     npu_single_core_cycle_core_inputs_t core_inputs;
     npu_single_core_cycle_core_outputs_t core_outputs;
     npu_single_core_cycle_noc_outputs_t noc_outputs;
@@ -3031,9 +2873,6 @@ static int single_test_soft_reset_cross_domain(
     SINGLE_TEST_CALL(single_test_system_write_core_only(
         env, NPU_LSC_REG_M_AXI_ADDR_LIMIT,
         ddr_limit, 0x51u));
-    SINGLE_TEST_CALL(single_test_system_write_core_only(
-        env, NPU_LSC_REG_TBU_STREAM_ID,
-        tbu_ids, 0x52u));
 
     env->top.mif.first_error_valid = 1u;
     env->top.mif.first_error_status =
@@ -3041,7 +2880,7 @@ static int single_test_soft_reset_cross_domain(
     env->top.mif.first_error_owner = NPU_MIF_OWNER_DMA;
     env->top.mif.first_error_tag = 0x4a1u;
     env->top.mif.first_error_task_id = 0x5a1u;
-    env->top.mif.first_error_vaddr =
+    env->top.mif.first_error_addr =
         UINT64_C(0x0000000004560);
     env->top.mif.first_error_axi_resp =
         NPU_MIF_AXI_RESP_DECERR;
@@ -3063,7 +2902,6 @@ static int single_test_soft_reset_cross_domain(
     env->top.mif.next_axi_id = 0x5au;
     env->top.mif.request_rr_owner = 1u;
     env->top.mif.schedule_rr = 7u;
-    env->top.mif.tbu_hold.tag = 0x4a2u;
     env->top.mif.rsp_hold[0].tag = 0x4a3u;
     env->top.mif.w_hold.out_slot = 3u;
     env->top.mif.b_entry.id = 0x2au;
@@ -3100,9 +2938,6 @@ static int single_test_soft_reset_cross_domain(
     TEST_CHECK(env->top.lsc.fault_error_info ==
                saved_fault_info);
     TEST_CHECK(env->top.lsc.m_axi_addr_limit == ddr_limit);
-    TEST_CHECK(
-        ((uint64_t)env->top.lsc.tbu_substream_id << 16u |
-         env->top.lsc.tbu_stream_id) == tbu_ids);
 
     for (tick = 0u; tick < 3u; tick++) {
         single_test_core_inputs(env, &core_inputs);
@@ -3133,16 +2968,12 @@ static int single_test_soft_reset_cross_domain(
     TEST_CHECK(env->top.mif.next_axi_id == 0u);
     TEST_CHECK(env->top.mif.request_rr_owner == 0u);
     TEST_CHECK(env->top.mif.schedule_rr == 0u);
-    TEST_CHECK(env->top.mif.tbu_hold.tag == 0u);
     TEST_CHECK(env->top.mif.rsp_hold[0].tag == 0u);
     TEST_CHECK(env->top.mif.w_hold.out_slot == 0u);
     TEST_CHECK(env->top.mif.b_entry.id == 0u);
     TEST_CHECK(env->top.mif.r_entry.id == 0u);
     TEST_CHECK(
         env->top.mif.config.system_addr_limit == ddr_limit);
-    TEST_CHECK(
-        ((uint64_t)env->top.mif.config.tbu_substream_id << 16u |
-         env->top.mif.config.tbu_stream_id) == tbu_ids);
     TEST_CHECK(env->top.mif_diag_source.first_valid == 0u);
 
     for (tick = 0u; tick < 8u; tick++) {
@@ -3181,9 +3012,6 @@ static int single_test_soft_reset_cross_domain(
     TEST_CHECK(env->top.lsc.fault_error_info ==
                saved_fault_info);
     TEST_CHECK(env->top.lsc.m_axi_addr_limit == ddr_limit);
-    TEST_CHECK(
-        ((uint64_t)env->top.lsc.tbu_substream_id << 16u |
-         env->top.lsc.tbu_stream_id) == tbu_ids);
     return 0;
 }
 
@@ -3828,25 +3656,6 @@ static int single_test_issue_submit(
     return __LINE__;
 }
 
-static int single_test_start_descriptor_task(
-    single_test_env_t *env,
-    uint16_t command_id)
-{
-    SINGLE_TEST_CALL(single_test_wait_idle(env));
-    SINGLE_TEST_CALL(single_test_system_write(
-        env, NPU_LSC_REG_M_AXI_ADDR_LIMIT,
-        UINT64_C(0x00000000000ffff8), 0x61u));
-    SINGLE_TEST_CALL(single_test_system_write(
-        env, NPU_LSC_REG_TBU_STREAM_ID,
-        UINT64_C(0x56781234), 0x62u));
-    SINGLE_TEST_CALL(single_test_system_write(
-        env, NPU_LSC_REG_CORE_CONTROL,
-        NPU_LSC_CORE_CONTROL_START, 0x63u));
-    SINGLE_TEST_CALL(single_test_issue_submit(
-        env, command_id));
-    return 0;
-}
-
 static int single_test_issue_engine(
     single_test_env_t *env,
     uint16_t command_id,
@@ -3920,199 +3729,10 @@ static int single_test_start_engine_task(
         env, NPU_LSC_REG_M_AXI_ADDR_LIMIT,
         UINT64_C(0x00000000000ffff8), 0x64u));
     SINGLE_TEST_CALL(single_test_system_write(
-        env, NPU_LSC_REG_TBU_STREAM_ID,
-        UINT64_C(0x56781234), 0x65u));
-    SINGLE_TEST_CALL(single_test_system_write(
         env, NPU_LSC_REG_CORE_CONTROL,
         NPU_LSC_CORE_CONTROL_START, 0x66u));
     SINGLE_TEST_CALL(single_test_issue_engine(
         env, command_id, engine, opcode));
-    return 0;
-}
-
-static int single_test_internal_tbu_permission(
-    single_test_env_t *env)
-{
-    npu_single_core_cycle_core_inputs_t core_inputs;
-    npu_single_core_cycle_core_outputs_t core_outputs;
-    npu_single_core_cycle_noc_outputs_t noc_outputs;
-    uint64_t core_before = env->core_ticks;
-    uint64_t noc_before = env->noc_ticks;
-    uint8_t terminal_seen = 0u;
-    uint32_t cycle;
-
-    SINGLE_TEST_CALL(single_test_start_descriptor_task(
-        env, 0x461u));
-    for (cycle = 0u; cycle < 2048u; cycle++) {
-        single_test_core_inputs(env, &core_inputs);
-        core_inputs.issue_rsp_ready_i = 1u;
-        single_test_core_tick(
-            env, &core_inputs, &core_outputs);
-        if ((cycle % 5u) == 0u) {
-            SINGLE_TEST_CALL(single_test_noc_tick(
-                env, &noc_outputs));
-            TEST_CHECK(
-                noc_outputs.mif
-                    .axi.arvalid == 0u);
-        }
-        if (core_outputs.ts.terminal_valid != 0u) {
-            TEST_CHECK(core_outputs.ts.terminal_task_id ==
-                       0x461u);
-            TEST_CHECK(core_outputs.ts.terminal_status !=
-                       NPU_STATUS_SUCCESS);
-            terminal_seen = 1u;
-            break;
-        }
-    }
-    TEST_CHECK(terminal_seen != 0u);
-    TEST_CHECK(env->noc_server.axi_reads == 0u);
-    TEST_CHECK(env->noc_server.internal_tbu_requests == 1u);
-    TEST_CHECK(env->noc_server.internal_tbu_responses == 1u);
-    TEST_CHECK(env->top.mif.first_error_status ==
-               NPU_STATUS_ADDR_FAULT);
-    TEST_CHECK(env->core_ticks - core_before !=
-               env->noc_ticks - noc_before);
-    return 0;
-}
-
-static uint8_t single_test_tbu_ready_slot(
-    const npu_tbu_cycle_t *tbu)
-{
-    uint8_t slot;
-
-    for (slot = 0u; slot < NPU_TBU_OUTSTANDING; slot++) {
-        if (tbu->requests[slot].valid != 0u &&
-            tbu->requests[slot].remaining_cycles == 0u) {
-            return slot;
-        }
-    }
-    return NPU_TBU_INVALID_SLOT;
-}
-
-static int single_test_internal_tbu_hold_reset(
-    single_test_env_t *env)
-{
-    npu_single_core_cycle_core_inputs_t core_inputs;
-    npu_single_core_cycle_core_outputs_t core_outputs;
-    npu_single_core_cycle_noc_outputs_t noc_outputs;
-    npu_tbu_cycle_inputs_t tbu_inputs;
-    npu_tbu_cycle_outputs_t tbu_outputs;
-    npu_tbu_request_entry_t held;
-    npu_tbu_rule_t changed_rule;
-    uint64_t held_cycle;
-    uint32_t old_epoch;
-    const npu_ts_task_entry_t *task;
-    uint8_t slot = NPU_TBU_INVALID_SLOT;
-    uint8_t terminal_seen = 0u;
-    uint32_t cycle;
-
-    SINGLE_TEST_CALL(single_test_start_descriptor_task(
-        env, 0x462u));
-    for (cycle = 0u; cycle < 512u; cycle++) {
-        SINGLE_TEST_CALL(single_test_noc_tick_mask(
-            env,
-            (uint8_t)(NPU_SINGLE_CORE_CLK_ALL &
-                      ~(uint8_t)(1u <<
-                          NPU_SINGLE_CORE_CLK_MIF)),
-            &noc_outputs));
-        if (single_test_tbu_ready_slot(&env->top.tbu) !=
-                NPU_TBU_INVALID_SLOT ||
-            noc_outputs.tbu.outstanding != 0u) {
-            TEST_CHECK(single_test_clock_active(
-                           noc_outputs.module_clk_active_o,
-                           NPU_SINGLE_CORE_CLK_MIF) != 0u);
-        }
-        slot = single_test_tbu_ready_slot(&env->top.tbu);
-        if (slot != NPU_TBU_INVALID_SLOT) {
-            break;
-        }
-        single_test_core_inputs(env, &core_inputs);
-        single_test_core_tick(
-            env, &core_inputs, &core_outputs);
-    }
-    TEST_CHECK(slot != NPU_TBU_INVALID_SLOT);
-    TEST_CHECK(env->top.mif.tbu_count != 0u);
-    TEST_CHECK(env->noc_server.axi_reads == 0u);
-    held = env->top.tbu.requests[slot];
-
-    (void)memset(&tbu_inputs, 0, sizeof(tbu_inputs));
-    tbu_inputs.reset_n = 1u;
-    tbu_inputs.rsp_ready = 0u;
-    for (cycle = 0u; cycle < 3u; cycle++) {
-        npu_tbu_cycle_step(
-            &env->top.tbu, &tbu_inputs, &tbu_outputs);
-        TEST_CHECK(tbu_outputs.rsp_valid != 0u);
-        TEST_CHECK(tbu_outputs.rsp_tag == held.tag);
-        TEST_CHECK(tbu_outputs.rsp_paddr == held.paddr);
-        TEST_CHECK(memcmp(
-                       &env->top.tbu.requests[slot],
-                       &held, sizeof(held)) == 0);
-    }
-    held_cycle = env->top.tbu.cycle_count;
-
-    changed_rule = env->top.tbu.rules[0];
-    changed_rule.physical_page++;
-    TEST_CHECK(npu_tbu_cycle_set_rule(
-                   &env->top.tbu, 0u,
-                   &changed_rule) == 0);
-    for (cycle = 0u; cycle < 7u; cycle++) {
-        single_test_core_inputs(env, &core_inputs);
-        single_test_core_tick(
-            env, &core_inputs, &core_outputs);
-        TEST_CHECK(env->top.tbu.cycle_count == held_cycle);
-        TEST_CHECK(memcmp(
-                       &env->top.tbu.requests[slot],
-                       &held, sizeof(held)) == 0);
-    }
-
-    old_epoch = env->top.cdc.reset_epoch;
-    env->noc_rst_ni = 0u;
-    SINGLE_TEST_CALL(single_test_noc_tick(
-        env, &noc_outputs));
-    TEST_CHECK(noc_outputs.noc_reset_n == 0u);
-    TEST_CHECK(env->top.cdc.reset_epoch == old_epoch + 1u);
-    TEST_CHECK(noc_outputs.tbu.idle != 0u);
-    TEST_CHECK(env->top.tbu.rules[0].valid != 0u);
-    TEST_CHECK(single_test_tbu_ready_slot(&env->top.tbu) ==
-               NPU_TBU_INVALID_SLOT);
-    TEST_CHECK(npu_mif_cycle_is_idle(&env->top.mif) != 0u);
-
-    /*
-     * Do not advance NoC while Core observes the reset epoch. The active DFU
-     * request lost its response when the CDC FIFO and MIF were reset, so TS
-     * must produce ABORTED without waiting for another NoC edge.
-     */
-    for (cycle = 0u; cycle < 16u; cycle++) {
-        single_test_core_inputs(env, &core_inputs);
-        single_test_core_tick(
-            env, &core_inputs, &core_outputs);
-        if (core_outputs.ts.terminal_valid != 0u) {
-            TEST_CHECK(core_outputs.ts.terminal_task_id ==
-                       0x462u);
-            TEST_CHECK(core_outputs.ts.terminal_status ==
-                       NPU_STATUS_ABORTED);
-            TEST_CHECK(core_outputs.ts.terminal_done_flags ==
-                       NPU_DONE_ABORT_DRAINED);
-            terminal_seen = 1u;
-            break;
-        }
-    }
-    TEST_CHECK(terminal_seen != 0u);
-    TEST_CHECK(env->top.ts.dfu.valid == 0u);
-    task = npu_ts_cycle_find_task(&env->top.ts, 0x462u);
-    TEST_CHECK(task != (const npu_ts_task_entry_t *)0);
-    TEST_CHECK(task->state == NPU_TS_TASK_ABORTED);
-    TEST_CHECK(task->status == NPU_STATUS_ABORTED);
-    TEST_CHECK(task->done_flags == NPU_DONE_ABORT_DRAINED);
-
-    env->noc_rst_ni = 1u;
-    SINGLE_TEST_CALL(single_test_noc_tick(
-        env, &noc_outputs));
-    TEST_CHECK(noc_outputs.noc_reset_n == 0u);
-    SINGLE_TEST_CALL(single_test_noc_tick(
-        env, &noc_outputs));
-    TEST_CHECK(noc_outputs.noc_reset_n != 0u);
-    TEST_CHECK(env->top.tbu.rules[0].valid != 0u);
     return 0;
 }
 
@@ -4652,31 +4272,10 @@ static int single_test_vector_task(single_test_env_t *env)
     TEST_CHECK(env->top.engine[NPU_TS_PORT_VECTOR]
                    .trace.write_count == 2u);
     TEST_CHECK(env->noc_server.cdc_request_cycles != 0u);
-    if (env->top.tbu_mode ==
-        NPU_SINGLE_CORE_TBU_INTERNAL) {
-        TEST_CHECK(env->noc_server.tbu_requests == 0u);
-        TEST_CHECK(
-            env->noc_server.internal_tbu_requests == 2u);
-        TEST_CHECK(
-            env->noc_server.internal_tbu_responses == 2u);
-        TEST_CHECK(
-            env->noc_server.internal_tbu_first_response_tick -
-                    env->noc_server
-                        .internal_tbu_first_request_tick -
-                    1u ==
-                NPU_TBU_HIT_LATENCY);
-    } else {
-        TEST_CHECK(env->noc_server.tbu_requests == 2u);
-    }
     TEST_CHECK(env->noc_server.axi_reads == 2u);
     TEST_CHECK(env->noc_server.axi_read_beats ==
                NPU_WIRE_VECTOR_DESC_BYTES /
                    NPU_REF_BUS_BYTES);
-    if (env->top.tbu_mode ==
-        NPU_SINGLE_CORE_TBU_EXTERNAL) {
-        TEST_CHECK(
-            env->noc_server.tbu_request_stalls != 0u);
-    }
     TEST_CHECK(env->noc_server.axi_ar_stalls != 0u);
     TEST_CHECK(env->core_ticks - core_before !=
                env->noc_ticks - noc_before);
@@ -4800,21 +4399,16 @@ static int single_test_explicit_reset_clears_stale(
 {
     env->top.stale_axi_read_beats[0x21u] = 3u;
     env->top.stale_axi_write_pending[0x22u] = 1u;
-    env->top.stale_tbu_tag[0] = 0x123u;
-    env->top.stale_tbu_tag_valid[0] = 1u;
     env->top.stale_axi_read_drop_count = 4u;
     env->top.stale_axi_write_drop_count = 5u;
-    env->top.stale_tbu_drop_count = 6u;
 
     npu_single_core_cycle_reset(&env->top);
     TEST_CHECK(
         env->top.stale_axi_read_beats[0x21u] == 0u);
     TEST_CHECK(
         env->top.stale_axi_write_pending[0x22u] == 0u);
-    TEST_CHECK(env->top.stale_tbu_tag_valid[0] == 0u);
     TEST_CHECK(env->top.stale_axi_read_drop_count == 0u);
     TEST_CHECK(env->top.stale_axi_write_drop_count == 0u);
-    TEST_CHECK(env->top.stale_tbu_drop_count == 0u);
     TEST_CHECK(env->top.initialized != 0u);
     TEST_CHECK(env->top.engine[0].workspace_bound != 0u);
     return 0;
@@ -4828,8 +4422,6 @@ static int single_test_noc_reset_clears_stale(
     SINGLE_TEST_CALL(single_test_wait_idle(env));
     env->top.stale_axi_read_beats[0x31u] = 1u;
     env->top.stale_axi_write_pending[0x32u] = 1u;
-    env->top.stale_tbu_tag[0] = 0x321u;
-    env->top.stale_tbu_tag_valid[0] = 1u;
     env->noc_rst_ni = 0u;
     SINGLE_TEST_CALL(single_test_noc_tick(env, &outputs));
     TEST_CHECK(outputs.noc_reset_n == 0u);
@@ -4837,7 +4429,6 @@ static int single_test_noc_reset_clears_stale(
         env->top.stale_axi_read_beats[0x31u] == 0u);
     TEST_CHECK(
         env->top.stale_axi_write_pending[0x32u] == 0u);
-    TEST_CHECK(env->top.stale_tbu_tag_valid[0] == 0u);
     return 0;
 }
 
@@ -4979,21 +4570,7 @@ int test_single_core_cycle(void)
     SINGLE_TEST_CALL(single_test_reset_release(env));
     SINGLE_TEST_CALL(single_test_complex_numeric_error(env));
 
-    SINGLE_TEST_CALL(single_test_env_init_mode(
-        env, NPU_SINGLE_CORE_TBU_INTERNAL));
-    SINGLE_TEST_CALL(single_test_set_descriptor_rule(env, 0u));
-    SINGLE_TEST_CALL(single_test_reset_release(env));
-    SINGLE_TEST_CALL(single_test_internal_tbu_permission(env));
-
-    SINGLE_TEST_CALL(single_test_env_init_mode(
-        env, NPU_SINGLE_CORE_TBU_INTERNAL));
-    SINGLE_TEST_CALL(single_test_set_descriptor_rule(env, 1u));
-    SINGLE_TEST_CALL(single_test_reset_release(env));
-    SINGLE_TEST_CALL(single_test_internal_tbu_hold_reset(env));
-
-    SINGLE_TEST_CALL(single_test_env_init_mode(
-        env, NPU_SINGLE_CORE_TBU_INTERNAL));
-    SINGLE_TEST_CALL(single_test_set_descriptor_rule(env, 1u));
+    SINGLE_TEST_CALL(single_test_env_init(env));
     SINGLE_TEST_CALL(single_test_reset_release(env));
     SINGLE_TEST_CALL(single_test_system_and_debug(env));
     SINGLE_TEST_CALL(single_test_gc_axi_read(env));

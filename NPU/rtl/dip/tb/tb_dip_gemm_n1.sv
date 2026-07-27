@@ -6,6 +6,7 @@ module tb_dip_gemm_n1;
 
   logic clk;
   logic reset_n;
+  logic [1:0] mode;
   logic b_valid;
   logic b_ready;
   logic [15:0] b_row;
@@ -23,6 +24,7 @@ module tb_dip_gemm_n1;
   ) dut (
     .clk_i(clk),
     .reset_n(reset_n),
+    .mode_i(mode),
     .b_raw_row_valid_i(b_valid),
     .b_raw_row_ready_o(b_ready),
     .b_raw_row_i(b_row),
@@ -87,6 +89,7 @@ module tb_dip_gemm_n1;
   initial begin
     clk = 1'b0;
     reset_n = 1'b0;
+    mode = 2'd0;
     b_valid = 1'b0;
     b_row = '0;
     a_valid = 1'b0;

@@ -147,7 +147,6 @@ memory-test:
 		-o Vtb_memory_smoke \
 		npu_rtl_pkg.sv \
 		memory/npu_l1buf.sv \
-		memory/npu_tbu.sv \
 		memory/npu_axi_mif_master.sv \
 		memory/tb_memory_smoke.sv
 	mkdir -p $(BUILD_DIR)/memory_smoke

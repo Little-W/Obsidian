@@ -16,7 +16,6 @@ rtl_snapshot/engines/npu_fp32_alu_seq.sv
 rtl_snapshot/engines/npu_complex_math_seq.sv
 rtl_snapshot/engines/npu_complex_engine.sv
 
-rtl_snapshot/memory/npu_tbu.sv
 rtl_snapshot/memory/npu_axi_mif_master.sv
 rtl_snapshot/top/npu_axi_slave_frontend.sv
 

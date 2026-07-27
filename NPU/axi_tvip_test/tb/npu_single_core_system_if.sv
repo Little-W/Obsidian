@@ -18,6 +18,7 @@ interface npu_single_core_system_if #(
     logic irq_error;
 
     logic [31:0] system_memory_read_handshakes;
+    logic [31:0] system_memory_aw_handshakes;
     logic [31:0] system_memory_write_handshakes;
     logic system_memory_protocol_error;
 
@@ -27,6 +28,10 @@ interface npu_single_core_system_if #(
         for (int unsigned index = 0; index < MEMORY_BYTES; index++) begin
             system_memory[index] = 8'd0;
         end
+    endtask
+
+    task automatic load_memory_hex(input string file_name);
+        $readmemh(file_name, system_memory);
     endtask
 
     task automatic write_byte(
@@ -86,6 +91,7 @@ interface npu_single_core_system_if #(
         input irq_exception;
         input irq_error;
         input system_memory_read_handshakes;
+        input system_memory_aw_handshakes;
         input system_memory_write_handshakes;
         input system_memory_protocol_error;
     endclocking

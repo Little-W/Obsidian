@@ -16,18 +16,6 @@ module tb_memory_smoke;
   logic [5:0] l1_rsp_status;
   logic l1_idle;
 
-  logic tbu_enable;
-  logic tbu_allow_read;
-  logic tbu_allow_write;
-  logic tbu_req_valid;
-  logic tbu_req_ready;
-  logic tbu_req_write;
-  logic [47:0] tbu_req_addr;
-  logic tbu_rsp_valid;
-  logic [47:0] tbu_rsp_addr;
-  logic [2:0] tbu_rsp_status;
-  logic tbu_direct_idle;
-
   logic mif_req_valid;
   logic mif_req_ready;
   logic mif_req_write;
@@ -37,18 +25,8 @@ module tb_memory_smoke;
   logic mif_rsp_valid;
   logic [63:0] mif_rsp_rdata;
   logic [2:0] mif_rsp_status;
-  logic mif_tbu_req_valid;
-  logic mif_tbu_req_ready;
-  logic mif_tbu_req_write;
-  logic [47:0] mif_tbu_req_addr;
-  logic [15:0] mif_tbu_req_stream_id;
-  logic [15:0] mif_tbu_req_substream_id;
-  logic mif_tbu_rsp_valid;
-  logic mif_tbu_rsp_ready;
-  logic [47:0] mif_tbu_rsp_addr;
-  logic [2:0] mif_tbu_rsp_status;
-  logic tbu_mif_idle;
-
+  logic [47:0] mif_addr_base;
+  logic [47:0] mif_addr_limit;
   logic [7:0] axi_awid;
   logic [39:0] axi_awaddr;
   logic [7:0] axi_awlen;
@@ -118,52 +96,6 @@ module tb_memory_smoke;
     .l1_idle_o(l1_idle)
   );
 
-  npu_tbu u_tbu_direct (
-    .clk_i(clk),
-    .reset_n(reset_n),
-    .enable_i(tbu_enable),
-    .allowed_stream_id_i(16'h0011),
-    .allowed_substream_id_i(16'h0022),
-    .allow_read_i(tbu_allow_read),
-    .allow_write_i(tbu_allow_write),
-    .allowed_base_i(48'h1000),
-    .allowed_limit_i(48'h1ff8),
-    .req_valid_i(tbu_req_valid),
-    .req_ready_o(tbu_req_ready),
-    .req_write_i(tbu_req_write),
-    .req_addr_i(tbu_req_addr),
-    .req_stream_id_i(16'h0011),
-    .req_substream_id_i(16'h0022),
-    .rsp_valid_o(tbu_rsp_valid),
-    .rsp_ready_i(1'b1),
-    .rsp_addr_o(tbu_rsp_addr),
-    .rsp_status_o(tbu_rsp_status),
-    .tbu_idle_o(tbu_direct_idle)
-  );
-
-  npu_tbu u_tbu_mif (
-    .clk_i(clk),
-    .reset_n(reset_n),
-    .enable_i(1'b1),
-    .allowed_stream_id_i(16'h0033),
-    .allowed_substream_id_i(16'h0044),
-    .allow_read_i(1'b1),
-    .allow_write_i(1'b1),
-    .allowed_base_i(48'h0000),
-    .allowed_limit_i(48'h0000_ffff_fff8),
-    .req_valid_i(mif_tbu_req_valid),
-    .req_ready_o(mif_tbu_req_ready),
-    .req_write_i(mif_tbu_req_write),
-    .req_addr_i(mif_tbu_req_addr),
-    .req_stream_id_i(mif_tbu_req_stream_id),
-    .req_substream_id_i(mif_tbu_req_substream_id),
-    .rsp_valid_o(mif_tbu_rsp_valid),
-    .rsp_ready_i(mif_tbu_rsp_ready),
-    .rsp_addr_o(mif_tbu_rsp_addr),
-    .rsp_status_o(mif_tbu_rsp_status),
-    .tbu_idle_o(tbu_mif_idle)
-  );
-
   npu_axi_mif_master u_mif (
     .clk_i(clk),
     .reset_n(reset_n),
@@ -177,18 +109,8 @@ module tb_memory_smoke;
     .rsp_ready_i(1'b1),
     .rsp_rdata_o(mif_rsp_rdata),
     .rsp_status_o(mif_rsp_status),
-    .stream_id_i(16'h0033),
-    .substream_id_i(16'h0044),
-    .tbu_req_valid_o(mif_tbu_req_valid),
-    .tbu_req_ready_i(mif_tbu_req_ready),
-    .tbu_req_write_o(mif_tbu_req_write),
-    .tbu_req_addr_o(mif_tbu_req_addr),
-    .tbu_req_stream_id_o(mif_tbu_req_stream_id),
-    .tbu_req_substream_id_o(mif_tbu_req_substream_id),
-    .tbu_rsp_valid_i(mif_tbu_rsp_valid),
-    .tbu_rsp_ready_o(mif_tbu_rsp_ready),
-    .tbu_rsp_addr_i(mif_tbu_rsp_addr),
-    .tbu_rsp_status_i(mif_tbu_rsp_status),
+    .addr_base_i(mif_addr_base),
+    .addr_limit_i(mif_addr_limit),
     .m_axi_awid_o(axi_awid),
     .m_axi_awaddr_o(axi_awaddr),
     .m_axi_awlen_o(axi_awlen),
@@ -282,7 +204,8 @@ module tb_memory_smoke;
       if (!axi_rvalid && axi_arvalid && axi_arready) begin
         if ((axi_arid != 8'd0)
             || !((axi_araddr == 40'h1000)
-                 || (axi_araddr == 40'h1010))
+                 || (axi_araddr == 40'h1010)
+                 || (axi_araddr == 40'hff_ffff_fff8))
             || (axi_arlen != 8'd0) || (axi_arsize != 3'd3)
             || (axi_arburst != 2'b01) || axi_arlock
             || (axi_arcache != 4'b0011) || (axi_arprot != 3'b000)
@@ -323,25 +246,6 @@ module tb_memory_smoke;
     end
   endtask
 
-  task automatic tbu_access(
-    input logic write_access,
-    input logic [47:0] address
-  );
-    begin
-      @(negedge clk);
-      tbu_req_write = write_access;
-      tbu_req_addr  = address;
-      tbu_req_valid = 1'b1;
-      if (!tbu_req_ready) begin
-        $fatal(1, "TBU was not ready for a serialized request");
-      end
-      @(posedge clk);
-      @(negedge clk);
-      tbu_req_valid = 1'b0;
-      wait (tbu_rsp_valid);
-    end
-  endtask
-
   task automatic mif_access(
     input logic write_access,
     input logic [47:0] address,
@@ -371,17 +275,13 @@ module tb_memory_smoke;
     l1_req_wdata     = '0;
     l1_req_wstrb     = '0;
     l1_rsp_ready     = 2'b11;
-    tbu_enable       = 1'b1;
-    tbu_allow_read   = 1'b1;
-    tbu_allow_write  = 1'b1;
-    tbu_req_valid    = 1'b0;
-    tbu_req_write    = 1'b0;
-    tbu_req_addr     = 48'd0;
     mif_req_valid    = 1'b0;
     mif_req_write    = 1'b0;
     mif_req_addr     = 48'd0;
     mif_req_wdata    = 64'd0;
     mif_req_wstrb    = 8'd0;
+    mif_addr_base    = 48'h1000;
+    mif_addr_limit   = 48'h1ff8;
     next_read_response = 2'b00;
     repeat (4) @(posedge clk);
     reset_n = 1'b1;
@@ -411,24 +311,6 @@ module tb_memory_smoke;
     end
     @(posedge clk);
 
-    tbu_access(1'b0, 48'h1000);
-    if ((tbu_rsp_status != NPU_MEM_OK) || (tbu_rsp_addr != 48'h1000)) begin
-      $fatal(1, "TBU identity read failed");
-    end
-    @(posedge clk);
-    tbu_allow_write = 1'b0;
-    tbu_access(1'b1, 48'h1008);
-    if (tbu_rsp_status != NPU_MEM_PERM) begin
-      $fatal(1, "TBU did not reject a denied write");
-    end
-    @(posedge clk);
-    tbu_allow_write = 1'b1;
-    tbu_access(1'b0, 48'h2000);
-    if (tbu_rsp_status != NPU_MEM_ADDR) begin
-      $fatal(1, "TBU did not reject an address outside its range");
-    end
-    @(posedge clk);
-
     mif_access(1'b0, 48'h1000, 64'd0);
     if ((mif_rsp_status != NPU_MEM_OK)
         || (mif_rsp_rdata !=
@@ -448,22 +330,45 @@ module tb_memory_smoke;
     if (mif_rsp_status != NPU_MEM_DECERR) begin
       $fatal(1, "MIF did not report AXI DECERR");
     end
+    @(posedge clk);
+    mif_access(1'b0, 48'h2000, 64'd0);
+    if (mif_rsp_status != NPU_MEM_ADDR) begin
+      $fatal(1, "MIF accepted a physical address outside its configured range");
+    end
+    @(posedge clk);
+    mif_access(1'b0, 48'h1004, 64'd0);
+    if (mif_rsp_status != NPU_MEM_ADDR) begin
+      $fatal(1, "MIF accepted a misaligned physical address");
+    end
+    @(posedge clk);
+    mif_addr_base  = 48'd0;
+    mif_addr_limit = 48'hffff_ffff_fff8;
+    next_read_response = 2'b00;
+    mif_access(1'b0, 48'h00ff_ffff_fff8, 64'd0);
+    if (mif_rsp_status != NPU_MEM_OK) begin
+      $fatal(1, "MIF rejected the highest aligned 40-bit physical address");
+    end
+    @(posedge clk);
+    mif_access(1'b0, 48'h0100_0000_0000, 64'd0);
+    if (mif_rsp_status != NPU_MEM_ADDR) begin
+      $fatal(1, "MIF truncated a physical address with bit 40 set");
+    end
 
     @(posedge clk);
     @(negedge clk);
-    if ((read_count != 2) || (write_count != 1)) begin
+    if ((read_count != 3) || (write_count != 1)) begin
       $fatal(1, "AXI target transaction counts do not match");
     end
     if (!mif_error_valid || (mif_error_addr != 48'h1010)
         || (mif_error_status != NPU_MEM_DECERR)) begin
       $fatal(1, "MIF sticky error metadata is incorrect");
     end
-    if (!l1_idle || !tbu_direct_idle || !tbu_mif_idle || !mif_idle) begin
+    if (!l1_idle || !mif_idle) begin
       $fatal(1, "memory modules did not return to idle");
     end
 
     $display(
-      "PASS: L1BUF, TBU and AXI MIF signature=%0b",
+      "PASS: L1BUF and direct physical-address AXI MIF signature=%0b",
       ^l1_rsp_rdata[63:0]
     );
     $finish;

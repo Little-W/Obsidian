@@ -19,10 +19,9 @@ extern "C" {
 
 #define NPU_WIRE_DEFAULT_DESC_VERSION 1u
 #define NPU_WIRE_HEADER_VERSION 1u
-
 /*
- * Address limits are exclusive.  The reference C model uses byte offsets
- * from zero for both L1 and DDR storage.
+ * Address limits are exclusive. The reference C model uses physical byte
+ * offsets from zero for both L1 and DDR storage.
  */
 typedef struct {
     uint32_t l1_bytes;

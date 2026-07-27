@@ -88,6 +88,7 @@ class TargetConfig:
     l1_bytes: int = 256 * 1024
     ddr_base: int = 0x20000
     ddr_bytes: int = 2 * 1024 * 1024
+    axi_addr_bits: int = npu_assembler.AXI_ADDR_BITS
     mt: int = 8
     kt: int = 16
     nt: int = 8
@@ -1071,6 +1072,12 @@ class AddressAllocator:
 
 
 def validate_target(target: TargetConfig) -> None:
+    if target.axi_addr_bits != npu_assembler.AXI_ADDR_BITS:
+        raise fail(
+            "target.axi_addr_bits",
+            f"must equal {npu_assembler.AXI_ADDR_BITS}",
+        )
+    axi_addr_limit = 1 << target.axi_addr_bits
     for name, value in (
         ("l1_base", target.l1_base),
         ("l1_bytes", target.l1_bytes),
@@ -1081,6 +1088,16 @@ def validate_target(target: TargetConfig) -> None:
             raise fail(f"target.{name}", "must be nonnegative")
     if target.l1_base >= target.l1_bytes:
         raise fail("target.l1_base", "must be below the L1 capacity")
+    if target.ddr_base >= axi_addr_limit:
+        raise fail(
+            "target.ddr_base",
+            f"must be below 2^{target.axi_addr_bits}",
+        )
+    if target.ddr_bytes > axi_addr_limit:
+        raise fail(
+            "target.ddr_bytes",
+            f"must be at most 2^{target.axi_addr_bits}",
+        )
     if target.ddr_base >= target.ddr_bytes:
         raise fail("target.ddr_base", "must be below the DDR capacity")
     for name, value in (
@@ -1282,6 +1299,24 @@ def allocate_model_storage(
     for name in outputs:
         tensor = tensors[name]
         tensor.ddr_addr = ddr_allocator.allocate(tensor.storage_bytes, 64)
+    axi_addr_limit = 1 << target.axi_addr_bits
+    if ddr_allocator.cursor > axi_addr_limit:
+        raise fail(
+            "DDR allocation",
+            f"end address 0x{ddr_allocator.cursor:x} exceeds the "
+            f"{target.axi_addr_bits}-bit AXI address range",
+        )
+    for tensor in tensors.values():
+        if tensor.ddr_addr is None:
+            continue
+        end = tensor.ddr_addr + tensor.storage_bytes
+        if tensor.ddr_addr >= axi_addr_limit or end > axi_addr_limit:
+            raise fail(
+                "DDR allocation",
+                f"tensor {tensor.name!r} occupies "
+                f"0x{tensor.ddr_addr:x}..0x{end:x}, outside the "
+                f"{target.axi_addr_bits}-bit AXI address range",
+            )
     return l1_allocator, ddr_allocator, constant_image
 
 
@@ -3884,12 +3919,71 @@ def expand_inline_tasks(
     return result
 
 
+def global_address_bases(
+    tasks: Sequence[VirtualTask],
+    target: TargetConfig,
+) -> dict[str, int]:
+    """Choose register bases for the physical byte addresses used by tasks."""
+
+    address_limit = 1 << target.axi_addr_bits
+    window_bytes = 1 << 24
+    windows: set[int] = set()
+
+    def visit(value: Any, location: str) -> None:
+        if isinstance(value, Mapping):
+            if str(value.get("space", "")).lower() == "ddr":
+                address = parse_int(
+                    value.get("addr"),
+                    f"{location}.addr",
+                    0,
+                    address_limit - 1,
+                )
+                if "region_bytes" in value:
+                    region_bytes = parse_int(
+                        value["region_bytes"],
+                        f"{location}.region_bytes",
+                        0,
+                        address_limit,
+                    )
+                    if region_bytes > address_limit - address:
+                        raise fail(
+                            f"{location}.region_bytes",
+                            f"region ending at "
+                            f"0x{address + region_bytes:x} exceeds the "
+                            f"{target.axi_addr_bits}-bit AXI address range",
+                        )
+                window = address & ~(window_bytes - 1)
+                if window != 0:
+                    windows.add(window)
+            for name, nested in value.items():
+                visit(nested, f"{location}.{name}")
+        elif isinstance(value, (list, tuple)):
+            for index, nested in enumerate(value):
+                visit(nested, f"{location}[{index}]")
+
+    for task in tasks:
+        visit(task.descriptor, f"task {task.name}")
+
+    selector_names = ("input", "weight", "work", "output", "kv")
+    if len(windows) > len(selector_names):
+        raise fail(
+            "lowering",
+            "global tensor starts occupy more than five 24-bit address "
+            "windows",
+        )
+    return {
+        selector_names[index]: base
+        for index, base in enumerate(sorted(windows))
+    }
+
+
 def build_low_ir(
     tensors: Mapping[str, TensorInfo],
     tasks: Sequence[VirtualTask],
     target: TargetConfig,
 ) -> tuple[dict[str, Any], list[VirtualTask]]:
     inline_tasks = expand_inline_tasks(tasks, tensors, target)
+    gaddr_bases = global_address_bases(inline_tasks, target)
     base_dependencies = task_dependencies(inline_tasks, tensors)
     expanded, dependencies = expand_dependency_joins(
         inline_tasks, base_dependencies
@@ -4034,6 +4128,8 @@ def build_low_ir(
         "target": {
             "name": "single-core",
             "command_format": npu_assembler.COMMAND_FORMAT,
+            "axi_addr_bits": target.axi_addr_bits,
+            "gaddr_bases": gaddr_bases,
             "mt": target.mt,
             "kt": target.kt,
             "nt": target.nt,
@@ -4187,7 +4283,7 @@ def compile_model_document(
     arena, requant_by_shift = prepare_constant_arena(
         tensors, operators, target
     )
-    allocator, _ddr_allocator, constant_image = allocate_model_storage(
+    allocator, ddr_allocator, constant_image = allocate_model_storage(
         tensors, operators, outputs, target, arena
     )
     tasks = lower_model_tasks(
@@ -4212,6 +4308,19 @@ def compile_model_document(
         arena,
         constant_image,
     )
+    runtime["axi_addr_bits"] = target.axi_addr_bits
+    runtime["ddr_base"] = target.ddr_base
+    runtime["ddr_bytes"] = target.ddr_bytes
+    runtime["ddr_allocation_end"] = ddr_allocator.cursor
+    configured_bases = low_ir["target"]["gaddr_bases"]
+    runtime["gaddr_bases"] = {
+        name: (
+            0
+            if name == "zero"
+            else int(configured_bases.get(name, 0))
+        )
+        for name in npu_assembler.GADDR_BASE_CODES
+    }
     runtime["command_bytes"] = len(command_image)
     runtime["command_sha256"] = sha256_bytes(command_image)
     return CompilationResult(

@@ -3,6 +3,8 @@
 
 #include <string.h>
 
+#define LSC_TEST_REG_RESERVED_0090 UINT16_C(0x0090)
+
 static void lsc_set_idle(npu_lsc_cycle_inputs_t *inputs,
                          uint8_t idle)
 {
@@ -327,6 +329,7 @@ int test_lsc_cycle(void)
 {
     npu_lsc_cycle_config_t config;
     npu_lsc_cycle_t model;
+    npu_lsc_cycle_t reserved_snapshot;
     npu_lsc_cycle_inputs_t inputs;
     npu_lsc_cycle_outputs_t outputs;
     uint64_t value;
@@ -343,6 +346,9 @@ int test_lsc_cycle(void)
     TEST_CHECK(outputs.stop_fetch == 1u);
     TEST_CHECK(outputs.param_lock == 0u);
     TEST_CHECK(outputs.l1_diag_enable == 0u);
+    TEST_CHECK(outputs.m_axi_addr_base == 0u);
+    TEST_CHECK(outputs.m_axi_addr_limit ==
+               UINT64_C(0x00fffffffff8));
 
     inputs.reset_n = 1u;
     npu_lsc_cycle_step(&model, &inputs, &outputs);
@@ -380,7 +386,7 @@ int test_lsc_cycle(void)
         ((value >> NPU_LSC_BUS_DATA_BITS_SHIFT) &
          NPU_LSC_FIELD_U8_MASK) == 64u);
     TEST_CHECK(
-        ((value >> NPU_LSC_BUS_GVA_BITS_SHIFT) &
+        ((value >> NPU_LSC_BUS_GADDR_BITS_SHIFT) &
          NPU_LSC_FIELD_U8_MASK) == 48u);
     TEST_CHECK(
         ((value >> NPU_LSC_BUS_PA_BITS_SHIFT) &
@@ -502,12 +508,54 @@ int test_lsc_cycle(void)
 
     lsc_set_idle(&inputs, 0u);
     TEST_CHECK(lsc_write(&model, &inputs, &outputs, 0u,
+                         NPU_LSC_REG_RESERVED_0050,
+                         UINT64_MAX,
+                         0xffu) == NPU_LSC_REG_OKAY);
+    TEST_CHECK(lsc_read(&model, &inputs, &outputs, 0u,
+                        NPU_LSC_REG_RESERVED_0050,
+                        &value) == NPU_LSC_REG_OKAY);
+    TEST_CHECK(value == 0u);
+    TEST_CHECK(lsc_read(&model, &inputs, &outputs, 0u,
+                        LSC_TEST_REG_RESERVED_0090,
+                        &value) == NPU_LSC_REG_OKAY);
+    TEST_CHECK(value == 0u);
+    (void)memcpy(&reserved_snapshot, &model, sizeof(model));
+    TEST_CHECK(lsc_write(&model, &inputs, &outputs, 0u,
+                         LSC_TEST_REG_RESERVED_0090,
+                         UINT64_MAX,
+                         0xffu) == NPU_LSC_REG_OKAY);
+    TEST_CHECK(memcmp(&model, &reserved_snapshot,
+                      sizeof(model)) == 0);
+    TEST_CHECK(lsc_read(&model, &inputs, &outputs, 0u,
+                        LSC_TEST_REG_RESERVED_0090,
+                        &value) == NPU_LSC_REG_OKAY);
+    TEST_CHECK(value == 0u);
+    TEST_CHECK(lsc_write(&model, &inputs, &outputs, 0u,
                          NPU_LSC_REG_INPUT_BASE,
                          UINT64_C(0x1000),
                          0xffu) == NPU_LSC_REG_SLVERR);
     TEST_CHECK(model.input_base == 0u);
     lsc_set_idle(&inputs, 1u);
 
+    TEST_CHECK(lsc_write(&model, &inputs, &outputs, 0u,
+                         NPU_LSC_REG_INPUT_BASE,
+                         UINT64_C(0x000000fffffff000),
+                         0xffu) == NPU_LSC_REG_OKAY);
+    TEST_CHECK(model.input_base ==
+               UINT64_C(0x000000fffffff000));
+    TEST_CHECK(lsc_write(&model, &inputs, &outputs, 0u,
+                         NPU_LSC_REG_INPUT_BASE,
+                         UINT64_C(0x0000010000000000),
+                         0xffu) == NPU_LSC_REG_SLVERR);
+    TEST_CHECK(model.input_base ==
+               UINT64_C(0x000000fffffff000));
+
+    TEST_CHECK(lsc_write(&model, &inputs, &outputs, 0u,
+                         NPU_LSC_REG_M_AXI_ADDR_LIMIT,
+                         UINT64_C(0x0000010000000000),
+                         0xffu) == NPU_LSC_REG_SLVERR);
+    TEST_CHECK(model.m_axi_addr_limit ==
+               UINT64_C(0x00fffffffff8));
     TEST_CHECK(lsc_write(&model, &inputs, &outputs, 0u,
                          NPU_LSC_REG_M_AXI_ADDR_LIMIT,
                          UINT64_C(0x4000),
