@@ -613,19 +613,104 @@ def q5_training_model(
     )
 
 
-def use_uniform_attention_scores(
+def configure_attention_scores(
     layers: dict[str, keras.layers.Layer],
 ) -> None:
-    """Keep Q and K at zero so every valid score row has uniform weights."""
+    """Use uniform scores first, then fixed data-dependent scores."""
 
-    for name in ("attention1", "attention2"):
-        attention = layers[name]
-        query_dense = attention.query_dense
-        key_dense = attention.key_dense
-        query_dense.kernel.assign(tf.zeros_like(query_dense.kernel))
-        key_dense.kernel.assign(tf.zeros_like(key_dense.kernel))
-        query_dense.trainable = False
-        key_dense.trainable = False
+    attention1 = layers["attention1"]
+    attention1.query_dense.kernel.assign(
+        tf.zeros_like(attention1.query_dense.kernel)
+    )
+    attention1.key_dense.kernel.assign(
+        tf.zeros_like(attention1.key_dense.kernel)
+    )
+    attention1.query_dense.trainable = False
+    attention1.key_dense.trainable = False
+
+    attention2 = layers["attention2"]
+    identity = np.zeros((WIDTH, HEADS, HEAD_WIDTH), dtype=np.float32)
+    for channel in range(WIDTH):
+        identity[channel, channel // HEAD_WIDTH, channel % HEAD_WIDTH] = 0.5
+    attention2.query_dense.kernel.assign(identity)
+    attention2.key_dense.kernel.assign(identity)
+    attention2.query_dense.trainable = False
+    attention2.key_dense.trainable = False
+
+
+def validate_attention_kernels(
+    layers: dict[str, keras.layers.Layer],
+) -> dict[str, int | float]:
+    attention1 = layers["attention1"]
+    attention2 = layers["attention2"]
+    query1 = np.asarray(attention1.query_dense.kernel)
+    key1 = np.asarray(attention1.key_dense.kernel)
+    query2 = np.asarray(attention2.query_dense.kernel)
+    key2 = np.asarray(attention2.key_dense.kernel)
+    expected = np.zeros((WIDTH, HEADS, HEAD_WIDTH), dtype=np.float32)
+    for channel in range(WIDTH):
+        expected[channel, channel // HEAD_WIDTH, channel % HEAD_WIDTH] = 0.5
+    if (
+        np.count_nonzero(query1) != 0
+        or np.count_nonzero(key1) != 0
+        or not np.array_equal(query2, expected)
+        or not np.array_equal(key2, expected)
+    ):
+        raise RuntimeError("fixed attention Q/K kernels changed during training")
+    return {
+        "encoder1_query_nonzero": int(np.count_nonzero(query1)),
+        "encoder1_key_nonzero": int(np.count_nonzero(key1)),
+        "encoder2_query_nonzero": int(np.count_nonzero(query2)),
+        "encoder2_key_nonzero": int(np.count_nonzero(key2)),
+        "encoder2_nonzero_value": 0.5,
+    }
+
+
+def attention_score_statistics(
+    layers: dict[str, keras.layers.Layer],
+    words: np.ndarray,
+    positions: np.ndarray,
+    encoder1_probe: np.ndarray,
+) -> dict[str, dict[str, int | float]]:
+    score_sets: list[list[np.ndarray]] = [[], []]
+    for sample in range(words.shape[0]):
+        source = tf.convert_to_tensor(
+            words[sample : sample + 1] + positions[sample : sample + 1]
+        )
+        _, score1 = layers["attention1"](
+            source, source, return_attention_scores=True, training=False
+        )
+        encoded = tf.convert_to_tensor(
+            encoder1_probe[sample : sample + 1]
+        )
+        _, score2 = layers["attention2"](
+            encoded, encoded, return_attention_scores=True, training=False
+        )
+        score_sets[0].append(np.asarray(score1))
+        score_sets[1].append(np.asarray(score2))
+
+    result: dict[str, dict[str, int | float]] = {}
+    for name, score_items in zip(
+        ("encoder1", "encoder2"), score_sets, strict=True
+    ):
+        scores = np.concatenate(score_items, axis=0)
+        row_spread = np.max(scores, axis=-1) - np.min(scores, axis=-1)
+        nonuniform = int(np.count_nonzero(row_spread > 1.0e-6))
+        result[name] = {
+            "rows": int(row_spread.size),
+            "nonuniform_rows": nonuniform,
+            "uniform_rows": int(row_spread.size - nonuniform),
+            "minimum_weight": float(np.min(scores)),
+            "maximum_weight": float(np.max(scores)),
+            "maximum_row_spread": float(np.max(row_spread)),
+        }
+    if (
+        int(result["encoder1"]["nonuniform_rows"]) != 0
+        or int(result["encoder2"]["nonuniform_rows"])
+        != int(result["encoder2"]["rows"])
+    ):
+        raise RuntimeError("attention score diversity requirement not met")
+    return result
 
 
 def inference_model(
@@ -916,7 +1001,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     layers = model_layers()
     trainer = training_model(layers)
-    use_uniform_attention_scores(layers)
+    configure_attention_scores(layers)
     trainer.compile(
         optimizer=keras.optimizers.Adam(learning_rate=0.003),
         loss=keras.losses.MeanSquaredError(),
@@ -972,6 +1057,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     projection_stats = snap_model_weights_to_q5(q5_trainer)
     stabilize_final_encoder_scale(layers)
     projection_stats = snap_model_weights_to_q5(q5_trainer)
+    attention_kernel_stats = validate_attention_kernels(layers)
     final_loss, final_mse = trainer.evaluate(
         train_inputs,
         train_target,
@@ -997,6 +1083,28 @@ def main(argv: Sequence[str] | None = None) -> int:
     test_probe1, test_probe2, test_logits = predict_fixed_batch(
         exported, test_words, test_positions
     )
+    attention_stats = attention_score_statistics(
+        layers,
+        test_words,
+        test_positions,
+        test_probe1,
+    )
+    total_parameters = int(exported.count_params())
+    trainable_parameters = sum(
+        int(np.prod(variable.shape))
+        for variable in exported.trainable_weights
+    )
+    fixed_parameters = total_parameters - trainable_parameters
+    if (
+        total_parameters != 14884
+        or fixed_parameters != 4096
+        or trainable_parameters != 10788
+    ):
+        raise RuntimeError(
+            "unexpected parameter counts: "
+            f"total={total_parameters} trainable={trainable_parameters} "
+            f"fixed={fixed_parameters}"
+        )
     test_accuracy = classification_accuracy(
         test_logits, test_lengths, test_labels
     )
@@ -1072,7 +1180,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         "epochs": EPOCHS,
         "q5_aware_epochs": Q5_AWARE_EPOCHS,
         "q5_projected_epochs": Q5_PROJECTED_EPOCHS,
-        "attention_score_mode": "uniform_zero_query_and_key",
+        "attention_score_mode": (
+            "encoder1_uniform_encoder2_fixed_head_identity"
+        ),
+        "attention_kernel_check": attention_kernel_stats,
+        "attention_score_statistics": attention_stats,
+        "parameters": {
+            "total": total_parameters,
+            "trainable": trainable_parameters,
+            "fixed": fixed_parameters,
+        },
         "final_encoder_norm_scale": FINAL_NORM_SCALE,
         "input_shapes": [[1, TOKENS, WIDTH], [1, TOKENS, WIDTH]],
         "output_shapes": [
@@ -1160,6 +1277,20 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(
         f"weight_range=[{smallest_weight:.7f},{largest_weight:.7f}] "
         f"model_sha256={report['model_sha256']}"
+    )
+    print(
+        "attention_scores "
+        f"encoder1_nonuniform="
+        f"{int(attention_stats['encoder1']['nonuniform_rows'])}/"
+        f"{int(attention_stats['encoder1']['rows'])} "
+        f"encoder2_nonuniform="
+        f"{int(attention_stats['encoder2']['nonuniform_rows'])}/"
+        f"{int(attention_stats['encoder2']['rows'])} "
+        f"encoder2_weight_range=["
+        f"{float(attention_stats['encoder2']['minimum_weight']):.7f},"
+        f"{float(attention_stats['encoder2']['maximum_weight']):.7f}] "
+        f"parameters={total_parameters} trainable={trainable_parameters} "
+        f"fixed={fixed_parameters}"
     )
     return 0
 

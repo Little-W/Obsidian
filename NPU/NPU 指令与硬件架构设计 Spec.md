@@ -246,29 +246,28 @@ MIF 是 64 bit AXI4 Master，连接 SoC Fabric。关键要求：
 - 反压期间保持全部有效载荷稳定。
 - AXI ID 只有在对应 RLAST 或 B 响应完成后才能复用。
 
-MIF 不接收 V2 Task Context 地址，也不读取外部任务参数块。
+MIF 不接收 Task Context 地址，也不读取外部任务参数块。
 
-## 6. CMD128 inline V2 公共格式
+## 6. 指令集设计
 
 ### 6.1 位定义
 
-| bit | 名称 | 说明 |
-| ---: | --- | --- |
-| 127 | `V2` | 必须为 1 |
-| 126:122 | `compact_opcode` | 5 bit，见 6.3 |
-| 121:112 | `command_id` | 10 bit，0..1023 |
-| 111:104 | `wait0` | 8 bit Event ID，0xff 表示 none |
-| 103:96 | `wait1` | 8 bit Event ID，0xff 表示 none |
-| 95:88 | `signal` | 8 bit Event ID，0xff 表示 none |
-| 87 | `irq_success` | 成功完成时产生中断 |
-| 86 | `irq_error` | 错误完成时产生中断 |
-| 85 | `strict_numeric` | CME 数值异常转为任务错误 |
-| 84 | `ordered` | 与同执行单元的先前任务保持提交顺序 |
-| 83:82 | `timeout_class` | 4 个 V2 timeout 配置之一 |
-| 81:80 | `dtype` | 公共输入 dtype |
-| 79:0 | `payload` | 操作专有字段 |
+|     bit | 名称               | 说明                          |
+| ------: | ---------------- | --------------------------- |
+| 126:122 | `compact_opcode` | 5 bit，见 6.3                 |
+| 121:112 | `command_id`     | 10 bit，0..1023              |
+| 111:104 | `wait0`          | 8 bit Event ID，0xff 表示 none |
+|  103:96 | `wait1`          | 8 bit Event ID，0xff 表示 none |
+|   95:88 | `signal`         | 8 bit Event ID，0xff 表示 none |
+|      87 | `irq_success`    | 成功完成时产生中断                   |
+|      86 | `irq_error`      | 错误完成时产生中断                   |
+|      85 | `strict_numeric` | CME 数值异常转为任务错误              |
+|      84 | `ordered`        | 与同执行单元的先前任务保持提交顺序           |
+|   83:82 | `timeout_class`  | 4 个 timeout 配置之一            |
+|   81:80 | `dtype`          | 公共输入 dtype                  |
+|    79:0 | `payload`        | 操作专有字段                      |
 
-所有未定义位必须为 0。命令以 little-endian 字节保存并先发送低 64 bit。
+各操作的保留位必须为 0。命令以 little-endian 字节保存并先发送低 64 bit。
 `command_id` 在未 ACK 的 Task 表项中必须唯一。CFE 在接收前查询占用状态；
 重复 ID 返回 BAD_DESC。
 

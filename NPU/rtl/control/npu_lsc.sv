@@ -148,6 +148,24 @@ module npu_lsc (
     end
   endfunction
 
+  function automatic logic [47:0] merge_write48(
+    input logic [47:0] old_value,
+    input logic [47:0] new_value,
+    input logic [5:0]  strobe
+  );
+    logic [47:0] merged_value;
+    begin
+      merged_value = old_value;
+      for (int unsigned byte_idx = 0; byte_idx < 6; byte_idx++) begin
+        if (strobe[byte_idx]) begin
+          merged_value[byte_idx*8 +: 8] =
+              new_value[byte_idx*8 +: 8];
+        end
+      end
+      return merged_value;
+    end
+  endfunction
+
   assign reg_req_ready_o  = !rsp_valid_q;
   assign reg_rsp_valid_o  = rsp_valid_q;
   assign reg_rsp_rdata_o  = rsp_data_q;
@@ -347,9 +365,9 @@ module npu_lsc (
                   || (|reg_req_wdata_i[2:0])) begin
                 rsp_status_q <= 2'b10;
               end else begin
-                input_base_q <= merge_write({16'd0, input_base_q},
-                                            reg_req_wdata_i,
-                                            reg_req_wstrb_i)[47:0];
+                input_base_q <= merge_write48(input_base_q,
+                                              reg_req_wdata_i[47:0],
+                                              reg_req_wstrb_i[5:0]);
               end
             end
             16'h0060: begin
@@ -357,9 +375,9 @@ module npu_lsc (
                   || (|reg_req_wdata_i[2:0])) begin
                 rsp_status_q <= 2'b10;
               end else begin
-                weight_base_q <= merge_write({16'd0, weight_base_q},
-                                             reg_req_wdata_i,
-                                             reg_req_wstrb_i)[47:0];
+                weight_base_q <= merge_write48(weight_base_q,
+                                               reg_req_wdata_i[47:0],
+                                               reg_req_wstrb_i[5:0]);
               end
             end
             16'h0068: begin
@@ -367,9 +385,9 @@ module npu_lsc (
                   || (|reg_req_wdata_i[2:0])) begin
                 rsp_status_q <= 2'b10;
               end else begin
-                work_base_q <= merge_write({16'd0, work_base_q},
-                                           reg_req_wdata_i,
-                                           reg_req_wstrb_i)[47:0];
+                work_base_q <= merge_write48(work_base_q,
+                                             reg_req_wdata_i[47:0],
+                                             reg_req_wstrb_i[5:0]);
               end
             end
             16'h0070: begin
@@ -377,9 +395,9 @@ module npu_lsc (
                   || (|reg_req_wdata_i[2:0])) begin
                 rsp_status_q <= 2'b10;
               end else begin
-                output_base_q <= merge_write({16'd0, output_base_q},
-                                             reg_req_wdata_i,
-                                             reg_req_wstrb_i)[47:0];
+                output_base_q <= merge_write48(output_base_q,
+                                               reg_req_wdata_i[47:0],
+                                               reg_req_wstrb_i[5:0]);
               end
             end
             16'h0078: begin
@@ -387,9 +405,9 @@ module npu_lsc (
                   || (|reg_req_wdata_i[2:0])) begin
                 rsp_status_q <= 2'b10;
               end else begin
-                kv_base_q <= merge_write({16'd0, kv_base_q},
-                                         reg_req_wdata_i,
-                                         reg_req_wstrb_i)[47:0];
+                kv_base_q <= merge_write48(kv_base_q,
+                                           reg_req_wdata_i[47:0],
+                                           reg_req_wstrb_i[5:0]);
               end
             end
             16'h0080: begin

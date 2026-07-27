@@ -1,5 +1,8 @@
+SHELL := /bin/bash
+.SHELLFLAGS := -o pipefail -c
+
 DC_SHELL ?= dc_shell
-SOURCE_RTL ?= /home/yusen/Obsidian\ Vault/NPU/rtl
+SOURCE_RTL ?= /home/yusen/Obsidian Vault/NPU/rtl
 SYN_ENV_ROOT ?= /home/yusen/opt/xinyuan/syn_env
 NPU_SYN_DIR ?= $(SYN_ENV_ROOT)/npu
 

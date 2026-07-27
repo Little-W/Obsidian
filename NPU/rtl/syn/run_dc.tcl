@@ -36,23 +36,44 @@ while {[gets $filelist_fp file_line] >= 0} {
 close $filelist_fp
 
 echo "NPU RTL files: [llength $rtl_files]"
-analyze -format sverilog $rtl_files
-elaborate $top_name
+if {![analyze -format sverilog $rtl_files]} {
+  echo "ERROR: SystemVerilog analysis failed"
+  exit 2
+}
+if {![elaborate $top_name]} {
+  echo "ERROR: top-level elaboration failed"
+  exit 2
+}
 current_design $top_name
-uniquify -force
-link
 
 set sram_designs [get_designs -quiet npu_l1_sram_bank_blackbox*]
 if {[sizeof_collection $sram_designs] > 0} {
+  if {[catch {
+    set_black_box $sram_designs
+  } black_box_error]} {
+    echo "WARNING: set_black_box is unavailable: $black_box_error"
+  }
   set_dont_touch $sram_designs
 }
+
+uniquify -force
+if {![link]} {
+  echo "ERROR: design link failed"
+  exit 2
+}
+
 set sram_cells [get_cells -quiet -hierarchical \
   -filter "ref_name =~ npu_l1_sram_bank_blackbox*"]
 if {[sizeof_collection $sram_cells] > 0} {
   set_dont_touch $sram_cells
 }
 
-source [file join $script_dir npu_single_core_400mhz.sdc]
+if {[catch {
+  source [file join $script_dir npu_single_core_400mhz.sdc]
+} constraint_error]} {
+  echo "ERROR: constraint setup failed: $constraint_error"
+  exit 3
+}
 set_operating_conditions typical -library gscl45nm
 
 set_fix_multiple_port_nets -all -buffer_constants
@@ -65,7 +86,12 @@ redirect [file join $report_dir ${top_name}_check_timing_precompile.rpt] {
   check_timing
 }
 
-compile_ultra -no_autoungroup -no_boundary_optimization
+if {[catch {
+  compile_ultra -no_autoungroup -no_boundary_optimization
+} compile_error]} {
+  echo "ERROR: compile_ultra failed: $compile_error"
+  exit 4
+}
 change_names -rules verilog -hierarchy
 
 redirect [file join $report_dir ${top_name}_check_design.rpt] {

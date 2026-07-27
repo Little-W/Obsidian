@@ -23,7 +23,6 @@ module npu_l1_sram_bank_blackbox #(
   input  logic [7:0]            wstrb_i,
   output logic [63:0]           rdata_o
 );
-  // synopsys syn_black_box
 endmodule
 
 module npu_l1buf #(
