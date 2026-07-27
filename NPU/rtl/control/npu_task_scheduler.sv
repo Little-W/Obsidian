@@ -131,6 +131,7 @@ module npu_task_scheduler #(
   logic [11:0]   task_wait1_q        [TASK_SLOTS];
   logic [11:0]   task_signal_q       [TASK_SLOTS];
   logic [63:0]   task_submit_seq_q   [TASK_SLOTS];
+  logic [TASK_SLOTS-1:0] task_predecessor_mask_q [TASK_SLOTS];
   /*
    * Keep the submitted instruction and its address-base snapshot instead of
    * a 2048-bit expanded descriptor per slot.  The snapshot preserves the
@@ -220,10 +221,46 @@ module npu_task_scheduler #(
 
   logic control_select_found;
   logic [TASK_IDX_W-1:0] control_select;
+  logic [TASK_SLOTS-1:0] completion_eligible_mask;
+  logic [TASK_SLOTS-1:0] event_publish_eligible_mask;
+  logic [TASK_SLOTS-1:0] control_eligible_mask;
+  logic [TASK_IDX_W-1:0] select_scan_slot_q;
+  logic [TASK_SLOTS-1:0] completion_scan_mask_q;
+  logic [TASK_SLOTS-1:0] event_publish_scan_mask_q;
+  logic [TASK_SLOTS-1:0] control_scan_mask_q;
+  logic completion_scan_dirty_q;
+  logic event_publish_scan_dirty_q;
+  logic control_scan_dirty_q;
+  logic completion_scan_best_valid_q;
+  logic event_publish_scan_best_valid_q;
+  logic control_scan_best_valid_q;
+  logic [TASK_IDX_W-1:0] completion_scan_best_slot_q;
+  logic [TASK_IDX_W-1:0] event_publish_scan_best_slot_q;
+  logic [TASK_IDX_W-1:0] control_scan_best_slot_q;
+  logic [63:0] completion_scan_best_seq_q;
+  logic [63:0] event_publish_scan_best_seq_q;
+  logic [63:0] control_scan_best_seq_q;
+  logic completion_scan_current_valid;
+  logic event_publish_scan_current_valid;
+  logic control_scan_current_valid;
+  logic completion_scan_winner_valid;
+  logic event_publish_scan_winner_valid;
+  logic control_scan_winner_valid;
+  logic [TASK_IDX_W-1:0] completion_scan_winner_slot;
+  logic [TASK_IDX_W-1:0] event_publish_scan_winner_slot;
+  logic [TASK_IDX_W-1:0] control_scan_winner_slot;
+  logic [63:0] completion_scan_winner_seq;
+  logic [63:0] event_publish_scan_winner_seq;
+  logic [63:0] control_scan_winner_seq;
+  logic completion_scan_round_dirty;
+  logic event_publish_scan_round_dirty;
+  logic control_scan_round_dirty;
 
   logic dependency_success [TASK_SLOTS];
   logic dependency_failed  [TASK_SLOTS];
   logic order_blocked      [TASK_SLOTS];
+  logic [TASK_SLOTS-1:0] task_live_mask;
+  logic [TASK_SLOTS-1:0] cmd_predecessor_mask;
   logic event_resources_valid;
   logic cmd_static_valid;
   logic cmd_accept;
@@ -597,7 +634,11 @@ module npu_task_scheduler #(
     task_signal_q[control_select][11:8] + 1'b1;
 
   always_comb begin
+    task_live_mask = '0;
     for (int unsigned slot = 0; slot < TASK_SLOTS; slot++) begin
+      task_live_mask[slot] =
+        (task_state_q[slot] != NPU_TASK_FREE) &&
+        !terminal_state(task_state_q[slot]);
       if ((task_engine_q[slot] == NPU_ENGINE_CONTROL) &&
           (task_opcode_q[slot] == NPU_OPCODE_EVENT_JOIN) &&
           task_cmd_q[slot][75]) begin
@@ -615,37 +656,25 @@ module npu_task_scheduler #(
           event_is_failed(task_wait0_q[slot])
           || event_is_failed(task_wait1_q[slot]);
       end
-      order_blocked[slot] = 1'b0;
-      if (task_header_flags_q[slot][4]) begin
-        for (int unsigned prior = 0; prior < TASK_SLOTS; prior++) begin
-          if ((task_state_q[prior] != NPU_TASK_FREE) &&
-              (task_submit_seq_q[prior] < task_submit_seq_q[slot]) &&
-              !terminal_state(task_state_q[prior])) begin
-            order_blocked[slot] = 1'b1;
-          end
-        end
-      end
-      if ((task_engine_q[slot] == NPU_ENGINE_CONTROL) &&
-          (task_opcode_q[slot] == NPU_OPCODE_GLOBAL_FENCE)) begin
-        for (int unsigned prior = 0; prior < TASK_SLOTS; prior++) begin
-          if ((task_state_q[prior] != NPU_TASK_FREE) &&
-              (task_submit_seq_q[prior] < task_submit_seq_q[slot]) &&
-              engine_mask_selected(
-                task_engine_q[prior], task_cmd_q[slot][79:76]
-              ) &&
-              !terminal_state(task_state_q[prior])) begin
-            order_blocked[slot] = 1'b1;
-          end
-        end
-      end
-      for (int unsigned barrier = 0;
-           barrier < TASK_SLOTS; barrier++) begin
-        if ((task_state_q[barrier] != NPU_TASK_FREE)
-            && task_header_flags_q[barrier][4]
-            && (task_submit_seq_q[barrier] < task_submit_seq_q[slot])
-            && !terminal_state(task_state_q[barrier])) begin
-          order_blocked[slot] = 1'b1;
-        end
+    end
+    for (int unsigned slot = 0; slot < TASK_SLOTS; slot++) begin
+      order_blocked[slot] =
+        |(task_predecessor_mask_q[slot] & task_live_mask);
+    end
+  end
+
+  always_comb begin
+    cmd_predecessor_mask = '0;
+    for (int unsigned prior = 0; prior < TASK_SLOTS; prior++) begin
+      if (task_live_mask[prior] &&
+          (cmd_header_flags[4] ||
+           task_header_flags_q[prior][4] ||
+           ((cmd_engine == NPU_ENGINE_CONTROL) &&
+            (cmd_opcode == NPU_OPCODE_GLOBAL_FENCE) &&
+            engine_mask_selected(
+              task_engine_q[prior], cfe_cmd_i[79:76]
+            )))) begin
+        cmd_predecessor_mask[prior] = 1'b1;
       end
     end
   end
@@ -691,43 +720,204 @@ module npu_task_scheduler #(
   end
 
   always_comb begin
-    completion_found    = 1'b0;
-    completion_select   = '0;
-    event_publish_found = 1'b0;
-    event_publish_select = '0;
-    control_select_found = 1'b0;
-    control_select      = '0;
-
+    completion_eligible_mask    = '0;
+    event_publish_eligible_mask = '0;
+    control_eligible_mask       = '0;
     for (int unsigned slot = 0; slot < TASK_SLOTS; slot++) begin
-      if (task_notify_q[slot] &&
-          (!completion_found ||
-           (task_submit_seq_q[slot] <
-            task_submit_seq_q[completion_select]))) begin
-        completion_found  = 1'b1;
-        completion_select = TASK_IDX_W'(slot);
+      completion_eligible_mask[slot] = task_notify_q[slot];
+      event_publish_eligible_mask[slot] =
+        task_notify_q[slot] &&
+        !task_event_published_q[slot] &&
+        !(event_publish_pending_valid_q &&
+          (event_publish_pending_slot_q == TASK_IDX_W'(slot))) &&
+        (task_signal_q[slot] != NPU_EVENT_NONE) &&
+        !((task_engine_q[slot] == NPU_ENGINE_CONTROL) &&
+          (task_opcode_q[slot] == NPU_OPCODE_EVENT_REARM));
+      control_eligible_mask[slot] =
+        (task_state_q[slot] == NPU_TASK_READY) &&
+        !order_blocked[slot] &&
+        (task_engine_q[slot] == NPU_ENGINE_CONTROL);
+    end
+  end
+
+  /*
+   * Completion, Event publication, and Control execution share one slot
+   * counter.  Each client keeps its own oldest candidate, so one cycle has
+   * at most three parallel 64-bit comparisons instead of three 16-slot
+   * serial comparison cones.
+   */
+  always_comb begin
+    completion_scan_current_valid =
+      completion_scan_mask_q[select_scan_slot_q];
+    event_publish_scan_current_valid =
+      event_publish_scan_mask_q[select_scan_slot_q];
+    control_scan_current_valid =
+      control_scan_mask_q[select_scan_slot_q];
+
+    completion_scan_winner_valid = completion_scan_best_valid_q;
+    completion_scan_winner_slot  = completion_scan_best_slot_q;
+    completion_scan_winner_seq   = completion_scan_best_seq_q;
+    event_publish_scan_winner_valid = event_publish_scan_best_valid_q;
+    event_publish_scan_winner_slot  = event_publish_scan_best_slot_q;
+    event_publish_scan_winner_seq   = event_publish_scan_best_seq_q;
+    control_scan_winner_valid = control_scan_best_valid_q;
+    control_scan_winner_slot  = control_scan_best_slot_q;
+    control_scan_winner_seq   = control_scan_best_seq_q;
+
+    if (TASK_SLOTS == 1) begin
+      completion_scan_current_valid = completion_eligible_mask[0];
+      event_publish_scan_current_valid = event_publish_eligible_mask[0];
+      control_scan_current_valid = control_eligible_mask[0];
+      completion_scan_winner_valid = completion_scan_current_valid;
+      completion_scan_winner_slot  = '0;
+      completion_scan_winner_seq   = task_submit_seq_q[0];
+      event_publish_scan_winner_valid = event_publish_scan_current_valid;
+      event_publish_scan_winner_slot  = '0;
+      event_publish_scan_winner_seq   = task_submit_seq_q[0];
+      control_scan_winner_valid = control_scan_current_valid;
+      control_scan_winner_slot  = '0;
+      control_scan_winner_seq   = task_submit_seq_q[0];
+    end else begin
+      if (completion_scan_current_valid &&
+          (!completion_scan_winner_valid ||
+           (task_submit_seq_q[select_scan_slot_q] <
+            completion_scan_winner_seq))) begin
+        completion_scan_winner_valid = 1'b1;
+        completion_scan_winner_slot  = select_scan_slot_q;
+        completion_scan_winner_seq =
+          task_submit_seq_q[select_scan_slot_q];
       end
-      if (task_notify_q[slot] && !task_event_published_q[slot] &&
-          !(event_publish_pending_valid_q &&
-            (event_publish_pending_slot_q == TASK_IDX_W'(slot))) &&
-          (task_signal_q[slot] != NPU_EVENT_NONE) &&
-          !((task_engine_q[slot] == NPU_ENGINE_CONTROL) &&
-            (task_opcode_q[slot] == NPU_OPCODE_EVENT_REARM)) &&
-          (!event_publish_found ||
-           (task_submit_seq_q[slot] <
-            task_submit_seq_q[event_publish_select]))) begin
-        event_publish_found  = 1'b1;
-        event_publish_select = TASK_IDX_W'(slot);
+      if (event_publish_scan_current_valid &&
+          (!event_publish_scan_winner_valid ||
+           (task_submit_seq_q[select_scan_slot_q] <
+            event_publish_scan_winner_seq))) begin
+        event_publish_scan_winner_valid = 1'b1;
+        event_publish_scan_winner_slot  = select_scan_slot_q;
+        event_publish_scan_winner_seq =
+          task_submit_seq_q[select_scan_slot_q];
       end
-      if ((task_state_q[slot] == NPU_TASK_READY) && !order_blocked[slot]) begin
-        if (task_engine_q[slot] == NPU_ENGINE_CONTROL) begin
-          if (!control_select_found ||
-              (task_submit_seq_q[slot] <
-               task_submit_seq_q[control_select])) begin
-            control_select_found = 1'b1;
-            control_select       = TASK_IDX_W'(slot);
-          end
+      if (control_scan_current_valid &&
+          (!control_scan_winner_valid ||
+           (task_submit_seq_q[select_scan_slot_q] <
+            control_scan_winner_seq))) begin
+        control_scan_winner_valid = 1'b1;
+        control_scan_winner_slot  = select_scan_slot_q;
+        control_scan_winner_seq =
+          task_submit_seq_q[select_scan_slot_q];
+      end
+    end
+
+    completion_scan_round_dirty =
+      completion_scan_dirty_q ||
+      (completion_eligible_mask != completion_scan_mask_q);
+    event_publish_scan_round_dirty =
+      event_publish_scan_dirty_q ||
+      (event_publish_eligible_mask != event_publish_scan_mask_q);
+    control_scan_round_dirty =
+      control_scan_dirty_q ||
+      (control_eligible_mask != control_scan_mask_q);
+
+    completion_found = 1'b0;
+    completion_select = completion_scan_winner_slot;
+    event_publish_found = 1'b0;
+    event_publish_select = event_publish_scan_winner_slot;
+    control_select_found = 1'b0;
+    control_select = control_scan_winner_slot;
+    if ((select_scan_slot_q == TASK_IDX_W'(TASK_SLOTS - 1)) &&
+        !abort_i) begin
+      completion_found =
+        completion_scan_winner_valid &&
+        !completion_scan_round_dirty &&
+        completion_eligible_mask[completion_scan_winner_slot] &&
+        (task_submit_seq_q[completion_scan_winner_slot] ==
+         completion_scan_winner_seq);
+      event_publish_found =
+        event_publish_scan_winner_valid &&
+        !event_publish_scan_round_dirty &&
+        event_publish_eligible_mask[event_publish_scan_winner_slot] &&
+        (task_submit_seq_q[event_publish_scan_winner_slot] ==
+         event_publish_scan_winner_seq);
+      control_select_found =
+        control_scan_winner_valid &&
+        !control_scan_round_dirty &&
+        control_eligible_mask[control_scan_winner_slot] &&
+        (task_submit_seq_q[control_scan_winner_slot] ==
+         control_scan_winner_seq);
+    end
+  end
+
+  always_ff @(posedge clk_i or negedge reset_n) begin
+    if (!reset_n || abort_i) begin
+      select_scan_slot_q <= '0;
+      completion_scan_mask_q <= '0;
+      event_publish_scan_mask_q <= '0;
+      control_scan_mask_q <= '0;
+      completion_scan_dirty_q <= 1'b0;
+      event_publish_scan_dirty_q <= 1'b0;
+      control_scan_dirty_q <= 1'b0;
+      completion_scan_best_valid_q <= 1'b0;
+      event_publish_scan_best_valid_q <= 1'b0;
+      control_scan_best_valid_q <= 1'b0;
+      completion_scan_best_slot_q <= '0;
+      event_publish_scan_best_slot_q <= '0;
+      control_scan_best_slot_q <= '0;
+      completion_scan_best_seq_q <= 64'd0;
+      event_publish_scan_best_seq_q <= 64'd0;
+      control_scan_best_seq_q <= 64'd0;
+    end else if (select_scan_slot_q == '0) begin
+      completion_scan_mask_q <= completion_eligible_mask;
+      event_publish_scan_mask_q <= event_publish_eligible_mask;
+      control_scan_mask_q <= control_eligible_mask;
+      completion_scan_dirty_q <= 1'b0;
+      event_publish_scan_dirty_q <= 1'b0;
+      control_scan_dirty_q <= 1'b0;
+      if (TASK_SLOTS == 1) begin
+        select_scan_slot_q <= '0;
+        completion_scan_best_valid_q <= 1'b0;
+        event_publish_scan_best_valid_q <= 1'b0;
+        control_scan_best_valid_q <= 1'b0;
+      end else begin
+        select_scan_slot_q <= TASK_IDX_W'(1);
+        completion_scan_best_valid_q <= completion_eligible_mask[0];
+        event_publish_scan_best_valid_q <=
+          event_publish_eligible_mask[0];
+        control_scan_best_valid_q <= control_eligible_mask[0];
+        if (completion_eligible_mask[0]) begin
+          completion_scan_best_slot_q <= '0;
+          completion_scan_best_seq_q <= task_submit_seq_q[0];
+        end
+        if (event_publish_eligible_mask[0]) begin
+          event_publish_scan_best_slot_q <= '0;
+          event_publish_scan_best_seq_q <= task_submit_seq_q[0];
+        end
+        if (control_eligible_mask[0]) begin
+          control_scan_best_slot_q <= '0;
+          control_scan_best_seq_q <= task_submit_seq_q[0];
         end
       end
+    end else if (select_scan_slot_q ==
+                 TASK_IDX_W'(TASK_SLOTS - 1)) begin
+      select_scan_slot_q <= '0;
+      completion_scan_dirty_q <= 1'b0;
+      event_publish_scan_dirty_q <= 1'b0;
+      control_scan_dirty_q <= 1'b0;
+      completion_scan_best_valid_q <= 1'b0;
+      event_publish_scan_best_valid_q <= 1'b0;
+      control_scan_best_valid_q <= 1'b0;
+    end else begin
+      select_scan_slot_q <= select_scan_slot_q + 1'b1;
+      completion_scan_dirty_q <= completion_scan_round_dirty;
+      event_publish_scan_dirty_q <= event_publish_scan_round_dirty;
+      control_scan_dirty_q <= control_scan_round_dirty;
+      completion_scan_best_valid_q <= completion_scan_winner_valid;
+      completion_scan_best_slot_q <= completion_scan_winner_slot;
+      completion_scan_best_seq_q <= completion_scan_winner_seq;
+      event_publish_scan_best_valid_q <= event_publish_scan_winner_valid;
+      event_publish_scan_best_slot_q <= event_publish_scan_winner_slot;
+      event_publish_scan_best_seq_q <= event_publish_scan_winner_seq;
+      control_scan_best_valid_q <= control_scan_winner_valid;
+      control_scan_best_slot_q <= control_scan_winner_slot;
+      control_scan_best_seq_q <= control_scan_winner_seq;
     end
   end
 
@@ -896,6 +1086,7 @@ module npu_task_scheduler #(
         task_wait1_q[slot]        <= NPU_EVENT_NONE;
         task_signal_q[slot]       <= NPU_EVENT_NONE;
         task_submit_seq_q[slot]   <= 64'd0;
+        task_predecessor_mask_q[slot] <= '0;
         task_status_q[slot]       <= NPU_STATUS_SUCCESS;
         task_fault_addr_q[slot]   <= 48'd0;
         task_progress_q[slot]     <= 64'd0;
@@ -917,6 +1108,10 @@ module npu_task_scheduler #(
       if (cmd_id_lookup_valid_i && cmd_id_lookup_ready_o) begin
         lookup_busy_q <= lookup_busy_comb;
       end
+      for (int unsigned slot = 0; slot < TASK_SLOTS; slot++) begin
+        task_predecessor_mask_q[slot] <=
+          task_predecessor_mask_q[slot] & task_live_mask;
+      end
 
       if (ctl_rsp_valid_q && axi_ctl_rsp_ready_i) begin
         ctl_rsp_valid_q <= 1'b0;
@@ -927,6 +1122,7 @@ module npu_task_scheduler #(
           task_error_info_q[ctl_ack_slot_q] <= 32'd0;
           task_done_flags_q[ctl_ack_slot_q] <= 16'd0;
           task_event_published_q[ctl_ack_slot_q] <= 1'b0;
+          task_predecessor_mask_q[ctl_ack_slot_q] <= '0;
           ctl_ack_release_q                 <= 1'b0;
         end
       end
@@ -1134,6 +1330,9 @@ module npu_task_scheduler #(
                                         ? cmd_signal_resolved
                                         : NPU_EVENT_NONE;
         task_submit_seq_q[free_slot]   <= submit_seq_q;
+        task_predecessor_mask_q[free_slot] <= cmd_static_valid
+                                            ? cmd_predecessor_mask
+                                            : '0;
         task_cmd_q[free_slot]           <= cfe_cmd_i;
         task_input_base_q[free_slot]    <= input_base_i;
         task_weight_base_q[free_slot]   <= weight_base_i;
@@ -1532,6 +1731,7 @@ module npu_task_scheduler #(
         task_error_info_q[ack_select] <= 32'd0;
         task_done_flags_q[ack_select] <= 16'd0;
         task_event_published_q[ack_select] <= 1'b0;
+        task_predecessor_mask_q[ack_select] <= '0;
       end
 
       if (event_publish_pending_valid_q) begin
@@ -1566,6 +1766,7 @@ module npu_task_scheduler #(
         decode_scan_slot_q       <= '0;
         decode_scan_best_valid_q <= 1'b0;
         for (int unsigned slot = 0; slot < TASK_SLOTS; slot++) begin
+          task_predecessor_mask_q[slot] <= '0;
           if ((task_state_q[slot] != NPU_TASK_FREE) &&
               !terminal_state(task_state_q[slot])) begin
             task_state_q[slot]      <= NPU_TASK_ERROR;

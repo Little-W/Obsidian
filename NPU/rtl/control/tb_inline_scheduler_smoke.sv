@@ -345,6 +345,7 @@ module tb_inline_scheduler_smoke;
     logic [79:0] complex_payload;
     logic [79:0] requant_payload;
     logic [127:0] event_command;
+    int unsigned scan_wait_cycles;
 
     clk = 1'b0;
     reset_n = 1'b0;
@@ -567,7 +568,8 @@ module tb_inline_scheduler_smoke;
     repeat (10) @(posedge clk);
 
     /*
-     * Build a terminal Event, enqueue EVENT_REARM, then accept a new waiter
+     * Build a terminal Event, enqueue EVENT_REARM, wait for the shared
+     * selection scan to produce the Control pulse, then accept a new waiter
      * on the exact cycle that the control task executes.  The waiter has
      * priority over rearming: EVENT_REARM must fail, the Event must remain
      * successful at its current generation, and the waiter must dispatch.
@@ -603,7 +605,18 @@ module tb_inline_scheduler_smoke;
       6'd5, 10'h00d, NPU_DTYPE_INT8, dma_payload
     );
     event_command[111:104] = 8'h08;
-    @(negedge clk);
+    scan_wait_cycles = 0;
+    while (!dut.control_select_found && (scan_wait_cycles < 256)) begin
+      @(negedge clk);
+      scan_wait_cycles++;
+    end
+    if (!dut.control_select_found)
+      $fatal(1, "Control scan did not select EVENT_REARM within 256 cycles");
+    if ((dut.task_opcode_q[dut.control_select] !=
+         NPU_OPCODE_EVENT_REARM) ||
+        (dut.control_rearm_current_ref != 12'h008)) begin
+      $fatal(1, "Control scan selected the wrong EVENT_REARM task");
+    end
     cfe_cmd = event_command;
     cfe_cmd_valid = 1'b1;
     if (!cfe_cmd_ready)

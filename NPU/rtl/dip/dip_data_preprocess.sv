@@ -66,59 +66,78 @@ module dip_data_preprocess #(
   assign busy_o = emitting_q || (capture_row_q != '0);
 
   always_comb begin
-    int unsigned lanes;
     int unsigned logical_n;
     int unsigned permuted_logical_row;
     int unsigned logical_col;
     int unsigned source_row;
 
     permuted_row_o = '0;
-    lanes = lane_count(mode_q);
     logical_n = logical_size(mode_q);
     permuted_logical_row =
       logical_n - 1 - int'(emit_row_q);
 
-    for (int physical_col = 0;
-         physical_col < ARRAY_N;
-         physical_col++) begin
-      for (int lane = 0; lane < 4; lane++) begin
-        if (lane < lanes) begin
-          logical_col = physical_col * lanes + lane;
+    case (mode_q)
+      MODE_INT16: begin
+        for (int physical_col = 0;
+             physical_col < ARRAY_N;
+             physical_col++) begin
+          logical_col = physical_col;
           source_row = wrap_logical_index(
             permuted_logical_row + logical_col,
             logical_n
           );
           if (source_row >= MAX_LOGICAL_N)
             source_row = 0;
-
-          case (mode_q)
-            MODE_INT16: begin
-              permuted_row_o[physical_col * 16 +: 16] =
-                weight_mem[source_row][physical_col];
-            end
-
-            MODE_INT8: begin
-              permuted_row_o[
-                physical_col * 16 + lane * 8 +: 8
-              ] = weight_mem[source_row][physical_col][
-                lane * 8 +: 8
-              ];
-            end
-
-            MODE_INT4: begin
-              permuted_row_o[
-                physical_col * 16 + lane * 4 +: 4
-              ] = weight_mem[source_row][physical_col][
-                lane * 4 +: 4
-              ];
-            end
-
-            default: begin
-            end
-          endcase
+          permuted_row_o[physical_col * 16 +: 16] =
+            weight_mem[source_row][physical_col];
         end
       end
-    end
+
+      MODE_INT8: begin
+        for (int physical_col = 0;
+             physical_col < ARRAY_N;
+             physical_col++) begin
+          for (int lane = 0; lane < 2; lane++) begin
+            logical_col = physical_col * 2 + lane;
+            source_row = wrap_logical_index(
+              permuted_logical_row + logical_col,
+              logical_n
+            );
+            if (source_row >= MAX_LOGICAL_N)
+              source_row = 0;
+            permuted_row_o[
+              physical_col * 16 + lane * 8 +: 8
+            ] = weight_mem[source_row][physical_col][
+              lane * 8 +: 8
+            ];
+          end
+        end
+      end
+
+      MODE_INT4: begin
+        for (int physical_col = 0;
+             physical_col < ARRAY_N;
+             physical_col++) begin
+          for (int lane = 0; lane < 4; lane++) begin
+            logical_col = physical_col * 4 + lane;
+            source_row = wrap_logical_index(
+              permuted_logical_row + logical_col,
+              logical_n
+            );
+            if (source_row >= MAX_LOGICAL_N)
+              source_row = 0;
+            permuted_row_o[
+              physical_col * 16 + lane * 4 +: 4
+            ] = weight_mem[source_row][physical_col][
+              lane * 4 +: 4
+            ];
+          end
+        end
+      end
+
+      default: begin
+      end
+    endcase
   end
 
   always_ff @(posedge clk_i or negedge reset_n) begin

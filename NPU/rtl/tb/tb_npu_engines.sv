@@ -3,6 +3,9 @@
 module tb_npu_engines;
 
     localparam int CLIENTS = 6;
+    localparam logic [4:0] MATRIX_ST_EP_MUL   = 5'd16;
+    localparam logic [4:0] MATRIX_ST_EP_SHIFT = 5'd17;
+    localparam logic [4:0] MATRIX_ST_EP_CLIP  = 5'd18;
 
     logic clk_i;
     logic reset_n;
@@ -487,6 +490,149 @@ module tb_npu_engines;
         end
     endtask
 
+    task automatic check_matrix_requant_case(
+        input logic signed [7:0] a_value,
+        input logic signed [7:0] b_value,
+        input logic [31:0] multiplier,
+        input logic signed [7:0] shift_value,
+        input logic [1:0] rounding,
+        input logic signed [63:0] expected_shifted,
+        input logic signed [7:0] expected_output,
+        input string case_name
+    );
+        logic [31:0] numeric;
+        logic [63:0] output_word;
+        logic signed [63:0] accumulator;
+        logic signed [127:0] expected_product;
+        logic saw_mul;
+        logic saw_shift;
+        logic saw_clip;
+        begin
+            l1_write_word(
+                20'h01100, {56'd0, a_value[7:0]}, 8'h01
+            );
+            l1_write_word(
+                20'h01108, {56'd0, b_value[7:0]}, 8'h01
+            );
+            l1_write_word(
+                20'h01110,
+                {24'd0, shift_value[7:0], multiplier},
+                8'hff
+            );
+            l1_write_word(20'h01118, 64'd0, 8'hff);
+
+            numeric = 32'h0000_0065;
+            numeric[11:10] = rounding;
+            init_common(
+                matrix_desc, 8'h02, 16'd256,
+                64'h1100, 64'h1108, 64'd0, 64'h1118, numeric
+            );
+            put_u64(matrix_desc, 16'h30, 64'h1110);
+            put_u32(matrix_desc, 16'h40, 32'd1);
+            put_u32(matrix_desc, 16'h44, 32'd1);
+            put_u32(matrix_desc, 16'h48, 32'd1);
+            put_u32(matrix_desc, 16'h4c, 32'd1);
+            put_u32(matrix_desc, 16'h50, 32'd1);
+            put_u32(matrix_desc, 16'h54, 32'd1);
+            put_u32(matrix_desc, 16'h58, 32'd1);
+            put_u32(matrix_desc, 16'h5c, 32'h0000_00a0);
+            put_u32(matrix_desc, 16'h60, 32'd1);
+            put_u32(matrix_desc, 16'h64, 32'd1);
+            put_u32(matrix_desc, 16'h68, 32'd1);
+            put_u8(matrix_desc, 16'h90, 8'd0);
+            put_u8(matrix_desc, 16'h91, 8'd0);
+            put_u8(matrix_desc, 16'h92, 8'd0);
+            put_u32(matrix_desc, 16'h9c, 32'd1);
+            put_u8(matrix_desc, 16'ha4, 8'd1);
+            put_u8(matrix_desc, 16'ha6, 8'd8);
+            put_u32(matrix_desc, 16'ha8, 32'd8);
+
+            accumulator = a_value * b_value;
+            expected_product =
+                accumulator * $signed({1'b0, multiplier});
+            saw_mul = 1'b0;
+            saw_shift = 1'b0;
+            saw_clip = 1'b0;
+
+            start_matrix();
+            do begin
+                @(posedge clk_i);
+                if (u_matrix.u_scalar_engine.state_q ==
+                    MATRIX_ST_EP_MUL) begin
+                    saw_mul = 1'b1;
+                end
+                if (u_matrix.u_scalar_engine.state_q ==
+                    MATRIX_ST_EP_SHIFT) begin
+                    check(
+                        saw_mul,
+                        $sformatf(
+                            "%s skipped the integer multiply stage",
+                            case_name
+                        )
+                    );
+                    check(
+                        $signed(
+                            u_matrix.u_scalar_engine.requant_product_q
+                        ) == expected_product,
+                        $sformatf(
+                            "%s integer scaled product mismatch",
+                            case_name
+                        )
+                    );
+                    saw_shift = 1'b1;
+                end
+                if (u_matrix.u_scalar_engine.state_q ==
+                    MATRIX_ST_EP_CLIP) begin
+                    check(
+                        saw_shift,
+                        $sformatf(
+                            "%s skipped the right-shift stage",
+                            case_name
+                        )
+                    );
+                    check(
+                        $signed(
+                            u_matrix.u_scalar_engine.epilogue_value_q
+                        ) == expected_shifted,
+                        $sformatf(
+                            "%s rounded or 64-bit saturated value mismatch",
+                            case_name
+                        )
+                    );
+                    saw_clip = 1'b1;
+                end
+            end while (!matrix_done_valid);
+
+            check(
+                saw_mul && saw_shift && saw_clip,
+                $sformatf("%s did not traverse all epilogue stages",
+                          case_name)
+            );
+            check(
+                matrix_done_status == 8'h00,
+                $sformatf("%s returned status 0x%02x",
+                          case_name, matrix_done_status)
+            );
+            check(
+                matrix_done_progress == 64'd1,
+                $sformatf("%s progress mismatch", case_name)
+            );
+            l1_read_word(20'h01118, output_word);
+            check(
+                $signed(output_word[7:0]) == expected_output,
+                $sformatf(
+                    "%s INT8 output mismatch: got %0d expected %0d",
+                    case_name, $signed(output_word[7:0]),
+                    expected_output
+                )
+            );
+            check(
+                output_word[63:8] == 56'd0,
+                $sformatf("%s wrote outside the output byte", case_name)
+            );
+        end
+    endtask
+
     task automatic start_vector;
         begin
             do @(posedge clk_i); while (!vector_task_ready);
@@ -546,55 +692,86 @@ module tb_npu_engines;
         repeat (3) @(posedge clk_i);
         check(l1_idle, "L1 did not become idle after reset");
 
-        // Matrix right shifts use the same signed rounding rules as CModel.
-        check($signed(u_matrix.u_scalar_engine.requantize(
-                64'sd1, 32'd1, 8'sd1, 2'd0
-              )) == 64'sd0,
-              "matrix nearest-even +0.5 mismatch");
-        check($signed(u_matrix.u_scalar_engine.requantize(
-                64'sd3, 32'd1, 8'sd1, 2'd0
-              )) == 64'sd2,
-              "matrix nearest-even +1.5 mismatch");
-        check($signed(u_matrix.u_scalar_engine.requantize(
-                -64'sd1, 32'd1, 8'sd1, 2'd0
-              )) == 64'sd0,
-              "matrix nearest-even -0.5 mismatch");
-        check($signed(u_matrix.u_scalar_engine.requantize(
-                -64'sd3, 32'd1, 8'sd1, 2'd0
-              )) == -64'sd2,
-              "matrix nearest-even -1.5 mismatch");
-        check($signed(u_matrix.u_scalar_engine.requantize(
-                64'sd5, 32'd1, 8'sd2, 2'd0
-              )) == 64'sd1,
-              "matrix nearest-even positive non-half mismatch");
-        check($signed(u_matrix.u_scalar_engine.requantize(
-                -64'sd5, 32'd1, 8'sd2, 2'd0
-              )) == -64'sd1,
-              "matrix nearest-even negative non-half mismatch");
-        check($signed(u_matrix.u_scalar_engine.requantize(
-                64'sd3, 32'd1, 8'sd1, 2'd1
-              )) == 64'sd1,
-              "matrix round-to-zero positive mismatch");
-        check($signed(u_matrix.u_scalar_engine.requantize(
-                -64'sd3, 32'd1, 8'sd1, 2'd1
-              )) == -64'sd1,
-              "matrix round-to-zero negative mismatch");
-        check($signed(u_matrix.u_scalar_engine.requantize(
-                64'sd3, 32'd1, 8'sd1, 2'd2
-              )) == 64'sd2,
-              "matrix round-to-positive-infinity positive mismatch");
-        check($signed(u_matrix.u_scalar_engine.requantize(
-                -64'sd3, 32'd1, 8'sd1, 2'd2
-              )) == -64'sd1,
-              "matrix round-to-positive-infinity negative mismatch");
-        check($signed(u_matrix.u_scalar_engine.requantize(
-                64'sd3, 32'd1, 8'sd1, 2'd3
-              )) == 64'sd1,
-              "matrix round-to-negative-infinity positive mismatch");
-        check($signed(u_matrix.u_scalar_engine.requantize(
-                -64'sd3, 32'd1, 8'sd1, 2'd3
-              )) == -64'sd2,
-              "matrix round-to-negative-infinity negative mismatch");
+        /*
+         * Drive 1x1 GEMM commands through the current epilogue pipeline.
+         * The checks observe the registered scaled product, the following
+         * shift result, and the final INT8 write.  This avoids depending on
+         * a removed single-cycle helper.
+         */
+        check_matrix_requant_case(
+            8'sd1, 8'sd1, 32'd1, 8'sd1, 2'd0,
+            64'sd0, 8'sd0, "matrix nearest-even +0.5"
+        );
+        check_matrix_requant_case(
+            8'sd3, 8'sd1, 32'd1, 8'sd1, 2'd0,
+            64'sd2, 8'sd2, "matrix nearest-even +1.5"
+        );
+        check_matrix_requant_case(
+            -8'sd1, 8'sd1, 32'd1, 8'sd1, 2'd0,
+            64'sd0, 8'sd0, "matrix nearest-even -0.5"
+        );
+        check_matrix_requant_case(
+            -8'sd3, 8'sd1, 32'd1, 8'sd1, 2'd0,
+            -64'sd2, -8'sd2, "matrix nearest-even -1.5"
+        );
+        check_matrix_requant_case(
+            8'sd5, 8'sd1, 32'd1, 8'sd2, 2'd0,
+            64'sd1, 8'sd1, "matrix nearest-even positive non-half"
+        );
+        check_matrix_requant_case(
+            -8'sd5, 8'sd1, 32'd1, 8'sd2, 2'd0,
+            -64'sd1, -8'sd1, "matrix nearest-even negative non-half"
+        );
+        check_matrix_requant_case(
+            8'sd3, 8'sd1, 32'd1, 8'sd1, 2'd1,
+            64'sd1, 8'sd1, "matrix round-to-zero positive"
+        );
+        check_matrix_requant_case(
+            -8'sd3, 8'sd1, 32'd1, 8'sd1, 2'd1,
+            -64'sd1, -8'sd1, "matrix round-to-zero negative"
+        );
+        check_matrix_requant_case(
+            8'sd3, 8'sd1, 32'd1, 8'sd1, 2'd2,
+            64'sd2, 8'sd2, "matrix round-to-positive-infinity positive"
+        );
+        check_matrix_requant_case(
+            -8'sd3, 8'sd1, 32'd1, 8'sd1, 2'd2,
+            -64'sd1, -8'sd1, "matrix round-to-positive-infinity negative"
+        );
+        check_matrix_requant_case(
+            8'sd3, 8'sd1, 32'd1, 8'sd1, 2'd3,
+            64'sd1, 8'sd1, "matrix round-to-negative-infinity positive"
+        );
+        check_matrix_requant_case(
+            -8'sd3, 8'sd1, 32'd1, 8'sd1, 2'd3,
+            -64'sd2, -8'sd2, "matrix round-to-negative-infinity negative"
+        );
+        check_matrix_requant_case(
+            8'sd3, 8'sd1, 32'd5, 8'sd1, 2'd0,
+            64'sd8, 8'sd8, "matrix registered positive scaling"
+        );
+        check_matrix_requant_case(
+            -8'sd3, 8'sd1, 32'd5, 8'sd1, 2'd0,
+            -64'sd8, -8'sd8, "matrix registered negative scaling"
+        );
+        check_matrix_requant_case(
+            8'sd127, 8'sd1, 32'd2, 8'sd0, 2'd0,
+            64'sd254, 8'sd127, "matrix positive INT8 saturation"
+        );
+        check_matrix_requant_case(
+            -8'sd128, 8'sd1, 32'd2, 8'sd0, 2'd0,
+            -64'sd256, -8'sd128, "matrix negative INT8 saturation"
+        );
+        check_matrix_requant_case(
+            8'sd127, 8'sd127, 32'hffff_ffff, -8'sd18, 2'd0,
+            64'sh7fff_ffff_ffff_ffff, 8'sd127,
+            "matrix positive 64-bit saturation"
+        );
+        check_matrix_requant_case(
+            -8'sd128, 8'sd127, 32'hffff_ffff, -8'sd18, 2'd0,
+            64'sh8000_0000_0000_0000, -8'sd128,
+            "matrix negative 64-bit saturation"
+        );
 
         // DMA_COPY_1D: system-memory bytes move into L1 despite MIF stalls.
         system_mem[13'h1000] = 64'h0a07_0301_00ff_fcf8;

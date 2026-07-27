@@ -402,6 +402,7 @@ flowchart TB
     CFE["CFE<br/>64 bit beat assembly / CMD FIFO"]
     TS["TaskScheduler<br/>Task Table / Event发布 / Completion Hold"]
     CHECK["接收检查解码器"]
+    SCAN["逐槽发射扫描<br/>每周期检查一项"]
     SNAP["发射窄快照<br/>指令 / 基地址 / 任务编号"]
     DEC["共享发射解码器<br/>Task Context 展开"]
     DISP["Task Dispatch<br/>四组发射暂存"]
@@ -419,7 +420,8 @@ flowchart TB
     AXIS --> HOSTL1 --> L1C
     CFE -->|"完整指令"| TS
     TS <--> CHECK
-    TS --> SNAP
+    TS --> SCAN
+    SCAN --> SNAP
     SNAP --> DEC
     DEC --> DISP
     DISP --> DMA
@@ -449,7 +451,7 @@ flowchart TB
 | Command FIFO             | 完整指令             | 排队后的完整指令                       | 吸收前端突发提交，维持接收顺序                                      |
 | Event Table / Scoreboard | CMD 中的依赖事件、各单元完成消息      | 可发射任务、事件状态、错误状态                  | 检查依赖、保存任务状态、传播错误                                     |
 | Inline Decode            | 指令、任务表保存的基地址快照       | 接收检查结果或内部展开的 Task Context | 接收检查实例判断字段是否合法；共享发射实例根据窄快照生成 Task Context，均不访问全局内存 |
-| Task Decode / Dispatch   | 任务表中的指令与基地址快照   | 各执行单元任务 | 选择最早的可发射任务，先保存窄快照，再经共享解码器把展开结果写入目标发射暂存 |
+| Task Decode / Dispatch   | 任务表中的指令与基地址快照   | 各执行单元任务 | 每周期检查一个非 Control 任务槽；候选必须处于 READY、没有仍在运行的前序任务且目标执行单元可接收新任务。检查完任务表后复查获胜项，再保存窄快照并由共享解码器把展开结果写入目标发射暂存 |
 | Matrix Engine            | GEMM/BMM 任务、L1BUF 数据    | 矩阵结果、完成消息 | 条件允许时用 DiP 阵列执行 INT16/INT8/INT4 方阵；其余任务由逐元素分支处理旧部分和、bias、Epilogue 与写回 |
 | Vector Engine            | 逐元素任务、L1BUF 数据          | 向量结果、完成消息                        | 算术、比较、选择、格式转换和门控更新；连续 MUL 可复用 16 个 4×4 基础乘法器形成多格式并行结果 |
 | CME 内部统计逻辑      | 行或向量段                   | 和、最大值、平方和 | 逐元素更新统计寄存器；SUMSQ 的平方和累加分成两个寄存阶段 |
@@ -944,7 +946,7 @@ FENCE 在控制请求握手时保存当前 `submit_seq`，只等待不大于该�
 3. Command Front End 检查操作码、命令编号和两拍格式。检查通过后，完整命令进入命令 FIFO。
 4. TaskScheduler 读取 Event Table，取得当前事件代次，并把命令中的 8 bit Event ID 扩展成内部事件引用。
 5. TaskScheduler 在接收时保存完整指令、五个 48 bit基地址快照和 20 bit L1 参数区基址，并完成字段检查。
-6. 等待事件与顺序条件满足后，TaskScheduler 选择最早的可发射任务，并把指令、提交时基地址和任务编号保存到发射窄快照寄存器。
+6. 等待事件成功且前序任务位图不再指向运行中的任务后，任务进入 READY。TaskScheduler 每周期检查一个非 Control 任务槽，在 16 项检查中保存 `submit_seq` 最小的可发射候选；最后一项检查结束时复查候选状态和目标执行单元，再把获胜任务的指令、提交时基地址和任务编号保存到发射窄快照寄存器。
 7. 共享发射解码器解释 `payload[79:0]`，生成内部 Task Context并写入目标执行单元的发射暂存；发射暂存从下一周期给出任务，执行单元接收后开始运行。
 8. 执行单元完成后返回状态；TaskScheduler 保存终态，普通 signal Event 经发布暂存写入 Event Table，再把完成持有槽中的稳定终态送到 LSC，由 LSC 按指令选项产生中断。
 
@@ -1435,7 +1437,7 @@ CFE 执行以下动作：
 6. 向 AXI Slave Frontend 返回一项 64-bit命令接收结果；
 7. 通过 128-bit ready/valid 接口把 FIFO 队首命令交给 TaskScheduler。
 
-CFE 不读取全局内存，不发起 MIF 请求，也不读取软件提供的任务参数块。操作所需参数均来自指令；TaskScheduler 保存完整指令和提交时的基地址快照，在选中 READY 任务后再为对应执行单元生成内部 Task Context。
+CFE 不读取全局内存，不发起 MIF 请求，也不读取软件提供的任务参数块。操作所需参数均来自指令；TaskScheduler 保存完整指令和提交时的基地址快照，READY 任务经过逐槽扫描并通过结束时复查后，再为对应执行单元生成内部 Task Context。
 
 ### 7.2 模块级信号
 
@@ -1578,22 +1580,24 @@ sequenceDiagram
 - 任务表，基准为 16 项；
 - Event Table，包含 255 个可用 Event ID；
 - 一组接收检查解码器；
+- 一组逐槽发射扫描寄存器；
 - 一组发射窄快照寄存器和一组共享发射解码器；
 - DMA、Matrix、Vector、Complex 各自使用的一组 2048 bit发射暂存；
 - DMA、Matrix、Vector、Complex 四组任务发射与完成接口；
-- Control 操作选择逻辑；
-- 普通 signal Event 的候选选择与发布暂存；
-- 完成通知选择逻辑和完成持有槽寄存器；
+- 一组由 Control 操作、普通 signal Event 和完成通知共用的逐槽选择寄存器；
+- 普通 signal Event 发布暂存和完成通知持有槽寄存器；
 - AXI Slave Frontend 控制请求接口；
 - 任务查询和 ACK 接口。
 
 接收检查解码器读取 CFE 提供的完整指令和 LSC 当前基地址，用 `valid_o`、`engine_o` 与 `opcode_o` 完成接收阶段检查，但它的 `desc_flat_o` 在该实例中没有接入任务表。命令被接收时，每个任务表项保存 128 bit指令、五个 48 bit基地址快照和 20 bit L1 参数区基址，不保存 2048 bit展开结果。
 
-任务进入 READY 后，DMA、Matrix、Vector 和 Complex 任务共同参加一次选择。一个任务只有在目标执行单元没有活动任务、对应发射暂存为空且顺序条件允许时才具备选择条件；若有多个候选项，TS 选择 `submit_seq` 最小的一项。Control 任务由 TS 内部的另一组选择逻辑处理，不占用共享发射解码器。
+等待事件成功并且 `predecessor_mask & task_live_mask` 为 0 时，任务才从 WAIT_EVENT 进入 READY。DMA、Matrix、Vector 和 Complex 的 READY 任务共同参加发射扫描。发射扫描器每周期读取一个任务槽；候选必须仍为 READY、上述按位与结果仍为 0、目标执行单元没有 RUNNING 任务，并且对应发射暂存的 `valid` 为 0。扫描器每周期只进行一次 64-bit `submit_seq` 比较，用于保留当前最早候选。检查完 16 个槽后，组合逻辑重新检查已保存候选和最后一个槽，只在获胜任务仍满足条件时写入发射窄快照。如果没有候选，本轮结束且不写快照，后续周期从槽 0 开始下一轮。
+
+Control 执行、普通 signal Event 发布和完成通知使用另一组逐槽选择寄存器。三类选择共用一个连续递增的任务槽计数器，并在同一周期检查同一个槽；每一类分别保存本轮候选位图、变化标志、最早候选槽号和 64-bit `submit_seq`。一轮开始时保存三类候选位图，随后 16 个周期逐项检查。最后一个槽检查结束时，各类分别复查本轮位图是否保持不变、获胜项是否仍符合要求以及 `submit_seq` 是否一致。某一类的候选位图在本轮发生变化时，只取消该类本轮的选择脉冲，下一轮从槽 0 重新检查；另外两类不受影响。三类选择可在同一轮末尾各产生一个脉冲。Control 任务不使用发射扫描器和共享发射解码器。
 
 被选任务先在时钟沿写入 `decode_pending_*`：其中保存目标执行单元、任务表项编号、操作码、命令编号、128 bit指令、五个 48 bit基地址快照和 20 bit L1 参数区基址。下一周期，`u_task_desc_decode` 根据这组稳定快照组合产生 `decode_pending_desc_flat[2047:0]`；再下一个时钟沿把展开结果和任务信息写入目标执行单元的发射暂存。本文把发射接口上的 2048 bit片上数据称为 Task Context。它不是软件数组，不位于 DDR，也不会引起 MIF 访问。
 
-共享解码器每次处理一个待展开任务。当前控制使用“处理已有快照，否则接收新快照”的次序，因此新的窄快照最多每两个周期接收一次。执行单元任务通常持续多个周期，这一级串行展开不会阻止已经取得任务的 DMA、Matrix、Vector 和 Complex 同时运行。四组发射暂存仍然彼此独立，可分别保持 `valid` 并承受不同长度的反压。
+共享解码器每次处理一个待展开任务。`decode_pending_valid_q=1` 时，TS 先处理已有窄快照并停止扫描；没有待处理快照时，扫描器从槽 0 到槽 15 每周期检查一项，共用 16 个周期完成一轮。已有快照在写入执行单元发射暂存前，会再次检查任务仍为 READY、任务表中的执行单元字段未变且前序任务条件仍满足。目标执行单元暂时不可接收新任务时，快照保持有效；任务本身不再满足条件时，快照被丢弃。执行单元任务通常持续多个周期，这一级按次序展开不会阻止已经取得任务的 DMA、Matrix、Vector 和 Complex 同时运行。四组发射暂存彼此独立，可分别保持 `valid` 并承受不同长度的反压。
 
 ### 8.2 CFE 输入与编号查询接口
 
@@ -1670,6 +1674,7 @@ CFE 的编号查询覆盖等待、就绪、运行和等待 ACK 的终态任务�
 | `wait0`、`wait1` | 各 12 | `{generation,event_id}` 或 `12'hfff` |
 | `signal` | 12 | `{generation,event_id}` 或 `12'hfff` |
 | `submit_seq` | 64 | 全局提交顺序号 |
+| `predecessor_mask` | 16 | `task_predecessor_mask_q`；每个 bit 对应一个任务槽，1 表示本任务仍需等待该槽中的较早任务 |
 | `cmd` | 128 | 接收的完整指令，RTL 中保存为 `task_cmd_q` |
 | `input_base`、`weight_base`、`work_base`、`output_base`、`kv_base` | 各 48 | 命令提交时五个 LSC 基地址寄存器的快照，分别对应 `task_input_base_q`、`task_weight_base_q`、`task_work_base_q`、`task_output_base_q` 和 `task_kv_base_q` |
 | `param_l1_base` | 20 | 命令提交时 L1 参数区基址的快照，对应 `task_param_l1_base_q` |
@@ -1697,7 +1702,9 @@ FREE
 
 任务表不保存 `desc_flat[2047:0]`。Control 任务不经过外部执行单元，满足等待和顺序条件后由 TS 内部完成。静态字段或事件资源检查失败时，命令仍建立一项 ERROR 终态记录，`status=BAD_DESC`，并产生完成通知；它不会发给任何执行单元。
 
-`ordered=1` 的任务等待所有更小 `submit_seq` 的非终态任务。更大 `submit_seq` 的任务也不能越过尚未结束的 ordered 任务。`GLOBAL_FENCE` 使用第 6.7.1 节的 `engine_mask`，只等待所选执行单元中更早提交且尚未结束的任务；未选择的执行单元不会阻止它。该指令在等待条件满足后返回 `SUCCESS`，不复制较早任务的失败状态。软件经 AXI 控制端口发出的 FENCE 不同：它保存请求开始时所选任务的快照，并返回其中提交顺序最早的失败状态。
+TS 在接收一条合法任务时生成 `predecessor_mask`，不再为每个等待任务反复比较两项 64-bit `submit_seq`。若新任务设置 `ordered=1`，掩码记录当时全部非 FREE 且未进入终态的较早任务。每条后续合法任务也记录当时仍未进入终态的较早 ordered 任务，因此不能越过这些任务。`GLOBAL_FENCE` 还会按照第 6.7.1 节的 `engine_mask`，记录被选执行单元中仍未进入终态的较早任务；它和其他合法任务一样，也要等待较早的 ordered 任务。
+
+`task_live_mask` 的每个 bit 表示对应槽当前为非 FREE 且非终态。`order_blocked` 直接由 `predecessor_mask & task_live_mask` 的结果是否非零得到。较早任务进入 SUCCESS 或 ERROR 后，其 bit 立即不再产生阻塞；时钟沿还会把失效 bit 从保存的掩码中清除。软件 ACK 释放槽时也清除该槽自身保存的掩码，因此后续任务复用槽号不会恢复旧的等待关系。abort 会清除全部前序任务掩码。GLOBAL_FENCE 在等待条件满足后返回 `SUCCESS`，不复制较早任务的失败状态。软件经 AXI 控制端口发出的 FENCE 不同：它保存请求开始时所选任务的快照，并返回其中提交顺序最早的失败状态。
 
 ### 8.5 Event Table
 
@@ -1715,19 +1722,21 @@ CMD 中的 Event ID 为 8 bit，0～254有效，`8'hff` 表示不用。TS 接收
 
 1. `wait0` 或 `wait1` 为 `8'hff` 时，该输入已经满足；
 2. 等待事件必须不是 FREE，否则命令以 `BAD_DESC` 结束；
-3. 普通任务和 `EVENT_JOIN(join_mode=0)` 在两个有效等待事件都为 SUCCESS 后从 WAIT_EVENT 进入 READY，任一有效等待事件为 ERROR 时以 `DEPENDENCY_FAILED` 结束；
-4. `EVENT_JOIN(join_mode=1)` 在任一等待事件为 SUCCESS 后进入 READY；两个有效等待事件都为 ERROR 时以 `DEPENDENCY_FAILED` 结束；一个失败而另一个仍为 PENDING 时继续等待；
+3. 普通任务和 `EVENT_JOIN(join_mode=0)` 在两个有效等待事件都为 SUCCESS 后满足事件依赖条件；此时前序任务位图按位与结果为 0 才进入 READY，否则继续处于 WAIT_EVENT。任一有效等待事件为 ERROR 时以 `DEPENDENCY_FAILED` 结束；
+4. `EVENT_JOIN(join_mode=1)` 在任一等待事件为 SUCCESS 后满足事件依赖条件；此时前序任务位图按位与结果为 0 才进入 READY。两个有效等待事件都为 ERROR 时以 `DEPENDENCY_FAILED` 结束；一个失败而另一个仍为 PENDING 时继续等待；
 5. 普通任务的 `signal` 必须指向 FREE 表项，接收命令时将其置为 PENDING并保存生产者编号；
-6. 普通任务形成完整终态记录后先置位 `notify`；TS 在所有尚未发布的候选任务中选择 `submit_seq` 最小的一项，把任务表项编号写入 `event_publish_pending_slot_q`；
-7. `event_publish_pending_valid_q=1` 的下一周期，TS 根据该任务的 status 把 signal Event 写为 SUCCESS 或 ERROR，并置位对应的 `task_event_published_q`；
-8. 发布暂存正在写入一个 Event 时，可以在同一周期选择下一项；流水启动后每周期最多写入一个普通任务的终态 Event。多个任务同时结束时，Event 按 `submit_seq` 从小到大依次可见；
-9. 每个普通任务的 signal Event 只写入一次。已经位于发布暂存中的任务不会再次成为候选，`task_event_published_q=1` 的任务也不会再次写入；
-10. `EVENT_REARM` 只接受已经终止且没有活动等待者的事件，把 generation 加 1 并把状态恢复为 FREE。该操作由 Control 处理逻辑直接修改 Event Table，不经过普通任务的发布暂存。
+6. 普通任务形成完整终态记录后先置位 `notify`。带有效 signal、尚未发布并且不在发布暂存中的任务进入 Event 发布候选位图；`EVENT_REARM` 不进入该位图；
+7. Event 发布选择与 Control、完成通知共用任务槽计数器。扫描轮开始时保存 Event 发布候选位图，之后每周期检查一个槽，并单独保存 `submit_seq` 最小的 Event 候选；
+8. 最后一个槽检查结束时，如果当前 Event 候选位图与本轮保存值不同，则本轮不产生 Event 选择脉冲，下一轮重新检查。如果位图未变，则再次检查获胜任务仍符合要求且 `submit_seq` 未变，检查通过后把任务表项编号写入 `event_publish_pending_slot_q`；
+9. `event_publish_pending_valid_q=1` 的周期，TS 根据该任务的 status 把 signal Event 写为 SUCCESS 或 ERROR，并置位对应的 `task_event_published_q`。同一周期若得到新的 Event 选择脉冲，可用新槽号继续保持发布暂存有效；
+10. 多个任务等待发布时，Event 按 `submit_seq` 从小到大依次可见。每个扫描轮最多选择一个普通任务的终态 Event；候选变化引起重试时，该轮不选择 Event；
+11. 每个普通任务的 signal Event 只写入一次。已经位于发布暂存中的任务不会再次成为候选，`task_event_published_q=1` 的任务也不会再次写入；
+12. `EVENT_REARM` 只接受已经终止且没有活动等待者的事件，把 generation 加 1 并把状态恢复为 FREE。该操作由 Control 处理逻辑直接修改 Event Table，不经过普通任务的发布暂存。
 
 TS 通过扫描非 FREE 且未终止的任务表项判断一个事件是否仍有活动等待者，不设置独立 waiter 计数器。
 
 > [!note] Event 可见时间
-> 执行单元的 done 握手只表示 TS 已经取得终态数据。带普通 signal Event 的任务还要经过“选择发布候选”和“写 Event Table”两个寄存器步骤。若较早提交的多个任务同时等待发布，后提交任务还要等待前面的 Event 逐项写入。依赖该 Event 的任务和 AXI `CTL WAIT` 都以 Event Table 中实际可见的状态为准。
+> 执行单元的 done 握手只表示 TS 已经取得终态数据。带普通 signal Event 的任务还要等待逐槽选择轮结束，再经过发布暂存写入 Event Table。任务在扫描轮中途成为候选时，候选位图变化会使该轮重试，因此不能把 done 到 Event 可见之间的时间假定为固定两拍。若较早提交的多个任务同时等待发布，后提交任务还要等待前面的 Event 逐项写入。依赖该 Event 的任务和 AXI `CTL WAIT` 都以 Event Table 中实际可见的状态为准。
 
 ### 8.6 执行单元任务与完成接口
 
@@ -1747,7 +1756,7 @@ DMA、Matrix、Vector 和 Complex 各有一组相同结构的任务接口。下�
 | `<eng>_done_fault_addr_i` | Input | 48 | 第一个错误地址，无错误时为 0 |
 | `<eng>_done_progress_i` | Input | 64 | 已完成字节数或元素数 |
 
-每个执行单元同时最多有一个 RUNNING 任务。TS 为四类执行单元分别设置 `*_dispatch_valid_q`、`*_dispatch_slot_q`、`*_dispatch_opcode_q`、`*_dispatch_command_id_q` 和 `*_dispatch_desc_q`。READY 任务经过最早任务选择后，第一拍写入 `decode_pending_*` 窄快照；下一拍共享解码器产生 Task Context，并在拍末写入对应发射暂存；随后 `<eng>_task_valid_o` 才为 1。任务 valid等待 ready 时，对应暂存保持 opcode、command ID和 Task Context不变。
+每个执行单元同时最多有一个 RUNNING 任务。TS 为四类执行单元分别设置 `*_dispatch_valid_q`、`*_dispatch_slot_q`、`*_dispatch_opcode_q`、`*_dispatch_command_id_q` 和 `*_dispatch_desc_q`。READY 任务先经过 16 周期逐槽扫描；最后一个槽完成检查时，`submit_seq` 最小且仍可发射的候选写入 `decode_pending_*` 窄快照。下一拍共享解码器产生 Task Context；若任务与目标执行单元仍可发射，则在拍末写入对应发射暂存，随后 `<eng>_task_valid_o` 才为 1。任务 valid等待 ready 时，对应暂存保持 opcode、command ID和 Task Context不变。
 
 四组发射暂存相互独立。某个执行单元令 `task_ready=0` 时，只会使该单元的暂存保持有效并阻止新的同类任务取得选择条件；其他暂存仍可保持或完成握手，其他执行单元也可继续运行。共享解码器每次只能向一组暂存写入新的 Task Context，因此“暂存可独立握手”和“任务展开按次序进行”是两个不同的控制层次。
 
@@ -1770,11 +1779,13 @@ TS 通过以下接口向 LSC 发送完整终态通知：
 | `completion_irq_success_o` | Output | 1 | CMD 请求成功中断且任务成功 |
 | `completion_irq_error_o` | Output | 1 | CMD 请求失败中断且任务失败 |
 
-完成通知使用 `completion_hold_valid_q` 和 `completion_hold_slot_q` 保存当前通知的任务表项编号。持有槽为空时，TS 在所有 `notify=1` 的任务中选择 `submit_seq` 最小的一项；只有该任务的 `task_event_published_q=1` 时，才把其编号装入持有槽。这样，带普通 signal Event 的任务一定先让 Event Table 状态可见，随后才可以向 LSC 发送完成通知。无 signal、接收检查失败和 `EVENT_REARM` 任务不需要等待普通 Event 发布步骤。
+完成通知使用 `completion_hold_valid_q` 和 `completion_hold_slot_q` 保存当前通知的任务表项编号。所有 `notify=1` 的任务组成完成候选位图。完成选择与 Event 发布、Control 共用任务槽计数器，但拥有自己的候选位图快照、变化标志、最早候选槽号和 `submit_seq`。最后一个槽检查结束时，只有本轮完成候选位图未变化、获胜任务仍为候选并且 `submit_seq` 一致，才产生完成选择脉冲。候选位图发生变化时，本轮不产生该脉冲，下一轮重新检查。
+
+持有槽为空且完成选择脉冲有效时，只有最早候选任务的 `task_event_published_q=1`，TS 才把其编号装入持有槽。这样，带普通 signal Event 的任务一定先让 Event Table 状态可见，随后才可以向 LSC 发送完成通知。无 signal、接收检查失败和 `EVENT_REARM` 任务不需要等待普通 Event 发布步骤。
 
 `completion_valid_o` 直接取自持有槽 valid，所有完成字段都用持有槽中的任务表项编号读取。`completion_valid_o=1` 且 `completion_ready_i=0` 时，持有槽编号和全部完成字段保持不变，即使这段时间出现了更早或更晚的其他终态任务，也不能替换当前通知。握手时，TS 清除持有槽 valid 和对应表项的 `notify`；握手不释放任务编号，软件 ACK 后表项才回到 FREE。
 
-如果多个任务同时形成终态，普通 Event 发布选择和完成通知选择都按 `submit_seq` 从小到大处理。完成选择先考察最早的 `notify` 项；该项的 Event 尚未发布时，不会绕过它发送后提交任务的完成通知。
+如果多个任务同时形成终态，普通 Event 发布选择和完成通知选择都按 `submit_seq` 从小到大处理。完成选择先考察最早的 `notify` 项；该项的 Event 尚未发布时，不会绕过它发送后提交任务的完成通知。扫描期间新增或移除候选时，对应类别等待下一轮重新选择，避免扫描早期遗漏刚出现的更早任务。
 
 TS 还提供组合查询和 ACK 端口：
 
@@ -1844,57 +1855,80 @@ sequenceDiagram
     participant TS as TaskScheduler
     participant CHECK as 接收检查解码器
     participant EVT as Event Table
+    participant SCAN as 逐槽扫描
     participant SNAP as 发射窄快照
     participant DEC as 共享发射解码器
     participant STG as 对应发射暂存
     participant ENG as 执行单元
+    participant SEL as Control/Event/完成逐槽选择
     participant PUB as Event发布暂存
     participant LSC
 
-    CFE->>TS: 完整 128-bit 指令
-    TS-->>CFE: ready
+    CFE->>TS: cfe_cmd_valid + 完整 128-bit 指令
+    TS-->>CFE: cfe_cmd_ready
     TS->>CHECK: 完整指令 + 当前基地址
     CHECK-->>TS: valid + engine + opcode
-    TS->>EVT: 读取 generation并保留 signal
+    TS->>EVT: 读取 wait、signal 的 generation
     EVT-->>TS: 事件状态与内部引用
-    TS->>TS: 保存指令、基地址快照和任务状态
-    EVT-->>TS: 等待事件进入终态
-    TS->>TS: WAIT_EVENT → READY
-    TS->>SNAP: 最早候选任务 + 指令 + 基地址快照
-    Note over TS,SNAP: 第一个时钟沿保存任务与窄快照
+    TS->>TS: 接收时钟沿分配 FREE 槽，保存任务与 predecessor_mask
+    EVT-->>TS: wait 事件状态
+    TS->>TS: 依赖成功且前序位图按位与为 0，WAIT_EVENT → READY
+    TS->>SCAN: 无待展开快照时从槽 0 开始
+    loop 16 个任务槽，每周期检查一项
+        SCAN->>SCAN: 检查 READY、前序位图和目标执行单元
+        SCAN->>SCAN: 用一次 64-bit 比较更新最早候选
+    end
+    SCAN->>SCAN: 最后一项完成时复查保存候选
+    SCAN->>SNAP: 时钟沿保存获胜任务、指令和基地址
+    Note over SCAN,SNAP: 没有候选时不写快照，后续周期重新从槽 0 检查
     SNAP->>DEC: 稳定的指令、基地址和目标执行单元
     DEC-->>STG: opcode + command_id + Task Context
-    Note over DEC,STG: 第二个时钟沿写入目标发射暂存
-    STG->>ENG: 随后一个周期 task_valid + 稳定 payload
-    ENG-->>TS: task_ready
+    Note over SNAP,STG: 写入前复查任务；执行单元忙时保持快照，任务失效时丢弃
+    Note over DEC,STG: 时钟沿写入目标发射暂存
+    STG->>ENG: task_valid + 稳定 payload
+    ENG-->>STG: task_ready
     ENG->>TS: done_valid + status + fault_addr + progress
     TS-->>ENG: done_ready
     TS->>TS: 保存完整终态
-    TS->>PUB: 选择最小submit_seq候选并保存表项编号
+    TS->>SEL: 更新完成与Event候选位图
+    loop 16 个任务槽，每周期并行检查三类候选
+        SEL->>SEL: 分别更新Control、Event和完成的最早候选
+    end
+    SEL->>SEL: 复查各类位图、获胜项和submit_seq
+    Note over TS,SEL: 某类位图改变时只取消该类本轮脉冲，下一轮重试
+    Note over TS,SEL: READY Control任务也由该扫描器在轮末选择并由TS执行
+    SEL->>PUB: Event选择脉冲与任务槽号
     PUB->>EVT: 下一周期写SUCCESS或ERROR
     EVT-->>TS: 置位该任务event_published
-    TS->>TS: 最小submit_seq通知装入完成持有槽
+    SEL->>TS: 完成选择脉冲与任务槽号
+    TS->>TS: Event已发布时装入完成持有槽
     TS->>LSC: completion_valid + 持有槽对应字段
     LSC-->>TS: completion_ready
     TS->>TS: 清除持有槽valid与该任务notify
 ```
 
-命令握手周期内，接收检查解码器组合产生 engine、opcode 和 `valid`。时钟沿到来时，TS 保存任务表字段、完整指令、基地址快照与事件引用。静态检查失败的任务直接建立 ERROR 终态；合法任务先进入 WAIT_EVENT，依赖满足后进入 READY。该阶段不把 2048 bit展开结果写入任务表。
+命令握手周期内，接收检查解码器组合产生 engine、opcode 和 `valid`。时钟沿到来时，TS 保存任务表字段、完整指令、基地址快照、事件引用与 `predecessor_mask`。静态检查失败的任务直接建立 ERROR 终态且掩码写 0；合法任务先进入 WAIT_EVENT，依赖事件成功并且 `predecessor_mask & task_live_mask` 为 0 后进入 READY。该阶段不把 2048 bit展开结果写入任务表。
 
-选中 READY 任务的周期末，TS 先保存窄快照。共享发射解码器在下一周期根据该快照组合产生 Task Context，并在该周期末写入目标执行单元的发射暂存；随后任务接口置 `valid`。ready/valid 握手后，TS 记录暂存中的任务表项编号并把任务置为 RUNNING。某一发射暂存因 `ready=0` 保持时，不妨碍其他执行单元继续运行或完成已有暂存的任务握手，但新的 Task Context 仍由共享解码器依次生成。
+没有待展开快照时，TS 启动或继续逐槽扫描。基准 16 项任务表每周期检查一项；候选必须为非 Control 的 READY 任务、前序任务条件已满足，并且目标执行单元没有活动任务且发射暂存为空。扫描保存当前 `submit_seq` 最小的候选，并在最后一个槽完成检查时复查获胜项。复查通过后，时钟沿保存窄快照；没有候选时不写快照。
 
-执行单元完成接口握手后，TS 保存 status、fault address和 progress，并把任务记录为终态。普通 signal Event 候选先写入发布暂存，下一周期才更新 Event Table；流水启动后每周期最多发布一个 Event。对应 `event_published` 置位后，任务才可以进入完成持有槽。持有槽等待 LSC ready 时保持全部完成字段不变。软件读取需要的信息并完成 ACK 后，任务表项和 `command_id` 才能复用。
+共享发射解码器在窄快照有效的周期组合产生 Task Context。TS 写入发射暂存前再次检查任务仍为 READY、执行单元字段一致且前序任务条件仍满足；检查失败时清除该快照，目标执行单元暂时不可接收新任务时则保持快照。写入暂存后任务接口置 `valid`。ready/valid 握手后，TS 记录暂存中的任务表项编号并把任务置为 RUNNING。某一发射暂存因 `ready=0` 保持时，不妨碍其他执行单元继续运行或完成已有暂存的任务握手，但新的 Task Context 仍由共享解码器依次生成。
+
+Control 执行、普通 signal Event 发布和完成通知共用一组连续逐槽选择寄存器。每轮开始分别保存三类候选位图，16 个周期内对同一槽并行完成三类候选比较，并分别保留最小 `submit_seq`。轮末分别复查候选位图、获胜项和提交序号；某一类位图发生变化时只取消该类选择脉冲，下一轮重新检查。三类选择因此保持相互独立，但不再各自形成一次覆盖全部任务槽的组合比较。
+
+执行单元完成接口握手后，TS 保存 status、fault address和 progress，并把任务记录为终态。普通 signal Event 在共享扫描轮末获得选择脉冲后先写入发布暂存，下一周期才更新 Event Table；每轮最多选择一个待发布 Event。对应 `event_published` 置位后，最早的完成候选才可以进入完成持有槽。持有槽等待 LSC ready 时保持全部完成字段不变。软件读取需要的信息并完成 ACK 后，任务表项和 `command_id` 才能复用。
 
 ### 8.10 停止、复位与错误处理
 
 - `quiesce_i=1` 阻止 TS 接收新的完整指令，不取消已保存任务；
-- `abort_i=1` 把所有非终态任务改为 `ABORTED`，清零错误地址和 progress，设置 `done_flags[2]`，并产生终态通知；
-- 复位把任务表全部置为 FREE，把 Event Table 置为 `FREE,generation=0`，清除 active Engine、四个发射暂存的 valid、`decode_pending_valid_q`、`completion_hold_valid_q`、`event_publish_pending_valid_q`、查询响应、控制请求和提交序号；
+- `abort_i=1` 把所有非终态任务改为 `ABORTED`，清零错误地址和 progress，设置 `done_flags[2]`，并产生终态通知；同时清除四组发射暂存的 valid、待展开快照、发射扫描状态、Control/Event/完成共用扫描器的槽号、三类候选位图、变化标志与最早候选记录，以及全部 `predecessor_mask`。该输入不直接清除四个执行单元 active 标志；已有执行任务返回 done 时清除对应标志，功能复位则清除全部 active 标志；
+- `reset_n` 低电平异步使复位状态生效，系统在 Core 时钟域同步释放复位；
+- 复位把任务表全部置为 FREE，把每项 `predecessor_mask` 清零，把 Event Table 置为 `FREE,generation=0`，并把提交序号清零；
+- 复位清除四个执行单元 active 标志和发射暂存 valid，清除 `decode_pending_valid_q`、`decode_scan_active_q`、`decode_scan_best_valid_q`、`completion_hold_valid_q`、`event_publish_pending_valid_q`、查询响应与控制请求；发射扫描槽号、Control/Event/完成共用扫描槽号、三类候选位图、变化标志、候选槽号和候选提交序号恢复为 0；
 - 任一执行单元返回错误编号或未定义 status 时，TS 使用 `BAD_DESC` 形成稳定终态，不用错误字段访问其他任务表项；
 - `scheduler_idle_o` 只有在任务占用数为 0 且四个执行单元均无 active任务时为 1；等待 ACK 的终态任务会使其保持为 0；
 - 内联解码不得访问 NPU `m_axi_*`；只有实际 DMA任务可通过 MIF访问全局数据。
 
-复位不要求清零任务表中的 128 bit指令和基地址快照，也不要求清零 `decode_pending_*` payload、四组 2048 bit发射 payload、完成持有槽编号或 Event 发布暂存编号。任务状态以及各级 valid 已经把这些内容标为无效；重新使用前，RTL 会由新任务完整覆盖。这样可以减少宽数据寄存器的复位负载，同时保持复位后的所有任务请求 valid 为 0。
+复位会清零任务状态、任务编号、执行单元、操作码、事件引用、`submit_seq`、`predecessor_mask`、状态记录和通知控制字段。复位不要求清零任务表中的 128 bit指令和基地址快照，也不要求清零 `decode_pending_*` payload、四组 2048 bit发射 payload、完成持有槽编号或 Event 发布暂存编号。任务状态以及各级 valid 已经把这些内容标为无效；重新使用前，RTL 会由新任务完整覆盖。这样可以减少宽数据寄存器的复位负载，同时保持复位后的所有任务请求 valid 为 0。
 
 ---
 
@@ -1973,7 +2007,7 @@ MIF 请求与响应端口如下：
 
 ### 9.3 指令展开得到的 DMA Task Context
 
-软件只填写第 6.7.2 节定义的指令位段。TaskScheduler 接收任务时保存指令与提交时基地址快照；选中 DMA READY 任务后，共享发射解码器根据操作码、地址引用、该任务的基地址快照和数据格式生成下表中的 Task Context，并写入 DMA 发射暂存。下表用于说明 DMA 内部如何接收任务以及波形中各字段的来源，不是任务表字段，也不是软件需要分配的参数结构。
+软件只填写第 6.7.2 节定义的指令位段。TaskScheduler 接收任务时保存指令与提交时基地址快照；DMA READY 任务在逐槽扫描中获胜并通过结束时复查后，共享发射解码器根据操作码、地址引用、该任务的基地址快照和数据格式生成下表中的 Task Context，并写入 DMA 发射暂存。下表用于说明 DMA 内部如何接收任务以及波形中各字段的来源，不是任务表字段，也不是软件需要分配的参数结构。
 
 | Byte Offset | 字段 | 位宽 | 说明 |
 | ---: | --- | ---: | --- |
@@ -2513,7 +2547,7 @@ A 为 INT32，或者 A 与 B 使用表中未列出的组合时，任务返回 `D
 
 ### 11.3 从指令到片上 Task Context
 
-主控提交 128-bit 指令后，TaskScheduler 先保存完整指令、提交时基地址快照以及任务状态。任务进入 READY 并被选择逻辑选中后，TS 先保存发射窄快照，共享发射解码器再组合生成 Task Context，并把结果写入 Matrix 发射暂存。Matrix 任务的数据处理过程是：
+主控提交 128-bit 指令后，TaskScheduler 先保存完整指令、提交时基地址快照以及任务状态。任务进入 READY 后参加逐槽扫描；扫描结束时仍满足前序任务条件、Matrix 没有活动任务且 Matrix 发射暂存为空的最早候选，才会写入发射窄快照。共享发射解码器随后组合生成 Task Context，并把结果写入 Matrix 发射暂存。Matrix 任务的数据处理过程是：
 
 ```text
 指令 → TaskScheduler 任务表 → 发射窄快照 → 共享发射解码器 → Matrix 发射暂存 → Matrix
@@ -3193,7 +3227,7 @@ Packed MUL 使用三个寄存阶段：第一段保存 16 个 4×4 基础乘积�
 
 每对输入 beat只读取一次。INT16 和 INT8 在已保存的 beat上依次切换 4 组或 2 组，INT4 直接处理整拍；结果缓存随后每次取相邻两个 INT32 元素组成一个 64-bit 写请求。地址使用行基址和当前 beat游标递增，L1 请求不经过 `row×stride+col×stride` 的当拍宽乘法。末拍不足完整输入 beat时只写 `valid_length` 指定的有效结果。
 
-外部 Generic Core 是 SoC 主控 CPU，不属于 NPU RTL，也不直接连接 IVE。它通过 NPU 的 64 bit AXI Slave 提交指令；Command Front End 把完整指令交给 TaskScheduler。TaskScheduler 任务表保存指令、提交时基地址快照、事件和状态字段，不为每个等待任务保存 2048 bit Task Context。IVE 任务被选中后，TS 先保存发射窄快照，共享发射解码器随后产生展开数据并写入 IVE 发射暂存；下一周期 IVE 接收到 `opcode_i`、`command_id_i` 和 `desc_i[2047:0]`。
+外部 Generic Core 是 SoC 主控 CPU，不属于 NPU RTL，也不直接连接 IVE。它通过 NPU 的 64 bit AXI Slave 提交指令；Command Front End 把完整指令交给 TaskScheduler。TaskScheduler 任务表保存指令、提交时基地址快照、事件和状态字段，不为每个等待任务保存 2048 bit Task Context。IVE READY 任务在逐槽扫描中获胜并通过结束时复查后，TS 保存发射窄快照，共享发射解码器随后产生展开数据并写入 IVE 发射暂存；下一周期 IVE 接收到 `opcode_i`、`command_id_i` 和 `desc_i[2047:0]`。
 
 ```mermaid
 flowchart LR
@@ -3211,7 +3245,7 @@ flowchart LR
     GC -->|"两个 64 bit beat"| AXIS
     AXIS --> CFE
     CFE --> TS
-    TS -->|"最早 READY 任务"| SNAP
+    TS -->|"逐槽扫描获胜任务"| SNAP
     SNAP -->|"稳定指令 + 基地址快照"| DEC
     DEC -->|"时钟沿装入"| STG
     STG -->|"下一周期 task ready/valid"| IVE
@@ -3257,7 +3291,7 @@ IVE 只有这一组 L1 请求和响应信号。src0、src1、src2、mask、目�
 
 ### 12.3 指令展开得到的 IVE Task Context
 
-软件只填写第 6.7.4 节中的指令位段。TaskScheduler 选中 IVE READY 任务后，先保存发射窄快照；共享发射解码器根据该任务保存的指令、提交时基地址快照、操作码和公共 dtype 组合出下表字段，并在解码周期末写入 IVE 发射暂存。这些字段用于说明模块接口和波形，不是任务表字段，也不是软件表。
+软件只填写第 6.7.4 节中的指令位段。IVE READY 任务在逐槽扫描中获胜并通过结束时复查后，TaskScheduler 保存发射窄快照；共享发射解码器根据该任务保存的指令、提交时基地址快照、操作码和公共 dtype 组合出下表字段，并在解码周期末写入 IVE 发射暂存。这些字段用于说明模块接口和波形，不是任务表字段，也不是软件表。
 
 | Byte Offset | 内部字段 | 位宽 | 当前指令展开值或作用 |
 | ---: | --- | ---: | --- |
@@ -3544,7 +3578,7 @@ flowchart LR
 
 ### 13.3 指令展开得到的 CME Task Context
 
-TaskScheduler 选中 CME READY 任务后，先保存发射窄快照；共享发射解码器读取该任务保存的指令和提交时基地址快照，把第 6.7.5 节的指令位段展开为以下内部字段，并在解码周期末写入 CME 发射暂存。任务表不保存这些 2048 bit展开字段。正常指令的 `rows` 范围为 1～32，`length` 范围为 1～256，`valid_length` 固定等于 `length`。
+CME READY 任务在逐槽扫描中获胜并通过结束时复查后，TaskScheduler 保存发射窄快照；共享发射解码器读取该任务保存的指令和提交时基地址快照，把第 6.7.5 节的指令位段展开为以下内部字段，并在解码周期末写入 CME 发射暂存。任务表不保存这些 2048 bit展开字段。正常指令的 `rows` 范围为 1～32，`length` 范围为 1～256，`valid_length` 固定等于 `length`。
 
 | Byte Offset | 内部字段 | 位宽 | 作用 |
 | ---: | --- | ---: | --- |
@@ -4480,19 +4514,19 @@ base 不大于 limit；从复位值 0 配置非空范围时，应先写 limit，
 
 1. 在执行单元的 done ready/valid 接口上接收 command ID、status、48-bit 错误地址和 64-bit progress；
 2. 检查 command ID 与 status，并更新任务表中的终态记录；
-3. 从尚未发布的普通 signal Event 中选择 `submit_seq` 最小的一项，把任务表项编号写入 Event 发布暂存；
-4. 下一周期把该 Event 写为 SUCCESS 或 ERROR，并置位对应任务的 `event_published`；
-5. 从 `notify=1` 的任务中选择 `submit_seq` 最小且 Event 已发布的一项，把任务表项编号装入完成持有槽；
-6. 通过 `completion_*` ready/valid 接口向 LSC 发送持有槽对应的终态；
-7. LSC 根据 status 和 CMD 中断选项更新 `IRQ_STATUS`，并在任务失败且首错寄存器为空时保存 `FAULT_*`。
+3. Control、普通 signal Event 和完成通知共用一个连续递增的任务槽计数器；三类分别保存扫描轮开始时的候选位图，并在 16 个周期内各自保留 `submit_seq` 最小的候选；
+4. 扫描轮末分别复查三类候选位图、获胜项和提交序号。某一类位图发生变化时，该类等待下一轮重新选择；
+5. Event 选择脉冲把任务表项编号写入发布暂存；下一周期把该 Event 写为 SUCCESS 或 ERROR，并置位对应任务的 `event_published`；
+6. 完成选择脉冲有效、完成持有槽为空且获胜任务的 Event 已发布时，把该任务表项编号装入完成持有槽；
+7. 通过 `completion_*` ready/valid 接口向 LSC 发送持有槽对应的终态；
+8. LSC 根据 status 和 CMD 中断选项更新 `IRQ_STATUS`，并在任务失败且首错寄存器为空时保存 `FAULT_*`。
 
 执行单元 done 和 TS 到 LSC 的终态通知都是一次 ready/valid 事务，没有固定拍数。
 `completion_valid_o` 等待 `completion_ready_i` 时，TS 必须保持全部终态字段不变。
 Event Table 的 SUCCESS 或 ERROR 不得早于任务表终态记录完成；完成通知又不得
 早于该任务的普通 signal Event 发布。这样软件观察到事件终态后，可以继续查询
-对应任务的错误地址和 progress。多个任务同时结束时，普通 Event 在流水启动后
-每周期最多发布一个，并按提交次序可见；完成持有槽也不允许绕过 Event 尚未发布
-的较早任务。
+对应任务的错误地址和 progress。多个任务同时结束时，普通 Event 每个扫描轮最多
+选择一个，并按提交次序可见；完成持有槽也不允许绕过 Event 尚未发布的较早任务。
 
 随后 LSC 根据 `IRQ_MASK` 产生 `irq_done_o`、`irq_exception_o` 或 `irq_error_o`。软件通过 W1C 清除中断位；清除中断不自动清除 `FAULT_*`。
 
@@ -4704,7 +4738,7 @@ PMU 撤销 `power_down_req_i` 后，LSC 立即撤销 `power_down_ack_o`，同时
 | 模块 | 复位后的状态 |
 | --- | --- |
 | CFE | 低 beat 保存寄存器无效，128-bit CMD FIFO 空，`ready=0` 直到复位释放 |
-| TaskScheduler | 任务表和 Event Table 为 FREE，`decode_pending_valid_q=0`，四组发射暂存 valid 为 0，`completion_hold_valid_q=0`，`event_publish_pending_valid_q=0`，所有执行单元任务请求 valid 为 0 |
+| TaskScheduler | 任务表和 Event Table 为 FREE，全部 `predecessor_mask` 为 0，逐槽扫描停止且候选无效，`decode_pending_valid_q=0`，四组发射暂存 valid 为 0，`completion_hold_valid_q=0`，`event_publish_pending_valid_q=0`，所有执行单元任务请求 valid 为 0 |
 | DMA | `state_q=ST_IDLE`，MIF、L1 请求 valid 和 done valid 为 0；Task Context、游标、shape 乘法和数据寄存器的旧值无效 |
 | Matrix | `state_q=ST_IDLE`，L1 请求 valid 和 done valid 为 0；操作数、乘积、累加和写回数据在新任务中重新赋值 |
 | IVE | `state_q=ST_IDLE`，L1 请求 valid 和 done valid 为 0；输入、乘积、结果和写回数据在新任务中重新赋值 |
@@ -4728,21 +4762,23 @@ L1BUF 在复位后不自动全区清零。任何任务读取一个 L1 地址前�
 | --- | --- | --- | --- |
 | 1. 提交指令 | Generic Core / AXI Slave | 指令低 64 bit与高 64 bit准备完成 | 固定地址 FIXED burst 的两个 beat 被前端接收 |
 | 2. CFE 排队 | CFE | 两个 beat 已组成完整指令 | 操作码和命令编号检查通过，128 bit指令进入 CFE FIFO |
-| 3. TS 接收 | TS / 接收检查解码器 | CFE 队首有效且任务表存在 FREE 项 | 保存指令、五个 48 bit基地址快照、20 bit L1 参数区基址、事件引用和状态字段 |
-| 4. 等待事件 | TS / Event Table | 接收阶段检查通过 | 依赖事件全部成功且顺序条件满足，或任一事件失败 |
-| 5. 选择任务 | TS | 目标执行单元无活动任务、对应发射暂存为空且存在 READY 任务 | 在全部具备条件的非 Control 任务中选择 `submit_seq` 最小的一项 |
-| 6. 保存窄快照 | TS | 已选出任务且没有待展开快照 | 时钟沿保存目标执行单元、任务编号、操作码、完整指令和提交时基地址 |
-| 7. 共享展开 | TS / 共享发射解码器 | `decode_pending_valid_q=1` | 组合产生 2048 bit Task Context，时钟沿写入目标发射暂存并清除 pending valid |
+| 3. TS 接收 | TS / 接收检查解码器 | CFE 队首有效且任务表存在 FREE 项 | 保存指令、五个 48 bit基地址快照、20 bit L1 参数区基址、事件引用、`predecessor_mask` 和状态字段 |
+| 4. 等待事件与前序任务 | TS / Event Table | 合法任务进入 WAIT_EVENT | 任一依赖事件失败时形成错误终态；依赖事件成功且 `predecessor_mask & task_live_mask` 为 0 时进入 READY；其余情况继续等待 |
+| 5. 逐槽扫描 | TS / 扫描寄存器 | `abort_i=0` 且没有待展开快照 | 从槽 0 到槽 15 每周期检查一项；非 Control 任务必须为 READY、前序条件满足、目标执行单元没有 RUNNING 任务且对应发射暂存 valid 为 0，扫描器用一次 64-bit 比较保留 `submit_seq` 最小的候选 |
+| 6. 保存窄快照 | TS | 最后一个槽完成检查且复查后的候选仍有效 | 时钟沿保存目标执行单元、任务编号、操作码、完整指令和提交时基地址；没有候选时结束本轮但不写快照 |
+| 7. 共享展开 | TS / 共享发射解码器 | `decode_pending_valid_q=1` | 复查任务状态、执行单元字段和前序条件；任务失效时丢弃快照，目标执行单元暂时不可接收时保持快照，否则组合产生 2048 bit Task Context并在时钟沿写入目标发射暂存 |
 | 8. 任务握手 | TS / Engine | 发射暂存置 `task_valid` | `task_valid && task_ready`，任务转为 RUNNING |
 | 9. 执行与排空 | Engine / L1BUF / MIF | 执行单元取得任务 | 结果全部产生，所有相关写响应返回 |
 | 10. 保存终态 | TS | 完成一次 done ready/valid 握手 | 保存状态、错误地址和进度，任务进入终态并置位 `notify` |
-| 11. 发布普通 Event | TS / Event Table | 终态任务带有尚未发布的普通 signal Event | 先把最小 `submit_seq` 候选写入发布暂存，下一周期写 Event Table 并置位 `event_published` |
-| 12. 装入完成持有槽 | TS | 完成持有槽为空，最早 `notify` 任务的 Event 已发布 | 保存该任务表项编号并置位 `completion_hold_valid_q` |
+| 11. 发布普通 Event | TS / 共用逐槽选择寄存器 / Event Table | 终态任务带有尚未发布的普通 signal Event | 扫描轮开始时保存 Event 候选位图，每周期检查一个槽并保留最小 `submit_seq`；轮末位图未变化且获胜项复查通过时写入发布暂存，下一周期写 Event Table 并置位 `event_published` |
+| 12. 装入完成持有槽 | TS / 共用逐槽选择寄存器 | 任务已经置位 `notify` | 扫描轮开始时保存完成候选位图，每周期检查一个槽并保留最小 `submit_seq`；轮末位图未变化、获胜项复查通过、完成持有槽为空且该任务 Event 已发布时，保存表项编号并置位 `completion_hold_valid_q` |
 | 13. 通知与释放 | TS / LSC / 软件 | 完成持有槽有效 | 完成通知握手后清除 `notify`；软件查询后 ACK，任务表项回到 FREE |
 
-阶段 3 保存的是提交时基地址快照，而不是每任务一份 2048 bit展开结果。这样，已经进入 WAIT_EVENT 或 READY 的任务不会因软件后续改写基地址寄存器而改变实际访问地址。阶段 6 的窄快照和阶段 7 的发射解码器由四类执行单元共享；阶段 7 的输出写入四组独立发射暂存中的一组。某个执行单元暂停接收时，其他执行单元仍可继续运行或完成已有暂存的握手，但新的 Task Context 按最早任务次序逐项展开。
+阶段 3 保存的是提交时基地址快照，而不是每任务一份 2048 bit展开结果。这样，已经进入 WAIT_EVENT 或 READY 的任务不会因软件后续改写基地址寄存器而改变实际访问地址。新任务设置 ordered 时，`predecessor_mask` 记录全部仍未进入终态的较早任务；每条合法新任务记录仍未进入终态的较早 ordered 任务；GLOBAL_FENCE 还按照 `engine_mask` 记录所选执行单元中的较早任务。较早任务进入终态后，对应 bit 不再阻止任务，并在时钟沿从保存值中清除。
 
-阶段 11 的 Event 发布和阶段 12 的完成通知都按 `submit_seq` 选择候选。Event 发布暂存已有有效项时，可以同时选择下一项，因此流水启动后每周期最多让一个普通 Event 进入终态。完成持有槽一旦有效，在 LSC 接收前不会换成其他任务。AXI `CTL WAIT` 的周期计数不会暂停，配置的最大等待周期必须覆盖 Event 发布暂存和前面候选排队所用的周期。
+阶段 5 的一轮扫描固定检查 16 个槽。扫描结束时没有候选，则后续周期从槽 0 开始新一轮。Control 任务不经过阶段 5～8；它在依赖与前序任务条件满足后进入 Control 候选位图，由 Control、Event 和完成共用的连续逐槽扫描器选择，并在轮末复查通过后由 TS 内部完成。阶段 6 的窄快照和阶段 7 的发射解码器由四类执行单元共享；阶段 7 的输出写入四组独立发射暂存中的一组。某个执行单元暂停接收时，其他执行单元仍可继续运行或完成已有暂存的握手，但新的 Task Context 按最早任务次序逐项展开。
+
+阶段 11 的 Event 发布、阶段 12 的完成通知以及 Control 执行共用一个任务槽计数器，同一周期对同一个槽并行检查三类条件；三类各自保存候选位图、变化标志和最早候选记录。某一类候选位图在扫描期间发生变化时，只取消该类本轮选择，下一轮从槽 0 重新检查。每轮最多选择一个待发布 Event 和一个待发送完成通知。完成持有槽一旦有效，在 LSC 接收前不会换成其他任务。AXI `CTL WAIT` 的周期计数不会暂停，配置的最大等待周期必须覆盖逐槽选择、候选变化后的重试、Event 发布暂存和前面候选等待所用的周期。
 
 > [!important] 结果可见点
 > 执行单元内部得到最后一个计算结果不等于任务完成。只有最后一个目的写请求收到完成响应，任务才可以进入成功终态。
@@ -5478,14 +5514,17 @@ beat 的 data 和 AXI 控制字段必须保持；CFE 到 TS 暂停时，完整 1
 TaskScheduler 的 Event 发布和完成持有槽至少检查：
 
 1. 一个带普通 signal Event 的任务完成后，先保存终态，再把表项编号写入 `event_publish_pending_slot_q`，下一周期才修改 Event Table；
-2. 多个任务在同一周期形成终态时，Event 按 `submit_seq` 从小到大可见，流水启动后每周期最多写入一个；
-3. 每个普通 signal Event 恰好发布一次，处于发布暂存或 `event_published=1` 的任务不会再次写入；
-4. `EVENT_REARM` 直接完成 generation 更新，不占用普通 Event 发布暂存；
-5. 最早 `notify` 任务的 Event 尚未发布时，不得发送后提交任务的完成通知；
-6. `completion_valid_o=1 && completion_ready_i=0` 时，持有槽编号、command ID、engine、opcode、status、错误地址、progress 和中断请求字段逐周期保持不变；
-7. 完成握手清除持有槽 valid 与对应 `notify`，但任务表项在软件 ACK 前仍不可复用；
-8. `CTL WAIT` 的超时计数覆盖 Event 发布暂存和前面候选排队所用的周期，并在 Event 终态可见时优先返回事件结果；
-9. 外部复位和受控软复位都清除 `completion_hold_valid_q` 与 `event_publish_pending_valid_q`，复位后不得出现旧完成通知或旧 Event 写入。
+2. Control、Event 发布和完成通知共用一个连续任务槽计数器，三类在同一周期检查同一个槽，并各自保存候选位图、变化标志和最早候选；
+3. 扫描轮中途新增较早候选，或任何候选被移除时，对应类别在轮末不得产生选择脉冲，下一轮重新检查；
+4. 扫描轮末产生选择脉冲前，必须再次检查获胜项仍符合要求，并检查其 `submit_seq` 与扫描保存值一致；
+5. 多个任务形成终态时，Event 按 `submit_seq` 从小到大可见，每个扫描轮最多选择一个；
+6. 每个普通 signal Event 恰好发布一次，处于发布暂存或 `event_published=1` 的任务不会再次写入；
+7. `EVENT_REARM` 直接完成 generation 更新，不占用普通 Event 发布暂存；
+8. 最早 `notify` 任务的 Event 尚未发布时，不得发送后提交任务的完成通知；
+9. `completion_valid_o=1 && completion_ready_i=0` 时，持有槽编号、command ID、engine、opcode、status、错误地址、progress 和中断请求字段逐周期保持不变；
+10. 完成握手清除持有槽 valid 与对应 `notify`，但任务表项在软件 ACK 前仍不可复用；
+11. `CTL WAIT` 的超时计数覆盖逐槽选择、候选变化后的重试、Event 发布暂存和前面候选等待所用的周期，并在 Event 终态可见时优先返回事件结果；
+12. 外部复位和受控软复位都清除共用扫描器状态、`completion_hold_valid_q` 与 `event_publish_pending_valid_q`，复位后不得出现旧选择脉冲、旧完成通知或旧 Event 写入。
 
 L1BUF 当前使用一次请求加一次响应的单 beat 接口。验证环境应随机暂停请求和响应，
 并检查：

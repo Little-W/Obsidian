@@ -1,6 +1,6 @@
 if {($argc != 4) && ($argc != 5)} {
   puts stderr \
-    "usage: run_vivado.tcl BUILD_DIR PART PERIOD_NS JOBS ?resume_post_synth?"
+    "usage: run_vivado.tcl BUILD_DIR PART PERIOD_NS JOBS ?start_mode?"
   exit 2
 }
 
@@ -11,7 +11,8 @@ set jobs [lindex $argv 3]
 set start_mode full
 if {$argc == 5} {
   set start_mode [lindex $argv 4]
-  if {$start_mode ne "resume_post_synth"} {
+  if {($start_mode ne "resume_post_synth") &&
+      ($start_mode ne "post_synth_only")} {
     puts stderr "ERROR: unsupported start mode: $start_mode"
     exit 2
   }
@@ -283,7 +284,7 @@ proc write_stage_reports {
   return [dict create setup $setup_metrics hold $hold_metrics]
 }
 
-if {$start_mode eq "full"} {
+if {$start_mode ne "resume_post_synth"} {
   set rtl_candidates [list \
     [file join $rtl_root npu_rtl_pkg.sv] \
     [file join $rtl_root engines npu_engine_pkg.sv]]
@@ -329,6 +330,11 @@ if {$start_mode eq "full"} {
 set post_synth_metrics \
   [write_stage_reports \
     $build_dir post_synth $timing_path_count $part_name $period_ns]
+
+if {$start_mode eq "post_synth_only"} {
+  puts "INFO: post-synthesis reports=$build_dir"
+  exit
+}
 
 place_design
 phys_opt_design

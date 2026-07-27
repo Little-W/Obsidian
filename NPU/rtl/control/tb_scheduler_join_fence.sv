@@ -24,6 +24,10 @@ module tb_scheduler_join_fence;
   logic [11:0] matrix_done_command_id;
   logic [7:0]  matrix_done_status;
 
+  logic        task_ack_valid;
+  logic [11:0] task_ack_command_id;
+  logic        task_ack_ready;
+
   logic        completion_valid;
   logic [11:0] completion_command_id;
   logic [3:0]  completion_engine;
@@ -80,6 +84,20 @@ module tb_scheduler_join_fence;
     end
   endfunction
 
+  function automatic logic [127:0] make_ordered_nop(
+    input logic [9:0] command_id
+  );
+    logic [127:0] command;
+    begin
+      command = make_command(
+        6'd0, command_id, NPU_DTYPE_INT8, 80'd0,
+        8'hff, 8'hff, 8'hff
+      );
+      command[84] = 1'b1;
+      return command;
+    end
+  endfunction
+
   task automatic apply_reset;
     begin
       @(negedge clk);
@@ -92,10 +110,62 @@ module tb_scheduler_join_fence;
       matrix_done_valid     = 1'b0;
       matrix_done_command_id = 12'd0;
       matrix_done_status    = NPU_STATUS_SUCCESS;
+      task_ack_valid        = 1'b0;
+      task_ack_command_id   = 12'd0;
       repeat (4) @(posedge clk);
       @(negedge clk);
       reset_n = 1'b1;
       repeat (3) @(posedge clk);
+    end
+  endtask
+
+  task automatic wait_for_dma_dispatch(
+    input logic [11:0] expected_command_id
+  );
+    int unsigned cycles;
+    begin
+      cycles = 0;
+      while ((!dma_dispatch_seen_q ||
+              (dma_dispatch_id_q != expected_command_id)) &&
+             (cycles < 256)) begin
+        @(negedge clk);
+        cycles++;
+      end
+      if (!dma_dispatch_seen_q ||
+          (dma_dispatch_id_q != expected_command_id))
+        $fatal(
+          1,
+          "DMA command %0d did not dispatch: ids=%0d/%0d/%0d/%0d states=%0d/%0d/%0d/%0d active=%0b",
+          expected_command_id,
+          dut.task_command_id_q[0],
+          dut.task_command_id_q[1],
+          dut.task_command_id_q[2],
+          dut.task_command_id_q[3],
+          dut.task_state_q[0],
+          dut.task_state_q[1],
+          dut.task_state_q[2],
+          dut.task_state_q[3],
+          dut.dma_active_q
+        );
+    end
+  endtask
+
+  task automatic wait_for_matrix_dispatch(
+    input logic [11:0] expected_command_id
+  );
+    int unsigned cycles;
+    begin
+      cycles = 0;
+      while ((!matrix_dispatch_seen_q ||
+              (matrix_dispatch_id_q != expected_command_id)) &&
+             (cycles < 256)) begin
+        @(negedge clk);
+        cycles++;
+      end
+      if (!matrix_dispatch_seen_q ||
+          (matrix_dispatch_id_q != expected_command_id))
+        $fatal(1, "Matrix command %0d did not dispatch",
+               expected_command_id);
     end
   endtask
 
@@ -117,7 +187,7 @@ module tb_scheduler_join_fence;
     begin
       cycles = 0;
       while (!(dma_dispatch_seen_q && matrix_dispatch_seen_q) &&
-             (cycles < 100)) begin
+             (cycles < 256)) begin
         @(negedge clk);
         cycles++;
       end
@@ -167,6 +237,34 @@ module tb_scheduler_join_fence;
     end
   endtask
 
+  task automatic acknowledge_task(input logic [11:0] command_id);
+    int unsigned cycles;
+    logic accepted;
+    begin
+      @(negedge clk);
+      task_ack_command_id = command_id;
+      task_ack_valid      = 1'b1;
+      cycles = 0;
+      accepted = 1'b0;
+      while (!accepted && (cycles < 256)) begin
+        @(posedge clk);
+        accepted = task_ack_ready;
+        cycles++;
+      end
+      if (!accepted)
+        $fatal(
+          1,
+          "command %0d was not ready for ACK: state=%0d notify=%0b",
+          command_id,
+          dut.task_state_q[0],
+          dut.task_notify_q[0]
+        );
+      @(negedge clk);
+      task_ack_valid      = 1'b0;
+      task_ack_command_id = 12'd0;
+    end
+  endtask
+
   task automatic wait_for_event(
     input int unsigned event_id,
     input logic [2:0] expected_state
@@ -175,7 +273,7 @@ module tb_scheduler_join_fence;
     begin
       cycles = 0;
       while ((dut.event_state_q[event_id] != expected_state) &&
-             (cycles < 100)) begin
+             (cycles < 256)) begin
         @(negedge clk);
         cycles++;
       end
@@ -199,7 +297,7 @@ module tb_scheduler_join_fence;
     int unsigned cycles;
     begin
       cycles = 0;
-      while (!completion_seen_q[command_id] && (cycles < 150)) begin
+      while (!completion_seen_q[command_id] && (cycles < 256)) begin
         @(negedge clk);
         cycles++;
       end
@@ -276,6 +374,10 @@ module tb_scheduler_join_fence;
         dma_dispatch_id_q   <= dma_task_command_id;
       end
       if (matrix_task_valid) begin
+        if ((matrix_task_command_id == 12'h003) &&
+            !((dut.task_state_q[1] == NPU_TASK_SUCCESS) ||
+              (dut.task_state_q[1] == NPU_TASK_ERROR)))
+          $fatal(1, "task after ordered command dispatched too early");
         matrix_dispatch_seen_q <= 1'b1;
         matrix_dispatch_id_q   <= matrix_task_command_id;
       end
@@ -295,7 +397,7 @@ module tb_scheduler_join_fence;
 
   /* verilator lint_off PINCONNECTEMPTY */
   npu_task_scheduler #(
-    .TASK_SLOTS(8),
+    .TASK_SLOTS(16),
     .EVENT_COUNT(255)
   ) dut (
     .clk_i(clk),
@@ -408,9 +510,9 @@ module tb_scheduler_join_fence;
     .task_query_error_info_o(),
     .task_query_done_flags_o(),
 
-    .task_ack_valid_i(1'b0),
-    .task_ack_command_id_i(12'd0),
-    .task_ack_ready_o(),
+    .task_ack_valid_i(task_ack_valid),
+    .task_ack_command_id_i(task_ack_command_id),
+    .task_ack_ready_o(task_ack_ready),
 
     .scheduler_idle_o(),
     .task_occupancy_o()
@@ -419,6 +521,7 @@ module tb_scheduler_join_fence;
 
   initial begin
     logic [79:0] fence_payload;
+    int unsigned cycles;
 
     clk                    = 1'b0;
     reset_n                = 1'b0;
@@ -430,6 +533,8 @@ module tb_scheduler_join_fence;
     matrix_done_valid      = 1'b0;
     matrix_done_command_id = 12'd0;
     matrix_done_status     = NPU_STATUS_SUCCESS;
+    task_ack_valid         = 1'b0;
+    task_ack_command_id    = 12'd0;
 
     apply_reset();
     start_join(1'b1);
@@ -479,6 +584,191 @@ module tb_scheduler_join_fence;
     apply_reset();
     submit_command(make_command(
       6'd5, 10'h001, NPU_DTYPE_INT8, dma_payload(),
+      8'hff, 8'hff, 8'h01
+    ));
+    submit_command(make_command(
+      6'd12, 10'h002, NPU_DTYPE_INT8, matrix_payload(),
+      8'hff, 8'hff, 8'h02
+    ));
+    wait_for_engine_pair();
+
+    cycles = 0;
+    while ((dut.select_scan_slot_q != 4'd4) && (cycles < 256)) begin
+      @(negedge clk);
+      cycles++;
+    end
+    if (dut.select_scan_slot_q != 4'd4)
+      $fatal(1, "shared selection scan did not reach slot 4");
+    complete_matrix(12'h002, NPU_STATUS_SUCCESS);
+
+    cycles = 0;
+    while (!((dut.select_scan_slot_q == 4'd4) &&
+             dut.completion_scan_mask_q[1] &&
+             dut.event_publish_scan_mask_q[1]) &&
+           (cycles < 256)) begin
+      @(negedge clk);
+      cycles++;
+    end
+    if (!dut.completion_scan_mask_q[1] ||
+        !dut.event_publish_scan_mask_q[1])
+      $fatal(1, "later task was not present in the scan snapshot");
+    complete_dma(12'h001, NPU_STATUS_SUCCESS);
+
+    wait_for_event(1, NPU_EVENT_SUCCESS);
+    if (dut.event_state_q[2] != NPU_EVENT_PENDING)
+      $fatal(1, "later Event was published before the earlier Event");
+    wait_for_completion(
+      1, NPU_ENGINE_DMA, NPU_OPCODE_DMA_COPY_1D, NPU_STATUS_SUCCESS
+    );
+    if (completion_seen_q[2])
+      $fatal(1, "later completion was reported before the earlier task");
+    wait_for_event(2, NPU_EVENT_SUCCESS);
+    wait_for_completion(
+      2, NPU_ENGINE_MATRIX, NPU_OPCODE_GEMM, NPU_STATUS_SUCCESS
+    );
+    $display(
+      "PASS: new earlier notify restarts completion and Event selection"
+    );
+
+    apply_reset();
+    submit_command(make_command(
+      6'd5, 10'h001, NPU_DTYPE_INT8, dma_payload(),
+      8'hff, 8'hff, 8'hff
+    ));
+    wait_for_dma_dispatch(12'h001);
+    fence_payload = 80'd0;
+    fence_payload[79:76] = 4'b0001;
+    submit_command(make_command(
+      6'd4, 10'h002, NPU_DTYPE_INT8, fence_payload,
+      8'hff, 8'hff, 8'hff
+    ));
+
+    cycles = 0;
+    while ((dut.select_scan_slot_q != 4'd4) && (cycles < 256)) begin
+      @(negedge clk);
+      cycles++;
+    end
+    if (dut.select_scan_slot_q != 4'd4)
+      $fatal(1, "shared Control scan did not reach slot 4");
+    submit_command(make_command(
+      6'd0, 10'h003, NPU_DTYPE_INT8, 80'd0,
+      8'hff, 8'hff, 8'hff
+    ));
+
+    cycles = 0;
+    while (!((dut.select_scan_slot_q == 4'd4) &&
+             dut.control_scan_mask_q[2]) &&
+           (cycles < 256)) begin
+      @(negedge clk);
+      cycles++;
+    end
+    if (!dut.control_scan_mask_q[2])
+      $fatal(1, "later Control task was not in the scan snapshot");
+    complete_dma(12'h001, NPU_STATUS_SUCCESS);
+
+    cycles = 0;
+    while (!((dut.task_state_q[1] == NPU_TASK_SUCCESS) ||
+             (dut.task_state_q[1] == NPU_TASK_ERROR)) &&
+           (cycles < 256)) begin
+      @(negedge clk);
+      cycles++;
+    end
+    if (dut.task_state_q[1] != NPU_TASK_SUCCESS)
+      $fatal(1, "earlier GLOBAL_FENCE did not complete successfully");
+    if (dut.task_state_q[2] != NPU_TASK_READY)
+      $fatal(1, "later Control task executed before the earlier task");
+    wait_for_completion(
+      2, NPU_ENGINE_CONTROL, NPU_OPCODE_GLOBAL_FENCE, NPU_STATUS_SUCCESS
+    );
+    wait_for_completion(
+      3, NPU_ENGINE_CONTROL, NPU_OPCODE_NOP, NPU_STATUS_SUCCESS
+    );
+    $display("PASS: new earlier READY Control task restarts selection");
+
+    apply_reset();
+    submit_command(make_command(
+      6'd5, 10'h001, NPU_DTYPE_INT8, dma_payload(),
+      8'hff, 8'hff, 8'hff
+    ));
+    wait_for_dma_dispatch(12'h001);
+    submit_command(make_ordered_nop(10'h002));
+    submit_command(make_command(
+      6'd12, 10'h003, NPU_DTYPE_INT8, matrix_payload(),
+      8'hff, 8'hff, 8'hff
+    ));
+    if (!dut.task_predecessor_mask_q[1][0] ||
+        !dut.task_predecessor_mask_q[2][1])
+      $fatal(1, "ordered predecessor masks were not captured");
+    expect_not_completed(2, 8);
+    if (matrix_dispatch_seen_q)
+      $fatal(1, "task after ordered command dispatched too early");
+
+    complete_dma(12'h001, NPU_STATUS_SUCCESS);
+    wait_for_completion(
+      1, NPU_ENGINE_DMA, NPU_OPCODE_DMA_COPY_1D, NPU_STATUS_SUCCESS
+    );
+    wait_for_completion(
+      2, NPU_ENGINE_CONTROL, NPU_OPCODE_NOP, NPU_STATUS_SUCCESS
+    );
+    wait_for_matrix_dispatch(12'h003);
+    complete_matrix(12'h003, NPU_STATUS_SUCCESS);
+    $display("PASS: ordered task waits for earlier work and blocks later work");
+
+    apply_reset();
+    submit_command(make_command(
+      6'd5, 10'h001, NPU_DTYPE_INT8, dma_payload(),
+      8'hff, 8'hff, 8'hff
+    ));
+    submit_command(make_command(
+      6'd12, 10'h002, NPU_DTYPE_INT8, matrix_payload(),
+      8'hff, 8'hff, 8'hff
+    ));
+    wait_for_engine_pair();
+    fence_payload = 80'd0;
+    fence_payload[79:76] = 4'b0011;
+    submit_command(make_command(
+      6'd4, 10'h003, NPU_DTYPE_INT8, fence_payload,
+      8'hff, 8'hff, 8'hff
+    ));
+    if (dut.task_predecessor_mask_q[2][1:0] != 2'b11)
+      $fatal(1, "fence did not capture both active predecessors");
+    expect_not_completed(3, 8);
+
+    complete_dma(12'h001, NPU_STATUS_SUCCESS);
+    wait_for_completion(
+      1, NPU_ENGINE_DMA, NPU_OPCODE_DMA_COPY_1D, NPU_STATUS_SUCCESS
+    );
+    acknowledge_task(12'h001);
+    if ((dut.task_state_q[0] != NPU_TASK_FREE) ||
+        dut.task_predecessor_mask_q[2][0])
+      $fatal(1, "completed predecessor bit was not cleared before reuse");
+    submit_command(make_command(
+      6'd5, 10'h004, NPU_DTYPE_INT8, dma_payload(),
+      8'hff, 8'hff, 8'hff
+    ));
+    wait_for_dma_dispatch(12'h004);
+    if ((dut.task_command_id_q[0] != 12'h004) ||
+        dut.task_predecessor_mask_q[2][0])
+      $fatal(1, "reused slot incorrectly blocked the fence");
+    expect_not_completed(3, 8);
+
+    complete_matrix(12'h002, NPU_STATUS_SUCCESS);
+    wait_for_completion(
+      2, NPU_ENGINE_MATRIX, NPU_OPCODE_GEMM, NPU_STATUS_SUCCESS
+    );
+    wait_for_completion(
+      3, NPU_ENGINE_CONTROL, NPU_OPCODE_GLOBAL_FENCE, NPU_STATUS_SUCCESS
+    );
+    if (!dma_done_ready || (dma_dispatch_id_q != 12'h004))
+      $fatal(1, "fence waited for the new occupant of a reused slot");
+    complete_dma(12'h004, NPU_STATUS_SUCCESS);
+    $display(
+      "PASS: predecessor masks handle early completion and slot reuse"
+    );
+
+    apply_reset();
+    submit_command(make_command(
+      6'd5, 10'h001, NPU_DTYPE_INT8, dma_payload(),
       8'hff, 8'hff, 8'hff
     ));
     submit_command(make_command(
@@ -492,6 +782,9 @@ module tb_scheduler_join_fence;
       6'd4, 10'h003, NPU_DTYPE_INT8, fence_payload,
       8'hff, 8'hff, 8'hff
     ));
+    if (!dut.task_predecessor_mask_q[2][0] ||
+        dut.task_predecessor_mask_q[2][1])
+      $fatal(1, "GLOBAL_FENCE engine mask selected the wrong predecessors");
     expect_not_completed(3, 8);
     complete_dma(12'h001, NPU_STATUS_SUCCESS);
     wait_for_completion(
