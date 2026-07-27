@@ -56,7 +56,13 @@ module npu_matrix_scalar_engine (
     ST_RMW_RSP,
     ST_WRITE_REQ,
     ST_WRITE_RSP,
-    ST_DONE
+    ST_DONE,
+    ST_EP_ABS,
+    ST_EP_ROUND,
+    ST_EP_INCREMENT,
+    ST_EP_SIGN,
+    ST_EP_NARROW,
+    ST_EP_ZERO_POINT
   } state_t;
 
   state_t state_q;
@@ -78,6 +84,17 @@ module npu_matrix_scalar_engine (
   logic signed [63:0] epilogue_input_q;
   logic signed [63:0] epilogue_value_q;
   logic signed [127:0] requant_product_q;
+  logic requant_negative_q;
+  logic signed [7:0] requant_shift_q;
+  logic [1:0] requant_round_q;
+  logic [127:0] requant_magnitude_q;
+  logic [127:0] requant_quotient_q;
+  logic [127:0] requant_remainder_q;
+  logic [127:0] requant_halfway_q;
+  logic requant_increment_q;
+  logic [127:0] requant_rounded_magnitude_q;
+  logic signed [127:0] requant_shifted_q;
+  logic signed [63:0] requant_narrow_q;
   logic [39:0] requant_entry_q;
   logic [63:0] rmw_beat_q;
   logic [7:0] status_q;
@@ -223,58 +240,6 @@ module npu_matrix_scalar_engine (
     end
   endfunction
 
-  function automatic logic signed [63:0] requant_shift(
-    input logic signed [127:0] product,
-    input logic signed [7:0] shift_value,
-    input logic [1:0] rounding
-  );
-    logic signed [127:0] shifted;
-    logic [127:0] magnitude;
-    logic [127:0] quotient;
-    logic [127:0] remainder;
-    logic [127:0] remainder_mask;
-    logic [127:0] halfway;
-    logic increment;
-    integer shift_amount;
-    begin
-      if (shift_value < 0) begin
-        shift_amount =
-          -$signed({{24{shift_value[7]}}, shift_value});
-        shifted = product <<< shift_amount;
-      end else if (shift_value == 0)
-        shifted = product;
-      else begin
-        shift_amount =
-          $signed({{24{shift_value[7]}}, shift_value});
-        magnitude = product < 0 ? $unsigned(-product) :
-                                  $unsigned(product);
-        quotient = magnitude >> shift_amount;
-        remainder_mask =
-          (128'd1 << shift_amount) - 128'd1;
-        remainder = magnitude & remainder_mask;
-        halfway = 128'd1 << (shift_amount - 1);
-        increment = 1'b0;
-        case (rounding)
-          2'd0:
-            increment =
-              remainder > halfway ||
-              (remainder == halfway && quotient[0]);
-          2'd2: increment = product >= 0 && remainder != 0;
-          2'd3: increment = product < 0 && remainder != 0;
-          default: increment = 1'b0;
-        endcase
-        quotient = quotient + {{127{1'b0}}, increment};
-        shifted = product < 0 ? -$signed(quotient) :
-                                $signed(quotient);
-      end
-      if (shifted[127:64] != {64{shifted[63]}})
-        return shifted[127] ?
-               64'sh8000_0000_0000_0000 :
-               64'sh7fff_ffff_ffff_ffff;
-      return shifted[63:0];
-    end
-  endfunction
-
   wire [63:0] a_addr =
     a_base + batch_q * a_batch_stride +
     (transpose_a ?
@@ -411,6 +376,7 @@ module npu_matrix_scalar_engine (
   always_ff @(posedge clk_i or negedge reset_n) begin
     logic signed [63:0] epilogue_value;
     logic overflow;
+    integer shift_amount;
     if (!reset_n) begin
       state_q <= ST_IDLE;
       status_q <= NPU_STATUS_SUCCESS;
@@ -722,15 +688,90 @@ module npu_matrix_scalar_engine (
           requant_product_q <=
             epilogue_input_q *
             $signed({1'b0, requant_entry_q[31:0]});
+          state_q <= ST_EP_ABS;
+        end
+
+        ST_EP_ABS: begin
+          requant_negative_q <= requant_product_q < 0;
+          requant_shift_q <= $signed(requant_entry_q[39:32]);
+          requant_round_q <= round_mode;
+          requant_magnitude_q <=
+            requant_product_q < 0 ?
+            $unsigned(-requant_product_q) :
+            $unsigned(requant_product_q);
           state_q <= ST_EP_SHIFT;
         end
 
         ST_EP_SHIFT: begin
-          epilogue_value_q <= requant_shift(
-            requant_product_q,
-            $signed(requant_entry_q[39:32]),
-            round_mode
-          ) + {{32{output_zero_point[31]}}, output_zero_point};
+          if (requant_shift_q < 0) begin
+            shift_amount =
+              -$signed({{24{requant_shift_q[7]}}, requant_shift_q});
+            requant_shifted_q <= requant_product_q <<< shift_amount;
+            state_q <= ST_EP_NARROW;
+          end else if (requant_shift_q == 0) begin
+            requant_shifted_q <= requant_product_q;
+            state_q <= ST_EP_NARROW;
+          end else begin
+            shift_amount =
+              $signed({{24{requant_shift_q[7]}}, requant_shift_q});
+            requant_quotient_q <= requant_magnitude_q >> shift_amount;
+            requant_remainder_q <=
+              requant_magnitude_q &
+              ((128'd1 << shift_amount) - 128'd1);
+            requant_halfway_q <= 128'd1 << (shift_amount - 1);
+            state_q <= ST_EP_ROUND;
+          end
+        end
+
+        ST_EP_ROUND: begin
+          case (requant_round_q)
+            2'd0:
+              requant_increment_q <=
+                requant_remainder_q > requant_halfway_q ||
+                (requant_remainder_q == requant_halfway_q &&
+                 requant_quotient_q[0]);
+            2'd2:
+              requant_increment_q <=
+                !requant_negative_q && requant_remainder_q != 0;
+            2'd3:
+              requant_increment_q <=
+                requant_negative_q && requant_remainder_q != 0;
+            default: requant_increment_q <= 1'b0;
+          endcase
+          state_q <= ST_EP_INCREMENT;
+        end
+
+        ST_EP_INCREMENT: begin
+          requant_rounded_magnitude_q <=
+            requant_quotient_q +
+            {{127{1'b0}}, requant_increment_q};
+          state_q <= ST_EP_SIGN;
+        end
+
+        ST_EP_SIGN: begin
+          requant_shifted_q <=
+            requant_negative_q ?
+            -$signed(requant_rounded_magnitude_q) :
+            $signed(requant_rounded_magnitude_q);
+          state_q <= ST_EP_NARROW;
+        end
+
+        ST_EP_NARROW: begin
+          if (requant_shifted_q[127:64] !=
+              {64{requant_shifted_q[63]}})
+            requant_narrow_q <=
+              requant_shifted_q[127] ?
+              64'sh8000_0000_0000_0000 :
+              64'sh7fff_ffff_ffff_ffff;
+          else
+            requant_narrow_q <= requant_shifted_q[63:0];
+          state_q <= ST_EP_ZERO_POINT;
+        end
+
+        ST_EP_ZERO_POINT: begin
+          epilogue_value_q <=
+            requant_narrow_q +
+            {{32{output_zero_point[31]}}, output_zero_point};
           state_q <= ST_EP_CLIP;
         end
 

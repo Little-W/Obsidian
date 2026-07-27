@@ -927,9 +927,9 @@ QUERY selector 定义如下：
 
 Selector 0～3、5 和 6 只读取状态。Selector 4 只有在任务已经进入终态时才能成功；ACK 响应完成后，TaskScheduler 释放 Task 表项和 `command_id`。ACK 不清除 Event Table 项。
 
-WAIT 和 FENCE 的最大等待周期为 0 时只检查一次。最大等待周期为 $L>0$ 时，硬件允许经历 $L$ 个完整等待周期；目标在第 $L$ 个周期进入终态时，目标结果优先于 `TIMEOUT`。达到上限只结束本次控制请求，不自动取消正在执行的 NPU 任务。
+WAIT 的最大等待周期为 0 时检查一次；最大等待周期为 $L>0$ 时，硬件最多等待 $L$ 个周期。目标在超时检查所在周期进入终态时，目标结果优先于 `TIMEOUT`。达到上限只结束本次控制请求，不自动取消正在执行的 NPU 任务。
 
-FENCE 在控制请求握手时保存当前 `submit_seq`，只等待不大于该快照且被执行单元选择值选中的任务。握手后提交的新任务不延长本次 FENCE。
+FENCE 在控制请求握手时保存当时被执行单元选择值选中的全部任务槽、每个任务的 `submit_seq`，以及当时已经终止任务的 status。随后每周期检查一个任务槽，16 槽配置的一轮检查需要 16 个周期；握手后提交的新任务不加入本次 FENCE。仍有未终止目标时，每周期检查最大等待周期；全部目标已经终止时，扫描器继续读取尚未处理的 status，再返回最终结果。
 
 ---
 
@@ -1831,6 +1831,20 @@ AXI Slave寄存器地址如下：
 
 同一时刻最多有一项控制请求。WAIT 的 `arg0[7:0]` 是 Event ID，`arg0[63:8]` 必须为 0，`arg1[31:0]` 是最大等待周期；TS 在接受 WAIT 时读取该 Event 的当前 generation，并把 `{generation,event_id}` 保存到控制请求状态中，因此事件随后经过 REARM 后不会被一次较早的 WAIT 错认。WAIT 只读取 Event Table，任务 done 到 Event 发布之间的暂存周期以及前面其他 Event 的排队周期都计入最大等待周期；设置超时值时必须包含这段时间。QUERY 的 `arg0[9:0]` 是命令编号，`arg0[63:10]` 必须为 0，`arg1[2:0]` 是 selector；FENCE 的 `arg0[3:0]` 是 Engine mask，`arg1[31:0]` 是最大等待周期。异步任务顺序控制使用第 6 章的 `GLOBAL_FENCE` 指令，AXI FENCE 用于软件发起一次同步管理等待。
 
+TS 接受 FENCE 时按 Engine mask 保存每个已占用目标槽的有效 bit、`submit_seq`、是否已经终止以及已终止任务的 status。扫描器从槽 0 开始，每周期读取一个槽：
+
+1. 请求开始时已经终止的目标使用保存的 status，不再依赖任务表中的当前内容；
+2. 请求开始时尚未终止的目标同时比较槽状态和保存的 `submit_seq`，任务进入终态后读取当前 status；
+3. 目标尚未终止时保留其有效 bit，下一轮再次检查；目标在本轮已经检查过以后才完成时，将在下一轮检查到；
+4. 目标终止后清除其有效 bit；所有 bit 清零时返回已保存结果；
+5. 多个目标失败时，每周期只比较当前目标与已保存失败任务的 `submit_seq`，最终返回提交时间最早的失败 status。
+
+FENCE 扫描期间，直接任务 ACK 对尚未检查完成的目标槽返回未就绪，防止任务完成后被释放并由新任务复用。扫描器读取终态结果并清除该目标 bit 后，直接 ACK 才能继续。若 FENCE 接收与一个终态任务的直接 ACK 发生在同一时钟沿，请求接收阶段保存的终态标志、status 和 `submit_seq` 仍可供后续扫描使用，因此不会漏掉该任务。AXI QUERY selector 4 与 AXI FENCE 不能同时被接受，因为控制端一次只保存一项请求，并且上一项响应被接收以前 `axi_ctl_ready_o` 保持为 0。
+
+FENCE 的等待计数包含逐槽检查周期。只要仍有未终止目标，硬件每周期比较等待计数和 `arg1[31:0]`；`arg1=0` 时在第一次检查发现未终止目标便返回 `TIMEOUT`。若当前检查确认最后一个目标已经终止，任务结果优先于 `TIMEOUT`。所有目标终止后不再触发超时，扫描器最多再用 `TASK_SLOTS-1` 个周期读取其余保存结果。`abort_i` 把尚未终止的目标任务改为 `ABORTED`，FENCE 继续扫描并按提交先后选择返回状态。`axi_ctl_cancel_i` 结束扫描并清除目标记录，不修改任务。复位清除扫描槽号、目标 bit、保存的终态标志和失败记录。
+
+控制响应有效且 `axi_ctl_rsp_ready_i=0` 时，TS 保持 `axi_ctl_rsp_valid_o` 与 `axi_ctl_rsp_data_o` 不变，同时拉低 `axi_ctl_ready_o`。因此等待软件接收的 QUERY 结果不会被后来的 FENCE 请求改写。
+
 QUERY selector 定义如下：
 
 | Selector | `CTL_RESULT` |
@@ -1923,7 +1937,7 @@ Control 执行、普通 signal Event 发布和完成通知共用一组连续逐�
 - `abort_i=1` 把所有非终态任务改为 `ABORTED`，清零错误地址和 progress，设置 `done_flags[2]`，并产生终态通知；同时清除四组发射暂存的 valid、待展开快照、发射扫描状态、Control/Event/完成共用扫描器的槽号、三类候选位图、变化标志与最早候选记录，以及全部 `predecessor_mask`。该输入不直接清除四个执行单元 active 标志；已有执行任务返回 done 时清除对应标志，功能复位则清除全部 active 标志；
 - `reset_n` 低电平异步使复位状态生效，系统在 Core 时钟域同步释放复位；
 - 复位把任务表全部置为 FREE，把每项 `predecessor_mask` 清零，把 Event Table 置为 `FREE,generation=0`，并把提交序号清零；
-- 复位清除四个执行单元 active 标志和发射暂存 valid，清除 `decode_pending_valid_q`、`decode_scan_active_q`、`decode_scan_best_valid_q`、`completion_hold_valid_q`、`event_publish_pending_valid_q`、查询响应与控制请求；发射扫描槽号、Control/Event/完成共用扫描槽号、三类候选位图、变化标志、候选槽号和候选提交序号恢复为 0；
+- 复位清除四个执行单元 active 标志和发射暂存 valid，清除 `decode_pending_valid_q`、`decode_scan_active_q`、`decode_scan_best_valid_q`、`completion_hold_valid_q`、`event_publish_pending_valid_q`、查询响应与控制请求；发射扫描槽号、Control/Event/完成共用扫描槽号、三类候选位图、变化标志、候选槽号和候选提交序号恢复为 0；AXI FENCE 的扫描槽号、目标 bit、任务序号副本、终态副本和失败记录同时清零；
 - 任一执行单元返回错误编号或未定义 status 时，TS 使用 `BAD_DESC` 形成稳定终态，不用错误字段访问其他任务表项；
 - `scheduler_idle_o` 只有在任务占用数为 0 且四个执行单元均无 active任务时为 1；等待 ACK 的终态任务会使其保持为 0；
 - 内联解码不得访问 NPU `m_axi_*`；只有实际 DMA任务可通过 MIF访问全局数据。

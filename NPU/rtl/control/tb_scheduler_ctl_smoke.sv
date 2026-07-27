@@ -3,6 +3,7 @@ module tb_scheduler_ctl_smoke;
 
   logic clk;
   logic reset_n;
+  logic abort;
 
   logic cfe_cmd_valid;
   logic cfe_cmd_ready;
@@ -70,7 +71,9 @@ module tb_scheduler_ctl_smoke;
   logic [63:0] ctl_arg0;
   logic [63:0] ctl_arg1;
   logic ctl_rsp_valid;
+  logic ctl_rsp_ready;
   logic [63:0] ctl_rsp_data;
+  logic ctl_cancel;
   logic event_query_found;
   logic [2:0] event_query_state;
   logic [11:0] event_query_producer_command_id;
@@ -83,6 +86,8 @@ module tb_scheduler_ctl_smoke;
   logic [11:0] task_query_signal_event;
   logic [31:0] task_query_error_info;
   logic [15:0] task_query_done_flags;
+  logic task_ack_valid;
+  logic [11:0] task_ack_command_id;
   logic task_ack_ready;
   logic scheduler_idle;
   logic [15:0] task_occupancy;
@@ -111,14 +116,14 @@ module tb_scheduler_ctl_smoke;
   endfunction
 
   npu_task_scheduler #(
-    .TASK_SLOTS(4),
+    .TASK_SLOTS(16),
     .EVENT_COUNT(255)
   ) u_scheduler (
     .clk_i(clk),
     .reset_n(reset_n),
     .enable_i(1'b1),
     .quiesce_i(1'b0),
-    .abort_i(1'b0),
+    .abort_i(abort),
 
     .cfe_cmd_valid_i(cfe_cmd_valid),
     .cfe_cmd_ready_o(cfe_cmd_ready),
@@ -200,9 +205,9 @@ module tb_scheduler_ctl_smoke;
     .axi_ctl_op_i(ctl_op),
     .axi_ctl_arg0_i(ctl_arg0),
     .axi_ctl_arg1_i(ctl_arg1),
-    .axi_ctl_cancel_i(1'b0),
+    .axi_ctl_cancel_i(ctl_cancel),
     .axi_ctl_rsp_valid_o(ctl_rsp_valid),
-    .axi_ctl_rsp_ready_i(1'b1),
+    .axi_ctl_rsp_ready_i(ctl_rsp_ready),
     .axi_ctl_rsp_data_o(ctl_rsp_data),
 
     .event_query_valid_i(1'b0),
@@ -225,8 +230,8 @@ module tb_scheduler_ctl_smoke;
     .task_query_error_info_o(task_query_error_info),
     .task_query_done_flags_o(task_query_done_flags),
 
-    .task_ack_valid_i(1'b0),
-    .task_ack_command_id_i(12'd0),
+    .task_ack_valid_i(task_ack_valid),
+    .task_ack_command_id_i(task_ack_command_id),
     .task_ack_ready_o(task_ack_ready),
 
     .scheduler_idle_o(scheduler_idle),
@@ -238,25 +243,62 @@ module tb_scheduler_ctl_smoke;
       completion_count <= 0;
     end else if (completion_valid) begin
       completion_count <= completion_count + 1;
-      if (completion_status != NPU_STATUS_SUCCESS) begin
-        $fatal(1, "unexpected failed completion");
-      end
       if ((completion_fault_addr != 48'd0)
-          || completion_irq_success || completion_irq_error
-          || !((completion_command_id == 12'h001
-                && completion_engine == NPU_ENGINE_DMA
-                && completion_opcode == NPU_OPCODE_DMA_COPY_1D)
-               || (completion_command_id == 12'h002
-                   && completion_engine == NPU_ENGINE_MATRIX
-                   && completion_opcode == NPU_OPCODE_GEMM)
-               || (completion_command_id == 12'h003
-                   && completion_engine == NPU_ENGINE_CONTROL
-                   && completion_opcode == NPU_OPCODE_EVENT_REARM)
-               || (completion_command_id == 12'h004
-                   && completion_engine == NPU_ENGINE_CONTROL
-                   && completion_opcode == NPU_OPCODE_EVENT_SIGNAL))) begin
-        $fatal(1, "completion metadata is incorrect");
+          || completion_irq_success || completion_irq_error) begin
+        $fatal(1, "completion sideband data is incorrect");
       end
+      unique case (completion_command_id)
+        12'h001: begin
+          if ((completion_engine != NPU_ENGINE_DMA)
+              || (completion_opcode != NPU_OPCODE_DMA_COPY_1D)
+              || (completion_status != NPU_STATUS_SUCCESS)) begin
+            $fatal(1, "DMA completion metadata is incorrect");
+          end
+        end
+        12'h002: begin
+          if ((completion_engine != NPU_ENGINE_MATRIX)
+              || (completion_opcode != NPU_OPCODE_GEMM)
+              || (completion_status != NPU_STATUS_SUCCESS)) begin
+            $fatal(1, "Matrix completion metadata is incorrect");
+          end
+        end
+        12'h003: begin
+          if ((completion_engine != NPU_ENGINE_CONTROL)
+              || (completion_opcode != NPU_OPCODE_EVENT_REARM)
+              || (completion_status != NPU_STATUS_SUCCESS)) begin
+            $fatal(1, "EVENT_REARM completion metadata is incorrect");
+          end
+        end
+        12'h004: begin
+          if ((completion_engine != NPU_ENGINE_CONTROL)
+              || (completion_opcode != NPU_OPCODE_EVENT_SIGNAL)
+              || (completion_status != NPU_STATUS_SUCCESS)) begin
+            $fatal(1, "EVENT_SIGNAL completion metadata is incorrect");
+          end
+        end
+        12'h005: begin
+          if ((completion_engine != NPU_ENGINE_DMA)
+              || (completion_opcode != NPU_OPCODE_DMA_COPY_1D)
+              || (completion_status != NPU_STATUS_BAD_DESC)) begin
+            $fatal(1, "failed DMA completion metadata is incorrect");
+          end
+        end
+        12'h006: begin
+          if ((completion_engine != NPU_ENGINE_MATRIX)
+              || (completion_opcode != NPU_OPCODE_GEMM)
+              || (completion_status != NPU_STATUS_ADDR_FAULT)) begin
+            $fatal(1, "failed Matrix completion metadata is incorrect");
+          end
+        end
+        12'h008: begin
+          if ((completion_engine != NPU_ENGINE_DMA)
+              || (completion_opcode != NPU_OPCODE_DMA_COPY_1D)
+              || (completion_status != NPU_STATUS_ABORTED)) begin
+            $fatal(1, "aborted DMA completion metadata is incorrect");
+          end
+        end
+        default: $fatal(1, "unexpected completion command ID");
+      endcase
       if ((completion_command_id == 12'h001)
           && (completion_progress != 64'h123)) begin
         $fatal(1, "DMA progress was not retained");
@@ -400,10 +442,12 @@ module tb_scheduler_ctl_smoke;
 
   initial begin
     logic [63:0] response;
+    logic [63:0] held_response;
     logic [79:0] payload;
 
     clk                    = 1'b0;
     reset_n                = 1'b0;
+    abort                  = 1'b0;
     cfe_cmd_valid          = 1'b0;
     cfe_cmd                = 128'd0;
     dma_done_valid         = 1'b0;
@@ -420,6 +464,10 @@ module tb_scheduler_ctl_smoke;
     ctl_op                 = 2'd0;
     ctl_arg0               = 64'd0;
     ctl_arg1               = 64'd0;
+    ctl_cancel             = 1'b0;
+    ctl_rsp_ready          = 1'b1;
+    task_ack_valid         = 1'b0;
+    task_ack_command_id    = 12'd0;
 
     repeat (4) @(posedge clk);
     reset_n = 1'b1;
@@ -530,8 +578,178 @@ module tb_scheduler_ctl_smoke;
       $fatal(1, "WAIT did not resolve the current event generation");
     end
 
+    payload = {
+      28'h000_0100, 28'h000_0200, 20'd4,
+      NPU_DTYPE_INT8, 1'b0, 1'b0
+    };
+    submit_command(make_command(
+      6'd5, 10'h005, NPU_DTYPE_INT8, payload, 8'hff));
+    payload = {
+      14'h004, 14'h008, 14'h00c, 12'd0,
+      6'd0, 6'd0, 6'd0,
+      1'b0, NPU_DTYPE_INT32, 5'd0
+    };
+    submit_command(make_command(
+      6'd12, 10'h006, NPU_DTYPE_INT8, payload, 8'hff));
+    wait ((dma_accepted_command_id_q == 12'h005)
+          && (matrix_accepted_command_id_q == 12'h006)
+          && dma_done_ready && matrix_done_ready);
+
+    start_ctl(NPU_CTL_FENCE, 64'h3, 64'd300);
+    complete_matrix(NPU_STATUS_ADDR_FAULT, 64'h600);
+    complete_dma(NPU_STATUS_BAD_DESC, 64'h500);
+    receive_ctl(response);
+    if (response[7:0] != NPU_STATUS_BAD_DESC) begin
+      $fatal(1, "FENCE did not report the older failed task");
+    end
+
+    wait (completion_count == 6);
+    repeat (2) @(posedge clk);
+
+    /*
+     * A captured terminal task cannot be acknowledged until its scan result
+     * has been retained.  This prevents slot reuse from hiding that result.
+     */
+    ctl_rsp_ready = 1'b0;
+    start_ctl(NPU_CTL_FENCE, 64'h1, 64'd100);
+    @(negedge clk);
+    task_ack_command_id = 12'h005;
+    task_ack_valid      = 1'b1;
+    #1;
+    if (task_ack_ready) begin
+      $fatal(1, "ACK was accepted before the FENCE retained the result");
+    end
+    while (!task_ack_ready) @(negedge clk);
+    @(posedge clk);
+    @(negedge clk);
+    task_ack_valid      = 1'b0;
+    task_ack_command_id = 12'd0;
+    wait (ctl_rsp_valid);
+    response = ctl_rsp_data;
+    if (response[7:0] != NPU_STATUS_BAD_DESC) begin
+      $fatal(1, "FENCE lost a task released after its scan");
+    end
+    ctl_rsp_ready = 1'b1;
+    @(posedge clk);
+    @(negedge clk);
+
+    /*
+     * Accept a FENCE and a direct ACK together.  The FENCE must retain the
+     * terminal result captured before the ACK releases and reuses the slot.
+     */
+    @(negedge clk);
+    ctl_op              = NPU_CTL_FENCE;
+    ctl_arg0            = 64'h2;
+    ctl_arg1            = 64'd100;
+    ctl_valid           = 1'b1;
+    task_ack_command_id = 12'h006;
+    task_ack_valid      = 1'b1;
+    #1;
+    if (!ctl_ready || !task_ack_ready) begin
+      $fatal(1, "FENCE and ACK were not ready before the shared edge");
+    end
+    @(posedge clk);
+    @(negedge clk);
+    ctl_valid           = 1'b0;
+    ctl_op              = 2'd0;
+    ctl_arg0            = 64'd0;
+    ctl_arg1            = 64'd0;
+    task_ack_valid      = 1'b0;
+    task_ack_command_id = 12'd0;
+    receive_ctl(response);
+    if (response[7:0] != NPU_STATUS_ADDR_FAULT) begin
+      $fatal(1, "FENCE lost a terminal task released at acceptance");
+    end
+
+    /*
+     * A pending QUERY response owns the control response registers until
+     * software accepts it.  A new FENCE request must remain backpressured.
+     */
+    ctl_rsp_ready = 1'b0;
+    start_ctl(NPU_CTL_QUERY, 64'h002, 64'd0);
+    wait (ctl_rsp_valid);
+    held_response = ctl_rsp_data;
+    @(negedge clk);
+    ctl_op    = NPU_CTL_FENCE;
+    ctl_arg0  = 64'h3;
+    ctl_arg1  = 64'd100;
+    ctl_valid = 1'b1;
+    repeat (4) begin
+      @(negedge clk);
+      if (ctl_ready || !ctl_rsp_valid
+          || (ctl_rsp_data != held_response)
+          || u_scheduler.ctl_active_q) begin
+        $fatal(1, "stalled QUERY response was overwritten");
+      end
+    end
+    ctl_valid     = 1'b0;
+    ctl_op        = 2'd0;
+    ctl_arg0      = 64'd0;
+    ctl_arg1      = 64'd0;
+    ctl_rsp_ready = 1'b1;
+    @(posedge clk);
+    @(negedge clk);
+    if (ctl_rsp_valid) begin
+      $fatal(1, "QUERY response did not complete after backpressure");
+    end
+
+    payload = {
+      28'h000_0100, 28'h000_0200, 20'd4,
+      NPU_DTYPE_INT8, 1'b0, 1'b0
+    };
+    submit_command(make_command(
+      6'd5, 10'h007, NPU_DTYPE_INT8, payload, 8'hff));
+    wait ((dma_accepted_command_id_q == 12'h007) && dma_done_ready);
+    start_ctl(NPU_CTL_FENCE, 64'h1, 64'd100);
+    wait (u_scheduler.ctl_active_q);
+    repeat (3) @(posedge clk);
+    @(negedge clk);
+    reset_n = 1'b0;
+    #1;
+    if (u_scheduler.ctl_active_q || ctl_rsp_valid
+        || (u_scheduler.ctl_fence_target_q != '0)
+        || (u_scheduler.ctl_fence_scan_slot_q != '0)) begin
+      $fatal(1, "reset did not clear the FENCE scan state");
+    end
+    repeat (2) @(posedge clk);
+    @(negedge clk);
+    reset_n = 1'b1;
+    repeat (2) @(posedge clk);
+
+    submit_command(make_command(
+      6'd5, 10'h008, NPU_DTYPE_INT8, payload, 8'hff));
+    wait ((dma_accepted_command_id_q == 12'h008) && dma_done_ready);
+    ctl_request(NPU_CTL_FENCE, 64'h1, 64'd0, response);
+    if (response[7:0] != NPU_STATUS_TIMEOUT) begin
+      $fatal(1, "zero-cycle FENCE did not time out a live task");
+    end
+    start_ctl(NPU_CTL_FENCE, 64'h1, 64'd100);
+    wait (u_scheduler.ctl_active_q);
+    @(negedge clk);
+    ctl_cancel = 1'b1;
+    @(posedge clk);
+    @(negedge clk);
+    ctl_cancel = 1'b0;
+    repeat (2) @(posedge clk);
+    if (u_scheduler.ctl_active_q || ctl_rsp_valid
+        || (u_scheduler.ctl_fence_target_q != '0)) begin
+      $fatal(1, "FENCE cancel did not clear the active scan");
+    end
+
+    start_ctl(NPU_CTL_FENCE, 64'h1, 64'd100);
+    wait (u_scheduler.ctl_active_q);
+    @(negedge clk);
+    abort = 1'b1;
+    @(posedge clk);
+    @(negedge clk);
+    abort = 1'b0;
+    receive_ctl(response);
+    if (response[7:0] != NPU_STATUS_ABORTED) begin
+      $fatal(1, "FENCE did not report an aborted captured task");
+    end
+
     $display(
-      "PASS: scheduler WAIT by event ID, masked FENCE, QUERY and ACK signature=%0b",
+      "PASS: scheduler WAIT, registered FENCE scan, QUERY and ACK signature=%0b",
       ^{
         cmd_id_lookup_ready, cmd_id_lookup_rsp_valid, cmd_id_busy,
         dma_task_desc_flat, matrix_task_desc_flat,

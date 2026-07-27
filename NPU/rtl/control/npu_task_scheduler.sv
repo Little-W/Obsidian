@@ -196,6 +196,9 @@ module npu_task_scheduler #(
   logic [TASK_IDX_W-1:0] ctl_ack_slot_q;
   logic [TASK_SLOTS-1:0] ctl_fence_target_q;
   logic [63:0] ctl_fence_target_seq_q [TASK_SLOTS];
+  logic [TASK_SLOTS-1:0] ctl_fence_snapshot_terminal_q;
+  logic [7:0] ctl_fence_snapshot_status_q [TASK_SLOTS];
+  logic [TASK_IDX_W-1:0] ctl_fence_scan_slot_q;
   logic [7:0] ctl_fence_status_q;
   logic [63:0] ctl_fence_failure_seq_q;
 
@@ -270,11 +273,14 @@ module npu_task_scheduler #(
   logic [2:0] ctl_wait_event_state;
   logic [11:0] ctl_wait_event_producer;
   logic ctl_fence_pending;
-  logic [7:0] ctl_fence_result_status;
-  logic [63:0] ctl_fence_result_seq;
   logic [TASK_SLOTS-1:0] ctl_fence_accept_target;
-  logic [7:0] ctl_fence_accept_status;
-  logic [63:0] ctl_fence_accept_failure_seq;
+  logic [TASK_SLOTS-1:0] ctl_fence_scan_next_target;
+  logic [7:0] ctl_fence_scan_next_status;
+  logic [63:0] ctl_fence_scan_next_failure_seq;
+  logic ctl_fence_scan_current_done;
+  logic [7:0] ctl_fence_scan_current_status;
+  logic [63:0] ctl_fence_scan_current_seq;
+  logic ctl_fence_scan_last;
   logic [11:0] cmd_command_id;
   logic [3:0] cmd_engine;
   logic [7:0] cmd_opcode;
@@ -520,42 +526,68 @@ module npu_task_scheduler #(
 
   always_comb begin
     ctl_fence_accept_target = '0;
-    ctl_fence_accept_status = NPU_STATUS_SUCCESS;
-    ctl_fence_accept_failure_seq = 64'hffff_ffff_ffff_ffff;
     for (int unsigned slot = 0; slot < TASK_SLOTS; slot++) begin
-      if ((task_state_q[slot] != NPU_TASK_FREE)
-          && engine_mask_selected(task_engine_q[slot],
-                                  axi_ctl_arg0_i[3:0])) begin
-        if (terminal_state(task_state_q[slot])) begin
-          if ((task_status_q[slot] != NPU_STATUS_SUCCESS)
-              && (task_submit_seq_q[slot] <
-                  ctl_fence_accept_failure_seq)) begin
-            ctl_fence_accept_status = task_status_q[slot];
-            ctl_fence_accept_failure_seq = task_submit_seq_q[slot];
-          end
-        end else begin
-          ctl_fence_accept_target[slot] = 1'b1;
-        end
-      end
+      ctl_fence_accept_target[slot] =
+        (task_state_q[slot] != NPU_TASK_FREE)
+        && engine_mask_selected(task_engine_q[slot],
+                                axi_ctl_arg0_i[3:0]);
     end
   end
 
   always_comb begin
-    ctl_fence_pending       = 1'b0;
-    ctl_fence_result_status = ctl_fence_status_q;
-    ctl_fence_result_seq    = ctl_fence_failure_seq_q;
+    ctl_fence_pending = 1'b0;
     for (int unsigned slot = 0; slot < TASK_SLOTS; slot++) begin
       if (ctl_fence_target_q[slot]
+          && !ctl_fence_snapshot_terminal_q[slot]
           && (task_state_q[slot] != NPU_TASK_FREE)
           && (task_submit_seq_q[slot] ==
-              ctl_fence_target_seq_q[slot])) begin
-        if (!terminal_state(task_state_q[slot])) begin
-          ctl_fence_pending = 1'b1;
-        end else if ((task_status_q[slot] != NPU_STATUS_SUCCESS)
-                     && (task_submit_seq_q[slot] <
-                         ctl_fence_result_seq)) begin
-          ctl_fence_result_status = task_status_q[slot];
-          ctl_fence_result_seq    = task_submit_seq_q[slot];
+              ctl_fence_target_seq_q[slot])
+          && !terminal_state(task_state_q[slot])) begin
+        ctl_fence_pending = 1'b1;
+      end
+    end
+  end
+
+  /*
+   * AXI FENCE examines one captured task slot per cycle.  The terminal
+   * snapshot retains a task result if software acknowledges that task on
+   * the same edge that accepts the FENCE request.  A later slot reuse is
+   * rejected by the captured submission sequence.
+   */
+  always_comb begin
+    ctl_fence_scan_next_target = ctl_fence_target_q;
+    ctl_fence_scan_next_status = ctl_fence_status_q;
+    ctl_fence_scan_next_failure_seq = ctl_fence_failure_seq_q;
+    ctl_fence_scan_current_done = 1'b0;
+    ctl_fence_scan_current_status = NPU_STATUS_SUCCESS;
+    ctl_fence_scan_current_seq =
+      ctl_fence_target_seq_q[ctl_fence_scan_slot_q];
+    ctl_fence_scan_last =
+      ctl_fence_scan_slot_q == TASK_IDX_W'(TASK_SLOTS - 1);
+
+    if (ctl_fence_target_q[ctl_fence_scan_slot_q]) begin
+      if (ctl_fence_snapshot_terminal_q[ctl_fence_scan_slot_q]) begin
+        ctl_fence_scan_current_done = 1'b1;
+        ctl_fence_scan_current_status =
+          ctl_fence_snapshot_status_q[ctl_fence_scan_slot_q];
+      end else if ((task_state_q[ctl_fence_scan_slot_q] == NPU_TASK_FREE)
+                   || (task_submit_seq_q[ctl_fence_scan_slot_q] !=
+                       ctl_fence_target_seq_q[ctl_fence_scan_slot_q])) begin
+        ctl_fence_scan_current_done = 1'b1;
+      end else if (terminal_state(
+                     task_state_q[ctl_fence_scan_slot_q])) begin
+        ctl_fence_scan_current_done = 1'b1;
+        ctl_fence_scan_current_status =
+          task_status_q[ctl_fence_scan_slot_q];
+      end
+
+      if (ctl_fence_scan_current_done) begin
+        ctl_fence_scan_next_target[ctl_fence_scan_slot_q] = 1'b0;
+        if ((ctl_fence_scan_current_status != NPU_STATUS_SUCCESS)
+            && (ctl_fence_scan_current_seq <
+                ctl_fence_scan_next_failure_seq)) begin
+          ctl_fence_scan_next_status = ctl_fence_scan_current_status;
+          ctl_fence_scan_next_failure_seq = ctl_fence_scan_current_seq;
         end
       end
     end
@@ -940,6 +972,7 @@ module npu_task_scheduler #(
         ctl_query_select = TASK_IDX_W'(slot);
       end
       if (terminal_state(task_state_q[slot]) && !task_notify_q[slot] &&
+          !ctl_fence_target_q[slot] &&
           (task_command_id_q[slot] == task_ack_command_id_i)) begin
         ack_found  = 1'b1;
         ack_select = TASK_IDX_W'(slot);
@@ -1074,6 +1107,8 @@ module npu_task_scheduler #(
       ctl_ack_release_q          <= 1'b0;
       ctl_ack_slot_q             <= '0;
       ctl_fence_target_q         <= '0;
+      ctl_fence_snapshot_terminal_q <= '0;
+      ctl_fence_scan_slot_q      <= '0;
       ctl_fence_status_q         <= NPU_STATUS_SUCCESS;
       ctl_fence_failure_seq_q    <= 64'hffff_ffff_ffff_ffff;
       for (int unsigned slot = 0; slot < TASK_SLOTS; slot++) begin
@@ -1095,6 +1130,7 @@ module npu_task_scheduler #(
         task_notify_q[slot]       <= 1'b0;
         task_event_published_q[slot] <= 1'b0;
         ctl_fence_target_seq_q[slot] <= 64'd0;
+        ctl_fence_snapshot_status_q[slot] <= NPU_STATUS_SUCCESS;
       end
       for (int unsigned event_idx = 0;
            event_idx < EVENT_COUNT; event_idx++) begin
@@ -1134,6 +1170,8 @@ module npu_task_scheduler #(
         ctl_wait_count_q        <= 32'd0;
         ctl_ack_release_q       <= 1'b0;
         ctl_fence_target_q      <= '0;
+        ctl_fence_snapshot_terminal_q <= '0;
+        ctl_fence_scan_slot_q   <= '0;
         ctl_fence_status_q      <= NPU_STATUS_SUCCESS;
         ctl_fence_failure_seq_q <= 64'hffff_ffff_ffff_ffff;
 
@@ -1240,11 +1278,13 @@ module npu_task_scheduler #(
               ctl_rsp_valid_q <= 1'b1;
             end else begin
               ctl_fence_target_q      <= ctl_fence_accept_target;
-              ctl_fence_status_q      <= ctl_fence_accept_status;
-              ctl_fence_failure_seq_q <= ctl_fence_accept_failure_seq;
               for (int unsigned slot = 0;
                    slot < TASK_SLOTS; slot++) begin
                 ctl_fence_target_seq_q[slot] <= task_submit_seq_q[slot];
+                ctl_fence_snapshot_terminal_q[slot] <=
+                  ctl_fence_accept_target[slot]
+                  && terminal_state(task_state_q[slot]);
+                ctl_fence_snapshot_status_q[slot] <= task_status_q[slot];
               end
               ctl_active_q <= 1'b1;
             end
@@ -1263,6 +1303,8 @@ module npu_task_scheduler #(
                 || (ctl_op_q == NPU_CTL_FENCE))) begin
           ctl_active_q          <= 1'b0;
           ctl_fence_target_q    <= '0;
+          ctl_fence_snapshot_terminal_q <= '0;
+          ctl_fence_scan_slot_q <= '0;
           ctl_wait_count_q      <= 32'd0;
         end else if (ctl_op_q == NPU_CTL_WAIT) begin
           if (!ctl_wait_event_found) begin
@@ -1286,28 +1328,42 @@ module npu_task_scheduler #(
             ctl_wait_count_q <= ctl_wait_count_q + 1'b1;
           end
         end else if (ctl_op_q == NPU_CTL_FENCE) begin
-          ctl_fence_status_q      <= ctl_fence_result_status;
-          ctl_fence_failure_seq_q <= ctl_fence_result_seq;
-          for (int unsigned slot = 0;
-               slot < TASK_SLOTS; slot++) begin
-            if (ctl_fence_target_q[slot]
-                && ((task_state_q[slot] == NPU_TASK_FREE)
-                    || (task_submit_seq_q[slot] !=
-                        ctl_fence_target_seq_q[slot])
-                    || terminal_state(task_state_q[slot]))) begin
-              ctl_fence_target_q[slot] <= 1'b0;
-            end
-          end
-          if (!ctl_fence_pending) begin
-            ctl_rsp_data_q  <= {56'd0, ctl_fence_result_status};
+          if (ctl_fence_target_q == '0) begin
+            ctl_rsp_data_q  <= {56'd0, ctl_fence_status_q};
             ctl_rsp_valid_q <= 1'b1;
             ctl_active_q    <= 1'b0;
-          end else if (ctl_wait_count_q >= ctl_arg1_q) begin
-            ctl_rsp_data_q  <= {56'd0, NPU_STATUS_TIMEOUT};
-            ctl_rsp_valid_q <= 1'b1;
-            ctl_active_q    <= 1'b0;
+            ctl_fence_snapshot_terminal_q <= '0;
+            ctl_fence_scan_slot_q <= '0;
           end else begin
-            ctl_wait_count_q <= ctl_wait_count_q + 1'b1;
+            ctl_fence_target_q <= ctl_fence_scan_next_target;
+            ctl_fence_status_q <= ctl_fence_scan_next_status;
+            ctl_fence_failure_seq_q <=
+              ctl_fence_scan_next_failure_seq;
+            if (ctl_fence_scan_next_target == '0) begin
+              ctl_rsp_data_q <= {
+                56'd0, ctl_fence_scan_next_status
+              };
+              ctl_rsp_valid_q <= 1'b1;
+              ctl_active_q <= 1'b0;
+              ctl_fence_snapshot_terminal_q <= '0;
+              ctl_fence_scan_slot_q <= '0;
+            end else if (ctl_fence_pending
+                         && (ctl_wait_count_q >= ctl_arg1_q)) begin
+              ctl_rsp_data_q <= {56'd0, NPU_STATUS_TIMEOUT};
+              ctl_rsp_valid_q <= 1'b1;
+              ctl_active_q <= 1'b0;
+              ctl_fence_target_q <= '0;
+              ctl_fence_snapshot_terminal_q <= '0;
+              ctl_fence_scan_slot_q <= '0;
+            end else begin
+              ctl_wait_count_q <= ctl_wait_count_q + 1'b1;
+              if (ctl_fence_scan_last) begin
+                ctl_fence_scan_slot_q <= '0;
+              end else begin
+                ctl_fence_scan_slot_q <=
+                  ctl_fence_scan_slot_q + 1'b1;
+              end
+            end
           end
         end else begin
           ctl_rsp_data_q  <= {56'd0, NPU_STATUS_BAD_DESC};

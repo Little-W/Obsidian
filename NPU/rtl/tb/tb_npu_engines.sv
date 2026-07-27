@@ -755,6 +755,14 @@ module tb_npu_engines;
             -64'sd8, -8'sd8, "matrix registered negative scaling"
         );
         check_matrix_requant_case(
+            8'sd3, 8'sd1, 32'd5, -8'sd2, 2'd0,
+            64'sd60, 8'sd60, "matrix positive left shift"
+        );
+        check_matrix_requant_case(
+            -8'sd3, 8'sd1, 32'd5, -8'sd2, 2'd0,
+            -64'sd60, -8'sd60, "matrix negative left shift"
+        );
+        check_matrix_requant_case(
             8'sd127, 8'sd1, 32'd2, 8'sd0, 2'd0,
             64'sd254, 8'sd127, "matrix positive INT8 saturation"
         );

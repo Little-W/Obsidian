@@ -58,6 +58,11 @@ module npu_complex_engine (
     ST_STAT_ACCUM,
     ST_MATH_REQ,
     ST_MATH_RSP,
+    ST_F2I_ROUND,
+    ST_F2I_MAG,
+    ST_F2I_SIGN,
+    ST_F2I_OFFSET,
+    ST_F2I_FINISH,
     ST_ADVANCE,
     ST_RMW_REQ,
     ST_RMW_RSP,
@@ -345,6 +350,23 @@ module npu_complex_engine (
   logic [31:0] fp_tmp1_q;
   logic [31:0] fp_tmp2_q;
   logic [31:0] fp_lane_selected;
+  logic [63:0] f2i_quotient_q;
+  logic [63:0] f2i_remainder_q;
+  logic [63:0] f2i_halfway_q;
+  logic [63:0] f2i_magnitude_q;
+  logic signed [63:0] f2i_rounded_q;
+  logic signed [63:0] f2i_output_integer_q;
+  logic signed [31:0] f2i_dst_zero_point_q;
+  logic [47:0] f2i_dst_addr_q;
+  logic [7:0] f2i_overflow_mode_q;
+  logic [3:0] f2i_phase_q;
+  logic [1:0] f2i_round_mode_q;
+  logic [1:0] f2i_dst_dtype_q;
+  logic f2i_sign_q;
+  logic f2i_force_limit_q;
+  logic f2i_exceptional_q;
+  logic f2i_dst_high_nibble_q;
+  logic f2i_increment_q;
 
   wire signed [63:0] src0_centered_integer =
     src0_value_q -
@@ -494,12 +516,19 @@ module npu_complex_engine (
 
   always_ff @(posedge clk_i or negedge reset_n) begin
     logic signed [63:0] next_stat;
-    logic signed [63:0] output_integer;
     logic signed [63:0] valid_length_value;
     logic [31:0] activation_value;
     logic [31:0] softmax_difference;
     logic [31:0] nonnegative_variance;
-    logic f2i_exceptional;
+    logic [23:0] f2i_significand;
+    logic [63:0] f2i_quotient;
+    logic [63:0] f2i_remainder;
+    logic [63:0] f2i_remainder_mask;
+    logic [63:0] f2i_halfway;
+    logic f2i_force_limit;
+    logic f2i_increment;
+    integer f2i_unbiased;
+    integer f2i_shift_amount;
     logic output_overflow;
     logic current_valid;
     if (!reset_n) begin
@@ -1337,34 +1366,65 @@ module npu_complex_engine (
               end
 
               MA_F2I: begin
-                output_integer =
-                  fp32_to_int_round(math_rsp_result, round_mode) +
-                  {{32{dst_zero_point[31]}}, dst_zero_point};
-                f2i_exceptional =
+                f2i_significand =
+                  math_rsp_result[30:23] == 0 ?
+                  {1'b0, math_rsp_result[22:0]} :
+                  {1'b1, math_rsp_result[22:0]};
+                f2i_unbiased =
+                  math_rsp_result[30:23] == 0 ?
+                  -126 :
+                  {24'd0, math_rsp_result[30:23]} - 127;
+                f2i_quotient = 64'd0;
+                f2i_remainder = 64'd0;
+                f2i_halfway = 64'd0;
+                f2i_force_limit = 1'b0;
+
+                if (fp32_is_inf(math_rsp_result))
+                  f2i_force_limit = 1'b1;
+                else if (!fp32_is_nan(math_rsp_result) &&
+                         !fp32_is_zero(math_rsp_result)) begin
+                  if (f2i_unbiased >= 63)
+                    f2i_force_limit = 1'b1;
+                  else if (f2i_unbiased >= 23)
+                    f2i_quotient =
+                      {40'd0, f2i_significand} <<
+                      (f2i_unbiased - 23);
+                  else begin
+                    f2i_shift_amount = 23 - f2i_unbiased;
+                    if (f2i_shift_amount >= 64) begin
+                      f2i_remainder = {40'd0, f2i_significand};
+                      f2i_halfway = 64'hffff_ffff_ffff_ffff;
+                    end else begin
+                      f2i_quotient =
+                        {40'd0, f2i_significand} >>
+                        f2i_shift_amount;
+                      f2i_remainder_mask =
+                        (64'd1 << f2i_shift_amount) - 1;
+                      f2i_remainder =
+                        {40'd0, f2i_significand} &
+                        f2i_remainder_mask;
+                      f2i_halfway =
+                        64'd1 << (f2i_shift_amount - 1);
+                    end
+                  end
+                end
+
+                f2i_quotient_q <= f2i_quotient;
+                f2i_remainder_q <= f2i_remainder;
+                f2i_halfway_q <= f2i_halfway;
+                f2i_sign_q <= math_rsp_result[31];
+                f2i_force_limit_q <= f2i_force_limit;
+                f2i_exceptional_q <=
                   fp32_is_nan(math_rsp_result) ||
                   fp32_is_inf(math_rsp_result);
-                output_overflow =
-                  output_integer < dtype_min(dst_dtype) ||
-                  output_integer > dtype_max(dst_dtype);
-                result_q <= clip_to_dtype(output_integer, dst_dtype);
-                if (phase_q == PH_ELEMENT &&
-                    (output_overflow || f2i_exceptional) &&
-                    overflow_mode == 1)
-                  fail_task(
-                    NPU_STATUS_NUMERIC_EXCEPTION,
-                    current_dst_addr[47:0]
-                  );
-                else if (crosses_beat(
-                           current_dst_addr[2:0], dst_dtype
-                         ))
-                  fail_task(
-                    NPU_STATUS_ADDR_FAULT,
-                    current_dst_addr[47:0]
-                  );
-                else
-                  state_q <= dst_dtype == NPU_DTYPE_INT4 &&
-                             dst_high_nibble ?
-                             ST_RMW_REQ : ST_WRITE_REQ;
+                f2i_round_mode_q <= round_mode;
+                f2i_dst_zero_point_q <= dst_zero_point;
+                f2i_dst_dtype_q <= dst_dtype;
+                f2i_overflow_mode_q <= overflow_mode;
+                f2i_phase_q <= phase_q;
+                f2i_dst_addr_q <= current_dst_addr[47:0];
+                f2i_dst_high_nibble_q <= dst_high_nibble;
+                state_q <= ST_F2I_ROUND;
               end
 
               default:
@@ -1374,6 +1434,89 @@ module npu_complex_engine (
                 );
             endcase
           end
+
+        ST_F2I_ROUND: begin
+          f2i_increment = 1'b0;
+          case (f2i_round_mode_q)
+            2'd0:
+              f2i_increment =
+                f2i_remainder_q > f2i_halfway_q ||
+                (f2i_remainder_q == f2i_halfway_q &&
+                 f2i_quotient_q[0]);
+            2'd2:
+              f2i_increment =
+                !f2i_sign_q && f2i_remainder_q != 0;
+            2'd3:
+              f2i_increment =
+                f2i_sign_q && f2i_remainder_q != 0;
+            default: f2i_increment = 1'b0;
+          endcase
+          f2i_increment_q <= f2i_increment;
+          state_q <= ST_F2I_MAG;
+        end
+
+        ST_F2I_MAG: begin
+          if (f2i_force_limit_q)
+            f2i_magnitude_q <=
+              f2i_sign_q ?
+              64'h8000_0000_0000_0000 :
+              64'h7fff_ffff_ffff_ffff;
+          else
+            f2i_magnitude_q <=
+              f2i_quotient_q + {63'd0, f2i_increment_q};
+          state_q <= ST_F2I_SIGN;
+        end
+
+        ST_F2I_SIGN: begin
+          if (f2i_sign_q) begin
+            if (f2i_magnitude_q >= 64'h8000_0000_0000_0000)
+              f2i_rounded_q <= 64'sh8000_0000_0000_0000;
+            else
+              f2i_rounded_q <=
+                $signed((~f2i_magnitude_q) + 64'd1);
+          end else if (f2i_magnitude_q >
+                       64'h7fff_ffff_ffff_ffff)
+            f2i_rounded_q <= 64'sh7fff_ffff_ffff_ffff;
+          else
+            f2i_rounded_q <= $signed(f2i_magnitude_q);
+          state_q <= ST_F2I_OFFSET;
+        end
+
+        ST_F2I_OFFSET: begin
+          f2i_output_integer_q <=
+            f2i_rounded_q +
+            {{32{f2i_dst_zero_point_q[31]}},
+             f2i_dst_zero_point_q};
+          state_q <= ST_F2I_FINISH;
+        end
+
+        ST_F2I_FINISH: begin
+          output_overflow =
+            f2i_output_integer_q < dtype_min(f2i_dst_dtype_q) ||
+            f2i_output_integer_q > dtype_max(f2i_dst_dtype_q);
+          result_q <= clip_to_dtype(
+            f2i_output_integer_q, f2i_dst_dtype_q
+          );
+          if (f2i_phase_q == PH_ELEMENT &&
+              (output_overflow || f2i_exceptional_q) &&
+              f2i_overflow_mode_q == 1)
+            fail_task(
+              NPU_STATUS_NUMERIC_EXCEPTION,
+              f2i_dst_addr_q
+            );
+          else if (crosses_beat(
+                     f2i_dst_addr_q[2:0], f2i_dst_dtype_q
+                   ))
+            fail_task(
+              NPU_STATUS_ADDR_FAULT,
+              f2i_dst_addr_q
+            );
+          else
+            state_q <=
+              f2i_dst_dtype_q == NPU_DTYPE_INT4 &&
+              f2i_dst_high_nibble_q ?
+              ST_RMW_REQ : ST_WRITE_REQ;
+        end
 
         ST_ADVANCE: begin
           if (col_q + 1 < active_columns) begin

@@ -83,6 +83,7 @@ module npu_matrix_dip_engine (
   logic [60:0] read_cache_tag_q;
   logic [63:0] read_cache_data_q;
   logic [4:0] captured_rows_q;
+  (* ram_style = "block" *)
   logic [DIP_ACCUM_ROW_W-1:0] accum_rows_q [0:MAX_LOGICAL_N-1];
   logic [4:0] write_row_q;
   logic [3:0] write_pair_q;
@@ -332,6 +333,18 @@ module npu_matrix_dip_engine (
     endcase
   end
 
+  /*
+   * The result store has one write port and one synchronous read port.
+   * Keeping its payload outside the asynchronous-reset state block lets
+   * synthesis use FPGA memory primitives instead of one flip-flop per bit.
+   */
+  always_ff @(posedge clk_i) begin
+    if (dip_c_valid)
+      accum_rows_q[captured_rows_q[3:0]] <= dip_c_accum_row;
+    if (state_q == ST_WRITE_ROW_LOAD)
+      write_row_data_q <= accum_rows_q[write_row_q[3:0]];
+  end
+
   always_ff @(posedge clk_i or negedge reset_n) begin
     logic [15:0] loaded_value;
     if (!reset_n) begin
@@ -343,7 +356,6 @@ module npu_matrix_dip_engine (
       read_cache_valid_q <= 1'b0;
     end else begin
       if (dip_c_valid) begin
-        accum_rows_q[captured_rows_q[3:0]] <= dip_c_accum_row;
         captured_rows_q <= captured_rows_q + 1'b1;
       end
 
@@ -554,10 +566,8 @@ module npu_matrix_dip_engine (
             state_q <= ST_WRITE_ROW_LOAD;
           end
 
-        ST_WRITE_ROW_LOAD: begin
-          write_row_data_q <= accum_rows_q[write_row_q[3:0]];
+        ST_WRITE_ROW_LOAD:
           state_q <= ST_WRITE_INIT;
-        end
 
         ST_WRITE_INIT: begin
           if (write_addr_q[63:20] != 0 || write_addr_q[2:0] != 0)

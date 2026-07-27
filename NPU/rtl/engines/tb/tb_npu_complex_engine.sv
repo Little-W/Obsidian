@@ -23,6 +23,9 @@ module tb_npu_complex_engine;
   logic l1_rsp_ready;
   logic [63:0] l1_rsp_rdata;
   logic [2:0] l1_rsp_status;
+  logic signed [7:0] expected_byte;
+  integer round_index;
+  integer hold_index;
 
   npu_complex_engine dut (
     .clk_i(clk),
@@ -274,6 +277,105 @@ module tb_npu_complex_engine;
       $fatal(1, "complex INT16 sigmoid mismatch: %0d %0d",
              $signed({l1.mem['h221], l1.mem['h220]}),
              $signed({l1.mem['h223], l1.mem['h222]}));
+
+    l1.mem['h230] = 8'h01;
+    l1.mem['h240] = 8'h00;
+    for (round_index = 0; round_index < 4;
+         round_index = round_index + 1) begin
+      setup_fp_task(
+        NPU_COMPLEX_ADD_RESCALE, 32'd12,
+        64'h230, 64'h240, 64'd0,
+        64'h250 + 64'(round_index), 32'd1,
+        32'h3f80_0000, 32'h3f80_0000,
+        32'd0, 32'h4000_0000, 32'd0
+      );
+      put32(
+        'h38,
+        32'h0001_3055 | (32'(round_index) << 10)
+      );
+      submit_and_expect(NPU_STATUS_SUCCESS);
+      expected_byte = round_index == 2 ? 8'sd1 : 8'sd0;
+      if ($signed(l1.mem['h250 + round_index]) !=
+          expected_byte)
+        $fatal(
+          1,
+          "positive half round mode %0d got %0d expected %0d",
+          round_index,
+          $signed(l1.mem['h250 + round_index]),
+          expected_byte
+        );
+    end
+
+    l1.mem['h230] = 8'hff;
+    for (round_index = 0; round_index < 4;
+         round_index = round_index + 1) begin
+      setup_fp_task(
+        NPU_COMPLEX_ADD_RESCALE, 32'd12,
+        64'h230, 64'h240, 64'd0,
+        64'h260 + 64'(round_index), 32'd1,
+        32'h3f80_0000, 32'h3f80_0000,
+        32'd0, 32'h4000_0000, 32'd0
+      );
+      put32(
+        'h38,
+        32'h0001_3055 | (32'(round_index) << 10)
+      );
+      submit_and_expect(NPU_STATUS_SUCCESS);
+      expected_byte = round_index == 3 ? -8'sd1 : 8'sd0;
+      if ($signed(l1.mem['h260 + round_index]) !=
+          expected_byte)
+        $fatal(
+          1,
+          "negative half round mode %0d got %0d expected %0d",
+          round_index,
+          $signed(l1.mem['h260 + round_index]),
+          expected_byte
+        );
+    end
+
+    l1.mem['h270] = 8'h7f;
+    l1.mem['h271] = 8'h80;
+    l1.mem['h280] = 8'h7f;
+    l1.mem['h281] = 8'h80;
+    setup_fp_task(
+      NPU_COMPLEX_ADD_RESCALE, 32'd12,
+      64'h270, 64'h280, 64'd0, 64'h290, 32'd2,
+      32'h3f80_0000, 32'h3f80_0000,
+      32'd0, 32'h3f00_0000, 32'd0
+    );
+    submit_and_expect(NPU_STATUS_SUCCESS);
+    if ($signed(l1.mem['h290]) != 127 ||
+        $signed(l1.mem['h291]) != -128)
+      $fatal(
+        1,
+        "complex F2I clipping mismatch: %0d %0d",
+        $signed(l1.mem['h290]),
+        $signed(l1.mem['h291])
+      );
+
+    l1.mem['h230] = 8'h01;
+    setup_fp_task(
+      NPU_COMPLEX_ADD_RESCALE, 32'd12,
+      64'h230, 64'h240, 64'd0, 64'h2a0, 32'd1,
+      32'h3f80_0000, 32'h3f80_0000,
+      32'd0, 32'h3f80_0000, 32'd0
+    );
+    do @(posedge clk); while (!task_ready);
+    @(negedge clk);
+    done_ready = 1'b0;
+    submit_and_expect(NPU_STATUS_SUCCESS);
+    for (hold_index = 0; hold_index < 4;
+         hold_index = hold_index + 1) begin
+      @(posedge clk);
+      if (!done_valid || done_status != NPU_STATUS_SUCCESS ||
+          done_progress != 1 || task_ready)
+        $fatal(1, "complex completion backpressure changed outputs");
+    end
+    if ($signed(l1.mem['h2a0]) != 1)
+      $fatal(1, "complex backpressure result mismatch");
+    @(negedge clk);
+    done_ready = 1'b1;
+    do @(posedge clk); while (!task_ready);
 
     $display("tb_npu_complex_engine PASS");
     $finish;
