@@ -48,7 +48,7 @@
 | GADDR | 全局地址，用于 DDR 或外设空间                     |
 | LADDR | 当前 Core 的 L1BUF 字节地址                 |
 | CMD   | 任务命令头                                |
-| TC    | Task Context，由指令在 NPU 内部展开的任务信息 |
+| TC    | Task Context，发射时由任务表中的指令和提交时基地址快照展开的执行单元任务信息 |
 
 ### 1.3 设计范围
 
@@ -1587,7 +1587,7 @@ sequenceDiagram
 
 接收检查解码器读取 CFE 提供的完整指令和 LSC 当前基地址，用 `valid_o`、`engine_o` 与 `opcode_o` 完成接收阶段检查，但它的 `desc_flat_o` 在该实例中没有接入任务表。命令被接收时，每个任务表项保存 128 bit指令、五个 48 bit基地址快照和 20 bit L1 参数区基址，不保存 2048 bit展开结果。
 
-任务进入 READY 后，四组执行单元选择逻辑可以各自选择本类任务。对应发射解码器读取所选任务的指令和提交时基地址快照，组合产生 `desc_flat[2047:0]`；时钟沿把展开结果、操作码、命令编号和任务表项编号写入该执行单元的发射暂存，下一周期才置任务 `valid`。本文把发射接口上的 2048 bit片上数据称为 Task Context。它不是软件数组，不位于 DDR，也不会引起 MIF 访问。
+任务进入 READY 后，四组执行单元选择逻辑可以各自选择本类任务。`g_task_desc_decode[0]`～`g_task_desc_decode[3]` 分别服务 DMA、Matrix、Vector 和 Complex；对应实例读取所选任务的指令和提交时基地址快照，组合产生 `desc_flat[2047:0]`。时钟沿把展开结果、操作码、命令编号和任务表项编号写入该执行单元的发射暂存，下一周期才置任务 `valid`。本文把发射接口上的 2048 bit片上数据称为 Task Context。它不是软件数组，不位于 DDR，也不会引起 MIF 访问。
 
 ### 8.2 CFE 输入与编号查询接口
 
@@ -1665,8 +1665,8 @@ CFE 的编号查询覆盖等待、就绪、运行和等待 ACK 的终态任务�
 | `signal` | 12 | `{generation,event_id}` 或 `12'hfff` |
 | `submit_seq` | 64 | 全局提交顺序号 |
 | `cmd` | 128 | 接收的完整指令，RTL 中保存为 `task_cmd_q` |
-| `input_base`、`weight_base`、`work_base`、`output_base`、`kv_base` | 各 48 | 命令提交时五个 LSC 基地址寄存器的快照 |
-| `param_l1_base` | 20 | 命令提交时 L1 参数区基址的快照 |
+| `input_base`、`weight_base`、`work_base`、`output_base`、`kv_base` | 各 48 | 命令提交时五个 LSC 基地址寄存器的快照，分别对应 `task_input_base_q`、`task_weight_base_q`、`task_work_base_q`、`task_output_base_q` 和 `task_kv_base_q` |
+| `param_l1_base` | 20 | 命令提交时 L1 参数区基址的快照，对应 `task_param_l1_base_q` |
 | `status` | 8 | 当前或终态状态码 |
 | `fault_addr` | 48 | 第一个任务错误地址 |
 | `progress` | 64 | 执行单元报告的进度 |
@@ -1734,7 +1734,7 @@ DMA、Matrix、Vector 和 Complex 各有一组相同结构的任务接口。下�
 | `<eng>_done_fault_addr_i` | Input | 48 | 第一个错误地址，无错误时为 0 |
 | `<eng>_done_progress_i` | Input | 64 | 已完成字节数或元素数 |
 
-每个执行单元同时最多有一个 RUNNING 任务。TS 为四类执行单元分别设置 `dispatch_valid`、任务表项编号、操作码、命令编号和 2048 bit Task Context暂存。某类 READY 任务被选中时，本周期由该类解码器组合展开，时钟沿写入对应暂存，下一周期 `<eng>_task_valid_o` 才为 1。任务 valid等待 ready 时，对应暂存保持 opcode、command ID和 Task Context不变。
+每个执行单元同时最多有一个 RUNNING 任务。TS 为四类执行单元分别设置 `*_dispatch_valid_q`、`*_dispatch_slot_q`、`*_dispatch_opcode_q`、`*_dispatch_command_id_q` 和 `*_dispatch_desc_q`。某类 READY 任务被选中时，本周期由该类解码器组合展开，时钟沿写入对应暂存，下一周期 `<eng>_task_valid_o` 才为 1。任务 valid等待 ready 时，对应暂存保持 opcode、command ID和 Task Context不变。
 
 四组发射暂存相互独立。某个执行单元令 `task_ready=0` 时，只会使该单元的暂存保持有效并阻止它选择下一任务；其他三组暂存仍可装入各自选中的任务或完成握手。因此，DMA、Matrix、Vector 与 Complex 的任务接口可以分别承受不同长度的反压。
 
@@ -1942,7 +1942,7 @@ MIF 请求与响应端口如下：
 
 ### 9.3 指令展开得到的 DMA Task Context
 
-软件只填写第 6.7.2 节定义的指令位段。内联解码器根据操作码、地址引用、基地址寄存器和数据格式生成下表中的 Task Context。下表用于说明 DMA 内部如何接收任务以及波形中各字段的来源，不是软件需要分配的参数结构。
+软件只填写第 6.7.2 节定义的指令位段。TaskScheduler 接收任务时保存指令与提交时基地址快照；选中 DMA READY 任务后，DMA 发射解码器根据操作码、地址引用、该任务的基地址快照和数据格式生成下表中的 Task Context，并写入 DMA 发射暂存。下表用于说明 DMA 内部如何接收任务以及波形中各字段的来源，不是任务表字段，也不是软件需要分配的参数结构。
 
 | Byte Offset | 字段 | 位宽 | 说明 |
 | ---: | --- | ---: | --- |
@@ -2424,10 +2424,10 @@ A 为 INT32，或者 A 与 B 使用表中未列出的组合时，任务返回 `D
 
 ### 11.3 从指令到片上 Task Context
 
-主控提交 128-bit 指令后，`npu_inline_desc_decode` 直接读取指令中的字段并组合生成 Task Context。Matrix 任务的数据处理过程是：
+主控提交 128-bit 指令后，TaskScheduler 先保存完整指令、提交时基地址快照以及任务状态。任务进入 READY 并被 Matrix 选择逻辑选中后，Matrix 发射解码器读取该表项并组合生成 Task Context，时钟沿把结果写入 Matrix 发射暂存。Matrix 任务的数据处理过程是：
 
 ```text
-指令 → npu_inline_desc_decode → 片上 Task Context → TaskScheduler → Matrix
+指令 → TaskScheduler 任务表 → Matrix 发射解码器 → Matrix 发射暂存 → Matrix
 ```
 
 `GEMM`、`GEMM_ACCUM` 和 `GEMM_ZERO` 使用同一组指令字段：
@@ -2463,7 +2463,7 @@ A 为 INT32，或者 A 与 B 使用表中未列出的组合时，任务返回 `D
 | bias 数量与步长 | GEMM 启用 bias 时为 N 和 4B |
 | inline integer shift | 非 INT32 输出使用乘数 1 和指令中的 `requant_shift` |
 
-Task Context 在 Matrix 接收任务时整体锁存到 `desc_q`。状态机随后直接进入 `ST_CHECK`，不会先访问任何参数存储。
+任务表不保存 2048 bit Task Context。发射暂存从写入后的下一周期置 `task_valid`，Task Context 在 Matrix 接收任务时整体锁存到 `desc_q`。状态机随后直接进入 `ST_CHECK`，不会先访问任何参数存储。
 
 > [!note] bias 地址为 0 的特殊含义
 > GEMM 中 bias 的 `LREF12=0` 表示关闭 bias。因此，需要 bias 时不能把 bias 数组放在 L1 地址 `0x00000`；应选择另一个 64B 对齐地址。
@@ -3263,7 +3263,9 @@ Complex Math Engine（CME）接收整数张量，把元素转换成内部 IEEE 7
 
 ```mermaid
 flowchart LR
-    TS["TaskScheduler<br/>CME 发射暂存"]
+    TS["TaskScheduler<br/>CME READY 任务"]
+    DEC["CME 发射解码器"]
+    STG["CME 发射暂存"]
     CFSM["CME Control FSM<br/>row / column / phase"]
     L1C["L1BUF Controller"]
     CONV["整数取值<br/>符号扩展"]
@@ -3272,7 +3274,9 @@ flowchart LR
     OUT["FP32 除 scale<br/>RNE + 整数裁剪"]
     DONE["status / fault / progress"]
 
-    TS --> CFSM
+    TS --> DEC
+    DEC -->|"时钟沿装入"| STG
+    STG -->|"下一周期 ready/valid"| CFSM
     CFSM <-->|"单拍 L1 请求/响应"| L1C
     CFSM --> CONV
     CONV --> MSEQ
