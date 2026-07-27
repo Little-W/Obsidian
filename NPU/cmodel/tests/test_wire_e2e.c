@@ -165,10 +165,14 @@ static int e2e_init(void)
     e2e_zero(e2e_ddr, sizeof(e2e_ddr));
     npu_config_reference(&config);
     config.l1_bytes = E2E_MEMORY_BYTES;
-    return npu_model_init(&e2e_model, &config,
-                          e2e_l1, sizeof(e2e_l1),
-                          e2e_ddr, sizeof(e2e_ddr)) ==
-           NPU_STATUS_SUCCESS;
+    if (npu_model_init(&e2e_model, &config,
+                       e2e_l1, sizeof(e2e_l1),
+                       e2e_ddr, sizeof(e2e_ddr)) !=
+        NPU_STATUS_SUCCESS) {
+        return 0;
+    }
+    e2e_model.descriptor_diagnostic_mode = 1u;
+    return 1;
 }
 
 static const npu_task_request_t *e2e_find_request(uint16_t command_id)

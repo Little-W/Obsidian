@@ -1,25 +1,32 @@
-# NPU single-core Synopsys DC flow
+# NPU 单核综合检查
 
-This directory holds the 400 MHz synthesis flow for `npu_single_core_top`.
-It is copied into an independent `npu` directory under the existing synthesis
-environment, so the `matrix_processor` project and its reports are untouched.
+当前 FPGA 目标使用 Vivado 2024.2：
 
-## L1 treatment
+- 器件：`xc7a200tfbg484-3`
+- 目标频率：100 MHz
+- 时钟周期：10.000 ns
+- 入口目录：`vivado_100mhz/`
 
-The functional RTL contains a 1 MiB behavioral array. The DC file list replaces
-that array with `npu_l1buf_timing_wrapper.sv`. The wrapper retains arbitration,
-bank selection, request/response registers, and sixteen SRAM instances. Each
-instance represents an 8192 x 64 bank, for a total of 8,388,608 storage bits.
+运行方式：
 
-The SRAM instances are black boxes because the environment does not contain a
-characterized SRAM `.db`. Standard-cell area reports therefore exclude SRAM
-physical area, and timing reports exclude SRAM internal access time. Before
-physical implementation, replace each placeholder with the selected memory
-compiler view and rerun synthesis and static timing analysis.
+```sh
+cd "/home/yusen/Obsidian Vault/NPU/rtl/syn/vivado_100mhz"
+make clean
+make syn
+```
 
-## Run
+该流程依次执行综合、布局和布线，并生成资源报告、时序摘要和详细 setup
+路径。最终结果以 `vivado_100mhz/build/summary.txt` 与
+`vivado_100mhz/build/critical_paths_post_route.rpt` 为准。
 
-From the tracked flow directory:
+## DC 参考流程
+
+本目录原有的 `run_dc.tcl`、`filelist.f`、`npu_l1buf_timing_wrapper.sv` 和
+`npu_single_core_400mhz.sdc` 用于标准单元库下的逻辑评估。该流程使用
+FreePDK45，并把 L1 SRAM 作为外部存储宏处理，因此不能代替当前 Artix-7
+器件上的 Vivado 结果。
+
+如需复查 DC 数据，可先把文件复制到独立综合目录，再运行 DC：
 
 ```sh
 cd "/home/yusen/Obsidian Vault/NPU/rtl/syn"
@@ -28,16 +35,4 @@ cd /home/yusen/opt/xinyuan/syn_env/npu
 make syn
 ```
 
-The fixed report directory is:
-
-```text
-/home/yusen/opt/xinyuan/syn_env/npu/reports/baseline_400mhz
-```
-
-The timing target is 2.500 ns. Setup uncertainty is 0.150 ns and top-level
-input/output delay is 0.250 ns. `summary.txt` records the worst setup slack,
-startpoint, and endpoint. Full paths are in
-`npu_single_core_top_timing_max.rpt`; QoR and hierarchical area are in the
-matching report files.
-
-Use `make clean` in the copied `npu` directory before a clean rerun.
+运行任何流程前都应执行相应目录的 `make clean`，避免读取旧报告。

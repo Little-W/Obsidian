@@ -544,6 +544,7 @@ typedef struct {
     npu_event_entry_t events[NPU_EVENT_NUM];
     npu_perf_t perf;
     npu_cfe_model_t cfe;
+    uint8_t descriptor_diagnostic_mode;
 
     /*
      * Private, temporary fault recorder used by the cycle adapters. Public
@@ -591,6 +592,13 @@ npu_status_t npu_event_signal(npu_model_t *model,
 npu_status_t npu_cmd_decode(uint64_t low_beat,
                             uint64_t high_beat,
                             npu_cmd_t *cmd);
+/*
+ * Explicit decoder for descriptor-based diagnostic tests.  Runtime command
+ * submission always uses npu_cmd_decode() and the current CMD128 format.
+ */
+npu_status_t npu_cmd_decode_descriptor(uint64_t low_beat,
+                                       uint64_t high_beat,
+                                       npu_cmd_t *cmd);
 void npu_cmd_encode(const npu_cmd_t *cmd,
                     uint64_t *low_beat,
                     uint64_t *high_beat);

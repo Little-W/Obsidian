@@ -2,6 +2,7 @@
 #include "npu_inline.h"
 
 #include <limits.h>
+#include <string.h>
 
 static void npu_fence_record_one(npu_task_slot_t *fence,
                                  const npu_task_slot_t *completed);
@@ -419,19 +420,15 @@ static uint16_t npu_event_pack(npu_event_ref_t event)
     return (uint16_t)(((uint16_t)event.generation << 8) | event.id);
 }
 
-static npu_event_ref_t npu_event_unpack(uint16_t value)
-{
-    npu_event_ref_t event;
-    event.id = (uint8_t)(value & 0xffu);
-    event.generation = (uint8_t)((value >> 8) & 0x0fu);
-    return event;
-}
-
 npu_status_t npu_cmd_decode(uint64_t low_beat,
                             uint64_t high_beat,
                             npu_cmd_t *cmd)
 {
-    uint16_t flags;
+    uint8_t compact_opcode;
+    uint8_t packed_flags;
+    uint8_t wait0;
+    uint8_t wait1;
+    uint8_t signal;
 
     if (cmd == (npu_cmd_t *)0) {
         return NPU_STATUS_BAD_DESC;
@@ -452,69 +449,83 @@ npu_status_t npu_cmd_decode(uint64_t low_beat,
     cmd->inline_format = 0u;
     cmd->inline_dtype = NPU_DTYPE_INT4;
 
-    if ((high_beat >> 63u) != 0u) {
-        uint8_t compact_opcode =
-            (uint8_t)((high_beat >> 58u) & UINT64_C(0x1f));
-        uint8_t packed_flags =
-            (uint8_t)((high_beat >> 20u) & UINT64_C(0x0f));
-        uint8_t wait0 =
-            (uint8_t)((high_beat >> 40u) & UINT64_C(0xff));
-        uint8_t wait1 =
-            (uint8_t)((high_beat >> 32u) & UINT64_C(0xff));
-        uint8_t signal =
-            (uint8_t)((high_beat >> 24u) & UINT64_C(0xff));
+    compact_opcode =
+        (uint8_t)((high_beat >> 59u) & UINT64_C(0x1f));
+    packed_flags =
+        (uint8_t)((high_beat >> 20u) & UINT64_C(0x0f));
+    wait0 = (uint8_t)((high_beat >> 40u) & UINT64_C(0xff));
+    wait1 = (uint8_t)((high_beat >> 32u) & UINT64_C(0xff));
+    signal = (uint8_t)((high_beat >> 24u) & UINT64_C(0xff));
 
-        cmd->inline_payload_lo = low_beat;
-        cmd->inline_payload_hi =
-            (uint16_t)(high_beat & UINT64_C(0xffff));
-        cmd->inline_format = 1u;
-        cmd->inline_dtype =
-            (npu_dtype_t)((high_beat >> 16u) & UINT64_C(0x03));
-        cmd->timeout_class =
-            (uint8_t)((high_beat >> 18u) & UINT64_C(0x03));
-        cmd->header_flags =
-            (uint16_t)(((packed_flags >> 3u) & 0x01u) |
-                       (((packed_flags >> 2u) & 0x01u) << 1u) |
-                       (((packed_flags >> 1u) & 0x01u) << 2u) |
-                       ((packed_flags & 0x01u) << 4u) |
-                       ((uint16_t)cmd->timeout_class << 6u));
-        cmd->wait_event[0].id = wait0;
-        cmd->wait_event[0].generation =
-            wait0 == NPU_EVENT_NONE_ID
-                ? NPU_EVENT_NONE_GENERATION
-                : 0u;
-        cmd->wait_event[1].id = wait1;
-        cmd->wait_event[1].generation =
-            wait1 == NPU_EVENT_NONE_ID
-                ? NPU_EVENT_NONE_GENERATION
-                : 0u;
-        cmd->signal_event.id = signal;
-        cmd->signal_event.generation =
-            signal == NPU_EVENT_NONE_ID
-                ? NPU_EVENT_NONE_GENERATION
-                : 0u;
-        cmd->command_id =
-            (uint16_t)((high_beat >> 48u) & UINT64_C(0x03ff));
-        cmd->header_version = 2u;
-        if (!npu_dtype_valid(cmd->inline_dtype)) {
-            return NPU_STATUS_DTYPE_UNSUPPORTED;
-        }
-        if (!npu_inline_opcode_decode(
-                compact_opcode, &cmd->engine, &cmd->opcode)) {
-            return NPU_STATUS_ILLEGAL_OPCODE;
-        }
-        if (cmd->signal_event.id != NPU_EVENT_NONE_ID &&
-            ((cmd->signal_event.id == cmd->wait_event[0].id &&
-              cmd->signal_event.generation ==
-                  cmd->wait_event[0].generation) ||
-             (cmd->signal_event.id == cmd->wait_event[1].id &&
-              cmd->signal_event.generation ==
-                  cmd->wait_event[1].generation))) {
-            return NPU_STATUS_BAD_DESC;
-        }
-        return NPU_STATUS_SUCCESS;
+    cmd->inline_payload_lo = low_beat;
+    cmd->inline_payload_hi =
+        (uint16_t)(high_beat & UINT64_C(0xffff));
+    cmd->inline_format = 1u;
+    cmd->inline_dtype =
+        (npu_dtype_t)((high_beat >> 16u) & UINT64_C(0x03));
+    cmd->timeout_class =
+        (uint8_t)((high_beat >> 18u) & UINT64_C(0x03));
+    cmd->header_flags =
+        (uint16_t)(((packed_flags >> 3u) & 0x01u) |
+                   (((packed_flags >> 2u) & 0x01u) << 1u) |
+                   (((packed_flags >> 1u) & 0x01u) << 2u) |
+                   ((packed_flags & 0x01u) << 4u) |
+                   ((uint16_t)cmd->timeout_class << 6u));
+    cmd->wait_event[0].id = wait0;
+    cmd->wait_event[0].generation =
+        wait0 == NPU_EVENT_NONE_ID
+            ? NPU_EVENT_NONE_GENERATION
+            : 0u;
+    cmd->wait_event[1].id = wait1;
+    cmd->wait_event[1].generation =
+        wait1 == NPU_EVENT_NONE_ID
+            ? NPU_EVENT_NONE_GENERATION
+            : 0u;
+    cmd->signal_event.id = signal;
+    cmd->signal_event.generation =
+        signal == NPU_EVENT_NONE_ID
+            ? NPU_EVENT_NONE_GENERATION
+            : 0u;
+    cmd->command_id =
+        (uint16_t)((high_beat >> 48u) & UINT64_C(0x07ff));
+    if (!npu_dtype_valid(cmd->inline_dtype)) {
+        return NPU_STATUS_DTYPE_UNSUPPORTED;
     }
+    if (!npu_inline_opcode_decode(
+            compact_opcode, &cmd->engine, &cmd->opcode)) {
+        return NPU_STATUS_ILLEGAL_OPCODE;
+    }
+    if (cmd->signal_event.id != NPU_EVENT_NONE_ID &&
+        ((cmd->signal_event.id == cmd->wait_event[0].id &&
+          cmd->signal_event.generation ==
+              cmd->wait_event[0].generation) ||
+         (cmd->signal_event.id == cmd->wait_event[1].id &&
+          cmd->signal_event.generation ==
+              cmd->wait_event[1].generation))) {
+        return NPU_STATUS_BAD_DESC;
+    }
+    return NPU_STATUS_SUCCESS;
+}
 
+static npu_event_ref_t npu_event_unpack(uint16_t value)
+{
+    npu_event_ref_t event;
+
+    event.id = (uint8_t)(value & 0xffu);
+    event.generation = (uint8_t)((value >> 8) & 0x0fu);
+    return event;
+}
+
+npu_status_t npu_cmd_decode_descriptor(uint64_t low_beat,
+                                       uint64_t high_beat,
+                                       npu_cmd_t *cmd)
+{
+    uint16_t flags;
+
+    if (cmd == (npu_cmd_t *)0) {
+        return NPU_STATUS_BAD_DESC;
+    }
+    memset(cmd, 0, sizeof(*cmd));
     cmd->desc_addr = low_beat & UINT64_C(0x0000ffffffffffff);
     cmd->command_id = (uint16_t)((low_beat >> 48) & 0x0fffu);
     cmd->engine = (npu_engine_t)((low_beat >> 60) & 0x0fu);
@@ -530,7 +541,7 @@ npu_status_t npu_cmd_decode(uint64_t low_beat,
     cmd->header_version = (uint8_t)(high_beat >> 56);
     cmd->timeout_class = (uint8_t)((flags >> 6) & 0x0fu);
 
-    if (cmd->header_version != 1u ||
+    if (cmd->header_version != NPU_WIRE_HEADER_VERSION ||
         cmd->engine > NPU_ENGINE_COMPLEX ||
         (cmd->desc_addr & 63u) != 0u ||
         (flags & 0x0c00u) != 0u ||
@@ -559,7 +570,7 @@ void npu_cmd_encode(const npu_cmd_t *cmd,
 
         if (!npu_inline_opcode_encode(
                 cmd->engine, cmd->opcode, &compact_opcode) ||
-            cmd->command_id > 0x03ffu ||
+            cmd->command_id > 0x07ffu ||
             cmd->timeout_class > 3u ||
             !npu_dtype_valid(cmd->inline_dtype) ||
             !npu_event_ref_valid(cmd->wait_event[0]) ||
@@ -592,9 +603,8 @@ void npu_cmd_encode(const npu_cmd_t *cmd,
             ((uint64_t)cmd->signal_event.id << 24u) |
             ((uint64_t)cmd->wait_event[1].id << 32u) |
             ((uint64_t)cmd->wait_event[0].id << 40u) |
-            ((uint64_t)(cmd->command_id & 0x03ffu) << 48u) |
-            ((uint64_t)compact_opcode << 58u) |
-            (UINT64_C(1) << 63u);
+            ((uint64_t)(cmd->command_id & 0x07ffu) << 48u) |
+            ((uint64_t)compact_opcode << 59u);
         return;
     }
     flags = (uint16_t)(cmd->header_flags & 0x0fffu);
@@ -712,13 +722,12 @@ npu_status_t npu_model_submit(npu_model_t *model,
             model, &resolved_request);
         request = &resolved_request;
     }
-    if ((request->cmd.header_version != 1u &&
-         request->cmd.header_version !=
-             NPU_WIRE_INLINE_HEADER_VERSION) ||
+    if ((request->cmd.inline_format == 0u &&
+         request->cmd.header_version != 1u) ||
         request->cmd.engine > NPU_ENGINE_COMPLEX ||
         request->cmd.command_id >
             (request->cmd.inline_format != 0u
-                 ? 0x03ffu
+                 ? 0x07ffu
                  : 0x0fffu) ||
         request->cmd.timeout_class >= NPU_TIMEOUT_CLASS_NUM ||
         (request->cmd.header_flags & 0x0c00u) != 0u) {

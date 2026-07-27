@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Assemble the NPU low-level JSON IR into CMD128 inline-V2 records.
+"""Assemble the NPU low-level JSON IR into CMD128 records.
 
 Every executable parameter is encoded in the 128-bit command.  The assembler
 therefore emits a command image and metadata, but never emits a separate
@@ -22,11 +22,10 @@ from typing import Any, Mapping, Sequence
 sys.dont_write_bytecode = True
 
 SCHEMA_VERSION = 1
-COMMAND_FORMAT = "cmd128-inline-v2"
-HEADER_VERSION = 2
+COMMAND_FORMAT = "cmd128"
 EVENT_NONE = 0xFF
 MAX_EVENT_ID = 0xFE
-MAX_COMMAND_ID = 0x3FF
+MAX_COMMAND_ID = 0x7FF
 PAYLOAD_BITS = 80
 
 ENGINE_CODES = {"control": 0, "dma": 1, "matrix": 2, "vector": 3, "complex": 4}
@@ -260,7 +259,7 @@ def parse_event(value: Any, location: str) -> int:
     if generation != 0:
         raise fail(
             f"{location}.generation",
-            "inline V2 carries an 8-bit event ID and requires generation 0",
+            "CMD128 carries an 8-bit event ID and requires generation 0",
         )
     return event_id
 
@@ -280,7 +279,7 @@ def header_flags(fields: Mapping[str, Any], location: str) -> tuple[int, int]:
     if unsupported:
         raise fail(
             location,
-            "inline V2 flag object does not support "
+            "CMD128 flag object does not support "
             + ", ".join(sorted(unsupported)),
         )
     packed = 0
@@ -333,8 +332,7 @@ def encode_command128(
         | (wait1 << 32)
         | (wait0 << 40)
         | (command_id << 48)
-        | (compact_opcode << 58)
-        | (1 << 63)
+        | (compact_opcode << 59)
     )
     return struct.pack("<QQ", low, high)
 
@@ -394,7 +392,7 @@ def operation_fields(
     if "descriptor" in operation:
         raise fail(
             f"{location}.descriptor",
-            "inline V2 uses the fields object; external Descriptor input is not accepted",
+            "CMD128 uses the fields object; external Descriptor input is not accepted",
         )
     fields = object_value(operation.get("fields", {}), f"{location}.fields")
     common = object_value(fields.get("common", {}), f"{location}.fields.common")
@@ -725,7 +723,7 @@ def reject_true(fields: Mapping[str, Any], names: Sequence[str], location: str) 
         if not isinstance(value, bool):
             raise fail(f"{location}.{name}", "must be true or false")
         if value:
-            raise fail(f"{location}.{name}", "is not encoded by this compact opcode")
+            raise fail(f"{location}.{name}", "is not encoded by this opcode")
 
 
 def encode_matrix_payload(
@@ -1232,7 +1230,7 @@ def compile_document(
         engine = engine_value.lower()
         opcode_value = operation.get("opcode")
         if not isinstance(opcode_value, str):
-            raise fail(f"{location}.opcode", "inline V2 requires an opcode name")
+            raise fail(f"{location}.opcode", "CMD128 requires an opcode name")
         opcode_name = opcode_value.upper()
         if opcode_name not in OPCODES[engine]:
             raise fail(
@@ -1367,7 +1365,6 @@ def build_output_manifest(
         "source_sha256": sha256_bytes(source_path.read_bytes()),
         "target": source_document["target"],
         "command_format": COMMAND_FORMAT,
-        "header_version": HEADER_VERSION,
         "command_record_bytes": 16,
         "command_count": len(operations),
         "command_file": command_name,
@@ -1379,7 +1376,7 @@ def build_output_manifest(
                 "command_id": operation.command_id,
                 "engine": operation.engine,
                 "opcode": operation.opcode,
-                "compact_opcode": operation.compact_opcode,
+                "encoded_opcode": operation.compact_opcode,
                 "payload": f"0x{operation.payload:020x}",
                 "wait_events": [
                     event_to_json(operation.wait_events[0]),

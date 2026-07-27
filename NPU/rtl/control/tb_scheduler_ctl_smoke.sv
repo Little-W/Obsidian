@@ -144,7 +144,7 @@ module tb_scheduler_ctl_smoke;
 
     .cmd_id_lookup_valid_i(1'b0),
     .cmd_id_lookup_ready_o(cmd_id_lookup_ready),
-    .cmd_id_lookup_id_i(12'd0),
+    .cmd_id_lookup_id_i(11'd0),
     .cmd_id_lookup_rsp_valid_o(cmd_id_lookup_rsp_valid),
     .cmd_id_busy_o(cmd_id_busy),
 

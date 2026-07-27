@@ -483,6 +483,8 @@ static void scat_core_tick(
     npu_axi_mem_target_cycle_outputs_t target_preview;
     npu_axi_mem_target_cycle_outputs_t target_outputs;
 
+    env->top.cfe.descriptor_diagnostic_mode = 1u;
+    env->top.ts.descriptor_diagnostic_mode = 1u;
     (void)memset(&target_inputs, 0, sizeof(target_inputs));
     target_inputs.reset_n = env->gc_target_reset_n;
     npu_axi_mem_master_from_gc(

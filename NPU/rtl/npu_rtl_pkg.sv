@@ -117,39 +117,39 @@ package npu_rtl_pkg;
   localparam logic [7:0] NPU_OPCODE_VRECIP_I         = 8'h85;
   localparam logic [7:0] NPU_OPCODE_VADD_RESCALE_I   = 8'h86;
 
-  function automatic logic npu_v2_compact_opcode_valid(
-    input logic [4:0] compact_opcode
+  function automatic logic npu_cmd_opcode_valid(
+    input logic [4:0] opcode_field
   );
-    return (compact_opcode != 5'd28) &&
-           (compact_opcode != 5'd30);
+    return (opcode_field != 5'd28) &&
+           (opcode_field != 5'd30);
   endfunction
 
-  function automatic logic [3:0] npu_v2_engine(
-    input logic [4:0] compact_opcode
+  function automatic logic [3:0] npu_cmd_engine_from_opcode(
+    input logic [4:0] opcode_field
   );
-    if (compact_opcode <= 5'd4)
+    if (opcode_field <= 5'd4)
       return NPU_ENGINE_CONTROL;
-    if (compact_opcode <= 5'd10)
+    if (opcode_field <= 5'd10)
       return NPU_ENGINE_DMA;
-    if (compact_opcode <= 5'd14)
+    if (opcode_field <= 5'd14)
       return NPU_ENGINE_MATRIX;
-    if (compact_opcode <= 5'd24)
+    if (opcode_field <= 5'd24)
       return NPU_ENGINE_VECTOR;
     return NPU_ENGINE_COMPLEX;
   endfunction
 
-  function automatic logic [7:0] npu_v2_opcode(
-    input logic [4:0] compact_opcode
+  function automatic logic [7:0] npu_cmd_expanded_opcode(
+    input logic [4:0] opcode_field
   );
-    if (compact_opcode <= 5'd4)
-      return {3'd0, compact_opcode};
-    if (compact_opcode <= 5'd10)
-      return NPU_OPCODE_DMA_COPY_1D + 8'(compact_opcode - 5'd5);
-    if (compact_opcode <= 5'd14)
-      return NPU_OPCODE_GEMM + 8'(compact_opcode - 5'd11);
-    if (compact_opcode <= 5'd24)
-      return NPU_OPCODE_VADD_I + 8'(compact_opcode - 5'd15);
-    unique case (compact_opcode)
+    if (opcode_field <= 5'd4)
+      return {3'd0, opcode_field};
+    if (opcode_field <= 5'd10)
+      return NPU_OPCODE_DMA_COPY_1D + 8'(opcode_field - 5'd5);
+    if (opcode_field <= 5'd14)
+      return NPU_OPCODE_GEMM + 8'(opcode_field - 5'd11);
+    if (opcode_field <= 5'd24)
+      return NPU_OPCODE_VADD_I + 8'(opcode_field - 5'd15);
+    unique case (opcode_field)
       5'd25: return NPU_OPCODE_VACT_I;
       5'd26: return NPU_OPCODE_VSOFTMAX_I;
       5'd27: return NPU_OPCODE_VNORM_I;
@@ -161,7 +161,7 @@ package npu_rtl_pkg;
     endcase
   endfunction
 
-  function automatic logic [11:0] npu_v2_event_ref(
+  function automatic logic [11:0] npu_cmd_event_ref(
     input logic [7:0] event_id
   );
     return event_id == 8'hff ? NPU_EVENT_NONE : {4'd0, event_id};
@@ -171,43 +171,37 @@ package npu_rtl_pkg;
   function automatic logic [11:0] npu_cmd_command_id(
     input logic [127:0] command
   );
-    return command[127]
-      ? {2'd0, command[121:112]} : command[59:48];
+    return {1'b0, command[122:112]};
   endfunction
 
   function automatic logic [3:0] npu_cmd_engine(
     input logic [127:0] command
   );
-    return command[127]
-      ? npu_v2_engine(command[126:122]) : command[63:60];
+    return npu_cmd_engine_from_opcode(command[127:123]);
   endfunction
 
   function automatic logic [7:0] npu_cmd_opcode(
     input logic [127:0] command
   );
-    return command[127]
-      ? npu_v2_opcode(command[126:122]) : command[71:64];
+    return npu_cmd_expanded_opcode(command[127:123]);
   endfunction
 
   function automatic logic [11:0] npu_cmd_wait0(
     input logic [127:0] command
   );
-    return command[127]
-      ? npu_v2_event_ref(command[111:104]) : command[95:84];
+    return npu_cmd_event_ref(command[111:104]);
   endfunction
 
   function automatic logic [11:0] npu_cmd_wait1(
     input logic [127:0] command
   );
-    return command[127]
-      ? npu_v2_event_ref(command[103:96]) : command[107:96];
+    return npu_cmd_event_ref(command[103:96]);
   endfunction
 
   function automatic logic [11:0] npu_cmd_signal(
     input logic [127:0] command
   );
-    return command[127]
-      ? npu_v2_event_ref(command[95:88]) : command[119:108];
+    return npu_cmd_event_ref(command[95:88]);
   endfunction
 
   function automatic logic [11:0] npu_cmd_header_flags(
@@ -215,8 +209,6 @@ package npu_rtl_pkg;
   );
     logic [11:0] flags;
     begin
-      if (!command[127])
-        return command[83:72];
       flags = 12'd0;
       flags[0] = command[87];
       flags[1] = command[86];

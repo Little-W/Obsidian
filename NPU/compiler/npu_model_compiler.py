@@ -3668,7 +3668,7 @@ def build_low_ir(
     low_ir = {
         "schema_version": 1,
         "target": {
-            "name": "single-core-v2",
+            "name": "single-core",
             "command_format": npu_assembler.COMMAND_FORMAT,
             "mt": target.mt,
             "kt": target.kt,

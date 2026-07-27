@@ -68,7 +68,6 @@ static npu_cmd_t inline_command(const uint8_t payload[10],
     cmd.wait_event[0] = npu_event_none();
     cmd.wait_event[1] = npu_event_none();
     cmd.signal_event = npu_event_none();
-    cmd.header_version = NPU_WIRE_INLINE_HEADER_VERSION;
     cmd.inline_payload_lo = inline_load_u64(payload);
     cmd.inline_payload_hi =
         (uint16_t)payload[8] |
@@ -88,7 +87,7 @@ static void inline_wire(const npu_cmd_t *cmd,
     inline_store_u64(&wire[8], *high);
 }
 
-static int inline_test_compact_opcode_table(void)
+static int inline_test_opcode_table(void)
 {
     static const uint8_t opcode[32] = {
         NPU_CTRL_NOP,
@@ -211,9 +210,9 @@ static int inline_test_vector_and_header(npu_model_t *model,
     encoded.signal_event.generation = 0u;
     inline_wire(&encoded, wire, &low, &high);
 
-    TEST_CHECK((high >> 63u) == 1u);
-    TEST_CHECK(((high >> 58u) & 0x1fu) == 15u);
-    TEST_CHECK(((high >> 48u) & 0x3ffu) == 0x155u);
+    TEST_CHECK((high >> 63u) == 0u);
+    TEST_CHECK(((high >> 59u) & 0x1fu) == 15u);
+    TEST_CHECK(((high >> 48u) & 0x7ffu) == 0x155u);
     TEST_CHECK(((high >> 40u) & 0xffu) == 2u);
     TEST_CHECK(((high >> 32u) & 0xffu) == 0xffu);
     TEST_CHECK(((high >> 24u) & 0xffu) == 7u);
@@ -224,8 +223,7 @@ static int inline_test_vector_and_header(npu_model_t *model,
     TEST_CHECK_STATUS(
         npu_cmd_decode(low, high, &decoded), NPU_STATUS_SUCCESS);
     TEST_CHECK(decoded.inline_format == 1u);
-    TEST_CHECK(decoded.header_version ==
-               NPU_WIRE_INLINE_HEADER_VERSION);
+    TEST_CHECK(decoded.header_version == 0u);
     TEST_CHECK(decoded.engine == NPU_ENGINE_VECTOR);
     TEST_CHECK(decoded.opcode == NPU_VECTOR_ADD);
     TEST_CHECK(decoded.command_id == 0x155u);
@@ -241,8 +239,7 @@ static int inline_test_vector_and_header(npu_model_t *model,
             limits, &request, &meta),
         NPU_STATUS_SUCCESS);
     TEST_CHECK(request.desc_bytes == NPU_WIRE_CMD_BYTES);
-    TEST_CHECK(request.desc_version ==
-               NPU_WIRE_INLINE_HEADER_VERSION);
+    TEST_CHECK(request.desc_version == NPU_INLINE_DESC_VERSION);
     TEST_CHECK(request.desc.vector.rows == 2u);
     TEST_CHECK(request.desc.vector.length == 4u);
     TEST_CHECK(request.desc.vector.src0.addr == 0x1000u);
@@ -743,7 +740,7 @@ int test_inline(void)
     npu_wire_limits_reference(&limits);
     limits.gaddr_limit = sizeof(inline_ddr);
 
-    line = inline_test_compact_opcode_table();
+    line = inline_test_opcode_table();
     if (line != 0) {
         return line;
     }

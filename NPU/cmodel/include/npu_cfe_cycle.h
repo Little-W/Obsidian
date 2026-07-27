@@ -79,6 +79,7 @@ typedef struct {
     uint8_t local_duplicate;
     uint8_t error_pulse;
     uint8_t accepted_pulse;
+    uint8_t descriptor_diagnostic_mode;
 
     npu_cfe_fifo_entry_t fifo[NPU_CFE_CYCLE_FIFO_DEPTH];
     uint8_t fifo_read_index;

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and optionally run the compact Transformer RTL test fixture."""
+"""Build and optionally run the Transformer RTL test fixture."""
 
 from __future__ import annotations
 
@@ -50,6 +50,8 @@ def compile_fixture(model_path: Path, output_dir: Path) -> dict[str, object]:
         compiler.TargetConfig(task_entries=8),
         source_name=str(model_path),
     )
+    if result.runtime["command_format"] != "cmd128":
+        raise RuntimeError("fixture requires the cmd128 command format")
     operations = {item.name: item for item in result.assembled_operations}
     for name, (engine, opcode_name) in REQUIRED_LOWERED_OPERATIONS.items():
         if name not in operations:

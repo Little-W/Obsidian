@@ -1344,9 +1344,9 @@ npu_status_t npu_inline_decode_task(
     memset(meta, 0, sizeof(*meta));
     request->cmd = *cmd;
     request->cmd.user_tag = cmd->command_id;
-    request->desc_version = NPU_INLINE_FORMAT_VERSION;
+    request->desc_version = NPU_INLINE_DESC_VERSION;
     request->desc_bytes = NPU_WIRE_CMD_BYTES;
-    meta->desc_version = NPU_INLINE_FORMAT_VERSION;
+    meta->desc_version = NPU_INLINE_DESC_VERSION;
     meta->desc_type = (uint8_t)cmd->engine;
     meta->desc_bytes = NPU_WIRE_CMD_BYTES;
 

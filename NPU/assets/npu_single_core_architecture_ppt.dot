@@ -222,21 +222,20 @@ digraph NPU_SINGLE_CORE_PPT {
           <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="7" COLOR="#3B82F6">
             <TR><TD BGCOLOR="#2563EB" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" COLOR="#FFFFFF" POINT-SIZE="15"><B>Command Front End</B></FONT></TD></TR>
             <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="12"><B>2 × 64-bit beat → CMD128</B></FONT></TD></TR>
-            <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="12"><B>次序 · V2 标记 · 紧凑 opcode · command_id 检查</B></FONT></TD></TR>
+            <TR><TD VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="12"><B>次序 · opcode · command_id 检查</B></FONT></TD></TR>
             <TR><TD BGCOLOR="#DBEAFE" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="12"><B>内部接收模块，不发起 AXI 事务</B></FONT></TD></TR>
           </TABLE>
         >
       ];
 
-      cmd_v2 [
+      cmd_format [
         shape=plain,
         label=<
           <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="7" COLOR="#2563EB">
-            <TR><TD COLSPAN="4" BGCOLOR="#1D4ED8" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" COLOR="#FFFFFF" POINT-SIZE="15"><B>CMD128 V2：任务参数随指令提交</B></FONT></TD></TR>
+            <TR><TD COLSPAN="4" BGCOLOR="#1D4ED8" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" COLOR="#FFFFFF" POINT-SIZE="15"><B>CMD128 指令格式：任务参数随指令提交</B></FONT></TD></TR>
             <TR>
-              <TD BGCOLOR="#DBEAFE" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="11"><B>[127] V2 标记</B></FONT></TD>
-              <TD BGCOLOR="#DBEAFE" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="11"><B>[126:122] 紧凑 opcode</B></FONT></TD>
-              <TD BGCOLOR="#DBEAFE" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="11"><B>[121:112] command_id</B></FONT></TD>
+              <TD COLSPAN="2" BGCOLOR="#DBEAFE" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="11"><B>[127:123] opcode</B></FONT></TD>
+              <TD BGCOLOR="#DBEAFE" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="11"><B>[122:112] command_id（0～2047）</B></FONT></TD>
               <TD BGCOLOR="#DBEAFE" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="11"><B>[111:88] wait0 / wait1 / signal</B></FONT></TD>
             </TR>
             <TR>
@@ -314,11 +313,11 @@ digraph NPU_SINGLE_CORE_PPT {
         arrowtail=normal,
         penwidth=2.0
       ];
-      cfe:s -> cmd_v2:n [
+      cfe:s -> cmd_format:n [
         color="#2563EB",
         style=solid
       ];
-      cmd_v2:s -> scheduler:n [
+      cmd_format:s -> scheduler:n [
         color="#2563EB",
         style=solid
       ];

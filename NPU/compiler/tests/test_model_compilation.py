@@ -806,7 +806,7 @@ class EndToEndCompilerTests(unittest.TestCase):
                 self.assertTrue(row["host_sync_after"])
         self.assertGreater(max(rearm_batch_lengths), 1)
         self.assertLessEqual(len(result.runtime["batches"]), 45)
-        self.assertEqual(result.low_ir["target"]["name"], "single-core-v2")
+        self.assertEqual(result.low_ir["target"]["name"], "single-core")
         self.assertEqual(result.runtime["external_descriptor_bytes"], 0)
 
     def test_l1_storage_is_reused_after_last_consumer(self) -> None:

@@ -20,7 +20,7 @@ SPEC.loader.exec_module(npu_assembler)
 
 
 class CommandTests(unittest.TestCase):
-    def test_exact_cmd128_inline_v2_encoding(self) -> None:
+    def test_exact_cmd128_encoding(self) -> None:
         payload = 0xABCD_0123456789ABCDEF
         encoded = npu_assembler.encode_command128(
             payload=payload,
@@ -45,8 +45,7 @@ class CommandTests(unittest.TestCase):
             | (0x56 << 32)
             | (0x23 << 40)
             | (0x345 << 48)
-            | (27 << 58)
-            | (1 << 63),
+            | (27 << 59),
         )
 
     def test_event_generation_and_command_ranges_are_rejected(self) -> None:
@@ -62,9 +61,9 @@ class CommandTests(unittest.TestCase):
                 "none",
                 "none",
             )
-        with self.assertRaisesRegex(npu_assembler.CompileError, "0..1023"):
+        with self.assertRaisesRegex(npu_assembler.CompileError, "0..2047"):
             npu_assembler.encode_command128(
-                0, 1024, 0, 1, 0, 0, "none", "none", "none"
+                0, 2048, 0, 1, 0, 0, "none", "none", "none"
             )
 
 
@@ -106,8 +105,8 @@ class AssemblerTests(unittest.TestCase):
         self.assertEqual(matrix.wait_events, (0, npu_assembler.EVENT_NONE))
         _low, high = struct.unpack("<QQ", matrix.command)
         self.assertEqual((high >> 16) & 0x3, 1)
-        self.assertEqual((high >> 58) & 0x1F, 11)
-        self.assertEqual(high >> 63, 1)
+        self.assertEqual((high >> 59) & 0x1F, 11)
+        self.assertEqual((high >> 63) & 0x1, 0)
 
     def test_example_int16_header_and_matrix_dtype_fields(self) -> None:
         operations, commands = npu_assembler.compile_document(
@@ -431,7 +430,7 @@ class AssemblerTests(unittest.TestCase):
         )
         for operation, expected in zip(operations, (28, 30, 31)):
             _low, high = struct.unpack("<QQ", operation.command)
-            self.assertEqual((high >> 58) & 0x1F, expected)
+            self.assertEqual((high >> 59) & 0x1F, expected)
 
     def test_matrix_shift_and_dimensions_are_checked(self) -> None:
         document = self.example("int8_regression.json")

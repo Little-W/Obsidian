@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-#define NPU_INLINE_FORMAT_VERSION 2u
+#define NPU_INLINE_DESC_VERSION 1u
 #define NPU_INLINE_EVENT_NONE UINT8_C(0xff)
 
 int npu_inline_opcode_decode(uint8_t compact_opcode,

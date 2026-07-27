@@ -103,7 +103,7 @@ static int fake_submit_response(void *context, uint64_t *value)
                            (fake->beats[
                                 index * NPU_DRV_CMD128_BEATS + 1u] >>
                             48u) &
-                           0x03ffu);
+                           0x07ffu);
     *value = (uint64_t)command_id |
              ((uint64_t)fake->response_status[index] << 12u) |
              ((uint64_t)(NPU_DRV_CMD_FIFO_MAX_BURST_COMMANDS -
@@ -210,7 +210,7 @@ static npu_drv_cmd128_t make_command(uint16_t command_id, uint64_t payload)
     memset(&fields, 0, sizeof(fields));
     fields.payload.lo = payload;
     fields.command_id = command_id;
-    fields.compact_opcode = NPU_DRV_COMPACT_DMA_COPY_1D;
+    fields.opcode = NPU_DRV_OPCODE_DMA_COPY_1D;
     fields.dtype = NPU_DRV_DTYPE_INT8;
     fields.wait_event[0].id = NPU_DRV_EVENT_NONE;
     fields.wait_event[1].id = NPU_DRV_EVENT_NONE;
@@ -316,7 +316,7 @@ static int test_command(void)
     fields.payload.lo = UINT64_C(0x0123456789abcdef);
     fields.payload.hi = UINT16_C(0xabcd);
     fields.command_id = 0x345u;
-    fields.compact_opcode = NPU_DRV_COMPACT_COMPLEX_NORM;
+    fields.opcode = NPU_DRV_OPCODE_COMPLEX_NORM;
     fields.dtype = NPU_DRV_DTYPE_INT16;
     fields.timeout_class = 2u;
     fields.header_flags =
@@ -336,28 +336,26 @@ static int test_command(void)
         (UINT64_C(0x56) << 32u) |
         (UINT64_C(0x23) << 40u) |
         (UINT64_C(0x345) << 48u) |
-        (UINT64_C(27) << 58u) |
-        (UINT64_C(1) << 63u);
+        (UINT64_C(27) << 59u);
     CHECK(command.lo == fields.payload.lo);
     CHECK(command.hi == expected_high);
     CHECK(npu_drv_cmd128_decode(&command, &decoded) == NPU_DRV_OK);
     CHECK(decoded.payload.lo == fields.payload.lo);
     CHECK(decoded.payload.hi == fields.payload.hi);
     CHECK(decoded.command_id == fields.command_id);
-    CHECK(decoded.compact_opcode == fields.compact_opcode);
+    CHECK(decoded.opcode == fields.opcode);
     CHECK(decoded.dtype == fields.dtype);
     CHECK(decoded.wait_event[0].id == 0x23u);
     CHECK(decoded.signal_event.id == 0x89u);
-    fields.compact_opcode = NPU_DRV_COMPACT_COMPLEX_ADD_RESCALE;
+    fields.opcode = NPU_DRV_OPCODE_COMPLEX_ADD_RESCALE;
     fields.signal_event.id = 0x88u;
     CHECK(npu_drv_cmd128_encode(&fields, &command) == NPU_DRV_OK);
-    CHECK(((command.hi >> 58u) & 0x1fu) == 31u);
+    CHECK(((command.hi >> 59u) & 0x1fu) == 31u);
     CHECK(npu_drv_cmd128_decode(&command, &decoded) == NPU_DRV_OK);
-    CHECK(decoded.compact_opcode ==
-          NPU_DRV_COMPACT_COMPLEX_ADD_RESCALE);
+    CHECK(decoded.opcode == NPU_DRV_OPCODE_COMPLEX_ADD_RESCALE);
 
-    command.hi &= ~(UINT64_C(1) << 63u);
-    CHECK(npu_drv_cmd128_decode(&command, &decoded) == NPU_DRV_EINVAL);
+    fields.opcode = (npu_drv_opcode_t)32;
+    CHECK(npu_drv_cmd128_encode(&fields, &command) == NPU_DRV_EINVAL);
     fields.signal_event = fields.wait_event[0];
     CHECK(npu_drv_cmd128_encode(&fields, &command) == NPU_DRV_EINVAL);
     return 0;

@@ -1,6 +1,6 @@
 # NPU 指令与硬件架构设计 Spec
 
-状态：CMD128 inline V2
+状态：CMD128 内联指令集
 
 目标：单核整数推理 NPU
 
@@ -8,13 +8,12 @@
 
 命令宽度：128 bit
 
-本文定义部署软件与硬件共同遵守的 CMD128 inline V2。所有执行参数都在
-128 bit 命令内；V2 不含 `desc_addr`，不读取外部任务参数块，也不要求软件在
+本文定义部署软件与硬件共同遵守的 CMD128 内联指令集。所有执行参数都在
+128 bit 命令内；指令不含 `desc_addr`，不读取外部任务参数块，也不要求软件在
 DDR 中生成此类数组。CFE 与 Task Scheduler（TS）保存收到的 16 byte
 Task Context，执行单元可以读取内部展开字段；这些内部字段不是软件可见数组。
 
-旧 CMD 与外部任务参数块只用于诊断兼容，见附录 A。除附录 A 外，本文中的
-“命令”“任务”“部署”均指 V2。
+本文中的“命令”“任务”“部署”均指本章定义的 CMD128 指令。
 
 ## 1. 设计范围与基准配置
 
@@ -80,8 +79,8 @@ x_real = q * S
 ```
 
 Matrix 的乘加先在足够宽的内部整数中形成结果，再按指令的
-`requant_shift` 执行右移和最近偶数舍入，最后饱和写入目标 dtype。V2
-Matrix inline 倍数固定为 1，所以 `requant_shift` 是直接移位值，不是表
+`requant_shift` 执行右移和最近偶数舍入，最后饱和写入目标 dtype。Matrix
+指令的整数倍数固定为 1，所以 `requant_shift` 是直接移位值，不是表
 索引。目标为 INT32 时必须令 `requant_shift=0`。
 
 IVE 的 ADD、SUB、MAX、MIN、SELECT 与 RELU 保持输入 dtype；MUL 和 FMA
@@ -140,7 +139,7 @@ DMA <-> TBU <-> MIF <-> 64-bit AXI Master <-> SoC Fabric <-> DDR/other memory
 | 模块 | 职责 |
 | --- | --- |
 | System Slave Front End | AXI Slave 协议、固定命令地址、响应 FIFO、CSR 与 L1 窗口访问 |
-| CFE | 两个 64 bit beat 组装、V2 头检查、command_id 查询、接收响应 |
+| CFE | 两个 64 bit beat 组装、公共头检查、command_id 查询、接收响应 |
 | TS | Task Context、事件依赖、发射、timeout、完成与 ACK |
 | DMA | 系统存储/L1 数据搬运、填充、转置、PACK、SPLIT |
 | Matrix | GEMM、BMM、ACCUM、ZERO、bias、整数重缩放 |
@@ -152,7 +151,7 @@ DMA <-> TBU <-> MIF <-> 64-bit AXI Master <-> SoC Fabric <-> DDR/other memory
 | LSC | CSR、首错记录、中断、性能计数、停止接收与软复位控制 |
 | CRG/WDT | 复位同步、时钟控制、看门狗 |
 
-V2 的 MIF 请求只来自 DMA 对全局张量、权重、输入、工作区、输出和 KV
+MIF 请求只来自 DMA 对全局张量、权重、输入、工作区、输出和 KV
 数据的访问。CFE、TS、Matrix、IVE、CME 不通过 MIF读取任务参数。
 
 ## 4. 通用接口规则
@@ -183,7 +182,7 @@ NoC 域可使用独立 `noc_clk` 与 `noc_reset_n`。Core/NoC 之间通过请求
 | ---: | --- | --- |
 | 0x00 | SUCCESS | 完成 |
 | 0x01 | ILLEGAL_OPCODE | 操作码未实现或功能关闭 |
-| 0x02 | BAD_DESC | V2 保留位、字段组合或协议错误 |
+| 0x02 | BAD_DESC | 保留位、字段组合或协议错误 |
 | 0x03 | BAD_SHAPE | 尺寸或 stride 无效 |
 | 0x04 | ADDR_FAULT | 地址超出允许范围 |
 | 0x05 | BUS_DECERR | AXI DECERR |
@@ -254,8 +253,8 @@ MIF 不接收 Task Context 地址，也不读取外部任务参数块。
 
 |     bit | 名称               | 说明                          |
 | ------: | ---------------- | --------------------------- |
-| 126:122 | `compact_opcode` | 5 bit，见 6.3                 |
-| 121:112 | `command_id`     | 10 bit，0..1023              |
+| 127:123 | `opcode`         | 5 bit，见 6.3                 |
+| 122:112 | `command_id`     | 11 bit，0..2047              |
 | 111:104 | `wait0`          | 8 bit Event ID，0xff 表示 none |
 |  103:96 | `wait1`          | 8 bit Event ID，0xff 表示 none |
 |   95:88 | `signal`         | 8 bit Event ID，0xff 表示 none |
@@ -266,6 +265,9 @@ MIF 不接收 Task Context 地址，也不读取外部任务参数块。
 |   83:82 | `timeout_class`  | 4 个 timeout 配置之一            |
 |   81:80 | `dtype`          | 公共输入 dtype                  |
 |    79:0 | `payload`        | 操作专有字段                      |
+
+指令不设置专用版本标志。`opcode` 直接占用最高 5 bit，`command_id` 使用
+11 bit，因此可表示 0..2047。
 
 各操作的保留位必须为 0。命令以 little-endian 字节保存并先发送低 64 bit。
 `command_id` 在未 ACK 的 Task 表项中必须唯一。CFE 在接收前查询占用状态；
@@ -285,7 +287,7 @@ REARM 不会改变已经接收任务所等待的代次。
 - `timeout_class` 从任务进入 RUNNING 开始计数；0 值配置表示该类不启用
   timeout。TIMEOUT 后 TS 发取消请求，执行单元排空已接收的数据响应再完成。
 
-### 6.3 compact opcode
+### 6.3 操作码
 
 | 值 | 类别 | 指令 |
 | ---: | --- | --- |
@@ -453,9 +455,9 @@ Event ID 数量小于模型任务总数时，编译器负责安排复用。REARM
 变宽做符号扩展，变窄做饱和，目标 INT4 做半字节打包。`dst_nibble` 首版必须
 为 0；源 INT4 可用 `src_nibble` 选择首元素所在半字节。
 
-COPYND 在 inline V2 首版采用与 COPY1D 相同的连续元素字段。高层多层
+COPYND 在首版采用与 COPY1D 相同的连续元素字段。高层多层
 stride 操作由编译器拆成多条 COPYND/COPY1D，或结合 PACK、SPLIT、
-TRANSPOSE。硬件不得为 V2 再读取 stride 参数块。
+TRANSPOSE。硬件不得再读取 stride 参数块。
 
 ### 9.2 FILL
 
@@ -737,7 +739,7 @@ command_id 查询接口：
 ```text
 cmd_id_lookup_valid_o
 cmd_id_lookup_ready_i
-cmd_id_lookup_id_o[9:0]
+cmd_id_lookup_id_o[10:0]
 cmd_id_lookup_rsp_valid_i
 cmd_id_busy_i
 ```
@@ -747,7 +749,7 @@ RESP_OK/RESP_ERR`。低拍握手后只接受带 `last=1` 的高拍；最多等�
 检查成功且 ID 空闲时，两拍进入 FIFO，并在接收响应中返回 SUCCESS。该响应
 只表示命令已接收，不表示任务已执行。
 
-### 13.2 V2 Task Context
+### 13.2 Task Context
 
 TS 为每个任务保存原始 16 byte CMD128，以及接收时取得的三个事件代次。
 内部展开器从 payload 产生：
@@ -759,7 +761,7 @@ TS 为每个任务保存原始 16 byte CMD128，以及接收时取得的三个�
 - 目标区域大小及错误检查信息。
 
 展开字段可放在 Task 表或执行单元本地寄存器中。它们只能从 16 byte CMD128
-产生，不能触发 MIF 任务参数读取。V2 Task Context 读端口可以采用两拍
+产生，不能触发 MIF 任务参数读取。Task Context 读端口可以采用两拍
 64 bit ready/valid：
 
 ```text
@@ -793,7 +795,7 @@ eng_quiescent
 ### 13.4 TS 功能时序
 
 1. 接收 CFE 两拍并保存 16 byte Task Context。
-2. 检查 V2 位、opcode、保留位、dtype、command_id 和事件资源。
+2. 检查 opcode、保留位、dtype、command_id 和事件资源。
 3. 从 Event Table 取得代次并登记等待者/生产者。
 4. inline 展开；任何错误直接进入终态，不发执行单元请求。
 5. 等待 wait0/wait1；失败事件产生 DEPENDENCY_FAILED。
@@ -900,8 +902,8 @@ rsp_valid, rsp_ready
 rsp_data[63:0], rsp_tag, rsp_last, rsp_status
 ```
 
-V2 生产配置只启用 DMA owner。为旧测试保留的第二 owner 不得在 V2 部署任务
-中产生请求。
+部署配置只启用 DMA owner。诊断测试使用的第二 owner 不得在部署任务中产生
+请求。
 
 ### 15.2 TBU
 
@@ -929,9 +931,9 @@ TBU 最多保存 64 条页规则和 8 个查询中的请求。每条规则定义
 
 LSC 至少提供：
 
-- 能力寄存器：V2 支持、opcode feature、L1 大小、tile 参数、lane 数。
+- 能力寄存器：指令集版本、opcode feature、L1 大小、tile 参数、lane 数。
 - `GADDR_BASE[0..5]` 与 TBU 控制。
-- 4 个 V2 timeout class 周期值。
+- 4 个 timeout class 周期值。
 - CMD FIFO 状态与接收响应。
 - Task 查询、WAIT、ACK、FENCE。
 - 首错状态、fault address、error info、ECC 记录。
@@ -969,8 +971,8 @@ LSC 至少提供：
 | `0x0180` | PERF_CONTROL |
 | `0x0200..` | TIMEOUT_CLASS |
 
-CSR 是 64 bit little-endian 寄存器。V2 只选择 timeout class 0..3；实现可以
-保留更多诊断类，但不能由 V2 CMD 选择。`ISA_FEATURE` 的 ROPE、RECIP 与
+CSR 是 64 bit little-endian 寄存器。CMD128 只选择 timeout class 0..3；实现可以
+保留更多诊断类，但不能由 CMD128 选择。`ISA_FEATURE` 的 ROPE、RECIP 与
 causal softmax 位在首版为 0。
 
 配置寄存器在 Task 或 DMA 活动时写入应返回 BUSY。首错寄存器保持第一次错误，
@@ -1011,19 +1013,19 @@ Conv2D 降低为 im2col/数据准备、PACK/TRANSPOSE 和 GEMM；数据形状或
 默认输出模型专用 `.c/.h`，至少包含：
 
 - NPU 配置与要求的 feature；
-- CMD128 inline V2 数组；
+- CMD128 指令数组；
 - 权重和常量数组；
 - 输入、输出及操作信息；
 - 全局基址和 L1 区域信息；
 - 任务组、WAIT、Event REARM、ACK 的同步信息。
 
 部署输出不包含外部任务参数数组，也不默认输出裸二进制。若工具另行提供诊断
-导出，文件名和 manifest 必须明确标为 V1 diagnostic，驱动不得把它当作 V2
-部署产物。
+导出，文件名和 manifest 必须明确标为 diagnostic，驱动不得把它当作部署
+产物。
 
 ### 17.3 驱动提交次序
 
-1. 读取能力并确认 V2 与所需 opcode。
+1. 读取能力并确认指令集版本与所需 opcode。
 2. 配置 TBU、全局基址、timeout 和中断。
 3. 通过 L1 窗口或 DMA 装载权重、常量和输入。
 4. 逐条以 FIXED burst 写 CMD 固定地址，读取接收响应。
@@ -1036,11 +1038,11 @@ Conv2D 降低为 im2col/数据准备、PACK/TRANSPOSE 和 GEMM；数据形状或
 
 ### 18.1 指令检查
 
-- 对 32 个 compact opcode 做编码/解码互反测试。
+- 对 32 个 opcode 做编码/解码互反测试。
 - 对公共头每个字段做 bit-accurate little-endian 测试。
 - 对所有保留位、非法 dtype、重复 command_id、同一 signal/wait ID 做负例。
 - 明确检查 ROPE/RECIP feature-off 返回 ILLEGAL_OPCODE 且目标不变。
-- 检查 V2 提交过程中 MIF 没有任务参数读取。
+- 检查提交过程中 MIF 没有任务参数读取。
 
 ### 18.2 数值检查
 
@@ -1086,21 +1088,3 @@ Conv2D 降低为 im2col/数据准备、PACK/TRANSPOSE 和 GEMM；数据形状或
 任务组 A 使用 E7，主机等待组 A 全部到终态并 ACK；随后单独提交 REARM E7，
 等待 REARM 成功并 ACK，再提交任务组 B。组 B 接收时取得新的 generation。
 主机不能把 REARM 与组 A 最后一批仍在 CFE FIFO 的命令同时提交。
-
-## 附录 A：V1 诊断兼容格式
-
-部分 CModel 单元测试仍保留旧 CMD、外部任务参数块、旧参数读取单元和旧
-参数 SRAM，以检查历史 RTL 的错误处理、ECC、MIF 仲裁和回归结果。它们的
-存在只表示诊断兼容，不属于 V2 部署协议。
-
-必须遵守以下隔离要求：
-
-- 模型编译器和部署驱动只生成/提交 V2 CMD128。
-- V2 命令不会读取旧地址字段，不启动旧参数读取单元。
-- 旧测试文件、日志和生成物必须带 `v1` 或 `diagnostic` 标识。
-- 生产能力寄存器以 V2 为默认；旧格式只能由仿真或明确的诊断开关启用。
-- 旧参数 SRAM 可以在兼容模型内部保留，但不能成为软件需要分配的系统存储
-  对象。
-
-附录 A 不定义新的部署功能；若旧内容与正文冲突，以正文的 CMD128 inline V2
-为准。

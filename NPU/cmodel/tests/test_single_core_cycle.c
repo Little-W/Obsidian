@@ -699,6 +699,8 @@ static void single_test_core_tick(
     const npu_single_core_cycle_core_inputs_t *inputs,
     npu_single_core_cycle_core_outputs_t *outputs)
 {
+    env->top.cfe.descriptor_diagnostic_mode = 1u;
+    env->top.ts.descriptor_diagnostic_mode = 1u;
     npu_single_core_cycle_core_tick(
         &env->top, inputs, outputs);
     env->core_ticks++;

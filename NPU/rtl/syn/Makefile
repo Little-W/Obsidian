@@ -6,7 +6,13 @@ SOURCE_RTL ?= /home/yusen/Obsidian Vault/NPU/rtl
 SYN_ENV_ROOT ?= /home/yusen/opt/xinyuan/syn_env
 NPU_SYN_DIR ?= $(SYN_ENV_ROOT)/npu
 
-.PHONY: sync syn clean
+.PHONY: vivado-syn vivado-clean sync syn clean
+
+vivado-syn:
+	$(MAKE) -C vivado_100mhz syn
+
+vivado-clean:
+	$(MAKE) -C vivado_100mhz clean
 
 sync:
 	mkdir -p "$(NPU_SYN_DIR)"

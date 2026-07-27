@@ -32,7 +32,7 @@ int main(void)
         return 1;
     }
     fields.command_id = 7u;
-    fields.compact_opcode = NPU_DRV_COMPACT_MATRIX_GEMM;
+    fields.opcode = NPU_DRV_OPCODE_MATRIX_GEMM;
     fields.dtype = NPU_DRV_DTYPE_INT8;
     fields.wait_event[0].id = NPU_DRV_EVENT_NONE;
     fields.wait_event[1].id = NPU_DRV_EVENT_NONE;

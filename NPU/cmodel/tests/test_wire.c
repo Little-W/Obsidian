@@ -97,6 +97,94 @@ static void wire_make_cmd(uint8_t *wire,
     wire_put_u64(wire, 8u, high);
 }
 
+static int wire_descriptor_opcode_valid(npu_engine_t engine,
+                                        uint8_t opcode)
+{
+    if (engine == NPU_ENGINE_CONTROL) {
+        return opcode <= NPU_CTRL_GLOBAL_FENCE;
+    }
+    if (engine == NPU_ENGINE_DMA) {
+        return opcode >= NPU_DMA_COPY_1D &&
+               opcode <= NPU_DMA_SPLIT;
+    }
+    if (engine == NPU_ENGINE_MATRIX) {
+        return opcode >= NPU_MATRIX_GEMM &&
+               opcode <= NPU_MATRIX_GEMM_ZERO;
+    }
+    if (engine == NPU_ENGINE_VECTOR) {
+        return opcode >= NPU_VECTOR_ADD &&
+               opcode <= NPU_VECTOR_RELU;
+    }
+    if (engine == NPU_ENGINE_COMPLEX) {
+        return opcode == NPU_COMPLEX_ACT ||
+               opcode == NPU_COMPLEX_SOFTMAX ||
+               opcode == NPU_COMPLEX_NORM ||
+               opcode == NPU_COMPLEX_STAT ||
+               opcode == NPU_COMPLEX_ADD_RESCALE;
+    }
+    return 0;
+}
+
+static npu_status_t wire_decode_descriptor_cmd_with_meta(
+    const uint8_t *wire,
+    size_t wire_bytes,
+    const npu_wire_limits_t *limits,
+    npu_cmd_t *cmd,
+    npu_wire_meta_t *meta)
+{
+    npu_status_t status;
+
+    if (wire == (const uint8_t *)0 ||
+        wire_bytes != NPU_WIRE_CMD_BYTES ||
+        limits == (const npu_wire_limits_t *)0 ||
+        cmd == (npu_cmd_t *)0 ||
+        meta == (npu_wire_meta_t *)0) {
+        return NPU_STATUS_BAD_DESC;
+    }
+    wire_zero((uint8_t *)meta, sizeof(*meta));
+    status = npu_cmd_decode_descriptor(
+        wire_get_u64(wire, 0u), wire_get_u64(wire, 8u), cmd);
+    if (status != NPU_STATUS_SUCCESS) {
+        return status;
+    }
+    if (!wire_descriptor_opcode_valid(cmd->engine, cmd->opcode)) {
+        return NPU_STATUS_ILLEGAL_OPCODE;
+    }
+    return npu_wire_validate_cmd_address(cmd, limits, meta);
+}
+
+static npu_status_t wire_decode_descriptor_cmd(
+    const uint8_t *wire,
+    size_t wire_bytes,
+    const npu_wire_limits_t *limits,
+    npu_cmd_t *cmd)
+{
+    npu_wire_meta_t meta;
+
+    return wire_decode_descriptor_cmd_with_meta(
+        wire, wire_bytes, limits, cmd, &meta);
+}
+
+static npu_status_t wire_decode_descriptor_task(
+    const uint8_t *cmd_wire,
+    size_t cmd_wire_bytes,
+    const uint8_t *desc_wire,
+    size_t desc_wire_bytes,
+    const npu_wire_limits_t *limits,
+    npu_task_request_t *request,
+    npu_wire_meta_t *meta)
+{
+    npu_cmd_t cmd;
+    npu_status_t status = wire_decode_descriptor_cmd_with_meta(
+        cmd_wire, cmd_wire_bytes, limits, &cmd, meta);
+
+    if (status != NPU_STATUS_SUCCESS) {
+        return status;
+    }
+    return npu_wire_decode_descriptor(
+        &cmd, desc_wire, desc_wire_bytes, limits, request, meta);
+}
+
 static void wire_make_common(uint8_t *wire,
                              size_t bytes,
                              npu_engine_t engine,
@@ -157,7 +245,7 @@ static int wire_test_cmd_and_control(const npu_wire_limits_t *limits)
                   NPU_ENGINE_CONTROL, NPU_CTRL_EVENT_JOIN,
                   (uint16_t)(7u << 6),
                   event0, event1, target);
-    TEST_CHECK_STATUS(npu_wire_decode_cmd(cmd_wire,
+    TEST_CHECK_STATUS(wire_decode_descriptor_cmd(cmd_wire,
                                           sizeof(cmd_wire),
                                           limits, &cmd),
                       NPU_STATUS_SUCCESS);
@@ -175,7 +263,7 @@ static int wire_test_cmd_and_control(const npu_wire_limits_t *limits)
                      NPU_ENGINE_CONTROL, 2u << 8,
                      event0, event1, 0u, target,
                      0u, 0u, 0u, 0x78563412u);
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           desc_wire, sizeof(desc_wire),
                           limits, &request, &meta),
@@ -192,14 +280,14 @@ static int wire_test_cmd_and_control(const npu_wire_limits_t *limits)
     wire_put_u64(
         cmd_wire, 8u,
         valid_high | (UINT64_C(1) << (8u + 10u)));
-    TEST_CHECK_STATUS(npu_wire_decode_cmd(cmd_wire,
+    TEST_CHECK_STATUS(wire_decode_descriptor_cmd(cmd_wire,
                                           sizeof(cmd_wire),
                                           limits, &cmd),
                       NPU_STATUS_BAD_DESC);
     wire_put_u64(
         cmd_wire, 8u,
         valid_high | (UINT64_C(1) << (8u + 5u)));
-    TEST_CHECK_STATUS(npu_wire_decode_cmd(cmd_wire,
+    TEST_CHECK_STATUS(wire_decode_descriptor_cmd(cmd_wire,
                                           sizeof(cmd_wire),
                                           limits, &cmd),
                       NPU_STATUS_BAD_DESC);
@@ -207,7 +295,7 @@ static int wire_test_cmd_and_control(const npu_wire_limits_t *limits)
         cmd_wire, 8u,
         (valid_high & ~(UINT64_C(0x0fff) << 20u)) |
             (UINT64_C(0x00ff) << 20u));
-    TEST_CHECK_STATUS(npu_wire_decode_cmd(cmd_wire,
+    TEST_CHECK_STATUS(wire_decode_descriptor_cmd(cmd_wire,
                                           sizeof(cmd_wire),
                                           limits, &cmd),
                       NPU_STATUS_BAD_DESC);
@@ -216,7 +304,7 @@ static int wire_test_cmd_and_control(const npu_wire_limits_t *limits)
     wire_put_u64(
         cmd_wire, 8u,
         (valid_high & ~UINT64_C(0xff)) | UINT64_C(0x0f));
-    TEST_CHECK_STATUS(npu_wire_decode_cmd(cmd_wire,
+    TEST_CHECK_STATUS(wire_decode_descriptor_cmd(cmd_wire,
                                           sizeof(cmd_wire),
                                           limits, &cmd),
                       NPU_STATUS_ILLEGAL_OPCODE);
@@ -226,7 +314,7 @@ static int wire_test_cmd_and_control(const npu_wire_limits_t *limits)
                       (uint16_t)(0x380u + index),
                       engines[index], opcodes[index], 0u,
                       WIRE_NONE, WIRE_NONE, WIRE_NONE);
-        TEST_CHECK_STATUS(npu_wire_decode_cmd(
+        TEST_CHECK_STATUS(wire_decode_descriptor_cmd(
                               cmd_wire, sizeof(cmd_wire),
                               limits, &cmd),
                           NPU_STATUS_SUCCESS);
@@ -237,7 +325,7 @@ static int wire_test_cmd_and_control(const npu_wire_limits_t *limits)
     wire_make_cmd(cmd_wire, UINT64_C(0xffffffffffc0),
                   0x390u, NPU_ENGINE_CONTROL, NPU_CTRL_NOP,
                   0u, WIRE_NONE, WIRE_NONE, WIRE_NONE);
-    TEST_CHECK_STATUS(npu_wire_decode_cmd(cmd_wire,
+    TEST_CHECK_STATUS(wire_decode_descriptor_cmd(cmd_wire,
                                           sizeof(cmd_wire),
                                           limits, &cmd),
                       NPU_STATUS_SUCCESS);
@@ -295,7 +383,7 @@ static int wire_test_dma(const npu_wire_limits_t *limits)
     wire_put_u64(desc_wire, 0x98u, 6u);
     wire_put_u64(desc_wire, 0xa0u, 24u);
 
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           desc_wire, sizeof(desc_wire),
                           limits, &request, &meta),
@@ -308,14 +396,14 @@ static int wire_test_dma(const npu_wire_limits_t *limits)
     TEST_CHECK(request.desc.dma.burst_beats == 16u);
     TEST_CHECK(meta.dma_burst_beats == 16u);
 
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           desc_wire, sizeof(desc_wire) - 1u,
                           limits, &request, &meta),
                       NPU_STATUS_BAD_DESC);
     wire_put_u16(desc_wire, 0x02u,
                  NPU_WIRE_DMA_DESC_BYTES - 64u);
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           desc_wire, sizeof(desc_wire),
                           limits, &request, &meta),
@@ -324,7 +412,7 @@ static int wire_test_dma(const npu_wire_limits_t *limits)
                  NPU_WIRE_DMA_DESC_BYTES);
 
     desc_wire[0x5cu] = 1u;
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           desc_wire, sizeof(desc_wire),
                           limits, &request, &meta),
@@ -332,7 +420,7 @@ static int wire_test_dma(const npu_wire_limits_t *limits)
     desc_wire[0x5cu] = 0u;
     wire_put_u64(desc_wire, 0x20u,
                  UINT64_C(1) << 24);
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           desc_wire, sizeof(desc_wire),
                           limits, &request, &meta),
@@ -359,7 +447,7 @@ static int wire_test_dma(const npu_wire_limits_t *limits)
     wire_put_u64(desc_wire, 0x90u, 0x0du);
     wire_put_u64(desc_wire, 0x98u, 0u);
     wire_put_u64(desc_wire, 0xa0u, 3u);
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           desc_wire, sizeof(desc_wire),
                           limits, &request, &meta),
@@ -390,7 +478,7 @@ static int wire_test_dma(const npu_wire_limits_t *limits)
     wire_put_u16(desc_wire, 0xa8u, 3u);
     wire_put_u16(desc_wire, 0xaau, 5u);
     wire_put_u32(desc_wire, 0xacu, 9u);
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           desc_wire, sizeof(desc_wire),
                           limits, &request, &meta),
@@ -401,14 +489,14 @@ static int wire_test_dma(const npu_wire_limits_t *limits)
     TEST_CHECK(request.desc.dma.segment_stride == 9u);
 
     wire_put_u32(desc_wire, 0x48u, 4u);
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           desc_wire, sizeof(desc_wire),
                           limits, &request, &meta),
                       NPU_STATUS_BAD_SHAPE);
     wire_put_u32(desc_wire, 0x48u, 3u);
     wire_put_u32(desc_wire, 0xacu, 4u);
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           desc_wire, sizeof(desc_wire),
                           limits, &request, &meta),
@@ -420,7 +508,7 @@ static int wire_test_dma(const npu_wire_limits_t *limits)
                   0u, WIRE_NONE, WIRE_NONE, WIRE_NONE);
     wire_put_u64(desc_wire, 0x98u, 15u);
     wire_put_u64(desc_wire, 0xa0u, 23u);
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           desc_wire, sizeof(desc_wire),
                           limits, &request, &meta),
@@ -472,7 +560,7 @@ static int wire_test_matrix(const npu_wire_limits_t *limits)
     desc_wire[0xa5u] = 0u;
     desc_wire[0xa6u] = 8u;
 
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           desc_wire, sizeof(desc_wire),
                           limits, &request, &meta),
@@ -487,14 +575,14 @@ static int wire_test_matrix(const npu_wire_limits_t *limits)
     TEST_CHECK(meta.matrix_b_pack_format == 2u);
 
     desc_wire[0x90u] = 5u;
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           desc_wire, sizeof(desc_wire),
                           limits, &request, &meta),
                       NPU_STATUS_BAD_DESC);
     desc_wire[0x90u] = 0u;
     desc_wire[0x91u] = 6u;
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           desc_wire, sizeof(desc_wire),
                           limits, &request, &meta),
@@ -502,28 +590,28 @@ static int wire_test_matrix(const npu_wire_limits_t *limits)
     desc_wire[0x91u] = 2u;
 
     wire_put_u32(desc_wire, 0x50u, 1u);
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           desc_wire, sizeof(desc_wire),
                           limits, &request, &meta),
                       NPU_STATUS_BAD_SHAPE);
     wire_put_u32(desc_wire, 0x50u, 2u);
     wire_put_u32(desc_wire, 0x54u, 2u);
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           desc_wire, sizeof(desc_wire),
                           limits, &request, &meta),
                       NPU_STATUS_BAD_SHAPE);
     wire_put_u32(desc_wire, 0x54u, 3u);
     wire_put_u32(desc_wire, 0x58u, 3u);
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           desc_wire, sizeof(desc_wire),
                           limits, &request, &meta),
                       NPU_STATUS_BAD_SHAPE);
     wire_put_u32(desc_wire, 0x58u, 4u);
     desc_wire[0x96u] = 1u;
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           desc_wire, sizeof(desc_wire),
                           limits, &request, &meta),
@@ -568,7 +656,7 @@ static int wire_test_vector(const npu_wire_limits_t *limits)
     wire_put_u32(desc_wire, 0x88u, 0u);
     wire_put_u32(desc_wire, 0x8cu, 0x3f800000u);
 
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           desc_wire, sizeof(desc_wire),
                           limits, &request, &meta),
@@ -580,14 +668,14 @@ static int wire_test_vector(const npu_wire_limits_t *limits)
     TEST_CHECK(request.desc.vector.dst_scale_bits == 0x3f800000u);
 
     wire_put_u32(desc_wire, 0x84u, 0x40000000u);
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           desc_wire, sizeof(desc_wire),
                           limits, &request, &meta),
                       NPU_STATUS_BAD_DESC);
     wire_put_u32(desc_wire, 0x84u, 0x3f800000u);
     desc_wire[0x7eu] = 1u;
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           desc_wire, sizeof(desc_wire),
                           limits, &request, &meta),
@@ -605,7 +693,7 @@ static int wire_test_vector(const npu_wire_limits_t *limits)
     wire_put_u32(desc_wire, 0x5cu, 16u);
     wire_put_u32(desc_wire, 0x68u, 5u);
     wire_put_u32(desc_wire, 0x6cu, 20u);
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           desc_wire, sizeof(desc_wire),
                           limits, &request, &meta),
@@ -649,7 +737,7 @@ static int wire_test_complex(const npu_wire_limits_t *limits)
     desc_wire[0x9eu] = NPU_ALL_MASK_WRITE_ZERO;
     desc_wire[0x9fu] = 0u;
 
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           desc_wire, sizeof(desc_wire),
                           limits, &request, &meta),
@@ -674,14 +762,14 @@ static int wire_test_complex(const npu_wire_limits_t *limits)
     TEST_CHECK(meta.cme_stats_mode == 0u);
 
     wire_put_u32(desc_wire, 0x38u, numeric & ~(1u << 16));
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           desc_wire, sizeof(desc_wire),
                           limits, &request, &meta),
                       NPU_STATUS_BAD_DESC);
     wire_put_u32(desc_wire, 0x38u, numeric);
     desc_wire[0xadu] = 1u;
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           desc_wire, sizeof(desc_wire),
                           limits, &request, &meta),
@@ -706,7 +794,7 @@ static int wire_test_complex(const npu_wire_limits_t *limits)
     wire_put_u32(desc_wire, 0x98u, 0x41800000u);
     desc_wire[0x9du] = NPU_OVERFLOW_SATURATE;
     desc_wire[0x9eu] = NPU_ALL_MASK_WRITE_ZERO;
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           desc_wire, sizeof(desc_wire),
                           limits, &request, &meta),
@@ -721,7 +809,7 @@ static int wire_test_complex(const npu_wire_limits_t *limits)
     TEST_CHECK(meta.cme_dst_scale_table_addr == 0x1900u);
 
     wire_put_u32(desc_wire, 0x70u, 0x3f800000u);
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           desc_wire, sizeof(desc_wire),
                           limits, &request, &meta),
@@ -729,21 +817,21 @@ static int wire_test_complex(const npu_wire_limits_t *limits)
     wire_put_u32(desc_wire, 0x70u, 0u);
     wire_put_u64(desc_wire, 0x28u,
                  (uint64_t)limits->l1_bytes - 8u);
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           desc_wire, sizeof(desc_wire),
                           limits, &request, &meta),
                       NPU_STATUS_ADDR_FAULT);
     wire_put_u64(desc_wire, 0x28u, 0x1800u);
     wire_put_u64(desc_wire, 0x30u, 0x1901u);
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           desc_wire, sizeof(desc_wire),
                           limits, &request, &meta),
                       NPU_STATUS_BAD_DESC);
     wire_put_u64(desc_wire, 0x30u, 0x1900u);
     desc_wire[0x9fu] = 1u;
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           desc_wire, sizeof(desc_wire),
                           limits, &request, &meta),
@@ -761,7 +849,7 @@ static int wire_test_complex(const npu_wire_limits_t *limits)
     wire_put_u32(desc_wire, 0x70u, 0x3f000000u);
     wire_put_u32(desc_wire, 0x7cu, 0x3c000000u);
     desc_wire[0x9fu] = 0u;
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           desc_wire, sizeof(desc_wire),
                           limits, &request, &meta),
@@ -772,7 +860,7 @@ static int wire_test_complex(const npu_wire_limits_t *limits)
     TEST_CHECK(meta.allow_partial_dest == 1u);
 
     wire_put_u32(desc_wire, 0x04u, 1u << 7);
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           desc_wire, sizeof(desc_wire),
                           limits, &request, &meta),
@@ -797,14 +885,14 @@ static int wire_test_fault_metadata(void)
     wire_make_cmd(cmd_wire, 0x1080u, 0x301u,
                   NPU_ENGINE_VECTOR, NPU_VECTOR_ADD,
                   0u, WIRE_NONE, WIRE_NONE, WIRE_NONE);
-    TEST_CHECK_STATUS(npu_wire_decode_cmd_with_meta(
+    TEST_CHECK_STATUS(wire_decode_descriptor_cmd_with_meta(
                           cmd_wire, sizeof(cmd_wire),
                           &limits, &cmd, &meta),
                       NPU_STATUS_ADDR_FAULT);
     TEST_CHECK(meta.fault_valid == 1u);
     TEST_CHECK(meta.fault_space == NPU_SPACE_DDR);
     TEST_CHECK(meta.fault_addr == 0x1100u);
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           vector_wire, sizeof(vector_wire),
                           &limits, &request, &meta),
@@ -841,7 +929,7 @@ static int wire_test_fault_metadata(void)
     wire_put_u32(vector_wire, 0x80u, 0x3f800000u);
     wire_put_u32(vector_wire, 0x84u, 0x3f800000u);
     wire_put_u32(vector_wire, 0x8cu, 0x3f800000u);
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           vector_wire, sizeof(vector_wire),
                           &limits, &request, &meta),
@@ -871,7 +959,7 @@ static int wire_test_fault_metadata(void)
     wire_put_u32(dma_wire, 0x48u, 8u);
     wire_put_u64(dma_wire, 0x98u, 8u);
     wire_put_u64(dma_wire, 0xa0u, 8u);
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           dma_wire, sizeof(dma_wire),
                           &limits, &request, &meta),
@@ -896,7 +984,7 @@ static int wire_test_fault_metadata(void)
     }
     wire_put_u64(dma_wire, 0x98u, UINT64_MAX);
     wire_put_u64(dma_wire, 0xa0u, UINT64_MAX);
-    TEST_CHECK_STATUS(npu_wire_decode_task(
+    TEST_CHECK_STATUS(wire_decode_descriptor_task(
                           cmd_wire, sizeof(cmd_wire),
                           dma_wire, sizeof(dma_wire),
                           &limits, &request, &meta),

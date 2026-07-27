@@ -58,7 +58,7 @@ VERILATOR_SIM := $(VERILATOR_COMMON) \
 	--output-split 10000 \
 	--output-split-cfuncs 5000
 
-# The model-only build excludes the legacy smoke-test initial block.  Its
+# The model-only build excludes the default smoke-test initial block. Its
 # shared declarations remain in the source so both modes use the same AXI
 # tasks and DUT wiring.
 VERILATOR_TRANSFORMER := $(VERILATOR_SIM) \

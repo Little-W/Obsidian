@@ -22,7 +22,7 @@ module npu_task_scheduler #(
 
   input  logic          cmd_id_lookup_valid_i,
   output logic          cmd_id_lookup_ready_o,
-  input  logic [11:0]   cmd_id_lookup_id_i,
+  input  logic [10:0]   cmd_id_lookup_id_i,
   output logic          cmd_id_lookup_rsp_valid_o,
   output logic          cmd_id_busy_o,
 
@@ -229,7 +229,6 @@ module npu_task_scheduler #(
   logic [TASK_SLOTS-1:0] ctl_fence_accept_target;
   logic [7:0] ctl_fence_accept_status;
   logic [63:0] ctl_fence_accept_failure_seq;
-  logic cmd_is_v2;
   logic [11:0] cmd_command_id;
   logic [3:0] cmd_engine;
   logic [7:0] cmd_opcode;
@@ -247,16 +246,15 @@ module npu_task_scheduler #(
   logic [2047:0] inline_desc_flat;
   logic [2047:0] inline_desc_resolved;
 
-  assign cmd_is_v2       = cfe_cmd_i[127];
   assign cmd_command_id   = npu_cmd_command_id(cfe_cmd_i);
-  assign cmd_engine       = cmd_is_v2 ? inline_engine : cfe_cmd_i[63:60];
-  assign cmd_opcode       = cmd_is_v2 ? inline_opcode : cfe_cmd_i[71:64];
+  assign cmd_engine       = inline_engine;
+  assign cmd_opcode       = inline_opcode;
   assign cmd_header_flags = npu_cmd_header_flags(cfe_cmd_i);
   assign cmd_wait0        = npu_cmd_wait0(cfe_cmd_i);
   assign cmd_wait1        = npu_cmd_wait1(cfe_cmd_i);
   assign cmd_signal       = npu_cmd_signal(cfe_cmd_i);
   assign cmd_is_inline_rearm =
-    cmd_is_v2 && (cmd_engine == NPU_ENGINE_CONTROL) &&
+    (cmd_engine == NPU_ENGINE_CONTROL) &&
     (cmd_opcode == NPU_OPCODE_EVENT_REARM);
 
   npu_inline_desc_decode u_inline_desc_decode (
@@ -451,23 +449,13 @@ module npu_task_scheduler #(
   end
 
   assign cmd_static_valid =
-    event_resources_valid &&
-    (cmd_is_v2
-      ? inline_desc_valid
-      : ((cfe_cmd_i[127:120] == 8'h01)
-         && (cfe_cmd_i[5:0] == 6'd0)
-         && (cfe_cmd_i[83:82] == 2'd0)
-         && npu_opcode_engine_valid(cfe_cmd_i[63:60],
-                                    cfe_cmd_i[71:64])
-         && npu_event_ref_valid(cfe_cmd_i[95:84])
-         && npu_event_ref_valid(cfe_cmd_i[107:96])
-         && npu_event_ref_valid(cfe_cmd_i[119:108])));
+    event_resources_valid && inline_desc_valid;
 
   always_comb begin
     lookup_busy_comb = 1'b0;
     for (int unsigned slot = 0; slot < TASK_SLOTS; slot++) begin
       if ((task_state_q[slot] != NPU_TASK_FREE) &&
-          (task_command_id_q[slot] == cmd_id_lookup_id_i)) begin
+          (task_command_id_q[slot] == {1'b0, cmd_id_lookup_id_i})) begin
         lookup_busy_comb = 1'b1;
       end
     end
@@ -477,38 +465,32 @@ module npu_task_scheduler #(
     cmd_wait0_resolved = cmd_wait0;
     cmd_wait1_resolved = cmd_wait1;
     cmd_signal_resolved = cmd_signal;
-    if (cmd_is_v2) begin
-      if ((cmd_wait0 != NPU_EVENT_NONE) &&
-          (cmd_wait0[7:0] < 8'(EVENT_COUNT))) begin
-        cmd_wait0_resolved =
-          {event_generation_q[cmd_wait0[7:0]], cmd_wait0[7:0]};
-      end
-      if ((cmd_wait1 != NPU_EVENT_NONE) &&
-          (cmd_wait1[7:0] < 8'(EVENT_COUNT))) begin
-        cmd_wait1_resolved =
-          {event_generation_q[cmd_wait1[7:0]], cmd_wait1[7:0]};
-      end
-      if ((cmd_signal != NPU_EVENT_NONE) &&
-          (cmd_signal[7:0] < 8'(EVENT_COUNT))) begin
-        cmd_signal_resolved =
-          {event_generation_q[cmd_signal[7:0]], cmd_signal[7:0]};
-      end
+    if ((cmd_wait0 != NPU_EVENT_NONE) &&
+        (cmd_wait0[7:0] < 8'(EVENT_COUNT))) begin
+      cmd_wait0_resolved =
+        {event_generation_q[cmd_wait0[7:0]], cmd_wait0[7:0]};
+    end
+    if ((cmd_wait1 != NPU_EVENT_NONE) &&
+        (cmd_wait1[7:0] < 8'(EVENT_COUNT))) begin
+      cmd_wait1_resolved =
+        {event_generation_q[cmd_wait1[7:0]], cmd_wait1[7:0]};
+    end
+    if ((cmd_signal != NPU_EVENT_NONE) &&
+        (cmd_signal[7:0] < 8'(EVENT_COUNT))) begin
+      cmd_signal_resolved =
+        {event_generation_q[cmd_signal[7:0]], cmd_signal[7:0]};
     end
 
     event_resources_valid = 1'b1;
     if (cmd_wait0 != NPU_EVENT_NONE) begin
       if ((cmd_wait0[7:0] >= 8'(EVENT_COUNT)) ||
-          (event_state_q[cmd_wait0[7:0]] == NPU_EVENT_FREE) ||
-          (!cmd_is_v2 &&
-           (event_generation_q[cmd_wait0[7:0]] != cmd_wait0[11:8]))) begin
+          (event_state_q[cmd_wait0[7:0]] == NPU_EVENT_FREE)) begin
         event_resources_valid = 1'b0;
       end
     end
     if (cmd_wait1 != NPU_EVENT_NONE) begin
       if ((cmd_wait1[7:0] >= 8'(EVENT_COUNT)) ||
-          (event_state_q[cmd_wait1[7:0]] == NPU_EVENT_FREE) ||
-          (!cmd_is_v2 &&
-           (event_generation_q[cmd_wait1[7:0]] != cmd_wait1[11:8]))) begin
+          (event_state_q[cmd_wait1[7:0]] == NPU_EVENT_FREE)) begin
         event_resources_valid = 1'b0;
       end
     end
@@ -526,8 +508,6 @@ module npu_task_scheduler #(
     end else if (cmd_signal != NPU_EVENT_NONE) begin
       if ((cmd_signal[7:0] >= 8'(EVENT_COUNT)) ||
           (event_state_q[cmd_signal[7:0]] != NPU_EVENT_FREE) ||
-          (!cmd_is_v2 &&
-           (event_generation_q[cmd_signal[7:0]] != cmd_signal[11:8])) ||
           event_has_live_waiter(cmd_signal_resolved) ||
           (cmd_signal_resolved == cmd_wait0_resolved) ||
           (cmd_signal_resolved == cmd_wait1_resolved)) begin
@@ -538,7 +518,7 @@ module npu_task_scheduler #(
 
   always_comb begin
     inline_desc_resolved = inline_desc_flat;
-    if (cmd_is_v2 && (cmd_engine == NPU_ENGINE_CONTROL)) begin
+    if (cmd_engine == NPU_ENGINE_CONTROL) begin
       inline_desc_resolved[64 +: 64] =
         {52'd0, cmd_wait0_resolved};
       inline_desc_resolved[128 +: 64] =
@@ -1037,12 +1017,9 @@ module npu_task_scheduler #(
 
       if (cmd_accept) begin
         task_state_q[free_slot]        <= cmd_static_valid
-                                        ? (cmd_is_v2
-                                           ? NPU_TASK_WAIT_EVENT
-                                           : NPU_TASK_FETCH_DESC)
+                                        ? NPU_TASK_WAIT_EVENT
                                         : NPU_TASK_ERROR;
-        task_desc_addr_q[free_slot]    <= cmd_is_v2
-                                        ? 48'd0 : cfe_cmd_i[47:0];
+        task_desc_addr_q[free_slot]    <= 48'd0;
         task_command_id_q[free_slot]   <= cmd_command_id;
         task_engine_q[free_slot]       <= cmd_engine;
         task_opcode_q[free_slot]       <= cmd_opcode;
@@ -1053,8 +1030,7 @@ module npu_task_scheduler #(
                                         ? cmd_signal_resolved
                                         : NPU_EVENT_NONE;
         task_submit_seq_q[free_slot]   <= submit_seq_q;
-        task_desc_flat_q[free_slot]    <= cmd_is_v2
-                                        ? inline_desc_resolved : '0;
+        task_desc_flat_q[free_slot]    <= inline_desc_resolved;
         task_status_q[free_slot]       <= cmd_static_valid
                                         ? NPU_STATUS_SUCCESS
                                         : NPU_STATUS_BAD_DESC;

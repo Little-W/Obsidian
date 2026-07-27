@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "target": {
-    "name": "single-core-v2",
-    "command_format": "cmd128-inline-v2",
+    "name": "single-core",
+    "command_format": "cmd128",
     "mt": 8,
     "kt": 16,
     "nt": 8

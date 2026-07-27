@@ -38,12 +38,14 @@ static uint64_t npu_frontend_response(uint16_t command_id,
 }
 
 static uint16_t npu_frontend_command_id(uint64_t low_beat,
-                                        uint64_t high_beat)
+                                        uint64_t high_beat,
+                                        uint8_t descriptor_diagnostic_mode)
 {
-    if ((high_beat >> 63u) != 0u) {
-        return (uint16_t)((high_beat >> 48u) & 0x03ffu);
+    if (descriptor_diagnostic_mode != 0u) {
+        return (uint16_t)((low_beat >> 48u) & 0x0fffu);
     }
-    return (uint16_t)((low_beat >> 48u) & 0x0fffu);
+    (void)low_beat;
+    return (uint16_t)((high_beat >> 48u) & 0x07ffu);
 }
 
 npu_status_t npu_model_submit_wire(npu_model_t *model,
@@ -77,16 +79,19 @@ npu_status_t npu_model_submit_wire(npu_model_t *model,
     limits.cme_scratch_elems =
         model->config.cme_scratch_elems;
 
-    status = npu_wire_decode_cmd_with_meta(
-        cmd_wire, sizeof(cmd_wire), &limits, &command, &meta);
-    if (status != NPU_STATUS_SUCCESS) {
-        return status;
-    }
-    if (command.inline_format != 0u) {
-        descriptor = (const uint8_t *)0;
-        descriptor_bytes = 0u;
-    } else {
-        descriptor_bytes = npu_wire_descriptor_bytes(command.engine);
+    if (model->descriptor_diagnostic_mode != 0u) {
+        status = npu_cmd_decode_descriptor(
+            low_beat, high_beat, &command);
+        if (status != NPU_STATUS_SUCCESS) {
+            return status;
+        }
+        status = npu_wire_validate_cmd_address(
+            &command, &limits, &meta);
+        if (status != NPU_STATUS_SUCCESS) {
+            return status;
+        }
+        descriptor_bytes =
+            npu_wire_descriptor_bytes(command.engine);
         if (descriptor_bytes == 0u ||
             command.desc_addr > model->ddr_size ||
             descriptor_bytes >
@@ -94,10 +99,20 @@ npu_status_t npu_model_submit_wire(npu_model_t *model,
             return NPU_STATUS_ADDR_FAULT;
         }
         descriptor = &model->ddr[(size_t)command.desc_addr];
+        status = npu_wire_decode_descriptor(
+            &command, descriptor, descriptor_bytes,
+            &limits, &request, &meta);
+    } else {
+        status = npu_wire_decode_cmd_with_meta(
+            cmd_wire, sizeof(cmd_wire), &limits, &command, &meta);
+        if (status != NPU_STATUS_SUCCESS) {
+            return status;
+        }
+        status = npu_wire_decode_task(
+            cmd_wire, sizeof(cmd_wire),
+            (const uint8_t *)0, 0u,
+            &limits, &request, &meta);
     }
-    status = npu_wire_decode_task(cmd_wire, sizeof(cmd_wire),
-                                  descriptor, descriptor_bytes,
-                                  &limits, &request, &meta);
     if (status != NPU_STATUS_SUCCESS) {
         return status;
     }
@@ -166,7 +181,8 @@ void npu_model_cycle_io(npu_model_t *model,
             }
         } else {
             command_id = npu_frontend_command_id(
-                model->cfe.low_beat, inputs->cmd_data);
+                model->cfe.low_beat, inputs->cmd_data,
+                model->descriptor_diagnostic_mode);
             if (inputs->cmd_first != 0u ||
                 inputs->cmd_last == 0u) {
                 status = NPU_STATUS_BAD_DESC;
@@ -188,7 +204,11 @@ void npu_model_cycle_io(npu_model_t *model,
         if (model->cfe.wait_cycles >=
             model->config.cfe_beat_timeout) {
             command_id =
-                (uint16_t)((model->cfe.low_beat >> 48) & 0x0fffu);
+                model->descriptor_diagnostic_mode != 0u
+                    ? (uint16_t)(
+                          (model->cfe.low_beat >> 48u) &
+                          0x0fffu)
+                    : 0u;
             model->cfe.response_data =
                 npu_frontend_response(
                     command_id, NPU_STATUS_TIMEOUT,

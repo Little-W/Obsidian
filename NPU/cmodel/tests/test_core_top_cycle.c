@@ -376,6 +376,8 @@ static int top_test_tick(
     if (line != 0) {
         return line;
     }
+    env->top.cfe.descriptor_diagnostic_mode = 1u;
+    env->top.ts.descriptor_diagnostic_mode = 1u;
     npu_core_top_cycle_step(&env->top, inputs, outputs);
     return top_test_dfu_observe(&env->dfu, inputs, outputs);
 }

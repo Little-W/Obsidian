@@ -70,6 +70,7 @@ static int cfe_test_submit(
     npu_cfe_cycle_inputs_t inputs;
     npu_cfe_cycle_outputs_t outputs;
 
+    model->descriptor_diagnostic_mode = 1u;
     CFE_TEST_CHECK(model->state == NPU_CFE_STATE_IDLE);
     cfe_test_inputs_default(&inputs);
     inputs.ts_cmd_ready_i = ts_ready;

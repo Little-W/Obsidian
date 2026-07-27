@@ -253,7 +253,7 @@ int npu_drv_cmd128_encode(const npu_drv_cmd_fields_t *fields,
     if (fields == (const npu_drv_cmd_fields_t *)0 ||
         command == (npu_drv_cmd128_t *)0 ||
         fields->command_id > NPU_DRV_MAX_COMMAND_ID ||
-        fields->compact_opcode > NPU_DRV_COMPACT_COMPLEX_ADD_RESCALE ||
+        fields->opcode > NPU_DRV_OPCODE_COMPLEX_ADD_RESCALE ||
         fields->dtype > NPU_DRV_DTYPE_INT16 ||
         fields->timeout_class > 3u ||
         (fields->header_flags & (uint8_t)~NPU_DRV_HEADER_FLAGS_MASK) != 0u ||
@@ -274,8 +274,7 @@ int npu_drv_cmd128_encode(const npu_drv_cmd_fields_t *fields,
         ((uint64_t)wait1 << 32u) |
         ((uint64_t)wait0 << 40u) |
         ((uint64_t)fields->command_id << 48u) |
-        ((uint64_t)fields->compact_opcode << 58u) |
-        (UINT64_C(1) << 63u);
+        ((uint64_t)fields->opcode << 59u);
     return NPU_DRV_OK;
 }
 
@@ -287,8 +286,7 @@ int npu_drv_cmd128_decode(const npu_drv_cmd128_t *command,
     uint8_t signal;
 
     if (command == (const npu_drv_cmd128_t *)0 ||
-        fields == (npu_drv_cmd_fields_t *)0 ||
-        (command->hi & (UINT64_C(1) << 63u)) == 0u) {
+        fields == (npu_drv_cmd_fields_t *)0) {
         return NPU_DRV_EINVAL;
     }
     memset(fields, 0, sizeof(*fields));
@@ -304,12 +302,11 @@ int npu_drv_cmd128_decode(const npu_drv_cmd128_t *command,
     wait1 = (uint8_t)((command->hi >> 32u) & UINT64_C(0xff));
     wait0 = (uint8_t)((command->hi >> 40u) & UINT64_C(0xff));
     fields->command_id =
-        (uint16_t)((command->hi >> 48u) & UINT64_C(0x3ff));
-    fields->compact_opcode =
-        (npu_drv_compact_opcode_t)(
-            (command->hi >> 58u) & UINT64_C(0x1f));
-    if (fields->compact_opcode >
-            NPU_DRV_COMPACT_COMPLEX_ADD_RESCALE ||
+        (uint16_t)((command->hi >> 48u) & UINT64_C(0x7ff));
+    fields->opcode =
+        (npu_drv_opcode_t)(
+            (command->hi >> 59u) & UINT64_C(0x1f));
+    if (fields->opcode > NPU_DRV_OPCODE_COMPLEX_ADD_RESCALE ||
         npu_drv_event_decode(wait0, &fields->wait_event[0]) != NPU_DRV_OK ||
         npu_drv_event_decode(wait1, &fields->wait_event[1]) != NPU_DRV_OK ||
         npu_drv_event_decode(signal, &fields->signal_event) != NPU_DRV_OK ||

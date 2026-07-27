@@ -17,7 +17,7 @@ module npu_inline_desc_decode (
 );
   import npu_rtl_pkg::*;
 
-  logic [4:0]  compact_opcode;
+  logic [4:0]  command_opcode;
   logic [79:0] payload;
   logic [1:0]  header_dtype;
   logic [27:0] src_aref;
@@ -238,12 +238,12 @@ module npu_inline_desc_decode (
   endfunction
 
   always_comb begin
-    compact_opcode = cmd_i[126:122];
+    command_opcode = cmd_i[127:123];
     payload = cmd_i[79:0];
     header_dtype = cmd_i[81:80];
-    engine_o = npu_v2_engine(compact_opcode);
-    opcode_o = npu_v2_opcode(compact_opcode);
-    valid_o = cmd_i[127] && npu_v2_compact_opcode_valid(compact_opcode);
+    engine_o = npu_cmd_engine_from_opcode(command_opcode);
+    opcode_o = npu_cmd_expanded_opcode(command_opcode);
+    valid_o = npu_cmd_opcode_valid(command_opcode);
     desc_flat_o = 2048'd0;
 
     src_aref = payload[79:52];
@@ -275,21 +275,21 @@ module npu_inline_desc_decode (
     desc_flat_o[7:0] = 8'h01;
     desc_flat_o[15:8] = {4'd0, engine_o};
     desc_flat_o[31:16] = npu_desc_bytes_for_engine(engine_o);
-    desc_flat_o[511:480] = {22'd0, cmd_i[121:112]};
+    desc_flat_o[511:480] = {21'd0, cmd_i[122:112]};
 
-    unique case (compact_opcode)
+    unique case (command_opcode)
       5'd0, 5'd1, 5'd2, 5'd3, 5'd4: begin
         desc_flat_o[31:16] = 16'd64;
         desc_flat_o[64 +: 64] =
-          {52'd0, npu_v2_event_ref(cmd_i[111:104])};
+          {52'd0, npu_cmd_event_ref(cmd_i[111:104])};
         desc_flat_o[128 +: 64] =
-          {52'd0, npu_v2_event_ref(cmd_i[103:96])};
+          {52'd0, npu_cmd_event_ref(cmd_i[103:96])};
         desc_flat_o[256 +: 64] =
-          {52'd0, npu_v2_event_ref(cmd_i[95:88])};
+          {52'd0, npu_cmd_event_ref(cmd_i[95:88])};
         desc_flat_o[320 +: 64] = {60'd0, payload[79:76]};
         desc_flat_o[39:32] = {7'd0, payload[75]};
         valid_o = valid_o && (payload[74:0] == 75'd0);
-        unique case (compact_opcode)
+        unique case (command_opcode)
           5'd0:
             valid_o = valid_o &&
               (cmd_i[111:88] == 24'hff_ffff) &&
@@ -438,11 +438,11 @@ module npu_inline_desc_decode (
         desc_flat_o[16'h45 * 8 +: 8] = 8'd1;
         desc_flat_o[16'h48 * 8 +: 32] = count;
         desc_flat_o[16'h98 * 8 +: 64] =
-          compact_opcode == 5'd9
+          command_opcode == 5'd9
             ? {32'd0, (count - 1'b1) * length + rows}
             : {32'd0, count * rows};
         desc_flat_o[16'ha0 * 8 +: 64] =
-          compact_opcode == 5'd9
+          command_opcode == 5'd9
             ? {32'd0, count * rows}
             : {32'd0, (count - 1'b1) * length + rows};
         desc_flat_o[16'ha8 * 8 +: 16] = count[15:0];
@@ -478,11 +478,11 @@ module npu_inline_desc_decode (
         desc_flat_o[16'h54 * 8 +: 32] = matrix_tail(matrix_n, 32'd8);
         desc_flat_o[16'h58 * 8 +: 32] = matrix_tail(matrix_k, 32'd16);
         matrix_flags[2] =
-          (compact_opcode == 5'd11) && (payload[37:26] != 12'd0);
+          (command_opcode == 5'd11) && (payload[37:26] != 12'd0);
         matrix_flags[5] =
-          (compact_opcode == 5'd11) && (dst_dtype != NPU_DTYPE_INT32);
-        matrix_flags[6] = compact_opcode == 5'd13;
-        matrix_flags[7] = compact_opcode == 5'd11;
+          (command_opcode == 5'd11) && (dst_dtype != NPU_DTYPE_INT32);
+        matrix_flags[6] = command_opcode == 5'd13;
+        matrix_flags[7] = command_opcode == 5'd11;
         desc_flat_o[16'h5c * 8 +: 32] = matrix_flags;
         desc_flat_o[16'h60 * 8 +: 32] =
           storage_bytes(matrix_k, src_dtype);
@@ -517,7 +517,7 @@ module npu_inline_desc_decode (
           desc_flat_o[16'hb1 * 8 +: 8] =
             {3'd0, payload[4:0]};
         end
-        if (compact_opcode == 5'd13) begin
+        if (command_opcode == 5'd13) begin
           desc_flat_o[192 +: 64] = lref14_addr(payload[51:38]);
           valid_o = valid_o && (dst_dtype == NPU_DTYPE_INT32) &&
                     (payload[37:26] == 12'd0) &&
@@ -527,7 +527,7 @@ module npu_inline_desc_decode (
                     ((src_dtype == NPU_DTYPE_INT4) ||
                      (src_dtype == NPU_DTYPE_INT8) ||
                      (src_dtype == NPU_DTYPE_INT16));
-        end else if (compact_opcode == 5'd14) begin
+        end else if (command_opcode == 5'd14) begin
           valid_o = valid_o && (dst_dtype == NPU_DTYPE_INT32) &&
                     (payload[79:66] == 14'd0) &&
                     (payload[65:52] == 14'd0) &&
@@ -647,12 +647,12 @@ module npu_inline_desc_decode (
         broadcast_mode = {
           2'd0, payload[1:0], payload[3:2], payload[5:4]
         };
-        if (compact_opcode == 5'd17) begin
+        if (command_opcode == 5'd17) begin
           dst_dtype = NPU_DTYPE_INT32;
-        end else if (compact_opcode == 5'd18) begin
+        end else if (command_opcode == 5'd18) begin
           dst_dtype = NPU_DTYPE_INT32;
           src2_dtype = NPU_DTYPE_INT32;
-        end else if (compact_opcode == 5'd21) begin
+        end else if (command_opcode == 5'd21) begin
           dst_dtype = NPU_DTYPE_INT8;
         end
         numeric_cfg[1:0] = src_dtype;
@@ -686,12 +686,12 @@ module npu_inline_desc_decode (
         desc_flat_o[16'h78 * 8 +: 8] = broadcast_mode;
         desc_flat_o[16'h7a * 8 +: 8] = 8'd0;
         valid_o = valid_o &&
-          (((compact_opcode == 5'd18) ||
-            (compact_opcode == 5'd21) ||
-            (compact_opcode == 5'd22) ||
-            (compact_opcode == 5'd23)) ||
+          (((command_opcode == 5'd18) ||
+            (command_opcode == 5'd21) ||
+            (command_opcode == 5'd22) ||
+            (command_opcode == 5'd23)) ||
            (payload[47:32] == 16'd0));
-        if (compact_opcode == 5'd21) begin
+        if (command_opcode == 5'd21) begin
           desc_flat_o[192 +: 64] = 64'd0;
           desc_flat_o[16'h79 * 8 +: 8] =
             {5'd0, payload[47:45]};
@@ -699,7 +699,7 @@ module npu_inline_desc_decode (
                     (payload[47:45] <= 3'd5) &&
                     (payload[1:0] == 2'd0);
         end
-        if (compact_opcode == 5'd22) begin
+        if (command_opcode == 5'd22) begin
           vector_flags[0] = 1'b1;
           desc_flat_o[192 +: 64] = 64'd0;
           desc_flat_o[320 +: 64] = lref16_addr(payload[47:32]);
@@ -708,7 +708,7 @@ module npu_inline_desc_decode (
           desc_flat_o[16'h94 * 8 +: 32] = length;
           valid_o = valid_o && (payload[1:0] == 2'd0);
         end
-        if (compact_opcode == 5'd23) begin
+        if (command_opcode == 5'd23) begin
           desc_flat_o[128 +: 64] = 64'd0;
           desc_flat_o[192 +: 64] = 64'd0;
           desc_flat_o[16'h70 * 8 +: 32] =
@@ -720,7 +720,7 @@ module npu_inline_desc_decode (
                     ($signed(payload[63:48]) <=
                      $signed(payload[47:32]));
         end
-        if (compact_opcode == 5'd24) begin
+        if (command_opcode == 5'd24) begin
           desc_flat_o[128 +: 64] = 64'd0;
           desc_flat_o[192 +: 64] = 64'd0;
           valid_o = valid_o && (payload[63:32] == 32'd0) &&
@@ -747,7 +747,7 @@ module npu_inline_desc_decode (
         desc_flat_o[16'h5c * 8 +: 32] =
           storage_bytes(length, dst_dtype);
 
-        unique case (compact_opcode)
+        unique case (command_opcode)
           5'd25: begin
             function_mode = {30'd0, payload[18:17]};
             dst_dtype = payload[8:7];
@@ -889,7 +889,7 @@ module npu_inline_desc_decode (
         desc_flat_o[448 +: 32] = numeric_cfg;
         desc_flat_o[16'h4c * 8 +: 32] = function_mode;
         desc_flat_o[16'h5c * 8 +: 32] =
-          compact_opcode == 5'd29
+          command_opcode == 5'd29
             ? 32'd4 : storage_bytes(length, dst_dtype);
         desc_flat_o[16'h6c * 8 +: 32] = mask_mode;
       end

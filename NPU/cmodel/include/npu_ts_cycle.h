@@ -373,6 +373,7 @@ typedef struct {
     uint64_t cycle;
     uint64_t next_submit_seq;
     npu_wire_limits_t wire_limits;
+    uint8_t descriptor_diagnostic_mode;
 
     npu_ts_task_entry_t task[NPU_TS_TASK_COUNT];
     npu_ts_desc_slot_t desc_slot[NPU_TS_DESC_SLOT_COUNT];

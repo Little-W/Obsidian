@@ -87,6 +87,7 @@ static void tc_step(npu_ts_cycle_t *model,
                     npu_ts_cycle_inputs_t *inputs,
                     npu_ts_cycle_outputs_t *outputs)
 {
+    model->descriptor_diagnostic_mode = 1u;
     npu_ts_cycle_step(model, inputs, outputs);
 }
 

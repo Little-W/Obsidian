@@ -137,7 +137,8 @@ int test_bits(void)
     TEST_CHECK(((high_beat >> 32u) & 0x0fffu) == 0x0fffu);
     TEST_CHECK(((high_beat >> 44u) & 0x0fffu) == 0x0704u);
     TEST_CHECK((high_beat >> 56u) == NPU_WIRE_HEADER_VERSION);
-    TEST_CHECK_STATUS(npu_cmd_decode(low_beat, high_beat, &decoded),
+    TEST_CHECK_STATUS(npu_cmd_decode_descriptor(
+                          low_beat, high_beat, &decoded),
                       NPU_STATUS_SUCCESS);
     TEST_CHECK(decoded.desc_addr == command.desc_addr);
     TEST_CHECK(decoded.command_id == command.command_id);
@@ -150,13 +151,13 @@ int test_bits(void)
     TEST_CHECK(decoded.header_version == NPU_WIRE_HEADER_VERSION);
     TEST_CHECK(decoded.wait_event[0].id == 3u);
     TEST_CHECK(decoded.signal_event.generation == 7u);
-    TEST_CHECK_STATUS(npu_cmd_decode(
+    TEST_CHECK_STATUS(npu_cmd_decode_descriptor(
                           low_beat,
                           (high_beat &
                            UINT64_C(0x00ffffffffffffff)),
                           &decoded),
                       NPU_STATUS_BAD_DESC);
-    TEST_CHECK_STATUS(npu_cmd_decode(
+    TEST_CHECK_STATUS(npu_cmd_decode_descriptor(
                           low_beat,
                           (high_beat &
                            ~(UINT64_C(0x0fff) << 20u)) |
@@ -165,20 +166,21 @@ int test_bits(void)
                       NPU_STATUS_BAD_DESC);
     invalid_beat =
         (high_beat & ~UINT64_C(0xff)) | UINT64_C(0x0f);
-    TEST_CHECK_STATUS(npu_cmd_decode(low_beat, invalid_beat,
-                                     &decoded),
+    TEST_CHECK_STATUS(npu_cmd_decode_descriptor(
+                          low_beat, invalid_beat, &decoded),
                       NPU_STATUS_SUCCESS);
     TEST_CHECK(decoded.opcode == 0x0fu);
     invalid_beat =
         (low_beat & ~(UINT64_C(0x0f) << 60u)) |
         (UINT64_C(0x07) << 60u);
-    TEST_CHECK_STATUS(npu_cmd_decode(invalid_beat, high_beat,
-                                     &decoded),
+    TEST_CHECK_STATUS(npu_cmd_decode_descriptor(
+                          invalid_beat, high_beat, &decoded),
                       NPU_STATUS_BAD_DESC);
 
     command.desc_addr = 0x43fu;
     npu_cmd_encode(&command, &low_beat, &high_beat);
-    TEST_CHECK_STATUS(npu_cmd_decode(low_beat, high_beat, &decoded),
+    TEST_CHECK_STATUS(npu_cmd_decode_descriptor(
+                          low_beat, high_beat, &decoded),
                       NPU_STATUS_BAD_DESC);
 
     TEST_CHECK(npu_float_to_int(0.5f, NPU_ROUND_NEAREST_EVEN) == 0);
@@ -1449,16 +1451,6 @@ int test_frontend(void)
     uint32_t cycle;
 
     TEST_CHECK(test_init_model());
-    test_ddr[0x400u] = 1u;
-    test_ddr[0x401u] = (uint8_t)NPU_ENGINE_CONTROL;
-    test_ddr[0x402u] = 64u;
-    test_ddr[0x403u] = 0u;
-    test_ddr[0x43cu] = 0x78u;
-    test_ddr[0x43du] = 0x56u;
-    test_ddr[0x43eu] = 0x34u;
-    test_ddr[0x43fu] = 0x12u;
-
-    command.desc_addr = 0x400u;
     command.command_id = 6u;
     command.engine = NPU_ENGINE_CONTROL;
     command.opcode = NPU_CTRL_NOP;
@@ -1466,8 +1458,9 @@ int test_frontend(void)
     command.wait_event[0] = npu_event_none();
     command.wait_event[1] = npu_event_none();
     command.signal_event = npu_event_none();
-    command.header_version = NPU_WIRE_HEADER_VERSION;
     command.timeout_class = 0u;
+    command.inline_format = 1u;
+    command.inline_dtype = NPU_DTYPE_INT8;
     npu_cmd_encode(&command, &low_beat, &high_beat);
 
     inputs.core_reset_n = 1u;
@@ -1486,8 +1479,7 @@ int test_frontend(void)
     npu_model_cycle_io(&test_model, &inputs, &outputs);
     TEST_CHECK(outputs.cmd_ready == 1u);
     TEST_CHECK(outputs.cmd_rsp_valid == 0u);
-    TEST_CHECK(test_model.tasks[0].request.cmd.header_version ==
-               NPU_WIRE_HEADER_VERSION);
+    TEST_CHECK(test_model.tasks[0].request.cmd.header_version == 0u);
     TEST_CHECK((test_model.tasks[0].request.cmd.header_flags & 1u) !=
                0u);
 

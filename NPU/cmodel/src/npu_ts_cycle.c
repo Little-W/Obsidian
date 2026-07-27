@@ -716,8 +716,12 @@ static void ts_accept_second_beat(npu_ts_cycle_t *model,
     ts_store_u64(
         model->desc_slot[task->desc_slot].data,
         8u, input->data);
-    status = npu_cmd_decode(model->cfe_low, input->data,
-                            &task->cmd);
+    status =
+        model->descriptor_diagnostic_mode != 0u
+            ? npu_cmd_decode_descriptor(
+                  model->cfe_low, input->data, &task->cmd)
+            : npu_cmd_decode(
+                  model->cfe_low, input->data, &task->cmd);
     if (status == NPU_STATUS_SUCCESS &&
         task->cmd.inline_format != 0u) {
         uint32_t event_index;

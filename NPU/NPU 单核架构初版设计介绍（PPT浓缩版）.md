@@ -3,7 +3,7 @@
 > [!summary]
 > 本设计从单核开始。外部 Generic Core 负责模型调度，NPU 通过 64-bit AXI
 > Slave 接收控制访问和 CMD128，通过 64-bit AXI Master 访问系统内存。
-> CMD128 V2 把任务参数直接放入指令，不再从外部内存读取 Descriptor。
+> CMD128 把任务参数直接放入指令，不再从外部内存读取 Descriptor。
 
 ## 1. 设计目标
 
@@ -46,41 +46,43 @@ NPU AXI Slave 提供三类访问入口：
 > low word 与 high word 不得被另一条指令插入。外部 CPU 不直接连接
 > Task Scheduler，也不能绕过 Command Front End 写任务表。
 
-## 4. CMD128 V2
+## 4. 指令集设计
 
 ### 4.1 公共头部
 
-| 位段 | 字段 | 说明 |
-| ---: | --- | --- |
-| `[127]` | `inline_v2` | 固定为 1，表示 80-bit 内联参数格式 |
-| `[126:122]` | `compact_opcode` | 5-bit 紧凑操作码 |
-| `[121:112]` | `command_id` | 10-bit 在途任务编号，范围 0～1023 |
-| `[111:104]` | `wait_event0` | 第一个前置 Event ID，`0xFF` 表示不用 |
-| `[103:96]` | `wait_event1` | 第二个前置 Event ID，`0xFF` 表示不用 |
-| `[95:88]` | `signal_event` | 完成后更新的 Event ID，`0xFF` 表示不用 |
-| `[87]` | `irq_success` | 任务成功时请求中断 |
-| `[86]` | `irq_error` | 任务失败时请求中断 |
-| `[85]` | `strict_numeric` | 复杂函数出现非法数值时返回错误 |
-| `[84]` | `ordered` | 要求按提交次序检查发射条件 |
-| `[83:82]` | `timeout_class` | 选择四档超时配置 |
-| `[81:80]` | `dtype` | `0=INT4`、`1=INT8`、`2=INT32`、`3=INT16` |
-| `[79:0]` | `payload` | 按操作类型解释的任务参数 |
+|          位段 | 字段               | 说明                                    |
+| ----------: | ---------------- | ------------------------------------- |
+| `[127:123]` | `opcode`         | 5-bit 操作码                              |
+| `[122:112]` | `command_id`     | 11-bit 在途任务编号，范围 0～2047              |
+| `[111:104]` | `wait_event0`    | 第一个前置 Event ID，`0xFF` 表示不用            |
+|  `[103:96]` | `wait_event1`    | 第二个前置 Event ID，`0xFF` 表示不用            |
+|   `[95:88]` | `signal_event`   | 完成后更新的 Event ID，`0xFF` 表示不用           |
+|      `[87]` | `irq_success`    | 任务成功时请求中断                             |
+|      `[86]` | `irq_error`      | 任务失败时请求中断                             |
+|      `[85]` | `strict_numeric` | 复杂函数出现非法数值时返回错误                       |
+|      `[84]` | `ordered`        | 要求按提交次序检查发射条件                         |
+|   `[83:82]` | `timeout_class`  | 选择四档超时配置                              |
+|   `[81:80]` | `dtype`          | `0=INT4`、`1=INT8`、`2=INT32`、`3=INT16` |
+|    `[79:0]` | `payload`        | 按操作类型解释的任务参数                          |
 
-V2 指令没有 `desc_addr`。CFE 和 TS 保存收到的 16 字节 CMD128，内联解码器从
+指令不设置专用版本标志。`opcode` 使用最高 5 bit，`command_id` 扩展为
+11 bit。
+
+CFE 和 TS 保存收到的 16 字节 CMD128，内联解码器从
 `payload` 直接得到地址引用、尺寸、数据格式和函数选项。MIF 不再产生任务参数
 读取事务。
 
-### 4.2 紧凑操作码
+### 4.2 操作码
 
 5-bit 编码的 32 个值均有明确用途：
 
-| 紧凑值 | 执行单元 | 完整指令 |
-| --- | --- | --- |
-| 0～4 | Control | NOP、EVENT_SIGNAL、EVENT_REARM、EVENT_JOIN、GLOBAL_FENCE |
-| 5～10 | DMA | COPY_1D、COPY_ND、FILL、TRANSPOSE_2D、PACK、SPLIT |
-| 11～14 | Matrix | GEMM、BMM、GEMM_ACCUM、GEMM_ZERO |
-| 15～24 | Vector | ADD、SUB、MUL、FMA、MAX、MIN、CMP、SELECT、CLAMP、RELU |
-| 25～31 | Complex | ACT、SOFTMAX、NORM、ROPE、STAT、RECIP、ADD_RESCALE |
+| 值     | 执行单元    | 指令                                                   |
+| ----- | ------- | ---------------------------------------------------- |
+| 0～4   | Control | NOP、EVENT_SIGNAL、EVENT_REARM、EVENT_JOIN、GLOBAL_FENCE |
+| 5～10  | DMA     | COPY_1D、COPY_ND、FILL、TRANSPOSE_2D、PACK、SPLIT         |
+| 11～14 | Matrix  | GEMM、BMM、GEMM_ACCUM、GEMM_ZERO                        |
+| 15～24 | Vector  | ADD、SUB、MUL、FMA、MAX、MIN、CMP、SELECT、CLAMP、RELU        |
+| 25～31 | Complex | ACT、SOFTMAX、NORM、ROPE、STAT、RECIP、ADD_RESCALE         |
 
 ROPE 和 RECIP 的编码供后续功能使用。第一版功能寄存器未声明支持时，硬件返回
 `ILLEGAL_OPCODE`；其他表项属于第一版实现内容。
@@ -168,7 +170,7 @@ scale、目的 dtype、Softmax mask 类型、Norm 模式和 epsilon 档位。Lay
 ## 5. Event 是什么
 
 Event 是硬件任务之间的完成状态记录，不是数据缓冲区，也不是中断编号。每个
-Event Table 表项保存状态、当前代次、生产者和等待者数量。CMD128 V2 只写
+Event Table 表项保存状态、当前代次、生产者和等待者数量。CMD128 只写
 8-bit Event ID；TS 在接收指令时读取该表项的当前代次。
 
 - `signal_event=x`：任务被接收后保留 Event x；任务结束时写入成功或失败。
@@ -203,10 +205,10 @@ EVENT_REARM 的批次。
 | MIF / TBU | DMA 全局访问、地址转换服务、AXI burst 与响应处理 |
 | LSC / CRG / WDT | 状态、中断、错误、时钟复位和超时控制 |
 
-一条 V2 任务按以下次序推进：
+一条任务按以下次序推进：
 
 1. AXI Slave 接收 low、high 两个 beat。
-2. CFE 组成 CMD128，检查 V2 标记、操作码和 command_id。
+2. CFE 组成 CMD128，检查操作码和 command_id。
 3. TS 分配任务项和 16 字节 Task Context，当拍不产生参数读取请求。
 4. 内联解码器检查 payload、地址范围、尺寸和数据格式。
 5. 前置 Event 成功且执行单元可接收时，TS 发射任务。
@@ -254,8 +256,8 @@ Vector，以及 ACT、SOFTMAX、NORM、STAT、ADD_RESCALE。ROPE、RECIP 和更�
 
 第一版完成条件包括：
 
-- CMD128 V2 的 32 个紧凑操作码可正确解码，未启用功能返回明确错误；
-- V2 执行期间没有外部任务参数读取；
+- CMD128 的 32 个操作码可正确解码，未启用功能返回明确错误；
+- 执行期间没有外部任务参数读取；
 - INT4、INT8、INT16、INT32 组合测试通过；
 - RNN、GRU、LSTM、CNN、Transformer 端到端示例分别通过；
 - CModel、RTL、Verilator 和 AXI 验证环境的结果一致；

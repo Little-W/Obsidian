@@ -26,7 +26,7 @@ module npu_cmd_frontend #(
 
   output logic         cmd_id_lookup_valid_o,
   input  logic         cmd_id_lookup_ready_i,
-  output logic [11:0]  cmd_id_lookup_id_o,
+  output logic [10:0]  cmd_id_lookup_id_o,
   input  logic         cmd_id_lookup_rsp_valid_i,
   input  logic         cmd_id_busy_i,
 
@@ -59,7 +59,6 @@ module npu_cmd_frontend #(
   logic [COUNT_W-1:0] fifo_count_q;
 
   logic local_duplicate;
-  logic header_format_valid;
   logic opcode_format_valid;
   logic input_handshake;
   logic output_handshake;
@@ -96,23 +95,8 @@ module npu_cmd_frontend #(
 
   assign fifo_free_entries = 8'(FIFO_DEPTH) - 8'(fifo_count_q);
 
-  always_comb begin
-    if (candidate_cmd[127]) begin
-      header_format_valid = 1'b1;
-      opcode_format_valid =
-        npu_v2_compact_opcode_valid(candidate_cmd[126:122]);
-    end else begin
-      header_format_valid =
-          (low_word_q[5:0] == 6'd0)
-        && (high_word_q[63:56] == 8'h01)
-        && (high_word_q[19:18] == 2'b00)
-        && npu_event_ref_valid(high_word_q[31:20])
-        && npu_event_ref_valid(high_word_q[43:32])
-        && npu_event_ref_valid(high_word_q[55:44]);
-      opcode_format_valid =
-        npu_opcode_engine_valid(low_word_q[63:60], high_word_q[7:0]);
-    end
-  end
+  assign opcode_format_valid =
+    npu_cmd_opcode_valid(candidate_cmd[127:123]);
 
   always_comb begin
     axi_cmd_ready_o       = 1'b0;
@@ -126,7 +110,7 @@ module npu_cmd_frontend #(
     ts_cmd_o              = fifo_q[fifo_rd_ptr_q];
 
     cmd_id_lookup_valid_o = (state_q == CFE_LOOKUP) && !lookup_sent_q;
-    cmd_id_lookup_id_o    = candidate_command_id;
+    cmd_id_lookup_id_o    = candidate_command_id[10:0];
 
     cfe_idle_o = (state_q == CFE_IDLE) && (fifo_count_q == 0);
 
@@ -217,11 +201,7 @@ module npu_cmd_frontend #(
         end
 
         CFE_CHECK: begin
-          if (!header_format_valid) begin
-            response_status_q <= NPU_STATUS_BAD_DESC;
-            cfe_error_o       <= 1'b1;
-            state_q           <= CFE_RESPOND;
-          end else if (!opcode_format_valid) begin
+          if (!opcode_format_valid) begin
             response_status_q <= NPU_STATUS_ILLEGAL_OPCODE;
             cfe_error_o       <= 1'b1;
             state_q           <= CFE_RESPOND;

@@ -19,7 +19,6 @@ extern "C" {
 
 #define NPU_WIRE_DEFAULT_DESC_VERSION 1u
 #define NPU_WIRE_HEADER_VERSION 1u
-#define NPU_WIRE_INLINE_HEADER_VERSION 2u
 
 /*
  * Address limits are exclusive.  The reference C model uses byte offsets
