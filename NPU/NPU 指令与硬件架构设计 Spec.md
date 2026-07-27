@@ -408,8 +408,8 @@ flowchart TB
     HOSTL1["L1BUF External Window"]
     CFE["CFE<br/>64 bit beat assembly / CMD FIFO"]
     TS["TaskScheduler<br/>Task Table / Event Table"]
-    DEC["Inline Decode<br/>指令 → Task Context"]
-    DISP["Task Dispatch"]
+    DEC["Inline Decode<br/>接收检查 / 四路发射解码"]
+    DISP["Task Dispatch<br/>四组发射暂存"]
     DMA["DMA / Layout"]
     ME["Matrix Engine"]
     IVE["Integer Vector Engine"]
@@ -453,8 +453,8 @@ flowchart TB
 | Command Front End        | 64-bit 指令 beat、Task 表编号查询结果 | 完整指令、每条命令的接收响应 | 组合低高两个 word，检查操作码和重复 `command_id`，保存完整指令 |
 | Command FIFO             | 完整指令             | 排队后的完整指令                       | 吸收前端突发提交，维持接收顺序                                      |
 | Event Table / Scoreboard | CMD 中的依赖事件、各单元完成消息      | 可发射任务、事件状态、错误状态                  | 检查依赖、保存任务状态、传播错误                                     |
-| Inline Decode            | 指令、LSC 基地址寄存器       | 内部展开的 Task Context               | 解释 payload，计算实际地址与内部字段，不访问全局内存 |
-| Task Decode / Dispatch   | 指令与内部 Task Context   | 各执行单元任务                          | 检查 opcode、字段和功能寄存器后分发                                |
+| Inline Decode            | 指令、任务表保存的基地址快照       | 内部展开的 Task Context               | 接收时检查字段，发射时按执行单元分别计算实际地址与内部字段，不访问全局内存 |
+| Task Decode / Dispatch   | 任务表中的指令与基地址快照   | 各执行单元任务                          | 选择 READY 任务，把展开结果写入对应发射暂存后提交                                |
 | Matrix Engine            | GEMM/BMM 任务、L1BUF 数据    | 矩阵结果、完成消息                        | tile 读取、乘累加、部分和处理、Epilogue、写回；支持两个内部阶段交叠             |
 | Vector Engine            | 逐元素任务、L1BUF 数据          | 向量结果、完成消息                        | 算术、比较、选择、格式转换和门控更新                                   |
 | Statistics Unit          | 行或向量段                   | 和、最大值、平方和                        | 分 lane 计算局部结果，再合并为每行统计结果                             |
@@ -944,14 +944,15 @@ FENCE 在控制请求握手时保存当前 `submit_seq`，只等待不大于该�
 2. AXI Slave 前端把连续两个 64 bit beat 组成一条完整指令，低 64 bit先到，高 64 bit后到。
 3. Command Front End 检查操作码、命令编号和两拍格式。检查通过后，完整命令进入命令 FIFO。
 4. TaskScheduler 读取 Event Table，取得当前事件代次，并把命令中的 8 bit Event ID 扩展成内部事件引用。
-5. 内联解码器按操作码解释 `payload[79:0]`，生成执行单元使用的内部 Task Context。
-6. TaskScheduler 在等待事件满足、顺序条件满足且目标执行单元可接收任务时发出任务。
-7. 执行单元完成后返回状态；TaskScheduler 更新 Event Table，并按照命令头标志产生中断。
+5. TaskScheduler 在接收时保存完整指令、五个 48 bit基地址快照和 20 bit L1 参数区基址，并完成字段检查。
+6. 等待事件与顺序条件满足后，对应执行单元的发射解码器解释 `payload[79:0]`，生成内部 Task Context并写入该单元的发射暂存。
+7. 发射暂存从下一周期给出任务；执行单元接收后开始运行。
+8. 执行单元完成后返回状态；TaskScheduler 更新 Event Table，并按照命令头标志产生中断。
 
 RTL 中的 `desc_flat[2047:0]` 是模块内部使用的展开 Task Context。它由指令在片上组合生成，不是软件接口的一部分，不占用 DDR 空间，也不会经 MIF 读取。编译器和驱动只需要产生指令数组、权重数组和 C 配置数据。
 
 > [!note] 为什么仍保留内部 Task Context
-> DMA、Matrix、IVE 和 CME 原有接口需要较多展开字段，例如实际地址、行字节数、tile 尾部尺寸和内部函数参数。将 80 bit 载荷先展开成固定的内部 Task Context，可以让各执行单元继续使用清晰的模块接口，同时不要求软件创建外部参数块。该 Task Context 只在 NPU 内部存在。
+> DMA、Matrix、IVE 和 CME 接口需要较多展开字段，例如实际地址、行字节数、tile 尾部尺寸和内部函数参数。发射前把 80 bit载荷展开成固定的内部 Task Context，可以让各执行单元使用清晰的模块接口，同时不要求软件创建外部参数块。任务表不为每项保存 2048 bit展开结果；该结果只保存在对应发射暂存和接收任务后的执行单元内部。
 
 不同执行单元可以同时工作。普通任务由 `wait0`、`wait1` 和 `signal` 表达数据先后关系；需要严格顺序的任务使用 `ordered`。Matrix Engine 内部还要保证分块乘累加、部分和读取与结果写回的先后关系。
 
@@ -1017,7 +1018,7 @@ AXI Slave 前端会为每对 beat 产生内部 `first/last` 标志：低 word �
 
 `command_id` 从命令被 CFE 接收开始占用，直到软件对终态任务执行 ACK 后释放。所有尚未 ACK 的 Task 表项以及 CFE 中等待进入 TaskScheduler 的命令都不能使用相同编号。发现重复编号时，CFE 返回 `BAD_DESC`，且不创建任务。
 
-Event ID 的有效值为 0～254，`8'hff` 表示该字段不用。CMD 中不直接保存 generation。TaskScheduler 接收命令时读取 Event Table 中的当前 generation，并把 `{generation,event_id}` 保存到内部 Task Context。因此，在命令已经接收后执行 `EVENT_REARM`，不会改变该命令已经保存的事件代次。
+Event ID 的有效值为 0～254，`8'hff` 表示该字段不用。指令中不直接保存 generation。TaskScheduler 接收命令时读取 Event Table 中的当前 generation，并把 `{generation,event_id}` 分别保存到任务表的 `wait0`、`wait1` 和 `signal` 字段。因此，在命令已经接收后执行 `EVENT_REARM`，不会改变该命令已经保存的事件代次。
 
 `payload[79:0]` 的含义由 `opcode` 决定。没有被当前操作使用的 payload 位必须为 0。发送任意值会使严格字段检查失去作用，也会影响后续增加功能时的软件兼容性。
 
@@ -1434,7 +1435,7 @@ CFE 执行以下动作：
 6. 向 AXI Slave Frontend 返回一项 64-bit命令接收结果；
 7. 通过 128-bit ready/valid 接口把 FIFO 队首命令交给 TaskScheduler。
 
-CFE 不读取全局内存，不发起 MIF 请求，也不读取软件提供的任务参数块。操作所需参数均来自指令；TaskScheduler 随后在片上把完整指令展开为内部 Task Context。
+CFE 不读取全局内存，不发起 MIF 请求，也不读取软件提供的任务参数块。操作所需参数均来自指令；TaskScheduler 保存完整指令和提交时的基地址快照，在选中 READY 任务后再为对应执行单元生成内部 Task Context。
 
 ### 7.2 模块级信号
 
@@ -1571,19 +1572,22 @@ sequenceDiagram
 
 ### 8.1 组成与职责
 
-`npu_task_scheduler` 接收 CFE 提供的完整指令，在同一 Core 时钟域完成内联解码、事件处理、任务保存、发射、完成记录和软件查询。模块由以下部分组成：
+`npu_task_scheduler` 接收 CFE 提供的完整指令，在同一 Core 时钟域完成字段检查、事件处理、任务保存、发射解码、完成记录和软件查询。模块由以下部分组成：
 
 - 完整 128-bit 指令输入接口；
 - 任务表，基准为 16 项；
 - Event Table，包含 255 个可用 Event ID；
-- `npu_inline_desc_decode` 组合解码器；
+- 一组接收检查解码器，以及 DMA、Matrix、Vector、Complex 各自使用的一组发射解码器；
+- DMA、Matrix、Vector、Complex 各自使用的一组 2048 bit发射暂存；
 - DMA、Matrix、Vector、Complex 四组任务发射与完成接口；
 - Control 操作选择逻辑；
 - 完成通知选择逻辑；
 - AXI Slave Frontend 控制请求接口；
 - 任务查询和 ACK 接口。
 
-内联解码器只读取完整指令以及 LSC 提供的基地址寄存器，把指令中的字段展开为 `desc_flat[2047:0]`。本文把这组 2048-bit片上数据称为 Task Context。`desc_flat` 是现有 RTL 信号名，不是软件数组，不位于 DDR，也不会引起 MIF 访问。
+接收检查解码器读取 CFE 提供的完整指令和 LSC 当前基地址，用 `valid_o`、`engine_o` 与 `opcode_o` 完成接收阶段检查，但它的 `desc_flat_o` 在该实例中没有接入任务表。命令被接收时，每个任务表项保存 128 bit指令、五个 48 bit基地址快照和 20 bit L1 参数区基址，不保存 2048 bit展开结果。
+
+任务进入 READY 后，四组执行单元选择逻辑可以各自选择本类任务。对应发射解码器读取所选任务的指令和提交时基地址快照，组合产生 `desc_flat[2047:0]`；时钟沿把展开结果、操作码、命令编号和任务表项编号写入该执行单元的发射暂存，下一周期才置任务 `valid`。本文把发射接口上的 2048 bit片上数据称为 Task Context。它不是软件数组，不位于 DDR，也不会引起 MIF 访问。
 
 ### 8.2 CFE 输入与编号查询接口
 
@@ -1616,7 +1620,9 @@ TS 的时钟、运行控制、配置和状态信号如下：
 | `cmd_id_lookup_rsp_valid_o` | Output | 1 | 查询握手后的下一周期产生一个周期脉冲 |
 | `cmd_id_busy_o` | Output | 1 | 任一非 FREE 任务表项使用该编号 |
 
-`cfe_cmd_ready_o` 只在 `enable_i=1`、`quiesce_i=0` 且任务表存在 FREE 项时为 1。完整命令握手后，TS 在一个时钟沿内分配任务表项、保存 64-bit `submit_seq`、解析事件、保存内联 Task Context，并把全局提交序号加 1。任务表满时，TS 对 CFE施加反压。
+`cfe_cmd_ready_o` 只在 `enable_i=1`、`quiesce_i=0` 且任务表存在 FREE 项时为 1。完整命令握手后，TS 在一个时钟沿内分配任务表项，保存完整指令、五个 48 bit基地址快照、20 bit L1 参数区基址和 64 bit `submit_seq`，并解析事件、更新全局提交序号。任务表满时，TS 对 CFE施加反压。
+
+保留提交时基地址快照是必要的：一条任务可能在 WAIT_EVENT 或 READY 状态停留多个周期，软件也可能在此期间改写 LSC 基地址寄存器。发射解码器必须继续使用接收该任务时看到的五个基地址和 L1 参数区基址，使已经接收的任务不受后续寄存器写入影响。
 
 CFE 的编号查询覆盖等待、就绪、运行和等待 ACK 的终态任务。终态项只有在 ACK 完成后才变为 FREE，因此相同 `command_id` 在 ACK 前始终返回 busy。内部任务编号和完成端口为 12 bit，指令中的 10-bit编号按 `{2'b00,command_id[9:0]}` 零扩展。
 
@@ -1636,13 +1642,13 @@ CFE 的编号查询覆盖等待、就绪、运行和等待 ACK 的终态任务�
 | `valid_o` | Output | 1 | opcode、payload、地址引用和固定字段组合合法 |
 | `engine_o` | Output | 4 | Control、DMA、Matrix、Vector 或 Complex |
 | `opcode_o` | Output | 8 | 执行单元使用的展开 opcode |
-| `desc_flat_o` | Output | 2048 | 内部 Task Context |
+| `desc_flat_o` | Output | 2048 | 组合展开的内部 Task Context；接收检查实例不保存该输出，四组发射实例把它写入各自的发射暂存 |
 
 解码器直接解释第 6.7 节的 80-bit payload。DMA 的 `AREF28` 根据 `space`、`base_select` 和 offset 形成 L1 地址或 48-bit全局地址；Matrix、IVE 和 CME 的 `LREF` 按第 6.5 节的固定单位形成 L1 字节地址。加法溢出、非法基址选择、保留位非零、不接受的操作组合、零长度和不接受的 dtype 组合使 `valid_o=0`。
 
-`engine_o` 和 `opcode_o` 由 CMD bit `[127:122]` 得到。Task Context 保存执行单元所需的地址、尺寸、dtype、内部控制字段和检查结果。Task Context 中不包含需要从系统存储补读的地址指针；DMA 只有在实际搬运任务执行时才通过 MIF访问全局数据。
+`engine_o` 和 `opcode_o` 由指令 bit `[127:122]` 得到。发射时生成的 Task Context包含执行单元所需的地址、尺寸、dtype、内部控制字段和检查结果，其中实际地址使用任务表保存的提交时基地址快照计算。Task Context 中不包含需要从系统存储补读的地址指针；DMA 只有在实际搬运任务执行时才通过 MIF访问全局数据。
 
-TS 把事件当前 generation 写入 Control Task Context。`EVENT_REARM` 同时保存旧事件引用和 generation 加 1 后的新事件引用。内联解码与事件 generation 解析均在命令写入任务表前完成。
+事件 generation 不依赖 2048 bit展开结果。TS 在命令接收阶段把 Event ID 与 Event Table 当前 generation 组合，并分别保存到任务表的 `wait0`、`wait1` 和 `signal` 字段。`EVENT_REARM` 执行时读取任务表中保存的 `signal` 引用，再把该事件的 generation 加 1。
 
 ### 8.4 任务表
 
@@ -1658,7 +1664,9 @@ TS 把事件当前 generation 写入 Control Task Context。`EVENT_REARM` 同时
 | `wait0`、`wait1` | 各 12 | `{generation,event_id}` 或 `12'hfff` |
 | `signal` | 12 | `{generation,event_id}` 或 `12'hfff` |
 | `submit_seq` | 64 | 全局提交顺序号 |
-| `task_context` | 2048 | 内联解码产生的 Task Context，RTL 中保存为 `task_desc_flat_q` |
+| `cmd` | 128 | 接收的完整指令，RTL 中保存为 `task_cmd_q` |
+| `input_base`、`weight_base`、`work_base`、`output_base`、`kv_base` | 各 48 | 命令提交时五个 LSC 基地址寄存器的快照 |
+| `param_l1_base` | 20 | 命令提交时 L1 参数区基址的快照 |
 | `status` | 8 | 当前或终态状态码 |
 | `fault_addr` | 48 | 第一个任务错误地址 |
 | `progress` | 64 | 执行单元报告的进度 |
@@ -1680,7 +1688,7 @@ FREE
 → FREE
 ```
 
-Control 任务不经过外部执行单元，满足等待和顺序条件后由 TS 内部完成。静态字段或事件资源检查失败时，命令仍建立一项 ERROR 终态记录，`status=BAD_DESC`，并产生完成通知；它不会发给任何执行单元。
+任务表不保存 `desc_flat[2047:0]`。Control 任务不经过外部执行单元，满足等待和顺序条件后由 TS 内部完成。静态字段或事件资源检查失败时，命令仍建立一项 ERROR 终态记录，`status=BAD_DESC`，并产生完成通知；它不会发给任何执行单元。
 
 `ordered=1` 的任务等待所有更小 `submit_seq` 的非终态任务。更大 `submit_seq` 的任务也不能越过尚未结束的 ordered 任务。`GLOBAL_FENCE` 使用第 6.7.1 节的 `engine_mask` 和接收命令时的提交顺序快照，只等待快照中被选中的较早任务。
 
@@ -1718,7 +1726,7 @@ DMA、Matrix、Vector 和 Complex 各有一组相同结构的任务接口。下�
 | `<eng>_task_ready_i` | Input | 1 | 执行单元可以接收 |
 | `<eng>_task_opcode_o` | Output | 8 | 展开后的执行单元 opcode |
 | `<eng>_task_command_id_o` | Output | 12 | 零扩展后的命令编号 |
-| `<eng>_task_desc_flat_o` | Output | 2048 | 内部 Task Context |
+| `<eng>_task_desc_flat_o` | Output | 2048 | 对应执行单元发射暂存中的 Task Context |
 | `<eng>_done_valid_i` | Input | 1 | 执行单元完成结果有效 |
 | `<eng>_done_ready_o` | Output | 1 | TS 可以接收完成结果 |
 | `<eng>_done_command_id_i` | Input | 12 | 完成任务编号 |
@@ -1726,7 +1734,9 @@ DMA、Matrix、Vector 和 Complex 各有一组相同结构的任务接口。下�
 | `<eng>_done_fault_addr_i` | Input | 48 | 第一个错误地址，无错误时为 0 |
 | `<eng>_done_progress_i` | Input | 64 | 已完成字节数或元素数 |
 
-每个执行单元同时最多有一个 RUNNING 任务。任务 valid等待 ready 时，opcode、command ID和 Task Context 必须保持不变。
+每个执行单元同时最多有一个 RUNNING 任务。TS 为四类执行单元分别设置 `dispatch_valid`、任务表项编号、操作码、命令编号和 2048 bit Task Context暂存。某类 READY 任务被选中时，本周期由该类解码器组合展开，时钟沿写入对应暂存，下一周期 `<eng>_task_valid_o` 才为 1。任务 valid等待 ready 时，对应暂存保持 opcode、command ID和 Task Context不变。
+
+四组发射暂存相互独立。某个执行单元令 `task_ready=0` 时，只会使该单元的暂存保持有效并阻止它选择下一任务；其他三组暂存仍可装入各自选中的任务或完成握手。因此，DMA、Matrix、Vector 与 Complex 的任务接口可以分别承受不同长度的反压。
 
 TS 接受 done 时检查 command ID和 status。编号与当前活动任务不符，或 status 不在 `0x00～0x0d` 范围内时，把任务记录为 `BAD_DESC`。合法 `SUCCESS` 进入 SUCCESS，其余合法状态进入 ERROR。TS 同时保存 fault address和 progress，生成 `error_info`，清除该执行单元 active 状态并置位终态通知。
 
@@ -1758,7 +1768,7 @@ TS 还提供组合查询和 ACK 端口：
 | `task_query_valid_i`、`task_query_command_id_i[11:0]` | 查询一个任务编号 |
 | `task_query_found_o`、`task_query_state_o[3:0]`、`task_query_status_o[7:0]` | 任务存在、软件可见状态和状态码 |
 | `task_query_fault_addr_o[47:0]`、`task_query_progress_o[63:0]` | 错误地址和进度 |
-| `task_query_user_tag_o[31:0]` | 现有 RTL 名称；指令没有独立 user tag，该字段返回 Task Context 中保存的零扩展命令编号 |
+| `task_query_user_tag_o[31:0]` | 现有 RTL 名称；指令没有独立 user tag，该字段返回 `task_cmd_q[121:112]` 的零扩展值 |
 | `task_query_signal_event_o[11:0]`、`task_query_error_info_o[31:0]`、`task_query_done_flags_o[15:0]` | 事件引用和诊断信息 |
 | `task_ack_valid_i`、`task_ack_command_id_i[11:0]`、`task_ack_ready_o` | ACK 一个已经终止且通知已送出的任务 |
 
@@ -1798,7 +1808,7 @@ QUERY selector 定义如下：
 | Selector | `CTL_RESULT` |
 | ---: | --- |
 | 0 | bit `[3:0]` 为软件任务状态，`[11:4]` 为 status，`[23:12]` 为命令编号 |
-| 1 | bit `[31:0]` 为 Task Context 中的零扩展命令编号，`[43:32]` 为 signal Event 引用 |
+| 1 | bit `[31:0]` 为任务表中完整指令的零扩展命令编号，`[43:32]` 为 signal Event 引用 |
 | 2 | bit `[47:0]` 为第一个错误地址 |
 | 3 | bit `[63:0]` 为 progress |
 | 4 | ACK 结果：0 表示释放成功，1 表示任务未终止或通知未送出，2 表示没有该任务 |
@@ -1815,21 +1825,26 @@ QUERY selector 4 只有在任务已经终止且 `notify=0` 时释放任务表项
 sequenceDiagram
     participant CFE
     participant TS as TaskScheduler
-    participant DEC as Inline Decode
+    participant CHECK as 接收检查解码器
     participant EVT as Event Table
+    participant DEC as 执行单元发射解码器
+    participant STG as 对应发射暂存
     participant ENG as 执行单元
     participant LSC
 
     CFE->>TS: 完整 128-bit 指令
     TS-->>CFE: ready
-    TS->>DEC: 完整指令 + 基地址寄存器
-    DEC-->>TS: valid + engine + opcode + 2048-bit Task Context
+    TS->>CHECK: 完整指令 + 当前基地址
+    CHECK-->>TS: valid + engine + opcode
     TS->>EVT: 读取 generation并保留 signal
     EVT-->>TS: 事件状态与内部引用
-    TS->>TS: 分配任务表项，进入 WAIT_EVENT
+    TS->>TS: 保存指令、基地址快照和任务状态
     EVT-->>TS: 等待事件进入终态
     TS->>TS: WAIT_EVENT → READY
-    TS->>ENG: task_valid + opcode + command_id + Task Context
+    TS->>DEC: 所选指令 + 提交时基地址快照
+    DEC-->>STG: opcode + command_id + Task Context
+    Note over TS,STG: 时钟沿写入对应发射暂存
+    STG->>ENG: 下一周期 task_valid + 稳定 payload
     ENG-->>TS: task_ready
     ENG->>TS: done_valid + status + fault_addr + progress
     TS-->>ENG: done_ready
@@ -1839,9 +1854,11 @@ sequenceDiagram
     LSC-->>TS: completion_ready
 ```
 
-命令握手周期内，组合解码器产生 engine、opcode、Task Context 和 `valid`。时钟沿到来时，TS 原子保存任务表字段与事件引用。静态检查失败的任务直接建立 ERROR 终态；合法任务先进入 WAIT_EVENT，依赖满足后进入 READY。
+命令握手周期内，接收检查解码器组合产生 engine、opcode 和 `valid`。时钟沿到来时，TS 保存任务表字段、完整指令、基地址快照与事件引用。静态检查失败的任务直接建立 ERROR 终态；合法任务先进入 WAIT_EVENT，依赖满足后进入 READY。该阶段不把 2048 bit展开结果写入任务表。
 
-任务 ready/valid 握手后进入 RUNNING。执行单元完成接口握手后，TS 保存 status、fault address和 progress，再更新任务终态和 signal Event。终态通知必须在这些字段全部稳定后发出。软件读取需要的信息并完成 ACK 后，任务表项和 `command_id` 才能复用。
+选中 READY 任务的周期内，对应发射解码器根据任务表中的指令和基地址快照组合产生 Task Context。时钟沿把结果写入该执行单元的发射暂存，下一周期任务接口才置 `valid`。ready/valid 握手后，TS 记录暂存中的任务表项编号并把任务置为 RUNNING。某一发射暂存因 `ready=0` 保持时，不妨碍其他执行单元的暂存和任务握手。
+
+执行单元完成接口握手后，TS 保存 status、fault address和 progress，再更新任务终态和 signal Event。终态通知必须在这些字段全部稳定后发出。软件读取需要的信息并完成 ACK 后，任务表项和 `command_id` 才能复用。
 
 ### 8.10 停止、复位与错误处理
 
@@ -2981,32 +2998,32 @@ Matrix 只在以下条件都满足后报告成功：
 
 Integer Vector Engine（IVE）执行有符号整数逐元素运算。当前 RTL 每次处理一个元素，依次完成输入读取、整数计算和目的写响应；模块名称中的 Vector 表示操作对象是二维整数张量，不表示当前实现具有多 lane 并行 ALU。
 
-外部 Generic Core 是 SoC 主控 CPU，不属于 NPU RTL，也不直接连接 IVE。它通过 NPU 的 64 bit AXI Slave 提交指令；Command Front End、内联解码器和 TaskScheduler 完成检查、片上展开与派发。IVE 接收到的是 `opcode_i`、`command_id_i` 和 2048 bit Task Context。RTL 端口仍名为 `desc_i`，该名字只表示一组片上展开数据，不表示软件对象或存储器中的参数块。
+外部 Generic Core 是 SoC 主控 CPU，不属于 NPU RTL，也不直接连接 IVE。它通过 NPU 的 64 bit AXI Slave 提交指令；Command Front End 把完整指令交给 TaskScheduler。TaskScheduler 任务表保存指令、提交时基地址快照、事件和状态字段，不为每个等待任务保存 2048 bit Task Context。IVE 任务被选中后，IVE 发射解码器才产生展开数据并在时钟沿写入 IVE 发射暂存；下一周期 IVE 接收到 `opcode_i`、`command_id_i` 和 `desc_i[2047:0]`。
 
 ```mermaid
 flowchart LR
     GC["Generic Core<br/>外部主控 CPU"]
     AXIS["NPU 64 bit AXI Slave"]
     CFE["Command Front End"]
-    DEC["Inline Decode<br/>指令字段展开"]
-    CTX["2048-bit Task Context<br/>片上数据"]
-    TS["TaskScheduler"]
+    TS["TaskScheduler<br/>指令 / 基地址快照 / 状态"]
+    DEC["IVE 发射解码器<br/>指令字段展开"]
+    STG["IVE 发射暂存<br/>opcode / id / Task Context"]
     IVE["Integer Vector Engine<br/>单元素顺序执行"]
     L1C["L1BUF Controller"]
     L1["L1BUF SRAM"]
 
     GC -->|"两个 64 bit beat"| AXIS
     AXIS --> CFE
-    CFE --> DEC
-    DEC --> CTX
-    CTX --> TS
-    TS -->|"task ready/valid"| IVE
+    CFE --> TS
+    TS -->|"READY 任务 + 基地址快照"| DEC
+    DEC -->|"时钟沿装入"| STG
+    STG -->|"下一周期 task ready/valid"| IVE
     IVE <-->|"单拍请求/响应"| L1C
     L1C <--> L1
     IVE -->|"status / fault / progress"| TS
 ```
 
-IVE 不读取外部任务参数，不经过 MIF 取得执行字段，也没有任务开始阶段的参数装载状态。地址、shape、广播方式、立即数和内部控制值都由指令中的字段在片上展开后随任务一起到达。
+IVE 不读取外部任务参数，不经过 MIF 取得执行字段，也没有任务开始阶段的参数装载状态。地址、shape、广播方式、立即数和内部控制值都由 IVE 发射解码器产生，并在发射暂存与 IVE 完成 ready/valid 握手后由 IVE 锁存。
 
 ### 12.2 模块级信号
 
@@ -3020,13 +3037,13 @@ IVE 不读取外部任务参数，不经过 MIF 取得执行字段，也没有�
 | `task_ready_o` | Output | 1 | 仅 `ST_IDLE` 为 1 |
 | `opcode_i` | Input | 8 | 展开后的内部操作码 `0x60～0x69` |
 | `command_id_i` | Input | 12 | 内部任务编号；任务关联由 TaskScheduler 保存 |
-| `desc_i` | Input | 2048 | 当前任务的片上 Task Context |
+| `desc_i` | Input | 2048 | IVE 发射暂存提供的当前任务 Task Context |
 | `done_valid_o` | Output | 1 | 仅 `ST_DONE` 为 1，并保持到握手 |
 | `done_ready_i` | Input | 1 | TaskScheduler 接收完成状态 |
 | `done_status_o` | Output | 8 | `SUCCESS` 或首个失败状态 |
 | `done_fault_addr_o` | Output | 48 | 发生字段、地址、L1 或数值错误时的相关地址 |
 | `done_progress_o` | Output | 64 | 已收到成功写响应的目的元素数 |
-| `l1_req_valid_o` | Output | 1 | 单一 L1 请求有效 |
+| `l1_req_valid_o` | Output | 1 | L1 请求有效 |
 | `l1_req_ready_i` | Input | 1 | L1 接收请求 |
 | `l1_req_write_o` | Output | 1 | 0 为读，1 为写 |
 | `l1_req_addr_o` | Output | 20 | 向下对齐到 8B 的 L1 字节地址 |
@@ -3041,7 +3058,7 @@ IVE 只有这一组 L1 请求和响应信号。src0、src1、src2、mask、目�
 
 ### 12.3 指令展开得到的 IVE Task Context
 
-软件只填写第 6.7.4 节中的指令位段。内联解码器根据操作码和公共 dtype 组合出下表字段；这些字段用于说明模块接口和波形，不是软件表。
+软件只填写第 6.7.4 节中的指令位段。TaskScheduler 选中 IVE READY 任务后，IVE 发射解码器根据该任务保存的指令、提交时基地址快照、操作码和公共 dtype 组合出下表字段，并在选中周期末写入 IVE 发射暂存。这些字段用于说明模块接口和波形，不是任务表字段，也不是软件表。
 
 | Byte Offset | 内部字段 | 位宽 | 当前指令展开值或作用 |
 | ---: | --- | ---: | --- |
@@ -3189,7 +3206,7 @@ IVE 的主控制状态与 RTL 枚举一致：
 
 | 状态 | 动作 |
 | --- | --- |
-| `ST_IDLE` | `task_ready_o=1`；握手后锁存操作码和完整 Task Context |
+| `ST_IDLE` | `task_ready_o=1`；与 IVE 发射暂存握手后锁存操作码和完整 Task Context |
 | `ST_CHECK` | 检查结构编号、执行单元类型、有效字节数、dtype、shape、mask、地址和操作组合 |
 | `ST_MASK_REQ/RSP` | SELECT 读取一个 INT8 mask 字节 |
 | `ST_SRC0_REQ/RSP` | 读取并符号扩展 src0 |
@@ -3246,7 +3263,7 @@ Complex Math Engine（CME）接收整数张量，把元素转换成内部 IEEE 7
 
 ```mermaid
 flowchart LR
-    TS["TaskScheduler<br/>opcode + Task Context"]
+    TS["TaskScheduler<br/>CME 发射暂存"]
     CFSM["CME Control FSM<br/>row / column / phase"]
     L1C["L1BUF Controller"]
     CONV["整数取值<br/>符号扩展"]
@@ -3278,7 +3295,7 @@ flowchart LR
 | `task_valid_i`、`task_ready_o` | Input/Output | 各 1 | 任务握手；ready 仅在 `ST_IDLE` 为 1 |
 | `opcode_i` | Input | 8 | `0x80`、`0x81`、`0x82`、`0x84` 或 `0x86` |
 | `command_id_i` | Input | 12 | 内部任务编号 |
-| `desc_i` | Input | 2048 | 片上 Task Context |
+| `desc_i` | Input | 2048 | CME 发射暂存提供的当前任务 Task Context |
 | `done_valid_o`、`done_ready_i` | Output/Input | 各 1 | 完成握手 |
 | `done_status_o` | Output | 8 | 任务状态 |
 | `done_fault_addr_o` | Output | 48 | 首个失败相关地址 |
@@ -3296,7 +3313,7 @@ flowchart LR
 
 ### 13.3 指令展开得到的 CME Task Context
 
-内联解码器直接把第 6.7.5 节的指令位段展开为以下内部字段。正常指令的 `rows` 范围为 1～32，`length` 范围为 1～256，`valid_length` 固定等于 `length`。
+TaskScheduler 选中 CME READY 任务后，CME 发射解码器读取该任务保存的指令和提交时基地址快照，把第 6.7.5 节的指令位段展开为以下内部字段，并在选中周期末写入 CME 发射暂存。任务表不保存这些 2048 bit展开字段。正常指令的 `rows` 范围为 1～32，`length` 范围为 1～256，`valid_length` 固定等于 `length`。
 
 | Byte Offset | 内部字段 | 位宽 | 作用 |
 | ---: | --- | ---: | --- |
@@ -3550,7 +3567,7 @@ CME 外层状态机与当前 RTL 枚举一致：
 
 | 状态 | 动作 |
 | --- | --- |
-| `ST_IDLE` | 等待任务并锁存操作码与 Task Context |
+| `ST_IDLE` | 等待任务，与 CME 发射暂存握手后锁存操作码与 Task Context |
 | `ST_CHECK` | 检查操作、内部字段、dtype、shape、scale、mask、地址和函数组合 |
 | `ST_ROW_INIT` | 清零当前行的统计寄存器并选择初始 phase |
 | `ST_VLEN_REQ/RSP` | Softmax 读取当前行有效长度 |
@@ -3610,7 +3627,7 @@ sequenceDiagram
     participant MS as Math Sequencer
     participant FA as Shared FP32 ALU
 
-    TS->>CME: opcode + 2048-bit Task Context
+    TS->>CME: 发射暂存 valid + opcode + 2048-bit Task Context
     CME->>CME: ST_CHECK / ST_ROW_INIT
     loop 当前 phase 的每个元素
         CME->>L1: 8B 对齐读请求
@@ -4728,16 +4745,18 @@ L1BUF 在复位后不自动全区清零。任何任务读取一个 L1 地址前�
 
 | 阶段 | 模块 | 开始条件 | 完成条件 |
 | --- | --- | --- | --- |
-| 1. 提交 CMD | Generic Core / CFE | `rs1=CMD[63:0]`、`rs2=CMD[127:64]` 准备完成 | 低、高两个 beat 完成采样 |
-| 2. 接收 CMD | CFE | 两拍 CMD 完整 | 固定字段通过检查，完整 CMD 写入 FIFO |
-| 3. 读取描述符 | TS / DFU / MIF | 分配任务表项和描述符槽 | 描述符全部 64-bit beat 到达 |
-| 4. 检查描述符 | TS | 描述符完整 | 版本、地址、shape、stride、dtype 和 scale 合法 |
-| 5. 等待事件 | TS | 静态检查通过 | 依赖事件全部成功，或任一事件失败 |
-| 6. 发射 | TS / Engine | 单元 ready 且依赖成功 | `eng_req_valid && eng_req_ready` |
-| 7. 执行 | Engine / L1BUF / MIF | 单元取得任务 | 结果全部产生并写入目的地址 |
-| 8. 排空 | Engine | 不再产生结果 | 所有 L1 和 AXI 完成响应返回 |
-| 9. 提交终态 | TS / Event Table | 收到完整 done | 先写完整终态记录，再更新任务和事件终态 |
-| 10. 通知软件 | LSC | 终态记录与事件已经可见 | `NPU_WAIT` 返回或中断置位 |
+| 1. 提交指令 | Generic Core / AXI Slave | 指令低 64 bit与高 64 bit准备完成 | 固定地址 FIXED burst 的两个 beat 被前端接收 |
+| 2. CFE 排队 | CFE | 两个 beat 已组成完整指令 | 操作码和命令编号检查通过，128 bit指令进入 CFE FIFO |
+| 3. TS 接收 | TS / 接收检查解码器 | CFE 队首有效且任务表存在 FREE 项 | 保存指令、五个 48 bit基地址快照、20 bit L1 参数区基址、事件引用和状态字段 |
+| 4. 等待事件 | TS / Event Table | 接收阶段检查通过 | 依赖事件全部成功且顺序条件满足，或任一事件失败 |
+| 5. 选择与展开 | TS / 对应发射解码器 | 本类执行单元无活动任务、发射暂存为空且存在 READY 任务 | 选择最早提交的本类任务，组合产生 2048 bit Task Context |
+| 6. 写入发射暂存 | TS | 选择与展开结果有效 | 时钟沿保存任务表项编号、操作码、命令编号和 Task Context |
+| 7. 任务握手 | TS / Engine | 下一周期发射暂存置 `task_valid` | `task_valid && task_ready`，任务转为 RUNNING |
+| 8. 执行与排空 | Engine / L1BUF / MIF | 执行单元取得任务 | 结果全部产生，所有相关写响应返回 |
+| 9. 保存终态 | TS / Event Table | 收到完整 done | 先保存状态、错误地址和进度，再更新任务与事件终态 |
+| 10. 通知与释放 | TS / LSC / 软件 | 终态记录与事件已经可见 | 完成通知送达；软件查询后 ACK，任务表项回到 FREE |
+
+阶段 3 保存的是提交时基地址快照，而不是每任务一份 2048 bit展开结果。这样，已经进入 WAIT_EVENT 或 READY 的任务不会因软件后续改写基地址寄存器而改变实际访问地址。DMA、Matrix、Vector 和 Complex 各有自己的阶段 5 与阶段 6暂存；某个执行单元暂停接收时，其他执行单元仍可展开并接收各自任务。
 
 > [!important] 结果可见点
 > 执行单元内部得到最后一个计算结果不等于任务完成。只有最后一个目的写请求收到完成响应，任务才可以进入成功终态。
@@ -4921,7 +4940,7 @@ $$
 
 输入侧 bias $b_i=[b_{ir},b_{iz},b_{in}]$ 和状态侧 bias $b_h=[b_{hr},b_{hz},b_{hn}]$ 的 shape 都是 `[3H]`。Matrix 读取每组 bias 时，三个长度为 $H$ 的片段分别加到三段输出；同一组 `[3H]` bias 对全部 $B$ 行重复使用。
 
-PyTorch 的两组 GRU bias 可以分别保留为上述 $b_i,b_h$。Keras `reset_after=True` 常把两组 bias 保存为逻辑 shape `[2,3H]`，编译器拆成两个连续 `[3H]` 数组。门的实际存储次序可能是 R/Z/N 或 Z/R/N，编译器必须按模型框架的定义整理成描述符使用的次序。
+PyTorch 的两组 GRU bias 可以分别保留为上述 $b_i,b_h$。Keras `reset_after=True` 常把两组 bias 保存为逻辑 shape `[2,3H]`，编译器拆成两个连续 `[3H]` 数组。门的实际存储次序可能是 R/Z/N 或 Z/R/N，编译器必须按模型框架的定义整理成生成指令和权重数组时使用的次序。
 
 若模型使用 reset-before 公式：
 
