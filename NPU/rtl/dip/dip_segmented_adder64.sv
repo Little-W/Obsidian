@@ -5,7 +5,6 @@ module dip_segmented_adder64 (
   output logic [63:0] sum_o
 );
 
-  localparam logic [1:0] MODE_INT16 = 2'b00;
   localparam logic [1:0] MODE_INT8  = 2'b01;
   localparam logic [1:0] MODE_INT4  = 2'b10;
 
@@ -17,29 +16,21 @@ module dip_segmented_adder64 (
   generate
     for (genvar nibble = 0; nibble < 16; nibble++) begin : gen_add4
       if (nibble > 0) begin : gen_carry_input
-        always_comb begin
-          // Carry is cut at the start of every independent accumulator lane:
-          //   INT16: one 64-bit lane
-          //   INT8 : two 32-bit lanes
-          //   INT4 : four 16-bit lanes
-          case (mode_i)
-            MODE_INT8:
-              nibble_carry_in[nibble] =
-                (nibble == 8) ? 1'b0 :
-                                unused_nibble_carry_out[nibble-1];
-            MODE_INT4:
-              nibble_carry_in[nibble] =
-                ((nibble == 4) ||
-                 (nibble == 8) ||
-                 (nibble == 12)) ? 1'b0 :
-                                   unused_nibble_carry_out[nibble-1];
-            MODE_INT16:
-              nibble_carry_in[nibble] =
-                unused_nibble_carry_out[nibble-1];
-            default:
-              nibble_carry_in[nibble] =
-                unused_nibble_carry_out[nibble-1];
-          endcase
+        /*
+         * Carry control is needed only where an accumulator lane can start.
+         * Every other 4-bit slice connects directly to the preceding carry.
+         */
+        if ((nibble == 4) || (nibble == 12)) begin : gen_int4_cut
+          assign nibble_carry_in[nibble] =
+            (mode_i == MODE_INT4) ? 1'b0 :
+                                    unused_nibble_carry_out[nibble-1];
+        end else if (nibble == 8) begin : gen_int4_int8_cut
+          assign nibble_carry_in[nibble] =
+            ((mode_i == MODE_INT4) || (mode_i == MODE_INT8)) ? 1'b0 :
+              unused_nibble_carry_out[nibble-1];
+        end else begin : gen_direct_carry
+          assign nibble_carry_in[nibble] =
+            unused_nibble_carry_out[nibble-1];
         end
       end
 

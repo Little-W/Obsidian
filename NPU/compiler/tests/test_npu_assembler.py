@@ -124,6 +124,55 @@ class AssemblerTests(unittest.TestCase):
         self.assertEqual((matrix.payload >> 5) & 0x3, 3)
         self.assertEqual(matrix.payload & 0x1F, 0)
 
+    def test_l1_aref_rejects_addresses_above_the_20_bit_l1_space(self) -> None:
+        target = {"axi_addr_bits": 40}
+        self.assertEqual(
+            npu_assembler.encode_aref(
+                {"addr": 0xFFFFF, "space": "l1", "dtype": "int8"},
+                target,
+                "tensor",
+            ),
+            0xFFFFF,
+        )
+        with self.assertRaisesRegex(
+            npu_assembler.CompileError, "20-bit byte address"
+        ):
+            npu_assembler.encode_aref(
+                {"addr": 0x100000, "space": "l1", "dtype": "int8"},
+                target,
+                "tensor",
+            )
+
+    def test_dma_destination_high_nibble_is_rejected(self) -> None:
+        tensors = {
+            "src": {"addr": 0x100, "space": "l1", "dtype": "int4"},
+            "dst": {"addr": 0x200, "space": "l1", "dtype": "int4"},
+        }
+        common = {"src0": "src", "dst": "dst"}
+        target = {"axi_addr_bits": 40}
+        with self.assertRaisesRegex(
+            npu_assembler.CompileError, "must be zero for COPY"
+        ):
+            npu_assembler.encode_dma_payload(
+                "COPY_1D",
+                common,
+                {"shape": [4], "count": 4, "dst_nibble": 1},
+                tensors,
+                target,
+                "copy",
+            )
+        with self.assertRaisesRegex(
+            npu_assembler.CompileError, "must be zero for TRANSPOSE_2D"
+        ):
+            npu_assembler.encode_dma_payload(
+                "TRANSPOSE_2D",
+                common,
+                {"shape": [2, 2], "dst_nibble": 1},
+                tensors,
+                target,
+                "transpose",
+            )
+
     def test_control_event_rearm_uses_signal_field(self) -> None:
         document = {
             "schema_version": 1,

@@ -220,9 +220,6 @@ module npu_task_scheduler #(
 
   logic control_select_found;
   logic [TASK_IDX_W-1:0] control_select;
-  logic decode_select_found;
-  logic [TASK_IDX_W-1:0] decode_select;
-  logic [3:0] decode_select_engine;
 
   logic dependency_success [TASK_SLOTS];
   logic dependency_failed  [TASK_SLOTS];
@@ -268,6 +265,18 @@ module npu_task_scheduler #(
   logic [47:0] decode_pending_kv_base_q;
   logic [19:0] decode_pending_param_l1_base_q;
   logic [2047:0] decode_pending_desc_flat;
+  logic decode_scan_active_q;
+  logic [TASK_IDX_W-1:0] decode_scan_slot_q;
+  logic decode_scan_best_valid_q;
+  logic [TASK_IDX_W-1:0] decode_scan_best_slot_q;
+  logic [63:0] decode_scan_best_seq_q;
+  logic [3:0] decode_scan_current_engine;
+  logic decode_scan_current_eligible;
+  logic decode_scan_best_eligible;
+  logic decode_scan_winner_valid;
+  logic [TASK_IDX_W-1:0] decode_scan_winner_slot;
+  logic [3:0] decode_scan_winner_engine;
+  logic decode_pending_task_valid;
   logic [11:0] control_rearm_current_ref;
   logic [3:0] control_rearm_next_generation;
 
@@ -378,6 +387,23 @@ module npu_task_scheduler #(
       NPU_ENGINE_VECTOR:  return engine_mask[2];
       NPU_ENGINE_COMPLEX: return engine_mask[3];
       default:            return 1'b0;
+    endcase
+  endfunction
+
+  function automatic logic dispatch_engine_available(
+    input logic [3:0] engine
+  );
+    unique case (engine)
+      NPU_ENGINE_DMA:
+        return !dma_active_q && !dma_dispatch_valid_q;
+      NPU_ENGINE_MATRIX:
+        return !matrix_active_q && !matrix_dispatch_valid_q;
+      NPU_ENGINE_VECTOR:
+        return !vector_active_q && !vector_dispatch_valid_q;
+      NPU_ENGINE_COMPLEX:
+        return !complex_active_q && !complex_dispatch_valid_q;
+      default:
+        return 1'b0;
     endcase
   endfunction
 
@@ -572,18 +598,41 @@ module npu_task_scheduler #(
 
   always_comb begin
     for (int unsigned slot = 0; slot < TASK_SLOTS; slot++) begin
-      dependency_success[slot] =
-        event_is_success(task_wait0_q[slot])
-        && event_is_success(task_wait1_q[slot]);
-      dependency_failed[slot] =
-        event_is_failed(task_wait0_q[slot])
-        || event_is_failed(task_wait1_q[slot]);
+      if ((task_engine_q[slot] == NPU_ENGINE_CONTROL) &&
+          (task_opcode_q[slot] == NPU_OPCODE_EVENT_JOIN) &&
+          task_cmd_q[slot][75]) begin
+        dependency_success[slot] =
+          event_is_success(task_wait0_q[slot])
+          || event_is_success(task_wait1_q[slot]);
+        dependency_failed[slot] =
+          event_is_failed(task_wait0_q[slot])
+          && event_is_failed(task_wait1_q[slot]);
+      end else begin
+        dependency_success[slot] =
+          event_is_success(task_wait0_q[slot])
+          && event_is_success(task_wait1_q[slot]);
+        dependency_failed[slot] =
+          event_is_failed(task_wait0_q[slot])
+          || event_is_failed(task_wait1_q[slot]);
+      end
       order_blocked[slot] = 1'b0;
-      if (task_header_flags_q[slot][4] ||
+      if (task_header_flags_q[slot][4]) begin
+        for (int unsigned prior = 0; prior < TASK_SLOTS; prior++) begin
+          if ((task_state_q[prior] != NPU_TASK_FREE) &&
+              (task_submit_seq_q[prior] < task_submit_seq_q[slot]) &&
+              !terminal_state(task_state_q[prior])) begin
+            order_blocked[slot] = 1'b1;
+          end
+        end
+      end
+      if ((task_engine_q[slot] == NPU_ENGINE_CONTROL) &&
           (task_opcode_q[slot] == NPU_OPCODE_GLOBAL_FENCE)) begin
         for (int unsigned prior = 0; prior < TASK_SLOTS; prior++) begin
           if ((task_state_q[prior] != NPU_TASK_FREE) &&
               (task_submit_seq_q[prior] < task_submit_seq_q[slot]) &&
+              engine_mask_selected(
+                task_engine_q[prior], task_cmd_q[slot][79:76]
+              ) &&
               !terminal_state(task_state_q[prior])) begin
             order_blocked[slot] = 1'b1;
           end
@@ -601,6 +650,46 @@ module npu_task_scheduler #(
     end
   end
 
+  /*
+   * Non-control tasks use a registered slot scan.  One slot is inspected per
+   * cycle, and only the smallest submit sequence seen during the scan is
+   * retained.  The final cycle compares the last slot with the saved
+   * candidate and snapshots the winning task for the shared decoder.
+   */
+  always_comb begin
+    decode_scan_current_engine =
+      task_engine_q[decode_scan_slot_q];
+    decode_scan_current_eligible =
+      (task_state_q[decode_scan_slot_q] == NPU_TASK_READY) &&
+      !order_blocked[decode_scan_slot_q] &&
+      dispatch_engine_available(decode_scan_current_engine);
+
+    decode_scan_best_eligible =
+      decode_scan_best_valid_q &&
+      (task_state_q[decode_scan_best_slot_q] == NPU_TASK_READY) &&
+      !order_blocked[decode_scan_best_slot_q] &&
+      dispatch_engine_available(task_engine_q[decode_scan_best_slot_q]);
+
+    decode_scan_winner_valid  = decode_scan_best_eligible;
+    decode_scan_winner_slot   = decode_scan_best_slot_q;
+    decode_scan_winner_engine =
+      task_engine_q[decode_scan_best_slot_q];
+    if (decode_scan_current_eligible &&
+        (!decode_scan_winner_valid ||
+         (task_submit_seq_q[decode_scan_slot_q] <
+          decode_scan_best_seq_q))) begin
+      decode_scan_winner_valid  = 1'b1;
+      decode_scan_winner_slot   = decode_scan_slot_q;
+      decode_scan_winner_engine = decode_scan_current_engine;
+    end
+
+    decode_pending_task_valid =
+      (task_state_q[decode_pending_slot_q] == NPU_TASK_READY) &&
+      (task_engine_q[decode_pending_slot_q] ==
+       decode_pending_engine_q) &&
+      !order_blocked[decode_pending_slot_q];
+  end
+
   always_comb begin
     completion_found    = 1'b0;
     completion_select   = '0;
@@ -608,9 +697,6 @@ module npu_task_scheduler #(
     event_publish_select = '0;
     control_select_found = 1'b0;
     control_select      = '0;
-    decode_select_found  = 1'b0;
-    decode_select        = '0;
-    decode_select_engine = NPU_ENGINE_CONTROL;
 
     for (int unsigned slot = 0; slot < TASK_SLOTS; slot++) begin
       if (task_notify_q[slot] &&
@@ -633,58 +719,14 @@ module npu_task_scheduler #(
         event_publish_select = TASK_IDX_W'(slot);
       end
       if ((task_state_q[slot] == NPU_TASK_READY) && !order_blocked[slot]) begin
-        unique case (task_engine_q[slot])
-          NPU_ENGINE_CONTROL: begin
-            if (!control_select_found ||
-                (task_submit_seq_q[slot] <
-                 task_submit_seq_q[control_select])) begin
-              control_select_found = 1'b1;
-              control_select       = TASK_IDX_W'(slot);
-            end
+        if (task_engine_q[slot] == NPU_ENGINE_CONTROL) begin
+          if (!control_select_found ||
+              (task_submit_seq_q[slot] <
+               task_submit_seq_q[control_select])) begin
+            control_select_found = 1'b1;
+            control_select       = TASK_IDX_W'(slot);
           end
-          NPU_ENGINE_DMA: begin
-            if (!dma_active_q && !dma_dispatch_valid_q &&
-                (!decode_select_found ||
-                 (task_submit_seq_q[slot] <
-                  task_submit_seq_q[decode_select]))) begin
-              decode_select_found  = 1'b1;
-              decode_select        = TASK_IDX_W'(slot);
-              decode_select_engine = NPU_ENGINE_DMA;
-            end
-          end
-          NPU_ENGINE_MATRIX: begin
-            if (!matrix_active_q && !matrix_dispatch_valid_q &&
-                (!decode_select_found ||
-                 (task_submit_seq_q[slot] <
-                  task_submit_seq_q[decode_select]))) begin
-              decode_select_found  = 1'b1;
-              decode_select        = TASK_IDX_W'(slot);
-              decode_select_engine = NPU_ENGINE_MATRIX;
-            end
-          end
-          NPU_ENGINE_VECTOR: begin
-            if (!vector_active_q && !vector_dispatch_valid_q &&
-                (!decode_select_found ||
-                 (task_submit_seq_q[slot] <
-                  task_submit_seq_q[decode_select]))) begin
-              decode_select_found  = 1'b1;
-              decode_select        = TASK_IDX_W'(slot);
-              decode_select_engine = NPU_ENGINE_VECTOR;
-            end
-          end
-          NPU_ENGINE_COMPLEX: begin
-            if (!complex_active_q && !complex_dispatch_valid_q &&
-                (!decode_select_found ||
-                 (task_submit_seq_q[slot] <
-                  task_submit_seq_q[decode_select]))) begin
-              decode_select_found  = 1'b1;
-              decode_select        = TASK_IDX_W'(slot);
-              decode_select_engine = NPU_ENGINE_COMPLEX;
-            end
-          end
-          default: begin
-          end
-        endcase
+        end
       end
     end
   end
@@ -809,6 +851,11 @@ module npu_task_scheduler #(
       vector_dispatch_valid_q    <= 1'b0;
       complex_dispatch_valid_q   <= 1'b0;
       decode_pending_valid_q     <= 1'b0;
+      decode_scan_active_q       <= 1'b0;
+      decode_scan_slot_q         <= '0;
+      decode_scan_best_valid_q   <= 1'b0;
+      decode_scan_best_slot_q    <= '0;
+      decode_scan_best_seq_q     <= 64'd0;
       completion_hold_valid_q    <= 1'b0;
       completion_hold_slot_q     <= '0;
       event_publish_pending_valid_q <= 1'b0;
@@ -897,7 +944,7 @@ module npu_task_scheduler #(
         unique case (axi_ctl_op_i)
           NPU_CTL_QUERY: begin
             ctl_rsp_valid_q <= 1'b1;
-            if ((|axi_ctl_arg0_i[63:12])
+            if ((|axi_ctl_arg0_i[63:10])
                 || (|axi_ctl_arg1_i[63:3])
                 || (axi_ctl_arg1_i[2:0] == 3'd7)) begin
               ctl_rsp_data_q <= {56'd0, NPU_STATUS_BAD_DESC};
@@ -1179,63 +1226,140 @@ module npu_task_scheduler #(
       end
 
       if (decode_pending_valid_q && !abort_i) begin
-        unique case (decode_pending_engine_q)
-          NPU_ENGINE_DMA: begin
-            if (!dma_active_q && !dma_dispatch_valid_q) begin
-              dma_dispatch_valid_q      <= 1'b1;
-              dma_dispatch_slot_q       <= decode_pending_slot_q;
-              dma_dispatch_opcode_q     <= decode_pending_opcode_q;
-              dma_dispatch_command_id_q <= decode_pending_command_id_q;
-              dma_dispatch_desc_q       <= decode_pending_desc_flat;
-              decode_pending_valid_q    <= 1'b0;
+        decode_scan_active_q     <= 1'b0;
+        decode_scan_slot_q       <= '0;
+        decode_scan_best_valid_q <= 1'b0;
+        if (!decode_pending_task_valid) begin
+          decode_pending_valid_q <= 1'b0;
+        end else begin
+          unique case (decode_pending_engine_q)
+            NPU_ENGINE_DMA: begin
+              if (!dma_active_q && !dma_dispatch_valid_q) begin
+                dma_dispatch_valid_q      <= 1'b1;
+                dma_dispatch_slot_q       <= decode_pending_slot_q;
+                dma_dispatch_opcode_q     <= decode_pending_opcode_q;
+                dma_dispatch_command_id_q <= decode_pending_command_id_q;
+                dma_dispatch_desc_q       <= decode_pending_desc_flat;
+                decode_pending_valid_q    <= 1'b0;
+              end
+            end
+            NPU_ENGINE_MATRIX: begin
+              if (!matrix_active_q && !matrix_dispatch_valid_q) begin
+                matrix_dispatch_valid_q      <= 1'b1;
+                matrix_dispatch_slot_q       <= decode_pending_slot_q;
+                matrix_dispatch_opcode_q     <= decode_pending_opcode_q;
+                matrix_dispatch_command_id_q <= decode_pending_command_id_q;
+                matrix_dispatch_desc_q       <= decode_pending_desc_flat;
+                decode_pending_valid_q       <= 1'b0;
+              end
+            end
+            NPU_ENGINE_VECTOR: begin
+              if (!vector_active_q && !vector_dispatch_valid_q) begin
+                vector_dispatch_valid_q      <= 1'b1;
+                vector_dispatch_slot_q       <= decode_pending_slot_q;
+                vector_dispatch_opcode_q     <= decode_pending_opcode_q;
+                vector_dispatch_command_id_q <= decode_pending_command_id_q;
+                vector_dispatch_desc_q       <= decode_pending_desc_flat;
+                decode_pending_valid_q       <= 1'b0;
+              end
+            end
+            NPU_ENGINE_COMPLEX: begin
+              if (!complex_active_q && !complex_dispatch_valid_q) begin
+                complex_dispatch_valid_q      <= 1'b1;
+                complex_dispatch_slot_q       <= decode_pending_slot_q;
+                complex_dispatch_opcode_q     <= decode_pending_opcode_q;
+                complex_dispatch_command_id_q <= decode_pending_command_id_q;
+                complex_dispatch_desc_q       <= decode_pending_desc_flat;
+                decode_pending_valid_q        <= 1'b0;
+              end
+            end
+            default: decode_pending_valid_q <= 1'b0;
+          endcase
+        end
+      end else if (!abort_i) begin
+        if (!decode_scan_active_q) begin
+          if (TASK_SLOTS == 1) begin
+            if (decode_scan_winner_valid) begin
+              decode_pending_valid_q      <= 1'b1;
+              decode_pending_engine_q     <= decode_scan_winner_engine;
+              decode_pending_slot_q       <= decode_scan_winner_slot;
+              decode_pending_opcode_q     <=
+                task_opcode_q[decode_scan_winner_slot];
+              decode_pending_command_id_q <=
+                task_command_id_q[decode_scan_winner_slot];
+              decode_pending_cmd_q        <=
+                task_cmd_q[decode_scan_winner_slot];
+              decode_pending_input_base_q <=
+                task_input_base_q[decode_scan_winner_slot];
+              decode_pending_weight_base_q <=
+                task_weight_base_q[decode_scan_winner_slot];
+              decode_pending_work_base_q <=
+                task_work_base_q[decode_scan_winner_slot];
+              decode_pending_output_base_q <=
+                task_output_base_q[decode_scan_winner_slot];
+              decode_pending_kv_base_q <=
+                task_kv_base_q[decode_scan_winner_slot];
+              decode_pending_param_l1_base_q <=
+                task_param_l1_base_q[decode_scan_winner_slot];
+            end
+            decode_scan_slot_q       <= '0;
+            decode_scan_best_valid_q <= 1'b0;
+          end else begin
+            decode_scan_active_q     <= 1'b1;
+            decode_scan_slot_q       <= TASK_IDX_W'(1);
+            decode_scan_best_valid_q <= decode_scan_current_eligible;
+            if (decode_scan_current_eligible) begin
+              decode_scan_best_slot_q <= decode_scan_slot_q;
+              decode_scan_best_seq_q  <=
+                task_submit_seq_q[decode_scan_slot_q];
             end
           end
-          NPU_ENGINE_MATRIX: begin
-            if (!matrix_active_q && !matrix_dispatch_valid_q) begin
-              matrix_dispatch_valid_q      <= 1'b1;
-              matrix_dispatch_slot_q       <= decode_pending_slot_q;
-              matrix_dispatch_opcode_q     <= decode_pending_opcode_q;
-              matrix_dispatch_command_id_q <= decode_pending_command_id_q;
-              matrix_dispatch_desc_q       <= decode_pending_desc_flat;
-              decode_pending_valid_q       <= 1'b0;
-            end
+        end else if (decode_scan_slot_q ==
+                     TASK_IDX_W'(TASK_SLOTS - 1)) begin
+          if (decode_scan_winner_valid) begin
+            decode_pending_valid_q      <= 1'b1;
+            decode_pending_engine_q     <= decode_scan_winner_engine;
+            decode_pending_slot_q       <= decode_scan_winner_slot;
+            decode_pending_opcode_q     <=
+              task_opcode_q[decode_scan_winner_slot];
+            decode_pending_command_id_q <=
+              task_command_id_q[decode_scan_winner_slot];
+            decode_pending_cmd_q        <=
+              task_cmd_q[decode_scan_winner_slot];
+            decode_pending_input_base_q <=
+              task_input_base_q[decode_scan_winner_slot];
+            decode_pending_weight_base_q <=
+              task_weight_base_q[decode_scan_winner_slot];
+            decode_pending_work_base_q <=
+              task_work_base_q[decode_scan_winner_slot];
+            decode_pending_output_base_q <=
+              task_output_base_q[decode_scan_winner_slot];
+            decode_pending_kv_base_q <=
+              task_kv_base_q[decode_scan_winner_slot];
+            decode_pending_param_l1_base_q <=
+              task_param_l1_base_q[decode_scan_winner_slot];
           end
-          NPU_ENGINE_VECTOR: begin
-            if (!vector_active_q && !vector_dispatch_valid_q) begin
-              vector_dispatch_valid_q      <= 1'b1;
-              vector_dispatch_slot_q       <= decode_pending_slot_q;
-              vector_dispatch_opcode_q     <= decode_pending_opcode_q;
-              vector_dispatch_command_id_q <= decode_pending_command_id_q;
-              vector_dispatch_desc_q       <= decode_pending_desc_flat;
-              decode_pending_valid_q       <= 1'b0;
+          decode_scan_active_q     <= 1'b0;
+          decode_scan_slot_q       <= '0;
+          decode_scan_best_valid_q <= 1'b0;
+        end else begin
+          decode_scan_slot_q <= decode_scan_slot_q + 1'b1;
+          if (!decode_scan_best_eligible) begin
+            decode_scan_best_valid_q <= decode_scan_current_eligible;
+            if (decode_scan_current_eligible) begin
+              decode_scan_best_slot_q <= decode_scan_slot_q;
+              decode_scan_best_seq_q  <=
+                task_submit_seq_q[decode_scan_slot_q];
             end
+          end else if (decode_scan_current_eligible &&
+                       (task_submit_seq_q[decode_scan_slot_q] <
+                        decode_scan_best_seq_q)) begin
+            decode_scan_best_valid_q <= 1'b1;
+            decode_scan_best_slot_q  <= decode_scan_slot_q;
+            decode_scan_best_seq_q   <=
+              task_submit_seq_q[decode_scan_slot_q];
           end
-          NPU_ENGINE_COMPLEX: begin
-            if (!complex_active_q && !complex_dispatch_valid_q) begin
-              complex_dispatch_valid_q      <= 1'b1;
-              complex_dispatch_slot_q       <= decode_pending_slot_q;
-              complex_dispatch_opcode_q     <= decode_pending_opcode_q;
-              complex_dispatch_command_id_q <= decode_pending_command_id_q;
-              complex_dispatch_desc_q       <= decode_pending_desc_flat;
-              decode_pending_valid_q        <= 1'b0;
-            end
-          end
-          default: decode_pending_valid_q <= 1'b0;
-        endcase
-      end else if (decode_select_found && !abort_i) begin
-        decode_pending_valid_q         <= 1'b1;
-        decode_pending_engine_q        <= decode_select_engine;
-        decode_pending_slot_q          <= decode_select;
-        decode_pending_opcode_q        <= task_opcode_q[decode_select];
-        decode_pending_command_id_q    <= task_command_id_q[decode_select];
-        decode_pending_cmd_q           <= task_cmd_q[decode_select];
-        decode_pending_input_base_q    <= task_input_base_q[decode_select];
-        decode_pending_weight_base_q   <= task_weight_base_q[decode_select];
-        decode_pending_work_base_q     <= task_work_base_q[decode_select];
-        decode_pending_output_base_q   <= task_output_base_q[decode_select];
-        decode_pending_kv_base_q       <= task_kv_base_q[decode_select];
-        decode_pending_param_l1_base_q <=
-          task_param_l1_base_q[decode_select];
+        end
       end
 
       if (dma_task_valid_o && dma_task_ready_i) begin
@@ -1438,6 +1562,9 @@ module npu_task_scheduler #(
         vector_dispatch_valid_q  <= 1'b0;
         complex_dispatch_valid_q <= 1'b0;
         decode_pending_valid_q   <= 1'b0;
+        decode_scan_active_q     <= 1'b0;
+        decode_scan_slot_q       <= '0;
+        decode_scan_best_valid_q <= 1'b0;
         for (int unsigned slot = 0; slot < TASK_SLOTS; slot++) begin
           if ((task_state_q[slot] != NPU_TASK_FREE) &&
               !terminal_state(task_state_q[slot])) begin

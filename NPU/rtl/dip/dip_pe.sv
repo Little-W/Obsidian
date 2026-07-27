@@ -6,6 +6,7 @@ module dip_pe (
   input  logic               wshift_i,
   input  logic               pe_en_i,
   input  logic               mul_en_i,
+  input  logic               reassemble_en_i,
   input  logic               reduce_en_i,
   input  logic               adder_en_i,
 
@@ -53,6 +54,7 @@ module dip_pe (
     .clk_i(clk_i),
     .reset_n(reset_n),
     .mul_en_i(mul_en_i),
+    .reassemble_en_i(reassemble_en_i),
     .reduce_en_i(reduce_en_i),
     .mode_i(data_mode_q),
     .data_i(data_q),
@@ -80,37 +82,29 @@ module dip_pe (
     endcase
   end
 
-  always_ff @(posedge clk_i or negedge reset_n) begin
-    if (!reset_n) begin
-      data_q <= '0;
-      data_mode_q <= MODE_INT16;
-      for (integer depth = 0; depth < 4; depth++)
-        weight_q[depth] <= '0;
-      psum_q <= '0;
-    end else begin
-      if (wshift_i) begin
-        weight_q[0] <= weight_i;
-        case (sanitized_mode)
-          MODE_INT8:
-            weight_q[1] <= weight_q[0];
-          MODE_INT4: begin
-            weight_q[1] <= weight_q[0];
-            weight_q[2] <= weight_q[1];
-            weight_q[3] <= weight_q[2];
-          end
-          default: begin
-          end
-        endcase
-      end
-
-      if (pe_en_i) begin
-        data_q <= data_i;
-        data_mode_q <= sanitized_mode;
-      end
-
-      if (adder_en_i)
-        psum_q <= psum_comb;
+  always_ff @(posedge clk_i) begin
+    if (wshift_i) begin
+      weight_q[0] <= weight_i;
+      case (sanitized_mode)
+        MODE_INT8:
+          weight_q[1] <= weight_q[0];
+        MODE_INT4: begin
+          weight_q[1] <= weight_q[0];
+          weight_q[2] <= weight_q[1];
+          weight_q[3] <= weight_q[2];
+        end
+        default: begin
+        end
+      endcase
     end
+
+    if (pe_en_i) begin
+      data_q <= data_i;
+      data_mode_q <= sanitized_mode;
+    end
+
+    if (adder_en_i)
+      psum_q <= psum_comb;
   end
 
 endmodule

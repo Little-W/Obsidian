@@ -16,8 +16,10 @@ module tb_dip_gemm_n1;
   logic c_valid;
   logic c_last;
   logic [31:0] c_row;
+  logic [255:0] c_accum_row;
   logic busy;
   logic done;
+  wire unused_c_accum_row = ^c_accum_row;
 
   dip_gemm_core #(
     .ARRAY_N(ARRAY_N)
@@ -34,6 +36,7 @@ module tb_dip_gemm_n1;
     .c_row_valid_o(c_valid),
     .c_row_last_o(c_last),
     .c_row_o(c_row),
+    .c_accum_row_o(c_accum_row),
     .busy_o(busy),
     .tile_done_o(done)
   );

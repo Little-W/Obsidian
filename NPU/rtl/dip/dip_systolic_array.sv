@@ -12,7 +12,8 @@ module dip_systolic_array #(
   input  logic [ARRAY_N * 16 - 1:0]     data_row_i,
 
   output logic                          result_valid_o,
-  output logic [ARRAY_N * 32 - 1:0]     result_row_o
+  output logic [ARRAY_N * 32 - 1:0]     result_row_o,
+  output logic [ARRAY_N * 4 * 64 - 1:0] result_accum_row_o
 );
 
   localparam logic [1:0] MODE_INT16 = 2'd0;
@@ -28,17 +29,20 @@ module dip_systolic_array #(
 
   logic [ARRAY_N-1:0] data_valid_q;
   logic [ARRAY_N-1:0] product_valid_q;
+  logic [ARRAY_N-1:0] logical_product_valid_q;
   logic [ARRAY_N-1:0] contribution_valid_q;
   logic [ARRAY_N-1:0] psum_valid_q;
   logic [ARRAY_N-1:0] pe_en;
   logic [ARRAY_N-1:0] mul_en;
+  logic [ARRAY_N-1:0] reassemble_en;
   logic [ARRAY_N-1:0] reduce_en;
   logic [ARRAY_N-1:0] adder_en;
   logic unused_bottom_forwarding;
 
   assign pe_en[0] = data_valid_i;
   assign mul_en = data_valid_q;
-  assign reduce_en = product_valid_q;
+  assign reassemble_en = product_valid_q;
+  assign reduce_en = logical_product_valid_q;
   assign adder_en[0] = contribution_valid_q[0];
 
   generate
@@ -53,12 +57,14 @@ module dip_systolic_array #(
     if (!reset_n) begin
       data_valid_q <= '0;
       product_valid_q <= '0;
+      logical_product_valid_q <= '0;
       contribution_valid_q <= '0;
       psum_valid_q <= '0;
     end else begin
       data_valid_q[0] <= data_valid_i;
       product_valid_q <= data_valid_q;
-      contribution_valid_q <= product_valid_q;
+      logical_product_valid_q <= product_valid_q;
+      contribution_valid_q <= logical_product_valid_q;
       psum_valid_q[0] <= contribution_valid_q[0];
 
       for (int row = 1; row < ARRAY_N; row++) begin
@@ -100,6 +106,7 @@ module dip_systolic_array #(
           .wshift_i(weight_valid_i),
           .pe_en_i(pe_en[row]),
           .mul_en_i(mul_en[row]),
+          .reassemble_en_i(reassemble_en[row]),
           .reduce_en_i(reduce_en[row]),
           .adder_en_i(adder_en[row]),
           .data_i(data_to_pe[row][col]),
@@ -118,10 +125,13 @@ module dip_systolic_array #(
     for (genvar col = 0; col < ARRAY_N; col++) begin : gen_result_bus
       always_comb begin
         result_row_o[col * 32 +: 32] = '0;
+        result_accum_row_o[col * 4 * 64 +: 4 * 64] = '0;
         case (mode_i)
           MODE_INT16: begin
             result_row_o[col * 32 +: 32] =
               psum_from_pe[ARRAY_N-1][col][31:0];
+            result_accum_row_o[col * 4 * 64 +: 64] =
+              psum_from_pe[ARRAY_N-1][col];
           end
 
           MODE_INT8: begin
@@ -129,6 +139,12 @@ module dip_systolic_array #(
               psum_from_pe[ARRAY_N-1][col][15:0];
             result_row_o[col * 32 + 16 +: 16] =
               psum_from_pe[ARRAY_N-1][col][32 +: 16];
+            result_accum_row_o[col * 4 * 64 +: 64] =
+              {{32{psum_from_pe[ARRAY_N-1][col][31]}},
+               psum_from_pe[ARRAY_N-1][col][31:0]};
+            result_accum_row_o[col * 4 * 64 + 64 +: 64] =
+              {{32{psum_from_pe[ARRAY_N-1][col][63]}},
+               psum_from_pe[ARRAY_N-1][col][63:32]};
           end
 
           MODE_INT4: begin
@@ -140,6 +156,18 @@ module dip_systolic_array #(
               psum_from_pe[ARRAY_N-1][col][32 +: 8];
             result_row_o[col * 32 + 24 +: 8] =
               psum_from_pe[ARRAY_N-1][col][48 +: 8];
+            result_accum_row_o[col * 4 * 64 +: 64] =
+              {{48{psum_from_pe[ARRAY_N-1][col][15]}},
+               psum_from_pe[ARRAY_N-1][col][15:0]};
+            result_accum_row_o[col * 4 * 64 + 64 +: 64] =
+              {{48{psum_from_pe[ARRAY_N-1][col][31]}},
+               psum_from_pe[ARRAY_N-1][col][31:16]};
+            result_accum_row_o[col * 4 * 64 + 128 +: 64] =
+              {{48{psum_from_pe[ARRAY_N-1][col][47]}},
+               psum_from_pe[ARRAY_N-1][col][47:32]};
+            result_accum_row_o[col * 4 * 64 + 192 +: 64] =
+              {{48{psum_from_pe[ARRAY_N-1][col][63]}},
+               psum_from_pe[ARRAY_N-1][col][63:48]};
           end
 
           default: begin

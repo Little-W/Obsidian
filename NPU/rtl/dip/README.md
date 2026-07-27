@@ -6,9 +6,9 @@
 
 每个物理 PE 固定实例化 16 个 4×4 基础乘法器。模式降低输入位宽后，同一组乘法器分别组成 1 个 16×16、4 个 8×8 或 16 个 4×4 逻辑乘法。局部贡献使用 1×64 bit、2×32 bit 或 4×16 bit 的临时累加格式，阵列底部再截取为 1×INT32、2×INT16 或 4×INT8。
 
-当前 PE 采用三级算术流水：基础乘积寄存、radix 重组与局部 K 求和寄存、分段累加寄存。权重在计算前装入 PE 并保持不变；数据与部分和在物理行之间各延迟一拍。Python 黄金模型、定向测试和 Verilator 全阵列测试覆盖三种模式、随机 GEMM、极值、valid 空拍、连续 tile 与 \(N=1\) 特例。
+当前 PE 采用四级算术寄存：基础乘积寄存、逻辑乘积重组寄存、局部 K 求和寄存、分段累加寄存。权重在计算前装入 PE 并保持不变；数据与部分和在物理行之间各延迟一拍。Python 黄金模型、定向测试和 Verilator 全阵列测试覆盖三种模式、随机 GEMM、极值、valid 空拍、连续 tile 与 \(N=1\) 特例。
 
-文中插图依据论文 Fig. 2、Fig. 3 及当前 RTL 重新绘制。论文 3×3 图用于说明 DiP 的基本计算关系；三级流水、多 lane 和三种精度的逐拍阵列快照均以本目录 RTL 为准。
+文中插图依据论文 Fig. 2、Fig. 3 及当前 RTL 重新绘制。论文 3×3 图用于说明 DiP 的基本计算关系；四级算术寄存、多 lane 和三种精度的逐周期独立图均以本目录 RTL 为准。
 
 ## 1. 设计参数与实现结果
 
@@ -76,6 +76,7 @@ $$
 | 权重装载 | 16 bit | \(16N\) bit |
 | PE 间部分和 | 64 bit | \(64N\) bit |
 | C 输出 | 32 bit | \(32N\) bit |
+| 完整临时结果输出 | 4×64 bit | \(256N\) bit |
 
 物理字的 lane 0 位于最低位。对物理列 \(C\) 和 lane \(v\)，A、原始 B 与 C 的位段分别为
 
@@ -102,12 +103,12 @@ $$
 
 ### 2.1 执行次序
 
-| 阶段 | 接收或产生的内容 | 拍数 | 关键行为 |
-|---|---|---:|---|
-| B 接收 | 原始 B 的 \(L\) 行 | \(L\) | 第一个 B 行握手时锁存模式 |
-| 权重装载 | \(P_{L-1},\ldots,P_0\) | \(L\) | 每个物理列独立向下移位 |
-| A 接收 | A 的 \(L\) 行 | \(L\) | 最后一个权重拍可与第一个 A 行同拍接收 |
-| 计算与排出 | C 的 \(L\) 行 | 与阵列流水重叠 | 结果按 A 的行号顺序连续输出 |
+| 阶段    | 接收或产生的内容               |      拍数 | 关键行为                 |
+| ----- | ---------------------- | ------: | -------------------- |
+| B 接收  | 原始 B 的 \(L\) 行         |   \(L\) | 第一个 B 行握手时锁存模式       |
+| 权重装载  | \(P_{L-1},\ldots,P_0\) |   \(L\) | 每个物理列独立向下移位          |
+| A 接收  | A 的 \(L\) 行            |   \(L\) | 最后一个权重拍可与第一个 A 行同拍接收 |
+| 计算与排出 | C 的 \(L\) 行            | 与阵列流水重叠 | 结果按 A 的行号顺序连续输出      |
 
 最后一行 C 有效时 `c_row_last_o=1`；同一 tile 完成后 `tile_done_o` 拉高一个周期。
 
@@ -127,6 +128,7 @@ $$
 | `c_row_valid_o` | output | 1 | C 行有效 |
 | `c_row_last_o` | output | 1 | 当前 C 行是 tile 的最后一行 |
 | `c_row_o` | output | \(32N\) | 一个 packed C 行 |
+| `c_accum_row_o` | output | \(256N\) | 每物理列四个 64-bit 槽，给出符号扩展后的完整临时结果 |
 | `busy_o` | output | 1 | 当前 tile 尚未完成 |
 | `tile_done_o` | output | 1 | 当前 tile 完成脉冲 |
 
@@ -322,14 +324,15 @@ $$
 
 ### 4.4 最后权重拍与第一行 A
 
-| 上升沿 | 权重寄存器 | 数据寄存器 | 算术寄存器 |
-|---|---|---|---|
-| `e0` | 写入最终权重 | `data_q` 写入第一行 A | 尚未写入该 token 的乘积 |
-| `e1` | 保持 | 可接收下一行 A | `product_q` 写入 16 个基础乘积 |
-| `e2` | 保持 | — | `contribution_o` 写入重组及局部 K 求和结果 |
-| `e3` | 保持 | — | 第 0 物理行的 `psum_q` 更新 |
+| 上升沿  | 权重寄存器  | 数据寄存器            | 算术寄存器                           |
+| ---- | ------ | ---------------- | ------------------------------- |
+| `e0` | 写入最终权重 | `data_q` 写入第一行 A | 尚未写入该 token 的乘积                 |
+| `e1` | 保持     | 可接收下一行 A         | `product_q` 写入 16 个基础乘积         |
+| `e2` | 保持     | —                | `logical_product_q` 写入重组后的逻辑乘积 |
+| `e3` | 保持     | —                | `contribution_o` 写入局部 K 求和结果 |
+| `e4` | 保持     | —                | 第 0 物理行的 `psum_q` 更新 |
 
-`product_q` 到 `e1` 才采样乘法器输出，因此 `e0` 写入的最终权重已经稳定一个完整组合计算周期。后两级读取 `product_q` 和已寄存的 `contribution_o`，不再读取权重。
+`product_q` 到 `e1` 才采样乘法器输出，因此 `e0` 写入的最终权重已经稳定一个完整组合计算周期。其后三个阶段依次读取 `product_q`、`logical_product_q` 和已寄存的 `contribution_o`，不再读取权重。
 
 ### 4.5 预处理存储
 
@@ -478,9 +481,9 @@ $$
 
 ### 6.2 局部重组与 K 求和
 
-`dip_simd_dot_product` 的 Stage 1 产生 16 个 8-bit 基础乘积并写入 `product_q[0:15]`。Stage 2 按模式重组为 \(w\times w\) 元素乘积，再沿 \(u\) 求和，产生已寄存的 `contribution_o`。本文后续以 \(Q\) 表示该寄存结果。
+`dip_simd_dot_product` 的 Stage 1 产生 16 个 8-bit 基础乘积并写入 `product_q[0:15]`。Stage 2 按模式重组为 \(w\times w\) 元素乘积，并将 1、4 或 16 个有效结果写入 32-bit signed 的 `logical_product_q[0:15]`。本文以 \(LP\) 表示这一组寄存结果。
 
-Stage 2 使用 SystemVerilog `+` 描述部分乘积重组和局部 K 求和，综合工具会为这一阶段生成组合加法硬件。它与 Stage 3 的 `dip_segmented_adder64` 同时工作，不分时复用同一组加法单元。
+Stage 3 沿 \(u\) 对 `logical_product_q` 求和，并把每个输出 lane 的局部贡献写入 `contribution_o`。本文以 \(Q\) 表示该寄存结果。Stage 2 与 Stage 3 分别使用独立的组合加法树；Stage 4 的 `dip_segmented_adder64` 再把 \(Q\) 与上排部分和相加。
 
 ### 6.3 分段 64-bit 加法器
 
@@ -503,7 +506,7 @@ $$
 =\left((x+2^{b-1})\bmod2^b\right)-2^{b-1}.
 $$
 
-阵列底部输出每个累加段的低 \(2w\) bit：
+阵列底部把每个有效累加段符号扩展到 64 bit 后写入 `c_accum_row_o`，同时把每段低 \(2w\) bit 写入 `c_row_o`：
 
 $$
 C_{m,j}
@@ -512,31 +515,34 @@ $$
 
 例如，INT4 临时结果 204 在 16 bit 中为 `16'h00CC`；截取为 8 bit 后得到 `8'hCC`，按 signed 解释为 \(-52\)。
 
-## 7. 三级流水与输出时序
+## 7. 四级算术寄存与输出时序
 
 ![[NPU/rtl/dip/docs/figures/pe_pipeline_and_alignment.png]]
 
-*图 5　当前 PE 的三级算术流水和相邻物理行的一拍错位。*
+*图 5　当前 PE 的四级算术寄存和相邻物理行的一拍错位。*
 
 ### 7.1 单 PE 寄存器时序
 
-三级算术流水不包含输入寄存器。对在 `e0` 写入 `data_q` 的同一个 A 行 token：
+四级算术寄存不包含输入寄存器 D。对在 `e0` 写入 `data_q` 的同一个 A 行 token：
 
 | 上升沿 | 使能 | 更新内容 | 上升沿前读取的内容 |
 |---|---|---|---|
 | `e0` | `pe_en_i` | `data_q`、`data_mode_q` | `data_i`、`mode_i` |
 | `e1` | `mul_en_i` | `product_q[0:15]`、`product_mode_q` | 本地 `data_q`、同行右邻 `data_q`、静止权重 |
-| `e2` | `reduce_en_i` | `contribution_o`、`contribution_mode_o` | `product_q`、`product_mode_q` |
-| `e3` | `adder_en_i` | `psum_q` | `contribution_o`、`contribution_mode_o`、`psum_i` |
+| `e2` | `reassemble_en_i` | `logical_product_q[0:15]`、`logical_product_mode_q` | `product_q`、`product_mode_q` |
+| `e3` | `reduce_en_i` | `contribution_o`、`contribution_mode_o` | `logical_product_q`、`logical_product_mode_q` |
+| `e4` | `adder_en_i` | `psum_q` | `contribution_o`、`contribution_mode_o`、`psum_i` |
 
-三个组合阶段为
+四个组合阶段为
 
 $$
 \begin{aligned}
 (\mathtt{data\_q},\mathtt{weight\_q})
 &\xrightarrow{\;16\text{ 个基础乘法器}\;}
 \mathtt{product\_q}\\
-&\xrightarrow{\;\mathrm{radix\ 重组与局部\ K\ 求和}\;}
+&\xrightarrow{\;\mathrm{radix\ 重组}\;}
+\mathtt{logical\_product\_q}\\
+&\xrightarrow{\;\text{局部 }K\text{ 求和}\;}
 Q\\
 &\xrightarrow{\;\text{分段 64-bit 加法}\;}
 \mathtt{psum\_q}.
@@ -550,10 +556,12 @@ $$
 \longrightarrow
 \mathtt{product\_mode\_q}
 \longrightarrow
+\mathtt{logical\_product\_mode\_q}
+\longrightarrow
 \mathtt{contribution\_mode\_o}.
 $$
 
-`dip_segmented_adder64` 组合读取 `contribution_mode_o`，此处没有额外模式寄存级。权重只参与 Stage 1，不随 `product_q`、\(Q\)、`psum_q` 延迟。
+`dip_segmented_adder64` 组合读取 `contribution_mode_o`，此处没有额外模式寄存级。权重只参与 Stage 1，不随 \(M\)、\(LP\)、\(Q\)、\(S\) 延迟。
 
 ### 7.2 valid 与跨物理行对齐
 
@@ -561,7 +569,8 @@ $$
 |---|---|
 | `pe_en[R]` | 写入物理行 \(R\) 的 `data_q` |
 | `mul_en[R]` | 将 16 个基础乘积写入 `product_q` |
-| `reduce_en[R]` | 将重组及局部 K 求和结果写入 `contribution_o` |
+| `reassemble_en[R]` | 将重组后的逻辑乘积写入 `logical_product_q` |
+| `reduce_en[R]` | 将局部 K 求和结果写入 `contribution_o` |
 | `adder_en[R]` | 将本地 \(Q\) 与上一物理行 \(S\) 写入 `psum_q` |
 
 第 0 物理行没有上游部分和：
@@ -586,65 +595,253 @@ $$
 |---|---|
 | `data_q[R]` | \(e_{m+R}\) |
 | `product_q[R]` | \(e_{m+R+1}\) |
-| `contribution_o[R]` | \(e_{m+R+2}\) |
-| `psum_q[R]` | \(e_{m+R+3}\) |
+| `logical_product_q[R]` | \(e_{m+R+2}\) |
+| `contribution_o[R]` | \(e_{m+R+3}\) |
+| `psum_q[R]` | \(e_{m+R+4}\) |
 
-对 \(R>0\)，本地 \(Q\) 与上一物理行 \(S\) 都在 \(e_{m+R+2}\) 更新，并在下一个上升沿前保持稳定，所以本行在 \(e_{m+R+3}\) 相加时读取的是同一个 token。RTL 使用非阻塞赋值；即使连续 A 行相邻到达，加法器仍读取上升沿前保存的两项，不会混合相邻 token。
+对 \(R>0\)，本地 \(Q\) 与上一物理行 \(S\) 都在 \(e_{m+R+3}\) 更新，并在下一个上升沿前保持稳定，所以本行在 \(e_{m+R+4}\) 相加时读取的是同一个 token。RTL 使用非阻塞赋值；即使连续 A 行相邻到达，加法器仍读取上升沿前保存的两项，不会混合相邻 token。
 
 令 \(V_A[n]\) 表示上升沿 \(n\) 是否接收 A 行，则
 
 $$
 \begin{aligned}
 V_D(R,n)&=V_A[n-R],\\
-V_P(R,n)&=V_A[n-R-1],\\
-V_Q(R,n)&=V_A[n-R-2],\\
-V_S(R,n)&=V_A[n-R-3].
+V_M(R,n)&=V_A[n-R-1],\\
+V_{LP}(R,n)&=V_A[n-R-2],\\
+V_Q(R,n)&=V_A[n-R-3],\\
+V_S(R,n)&=V_A[n-R-4].
 \end{aligned}
 $$
 
 输入 valid 空拍会按相同形状延迟到输出。
 
-### 7.3 INT16 逐拍阵列快照
+### 7.3 逐周期独立图的阅读规则
 
-![[NPU/rtl/dip/docs/figures/rtl_cycle_trace_int16.png]]
+下面采用与论文 Fig. 3 相同的主要表现方式：每张图片完整重画一次物理阵列，PE 位置固定，蓝色箭头表示 packed A，灰色箭头表示同列部分和，固定权重写在 PE 顶部，结果放在阵列底部。当前 RTL 比论文示例多两个算术寄存级，因此周期编号、PE 内寄存内容和首次输出时刻均按本目录 RTL 重新计算。
 
-*图 6　\(N=4\) 参数实例的 INT16 首行计算。七个面板逐拍展示 packed A 的循环移动、16 个基础乘积、局部贡献、纵向部分和以及 `e6` 的首次有效输出。*
-
-### 7.4 INT8 逐拍阵列快照
-
-![[NPU/rtl/dip/docs/figures/rtl_cycle_trace_int8.png]]
-
-*图 7　\(N=4\) 参数实例的 INT8 首行计算。每个蓝色物理字包含两个 INT8，PE 产生四个 8×8 乘法，\(Q\) 与 \(S\) 分成两个 32-bit 段，`e6` 输出 8 个 INT16。*
-
-### 7.5 INT4 逐拍阵列快照
-
-![[NPU/rtl/dip/docs/figures/rtl_cycle_trace_int4.png]]
-
-*图 8　\(N=4\) 参数实例的 INT4 首行计算。每个蓝色物理字包含四个 INT4，PE 产生十六个 4×4 乘法，\(Q\) 与 \(S\) 分成四个 16-bit 段，`e6` 输出 16 个 INT8。*
-
-三张图均使用当前 RTL 的 `ARRAY_N=4` 参数，从最终权重拍与第一行 A 同时接收的 `e0` 开始。一个面板对应一个上升沿之后的寄存状态；只突出首个 A 行，连续输入的后续 A 行可同时占用已空出的前级。第 0、1、2、3 物理行依次接收循环移动后的 packed A，首个 C 行在
+所有图片使用 `ARRAY_N=4`，从最终权重拍与 A 行 0 同时接收的 `e0` 开始，一张图片只表示一个上升沿后的状态，不把多个周期合并。A 行连续输入且不插入空拍。对图片中的任意物理行 \(R\)，五组有效寄存内容所属的 A 行号为
 
 $$
-e_{\mathrm{first}}=e_{N+2}=e_6
+\begin{aligned}
+m_D&=e-R,\\
+m_M&=e-R-1,\\
+m_{LP}&=e-R-2,\\
+m_Q&=e-R-3,\\
+m_S&=e-R-4.
+\end{aligned}
 $$
 
-更新，并在该上升沿后使 `c_row_valid_o=1`。默认 \(N=16\) 时，同一逐拍关系继续到 \(e_{18}\)。模式改变的是每个物理字包含的逻辑元素数以及完整 tile 的 A、C 行数，不改变首个 token 穿过 \(N\) 个物理行所需的拍数。
+只有满足 \(0\le m_D,m_M,m_{LP},m_Q,m_S<L\) 的寄存内容才有效。
 
-### 7.6 连续结果与完整 tile
+因此同一个 PE 可以同时保存五个不同 A 行的 `data_q`、`product_q`、`logical_product_q`、`contribution_o` 和 `psum_q`。图片在 PE 框内同时列出五组当前有效内容；灰色短横线表示相应 valid 为 0。使能为 0 时，实际寄存器继续保留旧位值，但该旧值不属于当前有效 token。\(Q\) 明确表示触发器输出 `contribution_o`，不表示寄存器之间的组合中间值。
+
+灰色竖箭头表示本上升沿到达前由上一物理行保存的 \(S\)，标签同时给出实际数值。例如 `e5` 写入物理行 1 的结果时，组合加法器读取 `e4` 后保持的 \(Q_{m,1}\) 和 \(S_{m,0}\)，随后在 `e5` 将
+
+$$
+\mathbf S_m^{(1)}
+=\mathbf Q_m^{(1)}+\mathbf S_m^{(0)}
+$$
+
+写入物理行 1。读取动作本身不会清除上一物理行的 `psum_q`；若上一物理行的 `adder_en` 在同一上升沿也为 1，它会在该上升沿后改写为下一 token 的结果。蓝色斜箭头采用相同的上升沿定义，目标 PE 在该上升沿采样上一物理行的 `data_q`。
+
+三组图共用以下小数值例子：
+
+$$
+\begin{aligned}
+A[m,k]&=((3m+k)\bmod7)-3,\\
+B[k,j]&=((2k+j)\bmod5)-2.
+\end{aligned}
+$$
+
+A、B 的所有元素都在 INT4 可表示范围内。绘图脚本逐 PE 计算 packed A、\(LP\)、\(Q\)、\(S\) 和 C，并检查 \(LP\) 分组求和等于 \(Q\)，以及最底物理行的 \(S\) 等于普通 GEMM 结果。每张图右侧还给出五组 valid 的 `[R3:R0]` 值、本上升沿写入的部分和以及输出端口状态。
+
+首个 C 行在
+
+$$
+e_{\mathrm{first}}=e_{N+3}=e_7
+$$
+
+更新，并在该上升沿后使 `c_row_valid_o=1`。默认 \(N=16\) 时，同一逐周期关系继续到 \(e_{19}\)。模式改变的是每个物理字包含的逻辑元素数以及完整 tile 的 A、C 行数，不改变首个 token 穿过 \(N\) 个物理行所需的拍数。
+
+### 7.4 INT16：Cycle 0 至 Cycle 7
+
+INT16 的 \(L=4\)，所以 A 行 0、1、2、3 分别在 `e0`、`e1`、`e2`、`e3` 接收；从 `e4` 开始不再接收新的 A 行。一个 PE 有一个有效的 32-bit `logical_product_q`，\(Q\) 和 \(S\) 都是一个 64-bit signed 值；`e7` 从四个物理列分别给出完整临时结果并截取低 32 bit。
+
+#### Cycle 0：最终权重与 A 行 0 同拍写入
+
+![[NPU/rtl/dip/docs/figures/cycle_traces/int16_n04/dip_int16_n04_compute_e000_post.png]]
+
+*图 6(a)　INT16 Cycle 0：只有物理行 0 的 D 有效，四级算术寄存结果尚未产生。*
+
+#### Cycle 1：首行基础乘积写入
+
+![[NPU/rtl/dip/docs/figures/cycle_traces/int16_n04/dip_int16_n04_compute_e001_post.png]]
+
+*图 6(b)　INT16 Cycle 1：物理行 0 同时保存 A 行 1 的 D 与 A 行 0 的 M；A 行 0 的 packed 数据已循环移入物理行 1。*
+
+#### Cycle 2：首行逻辑乘积写入
+
+![[NPU/rtl/dip/docs/figures/cycle_traces/int16_n04/dip_int16_n04_compute_e002_post.png]]
+
+*图 6(c)　INT16 Cycle 2：物理行 0 得到 A 行 0 的 LP，物理行 1 得到对应 M，物理行 2 接收对应 D。*
+
+#### Cycle 3：首个局部贡献写入
+
+![[NPU/rtl/dip/docs/figures/cycle_traces/int16_n04/dip_int16_n04_compute_e003_post.png]]
+
+*图 6(d)　INT16 Cycle 3：物理行 0 写入 A 行 0 的 Q；首个 token 的 D、M、LP、Q 分别位于四个物理行。*
+
+#### Cycle 4：首个部分和写入物理行 0
+
+![[NPU/rtl/dip/docs/figures/cycle_traces/int16_n04/dip_int16_n04_compute_e004_post.png]]
+
+*图 6(e)　INT16 Cycle 4：物理行 0 写入 \(\mathbf S_0^{(0)}=\mathbf Q_0^{(0)}\)；灰色顶部箭头给出四列的 \(0+\mathbf Q_0^{(0)}\) 数值。*
+
+#### Cycle 5：首个部分和进入物理行 1
+
+![[NPU/rtl/dip/docs/figures/cycle_traces/int16_n04/dip_int16_n04_compute_e005_post.png]]
+
+*图 6(f)　INT16 Cycle 5：灰色竖箭头给出物理行 0 的沿前 \(S\)，物理行 1 写入 \(\mathbf S_0^{(1)}=\mathbf Q_0^{(1)}+\mathbf S_0^{(0)}\)。*
+
+#### Cycle 6：首个部分和进入物理行 2
+
+![[NPU/rtl/dip/docs/figures/cycle_traces/int16_n04/dip_int16_n04_compute_e006_post.png]]
+
+*图 6(g)　INT16 Cycle 6：物理行 2 写入 \(\mathbf S_0^{(2)}\)，物理行 3 保存同一 token 的 Q；此时 `c_row_valid_o=0`。*
+
+#### Cycle 7：首行结果有效
+
+![[NPU/rtl/dip/docs/figures/cycle_traces/int16_n04/dip_int16_n04_compute_e007_post.png]]
+
+*图 6(h)　INT16 Cycle 7：物理行 3 写入 \(\mathbf S_0^{(3)}\)，`c_row_valid_o=1`；完整临时结果与四个 INT32 输出 \([4,3,-3,1]\) 同时显示。*
+
+### 7.5 INT8：Cycle 0 至 Cycle 7
+
+INT8 的 \(L=8\)。每个蓝色物理字包含两个 INT8；每个 PE 的 `product_q` 保存 16 个基础乘积，`logical_product_q` 有四个有效 32-bit signed 项，`contribution_o` 与 `psum_q` 分别保存两个 32-bit signed 段。到 `e7` 仍处于 A 输入阶段，阵列各排可以同时存在五个不同 token 的 D、M、LP、Q、S。
+
+#### Cycle 0
+
+![[NPU/rtl/dip/docs/figures/cycle_traces/int8_n04/dip_int8_n04_compute_e000_post.png]]
+
+*图 7(a)　INT8 Cycle 0：A 行 0 以四个双 lane 物理字写入物理行 0。*
+
+#### Cycle 1
+
+![[NPU/rtl/dip/docs/figures/cycle_traces/int8_n04/dip_int8_n04_compute_e001_post.png]]
+
+*图 7(b)　INT8 Cycle 1：A 行 0 向下一排循环移动一个完整 16-bit 物理字，物理行 0 同时接收 A 行 1。*
+
+#### Cycle 2
+
+![[NPU/rtl/dip/docs/figures/cycle_traces/int8_n04/dip_int8_n04_compute_e002_post.png]]
+
+*图 7(c)　INT8 Cycle 2：A 行 0 的四个逻辑乘积 LP 首次写入物理行 0。*
+
+#### Cycle 3
+
+![[NPU/rtl/dip/docs/figures/cycle_traces/int8_n04/dip_int8_n04_compute_e003_post.png]]
+
+*图 7(d)　INT8 Cycle 3：物理行 0 写入 A 行 0 的两个局部贡献段 Q，其他物理行继续处理同一 token 的 LP、M 与 D。*
+
+#### Cycle 4
+
+![[NPU/rtl/dip/docs/figures/cycle_traces/int8_n04/dip_int8_n04_compute_e004_post.png]]
+
+*图 7(e)　INT8 Cycle 4：物理行 0 首次写入 A 行 0 的两个部分和段；顶部灰色箭头标明 \(0+Q\) 的实际值。*
+
+#### Cycle 5
+
+![[NPU/rtl/dip/docs/figures/cycle_traces/int8_n04/dip_int8_n04_compute_e005_post.png]]
+
+*图 7(f)　INT8 Cycle 5：A 行 0 的两个部分和段进入物理行 1；阵列中 D、M、LP、Q、S 五组寄存内容持续处理不同 A 行。*
+
+#### Cycle 6
+
+![[NPU/rtl/dip/docs/figures/cycle_traces/int8_n04/dip_int8_n04_compute_e006_post.png]]
+
+*图 7(g)　INT8 Cycle 6：A 行 0 的两个部分和段进入物理行 2，最底物理行保存对应 Q；`c_row_valid_o=0`。*
+
+#### Cycle 7
+
+![[NPU/rtl/dip/docs/figures/cycle_traces/int8_n04/dip_int8_n04_compute_e007_post.png]]
+
+*图 7(h)　INT8 Cycle 7：最底物理行写入 A 行 0 的最终 S，`c_row_valid_o=1`；八个 INT16 结果为 \([-5,12,4,-4,-7,-5,12,4]\)。*
+
+### 7.6 INT4：Cycle 0 至 Cycle 7
+
+INT4 的 \(L=16\)。每个蓝色物理字包含四个 INT4；每个 PE 每拍形成 16 个 4×4 基础乘积，Stage 2 将其写为 16 个有效的 32-bit `logical_product_q`，\(Q\) 与 \(S\) 分成四个 16-bit signed 段，输出端从每段保留低 8 bit。
+
+#### Cycle 0
+
+![[NPU/rtl/dip/docs/figures/cycle_traces/int4_n04/dip_int4_n04_compute_e000_post.png]]
+
+*图 8(a)　INT4 Cycle 0：A 行 0 以四个四 lane 物理字写入物理行 0。*
+
+#### Cycle 1
+
+![[NPU/rtl/dip/docs/figures/cycle_traces/int4_n04/dip_int4_n04_compute_e001_post.png]]
+
+*图 8(b)　INT4 Cycle 1：A 行 0 的 packed 数据进入物理行 1，物理行 0 写入该行的 16 个基础乘积。*
+
+#### Cycle 2
+
+![[NPU/rtl/dip/docs/figures/cycle_traces/int4_n04/dip_int4_n04_compute_e002_post.png]]
+
+*图 8(c)　INT4 Cycle 2：物理行 0 写入 A 行 0 的 16 个逻辑乘积 LP。*
+
+#### Cycle 3
+
+![[NPU/rtl/dip/docs/figures/cycle_traces/int4_n04/dip_int4_n04_compute_e003_post.png]]
+
+*图 8(d)　INT4 Cycle 3：物理行 0 写入 A 行 0 的四段局部贡献 Q；首个 token 的 D、M、LP、Q 分别位于四个物理行。*
+
+#### Cycle 4
+
+![[NPU/rtl/dip/docs/figures/cycle_traces/int4_n04/dip_int4_n04_compute_e004_post.png]]
+
+*图 8(e)　INT4 Cycle 4：物理行 0 首次写入四段 S，顶部灰色箭头给出四列的 \(0+Q\) 数值。*
+
+#### Cycle 5
+
+![[NPU/rtl/dip/docs/figures/cycle_traces/int4_n04/dip_int4_n04_compute_e005_post.png]]
+
+*图 8(f)　INT4 Cycle 5：物理行 1 读取上排四段沿前 S，并与本地四段 Q 相加。*
+
+#### Cycle 6
+
+![[NPU/rtl/dip/docs/figures/cycle_traces/int4_n04/dip_int4_n04_compute_e006_post.png]]
+
+*图 8(g)　INT4 Cycle 6：物理行 2 完成 A 行 0 的第三次纵向累加，物理行 3 保存对应 Q；`c_row_valid_o=0`。*
+
+#### Cycle 7
+
+![[NPU/rtl/dip/docs/figures/cycle_traces/int4_n04/dip_int4_n04_compute_e007_post.png]]
+
+*图 8(h)　INT4 Cycle 7：物理行 3 写入最终 S，`c_row_valid_o=1`；十六个 INT8 结果为 \([-2,3,13,-2,-12,-2,3,13,-2,-12,-2,3,13,-2,-12,-2]\)。*
+
+三种模式的逐周期图由 [`docs/figures/generate_rtl_cycle_traces.py`](./docs/figures/generate_rtl_cycle_traces.py) 生成。每个模式目录同时包含八张 PNG、对应 SVG 和 `trace_manifest.json`；README 仅嵌入 PNG。
+
+```bash
+python3 rtl/dip/docs/figures/generate_rtl_cycle_traces.py
+```
+
+该命令需要系统已安装 `inkscape`，脚本会直接生成 SVG 和 PNG。
+
+### 7.7 连续结果与完整 tile
 
 第 \(m\) 个 C 行的有效上升沿为
 
 $$
-e_C(m)=e_{m+N+2},
+e_C(m)=e_{m+N+3},
 \qquad 0\le m<L.
 $$
 
 因此
 
 $$
-e_{\mathrm{first}}=e_{N+2},
+e_{\mathrm{first}}=e_{N+3},
 \qquad
-e_{\mathrm{last}}=e_{L+N+1}.
+e_{\mathrm{last}}=e_{L+N+2}.
 $$
 
 连续输入时
@@ -656,14 +853,14 @@ $$
 所以流水充满后每周期输出一行 C。由 `e0` 到最后一行 C 有效的时钟差为
 
 $$
-\Delta_{\mathrm{tile}}=L+N+1.
+\Delta_{\mathrm{tile}}=L+N+2.
 $$
 
 | 模式 | \(L\) | \(\Delta_{\mathrm{tile}}\) | 默认 \(N=16\) 的末行 |
 |---|---:|---:|---:|
-| INT16 | \(N\) | \(2N+1\) | `e33` |
-| INT8 | \(2N\) | \(3N+1\) | `e49` |
-| INT4 | \(4N\) | \(5N+1\) | `e81` |
+| INT16 | \(N\) | \(2N+2\) | `e34` |
+| INT8 | \(2N\) | \(3N+2\) | `e50` |
+| INT4 | \(4N\) | \(5N+2\) | `e82` |
 
 该区间不包含原始 B 的接收，也不包含最终权重拍之前的 \(L-1\) 个权重装载拍。
 
@@ -757,9 +954,9 @@ $$
 |---|---|---|
 | [`dip_base_mul4.sv`](./dip_base_mul4.sv) | 基础算术 | 可配置 signed 属性的 4×4 乘法 |
 | [`dip_base_add4.sv`](./dip_base_add4.sv) | 基础算术 | 带进位输入、输出的 4-bit 加法 |
-| [`dip_simd_dot_product.sv`](./dip_simd_dot_product.sv) | PE 算术 | 16 个基础乘法、乘积寄存、重组与局部 K 求和 |
+| [`dip_simd_dot_product.sv`](./dip_simd_dot_product.sv) | PE 算术 | 16 个基础乘法、逻辑乘积重组、局部 K 求和及三个内部寄存层 |
 | [`dip_segmented_adder64.sv`](./dip_segmented_adder64.sv) | PE 算术 | 1×64、2×32、4×16 分段加法 |
-| [`dip_pe.sv`](./dip_pe.sv) | PE | 数据、权重、乘积、局部贡献与部分和寄存 |
+| [`dip_pe.sv`](./dip_pe.sv) | PE | 数据、权重、基础乘积、逻辑乘积、局部贡献与部分和寄存 |
 | [`dip_systolic_array.sv`](./dip_systolic_array.sv) | 阵列 | \(N\times N\) PE、对角数据连接、纵向权重和部分和 |
 | [`dip_data_preprocess.sv`](./dip_data_preprocess.sv) | 预处理 | 接收 B、产生 \(P\)、逆序发送 |
 | [`dip_gemm_core.sv`](./dip_gemm_core.sv) | 顶层 | 模式锁存、tile 控制、A/B/C 计数与完成信号 |
@@ -768,6 +965,7 @@ $$
 | [`tb/tb_dip_data_preprocess.sv`](./tb/tb_dip_data_preprocess.sv) | 测试 | 权重预处理、逆序发送与停顿 |
 | [`tb/tb_dip_gemm_core.sv`](./tb/tb_dip_gemm_core.sv) | 测试 | Python 向量驱动的完整 tile |
 | [`tb/tb_dip_gemm_n1.sv`](./tb/tb_dip_gemm_n1.sv) | 测试 | \(N=1\) 特例 |
+| [`docs/figures/generate_rtl_cycle_traces.py`](./docs/figures/generate_rtl_cycle_traces.py) | 文档工具 | 校验数值例子并生成三种模式的逐周期 SVG、PNG 与清单 |
 
 `dip_pe` 的固定宽度端口为
 
@@ -780,6 +978,7 @@ $$
 | `wshift_i` | 1 | 权重寄存使能 |
 | `pe_en_i` | 1 | 输入寄存使能 |
 | `mul_en_i` | 1 | 基础乘积寄存使能 |
+| `reassemble_en_i` | 1 | 逻辑乘积寄存使能 |
 | `reduce_en_i` | 1 | 局部贡献寄存使能 |
 | `adder_en_i` | 1 | 临时部分和寄存使能 |
 
@@ -851,7 +1050,7 @@ make -C rtl/dip gemm-test \
 - 三种模式的权重预处理、逆序装载和 ready/valid 停顿；
 - 最后一个权重拍与第一行 A 同拍接收；
 - Python 生成的完整随机 GEMM；
-- 三级算术流水后的 \(2N+1\)、\(3N+1\)、\(5N+1\) tile 时钟差；
+- 四级算术寄存后的 \(2N+2\)、\(3N+2\)、\(5N+2\) tile 时钟差；
 - 连续 A 输入时 C 保持每周期一行；
 - A/B valid 空拍、连续 tile、`last/done/busy`；
 - `ARRAY_N=1` 特例、异步复位和保留 mode。
@@ -871,9 +1070,9 @@ make -C rtl/dip gemm-test \
 |---|---|---|
 | 主要精度 | INT8 | INT16、INT8、INT4 |
 | 物理 PE 每周期工作量 | 一个逻辑 MAC | 1、4、16 个逻辑乘法 |
-| MAC 流水 | 二级 | 三级算术流水 |
+| MAC 流水 | 二级 | 四级算术寄存 |
 | 权重准备 | 软件预处理或存储器读次序调整 | RTL buffer 功能参考 |
-| 3×3 首个结果 | Cycle 3 结束，按本文上升沿记法为 `e4` | \(e_{N+2}=e5\) |
+| 3×3 首个结果 | Cycle 3 结束，按本文上升沿记法为 `e4` | \(e_{N+3}=e6\) |
 | 逻辑矩阵边长 | \(N\) | \(L=N\ell\) |
 
 论文给出的 DiP 单 tile 延迟为
@@ -882,15 +1081,15 @@ $$
 T_{\mathrm{DiP}}=2N+S-2,
 $$
 
-其中 \(S\) 为 MAC 算术流水级数，论文采用 \(S=2\)。当前 RTL 的输入与输出行数为 \(L\)，三级算术流水对应
+其中 \(S\) 为 MAC 算术寄存级数，论文采用 \(S=2\)。当前 RTL 的输入与输出行数为 \(L\)，四级算术寄存对应
 
 $$
 T_{\mathrm{RTL}}
 =L+N+S-2
-=L+N+1.
+=L+N+2.
 $$
 
-论文图中的 Cycle 表示周期区间，本文的 \(e_n\) 表示上升沿。论文 3×3 首个结果在 Cycle 3 结束后可见，对应本文记法中的 `e4`；当前三级 RTL 在 `e5` 更新，增加一拍。
+论文图中的 Cycle 表示周期区间，本文的 \(e_n\) 表示上升沿。论文 3×3 首个结果在 Cycle 3 结束后可见，对应本文记法中的 `e4`；当前四级 RTL 在 `e6` 更新，增加两拍。
 
 论文在 22 nm、INT8 和特定阵列规模下给出的面积、功耗与性能数据不能直接用于当前多精度 PE。当前设计增加了 radix 重组、局部 K 求和、更宽临时累加器和额外寄存器，需要重新综合、布局布线并测量。
 

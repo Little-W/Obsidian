@@ -547,51 +547,51 @@ module tb_npu_engines;
         check(l1_idle, "L1 did not become idle after reset");
 
         // Matrix right shifts use the same signed rounding rules as CModel.
-        check($signed(u_matrix.requantize(
+        check($signed(u_matrix.u_scalar_engine.requantize(
                 64'sd1, 32'd1, 8'sd1, 2'd0
               )) == 64'sd0,
               "matrix nearest-even +0.5 mismatch");
-        check($signed(u_matrix.requantize(
+        check($signed(u_matrix.u_scalar_engine.requantize(
                 64'sd3, 32'd1, 8'sd1, 2'd0
               )) == 64'sd2,
               "matrix nearest-even +1.5 mismatch");
-        check($signed(u_matrix.requantize(
+        check($signed(u_matrix.u_scalar_engine.requantize(
                 -64'sd1, 32'd1, 8'sd1, 2'd0
               )) == 64'sd0,
               "matrix nearest-even -0.5 mismatch");
-        check($signed(u_matrix.requantize(
+        check($signed(u_matrix.u_scalar_engine.requantize(
                 -64'sd3, 32'd1, 8'sd1, 2'd0
               )) == -64'sd2,
               "matrix nearest-even -1.5 mismatch");
-        check($signed(u_matrix.requantize(
+        check($signed(u_matrix.u_scalar_engine.requantize(
                 64'sd5, 32'd1, 8'sd2, 2'd0
               )) == 64'sd1,
               "matrix nearest-even positive non-half mismatch");
-        check($signed(u_matrix.requantize(
+        check($signed(u_matrix.u_scalar_engine.requantize(
                 -64'sd5, 32'd1, 8'sd2, 2'd0
               )) == -64'sd1,
               "matrix nearest-even negative non-half mismatch");
-        check($signed(u_matrix.requantize(
+        check($signed(u_matrix.u_scalar_engine.requantize(
                 64'sd3, 32'd1, 8'sd1, 2'd1
               )) == 64'sd1,
               "matrix round-to-zero positive mismatch");
-        check($signed(u_matrix.requantize(
+        check($signed(u_matrix.u_scalar_engine.requantize(
                 -64'sd3, 32'd1, 8'sd1, 2'd1
               )) == -64'sd1,
               "matrix round-to-zero negative mismatch");
-        check($signed(u_matrix.requantize(
+        check($signed(u_matrix.u_scalar_engine.requantize(
                 64'sd3, 32'd1, 8'sd1, 2'd2
               )) == 64'sd2,
               "matrix round-to-positive-infinity positive mismatch");
-        check($signed(u_matrix.requantize(
+        check($signed(u_matrix.u_scalar_engine.requantize(
                 -64'sd3, 32'd1, 8'sd1, 2'd2
               )) == -64'sd1,
               "matrix round-to-positive-infinity negative mismatch");
-        check($signed(u_matrix.requantize(
+        check($signed(u_matrix.u_scalar_engine.requantize(
                 64'sd3, 32'd1, 8'sd1, 2'd3
               )) == 64'sd1,
               "matrix round-to-negative-infinity positive mismatch");
-        check($signed(u_matrix.requantize(
+        check($signed(u_matrix.u_scalar_engine.requantize(
                 -64'sd3, 32'd1, 8'sd1, 2'd3
               )) == -64'sd2,
               "matrix round-to-negative-infinity negative mismatch");

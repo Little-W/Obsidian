@@ -490,8 +490,11 @@ def encode_aref(
     address = tensor_addr(tensor, location)
     space = str(tensor.get("space", "l1")).lower()
     if space == "l1":
-        if address > 0xFFFFFF:
-            raise fail(f"{location}.addr", "L1 AREF uses a 24-bit byte offset")
+        if address > 0xFFFFF:
+            raise fail(
+                f"{location}.addr",
+                "L1 AREF uses a 20-bit byte address",
+            )
         return address
     if space != "ddr":
         raise fail(f"{location}.space", "use l1 or ddr")
@@ -767,9 +770,20 @@ def encode_dma_payload(
             1,
             f"{location}.src_nibble",
         )
+        destination_nibble = parse_int(
+            fields.get("dst_nibble", 0),
+            f"{location}.dst_nibble",
+            0,
+            1,
+        )
+        if destination_nibble:
+            raise fail(
+                f"{location}.dst_nibble",
+                "must be zero for COPY instructions",
+            )
         payload = pack_field(
             payload,
-            parse_int(fields.get("dst_nibble", 0), f"{location}.dst_nibble", 0, 1),
+            destination_nibble,
             0,
             1,
             f"{location}.dst_nibble",
@@ -794,9 +808,20 @@ def encode_dma_payload(
             1,
             f"{location}.src_nibble",
         )
+        destination_nibble = parse_int(
+            fields.get("dst_nibble", 0),
+            f"{location}.dst_nibble",
+            0,
+            1,
+        )
+        if destination_nibble:
+            raise fail(
+                f"{location}.dst_nibble",
+                "must be zero for TRANSPOSE_2D",
+            )
         payload = pack_field(
             payload,
-            parse_int(fields.get("dst_nibble", 0), f"{location}.dst_nibble", 0, 1),
+            destination_nibble,
             4,
             1,
             f"{location}.dst_nibble",

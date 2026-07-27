@@ -13,15 +13,26 @@
 /home/yusen/opt/axi_tvip_test/npu_rtl/memory/npu_axi_mif_master.sv
 /home/yusen/opt/axi_tvip_test/npu_rtl/memory/npu_l1buf.sv
 
+/home/yusen/opt/axi_tvip_test/npu_rtl/dip/dip_base_mul4.sv
+/home/yusen/opt/axi_tvip_test/npu_rtl/dip/dip_base_add4.sv
+/home/yusen/opt/axi_tvip_test/npu_rtl/dip/dip_simd_dot_product.sv
+/home/yusen/opt/axi_tvip_test/npu_rtl/dip/dip_segmented_adder64.sv
+/home/yusen/opt/axi_tvip_test/npu_rtl/dip/dip_pe.sv
+/home/yusen/opt/axi_tvip_test/npu_rtl/dip/dip_systolic_array.sv
+/home/yusen/opt/axi_tvip_test/npu_rtl/dip/dip_data_preprocess.sv
+/home/yusen/opt/axi_tvip_test/npu_rtl/dip/dip_gemm_core.sv
+
 /home/yusen/opt/axi_tvip_test/npu_rtl/engines/npu_complex_convert.sv
 /home/yusen/opt/axi_tvip_test/npu_rtl/engines/npu_complex_math_core.sv
 /home/yusen/opt/axi_tvip_test/npu_rtl/engines/npu_fp32_alu_seq.sv
 /home/yusen/opt/axi_tvip_test/npu_rtl/engines/npu_complex_math_seq.sv
 /home/yusen/opt/axi_tvip_test/npu_rtl/engines/npu_complex_engine.sv
 /home/yusen/opt/axi_tvip_test/npu_rtl/engines/npu_dma_engine.sv
+/home/yusen/opt/axi_tvip_test/npu_rtl/engines/npu_matrix_scalar_engine.sv
+/home/yusen/opt/axi_tvip_test/npu_rtl/engines/npu_matrix_dip_engine.sv
 /home/yusen/opt/axi_tvip_test/npu_rtl/engines/npu_matrix_engine.sv
+/home/yusen/opt/axi_tvip_test/npu_rtl/engines/npu_vector_packed_mul.sv
 /home/yusen/opt/axi_tvip_test/npu_rtl/engines/npu_vector_engine.sv
 
 /home/yusen/opt/axi_tvip_test/npu_rtl/top/npu_axi_slave_frontend.sv
-/home/yusen/opt/axi_tvip_test/npu_rtl/top/npu_mif_arbiter.sv
 /home/yusen/opt/axi_tvip_test/npu_rtl/top/npu_single_core_top.sv

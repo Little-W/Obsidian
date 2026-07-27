@@ -453,14 +453,21 @@ module tb_scheduler_ctl_smoke;
       $fatal(1, "WAIT did not time out a pending event");
     end
 
-    start_ctl(NPU_CTL_FENCE, 64'h3, 64'd100);
-    fork
-      complete_dma(NPU_STATUS_SUCCESS, 64'h123);
-      complete_matrix(NPU_STATUS_SUCCESS, 64'h456);
-    join
+    start_ctl(NPU_CTL_FENCE, 64'h1, 64'd100);
+    complete_dma(NPU_STATUS_SUCCESS, 64'h123);
     receive_ctl(response);
     if (response[7:0] != NPU_STATUS_SUCCESS) begin
-      $fatal(1, "FENCE did not complete successfully");
+      $fatal(1, "DMA-only FENCE did not complete successfully");
+    end
+    if (!matrix_done_ready) begin
+      $fatal(1, "DMA-only FENCE waited for the Matrix engine");
+    end
+
+    start_ctl(NPU_CTL_FENCE, 64'h2, 64'd100);
+    complete_matrix(NPU_STATUS_SUCCESS, 64'h456);
+    receive_ctl(response);
+    if (response[7:0] != NPU_STATUS_SUCCESS) begin
+      $fatal(1, "Matrix-only FENCE did not complete successfully");
     end
 
     wait (completion_count == 2);
@@ -500,6 +507,11 @@ module tb_scheduler_ctl_smoke;
       $fatal(1, "reserved QUERY selector was not rejected");
     end
 
+    ctl_request(NPU_CTL_QUERY, 64'h401, 64'd0, response);
+    if (response[7:0] != NPU_STATUS_BAD_DESC) begin
+      $fatal(1, "QUERY accepted nonzero command-ID reserved bits");
+    end
+
     submit_command(make_command(
       6'd2, 10'h003, NPU_DTYPE_INT8, 80'd0, 8'h00));
     wait ((completion_count == 3)
@@ -519,7 +531,7 @@ module tb_scheduler_ctl_smoke;
     end
 
     $display(
-      "PASS: scheduler WAIT by event ID, FENCE, QUERY and ACK signature=%0b",
+      "PASS: scheduler WAIT by event ID, masked FENCE, QUERY and ACK signature=%0b",
       ^{
         cmd_id_lookup_ready, cmd_id_lookup_rsp_valid, cmd_id_busy,
         dma_task_desc_flat, matrix_task_desc_flat,

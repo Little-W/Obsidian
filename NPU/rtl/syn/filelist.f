@@ -9,8 +9,20 @@ rtl_snapshot/control/npu_lsc.sv
 rtl_snapshot/control/npu_wdt.sv
 rtl_snapshot/control/npu_crg.sv
 
+rtl_snapshot/dip/dip_base_mul4.sv
+rtl_snapshot/dip/dip_base_add4.sv
+rtl_snapshot/dip/dip_simd_dot_product.sv
+rtl_snapshot/dip/dip_segmented_adder64.sv
+rtl_snapshot/dip/dip_pe.sv
+rtl_snapshot/dip/dip_systolic_array.sv
+rtl_snapshot/dip/dip_data_preprocess.sv
+rtl_snapshot/dip/dip_gemm_core.sv
+
 rtl_snapshot/engines/npu_dma_engine.sv
+rtl_snapshot/engines/npu_matrix_scalar_engine.sv
+rtl_snapshot/engines/npu_matrix_dip_engine.sv
 rtl_snapshot/engines/npu_matrix_engine.sv
+rtl_snapshot/engines/npu_vector_packed_mul.sv
 rtl_snapshot/engines/npu_vector_engine.sv
 rtl_snapshot/engines/npu_fp32_alu_seq.sv
 rtl_snapshot/engines/npu_complex_math_seq.sv

@@ -20,6 +20,7 @@ sync:
 		npu_single_core_400mhz.sdc run_dc.tcl Makefile README.md .gitignore \
 		"$(NPU_SYN_DIR)/"
 	mkdir -p "$(NPU_SYN_DIR)/rtl_snapshot/control"
+	mkdir -p "$(NPU_SYN_DIR)/rtl_snapshot/dip"
 	mkdir -p "$(NPU_SYN_DIR)/rtl_snapshot/engines"
 	mkdir -p "$(NPU_SYN_DIR)/rtl_snapshot/memory"
 	mkdir -p "$(NPU_SYN_DIR)/rtl_snapshot/top"
@@ -27,6 +28,8 @@ sync:
 		"$(NPU_SYN_DIR)/rtl_snapshot/"
 	cp -a "$(SOURCE_RTL)"/control/npu_*.sv \
 		"$(NPU_SYN_DIR)/rtl_snapshot/control/"
+	cp -a "$(SOURCE_RTL)"/dip/dip_*.sv \
+		"$(NPU_SYN_DIR)/rtl_snapshot/dip/"
 	cp -a "$(SOURCE_RTL)"/engines/npu_*.sv \
 		"$(NPU_SYN_DIR)/rtl_snapshot/engines/"
 	cp -a "$(SOURCE_RTL)"/memory/npu_axi_mif_master.sv \

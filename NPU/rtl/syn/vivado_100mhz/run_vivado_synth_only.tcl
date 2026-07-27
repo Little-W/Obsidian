@@ -20,6 +20,10 @@ set_param general.maxThreads 1
 set rtl_files [list \
   [file join $rtl_root npu_rtl_pkg.sv] \
   [file join $rtl_root engines npu_engine_pkg.sv]]
+foreach rtl_file [lsort [glob -nocomplain \
+    [file join $rtl_root dip dip_*.sv]]] {
+  lappend rtl_files $rtl_file
+}
 foreach subdir {control memory engines top} {
   foreach rtl_file [lsort [glob -nocomplain \
       [file join $rtl_root $subdir npu_*.sv]]] {

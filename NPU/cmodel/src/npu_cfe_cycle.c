@@ -330,7 +330,7 @@ void npu_cfe_cycle_step(npu_cfe_cycle_t *model,
             if (model->local_duplicate != 0u ||
                 inputs->cmd_id_busy_i != 0u) {
                 npu_cfe_set_response(
-                    model, NPU_STATUS_BUSY,
+                    model, NPU_STATUS_BAD_DESC,
                     NPU_CFE_STATE_RESP_ERR);
             } else {
                 model->state = NPU_CFE_STATE_ENQUEUE;

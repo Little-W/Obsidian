@@ -1,6 +1,6 @@
-if {$argc != 4} {
+if {($argc != 4) && ($argc != 5)} {
   puts stderr \
-    "usage: run_vivado.tcl BUILD_DIR PART PERIOD_NS JOBS"
+    "usage: run_vivado.tcl BUILD_DIR PART PERIOD_NS JOBS ?resume_post_synth?"
   exit 2
 }
 
@@ -8,6 +8,14 @@ set build_dir [file normalize [lindex $argv 0]]
 set part_name [lindex $argv 1]
 set period_ns [lindex $argv 2]
 set jobs [lindex $argv 3]
+set start_mode full
+if {$argc == 5} {
+  set start_mode [lindex $argv 4]
+  if {$start_mode ne "resume_post_synth"} {
+    puts stderr "ERROR: unsupported start mode: $start_mode"
+    exit 2
+  }
+}
 set required_part xc7a200tfbg484-3
 
 if {$part_name ne $required_part} {
@@ -204,7 +212,6 @@ proc write_stage_reports {
     -delay_type min_max \
     -no_detailed_paths \
     -report_unconstrained \
-    -max_paths 10 \
     -file [file join $build_dir timing_summary_${stage_name}.rpt]
   report_timing \
     -delay_type max \
@@ -276,35 +283,49 @@ proc write_stage_reports {
   return [dict create setup $setup_metrics hold $hold_metrics]
 }
 
-set rtl_candidates [list \
-  [file join $rtl_root npu_rtl_pkg.sv] \
-  [file join $rtl_root engines npu_engine_pkg.sv]]
-foreach subdir {control memory engines top} {
+if {$start_mode eq "full"} {
+  set rtl_candidates [list \
+    [file join $rtl_root npu_rtl_pkg.sv] \
+    [file join $rtl_root engines npu_engine_pkg.sv]]
   foreach rtl_file [lsort [glob -nocomplain \
-      [file join $rtl_root $subdir npu_*.sv]]] {
-    if {[file tail $rtl_file] ne "npu_engine_pkg.sv"} {
-      lappend rtl_candidates $rtl_file
+      [file join $rtl_root dip dip_*.sv]]] {
+    lappend rtl_candidates $rtl_file
+  }
+  foreach subdir {control memory engines top} {
+    foreach rtl_file [lsort [glob -nocomplain \
+        [file join $rtl_root $subdir npu_*.sv]]] {
+      if {[file tail $rtl_file] ne "npu_engine_pkg.sv"} {
+        lappend rtl_candidates $rtl_file
+      }
     }
   }
+  set rtl_files [unique_normalized_files $rtl_candidates]
+
+  puts "INFO: part=$part_name period_ns=$period_ns jobs=$jobs"
+  puts \
+    "INFO: rtl_input_count=[llength $rtl_candidates] unique_rtl_file_count=[llength $rtl_files]"
+  read_verilog -sv $rtl_files
+
+  set xdc_file [file join $script_dir npu_single_core_100mhz.xdc]
+  read_xdc [list $xdc_file]
+
+  synth_design \
+    -top $top_name \
+    -part $part_name \
+    -flatten_hierarchy rebuilt \
+    -mode out_of_context
+
+  opt_design
+  write_checkpoint -force [file join $build_dir post_synth.dcp]
+} else {
+  set resume_checkpoint [file join $build_dir post_synth.dcp]
+  if {![file exists $resume_checkpoint]} {
+    puts stderr "ERROR: resume checkpoint not found: $resume_checkpoint"
+    exit 2
+  }
+  puts "INFO: resuming implementation from $resume_checkpoint"
+  open_checkpoint $resume_checkpoint
 }
-set rtl_files [unique_normalized_files $rtl_candidates]
-
-puts "INFO: part=$part_name period_ns=$period_ns jobs=$jobs"
-puts \
-  "INFO: rtl_input_count=[llength $rtl_candidates] unique_rtl_file_count=[llength $rtl_files]"
-read_verilog -sv $rtl_files
-
-set xdc_file [file join $script_dir npu_single_core_100mhz.xdc]
-read_xdc [list $xdc_file]
-
-synth_design \
-  -top $top_name \
-  -part $part_name \
-  -flatten_hierarchy rebuilt \
-  -mode out_of_context
-
-opt_design
-write_checkpoint -force [file join $build_dir post_synth.dcp]
 set post_synth_metrics \
   [write_stage_reports \
     $build_dir post_synth $timing_path_count $part_name $period_ns]

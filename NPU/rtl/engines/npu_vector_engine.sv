@@ -44,6 +44,14 @@ module npu_vector_engine (
     ST_EXEC,
     ST_MUL,
     ST_MUL_POST,
+    ST_FAST_SRC0_REQ,
+    ST_FAST_SRC0_RSP,
+    ST_FAST_SRC1_REQ,
+    ST_FAST_SRC1_RSP,
+    ST_FAST_MUL_REQ,
+    ST_FAST_MUL_WAIT,
+    ST_FAST_WRITE_REQ,
+    ST_FAST_WRITE_RSP,
     ST_RMW_REQ,
     ST_RMW_RSP,
     ST_WRITE_REQ,
@@ -74,6 +82,25 @@ module npu_vector_engine (
   logic [7:0] status_q;
   logic [47:0] fault_addr_q;
   logic [63:0] progress_q;
+  logic fast_path_active_q;
+  logic [63:0] fast_src0_beat_q;
+  logic [63:0] fast_src1_beat_q;
+  logic [47:0] fast_src0_row_base_q;
+  logic [47:0] fast_src1_row_base_q;
+  logic [47:0] fast_dst_row_base_q;
+  logic [47:0] fast_src0_addr_q;
+  logic [47:0] fast_src1_addr_q;
+  logic [47:0] fast_dst_addr_q;
+  logic [1:0] fast_group_q;
+  logic [3:0] fast_write_index_q;
+  logic signed [31:0] fast_products_q [0:15];
+
+  logic packed_mul_req_valid;
+  logic packed_mul_rsp_valid;
+  logic [1:0] packed_mul_rsp_dtype;
+  logic [1:0] packed_mul_rsp_group;
+  logic [4:0] packed_mul_rsp_count;
+  logic [511:0] packed_mul_rsp_products;
 
   wire [7:0] desc_version = desc_q[7:0];
   wire [7:0] desc_type = desc_q[15:8];
@@ -128,6 +155,101 @@ module npu_vector_engine (
   wire mask_false_keep_dst = vector_flags[1];
   wire src1_from_scalar0 = vector_flags[2];
   wire src2_from_scalar1 = vector_flags[3];
+
+  function automatic logic [4:0] elements_per_input_beat(
+    input logic [1:0] dtype
+  );
+    case (dtype)
+      NPU_DTYPE_INT4:  return 5'd16;
+      NPU_DTYPE_INT8:  return 5'd8;
+      NPU_DTYPE_INT16: return 5'd4;
+      default:         return 5'd0;
+    endcase
+  endfunction
+
+  function automatic logic [63:0] packed_row_bytes(
+    input logic [31:0] element_count,
+    input logic [1:0] dtype
+  );
+    case (dtype)
+      NPU_DTYPE_INT4:
+        return ({32'd0, element_count} + 64'd1) >> 1;
+      NPU_DTYPE_INT8:
+        return {32'd0, element_count};
+      NPU_DTYPE_INT16:
+        return {32'd0, element_count} << 1;
+      default:
+        return {32'd0, element_count} << 2;
+    endcase
+  endfunction
+
+  wire [63:0] fast_src_row_bytes =
+    packed_row_bytes(length, src0_dtype);
+  wire [63:0] fast_dst_row_bytes = {32'd0, length} << 2;
+  wire fast_multirow_layout_ok =
+    (rows <= 1) ||
+    (({32'd0, src0_row_stride} == fast_src_row_bytes) &&
+     ({32'd0, src1_row_stride} == fast_src_row_bytes) &&
+     ({32'd0, dst_row_stride} == fast_dst_row_bytes) &&
+     (src0_row_stride[2:0] == 3'd0) &&
+     (src1_row_stride[2:0] == 3'd0) &&
+     (dst_row_stride[2:0] == 3'd0));
+  wire fast_path_eligible =
+    (opcode_q == NPU_VECTOR_MUL) &&
+    (vector_flags == 32'd0) &&
+    (broadcast_mode == 8'd0) &&
+    (mask_mode == 8'd0) &&
+    (src0_dtype == src1_dtype) &&
+    ((src0_dtype == NPU_DTYPE_INT4) ||
+     (src0_dtype == NPU_DTYPE_INT8) ||
+     (src0_dtype == NPU_DTYPE_INT16)) &&
+    (dst_dtype == NPU_DTYPE_INT32) &&
+    (src0_elem_stride ==
+      ((src0_dtype == NPU_DTYPE_INT16) ? 32'd2 :
+       (src0_dtype == NPU_DTYPE_INT8) ? 32'd1 : 32'd0)) &&
+    (src1_elem_stride == src0_elem_stride) &&
+    (dst_elem_stride == 32'd4) &&
+    (src0_base[2:0] == 3'd0) &&
+    (src1_base[2:0] == 3'd0) &&
+    (dst_base[2:0] == 3'd0) &&
+    !src0_nibble &&
+    !src1_nibble &&
+    !dst_nibble &&
+    fast_multirow_layout_ok;
+
+  wire [31:0] fast_row_element_count =
+    (row_q + 1 == rows) ? valid_length : length;
+  wire [31:0] fast_remaining_elements =
+    (col_q < fast_row_element_count) ?
+    (fast_row_element_count - col_q) : 32'd0;
+  wire [4:0] fast_elements_per_beat =
+    elements_per_input_beat(src0_dtype);
+  wire [4:0] fast_beat_element_count =
+    (fast_remaining_elements < {27'd0, fast_elements_per_beat}) ?
+    fast_remaining_elements[4:0] : fast_elements_per_beat;
+  wire [2:0] fast_group_count =
+    (src0_dtype == NPU_DTYPE_INT16) ? 3'd4 :
+    (src0_dtype == NPU_DTYPE_INT8) ? 3'd2 : 3'd1;
+  wire [47:0] fast_dst_write_addr =
+    fast_dst_addr_q + ({44'd0, fast_write_index_q} << 2);
+
+  assign packed_mul_req_valid =
+    (state_q == ST_FAST_MUL_REQ) && fast_path_active_q;
+
+  npu_vector_packed_mul u_packed_mul (
+    .clk_i(clk_i),
+    .reset_n(reset_n),
+    .req_valid_i(packed_mul_req_valid),
+    .dtype_i(src0_dtype),
+    .group_i(fast_group_q),
+    .src0_beat_i(fast_src0_beat_q),
+    .src1_beat_i(fast_src1_beat_q),
+    .rsp_valid_o(packed_mul_rsp_valid),
+    .rsp_dtype_o(packed_mul_rsp_dtype),
+    .rsp_group_o(packed_mul_rsp_group),
+    .rsp_count_o(packed_mul_rsp_count),
+    .rsp_products_o(packed_mul_rsp_products)
+  );
 
   function automatic logic [63:0] tensor_addr(
     input logic [63:0] base,
@@ -313,6 +435,32 @@ module npu_vector_engine (
         l1_req_valid_o = 1'b1;
         l1_req_addr_o = {src2_addr[19:3], 3'b000};
       end
+      ST_FAST_SRC0_REQ: begin
+        l1_req_valid_o =
+          fast_path_active_q && (fast_src0_addr_q[47:20] == 28'd0);
+        l1_req_addr_o = fast_src0_addr_q[19:0];
+      end
+      ST_FAST_SRC1_REQ: begin
+        l1_req_valid_o =
+          fast_path_active_q && (fast_src1_addr_q[47:20] == 28'd0);
+        l1_req_addr_o = fast_src1_addr_q[19:0];
+      end
+      ST_FAST_WRITE_REQ: begin
+        l1_req_valid_o =
+          fast_path_active_q &&
+          (fast_dst_write_addr[47:20] == 28'd0) &&
+          (fast_dst_write_addr[2:0] == 3'd0);
+        l1_req_write_o = 1'b1;
+        l1_req_addr_o = fast_dst_write_addr[19:0];
+        l1_req_wdata_o[31:0] =
+          fast_products_q[fast_write_index_q];
+        if (fast_write_index_q + 1 < fast_beat_element_count)
+          l1_req_wdata_o[63:32] =
+            fast_products_q[fast_write_index_q + 1];
+        l1_req_wstrb_o =
+          (fast_write_index_q + 1 < fast_beat_element_count) ?
+          8'hff : 8'h0f;
+      end
       ST_KEEP_REQ,
       ST_RMW_REQ: begin
         l1_req_valid_o = 1'b1;
@@ -332,6 +480,9 @@ module npu_vector_engine (
       ST_SRC0_RSP,
       ST_SRC1_RSP,
       ST_SRC2_RSP,
+      ST_FAST_SRC0_RSP,
+      ST_FAST_SRC1_RSP,
+      ST_FAST_WRITE_RSP,
       ST_KEEP_RSP,
       ST_RMW_RSP,
       ST_WRITE_RSP: l1_rsp_ready_o = 1'b1;
@@ -348,12 +499,14 @@ module npu_vector_engine (
       status_q <= NPU_STATUS_SUCCESS;
       fault_addr_q <= '0;
       progress_q <= 64'd0;
+      fast_path_active_q <= 1'b0;
     end else begin
       case (state_q)
         ST_IDLE: begin
           status_q <= NPU_STATUS_SUCCESS;
           fault_addr_q <= 48'd0;
           progress_q <= 64'd0;
+          fast_path_active_q <= 1'b0;
           if (task_valid_i) begin
             desc_q <= desc_i;
             opcode_q <= opcode_i;
@@ -434,7 +587,17 @@ module npu_vector_engine (
             row_q <= 32'd0;
             col_q <= 32'd0;
             mask_value_q <= 1'b1;
-            state_q <= mask_enable ? ST_MASK_REQ : ST_SRC0_REQ;
+            fast_path_active_q <= fast_path_eligible;
+            fast_src0_row_base_q <= src0_base[47:0];
+            fast_src1_row_base_q <= src1_base[47:0];
+            fast_dst_row_base_q <= dst_base[47:0];
+            fast_src0_addr_q <= src0_base[47:0];
+            fast_src1_addr_q <= src1_base[47:0];
+            fast_dst_addr_q <= dst_base[47:0];
+            fast_group_q <= 2'd0;
+            fast_write_index_q <= 4'd0;
+            state_q <= fast_path_eligible ? ST_FAST_SRC0_REQ :
+              (mask_enable ? ST_MASK_REQ : ST_SRC0_REQ);
           end
         end
 
@@ -524,6 +687,141 @@ module npu_vector_engine (
                   state_q <= ST_SRC2_REQ;
               end else
                 state_q <= vector_mul_opcode ? ST_MUL : ST_EXEC;
+            end
+          end
+
+        ST_FAST_SRC0_REQ:
+          if (fast_src0_addr_q[47:20] != 28'd0)
+            fail_task(NPU_STATUS_ADDR_FAULT, fast_src0_addr_q);
+          else if (l1_req_ready_i)
+            state_q <= ST_FAST_SRC0_RSP;
+
+        ST_FAST_SRC0_RSP:
+          if (l1_rsp_valid_i) begin
+            if (l1_rsp_status_i != 0)
+              fail_task(memory_status_to_task(l1_rsp_status_i),
+                        fast_src0_addr_q);
+            else begin
+              fast_src0_beat_q <= l1_rsp_rdata_i;
+              state_q <= ST_FAST_SRC1_REQ;
+            end
+          end
+
+        ST_FAST_SRC1_REQ:
+          if (fast_src1_addr_q[47:20] != 28'd0)
+            fail_task(NPU_STATUS_ADDR_FAULT, fast_src1_addr_q);
+          else if (l1_req_ready_i)
+            state_q <= ST_FAST_SRC1_RSP;
+
+        ST_FAST_SRC1_RSP:
+          if (l1_rsp_valid_i) begin
+            if (l1_rsp_status_i != 0)
+              fail_task(memory_status_to_task(l1_rsp_status_i),
+                        fast_src1_addr_q);
+            else begin
+              fast_src1_beat_q <= l1_rsp_rdata_i;
+              fast_group_q <= 2'd0;
+              state_q <= ST_FAST_MUL_REQ;
+            end
+          end
+
+        ST_FAST_MUL_REQ:
+          state_q <= ST_FAST_MUL_WAIT;
+
+        ST_FAST_MUL_WAIT:
+          if (packed_mul_rsp_valid) begin
+            if ((packed_mul_rsp_dtype != src0_dtype) ||
+                (packed_mul_rsp_group != fast_group_q) ||
+                ((src0_dtype == NPU_DTYPE_INT16) &&
+                 (packed_mul_rsp_count != 5'd1)) ||
+                ((src0_dtype == NPU_DTYPE_INT8) &&
+                 (packed_mul_rsp_count != 5'd4)) ||
+                ((src0_dtype == NPU_DTYPE_INT4) &&
+                 (packed_mul_rsp_count != 5'd16))) begin
+              fail_task(NPU_STATUS_BAD_DESC, 48'd0);
+            end else begin
+              case (src0_dtype)
+                NPU_DTYPE_INT4:
+                  for (integer lane = 0; lane < 16; lane++)
+                    fast_products_q[lane] <=
+                      packed_mul_rsp_products[lane * 32 +: 32];
+
+                NPU_DTYPE_INT8:
+                  for (integer lane = 0; lane < 4; lane++)
+                    fast_products_q[
+                      int'(fast_group_q) * 4 + lane
+                    ] <= packed_mul_rsp_products[lane * 32 +: 32];
+
+                default:
+                  fast_products_q[{2'd0, fast_group_q}] <=
+                    packed_mul_rsp_products[31:0];
+              endcase
+
+              if ({1'b0, fast_group_q} + 3'd1 < fast_group_count) begin
+                fast_group_q <= fast_group_q + 1'b1;
+                state_q <= ST_FAST_MUL_REQ;
+              end else begin
+                fast_write_index_q <= 4'd0;
+                state_q <= ST_FAST_WRITE_REQ;
+              end
+            end
+          end
+
+        ST_FAST_WRITE_REQ:
+          if ((fast_dst_write_addr[47:20] != 28'd0) ||
+              (fast_dst_write_addr[2:0] != 3'd0))
+            fail_task(NPU_STATUS_ADDR_FAULT, fast_dst_write_addr);
+          else if (l1_req_ready_i)
+            state_q <= ST_FAST_WRITE_RSP;
+
+        ST_FAST_WRITE_RSP:
+          if (l1_rsp_valid_i) begin
+            if (l1_rsp_status_i != 0)
+              fail_task(memory_status_to_task(l1_rsp_status_i),
+                        fast_dst_write_addr);
+            else begin
+              progress_q <= progress_q +
+                ((fast_write_index_q + 1 < fast_beat_element_count) ?
+                 64'd2 : 64'd1);
+              if (fast_write_index_q + 2 >= fast_beat_element_count) begin
+                if (col_q + {27'd0, fast_beat_element_count} >=
+                    fast_row_element_count) begin
+                  if (row_q + 1 >= rows) begin
+                    status_q <= NPU_STATUS_SUCCESS;
+                    state_q <= ST_DONE;
+                  end else begin
+                    row_q <= row_q + 1;
+                    col_q <= 32'd0;
+                    fast_src0_row_base_q <=
+                      fast_src0_row_base_q + {16'd0, src0_row_stride};
+                    fast_src1_row_base_q <=
+                      fast_src1_row_base_q + {16'd0, src1_row_stride};
+                    fast_dst_row_base_q <=
+                      fast_dst_row_base_q + {16'd0, dst_row_stride};
+                    fast_src0_addr_q <=
+                      fast_src0_row_base_q + {16'd0, src0_row_stride};
+                    fast_src1_addr_q <=
+                      fast_src1_row_base_q + {16'd0, src1_row_stride};
+                    fast_dst_addr_q <=
+                      fast_dst_row_base_q + {16'd0, dst_row_stride};
+                    fast_group_q <= 2'd0;
+                    fast_write_index_q <= 4'd0;
+                    state_q <= ST_FAST_SRC0_REQ;
+                  end
+                end else begin
+                  col_q <= col_q + {27'd0, fast_elements_per_beat};
+                  fast_src0_addr_q <= fast_src0_addr_q + 48'd8;
+                  fast_src1_addr_q <= fast_src1_addr_q + 48'd8;
+                  fast_dst_addr_q <= fast_dst_addr_q +
+                    ({43'd0, fast_elements_per_beat} << 2);
+                  fast_group_q <= 2'd0;
+                  fast_write_index_q <= 4'd0;
+                  state_q <= ST_FAST_SRC0_REQ;
+                end
+              end else begin
+                fast_write_index_q <= fast_write_index_q + 4'd2;
+                state_q <= ST_FAST_WRITE_REQ;
+              end
             end
           end
 

@@ -16,6 +16,7 @@ module dip_gemm_core #(
   output logic                          c_row_valid_o,
   output logic                          c_row_last_o,
   output logic [ARRAY_N * 32 - 1:0]     c_row_o,
+  output logic [ARRAY_N * 4 * 64 - 1:0] c_accum_row_o,
 
   output logic                          busy_o,
   output logic                          tile_done_o
@@ -143,7 +144,8 @@ module dip_gemm_core #(
     .data_valid_i(array_data_valid),
     .data_row_i(a_row_i),
     .result_valid_o(array_result_valid),
-    .result_row_o(array_result_row)
+    .result_row_o(array_result_row),
+    .result_accum_row_o(c_accum_row_o)
   );
 
   always_ff @(posedge clk_i or negedge reset_n) begin

@@ -12,6 +12,7 @@ module tb_dip_pe;
   logic wshift;
   logic pe_en;
   logic mul_en;
+  logic reassemble_en;
   logic reduce_en;
   logic adder_en;
   logic signed [15:0] data_in;
@@ -29,6 +30,7 @@ module tb_dip_pe;
     .wshift_i(wshift),
     .pe_en_i(pe_en),
     .mul_en_i(mul_en),
+    .reassemble_en_i(reassemble_en),
     .reduce_en_i(reduce_en),
     .adder_en_i(adder_en),
     .data_i(data_in),
@@ -74,6 +76,10 @@ module tb_dip_pe;
       @(posedge clk);
       @(negedge clk);
       mul_en = 1'b0;
+      reassemble_en = 1'b1;
+      @(posedge clk);
+      @(negedge clk);
+      reassemble_en = 1'b0;
       reduce_en = 1'b1;
       @(posedge clk);
       @(negedge clk);
@@ -99,6 +105,7 @@ module tb_dip_pe;
     wshift = 1'b0;
     pe_en = 1'b0;
     mul_en = 1'b0;
+    reassemble_en = 1'b0;
     reduce_en = 1'b0;
     adder_en = 1'b0;
     data_in = '0;
@@ -178,7 +185,9 @@ module tb_dip_pe;
     if (psum_out !== expected)
       $fatal(1, "INT4 PE got %h expected %h", psum_out, expected);
 
-    // Disabled registers must hold, then asynchronous reset must clear them.
+    // Disabled datapath registers must hold.  The PE payload registers are
+    // intentionally not reset; the array controller only consumes them after
+    // the corresponding enable wave has written valid data.
     @(negedge clk);
     data_in = 16'h55aa;
     weight_in = 16'haa55;
@@ -187,12 +196,12 @@ module tb_dip_pe;
     #1;
     if (psum_out !== expected)
       $fatal(1, "PE enable-low hold behavior failed");
+    if (data_out !== {-4'sd4, 4'd3, -4'sd2, 4'd1})
+      $fatal(1, "PE data enable-low hold behavior failed");
 
     @(negedge clk);
     reset_n = 1'b0;
     #1;
-    if (data_out !== '0 || weight_out !== '0 || psum_out !== '0)
-      $fatal(1, "PE asynchronous reset failed");
 
     $display("tb_dip_pe: PASS");
     $finish;

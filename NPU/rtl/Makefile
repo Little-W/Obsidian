@@ -34,11 +34,12 @@ PKG_SRCS := \
 
 CONTROL_SRCS := $(filter-out control/tb_%.sv,$(wildcard control/*.sv))
 MEMORY_SRCS  := $(filter-out memory/tb_%.sv,$(wildcard memory/*.sv))
+DIP_SRCS     := $(wildcard dip/*.sv)
 ENGINE_SRCS  := $(filter-out engines/npu_engine_pkg.sv,$(wildcard engines/*.sv))
 TOP_SRCS     := $(wildcard top/*.sv)
 
 RTL_SRCS := $(PKG_SRCS) \
-	$(CONTROL_SRCS) $(MEMORY_SRCS) $(ENGINE_SRCS) $(TOP_SRCS)
+	$(CONTROL_SRCS) $(MEMORY_SRCS) $(DIP_SRCS) $(ENGINE_SRCS) $(TOP_SRCS)
 
 VERILATOR_COMMON := \
 	--sv \
@@ -51,6 +52,7 @@ VERILATOR_COMMON := \
 	-I. \
 	-Icontrol \
 	-Imemory \
+	-Idip \
 	-Iengines \
 	-Itop
 
@@ -122,6 +124,22 @@ control-test:
 		-f Vtb_scheduler_ctl_smoke.mk -j1 \
 		$(VERILATOR_MAKE_FLAGS)
 	$(BUILD_DIR)/control_scheduler/Vtb_scheduler_ctl_smoke
+	mkdir -p $(GEN_DIR)/control_scheduler_join_fence
+	$(VERILATOR) --cc --exe --main $(VERILATOR_SIM) \
+		--top-module tb_scheduler_join_fence \
+		-Mdir $(GEN_DIR)/control_scheduler_join_fence \
+		-o Vtb_scheduler_join_fence \
+		npu_rtl_pkg.sv \
+		control/npu_inline_desc_decode.sv \
+		control/npu_task_scheduler.sv \
+		control/tb_scheduler_join_fence.sv
+	mkdir -p $(BUILD_DIR)/control_scheduler_join_fence
+	cp -a $(GEN_DIR)/control_scheduler_join_fence/. \
+		$(BUILD_DIR)/control_scheduler_join_fence/
+	$(MAKE) -C $(BUILD_DIR)/control_scheduler_join_fence \
+		-f Vtb_scheduler_join_fence.mk -j1 \
+		$(VERILATOR_MAKE_FLAGS)
+	$(BUILD_DIR)/control_scheduler_join_fence/Vtb_scheduler_join_fence
 	mkdir -p $(GEN_DIR)/control_inline_scheduler
 	$(VERILATOR) --cc --exe --main $(VERILATOR_SIM) \
 		--top-module tb_inline_scheduler_smoke \
@@ -201,6 +219,9 @@ engine-test:
 		engines/npu_fp32_alu_seq.sv \
 		engines/npu_complex_math_seq.sv \
 		engines/npu_dma_engine.sv \
+		$(DIP_SRCS) \
+		engines/npu_matrix_scalar_engine.sv \
+		engines/npu_matrix_dip_engine.sv \
 		engines/npu_matrix_engine.sv \
 		engines/npu_vector_engine.sv \
 		engines/npu_complex_engine.sv \

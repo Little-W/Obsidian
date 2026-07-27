@@ -266,7 +266,7 @@ static int cfe_test_fifo_full_and_local_duplicate(void)
         0u, 0u, &response);
     CFE_TEST_CHECK(result == 0);
     CFE_TEST_CHECK(cfe_test_response_status(response) ==
-                   NPU_STATUS_BUSY);
+                   NPU_STATUS_BAD_DESC);
     CFE_TEST_CHECK(model.fifo_count ==
                    NPU_CFE_CYCLE_FIFO_DEPTH - 1u);
     return 0;
@@ -315,7 +315,7 @@ static int cfe_test_lookup_pause_and_scheduler_busy(void)
     response = outputs.gc_rsp_data_o;
     CFE_TEST_CHECK(cfe_test_response_id(response) == 0x345u);
     CFE_TEST_CHECK(cfe_test_response_status(response) ==
-                   NPU_STATUS_BUSY);
+                   NPU_STATUS_BAD_DESC);
     CFE_TEST_CHECK(model.fifo_count == 0u);
     return 0;
 }

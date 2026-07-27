@@ -21,8 +21,10 @@ module tb_dip_gemm_core;
   logic c_row_valid;
   logic c_row_last;
   logic [ARRAY_N * 32 - 1:0] c_row;
+  logic [ARRAY_N * 4 * 64 - 1:0] c_accum_row;
   logic busy;
   logic tile_done;
+  wire unused_c_accum_row = ^c_accum_row;
 
   integer a_matrix [0:MAX_LOGICAL_N-1][0:MAX_LOGICAL_N-1];
   integer b_matrix [0:MAX_LOGICAL_N-1][0:MAX_LOGICAL_N-1];
@@ -57,6 +59,7 @@ module tb_dip_gemm_core;
     .c_row_valid_o(c_row_valid),
     .c_row_last_o(c_row_last),
     .c_row_o(c_row),
+    .c_accum_row_o(c_accum_row),
     .busy_o(busy),
     .tile_done_o(tile_done)
   );
@@ -386,12 +389,12 @@ module tb_dip_gemm_core;
 
       if (measure_latency &&
           last_c_valid_time - first_a_accept_time !=
-          (logical_n + ARRAY_N + 1) * 10ns) begin
+          (logical_n + ARRAY_N + 2) * 10ns) begin
         $fatal(1,
                "tile %0d latency %0t, expected %0t",
                tile_index,
                last_c_valid_time - first_a_accept_time,
-               (logical_n + ARRAY_N + 1) * 10ns);
+               (logical_n + ARRAY_N + 2) * 10ns);
       end
       measure_latency = 1'b0;
 

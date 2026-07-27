@@ -94,6 +94,223 @@ module tb_npu_matrix_engine;
     });
   endfunction
 
+  function automatic integer fast_a_value(
+    input integer batch,
+    input integer row,
+    input integer col
+  );
+    return ((batch + row + col) % 7) - 3;
+  endfunction
+
+  function automatic integer fast_b_value(
+    input integer batch,
+    input integer row,
+    input integer col
+  );
+    return ((batch + 2 * row + 3 * col) % 5) - 2;
+  endfunction
+
+  function automatic integer packed_byte_offset(
+    input logic [1:0] dtype,
+    input integer element
+  );
+    case (dtype)
+      NPU_DTYPE_INT16: return element * 2;
+      NPU_DTYPE_INT8:  return element;
+      default:         return element / 2;
+    endcase
+  endfunction
+
+  function automatic integer tiled_b_byte_offset(
+    input logic [1:0] dtype,
+    input integer row,
+    input integer col
+  );
+    integer element_index;
+    begin
+      element_index =
+        (((col / 8) * 16 + row) * 8) + (col % 8);
+      if (dtype == NPU_DTYPE_INT4)
+        return element_index / 2;
+      if (dtype == NPU_DTYPE_INT8)
+        return element_index;
+      return element_index * 2;
+    end
+  endfunction
+
+  task automatic write_packed_value(
+    input integer address,
+    input logic [1:0] dtype,
+    input logic element_odd,
+    input logic signed [15:0] value
+  );
+    logic [15:0] value16;
+    logic [7:0] value8;
+    logic [3:0] value4;
+    begin
+      value16 = 16'(value);
+      value8 = 8'(value);
+      value4 = 4'(value);
+      case (dtype)
+        NPU_DTYPE_INT16: begin
+          l1.mem[address] = value16[7:0];
+          l1.mem[address + 1] = value16[15:8];
+        end
+        NPU_DTYPE_INT8:
+          l1.mem[address] = value8;
+        default: begin
+          if (element_odd)
+            l1.mem[address][7:4] = value4;
+          else
+            l1.mem[address][3:0] = value4;
+        end
+      endcase
+    end
+  endtask
+
+  task automatic run_fast_dip_case(
+    input logic [1:0] dtype,
+    input logic [7:0] b_pack,
+    input logic [7:0] test_opcode,
+    input integer batches
+  );
+    integer logical_n;
+    integer a_base_addr;
+    integer b_base_addr;
+    integer c_base_addr;
+    integer a_batch_bytes;
+    integer b_batch_bytes;
+    integer c_batch_bytes;
+    logic [7:0] a_pack;
+    integer last_mn;
+    integer expected;
+    integer before_count;
+    integer address;
+    integer numeric;
+    begin
+      case (dtype)
+        NPU_DTYPE_INT16: begin
+          logical_n = 4;
+          a_pack = 5;
+        end
+        NPU_DTYPE_INT8: begin
+          logical_n = 8;
+          a_pack = 0;
+        end
+        default: begin
+          logical_n = 16;
+          a_pack = 1;
+        end
+      endcase
+
+      a_base_addr = 'h800;
+      b_base_addr = 'ha00;
+      c_base_addr = 'hc00;
+      a_batch_bytes = 'h100;
+      b_batch_bytes = 'h100;
+      c_batch_bytes = logical_n * logical_n * 4;
+      last_mn = logical_n == 16 ? 8 : logical_n;
+
+      for (int byte_index = 'h800;
+           byte_index < 'h1000;
+           byte_index++)
+        l1.mem[byte_index] = 8'd0;
+
+      for (int batch = 0; batch < batches; batch++) begin
+        for (int row = 0; row < logical_n; row++) begin
+          for (int col = 0; col < logical_n; col++) begin
+            address =
+              a_base_addr + batch * a_batch_bytes + row * 8 +
+              packed_byte_offset(dtype, col);
+            write_packed_value(
+              address, dtype, col[0],
+              16'(fast_a_value(batch, row, col))
+            );
+            address =
+              b_base_addr + batch * b_batch_bytes +
+              tiled_b_byte_offset(dtype, row, col);
+            write_packed_value(
+              address, dtype, col[0],
+              16'(fast_b_value(batch, row, col))
+            );
+          end
+        end
+      end
+
+      desc = '0;
+      opcode = test_opcode;
+      put8('h00, 8'h01);
+      put8('h01, 8'h02);
+      put16('h02, 16'd256);
+      put64('h08, 64'(a_base_addr));
+      put64('h10, 64'(b_base_addr));
+      put64('h20, 64'(c_base_addr));
+      numeric = {
+        24'd0,
+        NPU_DTYPE_INT32,
+        NPU_DTYPE_INT32,
+        dtype,
+        dtype
+      };
+      put32('h38, numeric);
+      put32('h40, logical_n);
+      put32('h44, logical_n);
+      put32('h48, logical_n);
+      put32('h4c, batches);
+      put32('h50, last_mn);
+      put32('h54, last_mn);
+      put32('h58, logical_n);
+      put32('h5c, 32'h0000_0080);
+      put32('h60, 32'd8);
+      put32('h64, 32'd8);
+      put32('h68, logical_n * 4);
+      put64('h70, 64'(a_batch_bytes));
+      put64('h78, 64'(b_batch_bytes));
+      put64('h80, 64'(c_batch_bytes));
+      put8('h90, a_pack);
+      put8('h91, b_pack);
+      put8('h92, 8'd4);
+      put8('h93, 8'd0);
+      put8('h94, 8'd0);
+      put8('h95, 8'd0);
+
+      before_count = dut.dip_task_count_q;
+      submit_and_expect(NPU_STATUS_SUCCESS);
+      if (dut.dip_task_count_q != before_count + 1)
+        $fatal(1, "DiP task counter did not advance");
+      if (done_progress != 64'(batches * logical_n * logical_n))
+        $fatal(1, "DiP progress %0d expected %0d",
+               done_progress, batches * logical_n * logical_n);
+
+      for (int batch = 0; batch < batches; batch++) begin
+        for (int row = 0; row < logical_n; row++) begin
+          for (int col = 0; col < logical_n; col++) begin
+            expected = 0;
+            for (int k = 0; k < logical_n; k++)
+              expected +=
+                fast_a_value(batch, row, k) *
+                fast_b_value(batch, k, col);
+            address =
+              c_base_addr + batch * c_batch_bytes +
+              row * logical_n * 4 + col * 4;
+            if (read_s32(address) != expected)
+              $fatal(
+                1,
+                "DiP dtype=%0d batch=%0d row=%0d col=%0d got=%0d expected=%0d",
+                dtype, batch, row, col,
+                read_s32(address), expected
+              );
+          end
+        end
+      end
+
+      $display(
+        "DiP fast path PASS: dtype=%0d size=%0d batches=%0d",
+        dtype, logical_n, batches
+      );
+    end
+  endtask
+
   task automatic submit_and_expect(input logic [7:0] expected_status);
     integer timeout;
     begin
@@ -322,6 +539,16 @@ module tb_npu_matrix_engine;
       $fatal(1, "matrix INT16 pack5/pack6 mismatch: %0d %0d",
              $signed({l1.mem['h661], l1.mem['h660]}),
              $signed({l1.mem['h663], l1.mem['h662]}));
+
+    run_fast_dip_case(
+      NPU_DTYPE_INT16, 8'd6, NPU_MATRIX_BMM, 2
+    );
+    run_fast_dip_case(
+      NPU_DTYPE_INT8, 8'd2, NPU_MATRIX_GEMM, 1
+    );
+    run_fast_dip_case(
+      NPU_DTYPE_INT4, 8'd3, NPU_MATRIX_GEMM, 1
+    );
 
     $display("tb_npu_matrix_engine PASS");
     $finish;

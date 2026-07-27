@@ -2,6 +2,7 @@ module dip_simd_dot_product (
   input  logic        clk_i,
   input  logic        reset_n,
   input  logic        mul_en_i,
+  input  logic        reassemble_en_i,
   input  logic        reduce_en_i,
 
   input  logic [1:0]  mode_i,
@@ -28,6 +29,13 @@ module dip_simd_dot_product (
   logic [7:0] product_q [0:15];
   logic [1:0] product_mode_q;
 
+  logic signed [39:0] radix_term_comb [0:15];
+  logic signed [39:0] radix_sum2_comb [0:7];
+  logic signed [39:0] radix_sum4_comb [0:3];
+  logic signed [39:0] radix_sum8_comb [0:1];
+  logic signed [39:0] logical_product_comb [0:15];
+  logic signed [31:0] logical_product_q [0:15];
+  logic [1:0] logical_product_mode_q;
   logic signed [39:0] lane_sum_comb [0:3];
   logic        [63:0] contribution_comb;
 
@@ -42,6 +50,12 @@ module dip_simd_dot_product (
       extend_product = $signed({{32{product[7]}}, product});
     else
       extend_product = $signed({32'b0, product});
+  endfunction
+
+  function automatic logic signed [39:0] extend_logical_product (
+    input logic signed [31:0] product
+  );
+    return {{8{product[31]}}, product};
   endfunction
 
   generate
@@ -140,15 +154,21 @@ module dip_simd_dot_product (
     endcase
   end
 
-  always_comb begin : reduce_partial_products
+  always_comb begin : reassemble_logical_products
     logic [3:0] map_idx;
 
     map_idx = '0;
-    for (integer lane = 0; lane < 4; lane++)
-      lane_sum_comb[lane] = '0;
+    for (integer term = 0; term < 16; term++) begin
+      radix_term_comb[term] = '0;
+      logical_product_comb[term] = '0;
+    end
+    for (integer pair = 0; pair < 8; pair++)
+      radix_sum2_comb[pair] = '0;
+    for (integer group = 0; group < 4; group++)
+      radix_sum4_comb[group] = '0;
+    for (integer half = 0; half < 2; half++)
+      radix_sum8_comb[half] = '0;
 
-    // product_mode_q was captured together with product_q, so bubbles and
-    // back-to-back mode changes cannot reinterpret an older product bank.
     case (product_mode_q)
       MODE_INT8: begin
         for (integer out_lane = 0; out_lane < 2; out_lane++) begin
@@ -157,14 +177,18 @@ module dip_simd_dot_product (
               for (integer b_digit = 0; b_digit < 2; b_digit++) begin
                 map_idx = 4'((((out_lane * 2 + k_lane) * 2 + a_digit)
                              * 2 + b_digit));
-                lane_sum_comb[out_lane] =
-                  lane_sum_comb[out_lane] +
-                  (extend_product(
-                     product_q[map_idx],
-                     (a_digit == 1) || (b_digit == 1)
-                   ) <<< (4 * (a_digit + b_digit)));
+                radix_term_comb[map_idx] =
+                  extend_product(
+                    product_q[map_idx],
+                    (a_digit == 1) || (b_digit == 1)
+                  ) <<< (4 * (a_digit + b_digit));
               end
             end
+            logical_product_comb[out_lane * 4 + k_lane] =
+              (radix_term_comb[(out_lane * 2 + k_lane) * 4] +
+               radix_term_comb[(out_lane * 2 + k_lane) * 4 + 1]) +
+              (radix_term_comb[(out_lane * 2 + k_lane) * 4 + 2] +
+               radix_term_comb[(out_lane * 2 + k_lane) * 4 + 3]);
           end
         end
       end
@@ -173,8 +197,7 @@ module dip_simd_dot_product (
         for (integer out_lane = 0; out_lane < 4; out_lane++) begin
           for (integer k_lane = 0; k_lane < 4; k_lane++) begin
             map_idx = 4'(out_lane * 4 + k_lane);
-            lane_sum_comb[out_lane] =
-              lane_sum_comb[out_lane] +
+            logical_product_comb[map_idx] =
               extend_product(product_q[map_idx], 1'b1);
           end
         end
@@ -184,19 +207,71 @@ module dip_simd_dot_product (
         for (integer a_digit = 0; a_digit < 4; a_digit++) begin
           for (integer b_digit = 0; b_digit < 4; b_digit++) begin
             map_idx = 4'(a_digit * 4 + b_digit);
-            lane_sum_comb[0] =
-              lane_sum_comb[0] +
-              (extend_product(
-                 product_q[map_idx],
-                 (a_digit == 3) || (b_digit == 3)
-               ) <<< (4 * (a_digit + b_digit)));
+            radix_term_comb[map_idx] =
+              extend_product(
+                product_q[map_idx],
+                (a_digit == 3) || (b_digit == 3)
+              ) <<< (4 * (a_digit + b_digit));
           end
         end
+        for (integer pair = 0; pair < 8; pair++)
+          radix_sum2_comb[pair] =
+            radix_term_comb[pair * 2] +
+            radix_term_comb[pair * 2 + 1];
+        for (integer group = 0; group < 4; group++)
+          radix_sum4_comb[group] =
+            radix_sum2_comb[group * 2] +
+            radix_sum2_comb[group * 2 + 1];
+        for (integer half = 0; half < 2; half++)
+          radix_sum8_comb[half] =
+            radix_sum4_comb[half * 2] +
+            radix_sum4_comb[half * 2 + 1];
+        logical_product_comb[0] =
+          radix_sum8_comb[0] + radix_sum8_comb[1];
       end
+    endcase
+  end
+
+  always_comb begin : reduce_local_k
+    for (integer lane = 0; lane < 4; lane++)
+      lane_sum_comb[lane] = '0;
+
+    case (logical_product_mode_q)
+      MODE_INT8: begin
+        for (integer out_lane = 0; out_lane < 2; out_lane++)
+          lane_sum_comb[out_lane] =
+            extend_logical_product(
+              logical_product_q[out_lane * 4]
+            ) +
+            extend_logical_product(
+              logical_product_q[out_lane * 4 + 1]
+            );
+      end
+
+      MODE_INT4: begin
+        for (integer out_lane = 0; out_lane < 4; out_lane++)
+          lane_sum_comb[out_lane] =
+            (extend_logical_product(
+               logical_product_q[out_lane * 4]
+             ) +
+             extend_logical_product(
+               logical_product_q[out_lane * 4 + 1]
+             )) +
+            (extend_logical_product(
+               logical_product_q[out_lane * 4 + 2]
+             ) +
+             extend_logical_product(
+               logical_product_q[out_lane * 4 + 3]
+             ));
+      end
+
+      default:
+        lane_sum_comb[0] =
+          extend_logical_product(logical_product_q[0]);
     endcase
 
     contribution_comb = '0;
-    case (product_mode_q)
+    case (logical_product_mode_q)
       MODE_INT8: begin
         contribution_comb[0 * 32 +: 32] =
           lane_sum_comb[0][31:0];
@@ -221,14 +296,12 @@ module dip_simd_dot_product (
     endcase
   end
 
-  // Stage 1: capture only base-multiplier results.
-  // Stage 2: capture the completed partial-product/local-K reduction.
+  // Stage 1 captures base products.  Stage 2 rebuilds each logical
+  // product.  Stage 3 adds the local K lanes.
   always_ff @(posedge clk_i or negedge reset_n) begin
     if (!reset_n) begin
-      for (integer product = 0; product < 16; product++)
-        product_q[product] <= '0;
       product_mode_q <= MODE_INT16;
-      contribution_o <= '0;
+      logical_product_mode_q <= MODE_INT16;
       contribution_mode_o <= MODE_INT16;
     end else begin
       if (mul_en_i) begin
@@ -242,9 +315,18 @@ module dip_simd_dot_product (
         endcase
       end
 
+      if (reassemble_en_i) begin
+        for (integer logical_product = 0;
+             logical_product < 16;
+             logical_product++)
+          logical_product_q[logical_product] <=
+            logical_product_comb[logical_product][31:0];
+        logical_product_mode_q <= product_mode_q;
+      end
+
       if (reduce_en_i) begin
         contribution_o <= contribution_comb;
-        contribution_mode_o <= product_mode_q;
+        contribution_mode_o <= logical_product_mode_q;
       end
     end
   end
