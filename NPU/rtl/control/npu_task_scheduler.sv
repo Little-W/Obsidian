@@ -1290,7 +1290,8 @@ module npu_task_scheduler #(
       released_slots_q <= released_slots_d;
       for (int unsigned slot = 0; slot < TASK_SLOTS; slot++) begin
         task_predecessor_mask_q[slot] <=
-          task_predecessor_mask_q[slot] & ~released_slots_q;
+          task_predecessor_mask_q[slot]
+          & ~(released_slots_q | released_slots_d);
       end
 
       if (ctl_rsp_valid_q && axi_ctl_rsp_ready_i) begin
@@ -1531,7 +1532,8 @@ module npu_task_scheduler #(
         task_signal_q[cmd_admit_slot_q] <= cmd_admit_signal_q;
         task_submit_seq_q[cmd_admit_slot_q] <= submit_seq_q;
         task_predecessor_mask_q[cmd_admit_slot_q] <=
-          cmd_admit_predecessor_mask_q;
+          cmd_admit_predecessor_mask_q
+          & ~(released_slots_q | released_slots_d);
         task_cmd_q[cmd_admit_slot_q] <= cmd_admit_cmd_q;
         task_input_base_q[cmd_admit_slot_q] <=
           cmd_admit_input_base_q;
