@@ -1,3 +1,0 @@
-npu_cmd_fifo
-npu_single_core
-cov_metrics = line+toggle

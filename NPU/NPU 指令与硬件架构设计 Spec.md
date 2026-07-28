@@ -2297,7 +2297,7 @@ MIF 的 AXI 事务在 DMA 与 MIF 的内部接口之后完成。DMA 只依据 `m
 
 ### 10.1 当前 RTL 的职责
 
-L1BUF 是单核 NPU 内部的共享片上存储。当前 RTL 由 `NPU/rtl/memory/npu_l1buf.sv` 实现，文件中包含两个模块：
+L1BUF 是单核 NPU 内部的共享片上存储。当前 RTL 由 `/home/etc/FPGA/Transformer_NPU/rtl/memory/npu_l1buf.sv` 实现，文件中包含两个模块：
 
 - `npu_l1buf_bank`：一组 64-bit 同步 SRAM，支持逐字节写使能；
 - `npu_l1buf`：完成客户端仲裁、请求寄存、地址检查、bank 与 row 计算、读请求流水、写入控制和逐客户端响应保持。
@@ -5524,8 +5524,8 @@ $$
 
 | 阶段 | 参考程序 | 输入 | 主要工作 |
 | --- | --- | --- | --- |
-| 上层编译 | `NPU/compiler/npu_model_compiler.py` | Keras、PyTorch、TFLite、ONNX 或高层 JSON | 前端导入、图检查、稳定拓扑排序、shape 推导、常量处理、算子拆分、张量布局、存储分配、任务依赖生成和 C 包生成 |
-| 低层汇编 | `NPU/compiler/npu_assembler.py` | 规范化低层 JSON IR | 指令字段检查、事件字段检查、128-bit 指令编码、命令镜像和摘要生成 |
+| 上层编译 | `/home/etc/FPGA/Transformer_NPU/compiler/npu_model_compiler.py` | Keras、PyTorch、TFLite、ONNX 或高层 JSON | 前端导入、图检查、稳定拓扑排序、shape 推导、常量处理、算子拆分、张量布局、存储分配、任务依赖生成和 C 包生成 |
+| 低层汇编 | `/home/etc/FPGA/Transformer_NPU/compiler/npu_assembler.py` | 规范化低层 JSON IR | 指令字段检查、事件字段检查、128-bit 指令编码、命令镜像和摘要生成 |
 
 高层模型图只描述下列内容：
 
@@ -5608,7 +5608,7 @@ C 驱动使用 C11，并且不依赖某一种操作系统。公共头文件只�
 寄存器访问、指令提交、运行控制和缓存同步分别放在独立源文件中。仅供驱动内部
 共享的检查函数放在私有头文件，应用程序不得包含该私有头文件。
 
-参考驱动位于 `NPU/driver`，内部按下表拆分：
+参考驱动位于 `/home/etc/FPGA/Transformer_NPU/driver`，内部按下表拆分：
 
 | 文件 | 主要职责 | 不应承担的工作 |
 | --- | --- | --- |
@@ -5649,7 +5649,7 @@ word 因平台错误无法发送，平台需要按第 7.4 节等待 CFE 超时�
 
 ### 18.4 Transformer 端到端部署参考
 
-可执行参考程序位于 `NPU/cmodel/examples/transformer`。`build_model.py` 在
+可执行参考程序位于 `/home/etc/FPGA/Transformer_NPU/cmodel/examples/transformer`。`build_model.py` 在
 `tf_2_18` 环境训练一个英文房间设备命令分类模型并保存 `.keras` 文件。模型
 输入固定容纳 8 个 token，每个 token 有 32 个特征；网络含两个 Transformer
 Encoder，每个 Encoder 使用 4 个注意力 head、宽度 32、前馈层宽度 48，末尾
@@ -5681,7 +5681,7 @@ C 测试程序包含编译器生成的 `keras_transformer_model.h/.c`。指令�
 运行命令如下：
 
 ```bash
-cd "/home/yusen/Obsidian Vault/NPU/cmodel/examples/transformer"
+cd "/home/etc/FPGA/Transformer_NPU/cmodel/examples/transformer"
 make clean
 make test
 make regress

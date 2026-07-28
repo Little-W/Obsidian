@@ -1,8 +1,0 @@
-/build/
-/build_*/
-/.Xil/
-/vivado.jou
-/vivado.log
-/vivado_*.backup.jou
-/vivado_*.backup.log
-/vivado_pid*.str
