@@ -133,6 +133,8 @@ module npu_task_scheduler #(
   logic [11:0]   task_signal_q       [TASK_SLOTS];
   logic [63:0]   task_submit_seq_q   [TASK_SLOTS];
   logic [TASK_SLOTS-1:0] task_predecessor_mask_q [TASK_SLOTS];
+  logic [TASK_SLOTS-1:0] released_slots_q;
+  logic [TASK_SLOTS-1:0] released_slots_d;
   /*
    * Keep the submitted instruction and its address-base snapshot instead of
    * a 2048-bit expanded descriptor per slot.  The snapshot preserves the
@@ -1083,9 +1085,7 @@ module npu_task_scheduler #(
         cmd_admit_signal_q <= cmd_signal_resolved;
         cmd_admit_static_valid_q <= cmd_static_valid;
         cmd_admit_is_inline_rearm_q <= cmd_is_inline_rearm;
-        cmd_admit_predecessor_mask_q <= cmd_static_valid
-                                      ? cmd_predecessor_mask
-                                      : '0;
+        cmd_admit_predecessor_mask_q <= cmd_predecessor_mask;
         cmd_admit_cmd_q <= cfe_cmd_i;
         cmd_admit_input_base_q <= input_base_i;
         cmd_admit_weight_base_q <= weight_base_i;
@@ -1158,6 +1158,16 @@ module npu_task_scheduler #(
   assign task_query_error_info_o = task_error_info_q[query_select];
   assign task_query_done_flags_o = task_done_flags_q[query_select];
   assign task_ack_ready_o        = ack_found;
+
+  always_comb begin
+    released_slots_d = '0;
+    if (task_ack_valid_i && task_ack_ready_o) begin
+      released_slots_d[ack_select] = 1'b1;
+    end
+    if (ctl_rsp_valid_q && axi_ctl_rsp_ready_i && ctl_ack_release_q) begin
+      released_slots_d[ctl_ack_slot_q] = 1'b1;
+    end
+  end
 
   always_comb begin
     task_occupancy_o = cmd_admit_valid_q ? 16'd1 : 16'd0;
@@ -1238,6 +1248,7 @@ module npu_task_scheduler #(
       ctl_rsp_data_q             <= 64'd0;
       ctl_ack_release_q          <= 1'b0;
       ctl_ack_slot_q             <= '0;
+      released_slots_q           <= '0;
       ctl_fence_target_q         <= '0;
       ctl_fence_snapshot_terminal_q <= '0;
       ctl_fence_scan_slot_q      <= '0;
@@ -1276,9 +1287,10 @@ module npu_task_scheduler #(
       if (cmd_id_lookup_valid_i && cmd_id_lookup_ready_o) begin
         lookup_busy_q <= lookup_busy_comb;
       end
+      released_slots_q <= released_slots_d;
       for (int unsigned slot = 0; slot < TASK_SLOTS; slot++) begin
         task_predecessor_mask_q[slot] <=
-          task_predecessor_mask_q[slot] & task_live_mask;
+          task_predecessor_mask_q[slot] & ~released_slots_q;
       end
 
       if (ctl_rsp_valid_q && axi_ctl_rsp_ready_i) begin
@@ -1952,6 +1964,7 @@ module npu_task_scheduler #(
       end
 
       if (abort_i) begin
+        released_slots_q          <= '0;
         dma_dispatch_valid_q     <= 1'b0;
         matrix_dispatch_valid_q  <= 1'b0;
         vector_dispatch_valid_q  <= 1'b0;
