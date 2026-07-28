@@ -7,12 +7,15 @@ BUILD_DIR ?= build
 PART ?= xc7a200tfbg484-3
 PERIOD_NS ?= 10.000
 JOBS ?= 1
+VIVADO_SESSION_INFO ?= /tmp/npu_vivado_session:$(notdir $(BUILD_DIR))
 
 .PHONY: syn synth-only timing-dedup timing-dedup-synth clean
 
 syn:
 	mkdir -p "$(BUILD_DIR)"
 	cd "$(BUILD_DIR)" && \
+	env XILINX_LOCAL_USER_DATA=no \
+		RDI_SESSION_INFO="$(VIVADO_SESSION_INFO)" \
 	"$(VIVADO)" -mode batch -notrace \
 		-journal vivado.jou \
 		-log vivado_internal.log \
@@ -25,6 +28,8 @@ syn:
 synth-only:
 	mkdir -p "$(BUILD_DIR)"
 	cd "$(BUILD_DIR)" && \
+	env XILINX_LOCAL_USER_DATA=no \
+		RDI_SESSION_INFO="$(VIVADO_SESSION_INFO)" \
 	"$(VIVADO)" -mode batch -notrace \
 		-journal vivado_synth.jou \
 		-log vivado_synth_internal.log \

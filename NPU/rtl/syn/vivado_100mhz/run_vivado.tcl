@@ -40,6 +40,8 @@ set timing_path_count 200
 
 file mkdir $build_dir
 set_param general.maxThreads 1
+set_msg_config -id {Timing 38-242} -new_severity ERROR
+set_msg_config -id {Route 35-197} -new_severity ERROR
 
 proc unique_normalized_files {file_list} {
   set unique_files [list]
@@ -52,6 +54,25 @@ proc unique_normalized_files {file_list} {
     }
   }
   return $unique_files
+}
+
+proc assert_clock_source_constraints {} {
+  foreach {port_name site_name} {
+    core_clk_i BUFGCTRL_X0Y0
+  } {
+    set clock_port [get_ports -quiet $port_name]
+    if {[llength $clock_port] != 1} {
+      error "clock-source check failed: expected one port named $port_name"
+    }
+    if {[llength [get_sites -quiet $site_name]] != 1} {
+      error "clock-source check failed: site $site_name is not present on the selected part"
+    }
+    set applied_site [get_property HD.CLK_SRC $clock_port]
+    if {$applied_site ne $site_name} {
+      error "clock-source check failed: $port_name HD.CLK_SRC is '$applied_site', expected '$site_name'"
+    }
+    puts "INFO: clock-source check passed: $port_name HD.CLK_SRC=$applied_site"
+  }
 }
 
 proc get_memory_cells {scope_pattern ref_filter} {
@@ -327,6 +348,7 @@ if {$start_mode ne "resume_post_synth"} {
   puts "INFO: resuming implementation from $resume_checkpoint"
   open_checkpoint $resume_checkpoint
 }
+assert_clock_source_constraints
 set post_synth_metrics \
   [write_stage_reports \
     $build_dir post_synth $timing_path_count $part_name $period_ns]
