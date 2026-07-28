@@ -503,7 +503,7 @@ flowchart TB
 | 项目 | 规则 |
 | --- | --- |
 | 主时钟 | 当前 CFE、TS、四个执行单元、L1BUF、MIF 和 LSC 都使用 `core_clk_i`；`noc_clk_i` 只进入 CRG |
-| 主复位 | CRG 从外部 `reset_n` 产生 `core_reset_n_o` 和 `noc_reset_n_o`；当前功能模块使用由 `core_reset_n_o` 与内部软复位脉冲组合得到的 `functional_reset_n` |
+| 主复位 | CRG 从外部 `reset_n` 产生 `core_reset_n_o` 和 `noc_reset_n_o`。AXI Slave Frontend、CFE、TS、四个执行单元、L1BUF 和 MIF 使用由 `core_reset_n_o` 与内部软复位脉冲组合得到的 `functional_reset_n`；LSC 与 WDT 使用 `core_reset_n_o` |
 | ready/valid | 发送端驱动 `valid` 和 payload，接收端驱动 `ready` |
 | 传输发生条件 | 某周期上升沿同时采样到 `valid=1` 且 `ready=1` |
 | payload 保持 | `valid=1` 且 `ready=0` 时，发送端必须保持 payload 不变 |
@@ -516,9 +516,7 @@ flowchart TB
 > `valid` 不得组合依赖同一接口的 `ready`。`ready` 可以由接收端资源状态产生，但不得经过对端 `valid` 再直接返回，以免形成组合回授。
 
 > [!note] 复位信号后缀
-> `_n` 只表示低有效，不表示端口方向。当前顶层使用低有效复位输入 `reset_n`；
-> CRG 输出名为 `core_reset_n_o` 和 `noc_reset_n_o`，功能模块使用
-> `functional_reset_n`。每个端口的 Input 或 Output 方向由接口表单独规定。
+> `_n` 只表示低有效，不表示端口方向。当前顶层使用低有效复位输入 `reset_n`；CRG 输出名为 `core_reset_n_o` 和 `noc_reset_n_o`。AXI Slave Frontend、CFE、TS、四个执行单元、L1BUF 和 MIF 使用 `functional_reset_n`，LSC 与 WDT 使用 `core_reset_n_o`。LSC 在自身 RESET 状态机中处理软复位期间的错误记录与状态清理。每个端口的 Input 或 Output 方向由接口表单独规定。
 
 ### 4.2 ready/valid 基本时序
 
@@ -714,7 +712,7 @@ Generic Core 与 NPU 的关系只有两类：
 | 控制参数 0 | `0x020020` | 64 bit | WAIT/QUERY/FENCE 的第一个参数 |
 | 控制参数 1 | `0x020028` | 64 bit | WAIT/QUERY/FENCE 的第二个参数 |
 | 控制启动 | `0x020030` | 64 bit | 启动一次控制请求 |
-| 控制状态 | `0x020038` | 64 bit | 读取 busy、valid 和返回状态 |
+| 控制状态 | `0x020038` | 64 bit | 读取 busy、done 和前端完成状态 |
 | 控制结果 | `0x020040` | 64 bit | 读取控制请求返回值 |
 | 控制取消 | `0x020048` | 64 bit | 取消正在等待的 WAIT 或 FENCE |
 | L1BUF 外部窗口 | `0x100000～0x1FFFFF` | 8、16、32 或 64 bit | `L1_HOST_ACCESS_ENABLE=1` 时访问 |
@@ -842,7 +840,7 @@ WAIT、QUERY 和 FENCE 使用控制参数与控制启动寄存器，不使用 CP
 | `2` | QUERY | `ARG0[9:0]` 为 `command_id`，`ARG0[63:10]` 必须为 0，`ARG1[2:0]` 为查询 selector |
 | `3` | FENCE | `ARG0[3:0]` 为执行单元选择，`ARG1[31:0]` 为最大等待周期 |
 
-写 `CTL_START` 时高 62 bit必须为 0，并且当前控制端口不能处于 busy。Frontend 将参数和操作码通过 `ctl_req_*` ready/valid 接口送到 TaskScheduler。返回到达后，`CTL_STATUS.done=1`，状态写入 `CTL_STATUS[15:8]`，64 bit结果写入 `CTL_RESULT`。
+写 `CTL_START` 时高 62 bit必须为 0，并且当前控制端口不能处于 busy。Frontend 将参数和操作码通过 `ctl_req_*` ready/valid 接口送到 TaskScheduler。正常返回到达后，`CTL_STATUS.done=1`，`CTL_STATUS[15:8]` 写入 `SUCCESS`，完整的 64-bit 操作结果写入 `CTL_RESULT`。WAIT、QUERY 和 FENCE 的任务状态、事件状态或失败信息均按各自结果格式从 `CTL_RESULT` 读取。Frontend 本地处理取消请求时，`CTL_STATUS[15:8]` 写入 `8'h0a`。
 
 写 `CTL_CANCEL=1` 可以取消正在等待的 WAIT 或 FENCE。QUERY 不接受取消。取消只结束本次同步控制请求，不修改被查询任务、Event Table 或已经产生的张量数据。
 
@@ -1331,7 +1329,7 @@ STAT 的 `stat_mode` 为 0、1、2 时分别计算 SUM、MAX、SUMSQ，编码 3 
 6. 数据格式组合是否受该操作支持。
 7. `count`、M/N/K、rows、length、segment 等尺寸字段是否在允许范围。
 8. INT4 起始半字节、奇数个元素的最后半字节和完整访问字节数是否正确。
-9. DMA 在任务开始时检查可预先计算的完整源区和目标区；Matrix、IVE 和 CME 还会在逐项访问时检查计算所得地址是否仍位于 20-bit L1 地址空间。
+9. DMA 在任务开始时检查可预先计算的完整源区和目标区；Matrix 与 IVE 还会在逐项访问时检查计算所得地址是否仍位于 20-bit L1 地址空间。当前 CME 在任务开始时检查各基址的高位，逐项访问时检查元素是否跨越 8B beat，但没有再次检查行、列步长计算所得地址的高位；因此软件和编译器必须保证 CME 的全部实际访问地址都小于 `0x100000`。
 10. 源区与目标区重叠时，该操作是否明确允许重叠；DMA 在硬件中检查，连续 Vector MUL 由编译器保证 src0、src1、dst 两两不相交。
 
 公共检查失败时不得启动执行单元。CFE 已经接收成功但在 TaskScheduler 内联解码时失败的命令，会建立一个 `BAD_DESC` 终态任务并等待软件查询与 ACK；它不会回写或修改较早产生的 CFE 接收结果。当前内联解码器只输出合法标志，没有独立的错误状态端口，因此其所有字段检查失败都记录为 `BAD_DESC`。执行单元启动后的尺寸、数据格式、访问地址与总线错误仍按各模块的状态返回。错误状态按下表选择：
@@ -1745,7 +1743,7 @@ FREE
 
 TS 在接收一条合法任务时生成 `predecessor_mask`，不再为每个等待任务反复比较两项 64-bit `submit_seq`。若新任务设置 `ordered=1`，掩码记录当时全部非 FREE 且未进入终态的较早任务。每条后续合法任务也记录当时仍未进入终态的较早 ordered 任务，因此不能越过这些任务。`GLOBAL_FENCE` 还会按照第 6.7.1 节的 `engine_mask`，记录被选执行单元中仍未进入终态的较早任务；它和其他合法任务一样，也要等待较早的 ordered 任务。
 
-`task_live_mask` 的每个 bit 表示对应槽当前为非 FREE 且非终态。`order_blocked` 直接由 `predecessor_mask & task_live_mask` 的结果是否非零得到。较早任务进入 SUCCESS 或 ERROR 后，其 bit 立即不再产生阻塞；时钟沿还会把失效 bit 从保存的掩码中清除。软件 ACK 释放槽时也清除该槽自身保存的掩码，因此后续任务复用槽号不会恢复旧的等待关系。abort 会清除全部前序任务掩码。GLOBAL_FENCE 在等待条件满足后返回 `SUCCESS`，不复制较早任务的失败状态。软件经 AXI 控制端口发出的 FENCE 不同：它保存请求开始时所选任务的快照，并返回其中提交顺序最早的失败状态。
+`task_live_mask` 的每个 bit 表示对应槽当前为非 FREE 且非终态。`order_blocked` 直接由 `predecessor_mask & task_live_mask` 的结果是否非零得到。较早任务进入 SUCCESS 或 ERROR 后，其 bit 立即不再产生阻塞。软件直接 ACK 或通过 AXI ACK 释放槽时，`released_slots_d` 在释放当拍生效，`released_slots_q` 在下一拍继续保留该信息；两者共同从全部任务保存的 `predecessor_mask` 中删除被释放槽的 bit，并在新任务写入时做相同过滤，避免槽号立即复用后恢复旧等待关系。静态检查失败的任务仍保存接纳时取得的掩码，但任务直接进入 ERROR，因此不参加调度。abort 会清除全部前序任务掩码。GLOBAL_FENCE 在等待条件满足后返回 `SUCCESS`，不复制较早任务的失败状态。软件经 AXI 控制端口发出的 FENCE 不同：它保存请求开始时所选任务的快照，并返回其中提交顺序最早的失败状态。
 
 ### 8.5 Event Table
 
@@ -1983,7 +1981,7 @@ sequenceDiagram
     TS->>TS: 清除持有槽valid与该任务notify
 ```
 
-命令握手周期内，接收检查解码器组合产生 engine、opcode 和 `valid`，Event 逻辑形成内部事件引用与 `predecessor_mask`。第一个时钟沿只把这些结果、目标 FREE 槽、完整指令和基地址保存到命令接纳寄存级；第二个时钟沿才用保存值写任务表并分配 `submit_seq`。静态检查失败的任务直接建立 ERROR 终态且掩码写 0；合法任务先进入 WAIT_EVENT，依赖事件成功并且 `predecessor_mask & task_live_mask` 为 0 后进入 READY。该阶段不把 2048 bit展开结果写入任务表。
+命令握手周期内，接收检查解码器组合产生 engine、opcode 和 `valid`，Event 逻辑形成内部事件引用与 `predecessor_mask`。第一个时钟沿只把这些结果、目标 FREE 槽、完整指令和基地址保存到命令接纳寄存级；第二个时钟沿才用保存值写任务表并分配 `submit_seq`。保存值写入任务表前会删除 `released_slots_q | released_slots_d` 指出的槽 bit。静态检查失败的任务直接建立 ERROR 终态，仍可保存接纳时取得的掩码，但终态任务不参加调度；合法任务先进入 WAIT_EVENT，依赖事件成功并且 `predecessor_mask & task_live_mask` 为 0 后进入 READY。该阶段不把 2048 bit展开结果写入任务表。
 
 没有待展开快照时，TS 启动或继续逐槽扫描。基准 16 项任务表每周期检查一项；候选必须为非 Control 的 READY 任务、前序任务条件已满足，并且目标执行单元没有活动任务且发射暂存为空。扫描保存当前 `submit_seq` 最小的候选，并在最后一个槽完成检查时复查获胜项。复查通过后，时钟沿保存窄快照；没有候选时不写快照。
 
@@ -3631,7 +3629,10 @@ IVE 的主控制状态与 RTL 枚举一致：
 | --- | --- |
 | `ST_IDLE` | `task_ready_o=1`；与 IVE 发射暂存握手后锁存操作码和完整 Task Context |
 | `ST_CHECK` | 检查结构编号、执行单元类型、有效字节数、dtype、shape、mask、地址和操作组合；初始化行列游标以及快速分支的行基址、当前行元素数和末行标志 |
-| `ST_ADDR_PREP` | 通用分支计算当前元素的 src0、src1、src2、mask、dst 完整字节地址和 INT4 高低半字节选择，并写入专用寄存器 |
+| `ST_ADDR_PREP` | 通用分支保存当前元素的五组行偏移和 INT4 高低半字节选择 |
+| `ST_ADDR_ROW_ADD` | 分别计算 src0、src1、src2、mask、dst 的基址加行偏移，同时保存五组列偏移 |
+| `ST_ADDR_FINAL` | 在前一拍结果上加入列偏移，形成五组完整字节地址 |
+| `ST_ADDR_CHECK` | 检查五组地址是否位于 20-bit L1 地址范围，并检查各数据元素是否跨越 8B beat；检查结果写入专用 valid 寄存器 |
 | `ST_MASK_REQ/RSP` | SELECT 读取一个 INT8 mask 字节 |
 | `ST_SRC0_REQ/RSP` | 读取并符号扩展 src0 |
 | `ST_SRC1_REQ/RSP` | 需要时读取并符号扩展 src1 |
@@ -3640,12 +3641,14 @@ IVE 的主控制状态与 RTL 枚举一致：
 | `ST_EXEC` | 执行 ADD、SUB、MAX、MIN、CMP、SELECT、CLAMP 或 RELU，并完成范围处理 |
 | `ST_MUL` | 执行 signed16×signed16 乘法，保存 signed32 乘积、FMA 加数、目的格式、溢出方式和目的地址 |
 | `ST_MUL_POST` | 把乘积扩展到 signed64，执行可选 FMA 加法、范围处理和写回状态选择 |
+| `ST_FAST_ADDR_CHECK` | 快速分支检查当前 src0、src1 地址是否位于 20-bit L1 地址范围且按 8B 对齐 |
 | `ST_FAST_SRC0_REQ/RSP` | 快速分支读取并保存一个 64-bit src0 beat |
 | `ST_FAST_SRC1_REQ/RSP` | 快速分支读取并保存一个 64-bit src1 beat |
 | `ST_FAST_MUL_REQ` | 向三段 Packed MUL 提交当前格式和组号 |
 | `ST_FAST_MUL_WAIT` | 等待逻辑乘积，按 INT16、INT8 或 INT4 的组内位置保存结果 |
 | `ST_FAST_WRITE_PREP` | 保存当前输出对的 48-bit地址、64-bit写数据和 8-bit strobe；末尾剩一个结果时高 32 bit写 0，并把 strobe 设为 `8'h0f` |
-| `ST_FAST_WRITE_REQ` | 只用快速写寄存器发出请求；请求握手时保存本次进度增量和写响应后的动作 |
+| `ST_FAST_WRITE_CHECK` | 检查 `ST_FAST_WRITE_PREP` 保存的目的地址是否位于 20-bit L1 地址范围且按 8B 对齐 |
+| `ST_FAST_WRITE_REQ` | 只用快速写寄存器和地址检查寄存器发出请求；请求握手时保存本次进度增量和写响应后的动作 |
 | `ST_FAST_WRITE_RSP` | 等待写响应；成功时使用保存的进度和动作进入下一输出对、下一输入 beat、下一行或完成状态 |
 | `ST_RMW_REQ/RSP` | 普通计算产生任一 INT4 目的值时读取旧 beat；低半字节写保留旧高半字节，高半字节写保留旧低半字节 |
 | `ST_WRITE_REQ/RSP` | 发出带 `WSTRB` 的目的写，并等待写完成状态 |
@@ -3655,10 +3658,14 @@ IVE 的主控制状态与 RTL 枚举一致：
 stateDiagram-v2
     [*] --> ST_IDLE
     ST_IDLE --> ST_CHECK: task handshake
-    ST_CHECK --> ST_FAST_SRC0_REQ: eligible continuous MUL
+    ST_CHECK --> ST_FAST_ADDR_CHECK: eligible continuous MUL
     ST_CHECK --> ST_ADDR_PREP: other valid task
-    ST_ADDR_PREP --> ST_MASK_REQ: SELECT
-    ST_ADDR_PREP --> ST_SRC0_REQ: other valid task
+    ST_ADDR_PREP --> ST_ADDR_ROW_ADD
+    ST_ADDR_ROW_ADD --> ST_ADDR_FINAL
+    ST_ADDR_FINAL --> ST_ADDR_CHECK
+    ST_ADDR_CHECK --> ST_MASK_REQ: SELECT
+    ST_ADDR_CHECK --> ST_SRC0_REQ: other valid task
+    ST_FAST_ADDR_CHECK --> ST_FAST_SRC0_REQ
     ST_FAST_SRC0_REQ --> ST_FAST_SRC0_RSP
     ST_FAST_SRC0_RSP --> ST_FAST_SRC1_REQ
     ST_FAST_SRC1_REQ --> ST_FAST_SRC1_RSP
@@ -3666,7 +3673,8 @@ stateDiagram-v2
     ST_FAST_MUL_REQ --> ST_FAST_MUL_WAIT
     ST_FAST_MUL_WAIT --> ST_FAST_MUL_REQ: next group
     ST_FAST_MUL_WAIT --> ST_FAST_WRITE_PREP: all groups complete
-    ST_FAST_WRITE_PREP --> ST_FAST_WRITE_REQ
+    ST_FAST_WRITE_PREP --> ST_FAST_WRITE_CHECK
+    ST_FAST_WRITE_CHECK --> ST_FAST_WRITE_REQ
     ST_FAST_WRITE_REQ --> ST_FAST_WRITE_RSP
     ST_FAST_WRITE_RSP --> ST_FAST_WRITE_PREP: next output pair
     ST_FAST_WRITE_RSP --> ST_FAST_SRC0_REQ: next input beat or row
@@ -3696,9 +3704,9 @@ stateDiagram-v2
     ST_DONE --> ST_IDLE: done handshake
 ```
 
-通用标量分支中，每个元素先经过一个 `ST_ADDR_PREP` 周期。该状态只计算地址和半字节选择；后续请求、响应、计算与写回状态都读取 `element_src0_addr_q`、`element_src1_addr_q`、`element_src2_addr_q`、`element_mask_addr_q`、`element_dst_addr_q` 以及对应 nibble 寄存器。写响应成功后先更新行列游标，再返回 `ST_ADDR_PREP`，因此下一元素的行步长、列步长与广播地址运算不会串接到当前写响应的状态选择中。
+通用标量分支中，每个元素依次经过 `ST_ADDR_PREP → ST_ADDR_ROW_ADD → ST_ADDR_FINAL → ST_ADDR_CHECK`。第一拍保存行偏移和半字节选择，第二拍执行基址加行偏移并保存列偏移，第三拍加入列偏移，第四拍检查完整地址和跨 beat 条件。后续请求、响应、计算与写回状态都读取 `element_src0_addr_q`、`element_src1_addr_q`、`element_src2_addr_q`、`element_mask_addr_q`、`element_dst_addr_q`、对应 nibble 寄存器和地址 valid 寄存器。写响应成功后先更新行列游标，再返回 `ST_ADDR_PREP`，因此下一元素的行步长、列步长与广播地址运算不会串接到当前写响应的状态选择中。
 
-一个没有 mask 的双输入非乘法、非 INT4 元素至少包含一次地址准备、两次读请求/响应、一个 `ST_EXEC` 周期和一次写请求/响应。未进入快速分支的 MUL 在两次输入读取后还经过 `ST_MUL` 和 `ST_MUL_POST`；FMA 额外读取一次 src2，再经过相同的两个计算状态。SELECT 额外读取一次 mask；每个 INT4 目的元素都在写前增加一次目的 beat读取。实际周期数还包含 L1 的 `ready` 等待和响应延迟。
+一个没有 mask 的双输入非乘法、非 INT4 元素至少包含四个地址处理周期、两次读请求/响应、一个 `ST_EXEC` 周期和一次写请求/响应。未进入快速分支的 MUL 在两次输入读取后还经过 `ST_MUL` 和 `ST_MUL_POST`；FMA 额外读取一次 src2，再经过相同的两个计算状态。SELECT 额外读取一次 mask；每个 INT4 目的元素都在写前增加一次目的 beat读取。实际周期数还包含 L1 的 `ready` 等待和响应延迟。
 
 连续 MUL 快速分支按输入 beat工作：每个 beat有两次 L1 读请求，INT16、INT8、INT4 分别发出 4、2、1 次 Packed MUL 请求，然后发出 2、4、8 次写请求；每个 64-bit 写 beat携带两个 INT32，末尾只剩一个有效元素时仅使用低 4B。全部 Packed MUL 结果保存后，首个输出对先进入 `ST_FAST_WRITE_PREP`；后续每个 `NEXT_PAIR` 也先返回该状态。该状态把 `fast_dst_write_addr`、当前两个结果组成的 64-bit数据和 strobe 分别保存到 `fast_write_addr_q`、`fast_write_data_q` 与 `fast_write_strb_q`。`ST_FAST_WRITE_REQ` 的 L1 地址、数据和 strobe 只读取这些寄存值，因此请求暂停时三项保持不变。`ST_CHECK` 保存首行元素数和是否为末行；每次进入新行时，`ST_FAST_WRITE_RSP` 提前保存下一行的元素数和末行标志，最后一行使用 `valid_length`，其他行使用 `length`。
 
@@ -4125,8 +4133,10 @@ CME 外层状态机与当前 RTL 枚举一致：
 | `ST_IDLE` | 等待任务，与 CME 发射暂存握手后锁存操作码与 Task Context |
 | `ST_CHECK` | 检查操作、内部字段、dtype、shape、scale、mask、地址和函数组合 |
 | `ST_ROW_INIT` | 清零当前行的统计寄存器，寄存 causal query 位置，并选择初始 phase；STAT 目的地址已在任务检查结束时保存，后续在每行写成功后增加 stride |
+| `ST_VLEN_CHECK` | 每行有效长度模式下，检查当前 INT32 长度元素是否跨越 8B beat；通过后才能发出读取请求 |
 | `ST_VLEN_REQ/RSP` | Softmax 读取当前行有效长度 |
-| `ST_ELEMENT_BEGIN` | 选择 mask、读输入、跳过统计无效项或直接写无效输出 |
+| `ST_ELEMENT_BEGIN` | 保存当前 src0、src1、src2、dst、mask 地址，保存 INT4 半字节选择和派生 mask 结果 |
+| `ST_ADDR_PREP` | 根据 mask 模式和派生 mask 决定读取 boolean mask、跳过当前项、写零或读取 src0；同时检查 src0 元素是否跨越 8B beat |
 | `ST_MASK_REQ/RSP` | 读取 boolean mask |
 | `ST_SRC0_REQ/RSP` | 读取主输入 |
 | `ST_SRC1_REQ/RSP` | 读取第二输入或 gamma |
@@ -4930,11 +4940,7 @@ Core 域门控请求由 bit 0～6 的或值产生，NoC 域门控请求由 bit 7
 
 valid 保持但没有 ready 的等待周期不属于有效推进；同样，单纯处于 busy 状态也不能清除 WDT 计数。
 
-LSC 的 `wdt_timeout_i` 是单周期事件，而 WDT 的 `wdt_timeout_o` 是保持电平。
-顶层只在 `wdt_timeout_o` 从 0 变为 1 时向 LSC 发送一次事件。软件清除
-`FAULT_*` 时，如果 WDT 超时电平仍为 1，旧超时不得再次占用首错寄存器；
-只有先通过喂狗、关闭或复位使该电平回到 0，随后再次发生新的上升变化，才形成
-下一条 WDT 错误。
+当前顶层把 WDT 的保持电平 `wdt_timeout_o` 直接接到 LSC 的 `wdt_timeout_i`，没有增加上升变化检测。LSC 在 `wdt_timeout_i=1` 且首错寄存器为空时记录 WDT 错误。软件清除 `FAULT_*` 后，如果 WDT 超时电平仍为 1，LSC 会在后续周期再次记录该错误；软件若要结束本次超时状态，应先喂狗、关闭 WDT 或复位，使 `wdt_timeout_o` 回到 0。
 
 ### 15.7 上电与初始化时序
 
@@ -5087,7 +5093,7 @@ L1BUF 在复位后不自动全区清零。任何任务读取一个 L1 地址前�
 | 13. 装入完成持有槽 | TS / 共用逐槽选择寄存器 | 任务已经置位 `notify` | 扫描轮开始时保存完成候选位图，每周期检查一个槽并保留最小 `submit_seq`；轮末位图未变化、获胜项复查通过、完成持有槽为空且该任务 Event 已发布时，保存表项编号并置位 `completion_hold_valid_q` |
 | 14. 通知与释放 | TS / LSC / 软件 | 完成持有槽有效 | 完成通知握手后清除 `notify`；软件查询后 ACK，任务表项回到 FREE |
 
-阶段 3 保存的是接纳握手时的基地址，阶段 4 只把这些寄存值复制到任务表；两个阶段都不保存每任务一份 2048 bit展开结果。这样，已经进入命令接纳、WAIT_EVENT 或 READY 的任务不会因软件后续改写基地址寄存器而改变实际访问地址。新任务设置 ordered 时，`predecessor_mask` 记录全部仍未进入终态的较早任务；每条合法新任务记录仍未进入终态的较早 ordered 任务；GLOBAL_FENCE 还按照 `engine_mask` 记录所选执行单元中的较早任务。较早任务进入终态后，对应 bit 不再阻止任务，并在时钟沿从保存值中清除。
+阶段 3 保存的是接纳握手时的基地址，阶段 4 只把这些寄存值复制到任务表；两个阶段都不保存每任务一份 2048 bit展开结果。这样，已经进入命令接纳、WAIT_EVENT 或 READY 的任务不会因软件后续改写基地址寄存器而改变实际访问地址。新任务设置 ordered 时，`predecessor_mask` 记录全部仍未进入终态的较早任务；每条合法新任务记录仍未进入终态的较早 ordered 任务；GLOBAL_FENCE 还按照 `engine_mask` 记录所选执行单元中的较早任务。较早任务进入终态后，`task_live_mask` 使对应 bit 立即停止阻塞；槽经直接 ACK 或 AXI ACK 释放时，`released_slots_d` 和 `released_slots_q` 从全部保存值中删除该槽 bit，并过滤释放同拍及下一拍写入的新任务。
 
 阶段 6 的一轮扫描固定检查 16 个槽。扫描结束时没有候选，则后续周期从槽 0 开始新一轮。Control 任务不经过阶段 6～9；它在依赖与前序任务条件满足后进入 Control 候选位图，由 Control、Event 和完成共用的连续逐槽扫描器选择，轮末复查通过后先保存槽号和 `submit_seq`，下一周期再次复查并由 TS 内部完成。阶段 7 的窄快照和阶段 8 的发射解码器由四类执行单元共享；阶段 8 的输出写入四组独立发射暂存中的一组。某个执行单元暂停接收时，其他执行单元仍可继续运行或完成已有暂存的握手，但新的 Task Context 按最早任务次序逐项展开。
 
@@ -5799,9 +5805,9 @@ IVE 除原有逐元素操作外，还必须验证连续 MUL 快速分支：
 - 检查快速分支命中计数或内部活动状态，避免数值测试实际只经过标量分支；
 - 未对齐地址、广播、mask、不同输入格式、FMA 和非连续行距必须回到标量分支；
 - Packed MUL 的三段 valid、dtype、group 与结果保持同步，暂停写响应时结果缓存不得被覆盖；
-- 通用分支每个元素先经过 `ST_ADDR_PREP`，五组地址与四组 INT4 半字节选择在全部请求和响应等待周期保持不变；
+- 通用分支每个元素依次经过 `ST_ADDR_PREP`、`ST_ADDR_ROW_ADD`、`ST_ADDR_FINAL` 和 `ST_ADDR_CHECK`，五组地址、五组 valid 与四组 INT4 半字节选择在全部请求和响应等待周期保持不变；
 - 通用分支的普通计算结果对 INT4 低、高半字节写都必须经过 `ST_RMW_REQ/RSP`；测试分别预置相邻半字节为非零值，确认写低半字节时旧高半字节不变、写高半字节时旧低半字节不变，并确认奇数长度末字节的未使用高半字节保留旧值；模块级 `mask_false_keep_dst` 通过 `ST_KEEP_REQ/RSP` 取得旧 beat，不要求再进入 `ST_RMW_REQ/RSP`；
-- 连续 MUL 的每个输出对必须先经过 `ST_FAST_WRITE_PREP`，并检查保存的 48-bit地址、64-bit数据和 8-bit strobe；`ST_FAST_WRITE_REQ` 暂停期间三项保持不变，末尾单元素写的高 32 bit为 0 且 strobe 为 `8'h0f`；
+- 连续 MUL 每次读取前必须经过 `ST_FAST_ADDR_CHECK`；每个输出对必须依次经过 `ST_FAST_WRITE_PREP` 和 `ST_FAST_WRITE_CHECK`，并检查保存的 48-bit地址、地址 valid、64-bit数据和 8-bit strobe；`ST_FAST_WRITE_REQ` 暂停期间这些寄存值保持不变，末尾单元素写的高 32 bit为 0 且 strobe 为 `8'h0f`；
 - 快速写请求握手时保存 1 或 2 的进度增量以及 `NEXT_PAIR/NEXT_BEAT/NEXT_ROW/DONE` 动作，写响应暂停时两项寄存值保持不变，成功响应后只能执行保存的动作；
 - 使用长度 9 的 INT8 快速 MUL 覆盖 8 元素首拍、1 元素末拍和行切换，最终进度必须为 9；
 - 编译器端到端测试必须检查连续 MUL 的 src0、src1、dst 占用区域两两不相交；构造相交分配时，编译器应在生成 Task Context 前报错，因为当前 IVE 不产生相应的 `ADDR_OVERLAP`；
@@ -5836,6 +5842,9 @@ F2I 还必须检查以下状态和数值：
 - `done_ready_i=0` 时完成状态、错误地址和进度保持不变，F2I 中间寄存值不能引起重复写回。
 - STAT 在任务检查结束时把 `dst_base[47:0]` 保存到 `stat_dst_addr_q`；每行写响应成功后只在还有下一行时把该寄存器增加 `dst_row_stride`。SUM、MAX、SUMSQ 写请求、地址检查和错误报告都使用该寄存器，`ST_ROW_INIT` 与 `ST_STAT_SQUARE` 不重新计算或改写当前行地址。
 - 正常指令入口提交 `COMPLEX_SOFTMAX mask_mode=2` 时，内联解码必须返回无效，TS 建立 `BAD_DESC` 终态且 CME 不接收任务；CME 模块级直接 Task Context 测试要覆盖 `query_position_base`、`key_position_base` 和 `query_position_step`，确认每行先保存 `causal_query_position_q`，并按 `key_position_base+col_q <= causal_query_position_q` 选择有效位置。
+- 每行有效长度模式必须先进入 `ST_VLEN_CHECK`；INT32 长度元素跨越 8B beat时返回 `ADDR_FAULT`，通过检查后才能进入 `ST_VLEN_REQ/RSP`。
+- 每个元素必须先在 `ST_ELEMENT_BEGIN` 保存五组地址、四组 INT4 半字节选择和派生 mask，再由 `ST_ADDR_PREP` 决定读取 boolean mask、跳过、写零或读取 src0；请求暂停时只能使用这些保存值，不能重新读取已经变化的行列游标。
+- 分别构造派生 mask 无效且处于 `PH_SOFT_OUT`、派生 mask 无效且处于统计阶段、boolean mask 和普通有效元素四类情况，检查 `ST_ADDR_PREP` 的后续状态、写零行为和 `done_progress_o`。
 
 Exp 范围整数处理还必须检查：
 
