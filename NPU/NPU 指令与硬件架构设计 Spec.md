@@ -63,7 +63,7 @@
 下列物理参数允许不同芯片实现采用不同数值，但必须通过 RTL 参数和只读功能寄存器明确给出。第 2.2 节和第 20 节给出当前 RTL 的固定参考值：
 
 - Matrix 的物理阵列规模、逻辑 tile 大小与标量分支计算速率；
-- Vector 标量分支每次处理的元素数与 Packed MUL 每次请求的乘积数；
+- Vector 标量分支每次处理的元素数与共享 PE 每次请求的乘积数；
 - L1BUF 总容量、bank 数和每个 bank 的端口数；
 - AXI outstanding 深度；
 - 具体工艺下的 SRAM 和乘法器实现；
@@ -88,7 +88,7 @@ NPU 子系统必须满足以下要求：
 7. DDR Channel 选择或交织方式由 SoC 配置决定，NPU 指令不因该配置变化而改变。
 8. 地址错误、命令字段错误、数据格式不被接受、依赖任务失败和看门狗超时必须产生可读取的错误状态。
 9. DDR 和 L1BUF 中的模型张量只采用 INT4、INT8、INT16、INT32；FP32 可以作为只读 scale、$\epsilon$、函数系数或查找表元数据，也可以用于复杂数学函数的内部计算过程，但不能作为软件可见的模型张量格式。
-10. 当前 Matrix Engine 在固定 4×4、8×8 或 16×16 同精度方阵上使用 4×4 DiP 脉动阵列；其他合法任务进入保留的逐元素分支。顶层仍同时只接受一个 Matrix 任务，并共用一组 64-bit L1 端口。
+10. Matrix 与 Vector 是两类调度任务，但由一个 `npu_matrix_vector_engine` 物理模块执行。Matrix 内含 Outer context 与 Scalar context：Outer context 执行分块外积并保存本地部分和，Scalar context 执行逐元素乘加与后处理。两个 context 先共用 Matrix PE/L1 路由，再与 Vector 共用一套可配置多精度 MAC PE和内部存储通道。
 11. Generic Core 是 NPU 外部的主控 CPU，不属于 NPU RTL。它通过软件驱动发起 AXI 访问，不使用 NPU 内部取指端口或自定义指令端口。
 12. NPU 对外提供 AXI Slave 和 AXI Master：AXI Slave 接收指令、CSR 与 L1BUF 窗口访问；AXI Master 由 DMA/MIF 发起全局内存访问。
 
@@ -104,7 +104,7 @@ NPU 子系统必须满足以下要求：
 | 命令头宽度          | `CMD_W`           |         128 bit | 本文定义   | 在 64-bit 接口上按低 64 bit、再高 64 bit传送 |
 | 命令 beat 数       | `CMD_BEATS`       |               2 | 本文定义   | 每个 beat 为 64 bit                         |
 | 事件表项数          | `EVENT_NUM`       |             255 | 本文定义   | Event ID 为 0～254；每项含状态与 4-bit 代次      |
-| 单 Core 在途任务数   | `TASK_NUM`        |              16 | RTL 基准配置 | 终态记录在 ACK 前继续占用表项                       |
+| 单 Core 任务槽数   | `TASK_SLOTS`        |              16 | RTL 基准配置 | RTL 按该参数生成任务表、前序位图和逐槽检查器；参数测试覆盖 1、3、5，终态记录在 ACK 前继续占用槽                       |
 | CFE FIFO 深度      | `CFE_FIFO_DEPTH`  |               8 | C model 参考配置 | 每项保存一个完整的 128-bit CMD                  |
 | 第二 beat 等待上限   | `CFE_BEAT_TIMEOUT` |      32 cycles | C model 参考配置 | 收到低 64 bit 后等待高 64 bit 的最大周期数          |
 | DMA 连续复制最大元素数 | `DMA_MAX_COUNT` |         1048575 | 由指令中的字段决定 | COPY 与 FILL 的 20 bit `count` 最大值          |
@@ -114,31 +114,36 @@ NPU 子系统必须满足以下要求：
 | L1BUF bank 数   | `L1_BANKS`        |              16 | C model 参考配置 | bank 采用 64-bit 单端口 1RW                  |
 | L1 SRAM 读延迟    | `L1_RD_LATENCY`   |        2 cycles | C model 参考配置 | 从读请求握手后的下一周期开始计算                     |
 | L1 等待提升计数器 | — | 未实现 | 当前 RTL | 使用逐请求轮询；后续可以增加等待周期提升 |
-| DiP 物理阵列 | `ARRAY_N×ARRAY_N` | `4×4` | 当前 RTL | 由 16 个 PE 组成；每个 PE 内复用 16 个 4×4 基础乘法器 |
-| DiP 逻辑方阵 | — | INT16 `4×4×4`、INT8 `8×8×8`、INT4 `16×16×16` | 当前 RTL | 三个数依次表示 M、K、N；DiP 分支只接收对应的同格式方阵 |
-| 标量分支 B tile | `MT×KT×NT` | `8×16×8` | 当前格式配置 | 用于末尾 tile 检查和 B 的存储排列，不表示并行乘法器数量 |
+| Matrix context 数 | — | 2 | 当前 RTL | context0 是 Outer context并含本地部分和 RAM；context1 是 Scalar context |
+| 共享 PE group 数 | — | 4 | 当前 RTL | 每组 16 个 4×4 基础乘法器，Matrix 与 Vector MUL/FMA 共用 |
+| Matrix-Vector 旁路缓存项数 | `BYPASS_ENTRIES` | 2 | 单核顶层配置 | 每项保存一个 64-bit beat 的地址标签、数据和逐字节有效位 |
+| Matrix-Vector L1 请求 FIFO | — | 2 项 × 93 bit | 当前 RTL | 非直通；保存 write、20-bit addr、64-bit wdata 和 8-bit wstrb |
+| Matrix B tile | `MT×KT×NT` | `8×16×8` | 当前格式配置 | 多数据类型外积分支按行组、列组和 K 小段推进；B 以 `16×8` 小块保存 |
 | Matrix 临时累加宽度 | `accum_q`        |          64 bit | 当前 RTL | signed32 乘积经符号扩展后加入 signed64 累加寄存器 |
-| Matrix 标量分支计算速率 | — | 1 个乘积/计算步骤 | 当前 RTL | 乘积寄存与部分和更新分成两个状态 |
+| Matrix Scalar context 计算速率 | — | 1 个乘积/计算步骤 | 当前 RTL | context1 每次向共享 PE 提交一个逐元素乘法请求 |
 | Vector 标量分支处理数 | — | 1 个元素/计算步骤 | 当前 RTL | 每个源读请求和目的写请求均等待对应响应 |
-| Vector Packed MUL 乘积数 | — | INT16 为 1、INT8 为 4、INT4 为 16 | 当前 RTL | 使用 16 个 4×4 基础乘法器；INT16、INT8 对同一个输入 beat 分别提交 4、2 次请求 |
+| Vector 连续 MUL 每次请求的乘积数 | — | INT16 为 1、INT8 为 4、INT4 为 16 | 当前 RTL | 使用共享 PE；INT16、INT8 对同一个输入 beat分别提交 4、2 次请求 |
 | CME 同时接受数学请求数 | — | 1 | 当前 RTL | 共享数学单元完成当前请求后再接受下一项 |
 | CME 私有 FP32 数组 | — | 0 | 当前 RTL | 当前使用标量和每行统计寄存器，不包含 4096 项暂存数组 |
 | DMA 未完成存储请求数 | `DMA_OUTSTANDING` |           1 | 当前 RTL | DMA 等待当前 L1BUF 或 MIF 响应后再发下一项请求 |
 | MIF 未完成事务数 | `MIF_OUTSTANDING` |           1 | 当前 RTL | MIF 完成当前 AXI 事务后再接收下一项请求 |
-| MIF AXI burst 长度 | `MIF_AXI_BURST_BEATS` |         1 beat | 当前 RTL | `AxLEN=0`，每个事务传输一个 64-bit beat |
+| MIF AXI burst 长度 | `MIF_AXI_BURST_BEATS` | 读 1～16 beat，写 1 beat | 当前 RTL | 正常 DMA 指令的一次对齐读最多 8 beat；模块级 Task Context 可给出 1～16 beat |
 | 模型张量格式集合       | `MODEL_DTYPE_SET` | INT4、INT8、INT16、INT32 | 用户要求   | DMA、L1BUF、Matrix 和 Vector 的软件可见张量格式   |
-| Matrix 部分和张量格式 | `MAT_PARTIAL_DTYPE` | INT32 | 用户要求 | `GEMM_ACCUM` 和 `GEMM_ZERO` 的 C 使用 INT32；内部累加寄存器为 signed64 |
+| Matrix 部分和格式 | `MAT_PARTIAL_DTYPE` | INT32 | 用户要求 | `GEMM_ACCUM`、`GEMM_ZERO` 的 L1 C 和 Outer context 本地部分和 RAM 使用 INT32；计算阶段使用 signed64 |
 | 内部浮点工作格式       | `CME_FP_DTYPE`    |            FP32 | 本文基准定义 | 当前只存在于 Complex Math Engine 的状态和统计寄存器 |
 
 > [!note] 参数化要求
-> `L1_BYTES`、`L1_BANKS`、`MT`、`KT`、`NT`、DiP 阵列规模、Packed MUL 每次请求的乘积数和 CME 数学请求数
+> `L1_BYTES`、`L1_BANKS`、`MT`、`KT`、`NT`、共享 PE group 数、Vector 连续 MUL 每次请求的乘积数和 CME 数学请求数
 > 不得由软件写死。软件通过只读功能寄存器取得这些数值，再选择 tile 和任务拆分方式。
+
+> [!note] `TASK_SLOTS` 的当前使用范围
+> `TASK_SLOTS` 是 RTL 构建参数，当前软件接口与基准单核配置固定使用 16 个任务槽。1、3、5 槽配置用于验证计数器回绕和逐槽检查逻辑，不表示软件可以在运行期间改变任务槽数。若产品需要提供其他任务槽数，应先增加只读能力寄存器，再让驱动根据读取值决定每批可提交的任务数。
 
 > [!note] C model 参考配置的作用
 > 表中的 C model 参考值用于当前软件模型、测试向量和简单周期模型。后续 RTL 可以通过只读功能寄存器公布不同物理值，但不得改变指令中各字段的解释、整数结果或 ready/valid 规则。C model 分别由 Core tick 与 NoC tick 推进；常规回归默认按 `core_clk:noc_clk=1:1` 调用，也支持两者采用不同的整数 tick 节奏。DDR 读请求到首个返回 beat 的固定延迟为 20 个 NoC 存储目标 tick，连续返回时每个 NoC tick 最多一个 beat；写请求在最后一个数据 beat 握手后 12 个 NoC 存储目标 tick 返回响应。
 
 > [!important] 64-bit 总线要求
-> 本文所有软件可见总线和模块间数据接口均以 64 bit 为一个 beat。一条指令固定使用两个 beat，传送顺序为低 64 bit在前、高 64 bit在后。Matrix 标量分支每个计算步骤产生一个乘积；DiP 分支由 4×4 物理阵列并行工作。`MT×KT×NT` 只描述标量分支的任务检查和 B 存储排列参数。
+> 本文所有软件可见总线和模块间数据接口均以 64 bit 为一个 beat。一条指令固定使用两个 beat，传送顺序为低 64 bit在前、高 64 bit在后。Matrix 与 Vector 的乘法经共享 PE 完成；Matrix 使用分段贡献值或逐元素 signed32 乘积，Vector 使用逐元素 signed32 结果。Outer、Scalar 和 Vector 在合并单元内共用一组 64-bit L1 端口；端口前设置深度为 2 的寄存请求 FIFO。
 
 ### 2.3 整数推理与内部浮点计算
 
@@ -219,7 +224,7 @@ flowchart TB
 
 #### 2.3.4 Matrix 的整数计算
 
-Matrix Engine 支持 INT4、INT8 和 INT16 输入。标量分支还支持 INT8 激活乘 INT4 权重。每个输入元素先符号扩展，再执行有符号乘法；乘积加入 signed 64-bit 临时累加寄存器。先定义不含 bias 的乘累加结果：
+Matrix 子系统支持 INT4、INT8 和 INT16 输入。标量分支还支持 INT8 激活乘 INT4 权重。每个输入元素先符号扩展，再通过共享 PE 执行有符号乘法；乘积加入 signed 64-bit 临时累加寄存器。先定义不含 bias 的乘累加结果：
 
 $$
 p_{m,n}
@@ -349,8 +354,7 @@ flowchart TB
         LSC0["LSC / IRQ / CRG / WDT"]
         CFE0["Command Front End<br/>128-bit 指令 FIFO"]
         TS0["TaskScheduler<br/>Admission / Task / Event / Control Snapshot"]
-        ME0["Matrix Engine<br/>DiP Array + Scalar"]
-        VE0["Integer Vector Engine<br/>Packed MUL + Scalar"]
+        MVE0["Matrix-Vector Engine<br/>Outer + Scalar + Vector<br/>共享多精度 MAC PE / 2 项内部旁路"]
         CE0["Complex Math Engine"]
         DMA0["DMA / Layout Engine"]
         L10["L1BUF Controller + SRAM"]
@@ -362,12 +366,11 @@ flowchart TB
         CFE0 -->|"完整指令"| TS0
         LSC0 -->|"配置 / 停止 / 复位"| TS0
         TS0 -->|"Task Context"| DMA0
-        TS0 -->|"Task Context"| ME0
-        TS0 -->|"Task Context"| VE0
+        TS0 -->|"Matrix Task Context"| MVE0
+        TS0 -->|"Vector Task Context"| MVE0
         TS0 -->|"Task Context"| CE0
         DMA0 <--> L10
-        ME0 <--> L10
-        VE0 <--> L10
+        MVE0 <-->|"64-bit L1"| L10
         CE0 <--> L10
         DMA0 <-->|"全局数据请求"| MIF0
     end
@@ -385,9 +388,9 @@ flowchart TB
 - 指令写入固定 CMD FIFO 地址，采用 64 bit FIXED burst；主控先写低 word，再写高 word。
 - NPU 的 `m_axi_*` 由 MIF 驱动，经 SoC AXI Fabric 访问 DDR 或系统允许的其他存储目标。
 - DMA 是 NPU 发起全局内存访问的执行单元。
-- Matrix、Vector 和 CME 的张量操作数均从当前 Core 的 L1BUF 读取。
+- Matrix-Vector Engine 和 CME 的张量操作数均从当前 Core 的 L1BUF 读取。
 - TaskScheduler 直接解码指令，并在片上生成内部 Task Context；MIF 不读取外部任务参数块。
-- Matrix、Integer Vector 和 Complex Math Engine 不连接 MIF。
+- Matrix-Vector Engine 和 Complex Math Engine 不连接 MIF。
 - 首版不提供多核 Barrier 或远端 L1BUF 数据通路。
 
 ### 3.2 单 Core 内部结构
@@ -405,15 +408,40 @@ flowchart TB
     SCAN["逐槽发射扫描<br/>每周期检查一项"]
     SNAP["发射窄快照<br/>指令 / 基地址 / 任务编号"]
     DEC["共享发射解码器<br/>Task Context 展开"]
-    DISP["Task Dispatch<br/>四组发射暂存"]
+    DISP["Task Dispatch<br/>DMA / Matrix / Vector / Complex<br/>四组发射暂存"]
     DMA["DMA / Layout"]
-    ME["Matrix Engine<br/>DiP Array + Scalar"]
-    IVE["Integer Vector Engine<br/>Packed MUL + Scalar"]
     CME["Complex Math Engine"]
     L1C["L1BUF Controller"]
     SRAM["Banked L1BUF SRAM"]
     MIF["MIF<br/>AXI Master"]
     LSC["LSC / IRQ / CRG / WDT"]
+
+    subgraph MVE["npu_matrix_vector_engine<br/>Matrix 与 Vector 共用的物理执行模块"]
+        direction TB
+        MDISP["Matrix Context Dispatch"]
+        C0["context0 / Outer<br/>分块外积 / 本地部分和 RAM"]
+        C1["context1 / Scalar<br/>逐元素乘加 / 后处理"]
+        MPR["Matrix PE Router"]
+        MLR["Matrix L1 Router"]
+        VEC["Vector Controller<br/>轻量整数 ALU"]
+        SHMAC["Shared MAC Arbiter"]
+        MVPE["Shared MAC PE<br/>4 groups × 16 个 4×4 乘法器"]
+        MVMEM["MV Memory Path<br/>2 项旁路缓存"]
+        REQF["L1 Request FIFO<br/>深度 2 / 93 bit / 非直通"]
+
+        MDISP --> C0
+        MDISP --> C1
+        C0 --> MPR
+        C1 --> MPR
+        MPR --> SHMAC
+        VEC --> SHMAC
+        SHMAC <--> MVPE
+        C0 --> MLR
+        C1 --> MLR
+        MLR --> MVMEM
+        VEC --> MVMEM
+        MVMEM --> REQF
+    end
 
     AXIS --> CSR --> LSC
     AXIS --> CMD -->|"64 bit beat"| CFE
@@ -425,22 +453,24 @@ flowchart TB
     SNAP --> DEC
     DEC --> DISP
     DISP --> DMA
-    DISP --> ME
-    DISP --> IVE
+    DISP -->|"Matrix Task"| MDISP
+    DISP -->|"Vector Task"| VEC
     DISP --> CME
     DMA <--> L1C
-    ME <--> L1C
-    IVE <--> L1C
+    REQF -->|"请求"| L1C
+    L1C -->|"响应直接返回"| MVMEM
     CME <--> L1C
     L1C <--> SRAM
     DMA <-->|"全局数据"| MIF
     DMA -->|"done"| TS
-    ME -->|"done"| TS
-    IVE -->|"done"| TS
+    MDISP -->|"Matrix done + command_id"| TS
+    VEC -->|"Vector done"| TS
     CME -->|"done"| TS
     TS -->|"completion"| LSC
     LSC --> TS
 ```
+
+图中 DMA、Matrix-Vector Engine 和 Complex Math Engine 是三个物理执行模块。TaskScheduler 仍保留 DMA、Matrix、Vector 和 Complex 四类任务接口；其中 Matrix 与 Vector 两类任务都进入 Matrix-Vector Engine，但使用彼此独立的任务握手、发射暂存、active 记录和完成接口。
 
 ### 3.3 模块职责
 
@@ -453,8 +483,11 @@ flowchart TB
 | Event Table / Scoreboard | CMD 中的依赖事件、各单元完成消息      | 可发射任务、事件状态、错误状态                  | 检查依赖、保存任务状态、传播错误                                     |
 | Inline Decode            | 指令、任务表保存的基地址快照       | 接收检查结果或内部展开的 Task Context | 接收检查实例判断字段是否合法；共享发射实例根据窄快照生成 Task Context，均不访问全局内存 |
 | Task Decode / Dispatch   | 任务表中的指令与基地址快照   | 各执行单元任务 | 每周期检查一个非 Control 任务槽；轮末复查后保存发射窄快照。Control 获胜项保存槽号和提交序号，下一周期复查并执行 |
-| Matrix Engine            | GEMM/BMM 任务、L1BUF 数据    | 矩阵结果、完成消息 | 条件允许时用 DiP 阵列执行 INT16/INT8/INT4 方阵并按格式独立累加 lane；标量分支在输出开始时保存 C、src2、bias 和整数重缩放参数地址，在每个 K 位置保存 A/B 地址 |
-| Vector Engine            | 逐元素任务、L1BUF 数据          | 向量结果、完成消息                        | 通用分支先保存当前元素地址；连续 MUL 复用 16 个 4×4 基础乘法器，写请求前保存地址、数据和 strobe，请求握手时保存进度与后续动作 |
+| Matrix-Vector Engine     | Matrix 与 Vector Task Context、L1BUF 数据 | 矩阵和向量结果、两组完成消息 | `npu_matrix_vector_engine` 组合双 Matrix context、Vector 控制器、共享多精度 MAC PE 和内部存储通道；保留原有指令与两组任务接口 |
+| Matrix Dual Context      | Matrix 任务、共享 PE 和 L1 返回 | Matrix PE/L1 请求、带 `command_id` 的完成消息 | context0 直接例化 Outer 控制器，context1 直接例化 Scalar 控制器；任务分配器按操作码、Outer 支持状态和本地部分和状态选择 context |
+| Matrix-Vector L1 请求 FIFO | 内部存储通道输出的 L1 请求 | 排队后的 L1 请求 | 保存两项 93-bit 请求，按接收次序送到 L1BUF；响应不经过该 FIFO |
+| Shared MAC PE            | Matrix 乘法请求、Vector MUL/FMA 请求 | 分段贡献值或逐元素 INT32 乘积 | 四个 group 共 64 个 4×4 基础乘法器；支持 INT16、INT8、INT4 和 INT4/INT8 混合输入 |
+| Vector 轻量整数 ALU      | ADD、SUB、MAX、MIN、CMP、SELECT、CLAMP、ReLU | 逐元素整数结果 | 不申请共享 PE；MUL/FMA 的乘法部分才送入共享 PE |
 | CME 内部统计逻辑      | 行或向量段                   | 和、最大值、平方和 | 行初始化时保存 STAT 目的地址；逐元素更新统计寄存器，SUMSQ 的平方和累加分成两个寄存阶段 |
 | CME 内部数学单元          | FP32 标量请求                | 函数结果 | 顺序执行 Exp、Reciprocal、ReciprocalSqrt、Sigmoid、Tanh、GELU、SiLU；Exp 用五个状态完成范围整数舍入 |
 | DMA / Layout Engine      | DMA Task Context          | L1BUF 或全局内存写入、完成消息               | 连续复制、转置、pack、split、fill                           |
@@ -470,11 +503,12 @@ flowchart TB
 | 配置与状态 | 外部主控 CPU | SoC AXI Fabric、AXI Slave Frontend | LSC | 写配置、读取状态、查询完成和 ACK |
 | L1BUF 外部访问 | 外部主控 CPU | SoC AXI Fabric、AXI Slave Frontend、L1 Host 端口 | L1BUF | 装载输入与权重，读取输出或调试数据 |
 | 激活/权重加载 | DMA | MIF、SoC AXI Fabric、L1BUF Controller | L1BUF | 计算前预取 |
-| Matrix 读取 | Matrix Engine | L1BUF Controller | L1BUF bank | 读取 A、B、bias 和 residual |
-| Vector 读取 | Vector/CME | L1BUF Controller | L1BUF bank | 读取逐元素或行级输入 |
-| 结果写回 | Matrix/Vector/CME | L1BUF Controller | L1BUF bank | 保存片上结果 |
+| Matrix 请求 | Matrix-Vector Engine | Matrix context 路由、MV Memory Path、L1 Request FIFO、L1BUF Controller | L1BUF bank | 读取 A、B、bias、旧 C 和 residual，或写回 Matrix 结果 |
+| Vector 请求 | Matrix-Vector Engine | MV Memory Path、L1 Request FIFO、L1BUF Controller | L1BUF bank | 读取逐元素或行级输入，或写回 Vector 结果；旁路命中时不提交 L1 请求 |
+| Matrix / Vector 响应 | L1BUF Controller | MV Memory Path；Matrix 响应还经过 Matrix context 路由 | Matrix-Vector Engine | 响应不经过 L1 Request FIFO，返回原请求方 |
+| CME 请求与响应 | CME | CME L1 端口、L1BUF Controller | L1BUF bank | 读取行级输入并写回结果 |
 | DDR 输出 | DMA | L1BUF Controller、MIF、SoC AXI Fabric | DDR | 回写最终结果 |
-| 完成通知 | 各执行单元 | Event Table、LSC | 外部主控 CPU | 更新事件、产生中断 |
+| 完成通知 | 三个物理执行模块的四类完成接口 | Event Table、LSC | 外部主控 CPU | 更新事件、产生中断 |
 
 ### 3.5 模块连接与位宽
 
@@ -484,15 +518,15 @@ flowchart TB
 | SoC AXI Fabric | AXI Slave Frontend | `s_axi_*` | 64 bit | AW/W/B/AR/R；CMD 使用 FIXED burst |
 | AXI Slave Frontend | CFE | CMD beat | 64 bit | 每对 beat 依次携带低 word 和高 word，并产生内部 `first/last` |
 | CFE | TaskScheduler | 完整 CMD | 128 bit | ready/valid |
-| TaskScheduler | DMA / ME / IVE / CME | Task Context | 2048 bit | ready/valid；该宽总线只存在于 NPU 内部 |
-| DMA / ME / IVE / CME | TaskScheduler | 完成字段 | status 8 bit、fault address 48 bit、progress 64 bit | ready/valid；执行时间和完成等待时间随任务变化 |
+| TaskScheduler | DMA / Matrix-Vector Engine / CME | Task Context | 2048 bit | ready/valid；Matrix 与 Vector 保留两组任务接口，该宽总线只存在于 NPU 内部 |
+| DMA / Matrix-Vector Engine / CME | TaskScheduler | 完成字段 | status 8 bit、fault address 48 bit、progress 64 bit；Matrix 另返回 command ID 12 bit | ready/valid；执行时间和完成等待时间随任务变化 |
 | DMA | MIF | global memory data | 64 bit | 物理地址 request/response |
-| DMA / ME / IVE / CME | L1BUF Controller | L1 read/write | 每端口 64 bit | ready/valid |
+| DMA / Matrix-Vector Engine / CME | L1BUF Controller | L1 read/write | 每端口 64 bit | ready/valid；Matrix 与 Vector 在合并单元外共用一组客户端端口 |
 | MIF | SoC AXI Fabric | `m_axi_*` AXI4 Master | 64 bit | AW/W/B/AR/R |
 | AXI Slave Frontend | LSC | register | 64 bit | request/response |
 | AXI Slave Frontend | L1BUF Controller | L1 Host read/write | 64 bit | request/response |
 
-64 bit 是每个 AXI 和 L1 端口的单 beat 数据宽度。当前 DMA、Matrix、IVE 和 CME 各使用一组 64-bit L1 请求与响应端口，并在时间上复用该端口完成各类读写。外部主控在 AXI W 通道先发送 `CMD[63:0]`，再发送 `CMD[127:64]`；AXI Slave Frontend 为这两个 beat 产生内部 `first/last` 标志，CFE 组合出完整指令后再交给 TaskScheduler。
+64 bit 是每个 AXI 和 L1 端口的单 beat 数据宽度。当前 DMA、Matrix-Vector Engine 和 CME 各使用一组 64-bit L1 请求与响应端口，并在时间上复用该端口完成各类读写。Matrix-Vector Engine 内部先在 Outer 与 Scalar 之间选择 Matrix 请求，再在 Matrix 与 Vector 之间选择请求；请求随后进入深度为 2 的寄存 FIFO。owner 信息在内部存储通道接受请求时已经记录，FIFO 只保存读写标志、地址、写数据和写 strobe。L1 响应直接返回内部存储通道，并由 owner FIFO 送给原请求方。外部主控在 AXI W 通道先发送 `CMD[63:0]`，再发送 `CMD[127:64]`；AXI Slave Frontend 为这两个 beat 产生内部 `first/last` 标志，CFE 组合出完整指令后再交给 TaskScheduler。
 
 ---
 
@@ -502,8 +536,8 @@ flowchart TB
 
 | 项目 | 规则 |
 | --- | --- |
-| 主时钟 | 当前 CFE、TS、四个执行单元、L1BUF、MIF 和 LSC 都使用 `core_clk_i`；`noc_clk_i` 只进入 CRG |
-| 主复位 | CRG 从外部 `reset_n` 产生 `core_reset_n_o` 和 `noc_reset_n_o`。AXI Slave Frontend、CFE、TS、四个执行单元、L1BUF 和 MIF 使用由 `core_reset_n_o` 与内部软复位脉冲组合得到的 `functional_reset_n`；LSC 与 WDT 使用 `core_reset_n_o` |
+| 主时钟 | 当前 CFE、TS、DMA、Matrix-Vector Engine、CME、L1BUF、MIF 和 LSC 都使用 `core_clk_i`；`noc_clk_i` 只进入 CRG |
+| 主复位 | CRG 从外部 `reset_n` 产生 `core_reset_n_o` 和 `noc_reset_n_o`。AXI Slave Frontend、CFE、TS、三个物理执行模块、L1BUF 和 MIF 使用由 `core_reset_n_o` 与内部软复位脉冲组合得到的 `functional_reset_n`；LSC 与 WDT 使用 `core_reset_n_o` |
 | ready/valid | 发送端驱动 `valid` 和 payload，接收端驱动 `ready` |
 | 传输发生条件 | 某周期上升沿同时采样到 `valid=1` 且 `ready=1` |
 | payload 保持 | `valid=1` 且 `ready=0` 时，发送端必须保持 payload 不变 |
@@ -516,7 +550,7 @@ flowchart TB
 > `valid` 不得组合依赖同一接口的 `ready`。`ready` 可以由接收端资源状态产生，但不得经过对端 `valid` 再直接返回，以免形成组合回授。
 
 > [!note] 复位信号后缀
-> `_n` 只表示低有效，不表示端口方向。当前顶层使用低有效复位输入 `reset_n`；CRG 输出名为 `core_reset_n_o` 和 `noc_reset_n_o`。AXI Slave Frontend、CFE、TS、四个执行单元、L1BUF 和 MIF 使用 `functional_reset_n`，LSC 与 WDT 使用 `core_reset_n_o`。LSC 在自身 RESET 状态机中处理软复位期间的错误记录与状态清理。每个端口的 Input 或 Output 方向由接口表单独规定。
+> `_n` 只表示低有效，不表示端口方向。当前顶层使用低有效复位输入 `reset_n`；CRG 输出名为 `core_reset_n_o` 和 `noc_reset_n_o`。AXI Slave Frontend、CFE、TS、DMA、Matrix-Vector Engine、CME、L1BUF 和 MIF 使用 `functional_reset_n`，LSC 与 WDT 使用 `core_reset_n_o`。LSC 在自身 RESET 状态机中处理软复位期间的错误记录与状态清理。每个端口的 Input 或 Output 方向由接口表单独规定。
 
 ### 4.2 ready/valid 基本时序
 
@@ -621,7 +655,7 @@ NPU 顶层提供一组 `m_axi_*` AXI4 Master，由 MIF 驱动并连接 SoC AXI F
 | `m_axi_bready` | Output | 1 | NPU 可接收写响应 |
 | `m_axi_arid` | Output | 8 | 读事务 ID |
 | `m_axi_araddr` | Output | 40 | MIF 检查后的物理字节地址 |
-| `m_axi_arlen` | Output | 8 | 当前 RTL 固定为 0，每次读一个 64-bit beat |
+| `m_axi_arlen` | Output | 8 | 读 burst 的 beat 数减 1；当前 RTL 支持 0～15 |
 | `m_axi_arsize` | Output | 3 | 每个 beat 的字节数 |
 | `m_axi_arburst` | Output | 2 | P0 仅使用 INCR |
 | `m_axi_arlock` | Output | 1 | P0 固定为 0，不产生独占访问 |
@@ -639,13 +673,15 @@ NPU 顶层提供一组 `m_axi_*` AXI4 Master，由 MIF 驱动并连接 SoC AXI F
 
 AXI 接口必须满足：
 
-1. 当前 MIF 固定设置 `AWLEN=ARLEN=0`、`AWSIZE=ARSIZE=3` 和 `AWBURST=ARBURST=INCR`；它只接受 8B 对齐的请求，并把检查通过的地址原样送入 AXI 地址通道。
-2. 写入一个 beat 中的部分字节时使用 `WSTRB`；读取 beat 后，DMA 根据原始字节地址和数据格式选择有效元素。
-3. `AWLOCK=ARLOCK=0`，`AWQOS=ARQOS=0`；当前 RTL 的 `AWCACHE/ARCACHE=4'b0011`，`AWPROT/ARPROT=3'b000`。
-4. 当前 RTL 使用 AXI ID 0，并在返回时检查 `RID/BID=0`；读返回还必须满足 `RLAST=1`。
-5. 对写任务，收到对应 `BVALID` 之前不得报告任务成功。
-6. `RRESP` 或 `BRESP` 不是 `OKAY` 时，DMA 停止当前任务并报告错误。
-7. MIF 保存首次错误的请求地址和内部存储状态，直到软件清除。
+1. 读事务使用 `ARLEN=req_burst_len_i`，支持 1～16 个 64-bit beat；写事务固定 `AWLEN=0`。`AWSIZE=ARSIZE=3`，`AWBURST=ARBURST=INCR`。
+2. 读 burst 的首地址必须按 8B 对齐，首 beat 与末 beat 的起始地址都必须位于允许的地址范围内，并且整个 burst 不得跨越 4KiB 段。写请求同样按 8B 对齐。
+3. 写入一个 beat 中的部分字节时使用 `WSTRB`；读取普通元素时，DMA 根据原始字节地址和数据格式选择有效部分。对齐整 beat COPY 直接传送全部 64 bit。
+4. `AWLOCK=ARLOCK=0`，`AWQOS=ARQOS=0`；当前 RTL 的 `AWCACHE/ARCACHE=4'b0011`，`AWPROT/ARPROT=3'b000`。
+5. 当前 RTL 使用 AXI ID 0，并对每个 R beat 检查 `RID=0`。仅在剩余 beat 数为 1 时要求 `RLAST=1`，其他 beat 要求 `RLAST=0`；写响应检查 `BID=0`。
+6. 每个 R beat 分别形成一次 DMA 内部响应。该响应被 DMA 接收后，MIF 才重新进入读数据状态接收下一 beat。
+7. 对写任务，收到对应 `BVALID` 之前不得报告任务成功；`WLAST` 固定为 1。
+8. `RRESP` 或 `BRESP` 不是 `OKAY` 时，DMA 保存首次错误。多 beat 读已经开始后，DMA 继续接收并丢弃剩余返回，再结束当前任务。
+9. MIF 保存首次错误的请求地址和内部存储状态，直到软件清除。
 
 #### 5.2.1 外部主控 CPU 的总线位置
 
@@ -758,7 +794,7 @@ Frontend 还接收以下控制输入：
 
 Debug / Performance 读访问要求 `core_idle_i=1` 或 `debug_frozen_i=1`。当前 RTL 没有可写的 Debug / Performance 寄存器；格式正确的写请求仍可到达 LSC，但不修改调试状态。L1BUF 外部访问要求 `l1_host_access_enable_i=1`。为了避免软件与执行单元同时修改同一存储区，驱动在装载权重、写输入或读取最终输出前应停止相关任务；硬件仍通过 L1BUF Controller 的正常仲裁处理 Host 请求。
 
-`core_idle_i` 必须由本周期开始时的 AXI 命令接收、CFE、TS、四个执行单元、L1BUF 和 MIF 状态产生，不能使用上一周期保存的 `core_idle_o`。若本周期接收新的 CMD burst，则本周期的受限制 Debug 请求按忙状态检查。
+`core_idle_i` 必须由本周期开始时的 AXI 命令接收、CFE、TS、四类任务接口、三个物理执行模块、L1BUF 和 MIF 状态产生，不能使用上一周期保存的 `core_idle_o`。若本周期接收新的 CMD burst，则本周期的受限制 Debug 请求按忙状态检查。
 
 地址选择规则如下：
 
@@ -954,7 +990,7 @@ FENCE 在控制请求握手时保存当时被执行单元选择值选中的全�
 3. Command Front End 检查操作码、命令编号和两拍格式。检查通过后，完整命令进入命令 FIFO。
 4. TaskScheduler 在 CFE 握手周期完成字段检查，读取 Event Table 的当前事件代次，并把命令中的 8 bit Event ID 扩展成内部事件引用。
 5. 第一个时钟沿把检查结果、事件引用、前序任务位图、目标 FREE 槽、完整指令、五个 48 bit基地址和 20 bit L1 参数区基址保存到命令接纳寄存级；下一个时钟沿再写任务表并分配 `submit_seq`。
-6. 等待事件成功且前序任务位图不再指向运行中的任务后，任务进入 READY。TaskScheduler 每周期检查一个非 Control 任务槽，在 16 项检查中保存 `submit_seq` 最小的可发射候选；最后一项检查结束时复查候选状态和目标执行单元，再把获胜任务的指令、提交时基地址和任务编号保存到发射窄快照寄存器。
+6. WAIT_EVENT 检查器每周期读取一个任务槽的两个事件引用并寄存结果；下一周期复查任务状态和 `submit_seq` 后，依赖失败的任务进入错误终态，依赖成功且前序任务位图不再指向运行中任务的项目进入 READY。发射扫描器每周期检查一个非 Control 任务槽，在 `TASK_SLOTS` 项检查中保存 `submit_seq` 最小的可发射候选；最后一项检查结束时复查候选状态和目标执行单元，再把获胜任务的指令、提交时基地址和任务编号保存到发射窄快照寄存器。
 7. 共享发射解码器解释 `payload[79:0]`，生成内部 Task Context并写入目标执行单元的发射暂存；发射暂存从下一周期给出任务，执行单元接收后开始运行。
 8. 执行单元完成后返回状态；TaskScheduler 保存终态，普通 signal Event 经发布暂存写入 Event Table，再把完成持有槽中的稳定终态送到 LSC，由 LSC 按指令选项产生中断。
 
@@ -963,7 +999,7 @@ RTL 中的 `desc_flat[2047:0]` 是模块内部使用的展开 Task Context。它
 > [!note] 为什么仍保留内部 Task Context
 > DMA、Matrix、IVE 和 CME 接口需要较多展开字段，例如实际地址、行字节数、tile 尾部尺寸和内部函数参数。发射前把 80 bit载荷展开成固定的内部 Task Context，可以让各执行单元使用清晰的模块接口，同时不要求软件创建外部参数块。任务表不为每项保存 2048 bit展开结果；该结果只保存在对应发射暂存和接收任务后的执行单元内部。
 
-不同执行单元可以同时工作。普通任务由 `wait0`、`wait1` 和 `signal` 表达数据先后关系；需要严格顺序的任务使用 `ordered`。Matrix Engine 内部还要保证分块乘累加、部分和读取与结果写回的先后关系。
+DMA、Matrix-Vector Engine 和 CME 可以同时工作。Matrix 与 Vector 任务也可以同时处于运行状态，但它们在 Matrix-Vector Engine 内共用 PE 和 L1 端口。普通任务由 `wait0`、`wait1` 和 `signal` 表达数据先后关系；需要严格顺序的任务使用 `ordered`。Matrix 子系统还要保证分块乘累加、部分和读取与结果写回的先后关系。
 
 ### 6.2 64 bit AXI 上的提交方式
 
@@ -1001,7 +1037,7 @@ AXI Slave 前端会为每对 beat 产生内部 `first/last` 标志：低 word �
 
 | CMD bit | 字段 | 位宽 | 说明 |
 | ---: | --- | ---: | --- |
-| `[127:122]` | `opcode` | 6 | 软件可见操作码，当前定义 0～32 |
+| `[127:122]` | `opcode` | 6 | 软件可见操作码，当前定义 0～34 |
 | `[121:112]` | `command_id` | 10 | 命令编号，取值 0～1023 |
 | `[111:104]` | `wait0` | 8 | 第一个等待 Event ID，`8'hff` 表示不用 |
 | `[103:96]` | `wait1` | 8 | 第二个等待 Event ID，`8'hff` 表示不用 |
@@ -1144,8 +1180,10 @@ GEMM 的 A、B 和 C 使用 `LREF14`；bias 使用 `LREF12`。在 GEMM 中，bia
 | `30` | `0x84` | `COMPLEX_STAT` | CME | 已实现 | `src0`、`dst`、rows、length、统计方式 | 按行计算 SUM、MAX 或 SUMSQ，每行写一个 INT32。 |
 | `31` | `0x85` | `COMPLEX_RECIP` | CME | 编码已分配，功能关闭 | 操作码位置已分配 | 当前返回 `ILLEGAL_OPCODE`，不得启动 CME 或写目标张量。 |
 | `32` | `0x86` | `COMPLEX_ADD_RESCALE` | CME | 已实现 | `src0`、第二输入、`dst`、rows、length、三个 scale 指数、目标 dtype | 按两个输入 scale 相加，再按目标 scale 写回整数结果。 |
+| `33` | `0x44` | `GEMM_ZERO_LOCAL` | Matrix | 已实现 | C `LREF14`、M/N；其余计算字段必须为 0 | 在 Outer context 建立本地部分和区域并清除有效数据状态，不读取或写回 L1 中的 C。 |
+| `34` | `0x45` | `GEMM_ACCUM_HOLD` | Matrix | 已实现 | 与 `GEMM_ACCUM` 相同 | 把新的乘加结果保存到 Outer context 本地部分和 RAM，不提交最终 C。 |
 
-数值 33～63 当前没有定义，必须返回 `ILLEGAL_OPCODE`。`DMA_GATHER_ND`、`COMPLEX_ROPE` 和 `COMPLEX_RECIP` 只有在功能寄存器声明支持后才能执行。
+数值 35～63 当前没有定义，必须返回 `ILLEGAL_OPCODE`。`DMA_GATHER_ND`、`COMPLEX_ROPE` 和 `COMPLEX_RECIP` 只有在功能寄存器声明支持后才能执行。
 
 ### 6.7 操作专有 payload 位段
 
@@ -1227,7 +1265,7 @@ GEMM 的 A、B 和 C 使用 `LREF14`；bias 使用 `LREF12`。在 GEMM 中，bia
 
 #### 6.7.3 Matrix
 
-`GEMM`、`GEMM_ACCUM` 和 `GEMM_ZERO`：
+`GEMM`、`GEMM_ACCUM`、`GEMM_ZERO`、`GEMM_ZERO_LOCAL` 和 `GEMM_ACCUM_HOLD`：
 
 | payload bit | 字段 |
 | ---: | --- |
@@ -1245,6 +1283,8 @@ GEMM 的 A、B 和 C 使用 `LREF14`；bias 使用 `LREF12`。在 GEMM 中，bia
 命令头 `dtype` 是 A 的数据格式。通常 B 与 A 相同；只有 A 为 INT8 且 `b_int4=1` 时，B 使用 INT4。A 按 `[M][K]` 连续行优先保存；B 按 `KT=16、NT=8` 的 tile 顺序保存；C 按 `[M][N]` 连续行优先保存。
 
 `GEMM_ACCUM` 要求 C 为 INT32、bias 为 0、`requant_shift=0`，并把新结果加到原 C。`GEMM_ZERO` 要求 A、B、bias、`b_int4` 和 `requant_shift` 都为 0，`C_dtype=INT32`，编码的 K 字段为 0；该操作不执行 K 方向计算，只清零 `[M][N]` 的 INT32 C 区域。
+
+`GEMM_ZERO_LOCAL` 使用与 `GEMM_ZERO` 相同的字段限制，但不访问 L1 中的 C。它在 Outer context 保存 C 基地址、M、N 和行步长等元数据，清除对应本地部分和有效状态，为后续 `GEMM_ACCUM_HOLD` 建立初值。`GEMM_ACCUM_HOLD` 使用与 `GEMM_ACCUM` 相同的字段限制，把新结果加入 Outer context 的本地部分和 RAM，并保持本地状态，不写最终 C。后续 `GEMM_ACCUM` 读取匹配的本地状态、加入最后一段结果并写回 C，完成后清除该本地状态。`GEMM_ZERO_LOCAL` 和 `GEMM_ACCUM_HOLD` 固定由 Outer context 执行；`GEMM_ACCUM` 在 Outer 支持当前任务或本地部分和状态有效时也由 Outer context 执行，否则交给 Scalar context。
 
 `BMM`：
 
@@ -1486,9 +1526,9 @@ CFE 只在 `CFE_IDLE` 接受 `first=1,last=0` 的低 beat。低 beat 握手后�
 
 固定字段检查使用第 6 章的指令定义：
 
-- `opcode=0～32` 中已经启用的值可以继续处理；
+- `opcode=0～34` 中已经启用的值可以继续处理；
 - 未启用的 11、29、31 返回 `ILLEGAL_OPCODE`；
-- `opcode=33～63` 返回 `ILLEGAL_OPCODE`；
+- `opcode=35～63` 返回 `ILLEGAL_OPCODE`；
 - `command_id` 只取 CMD bit `[121:112]`，范围为 0～1023；
 - CFE 先检查本地 FIFO 中的相同编号，再通过查询接口检查 TS 中所有未 ACK 的任务以及已经离开 CFE、尚未写入任务表的命令接纳项。该接纳项也占用 `command_id`，因此 FIFO 出队与任务表写入之间不会出现重复编号检查空档。
 
@@ -1595,10 +1635,12 @@ sequenceDiagram
 - 任务表，基准为 16 项；
 - Event Table，包含 255 个可用 Event ID；
 - 一组接收检查解码器；
+- 一组 WAIT_EVENT 逐槽检查寄存器和一项检查结果寄存器；
 - 一组逐槽发射扫描寄存器；
 - 一组发射窄快照寄存器和一组共享发射解码器；
 - DMA、Matrix、Vector、Complex 各自使用的一组 2048 bit发射暂存；
 - DMA、Matrix、Vector、Complex 四组任务发射与完成接口；
+- 两项 Matrix active 记录，以及 DMA、Vector、Complex 各一项 active 记录；
 - 一组由 Control 操作、普通 signal Event 和完成通知共用的逐槽选择寄存器；
 - 一项 Control 执行快照，保存轮末获胜的任务槽号和 `submit_seq`；
 - 普通 signal Event 发布暂存和完成通知持有槽寄存器；
@@ -1607,15 +1649,17 @@ sequenceDiagram
 
 接收检查解码器读取 CFE 提供的完整指令和 LSC 当前基地址，用 `valid_o`、`engine_o` 与 `opcode_o` 完成接收阶段检查，但它的 `desc_flat_o` 在该实例中没有接入任务表。CFE 与 TS 完成握手时，TS 先把检查结果、当前 Event generation、前序任务位图、目标 FREE 槽、完整指令、五个 48 bit基地址和 20 bit L1 参数区基址保存到一项命令接纳寄存级；下一时钟周期只读取这些寄存值写任务表。任务表不保存 2048 bit展开结果。
 
-等待事件成功并且 `predecessor_mask & task_live_mask` 为 0 时，任务才从 WAIT_EVENT 进入 READY。DMA、Matrix、Vector 和 Complex 的 READY 任务共同参加发射扫描。发射扫描器每周期读取一个任务槽；候选必须仍为 READY、上述按位与结果仍为 0、目标执行单元没有 RUNNING 任务，并且对应发射暂存的 `valid` 为 0。扫描器每周期只进行一次 64-bit `submit_seq` 比较，用于保留当前最早候选。检查完 16 个槽后，组合逻辑重新检查已保存候选和最后一个槽，只在获胜任务仍满足条件时写入发射窄快照。如果没有候选，本轮结束且不写快照，后续周期从槽 0 开始下一轮。
+WAIT_EVENT 任务使用独立的逐槽检查器。检查器每周期只读取一个任务槽的 `wait0`、`wait1`，并以两个索引读取 Event Table；普通任务与 `EVENT_JOIN(join_mode=0)` 对两个结果执行 AND 条件，`EVENT_JOIN(join_mode=1)` 执行 OR 条件。事件检查结果、槽号和该槽当前的 `submit_seq` 在时钟沿写入结果寄存器，下一周期只有在任务仍为 WAIT_EVENT 且 `submit_seq` 未变时，才把任务改为 READY 或 `DEPENDENCY_FAILED`。前序任务仍未结束时，即使事件条件已经满足，任务也继续处于 WAIT_EVENT，后续扫描再次检查。Event 发布暂存即将在当前时钟沿写入的 SUCCESS 或 ERROR 会直接转发给本周期的两个 Event Table 读取，避免等待任务因读到旧状态而多等一整轮。基准 16 项任务表从某个事件可见到对应任务更新，最迟经过 16 个时钟周期。
 
-Control 执行、普通 signal Event 发布和完成通知使用另一组逐槽选择寄存器。三类选择共用一个连续递增的任务槽计数器，并在同一周期检查同一个槽；每一类分别保存本轮候选位图、变化标志、最早候选槽号和 64-bit `submit_seq`。一轮开始时保存三类候选位图，随后 16 个周期逐项检查。最后一个槽检查结束时，各类分别复查本轮位图是否保持不变、获胜项是否仍符合要求以及 `submit_seq` 是否一致。某一类的候选位图在本轮发生变化时，只取消该类本轮的选择脉冲，下一轮从槽 0 重新检查；另外两类不受影响。三类选择可在同一轮末尾各产生一个脉冲。
+等待事件成功并且 `predecessor_mask & task_live_mask` 为 0 时，任务才从 WAIT_EVENT 进入 READY。DMA、Matrix、Vector 和 Complex 的 READY 任务共同参加发射扫描。发射扫描器每周期读取一个任务槽；候选必须仍为 READY、上述按位与结果仍为 0、对应发射暂存的 `valid` 为 0，并且目标执行单元仍有接收容量。DMA、Vector 和 Complex 要求其 active 位为 0；Matrix 允许两项 active，只要至少存在一个空项，或本周期有可正确匹配的 Matrix 完成消息释放一项即可继续接收。扫描器每周期只进行一次 64-bit `submit_seq` 比较，用于保留当前最早候选。检查完 `TASK_SLOTS` 个槽后，组合逻辑重新检查已保存候选和最后一个槽，只在获胜任务仍满足条件时写入发射窄快照；基准配置为 16 个槽。如果没有候选，本轮结束且不写快照，后续周期从槽 0 开始下一轮。
+
+Control 执行、普通 signal Event 发布和完成通知使用另一组逐槽选择寄存器。三类选择共用一个连续递增的任务槽计数器，并在同一周期检查同一个槽；每一类分别保存本轮候选位图、变化标志、最早候选槽号和 64-bit `submit_seq`。一轮开始时保存三类候选位图，随后用 `TASK_SLOTS` 个周期逐项检查；基准配置为 16 个周期。最后一个槽检查结束时，各类分别复查本轮位图是否保持不变、获胜项是否仍符合要求以及 `submit_seq` 是否一致。某一类的候选位图在本轮发生变化时，只取消该类本轮的选择脉冲，下一轮从槽 0 重新检查；另外两类不受影响。三类选择可在同一轮末尾各产生一个脉冲。
 
 Control 获胜脉冲不直接修改 Event Table 或任务表。时钟沿先把获胜槽号和 `submit_seq` 写入 `control_exec_slot_q`、`control_exec_seq_q`，下一周期重新检查该槽仍为 READY Control 任务、提交序号一致且没有前序任务阻塞，检查通过后才执行 EVENT_REARM、EVENT_JOIN 或 GLOBAL_FENCE。正在执行的 Control 槽不再参加同轮候选集合。TS 在 `control_exec_valid_q=1` 时拉低 `cfe_cmd_ready_o`，防止 EVENT_REARM 修改 generation 的周期同时接收一条等待该 Event 的新命令。若执行快照形成前一个周期已经保存了一项命令接纳记录，EVENT_REARM 还会检查该接纳项的 `wait0` 和 `wait1`；任一引用等于待重置事件时，EVENT_REARM 返回 `BAD_DESC` 并保持 Event Table 不变。Control 任务不使用发射扫描器和共享发射解码器。
 
 被选任务先在时钟沿写入 `decode_pending_*`：其中保存目标执行单元、任务表项编号、操作码、命令编号、128 bit指令、五个 48 bit基地址快照和 20 bit L1 参数区基址。下一周期，`u_task_desc_decode` 根据这组稳定快照组合产生 `decode_pending_desc_flat[2047:0]`；再下一个时钟沿把展开结果和任务信息写入目标执行单元的发射暂存。本文把发射接口上的 2048 bit片上数据称为 Task Context。它不是软件数组，不位于 DDR，也不会引起 MIF 访问。
 
-共享解码器每次处理一个待展开任务。`decode_pending_valid_q=1` 时，TS 先处理已有窄快照并停止扫描；没有待处理快照时，扫描器从槽 0 到槽 15 每周期检查一项，共用 16 个周期完成一轮。已有快照在写入执行单元发射暂存前，会再次检查任务仍为 READY、任务表中的执行单元字段未变且前序任务条件仍满足。目标执行单元暂时不可接收新任务时，快照保持有效；任务本身不再满足条件时，快照被丢弃。执行单元任务通常持续多个周期，这一级按次序展开不会阻止已经取得任务的 DMA、Matrix、Vector 和 Complex 同时运行。四组发射暂存彼此独立，可分别保持 `valid` 并承受不同长度的反压。
+共享解码器每次处理一个待展开任务。`decode_pending_valid_q=1` 时，TS 先处理已有窄快照并停止扫描；没有待处理快照时，扫描器从槽 0 到槽 `TASK_SLOTS-1` 每周期检查一项，共用 `TASK_SLOTS` 个周期完成一轮，基准配置为 16 个周期。已有快照在写入任务发射暂存前，会再次检查任务仍为 READY、任务表中的执行类别字段未变且前序任务条件仍满足。目标任务接口暂时不可接收新任务时，快照保持有效；任务本身不再满足条件时，快照被丢弃。任务通常持续多个周期，这一级按次序展开不会阻止已经取得任务的 DMA、Matrix、Vector 和 Complex 同时运行。Matrix 与 Vector 同处于 Matrix-Vector Engine，运行时仍要经过该模块内部的 PE 与 L1 仲裁。四组发射暂存彼此独立，可分别保持 `valid` 并承受不同长度的反压。
 
 ### 8.2 CFE 输入与编号查询接口
 
@@ -1635,7 +1679,7 @@ TS 的时钟、运行控制、配置和状态信号如下：
 | `kv_base_i` | Input | 48 | `KV_BASE` |
 | `param_l1_base_i` | Input | 20 | L1 参数区起始地址 |
 | `scheduler_idle_o` | Output | 1 | 没有命令接纳项、任务表占用项和活动执行单元 |
-| `scheduler_quiescent_o` | Output | 1 | 没有接纳、解码、发射、活动执行、Control、Event 发布、完成持有或 AXI 控制请求；不要求终态任务表项已经 ACK |
+| `scheduler_quiescent_o` | Output | 1 | 没有接纳、WAIT_EVENT 任务、解码、发射、活动执行、Control、Event 发布、完成持有或 AXI 控制请求；不要求终态任务表项已经 ACK |
 | `task_occupancy_o` | Output | 16 | 当前非 FREE 任务表项数加命令接纳项数 |
 
 | 信号 | TS 方向 | 位宽 | 说明 |
@@ -1713,7 +1757,7 @@ CFE 的编号查询覆盖命令接纳项以及等待、就绪、运行和等待 
 | `wait0`、`wait1` | 各 12 | `{generation,event_id}` 或 `12'hfff` |
 | `signal` | 12 | `{generation,event_id}` 或 `12'hfff`；接收检查失败的任务也保留握手周期已经处理的引用，但不会修改或发布对应 Event |
 | `submit_seq` | 64 | 全局提交顺序号 |
-| `predecessor_mask` | 16 | `task_predecessor_mask_q`；每个 bit 对应一个任务槽，1 表示本任务仍需等待该槽中的较早任务 |
+| `predecessor_mask` | `TASK_SLOTS`，基准为 16 | `task_predecessor_mask_q`；每个 bit 对应一个任务槽，1 表示本任务仍需等待该槽中的较早任务 |
 | `cmd` | 128 | 接收的完整指令，RTL 中保存为 `task_cmd_q` |
 | `input_base`、`weight_base`、`work_base`、`output_base`、`kv_base` | 各 48 | 命令提交时五个 LSC 基地址寄存器的快照，分别对应 `task_input_base_q`、`task_weight_base_q`、`task_work_base_q`、`task_output_base_q` 和 `task_kv_base_q` |
 | `param_l1_base` | 20 | 命令提交时 L1 参数区基址的快照，对应 `task_param_l1_base_q` |
@@ -1743,7 +1787,7 @@ FREE
 
 TS 在接收一条合法任务时生成 `predecessor_mask`，不再为每个等待任务反复比较两项 64-bit `submit_seq`。若新任务设置 `ordered=1`，掩码记录当时全部非 FREE 且未进入终态的较早任务。每条后续合法任务也记录当时仍未进入终态的较早 ordered 任务，因此不能越过这些任务。`GLOBAL_FENCE` 还会按照第 6.7.1 节的 `engine_mask`，记录被选执行单元中仍未进入终态的较早任务；它和其他合法任务一样，也要等待较早的 ordered 任务。
 
-`task_live_mask` 的每个 bit 表示对应槽当前为非 FREE 且非终态。`order_blocked` 直接由 `predecessor_mask & task_live_mask` 的结果是否非零得到。较早任务进入 SUCCESS 或 ERROR 后，其 bit 立即不再产生阻塞。软件直接 ACK 或通过 AXI ACK 释放槽时，`released_slots_d` 在释放当拍生效，`released_slots_q` 在下一拍继续保留该信息；两者共同从全部任务保存的 `predecessor_mask` 中删除被释放槽的 bit，并在新任务写入时做相同过滤，避免槽号立即复用后恢复旧等待关系。静态检查失败的任务仍保存接纳时取得的掩码，但任务直接进入 ERROR，因此不参加调度。abort 会清除全部前序任务掩码。GLOBAL_FENCE 在等待条件满足后返回 `SUCCESS`，不复制较早任务的失败状态。软件经 AXI 控制端口发出的 FENCE 不同：它保存请求开始时所选任务的快照，并返回其中提交顺序最早的失败状态。
+`task_live_mask` 的每个 bit 表示对应槽当前为非 FREE 且非终态。`order_blocked` 直接由 `predecessor_mask & task_live_mask` 的结果是否非零得到。较早任务进入 SUCCESS 或 ERROR 后，其 bit 立即不再产生阻塞。软件直接 ACK 或通过 AXI ACK 释放槽时，`released_slots_d` 在释放当拍生效，`released_slots_q` 在下一拍继续保留该信息；两者共同从全部任务保存的 `predecessor_mask` 中删除被释放槽的 bit，并在新任务写入时做相同过滤，避免槽号立即复用后恢复旧等待关系。WAIT_EVENT 检查结果除保存槽号外还保存检查时的 `submit_seq`；应用结果前同时复查状态和提交序号，因此旧槽已经 ACK 并被新任务复用时，先前保存的检查结果不能修改新任务。静态检查失败的任务仍保存接纳时取得的掩码，但任务直接进入 ERROR，因此不参加调度。abort 会清除全部前序任务掩码和待应用的 WAIT_EVENT 检查结果。GLOBAL_FENCE 在等待条件满足后返回 `SUCCESS`，不复制较早任务的失败状态。软件经 AXI 控制端口发出的 FENCE 不同：它保存请求开始时所选任务的快照，并返回其中提交顺序最早的失败状态。
 
 ### 8.5 Event Table
 
@@ -1775,12 +1819,14 @@ CMD 中的 Event ID 为 8 bit，0～254有效，`8'hff` 表示不用。TS 接收
 
 TS 通过扫描非 FREE 且未终止的任务表项判断一个事件是否仍有活动等待者，不设置独立 waiter 计数器。
 
+WAIT_EVENT 检查与 Event 发布选择使用不同的逐槽计数器。前者每周期对当前任务槽的两个事件引用各读取一个 Event Table 表项，并把分类结果寄存；后者负责从待发布任务中选择最早项。若发布暂存在当前周期给某个事件写入终态，前者对相同事件引用优先使用待写入状态。这样既保留同周期可见性，也把 Event Table 读取、事件分类与任务状态写控制分到相邻时钟周期。
+
 > [!note] Event 可见时间
 > 执行单元的 done 握手只表示 TS 已经取得终态数据。带普通 signal Event 的任务还要等待逐槽选择轮结束，再经过发布暂存写入 Event Table。任务在扫描轮中途成为候选时，候选位图变化会使该轮重试，因此不能把 done 到 Event 可见之间的时间假定为固定两拍。若较早提交的多个任务同时等待发布，后提交任务还要等待前面的 Event 逐项写入。依赖该 Event 的任务和 AXI `CTL WAIT` 都以 Event Table 中实际可见的状态为准。
 
-### 8.6 执行单元任务与完成接口
+### 8.6 任务类别与完成接口
 
-DMA、Matrix、Vector 和 Complex 各有一组相同结构的任务接口。下表中的前缀分别替换为 `dma`、`matrix`、`vector` 或 `complex`。
+TaskScheduler 使用 DMA、Matrix、Vector 和 Complex 四类任务接口。它们不对应四个物理执行模块：DMA 连接 DMA / Layout Engine，Complex 连接 CME，Matrix 与 Vector 都连接 `npu_matrix_vector_engine`。Matrix 与 Vector 仍使用不同的接口前缀、发射暂存、active 记录和完成握手。下表中的前缀分别替换为 `dma`、`matrix`、`vector` 或 `complex`。
 
 | 信号 | TS 方向 | 位宽 | 说明 |
 | --- | --- | ---: | --- |
@@ -1791,16 +1837,18 @@ DMA、Matrix、Vector 和 Complex 各有一组相同结构的任务接口。下�
 | `<eng>_task_desc_flat_o` | Output | 2048 | 对应执行单元发射暂存中的 Task Context |
 | `<eng>_done_valid_i` | Input | 1 | 执行单元完成结果有效 |
 | `<eng>_done_ready_o` | Output | 1 | TS 可以接收完成结果 |
-| `<eng>_done_command_id_i` | Input | 12 | 完成任务编号；当前单核顶层用各执行单元的活动任务编号寄存器产生，执行单元本身不输出该字段 |
+| `<eng>_done_command_id_i` | Input | 12 | 完成任务编号；Matrix 由 `npu_matrix_context_dispatch` 返回所选 context 保存的编号，其他执行单元由其活动任务记录提供 |
 | `<eng>_done_status_i` | Input | 8 | 第 4.3 节状态 |
 | `<eng>_done_fault_addr_i` | Input | 48 | 第一个错误地址，无错误时为 0 |
 | `<eng>_done_progress_i` | Input | 64 | 已完成字节数或元素数 |
 
-每个执行单元同时最多有一个 RUNNING 任务。TS 为四类执行单元分别设置 `*_dispatch_valid_q`、`*_dispatch_slot_q`、`*_dispatch_opcode_q`、`*_dispatch_command_id_q` 和 `*_dispatch_desc_q`。READY 任务先经过 16 周期逐槽扫描；最后一个槽完成检查时，`submit_seq` 最小且仍可发射的候选写入 `decode_pending_*` 窄快照。下一拍共享解码器产生 Task Context；若任务与目标执行单元仍可发射，则在拍末写入对应发射暂存，随后 `<eng>_task_valid_o` 才为 1。任务 valid等待 ready 时，对应暂存保持 opcode、command ID和 Task Context不变。
+DMA、Vector 和 Complex 同时最多各有一个 RUNNING 任务；Matrix 最多有两个 RUNNING 任务。TS 为四类任务分别设置 `*_dispatch_valid_q`、`*_dispatch_slot_q`、`*_dispatch_opcode_q`、`*_dispatch_command_id_q` 和 `*_dispatch_desc_q`，并为 Matrix 设置两项 `matrix_active_valid_q` 与 `matrix_active_slot_q`。READY 任务先经过 16 周期逐槽扫描；最后一个槽完成检查时，`submit_seq` 最小且仍可发射的候选写入 `decode_pending_*` 窄快照。下一拍共享解码器产生 Task Context；若目标任务接口仍可发射，则在拍末写入对应发射暂存，随后 `<eng>_task_valid_o` 才为 1。任务 valid等待 ready 时，对应暂存保持 opcode、command ID和 Task Context不变。
 
 四组发射暂存相互独立。某个执行单元令 `task_ready=0` 时，只会使该单元的暂存保持有效并阻止新的同类任务取得选择条件；其他暂存仍可保持或完成握手，其他执行单元也可继续运行。共享解码器每次只能向一组暂存写入新的 Task Context，因此“暂存可独立握手”和“任务展开按次序进行”是两个不同的控制层次。
 
-TS 接受 done 时检查 command ID 和 status。编号与当前活动任务不符，或 status 不在 `0x00～0x0d` 范围内时，把任务记录为 `BAD_DESC`。当前单核顶层在执行单元接收任务时保存活动任务编号，并在 done 返回时把该寄存值送给 TS；DMA、Matrix、IVE 和 CME 的模块级 done 端口只返回 valid、status、fault address 和 progress。合法 `SUCCESS` 进入 SUCCESS，其余合法状态进入 ERROR。TS 同时保存 fault address 和 progress，生成 `error_info`，清除该执行单元 active 状态并置位终态通知。
+TS 接受 done 时检查 command ID 和 status。DMA、Vector 和 Complex 的编号必须与各自 active 任务相同。Matrix 在两项 active 记录中比较 `matrix_done_command_id_i`：恰有一项匹配时，清除该项并更新对应任务；没有匹配项或两项同时匹配时，仍接收完成消息以免阻塞执行单元，同时置起 `matrix_done_protocol_error_o`，但不释放任何 Matrix active 记录，也不修改无关任务。合法 `SUCCESS` 进入 SUCCESS，其余合法状态进入 ERROR。TS 同时保存 fault address 和 progress，生成 `error_info`，清除匹配的 active 状态并置位终态通知。
+
+Matrix 完成与新 Matrix 任务接收可以发生在同一周期。两项 active 都有效时，只有当前完成编号能正确匹配一项，`matrix_active_accept_capacity` 才允许新任务握手；新任务占用本周期释放的记录。这样既保持两项任务容量，也不会让未知完成编号错误腾出位置。
 
 ### 8.7 完成通知、查询和 ACK
 
@@ -1922,6 +1970,7 @@ sequenceDiagram
     participant CHECK as 接收检查解码器
     participant EVT as Event Table
     participant ADMIT as 命令接纳寄存级
+    participant WSCAN as WAIT_EVENT逐槽检查
     participant SCAN as 逐槽扫描
     participant SNAP as 发射窄快照
     participant DEC as 共享发射解码器
@@ -1942,10 +1991,16 @@ sequenceDiagram
     ADMIT->>TS: 下一时钟沿写任务表并分配submit_seq
     TS->>EVT: 合法普通signal写PENDING
     Note over ADMIT,EVT: 接收检查失败时保留signal引用，但不写Event Table且不发布Event
-    EVT-->>TS: wait 事件状态
-    TS->>TS: 依赖成功且前序位图按位与为 0，WAIT_EVENT → READY
+    loop TASK_SLOTS个任务槽，每周期检查一项
+        WSCAN->>EVT: 读取当前槽的wait0和wait1
+        EVT-->>WSCAN: 两个事件的代次与状态
+        WSCAN->>WSCAN: 分类AND或OR条件并寄存槽号、submit_seq和结果
+    end
+    WSCAN->>TS: 下一周期复查状态与submit_seq
+    TS->>TS: 依赖失败则进入ERROR；依赖成功且前序位图按位与为0则进入READY
+    Note over EVT,WSCAN: 当前周期发布的事件终态直接转发给相同事件引用
     TS->>SCAN: 无待展开快照时从槽 0 开始
-    loop 16 个任务槽，每周期检查一项
+    loop TASK_SLOTS个任务槽，每周期检查一项
         SCAN->>SCAN: 检查 READY、前序位图和目标执行单元
         SCAN->>SCAN: 用一次 64-bit 比较更新最早候选
     end
@@ -1958,11 +2013,11 @@ sequenceDiagram
     Note over DEC,STG: 时钟沿写入目标发射暂存
     STG->>ENG: task_valid + 稳定 payload
     ENG-->>STG: task_ready
-    ENG->>TS: done_valid + status + fault_addr + progress
+    ENG->>TS: done_valid + command_id + status + fault_addr + progress
     TS-->>ENG: done_ready
     TS->>TS: 保存完整终态
     TS->>SEL: 更新完成与Event候选位图
-    loop 16 个任务槽，每周期并行检查三类候选
+    loop TASK_SLOTS个任务槽，每周期并行检查三类候选
         SEL->>SEL: 分别更新Control、Event和完成的最早候选
     end
     SEL->>SEL: 复查各类位图、获胜项和submit_seq
@@ -1981,26 +2036,26 @@ sequenceDiagram
     TS->>TS: 清除持有槽valid与该任务notify
 ```
 
-命令握手周期内，接收检查解码器组合产生 engine、opcode 和 `valid`，Event 逻辑形成内部事件引用与 `predecessor_mask`。第一个时钟沿只把这些结果、目标 FREE 槽、完整指令和基地址保存到命令接纳寄存级；第二个时钟沿才用保存值写任务表并分配 `submit_seq`。保存值写入任务表前会删除 `released_slots_q | released_slots_d` 指出的槽 bit。静态检查失败的任务直接建立 ERROR 终态，仍可保存接纳时取得的掩码，但终态任务不参加调度；合法任务先进入 WAIT_EVENT，依赖事件成功并且 `predecessor_mask & task_live_mask` 为 0 后进入 READY。该阶段不把 2048 bit展开结果写入任务表。
+命令握手周期内，接收检查解码器组合产生 engine、opcode 和 `valid`，Event 逻辑形成内部事件引用与 `predecessor_mask`。第一个时钟沿只把这些结果、目标 FREE 槽、完整指令和基地址保存到命令接纳寄存级；第二个时钟沿才用保存值写任务表并分配 `submit_seq`。保存值写入任务表前会删除 `released_slots_q | released_slots_d` 指出的槽 bit。静态检查失败的任务直接建立 ERROR 终态，仍可保存接纳时取得的掩码，但终态任务不参加调度；合法任务先进入 WAIT_EVENT。独立检查器每周期读取一个槽和两个 Event Table 表项，时钟沿保存检查结果、槽号与 `submit_seq`；下一周期复查任务身份后，依赖失败的任务进入 ERROR，依赖成功且 `predecessor_mask & task_live_mask` 为 0 的任务进入 READY。该阶段不把 2048 bit展开结果写入任务表。
 
-没有待展开快照时，TS 启动或继续逐槽扫描。基准 16 项任务表每周期检查一项；候选必须为非 Control 的 READY 任务、前序任务条件已满足，并且目标执行单元没有活动任务且发射暂存为空。扫描保存当前 `submit_seq` 最小的候选，并在最后一个槽完成检查时复查获胜项。复查通过后，时钟沿保存窄快照；没有候选时不写快照。
+没有待展开快照时，TS 启动或继续逐槽扫描。任务表包含 `TASK_SLOTS` 项，基准值为 16；扫描器每周期检查一项。候选必须为非 Control 的 READY 任务、前序任务条件已满足、发射暂存为空，并且目标执行单元存在接收容量。Matrix 的容量为两项 active，其他执行单元为一项。扫描保存当前 `submit_seq` 最小的候选，并在最后一个槽完成检查时复查获胜项。复查通过后，时钟沿保存窄快照；没有候选时不写快照。
 
 共享发射解码器在窄快照有效的周期组合产生 Task Context。TS 写入发射暂存前再次检查任务仍为 READY、执行单元字段一致且前序任务条件仍满足；检查失败时清除该快照，目标执行单元暂时不可接收新任务时则保持快照。写入暂存后任务接口置 `valid`。ready/valid 握手后，TS 记录暂存中的任务表项编号并把任务置为 RUNNING。某一发射暂存因 `ready=0` 保持时，不妨碍其他执行单元继续运行或完成已有暂存的任务握手，但新的 Task Context 仍由共享解码器依次生成。
 
-Control 执行、普通 signal Event 发布和完成通知共用一组连续逐槽选择寄存器。每轮开始分别保存三类候选位图，16 个周期内对同一槽并行完成三类候选比较，并分别保留最小 `submit_seq`。轮末分别复查候选位图、获胜项和提交序号；某一类位图发生变化时只取消该类选择脉冲，下一轮重新检查。三类选择因此保持相互独立，但不再各自形成一次覆盖全部任务槽的组合比较。Control 获胜项还要先写入由槽号和 `submit_seq` 组成的执行快照，下一周期复查 READY 状态、执行单元类型、提交序号与前序任务条件后才更新 Control 任务和 Event 状态。快照有效周期暂停 CFE 命令接纳，避免 EVENT_REARM 和新等待者同时读取、修改同一 Event generation。
+Control 执行、普通 signal Event 发布和完成通知共用一组连续逐槽选择寄存器。每轮开始分别保存三类候选位图，在 `TASK_SLOTS` 个周期内对同一槽并行完成三类候选比较，并分别保留最小 `submit_seq`；基准配置为 16 个周期。轮末分别复查候选位图、获胜项和提交序号；某一类位图发生变化时只取消该类选择脉冲，下一轮重新检查。三类选择因此保持相互独立，但不再各自形成一次覆盖全部任务槽的组合比较。Control 获胜项还要先写入由槽号和 `submit_seq` 组成的执行快照，下一周期复查 READY 状态、执行单元类型、提交序号与前序任务条件后才更新 Control 任务和 Event 状态。快照有效周期暂停 CFE 命令接纳，避免 EVENT_REARM 和新等待者同时读取、修改同一 Event generation。
 
-执行单元完成接口握手后，TS 保存 status、fault address和 progress，并把任务记录为终态。普通 signal Event 在共享扫描轮末获得选择脉冲后先写入发布暂存，下一周期才更新 Event Table；每轮最多选择一个待发布 Event。对应 `event_published` 置位后，最早的完成候选才可以进入完成持有槽。持有槽等待 LSC ready 时保持全部完成字段不变。软件读取需要的信息并完成 ACK 后，任务表项和 `command_id` 才能复用。
+执行单元完成接口握手后，TS 保存 status、fault address和 progress，并把匹配任务记录为终态。Matrix 按返回的 `command_id` 在两项 active 中查找目标，因此两个 Matrix context 可以按不同于提交次序的先后完成。普通 signal Event 在共享扫描轮末获得选择脉冲后先写入发布暂存，下一周期才更新 Event Table；每轮最多选择一个待发布 Event。对应 `event_published` 置位后，最早的完成候选才可以进入完成持有槽。持有槽等待 LSC ready 时保持全部完成字段不变。软件读取需要的信息并完成 ACK 后，任务表项和 `command_id` 才能复用。
 
 ### 8.10 停止、复位与错误处理
 
 - `quiesce_i=1` 阻止 TS 接收新的完整指令，不取消已保存任务；
-- `abort_i=1` 丢弃尚未写入任务表的命令接纳项，把所有非终态任务改为 `ABORTED`，清零错误地址和 progress，并设置 `done_flags[2]`；同时清除 Control 执行快照、四组发射暂存的 valid、待展开快照、发射扫描状态、Control/Event/完成共用扫描器、完成持有槽、Event 发布暂存、AXI 控制请求及其待接收响应，以及全部 `predecessor_mask`。这些终态记录随后由功能复位直接清除，不要求先发送完成通知或由软件 ACK。该输入不直接清除四个执行单元 active 标志；已有执行任务返回 done 时清除对应标志，功能复位则清除全部 active 标志；
+- `abort_i=1` 丢弃尚未写入任务表的命令接纳项，把所有非终态任务改为 `ABORTED`，清零错误地址和 progress，并设置 `done_flags[2]`；同时清除 WAIT_EVENT 检查结果、Control 执行快照、四组发射暂存的 valid、待展开快照、发射扫描状态、Control/Event/完成共用扫描器、完成持有槽、Event 发布暂存、AXI 控制请求及其待接收响应，以及全部 `predecessor_mask`。这些终态记录随后由功能复位直接清除，不要求先发送完成通知或由软件 ACK。该输入不直接清除两项 Matrix active 与其他三项 active 记录；已有执行任务返回 done 时清除对应记录，功能复位则清除全部 active 记录；
 - `reset_n` 低电平异步使复位状态生效，系统在 Core 时钟域同步释放复位；
 - 复位把任务表全部置为 FREE，把每项 `predecessor_mask` 清零，把 Event Table 置为 `FREE,generation=0`，并把提交序号清零；
-- 复位清除命令接纳 valid、Control 执行快照 valid、四个执行单元 active 标志和发射暂存 valid，清除 `decode_pending_valid_q`、`decode_scan_active_q`、`decode_scan_best_valid_q`、`completion_hold_valid_q`、`event_publish_pending_valid_q`、查询响应与控制请求；发射扫描槽号、Control/Event/完成共用扫描槽号、三类候选位图、变化标志、候选槽号和候选提交序号恢复为 0；AXI FENCE 的扫描槽号、目标 bit、任务序号副本、终态副本和失败记录同时清零；
+- 复位清除命令接纳 valid、WAIT_EVENT 检查结果 valid、Control 执行快照 valid、两项 Matrix active、其他三项 active 和发射暂存 valid，清除 `decode_pending_valid_q`、`decode_scan_active_q`、`decode_scan_best_valid_q`、`completion_hold_valid_q`、`event_publish_pending_valid_q`、查询响应与控制请求；WAIT_EVENT 检查槽号、发射扫描槽号、Control/Event/完成共用扫描槽号、三类候选位图、变化标志、候选槽号和候选提交序号恢复为 0；AXI FENCE 的扫描槽号、目标 bit、任务序号副本、终态副本和失败记录同时清零；
 - 任一执行单元返回错误编号或未定义 status 时，TS 使用 `BAD_DESC` 形成稳定终态，不用错误字段访问其他任务表项；
-- `scheduler_idle_o` 只有在命令接纳项无效、任务表占用数为 0 且四个执行单元均无 active任务时为 1；等待 ACK 的终态任务会使其保持为 0；
-- `scheduler_quiescent_o` 检查命令接纳、待解码快照、逐槽发射、四组发射暂存、四个 active 标志、Control 执行快照、Event 发布暂存、完成持有槽以及 AXI 控制请求和响应；它不检查任务表占用数，因此只留下等待 ACK 的终态项时可以为 1；
+- `scheduler_idle_o` 只有在命令接纳项无效、任务表占用数为 0 且四类任务均无 active记录时为 1；等待 ACK 的终态任务会使其保持为 0；
+- `scheduler_quiescent_o` 检查命令接纳、WAIT_EVENT 任务、待解码快照、逐槽发射、四组发射暂存、两项 Matrix active、其他三项 active、Control 执行快照、Event 发布暂存、完成持有槽以及 AXI 控制请求和响应。任一任务仍为 WAIT_EVENT 时该信号保持 0；它不检查任务表占用数，因此只留下等待 ACK 的终态项时可以为 1；
 - 内联解码不得访问 NPU `m_axi_*`；只有实际 DMA任务可通过 MIF访问全局数据。
 
 复位会清零任务状态、任务编号、执行单元、操作码、事件引用、`submit_seq`、`predecessor_mask`、状态记录和通知控制字段。命令接纳项和 Control 执行快照的 payload 不要求清零，只需清除对应 valid；任务表中的 128 bit指令和基地址快照、`decode_pending_*` payload、四组 2048 bit发射 payload、完成持有槽编号或 Event 发布暂存编号也不要求清零。任务状态以及各级 valid 已经把这些内容标为无效；重新使用前，RTL 会由新任务完整覆盖。这样可以减少宽数据寄存器的复位负载，同时保持复位后的所有任务请求 valid 为 0。
@@ -2011,9 +2066,20 @@ Control 执行、普通 signal Event 发布和完成通知共用一组连续逐�
 
 ### 9.1 模块组成与功能
 
-DMA / Layout Engine 在 L1BUF 与全局存储之间搬运数据，也可以在 L1BUF 内或全局存储内复制数据。当前 RTL 包含 Task Context 锁存器、字段检查器、元素地址生成器、整数格式转换器、INT4 读写单元、二维转置地址生成器、PACK/SPLIT 地址生成器、L1BUF 请求端口、MIF 请求端口、错误记录和进度计数器。
+DMA / Layout Engine 在 L1BUF 与全局存储之间搬运数据，也可以在 L1BUF 内或全局存储内复制数据。当前 RTL 包含 Task Context 锁存器、字段检查器、元素地址生成器、整数格式转换器、INT4 读写单元、二维转置地址生成器、PACK/SPLIT 地址生成器、对齐整 beat 快速复制单元、L1BUF 请求端口、MIF 请求端口、错误记录和进度计数器。
 
-当前实现一次执行一条 DMA 任务，并且一次保留一个存储请求。一次元素处理必须完成“源读取、可选格式转换、目的写入”后才进入下一个元素。该方式便于先验证地址、数据格式和错误传播；后续提高吞吐率时可以增加请求队列与连续 beat 合并，但不得改变指令格式、整数结果、错误状态或任务完成条件。
+当前实现一次执行一条 DMA 任务。普通路径一次处理一个元素，完成“源读取、可选格式转换、目的写入”后才处理下一个元素。对齐整 beat 快速路径一次处理一个或多个 64-bit beat，省去逐元素选择与合并。多 beat AXI 读只用于 GADDR→L1BUF；L1BUF→GADDR、L1BUF→L1BUF 和 GADDR→GADDR 的快速复制每次仍处理一个 beat。MIF 同时保留一个 AXI 事务，DMA 用 `fast_beats_remaining_q` 跟踪已经发出的多 beat 读。
+
+快速路径必须同时满足：
+
+- 操作为 `DMA_COPY_1D` 或 `DMA_COPY_ND`；
+- `convert_mode=0`，且源、目的 dtype 相同；
+- 源、目的当前地址均按 8B 对齐；
+- INT4 源、目的均从低半字节开始；
+- 当前内层至少剩余一个完整 beat 的元素；
+- 源、目的当前区域都至少剩余 8B。
+
+一个 64-bit beat 可保存 16 个 INT4、8 个 INT8、4 个 INT16 或 2 个 INT32 元素。GADDR→L1BUF 的本次读 beat 数取以下四者的最小值：当前内层剩余的完整 beat 数、源和目的区域剩余的完整 beat 数、`burst_beats_minus1+1`，以及从当前 AXI 地址到本 4KiB 段末尾可容纳的完整 beat 数。
 
 地址生成使用递增游标，不在每个元素上重新求多维线性编号。DMA 保存五个维度的 `index_q`、源和目的外层累计偏移、内层起点、当前源地址、当前目的地址以及 INT4 半字节相位。连续内层元素只增加元素字节数；INT4 通过翻转半字节相位，并在越过高半字节后把字节地址加 1。外层维度通过 stride 增加起点，在某一维结束时减去该维已经累计的偏移，再继续处理更外层维度。
 
@@ -2073,12 +2139,13 @@ MIF 请求与响应端口如下：
 | `mif_req_addr_o` | Output | 48 | 8B 对齐的全局物理字节地址；高于 `PA_W-1` 的 bit为 0 |
 | `mif_req_wdata_o` | Output | 64 | 写数据 |
 | `mif_req_wstrb_o` | Output | 8 | 每个字节一个写使能位 |
+| `mif_req_burst_len_o` | Output | 8 | 读请求的 beat 数减 1；普通请求和全部写请求为 0 |
 | `mif_rsp_valid_i` | Input | 1 | 读返回或写完成有效 |
 | `mif_rsp_ready_o` | Output | 1 | DMA 可接收响应 |
 | `mif_rsp_rdata_i` | Input | 64 | 读返回数据 |
 | `mif_rsp_status_i` | Input | 3 | MIF 返回的存储状态 |
 
-所有请求端口都遵守 ready/valid 规则。请求握手后，DMA 必须等待对应响应；响应暂停时，接收方必须保持 `valid`、数据和状态不变。当前接口没有 tag，因为 DMA 和 MIF 都只保留一个未完成请求。
+所有请求端口都遵守 ready/valid 规则。请求握手后，DMA 必须等待对应响应；响应暂停时，接收方必须保持 `valid`、数据和状态不变。接口没有 tag，因为 DMA 和 MIF 都只保留一个活动事务。多 beat 读的每个返回 beat 都形成一次内部响应，DMA 与 MIF 分别保存剩余 beat 数。
 
 ### 9.3 指令展开得到的 DMA Task Context
 
@@ -2090,8 +2157,8 @@ MIF 请求与响应端口如下：
 | `0x41` | `src_space` | 8 | L1BUF 或 GADDR |
 | `0x42` | `dst_space` | 8 | L1BUF 或 GADDR |
 | `0x43` | `convert_mode` | 8 | 不转换、符号扩展、裁剪或 INT4 打包 |
-| `0x44` | `burst_beats_minus1` | 8 | 当前由内联解码器写 7；当前单 beat MIF 不使用它生成 AXI 长度 |
-| `0x45` | `max_outstanding` | 8 | 当前由内联解码器写 1 |
+| `0x44` | `burst_beats_minus1` | 8 | 当前由内联解码器写 7；GADDR→L1BUF 对齐 COPY 用它限制一次 AXI 读的长度 |
+| `0x45` | `max_outstanding` | 8 | 当前由内联解码器写 1；允许值为 1～16，当前数据通路不使用它增加活动事务数 |
 | `0x46` | `src_nibble` | 1 | INT4 起始元素位于低半字节或高半字节；该字节 `[7:1]` 写 0 |
 | `0x47` | `dst_nibble` | 1 | 当前必须为 0；该字节 `[7:1]` 写 0 |
 | `0x48` | `shape[0]` | 32 | 第 0 维元素数 |
@@ -2144,7 +2211,7 @@ INT4 源可以从高半字节开始，但 INT4 目的必须从一个字节的低
 
 `DMA_FILL` 把 `fill_value` 解释为一个整数标量并重复写到全部有效元素：INT4 取低 4 bit，INT8 取低 8 bit，INT16 取低 16 bit，INT32 取低 32 bit。该标量按目的 dtype 的二进制补码解释。INT4 仍按两个元素一个字节打包，奇数尾部的高半字节写 0。
 
-当前内联解码器把内部 `burst_beats_minus1` 写为 7，把 `max_outstanding` 写为 1。DMA 仍逐元素发出 64-bit 对齐请求，MIF 的 `AxLEN` 固定为 0；这两个内部字段当前只参加合法性检查，不改变 AXI 事务长度。
+当前内联解码器把内部 `burst_beats_minus1` 写为 7，把 `max_outstanding` 写为 1。DMA 检查 `burst_beats_minus1<=15`，并在 GADDR→L1BUF 对齐 COPY 中用该值限制 AXI 读长度，因此正常指令最多发出 8 beat 读；模块级 Task Context 可以测试 1～16 beat。`max_outstanding` 仍只参加合法性检查。
 
 ### 9.4 地址计算
 
@@ -2224,18 +2291,19 @@ $$
 | `ST_SHAPE_MUL` | 每周期处理一个乘数 bit；完成当前维后处理下一维，最后检查零维和 64-bit 元素总数溢出 |
 | `ST_REGION_CHECK` | 检查源、目的区域字节数以及同地址空间的区域重叠；FILL 不检查源区域 |
 | `ST_CURSOR_INIT` | 清零多维索引与累计偏移，装入当前地址、INT4 半字节相位、段游标和转置行列游标 |
-| `ST_PREP` | 使用已经保存的当前地址检查源、目的元素访问范围和跨 8B beat 条件 |
-| `ST_READ_REQ` | 向 L1BUF 或 MIF 发送一个 8B 对齐读请求 |
-| `ST_READ_RSP` | 接收 64-bit 数据和状态，依据当前元素字节地址选择元素 |
+| `ST_PREP` | 检查源、目的元素范围和跨 beat 条件，同时判断是否满足整 beat 快速复制要求并计算本次 beat 数 |
+| `ST_READ_REQ` | 向 L1BUF 或 MIF 发送读请求；GADDR 快速读把 `fast_beats_remaining_q-1` 送给 MIF |
+| `ST_READ_RSP` | 普通路径选择一个元素；快速同空间复制保存完整 beat；GADDR→L1BUF 直接以当前 MIF 返回数据形成 L1 满 strobe 写请求；L1BUF→GADDR 直接以 L1 返回数据形成 MIF 写请求 |
 | `ST_CONVERT` | 执行符号扩展、饱和处理或 INT4 范围检查 |
 | `ST_RMW_REQ` | 写 INT4 高半字节前读取目的 64-bit beat |
 | `ST_RMW_RSP` | 保存目的旧数据，使同一字节中的低半字节保持不变 |
 | `ST_WRITE_REQ` | 形成 64-bit 写数据和 8-bit `WSTRB`，向 L1BUF 或 MIF 发请求 |
-| `ST_WRITE_RSP` | 接收写完成状态并增加进度 |
+| `ST_WRITE_RSP` | 接收写完成状态；普通路径按实际目的字节数增加进度，快速路径增加 8B，并推进地址、索引和 burst 计数 |
+| `ST_BURST_DRAIN` | GADDR 多 beat 读中途发生 MIF 或 L1 错误时保存首次错误，接收并丢弃剩余 MIF 返回，然后进入完成状态 |
 | `ST_ADVANCE` | 推进连续元素、外层维度、转置行列或 PACK/SPLIT 段游标；全部元素结束时完成任务 |
 | `ST_DONE` | 保持完成状态，直到与 TaskScheduler 握手，然后回到 `ST_IDLE` |
 
-非 PACK/SPLIT 任务在 `ST_CHECK` 后进入 shape 乘法。任一有效维度为 0 时，乘法检查完成后直接返回成功且不访问存储。shape 乘积高 64 bit非零，或低 64 bit为 `64'hffff_ffff_ffff_ffff` 时返回 `BAD_SHAPE`。正常任务经 `ST_REGION_CHECK` 和 `ST_CURSOR_INIT` 后进入逐元素循环。`convert_mode=PACK_INT4` 先执行一次只读范围检查；检查通过后重新初始化游标，再执行实际写入。
+非 PACK/SPLIT 任务在 `ST_CHECK` 后进入 shape 乘法。任一有效维度为 0 时，乘法检查完成后直接返回成功且不访问存储。shape 乘积高 64 bit非零，或低 64 bit为 `64'hffff_ffff_ffff_ffff` 时返回 `BAD_SHAPE`。正常任务经 `ST_REGION_CHECK` 和 `ST_CURSOR_INIT` 后进入处理循环。符合快速要求的 COPY 每次推进一个或多个完整 beat；其他任务进入普通元素路径。`convert_mode=PACK_INT4` 先执行一次只读范围检查；检查通过后重新初始化游标，再执行实际写入。
 
 DMA 的异步复位只把 `state_q` 置为 `ST_IDLE`。因此复位后 `l1_req_valid_o`、`mif_req_valid_o` 和 `done_valid_o` 均为 0，模块可以在复位释放后接收新任务。Task Context、地址、数据、shape 乘法和进度相关寄存器不依赖复位清零：`ST_IDLE` 接收任务时装入新的 Task Context，`ST_CURSOR_INIT` 初始化地址与游标，其他寄存器在进入使用它们的状态前赋值。
 
@@ -2258,12 +2326,22 @@ sequenceDiagram
     DMA->>DMA: 锁存并检查固定字段
     DMA->>DMA: 串行检查 shape 乘积
     DMA->>DMA: 检查访问区域并初始化游标
-    loop 每个元素
-        DMA->>MIF: 8B 对齐读请求
-        MIF-->>DMA: 64-bit 数据 + status
-        DMA->>DMA: 选择元素并转换整数格式
-        DMA->>L1: 8B 对齐写请求 + WSTRB
-        L1-->>DMA: 写完成 status
+    alt 满足对齐整 beat 快速要求
+        DMA->>MIF: 一次 1～16 beat 读请求
+        loop burst 中的每个 R beat
+            MIF-->>DMA: 当前 64-bit 数据 + status
+            DMA->>L1: 满 beat 写请求 + WSTRB=8'hff
+            L1-->>DMA: 写完成 status
+            DMA->>DMA: 地址、索引和 progress 增加 8B
+        end
+    else 普通元素路径
+        loop 每个元素
+            DMA->>MIF: 8B 对齐读请求
+            MIF-->>DMA: 64-bit 数据 + status
+            DMA->>DMA: 选择元素并转换整数格式
+            DMA->>L1: 8B 对齐写请求 + WSTRB
+            L1-->>DMA: 写完成 status
+        end
     end
     DMA-->>TS: status + fault_addr + progress
 ```
@@ -2276,16 +2354,17 @@ sequenceDiagram
 4. `done_progress_o` 等于目的张量实际占用的字节数；
 5. TaskScheduler 接收完成状态。
 
-MIF 的 AXI 事务在 DMA 与 MIF 的内部接口之后完成。DMA 只依据 `mif_rsp_status_i` 判断本次全局访问是否成功，不直接观察 AXI 的 `AR/R` 信号。MIF 负责检查 `RID=0`、`RLAST=1` 和 `RRESP=OKAY`，再把结果转换成 3-bit 内部状态。
+MIF 的 AXI 事务在 DMA 与 MIF 的内部接口之后完成。DMA 只依据 `mif_rsp_status_i` 判断本次全局访问是否成功，不直接观察 AXI 的 `AR/R` 信号。快速读只发出一次 MIF 请求；每个 R beat 形成一次内部响应，该响应与 L1 满 beat 写请求握手后，DMA 等待对应 L1 写响应，再接收下一个 MIF 返回。MIF 在内部响应等待期间令 `RREADY=0`，所以 AXI R 数据不会连续无停顿地写入 L1BUF。MIF 对每个 beat 检查 `RID=0`、期望的 `RLAST` 和 `RRESP=OKAY`，再形成 3-bit 内部状态。
 
 ### 9.7 L1BUF 到 DDR 时序
 
 1. DMA 向 L1BUF 发出 8B 对齐读请求。
-2. L1BUF 返回完整 64-bit beat，DMA 根据元素地址低位和 dtype 取得目标元素。
-3. DMA 执行可选的符号扩展、饱和处理或 INT4 范围检查。
-4. DMA 向 MIF 发出 8B 对齐写请求，使用 `WSTRB` 选择目的字节；写 INT4 高半字节时，先经 MIF 读回目的 beat，再合并低、高半字节。
-5. MIF 检查物理地址并完成 AXI 写事务，只有在 `BID=0` 且 `BRESP=OKAY` 时返回成功。
-6. DMA 收到写完成响应后增加 `progress`。处理完最后一个元素后向 TaskScheduler 报告成功。
+2. L1BUF 返回完整 64-bit beat。普通路径根据元素地址低位和 dtype 取得一个元素；满足快速要求时保留全部 64 bit。
+3. 普通路径执行可选的符号扩展、饱和处理或 INT4 范围检查；快速路径不改变数据。
+4. DMA 向 MIF 发出 8B 对齐写请求。普通路径使用 `WSTRB` 选择目的字节；写 INT4 高半字节时，先经 MIF 读回目的 beat，再合并低、高半字节。快速路径使用完整数据和 `WSTRB=8'hff`。
+5. 当前 MIF 的 AXI 写固定为一个 beat，因此快速路径也为每个 L1 beat 分别发出一次 AXI 写。
+6. MIF 检查物理地址并完成 AXI 写事务，只有在 `BID=0` 且 `BRESP=OKAY` 时返回成功。
+7. DMA 收到写完成响应后增加 `progress`。处理完最后一个元素后向 TaskScheduler 报告成功。
 
 当前一次只保留一个请求，因此不存在两个元素的返回次序问题。若后续增加并发请求，必须为每个请求保存元素编号、源或目的类型、字节 lane 和 INT4 半字节位置，并保证最终整数结果与本节定义相同。
 
@@ -2370,18 +2449,16 @@ $$
 
 ### 10.4 顶层客户端编号
 
-`npu_single_core_top.sv` 把六个客户端槽按以下顺序接入 L1BUF：
+`npu_single_core_top.sv` 把四个客户端槽按以下顺序接入 L1BUF：
 
 | 客户端编号 | 顶层来源 | 用途 |
 | ---: | --- | --- |
 | 0 | AXI Slave 前端 | 外部主控访问片上 Buffer |
 | 1 | DMA Engine | L1BUF 与系统内存之间的数据搬运 |
-| 2 | Matrix Engine | A、B、旧部分和、bias、C 的访问 |
-| 3 | Integer Vector Engine | 整数逐元素运算 |
-| 4 | Complex Engine | 激活函数、Softmax、Norm 等操作 |
-| 5 | 保留槽 | 顶层固定为无请求 |
+| 2 | Matrix-Vector Engine | A、B、旧部分和、bias、C 与整数逐元素访问 |
+| 3 | Complex Engine | 激活函数、Softmax、Norm 等操作 |
 
-Matrix Engine 没有 A、B、bias、C 四套独立 L1 物理端口。这些访问都先在 Matrix 内部按状态排好次序，再通过客户端 2 的同一组请求与响应信号发送。
+Matrix-Vector Engine 没有 A、B、bias、C 和各 Vector 源的多组独立 L1 物理端口。Outer 与 Scalar 先通过 Matrix L1 路由，随后 Matrix 与 Vector 再通过内部存储通道；排队后的请求由深度为 2 的寄存 FIFO送到客户端 2，L1 响应直接返回内部存储通道。
 
 ### 10.5 模块级信号
 
@@ -2540,89 +2617,121 @@ response                     ↑ T4
 - 连续地址通常依次访问不同 bank，但当前 Controller 不利用这一点同时服务多个客户端。
 - 读写同一地址不会在同一周期被 Controller 接受，因为全局 grant 只有一个。
 - 请求没有 tag；每个客户端必须按照“一个响应槽可用”的限制管理未完成访问。
-- Matrix Engine 对 A、B、bias、旧部分和及 C 的访问是串行请求，不能按多端口 SRAM 的吞吐估算当前 RTL 性能。
+- Matrix-Vector Engine 内部允许 Outer、Scalar 和 Vector 同时提出请求，但经两级仲裁和深度为 2 的请求 FIFO后，每周期最多向 L1BUF 提交一个请求，不能按多端口 SRAM 的吞吐估算当前 RTL 性能。
+- 请求 FIFO不是直通结构。空 FIFO在某个时钟沿接受请求后，最早从下一周期拉高输出 valid；FIFO 已满时，即使同周期 L1 接受队首，请求侧 ready 仍保持为 0。
 
 ---
 
-## 11. Matrix Engine
+## 11. Matrix-Vector Engine：Matrix 子系统
 
 ### 11.1 当前执行结构
 
-Matrix Engine 由一个任务分支选择器和两个执行分支组成：
+Matrix 和 Integer Vector 在物理结构中属于 `npu_matrix_vector_engine`。该模块保留 Matrix、Vector 两组任务接口，但只例化一套 `npu_shared_mac_pe_array` 和一组 64-bit L1 客户端端口。任务接口分开是为了保持操作码分类、TaskScheduler 发射暂存、active 记录和完成处理不变，不表示 Matrix 与 Vector 各自拥有一个物理执行模块。
+
+Matrix 子系统包含两个物理 context，但不复制两套 Matrix 顶层控制器：
+
+- context0 直接例化 `npu_matrix_multi_dtype_outer_engine`，下文称为 Outer context。它执行多数据类型分块外积，并配置 `LOCAL_PSUM_ENABLE=1`，因此包含 4096×32 bit 本地部分和 RAM；
+- context1 直接例化 `npu_matrix_scalar_engine`，下文称为 Scalar context。它逐元素处理 M、N、K，支持 bias、旧部分和、整数重缩放、ReLU 和多种输出格式；
+- `GEMM_ZERO_LOCAL`（0x44）和 `GEMM_ACCUM_HOLD`（0x45）固定进入 Outer context；
+- `GEMM_ACCUM`（0x42）在 Outer 能处理当前任务或 Outer 本地部分和状态有效时进入 Outer context，否则进入 Scalar context；
+- 普通 `GEMM`（0x40）被 Outer 接受且 Outer 没有待提交的本地部分和时，Outer 与 Scalar 都可以执行。两者都空闲时按轮转状态选择；其他普通 `GEMM`、`BMM`（0x41）、`GEMM_ZERO`（0x43）由 Scalar context执行；
+- Outer 保存本地部分和并处理后续累加任务时，Scalar 可以同时推进另一个普通 `GEMM`。两者共享 PE 和 L1 访问资源，不复制乘法阵列。
 
 ```mermaid
-flowchart LR
-    TASK["Matrix Task Context"] --> REG["任务暂存"]
-    REG --> SEL{"任务条件检查"}
-    SEL -->|"满足 DiP 条件"| DIP["DiP 4×4 脉动阵列分支"]
-    SEL -->|"其他合法任务"| SCALAR["逐元素标量分支"]
-    DIP --> OUT["共享 L1 端口与 done 接口"]
-    SCALAR --> OUT
+%%{init: {"flowchart": {"useMaxWidth": true, "nodeSpacing": 16, "rankSpacing": 20}, "themeVariables": {"fontSize": "13px"}}}%%
+flowchart TB
+    TS["TaskScheduler<br/>Matrix / Vector 两类任务接口"]
+    DISP["npu_matrix_context_dispatch"]
+    C0["context0 / Outer<br/>npu_matrix_multi_dtype_outer_engine<br/>本地部分和 RAM"]
+    C1["context1 / Scalar<br/>npu_matrix_scalar_engine<br/>逐元素乘加与后处理"]
+    PR["npu_matrix_context_pe_router"]
+    LR["npu_matrix_context_l1_router"]
+    VEC["npu_vector_engine<br/>轻量整数 ALU"]
+    MVPE["npu_mv_shared_mac<br/>Matrix / Vector 轮转"]
+    PE["npu_shared_mac_pe_array<br/>4 groups × 16 个 4×4 乘法器"]
+    MEM["npu_mv_memory_path<br/>2 项旁路缓存"]
+    RF["npu_mv_l1_request_fifo<br/>深度 2 / 93 bit / 非直通"]
+    L1["L1BUF Controller<br/>64-bit 客户端端口"]
+
+    TS -->|"Matrix Task"| DISP
+    TS -->|"Vector Task"| VEC
+    DISP --> C0
+    DISP --> C1
+    C0 <-->|"PE 请求 / 返回"| PR
+    C1 <-->|"PE 请求 / 返回"| PR
+    PR <-->|"Matrix PE 请求 / 返回"| MVPE
+    VEC <-->|"Vector MUL/FMA 请求 / 返回"| MVPE
+    MVPE <--> PE
+    C0 <-->|"L1 请求 / 返回"| LR
+    C1 <-->|"L1 请求 / 返回"| LR
+    LR <-->|"Matrix L1 请求 / 返回"| MEM
+    VEC <-->|"Vector L1 请求 / 返回"| MEM
+    MEM -->|"排队前请求"| RF
+    RF -->|"按接收次序提交"| L1
+    L1 -->|"响应直接返回"| MEM
+    DISP -->|"Matrix done + command_id"| TS
+    VEC -->|"Vector done"| TS
 ```
 
 | RTL 文件 | 功能 |
 | --- | --- |
-| `engines/npu_matrix_engine.sv` | 先暂存任务，再检查任务是否适合 DiP，锁定当前活动分支，并复用顶层 L1 与 done 端口 |
-| `engines/npu_matrix_dip_engine.sv` | 装载 A/B 行、驱动 DiP 阵列、用同步一写一读存储模板保存宽结果行，并按两个 INT32 元素一个 64-bit beat 写回 |
-| `engines/npu_matrix_scalar_engine.sv` | 支持任意合法 M/N/K、混合 INT8×INT4、bias、旧部分和、整数重缩放、ReLU 和 INT4/INT8/INT16/INT32 写回 |
-| `dip/dip_gemm_core.sv` 与 `dip/dip_systolic_array.sv` | 4×4 PE 阵列、输入错拍、权重行装载、结果行输出 |
-| `dip/dip_simd_dot_product.sv` | 用 16 个 4×4 基础乘法器形成三种整数格式的逻辑乘法，并把乘积重组与局部 K 求和分段寄存 |
-| `dip/dip_segmented_adder64.sv` | 按当前整数格式把 64 bit部分和拆成 1 个 64-bit、2 个 32-bit 或 4 个 16-bit独立加法，禁止不同输出 lane 之间传递进位 |
+| `engines/npu_matrix_vector_engine.sv` | 合并执行单元顶层；连接双 Matrix context、Vector 控制器、共享 PE、内部旁路和外部 L1 端口 |
+| `engines/npu_matrix_dual_context.sv` | 直接例化 Outer context 与 Scalar context，并组合任务分配、完成选择、PE 路由和 L1 路由 |
+| `engines/npu_matrix_context_dispatch.sv` | 保存两个 context 的 active 状态和 `command_id`；依据操作码、`outer_task_supported_i` 和 `outer_local_psum_valid_i` 选择目标 context |
+| `engines/npu_matrix_context_pe_router.sv` | 两个 Matrix context 的 PE 请求轮转选择；owner FIFO 把返回送回原 context |
+| `engines/npu_matrix_context_l1_router.sv` | 两个 Matrix context 的 L1 请求轮转选择；owner FIFO 按请求次序分发 L1 返回 |
+| `engines/npu_matrix_multi_dtype_outer_engine.sv` | Outer context；执行多数据类型分块外积、部分和更新、本地部分和保存和最终 C 写回 |
+| `engines/npu_matrix_scalar_engine.sv` | Scalar context；支持较广的 M/N/K、bias、旧部分和、整数重缩放、ReLU 和多种输出格式；标量乘法也经共享 PE |
+| `engines/npu_matrix_psum_pipeline.sv` | 保存一项未返回 PE 请求的 tag 与末次 K 标志；返回到达时更新四组分段累加值并释放请求槽 |
+| `engines/npu_matrix_segmented_adder64.sv` | 根据 INT16、INT8 或 INT4 分段宽度完成部分和相加，各段之间不传递进位 |
+| `engines/npu_mv_shared_mac.sv` | 在 Matrix 与 Vector 乘法请求之间轮转，加入 owner 标签并统计授予、等待、冲突和空闲周期 |
+| `engines/npu_shared_mac_pe_array.sv` | 四个多精度 group 的公共 PE 阵列，返回分段贡献值或逐元素 INT32 乘积 |
+| `engines/npu_shared_mac_group.sv` | 每组使用 16 个 4×4 基础乘法器，按数据格式组合逻辑乘积和 64-bit 局部贡献 |
+| `engines/npu_vector_engine.sv` | 执行 Vector 指令；ADD 等操作使用轻量整数 ALU，MUL/FMA 申请共享 PE |
+| `engines/npu_mv_memory_path.sv` | 组合 L1 仲裁、Matrix 写回元数据、Vector 本地返回和旁路缓存控制 |
+| `engines/npu_mv_l1_arbiter.sv` | 在 Matrix 与 Vector L1 请求之间轮转，并依据 owner FIFO 分发 L1 返回 |
+| `engines/npu_mv_l1_request_fifo.sv` | 保存两项寄存请求；每项由 write、20-bit地址、64-bit写数据和 8-bit strobe组成，共 93 bit |
+| `engines/npu_mv_bypass_cache.sv` | 保存 Matrix 已成功写回的 64-bit beat；单核顶层配置为 2 项，逐字节维护有效状态 |
 
-DiP 使用 4×4 个 PE。每个 PE 内的 16 个 4×4 基础乘法器按输入格式重新组合：
+`npu_matrix_dual_context` 把当前操作码和 Task Context 同时提供给两个控制器。Outer context 的 `task_supported_o` 表明分块外积分支是否能执行当前任务，`local_psum_valid_o` 表明是否存在由本地累加序列保存且尚未最终提交的状态。任务分配器结合这两个信号与操作码决定 Outer 是否必须接收、Outer 是否可以接收以及 Scalar 是否可以接收。
 
-| 输入格式 | 一个 PE 每次形成的逻辑乘法 | 局部 K 项数 | PE 局部贡献保存形式 | 方阵大小 |
-| --- | ---: | ---: | --- | ---: |
-| INT16 | 1 个 16×16 | 1 | 1 个 signed64 | 4×4 |
-| INT8 | 4 个 8×8 | 每个输出 2 项 | 2 个 signed32 | 8×8 |
-| INT4 | 16 个 4×4 | 每个输出 4 项 | 4 个 signed16 | 16×16 |
+共享 PE 包含四个 group，每个 group 使用 16 个 4×4 基础乘法器。一个 group 可以组成 1 个 INT16×INT16、4 个 INT8×INT8、16 个 INT4×INT4，或 8 个 INT8/INT4 混合逻辑乘法。每个 group 的 64-bit 局部贡献分别按 1×64 bit、2×32 bit 或 4×16 bit 保存；四个 group 的贡献值由 Matrix 的分段加法器继续累加。Vector 的 MUL/FMA 请求使用逐元素返回方式，PE 返回每个逻辑乘积的 signed32 结果。
 
-降低输入位宽后，相同的 16 个基础乘法器在一个 PE 中形成更多逻辑乘法。整个 4×4 阵列因此每个有效阵列计算拍分别形成 16 个 INT16、64 个 INT8 或 256 个 INT4 逻辑乘法。PE 的局部贡献先采用上表的 64-bit、32-bit 或 16-bit分段形式，进入阵列部分和后继续按有符号数相加；阵列输出端把每个逻辑结果符号扩展成 64 bit，再交给 Matrix 写回单元执行 INT32 饱和或保留低 32 bit。
+Outer 与 Scalar 先通过 `npu_matrix_context_pe_router` 共用一组 Matrix PE 请求端口，再通过 `npu_mv_shared_mac` 与 Vector MUL/FMA 请求共用 PE。两级选择都采用轮转方式。Matrix context PE 路由在请求握手时把来源写入 owner FIFO；返回时按 FIFO 头部选择 context。Matrix 与 Vector 的来源位位于 PE client tag 最高位，返回阶段按该位选择 Matrix 或 Vector。
 
-`dip_segmented_adder64` 对三种格式使用下列加法结构：
+Outer 与 Scalar 的 L1 请求先进入 `npu_matrix_context_l1_router`，然后与 Vector 请求一起进入 `npu_mv_memory_path`。两级 L1 选择都使用 owner FIFO。`npu_mv_memory_path` 的请求输出还要进入 `npu_mv_l1_request_fifo`，再送到 L1BUF。这样，Outer 可以在更新或写回部分和时保留 active，Scalar 同时执行普通 GEMM 的地址准备、A/B 读取或 PE 请求；两者在申请同一资源时按轮转结果推进。
+
+Scalar context 的 `batch_q`、`row_q`、`col_q`、`k_q` 逐个输出元素推进。固定常量 `MATRIX_MT=8`、`MATRIX_KT=16`、`MATRIX_NT=8` 用于检查末尾 tile 的有效尺寸，并决定 B 的 tile 存储排列，不表示 Scalar 每周期并行计算 $8\times8$ 个输出。Scalar 在 `ST_MAC_MUL` 发出一个逐元素 PE 请求，收到 signed32 乘积后在后续状态中把它符号扩展并加入 signed64 累加值。Outer 不包含这套逐元素状态机。
+
+整数重缩放的 signed64 输入记为 \(x\)，32-bit 非负乘数记为 \(m\)。硬件把输入拆为 signed 高 32 bit和 unsigned 低 32 bit：
 
 $$
-\begin{aligned}
-\text{INT16:}\quad&s_{63:0}=a_{63:0}+b_{63:0},\\
-\text{INT8:}\quad&s_{31:0}=a_{31:0}+b_{31:0},\qquad
-s_{63:32}=a_{63:32}+b_{63:32},\\
-\text{INT4:}\quad&s_{16j+15:16j}=a_{16j+15:16j}+b_{16j+15:16j},
-\qquad j=0,1,2,3.
-\end{aligned}
+h=\operatorname{signed}(x[63:32]),\qquad
+\ell=\operatorname{unsigned}(x[31:0]).
 $$
 
-INT8 的低 32-bit lane 发生溢出时，进位不能进入高 32-bit lane；INT4 的每个 16-bit lane 同理。RTL 把每个 lane 写成独立的向量加法表达式，使综合工具分别识别为 1 条 64-bit、2 条 32-bit 或 4 条 16-bit进位路径，并在 Artix-7 目标器件上使用 CARRY4 等专用进位资源。模式选择只在各加法结果之间选择，不把四位小段串成由模式控制的长进位网络。
+`ST_EP_MUL` 的第一个周期并行计算：
 
-> [!example] 分段进位
-> INT8 模式下，令低 lane 为 `32'hffff_ffff + 32'h0000_0001`，高 lane 为 `32'h0000_0005 + 32'h0000_0007`。结果是 `{32'h0000_000c,32'h0000_0000}`。低 lane 丢弃自身第 33 位进位，高 lane 仍得到 12。若把整组数据错误地当作一个 64-bit数相加，高 lane 会得到 13，这会把两个逻辑输出混在一起。
+$$
+H=h\times \operatorname{zero\_extend}_{33}(m),\qquad
+L=\ell\times m,
+$$
 
-完整 PE 乘累加数据路径使用四个寄存阶段：
+其中 \(H\) 是 signed32 与零扩展后 33-bit 非负乘数的乘积，保存为 signed65；\(L\) 是两个 unsigned32 数的乘积，保存为 unsigned64。第二个周期计算：
 
-1. `dip_simd_dot_product` 保存 16 个 4×4 基础乘积；
-2. `dip_simd_dot_product` 保存 INT16/INT8 的基 16 数位重组结果；INT4 在这一段保存符号扩展后的乘积；
-3. `dip_simd_dot_product` 使用平衡加法树计算同一输出的局部 K 项并保存局部贡献；
-4. `dip_pe` 的 `psum_q` 保存局部贡献与上游部分和相加后的结果。
+$$
+U=H+\operatorname{zero\_extend}_{65}(L[63:32]),
+$$
 
-设物理阵列行数为 \(N\)。首个 A 行在事件 \(e_0\) 被接收时，首个完整 C 行在 \(e_{N+3}\) 可见；第 \(m\) 个连续输入的 A 行在 \(e_{m+N+3}\) 产生对应的 C 行。当前 \(N=4\)，因此首个完整 C 行在 \(e_7\) 可见。只有 A 行连续提交时，阵列才会在流水充满后连续逐行输出。四个寄存阶段切断了“基础乘法、数位重组、局部 K 求和、部分和更新”原本可能形成的长组合数据路径。
+再形成完整乘积：
 
-DiP 执行分支把宽结果行保存在 `accum_rows_q`。该数组包含 16 项，每项保存最多 16 个 signed64 结果，RTL 使用 `ram_style="block"` 属性以及同步一写一读模板：`dip_c_valid=1` 时在时钟上升沿写入当前结果行，状态进入 `ST_WRITE_ROW_LOAD` 时在时钟上升沿读取指定行并保存到 `write_row_data_q`，下一周期的 `ST_WRITE_INIT` 才选择其中两个 INT32 输出。宽数据数组及其读数据寄存器不使用异步复位，以便综合工具生成 FPGA RAM primitive；`state_q`、结果行计数、读缓存 valid 以及 DiP 流水中的 valid 仍由 `reset_n` 清除。复位后的旧存储内容不会被使用，因为写回阶段只能在本次任务收到全部有效结果行后开始。
+$$
+P=\operatorname{sign\_extend}_{128}\left(\{U,L[31:0]\}\right)=x\times m.
+$$
 
-> [!important] DiP 宽结果存储的综合要求
-> 综合报告必须显示 `accum_rows_q` 使用 FPGA RAM primitive。若该数组被拆成大量触发器或 LUT 存储，则不满足本设计的资源要求。验证还要确认同步读增加的 `ST_WRITE_ROW_LOAD` 周期存在，并确认复位会清除控制状态与 valid，而不会对宽数据数组生成逐 bit 异步复位电路。
+式中，`x[63:32]` 和 `x[31:0]` 分别表示 \(x\) 的高、低 32 个 bit；\(\operatorname{signed}(\cdot)\) 按二进制补码解释，\(\operatorname{unsigned}(\cdot)\) 按非负整数解释；\(\operatorname{zero\_extend}_{65}(\cdot)\) 在高位补 0 直到 65 bit；花括号表示把左侧 bit 放在高位、右侧 bit 放在低位进行拼接；\(\operatorname{sign\_extend}_{128}(\cdot)\) 复制最高符号 bit直到 128 bit。上述拆分没有改变数学结果，只改变计算在时钟周期中的安排。
 
-DiP 分支只接收以下任务：
-
-- 操作为 GEMM，或 Batch 数大于等于 1 的 BMM；
-- A 与 B 使用相同格式，C 为 INT32；
-- INT16 对应 $M=N=K=4$，INT8 对应 $M=N=K=8$，INT4 对应 $M=N=K=16$；
-- A 使用对应的行优先格式，B 使用对应的行优先格式或现有 `KT=16、NT=8` tile 格式，C 使用 INT32 行优先格式；正常指令解码固定生成 B tile 格式，B 行优先格式只用于模块级直接 Task Context 测试；
-- 任务为最终结果计算，不启用 bias、旧部分和、residual、整数右移或 ReLU；
-- A、B、C 基地址可由 20-bit L1 地址表示，C 地址、行距和 Batch 步长满足 8B 写入要求；
-- INT32 溢出处理选择饱和或保留低 32 bit。
-
-任何一项不满足时都进入标量分支，因而现有 GEMM、BMM、GEMM_ACCUM、GEMM_ZERO 和混合 INT8×INT4 行为保持不变。顶层先接收并暂存任务，在下一周期根据暂存字段选择执行分支；选择结果随后保持不变，直到该分支的 done 与 TaskScheduler 握手后才回到空闲状态。两个分支不会同时驱动 L1 端口。
-
-标量分支的 `batch_q`、`row_q`、`col_q`、`k_q` 逐个输出元素推进。固定常量 `MATRIX_MT=8`、`MATRIX_KT=16`、`MATRIX_NT=8` 用于检查末尾 tile 的有效尺寸，并决定 B 的 tile 存储排列，不表示标量分支每周期并行计算 $8\times8$ 个输出。`ST_MAC_MUL` 每次计算一个 $A_{m,k}\times B_{k,n}$ 并寄存 signed32 乘积；下一拍 `ST_MAC_ACC` 把它符号扩展后加入 signed64 累加值。输出后处理也采用逐段寄存：`ST_EP_MUL` 保存 signed128 重缩放乘积，`ST_EP_ABS` 保存正负号、绝对值、移位量和舍入方式，`ST_EP_SHIFT` 完成可变移位，正右移再依次经过舍入决定、加一和符号恢复，随后执行 signed64 限制、zero point 相加以及目标格式检查。64×32 乘法、128-bit 移位、128-bit 加法、符号处理、signed64 限制和目标格式检查因此不会串接在同一个周期内。
+因此第二个周期的主要加法宽度为 65 bit，不在一个周期内完成 signed64×unsigned32 的全部计算。随后，`ST_EP_ABS` 保存正负号、绝对值、移位量和舍入方式，`ST_EP_SHIFT` 完成可变移位，正右移再依次经过舍入决定、加一和符号恢复，最后执行 signed64 限制、zero point 相加以及目标格式检查。乘法高低两段、128-bit 移位、128-bit 加法、符号处理、signed64 限制和目标格式检查分布在相邻寄存阶段。
 
 支持的输入组合为：
 
@@ -2637,46 +2746,165 @@ A 为 INT32，或者 A 与 B 使用表中未列出的组合时，任务返回 `D
 
 ### 11.2 模块级信号
 
+`npu_matrix_vector_engine` 的构建参数如下：
+
+| 参数 | 单核值 | 作用 |
+| --- | ---: | --- |
+| `RESPONSE_TAG_DEPTH` | 8 | Matrix/Vector 到外部 L1 客户端端口的返回 owner FIFO 深度 |
+| `BYPASS_ENTRIES` | 2 | Matrix 到 Vector 内部旁路缓存项数 |
+| `PE_ISSUE_INTERVAL` | 1 | 共享 PE 两次可接收请求之间的最小周期距离 |
+| L1 请求 FIFO 深度 | 2 | `npu_matrix_vector_engine` 当前例化值；该 FIFO不增加响应存储 |
+
 | 信号 | 方向 | 位宽 | 作用 |
 | --- | --- | ---: | --- |
-| `clk_i` | Input | 1 | Matrix 工作时钟 |
+| `clk_i` | Input | 1 | 合并执行单元工作时钟 |
 | `reset_n` | Input | 1 | 低有效异步复位 |
-| `task_valid_i` | Input | 1 | TaskScheduler 提交任务 |
-| `task_ready_o` | Output | 1 | 顶层任务暂存为空，可以接收一项 Matrix 任务 |
-| `opcode_i` | Input | 8 | 片上展开后的 Matrix 操作码 |
-| `command_id_i` | Input | 12 | 调度器提供的任务编号 |
-| `desc_i` | Input | 2048 | `npu_inline_desc_decode` 生成的片上 Task Context |
-| `done_valid_o` | Output | 1 | 完成信息有效 |
-| `done_ready_i` | Input | 1 | TaskScheduler 可以接收完成信息 |
-| `done_status_o` | Output | 8 | 成功或错误状态 |
-| `done_fault_addr_o` | Output | 48 | 运行阶段访问错误对应的地址；启动检查发现基地址高位非零时返回 0 |
-| `done_progress_o` | Output | 64 | 已成功写回的输出元素数量 |
+| `matrix_task_valid_i` | Input | 1 | TaskScheduler 提交 Matrix 任务 |
+| `matrix_task_ready_o` | Output | 1 | 至少一个符合任务类型的 Matrix context 可以接收任务 |
+| `matrix_opcode_i` | Input | 8 | 片上展开后的 Matrix 操作码 |
+| `matrix_command_id_i` | Input | 12 | 调度器提供的任务编号 |
+| `matrix_desc_i` | Input | 2048 | `npu_inline_desc_decode` 生成的片上 Task Context |
+| `matrix_done_valid_o` | Output | 1 | Matrix 完成信息有效 |
+| `matrix_done_ready_i` | Input | 1 | TaskScheduler 可以接收 Matrix 完成信息 |
+| `matrix_done_command_id_o` | Output | 12 | 完成消息所属任务的编号 |
+| `matrix_done_status_o` | Output | 8 | 成功或错误状态 |
+| `matrix_done_fault_addr_o` | Output | 48 | 运行阶段访问错误对应的地址；启动检查发现基地址高位非零时返回 0 |
+| `matrix_done_progress_o` | Output | 64 | 已成功写回的输出元素数量 |
+| `vector_task_valid_i` | Input | 1 | TaskScheduler 提交 Vector 任务 |
+| `vector_task_ready_o` | Output | 1 | Vector 控制器可以接收任务 |
+| `vector_opcode_i` | Input | 8 | 片上展开后的 Vector 操作码 |
+| `vector_command_id_i` | Input | 12 | 调度器提供的 Vector 任务编号 |
+| `vector_desc_i` | Input | 2048 | Vector Task Context |
+| `vector_done_valid_o` | Output | 1 | Vector 完成信息有效 |
+| `vector_done_ready_i` | Input | 1 | TaskScheduler 可以接收 Vector 完成信息 |
+| `vector_done_status_o` | Output | 8 | Vector 成功或错误状态 |
+| `vector_done_fault_addr_o` | Output | 48 | Vector 运行阶段的第一个错误地址 |
+| `vector_done_progress_o` | Output | 64 | Vector 已成功写回的元素数量 |
 | `l1_req_valid_o` | Output | 1 | 单 beat L1 请求有效 |
 | `l1_req_ready_i` | Input | 1 | L1BUF 接受请求 |
-| `l1_req_write_o` | Output | 1 | 1 为写 C，0 为读 |
+| `l1_req_write_o` | Output | 1 | 1 为写，0 为读；该端口承载 Matrix 与 Vector 请求 |
 | `l1_req_addr_o` | Output | 20 | 8B 对齐的 L1 字节地址 |
-| `l1_req_wdata_o` | Output | 64 | C 写回数据 |
-| `l1_req_wstrb_o` | Output | 8 | C 写回逐字节使能 |
+| `l1_req_wdata_o` | Output | 64 | Matrix 或 Vector 写数据 |
+| `l1_req_wstrb_o` | Output | 8 | 逐字节写使能 |
 | `l1_rsp_valid_i` | Input | 1 | L1 响应有效 |
-| `l1_rsp_ready_o` | Output | 1 | Matrix 可以接收响应 |
+| `l1_rsp_ready_o` | Output | 1 | owner FIFO 指定的内部接收方可以接收响应 |
 | `l1_rsp_rdata_i` | Input | 64 | L1 读数据 |
 | `l1_rsp_status_i` | Input | 3 | L1 访问状态 |
+| `protocol_error_clear_i` | Input | 1 | 清除 context PE/L1 路由和合并存储通道的保持型协议错误 |
+| `bypass_clear_i` | Input | 1 | 清除 2 项旁路缓存的全部有效状态 |
+| `external_write_valid_i` | Input | 1 | DMA、CME 或 L1 外部窗口已经接受一次写请求 |
+| `external_write_addr_i` | Input | 20 | 外部写请求的 L1 字节地址 |
+| `external_write_byte_mask_i` | Input | 8 | 外部写请求修改的字节位置 |
+| `external_write_hazard_valid_i` | Input | 1 | 顶层当前存在可能与 Vector 读冲突的外部写 |
+| `external_write_hazard_addr_i` | Input | 20 | 外部写风险对应的 L1 beat 地址 |
+| `bypass_hit_count_o` | Output | 32 | Vector 读由内部旁路直接返回的次数 |
+| `vector_l1_count_o` | Output | 32 | Vector 请求实际送往 L1BUF 的次数 |
+| `l1_outstanding_o` | Output | 4 | 单核配置下已由内部存储通道送入请求 FIFO、但响应尚未完成的请求数，范围 0～8 |
+| `bypass_occupancy_o` | Output | 2 | 2 项旁路缓存中当前有效项数，范围 0～2 |
+| `matrix_pe_grant_count_o` | Output | 32 | Matrix 请求被共享 PE 接收的次数 |
+| `vector_pe_grant_count_o` | Output | 32 | Vector 请求被共享 PE 接收的次数 |
+| `matrix_pe_wait_cycle_count_o` | Output | 32 | Matrix 请求等待共享 PE 的周期数 |
+| `vector_pe_wait_cycle_count_o` | Output | 32 | Vector 请求等待共享 PE 的周期数 |
+| `pe_conflict_cycle_count_o` | Output | 32 | Matrix 与 Vector 同周期申请共享 PE 的周期数 |
+| `pe_idle_cycle_count_o` | Output | 32 | 共享 PE 本周期没有接收新请求的周期数 |
+| `protocol_error_o` | Output | 1 | context 路由、L1 路由或内部返回次序错误 |
 
-当 `task_valid_i && task_ready_o` 为 1 时，顶层把 `opcode_i`、`command_id_i` 和 `desc_i` 保存到本地寄存器并进入 `PATH_CLASSIFY`。下一周期的条件检查只读取这些寄存器，随后进入 `PATH_DIP` 或 `PATH_SCALAR`，再把已经保存的任务交给对应执行分支。这样，包含多项格式、shape 和功能检查的组合逻辑不会反向进入 `task_ready_o`，也不会要求 TaskScheduler 在接收周期同时完成分支选择。`desc_i` 是现有 RTL 的端口名，它承载片上生成的 Task Context，不是内存地址，也不会引起额外的 SRAM 或 DDR 读取。`command_id_i` 由 TaskScheduler 管理；当前 Matrix 完成端口不回传该编号，单核顶层保存活动任务编号并在完成时送回 TaskScheduler。
+当 `matrix_task_valid_i && matrix_task_ready_o` 为 1 时，`npu_matrix_context_dispatch` 依据本节的操作码规则选择 Outer 或 Scalar，并把操作码、编号和 Task Context 送给被选控制器。两个控制器都是直接例化的执行模块，不再经过按任务选择 Scalar/Outer 分支的 Matrix 包装层。被选控制器的 `done_valid` 保持到完成握手；任务分配器在两个完成输入之间选择一项，并把该 context 保存的 `command_id` 一同返回 TaskScheduler。一个 context 正在执行时，另一个 context 仍可接收符合自身条件的 Matrix 任务。
 
-顶层在对应分支完成任务接收后设置 `child_issued_q`，防止重复提交。被选分支的 `done_valid` 在完成状态保持为 1，直到 `done_ready_i=1`。分支选择器只转发活动分支的完成信息，并在完成握手后回到空闲状态。任务暂存、分类和执行期间 `task_ready_o=0`，因此当前 Matrix 不能同时保存第二个任务。
+`reset_n=0` 时，两个 context 的 active 状态、PE/L1 owner FIFO、共享 PE valid、L1 请求 FIFO计数、内部旁路有效位和完成 valid 全部清零。本地部分和 RAM 内容不要求清零，但 Outer 的元数据和有效状态清零，因此复位前内容不能被新任务使用。复位期间 L1 请求 valid 和 done valid 均为 0。
 
-`reset_n=0` 时，分支选择器回到空闲状态，两个执行分支和 DiP 流水中的 valid 状态全部清零。无效 payload 不要求参与功能判断；新任务在各分支的接收与初始化状态中覆盖需要的数据。复位期间 L1 请求 valid 和 done valid 均为 0。
+#### 11.2.1 Matrix context 分配与完成时序
+
+`npu_matrix_context_dispatch` 保存两组 active 位和 12-bit `command_id`。组合选择规则如下：
+
+| 操作码与运行状态 | Outer context | Scalar context | 选择方式 |
+| --- | --- | --- | --- |
+| `GEMM_ZERO_LOCAL`（0x44）或 `GEMM_ACCUM_HOLD`（0x45） | 必须使用 | 不可使用 | 等待 Outer 空闲并 ready |
+| `GEMM_ACCUM`（0x42），且 `outer_task_supported_i=1` 或 `outer_local_psum_valid_i=1` | 必须使用 | 不可使用 | 等待 Outer 空闲并 ready |
+| `GEMM_ACCUM`（0x42），且上述两个信号均为 0 | 不可使用 | 可以使用 | 等待 Scalar 空闲并 ready |
+| 普通 `GEMM`（0x40），Outer 支持且没有本地部分和状态 | 可以使用 | 可以使用 | 两者都空闲并 ready 时由 `next_task_context_q` 轮转；否则选择可以立即接收的一侧 |
+| 其他普通 `GEMM`、`BMM`（0x41）或 `GEMM_ZERO`（0x43） | 不可使用 | 可以使用 | 等待 Scalar 空闲并 ready |
+
+任务握手的同一时钟沿写 active 位与编号。Outer 接收任务后，下一个双可选普通 GEMM优先 Scalar；Scalar 接收任务后，下一个双可选普通 GEMM优先 Outer。
+
+两个 context 的 done 同时有效时，`next_done_context_q` 选择一项；只有被选项得到 `done_ready`。完成握手时清除对应 active 位，并把下一次同时完成的优先 context 切到另一侧。输出 `matrix_done_command_id_o`、status、fault address 和 progress 均来自同一被选 context。
+
+#### 11.2.2 Matrix context PE 路由
+
+`npu_matrix_context_pe_router` 的请求 payload 包含本地 tag 11 bit、逐元素标志 1 bit、两个 dtype 各 2 bit、group 使能 4 bit以及两组 256-bit 操作数。两侧同时 valid 时按轮转状态选择；外部 PE 完成请求握手后，来源写入默认深度为 8 的 owner FIFO。PE 返回不带 context 位，路由器读取 FIFO 头部并只向对应 context 拉高返回 valid。返回有效但 FIFO 为空时置起保持型协议错误。
+
+Outer 生成分块外积的分段贡献请求，Scalar 生成逐元素乘积请求。路由器不重新解释计算内容，只保存请求来源并保持全部 payload 字段。
+
+#### 11.2.3 Matrix context L1 路由
+
+`npu_matrix_context_l1_router` 接收 Outer 与 Scalar 的两组 20-bit 地址、64-bit 写数据、8-bit strobe 和读写标志，输出一组 Matrix L1 请求。请求握手时把 context 来源写入默认深度为 8 的 owner FIFO。L1 返回到达时，FIFO头部属于 Outer 就采用 Outer 的响应 ready，属于 Scalar 就采用 Scalar 的响应 ready；只有返回握手后才弹出 owner。该规则允许两个 context 保留多个已接收请求的来源次序。
+
+#### 11.2.4 Matrix 与 Vector 公共 PE
+
+`npu_mv_shared_mac` 在合并后的 Matrix 请求与 Vector MUL/FMA 请求之间轮转。请求标签扩展为 12 bit，其中最高位表示 Matrix 或 Vector，低 11 bit保留请求方编号。`ISSUE_INTERVAL=1` 时，只要 PE 接收端允许，连续周期都可接收请求。`npu_shared_mac_pe_array` 的四个 group 共使用 64 个 4×4 基础乘法器，支持 INT16×INT16、INT8×INT8、INT4×INT4、INT8×INT4 和 INT4×INT8。返回最高 owner 位选择 Matrix 或 Vector；Matrix 返回随后还要经过 context PE 路由。
+
+共享 PE 能够连续接收来自不同客户端的请求，不代表每个客户端都能连续提交。多数据类型外积分支中的 `npu_matrix_psum_pipeline` 只保存一项未返回请求：请求握手后 `request_outstanding_q=1`，`request_slot_ready_o` 保持为 0；匹配的 PE 返回到达时，模块在时钟沿更新四组 64-bit 分段部分和并清除未返回标志，下一周期才允许该 context 发出同一外积块的下一项请求。标量 Matrix 和 Vector 控制器也按各自状态机等待所需返回。
+
+#### 11.2.5 合并单元内部存储通道
+
+`npu_mv_memory_path` 在 Matrix 与 Vector 请求之间轮转，并用默认深度为 8 的 owner FIFO分发 L1 返回。请求在该模块与后级 FIFO完成输入握手时，来源 owner 和 Matrix 写回元数据已经写入各自队列。后级 `npu_mv_l1_request_fifo` 只保存请求 payload：
+
+$$
+1\text{ bit write}+20\text{ bit addr}+64\text{ bit wdata}+8\text{ bit wstrb}=93\text{ bit}.
+$$
+
+该 FIFO深度为 2，使用寄存的 head、tail 和 count，按输入握手次序向 L1BUF 提交。`s_ready_o` 只由寄存占用数决定，`m_valid_o` 只在 FIFO已有项目时为 1，因此它不是直通结构。FIFO满时，即使同周期 `m_valid_o && m_ready_i` 弹出队首，输入侧也要到下一周期才恢复 ready。输出暂停时，队首 write、addr、wdata 和 wstrb保持不变。
+
+L1 响应不进入请求 FIFO，而是直接送回 `npu_mv_memory_path`。L1 按请求接受次序返回响应，内部 owner FIFO据此选择 Matrix 或 Vector；Matrix L1 路由再把返回送给 Outer 或 Scalar。`npu_mv_memory_path` 还保存 Matrix 写请求的地址、数据与 strobe，只有对应 L1 写响应握手且 status 为成功时才更新内部旁路缓存。请求只是进入 FIFO、等待 L1 接受或等待写响应时，均不得提前填充旁路。单核顶层把 `BYPASS_ENTRIES` 设置为 2，因此缓存包含 2 项，每项保存一个对齐 64-bit beat 的地址标签、数据和 8-bit逐字节有效状态。
+
+请求 FIFO的内部信号如下。`s_*` 位于内部存储通道一侧，`m_*` 位于 L1BUF 客户端一侧：
+
+| 信号 | 方向 | 位宽 | 作用 |
+| --- | --- | ---: | --- |
+| `s_valid_i` | Input | 1 | 内部存储通道给出的请求有效 |
+| `s_ready_o` | Output | 1 | FIFO占用数小于 2，可以在当前时钟沿保存请求 |
+| `s_write_i` | Input | 1 | 1 表示写请求，0 表示读请求 |
+| `s_addr_i` | Input | 20 | 8B 对齐的 L1 字节地址 |
+| `s_wdata_i` | Input | 64 | 写数据；读请求中该字段不参与存储操作 |
+| `s_wstrb_i` | Input | 8 | 逐字节写使能；读请求中该字段不参与存储操作 |
+| `m_valid_o` | Output | 1 | 队首请求有效 |
+| `m_ready_i` | Input | 1 | L1BUF 可以接受队首请求 |
+| `m_write_o` | Output | 1 | 队首读写标志 |
+| `m_addr_o` | Output | 20 | 队首地址 |
+| `m_wdata_o` | Output | 64 | 队首写数据 |
+| `m_wstrb_o` | Output | 8 | 队首逐字节写使能 |
+
+从空 FIFO开始的一次请求时序为：
+
+1. T0 组合阶段，内部存储通道给出 `s_valid_i=1` 及 93-bit payload，FIFO给出 `s_ready_o=1`。Matrix/Vector owner 与 Matrix 写回元数据在这次输入握手对应的时钟沿记录。
+2. T0 时钟沿，请求写入 tail，计数从 0 变为 1。由于输出只读取已寄存项目，T0 组合阶段不会把该请求直接送到 `m_*`。
+3. T1 组合阶段，`m_valid_o=1`，输出 head对应的完整 payload。若 `m_ready_i=0`，这些输出逐周期保持。
+4. 某一时钟沿出现 `m_valid_o && m_ready_i` 后，队首从请求 FIFO弹出；后续响应不回到该 FIFO。
+5. L1 响应到达时直接与 `npu_mv_memory_path` 握手。owner FIFO头部决定响应目标；成功的 Matrix 写响应还触发旁路填充，失败响应只报告状态并禁止填充。
+
+Vector 读只有在该 beat 的八个字节全部有效时才由内部寄存响应返回，未命中时进入 L1 仲裁。存在较早已送往 L1 但尚未返回的 Vector 请求、当前 Matrix 对同一 beat 的待接收写请求，或顶层报告同地址外部写风险时，Vector 读不能采用旁路。Matrix 较新写请求、Vector 写和顶层报告的 DMA、CME、外部 L1 窗口写会使同 beat中相应字节失效。
+
+#### 11.2.6 Matrix 乘法与本地部分和任务同时推进
+
+TaskScheduler 可保存两项 Matrix active 记录，`npu_matrix_context_dispatch` 也可同时保持两个 context 为 active。典型安排是 Outer 执行 `GEMM_ACCUM_HOLD` 或使用本地状态的 `GEMM_ACCUM`，Scalar 执行另一个普通 `GEMM`。此时：
+
+1. Outer 可以访问本地部分和 RAM、准备 A/B 地址、等待 L1 返回或写回最终 C；
+2. Scalar 可以准备另一个 GEMM 的地址、读取 A/B 或申请共享 PE；
+3. 两个 context 同周期申请 Matrix PE 时，`npu_matrix_context_pe_router` 选择一项；
+4. 选出的 Matrix 请求还要与 Vector MUL/FMA 在 `npu_mv_shared_mac` 中进行选择；
+5. 两个 context 同周期申请 L1 时，`npu_matrix_context_l1_router` 选择一项，之后还要与 Vector 请求在 `npu_mv_memory_path` 中进行选择；被接受请求进入深度为 2 的请求 FIFO。
+
+因此，矩阵乘法任务和部分和累加任务可以在控制、地址准备、L1 访问、本地 RAM 访问、PE 等待和写回等阶段交错运行。它们不会各自占用一套乘法器，共享 PE 每周期至多接收一项 Matrix 或 Vector 请求。Outer 本地部分和 RAM 与 Scalar 普通 GEMM 的寄存状态彼此独立，所以一个任务等待存储响应时，另一个任务仍可推进不冲突的阶段。特别是 `outer_local_psum_valid_i=1` 时，普通 GEMM不再进入 Outer，仍可由空闲 Scalar 接收；这保证本地累加序列与普通 GEMM可以同时处于活动状态。
 
 ### 11.3 从指令到片上 Task Context
 
-主控提交 128-bit 指令后，TaskScheduler 先保存完整指令、提交时基地址快照以及任务状态。任务进入 READY 后参加逐槽扫描；扫描结束时仍满足前序任务条件、Matrix 没有活动任务且 Matrix 发射暂存为空的最早候选，才会写入发射窄快照。共享发射解码器随后组合生成 Task Context，并把结果写入 Matrix 发射暂存。Matrix 任务的数据处理过程是：
+主控提交 128-bit 指令后，TaskScheduler 先保存完整指令、提交时基地址快照以及任务状态。任务进入 READY 后参加逐槽扫描；扫描结束时仍满足前序任务条件、Matrix active 记录存在空项或本周期可释放一项，并且 Matrix 发射暂存为空的最早候选，才会写入发射窄快照。共享发射解码器随后组合生成 Task Context，并把结果写入 Matrix 发射暂存。Matrix 任务的数据处理过程是：
 
 ```text
 指令 → TaskScheduler 任务表 → 发射窄快照 → 共享发射解码器 → Matrix 发射暂存 → Matrix
 ```
 
-`GEMM`、`GEMM_ACCUM` 和 `GEMM_ZERO` 使用同一组指令字段：
+`GEMM`、`GEMM_ACCUM`、`GEMM_ZERO`、`GEMM_ZERO_LOCAL` 和 `GEMM_ACCUM_HOLD` 使用同一组指令字段：
 
 | 指令中的字段 | 位宽 | Matrix 用途 |
 | --- | ---: | --- |
@@ -2689,6 +2917,8 @@ A 为 INT32，或者 A 与 B 使用表中未列出的组合时，任务返回 `D
 | `C_dtype` | 2 | C 的数据格式 |
 | `requant_shift` | 5 | 非 INT32 输出的整数右移位数 |
 
+`GEMM_ZERO_LOCAL` 采用 `GEMM_ZERO` 的字段限制，建立 Outer context 本地部分和状态但不清零 L1 中的 C。`GEMM_ACCUM_HOLD` 采用 `GEMM_ACCUM` 的字段限制，把本次结果保存在 Outer 本地部分和 RAM 中但不写最终 C。
+
 `BMM` 使用 A、B、C 三个 `LREF14`，并直接携带 `batch-1`、`M-1`、`N-1`、`K-1`、`b_int4`、`C_dtype` 和 `requant_shift`。BMM 指令没有 bias 字段。
 
 解码器根据这些直接字段生成 Matrix 所需的派生信息：
@@ -2697,7 +2927,7 @@ A 为 INT32，或者 A 与 B 使用表中未列出的组合时，任务返回 `D
 | --- | --- |
 | `a_base`、`b_base`、`c_base` | `LREF14 << 6` |
 | `bias_base` | `LREF12 << 6` |
-| `src2_base` | `GEMM_ACCUM` 时取 C 地址，其他常规 Matrix 指令为 0 |
+| `src2_base` | `GEMM_ACCUM` 或 `GEMM_ACCUM_HOLD` 时取 C 地址，其他 Matrix 指令为 0 |
 | A/B/C 数据格式 | 由指令头数据格式、`b_int4` 和 `C_dtype` 得到 |
 | `batch_count` | GEMM 类操作为 1；BMM 为指令中的 batch |
 | `last_valid_m/n/k` | 分别由 M 对 8、N 对 8、K 对 16 的余数得到，整除时取 tile 大小 |
@@ -2718,7 +2948,7 @@ A 为 INT32，或者 A 与 B 使用表中未列出的组合时，任务返回 `D
 
 Matrix 在任何 A、B 或 C 访问之前完成以下检查：
 
-1. 操作码必须是 `GEMM`、`BMM`、`GEMM_ACCUM` 或 `GEMM_ZERO`。
+1. 操作码必须是 `GEMM`、`BMM`、`GEMM_ACCUM`、`GEMM_ZERO`、`GEMM_ZERO_LOCAL` 或 `GEMM_ACCUM_HOLD`。
 2. Task Context 的内部类型标记和字节数必须由 Matrix 解码路径产生。
 3. A、B、C 以及启用的旧部分和和 bias 基地址的 `[63:20]` 必须为 0。
 4. `batch_count` 必须非零；GEMM 为 1，BMM 可以大于 1。
@@ -2727,15 +2957,17 @@ Matrix 在任何 A、B 或 C 访问之前完成以下检查：
 7. A、B、C 的存储格式编号必须与各自数据格式一致。
 8. tile 格式的 B 不允许再启用逻辑转置；当前指令解码也不会启用 A 或 B 转置。
 9. 输出整数 zero point 固定为 0。
-10. `GEMM_ACCUM` 必须读取旧 INT32 C，并写 INT32 C；不能启用 bias、ReLU 或整数右移。
+10. `GEMM_ACCUM` 必须处理 INT32 部分和并写 INT32 C；Outer 本地部分和有效时由 Outer 读取本地 RAM并完成最终提交；Outer 不支持当前任务且没有本地状态时，Scalar 读取旧 INT32 C；不能启用 bias、ReLU 或整数右移。
 11. `GEMM_ZERO` 必须写 INT32，不能读取 A、B、旧 C 或 bias。
 12. 非 INT32 最终输出必须启用解码器生成的整数右移配置；INT32 输出不能启用该步骤。
 13. 启用 bias 时，bias 元素数量必须为 N，步长必须是大于或等于 4 的 4B 整数倍；指令解码固定生成 4B。
+14. `GEMM_ZERO_LOCAL` 与 `GEMM_ACCUM_HOLD` 固定进入 Outer；`GEMM_ACCUM` 在 Outer 支持当前任务或本地状态有效时进入 Outer，否则进入 Scalar。
+15. `BMM`、`GEMM_ZERO`、带 bias 的 GEMM以及不符合 Outer 条件的普通 GEMM由 Scalar 执行。Outer 支持且没有本地状态的普通 GEMM可由 Outer 或 Scalar 执行。
 
 字段或组合不合法时返回 `BAD_DESC` 或 `BAD_SHAPE`；数据格式组合不支持时返回 `DTYPE_UNSUPPORTED`；基地址高位非零时返回 `ADDR_FAULT`。检查失败后不写 C。
 
 > [!important] 最终元素地址在发请求前检查
-> 两个分支都会在启动时检查各基地址的 `[63:20]`。DiP 分支还在每次请求前检查行基址和读写游标。标量分支不会把未经检查的地址截成 20 bit 后发往 L1：C、旧部分和、bias 和外部整数重缩放项使用三拍输出地址生成，A/B 使用三拍操作数地址生成；最后一拍保存完整地址和对应 valid。完整地址高于 `0xfffff`、INT16 或 INT32 元素跨越 8B beat，或外部整数重缩放项没有按 8B 对齐时，valid 为 0。各请求状态先检查 valid，组合输出的 `l1_req_valid_o` 也受同一 valid 控制，因此无效地址只形成 `ADDR_FAULT`，不会产生 L1 请求握手。模型编译器仍应检查整个数组的地址范围，以便在提交前报告模型配置错误。
+> 两个分支都会在启动时检查各基地址的 `[63:20]`。外积分支还在每次请求前检查行基址和读写游标。标量分支不会把未经检查的地址截成 20 bit 后发往 L1：C、旧部分和、bias 和外部整数重缩放项使用三拍输出地址生成，A/B 使用三拍操作数地址生成；最后一拍保存完整地址和对应 valid。完整地址高于 `0xfffff`、INT16 或 INT32 元素跨越 8B beat，或外部整数重缩放项没有按 8B 对齐时，valid 为 0。各请求状态先检查 valid，组合输出的 `l1_req_valid_o` 也受同一 valid 控制，因此无效地址只形成 `ADDR_FAULT`，不会产生 L1 请求握手。模型编译器仍应检查整个数组的地址范围，以便在提交前报告模型配置错误。
 
 ### 11.5 A、B、C 与 bias 的存储排列
 
@@ -2821,7 +3053,7 @@ $$
 > $$
 > C[0,n]=2(n+1)-3(2n-4)=14-4n,
 > $$
-> 9 个输出依次为 `[14,10,6,2,-2,-6,-10,-14,-18]`。该尺寸不满足 DiP 固定方阵条件，因此进入标量分支，并同时检查列 8 的两个 B 地址确实来自第 1 个 N tile。
+> 9 个输出依次为 `[14,10,6,2,-2,-6,-10,-14,-18]`。该任务的格式或选项不满足 Outer 要求，因此进入 Scalar context，并同时检查列 8 的两个 B 地址确实来自第 1 个 N tile。
 
 #### 11.5.4 C 的行优先地址
 
@@ -2957,6 +3189,48 @@ C_{m,n}=0,
 $$
 
 该操作常用于在多条 `GEMM_ACCUM` 之前建立全零初值。清零任务仍然逐元素写回，并且每个成功写回的元素都会使 `done_progress_o` 增加 1。
+
+#### 11.6.5 GEMM_ZERO_LOCAL
+
+`GEMM_ZERO_LOCAL` 不逐项清零 RAM，也不访问 L1 中的 C。它保存 M、N、C 基地址和 C 行步长等元数据，把本地状态标记为有效，并把 `has_data` 清为 0。后续计算按逻辑零值开始：
+
+$$
+P^{\mathrm{local}}_{m,n}=0.
+$$
+
+RAM 中复位前或较早任务留下的 bit可以保持不变，因为 `has_data=0` 时后续 `GEMM_ACCUM_HOLD` 不读取这些 bit。只有 M、N、C 地址和行步长与保存元数据一致的后续任务才能使用该状态。
+
+#### 11.6.6 GEMM_ACCUM_HOLD 与最终提交
+
+第一个 `GEMM_ACCUM_HOLD` 在 `has_data=0` 时计算：
+
+$$
+P^{\mathrm{local,new}}_{m,n}
+=
+\sum_{k=0}^{K-1}A_{m,k}B_{k,n}.
+$$
+
+后续 `GEMM_ACCUM_HOLD` 先读本地 INT32 值，再计算：
+
+$$
+P^{\mathrm{local,new}}_{m,n}
+=
+P^{\mathrm{local,old}}_{m,n}
++
+\sum_{k=0}^{K-1}A_{m,k}B_{k,n}.
+$$
+
+结果限制到 INT32 后写回 Outer context 本地 RAM，不写 L1 中的 C。最后一条 `GEMM_ACCUM` 读取匹配的本地值并加入最后一段矩阵乘法结果：
+
+$$
+C_{m,n}
+=
+P^{\mathrm{local}}_{m,n}
++
+\sum_{k=0}^{K-1}A_{m,k}B_{k,n}.
+$$
+
+最终 C 写响应全部成功后，本地有效状态和 `has_data` 清除。上述本地部分和任务由 Outer context执行，因此这份本地 RAM不会被 Scalar 修改。
 
 ### 11.7 具体数值例子
 
@@ -3145,45 +3419,39 @@ ST_RMW_REQ → ST_RMW_RSP → ST_WRITE_REQ → ST_WRITE_RSP
 
 ### 11.9 状态机
 
-Matrix 顶层分支选择器使用 `PATH_IDLE`、`PATH_CLASSIFY`、`PATH_SCALAR` 和 `PATH_DIP` 四种状态：
+`npu_matrix_context_dispatch` 在任务握手前选择 Outer 或 Scalar；被选控制器直接接收操作码与 Task Context，并进入自身状态机。两个控制器之间没有任务分类包装状态。Outer 和 Scalar 各自保持 done，任务分配器完成返回选择和 `command_id` 补充。
 
-| 顶层状态 | 功能 |
-| --- | --- |
-| `PATH_IDLE` | `task_ready_o=1`；任务握手时保存操作码、任务编号和 Task Context |
-| `PATH_CLASSIFY` | 读取本地任务寄存器，选择 DiP 或标量分支 |
-| `PATH_SCALAR` | 向标量分支提交一次任务，随后转发该分支的 L1 与完成接口 |
-| `PATH_DIP` | 向 DiP 分支提交一次任务，随后转发该分支的 L1 与完成接口 |
-
-完成握手后，顶层返回 `PATH_IDLE`。任务分类逻辑位于任务暂存寄存器之后，不参与顶层 `task_ready_o` 的生成。
-
-DiP 执行分支的状态及功能如下：
+多数据类型外积分支的状态及功能如下：
 
 | 状态 | 功能 |
 | --- | --- |
-| `ST_IDLE/ST_CHECK` | 接收 Task Context，装入数据格式、Batch 数、A/B/C 基址和逻辑方阵大小 |
-| `ST_B_ROW_INIT` | 清空当前 64-bit B 行寄存器，初始化元素游标与读 beat 缓存 |
-| `ST_B_LOAD` | 检查当前 B 元素地址；命中已读 beat 时直接提取元素，否则进入读请求 |
-| `ST_B_REQ/ST_B_RSP` | 读取当前 B 元素所在 64-bit beat并保存到读缓存 |
-| `ST_B_SEND` | 把完整 64-bit B 行送入 DiP 权重装载端；按逻辑行数重复 |
-| `ST_A_ROW_INIT` | 清空当前 64-bit A 行寄存器并初始化元素游标 |
-| `ST_A_LOAD` | 检查当前 A 元素地址；命中已读 beat 时直接提取元素，否则进入读请求 |
-| `ST_A_REQ/ST_A_RSP` | 读取当前 A 元素所在 64-bit beat并保存到读缓存 |
-| `ST_A_SEND` | 把完整 64-bit A 行送入阵列数据端；按逻辑行数重复 |
-| `ST_WAIT_RESULT` | `dip_c_valid=1` 时把宽结果行同步写入 `accum_rows_q`，直到保存全部逻辑输出行 |
-| `ST_WRITE_ROW_LOAD` | 发起 `accum_rows_q` 的同步读，在时钟上升沿把指定结果行保存到 `write_row_data_q` |
-| `ST_WRITE_INIT` | 使用上一周期读出的结果行，选择其中一对 INT32 输出并形成 64-bit 写数据 |
-| `ST_WRITE_REQ/ST_WRITE_RSP` | 发出 8B 对齐写请求，等待完成响应，推进输出列对、行和 Batch |
+| `ST_IDLE` | 接收 Task Context并检查任务；`GEMM_ZERO_LOCAL` 在此保存 M、N、C 地址和行步长，清除 `has_data` 后直接完成 |
+| `ST_START_TILE` | 根据剩余 M、N 和数据类型选择行并行数、列组数和当前输出块有效范围；必要时转入本地部分和读取 |
+| `ST_PSUM_LOAD_REQ/ST_PSUM_LOAD_CAPTURE` | Outer 从本地部分和 RAM逐项读取当前输出块的 INT32 值，并符号扩展到 64-bit 输出累加寄存器 |
+| `ST_START_K_BLOCK` | 清零当前 16 个 K 元素块的分段累加状态 |
+| `ST_START_K_STEP` | 计算本次 PE 请求的有效 K 数，清理 A/B 小缓存并初始化装载游标 |
+| `ST_A_REQ/ST_A_RSP` | 从 L1 读取当前行组和 K 小段的 A 元素，写入 `a_local_q` |
+| `ST_B_REQ/ST_B_RSP` | 从 L1 读取当前 K 小段和列组的 B 元素，写入 `b_local_q` |
+| `ST_CORE_ISSUE` | 按数据类型打包四组 64-bit A/B 操作数，向共享 PE 发出带 tag 的请求 |
+| `ST_CORE_DRAIN` | 等待 `npu_matrix_psum_pipeline` 完成当前 K 小段的贡献值更新；若 16 元素 K 块未结束，则开始下一 K 小段 |
+| `ST_C_REQ/ST_C_RSP` | 最终提交需要旧 INT32 C 时读取 C，并与当前输出累加值相加 |
+| `ST_C_PACK` | 按输出数据类型选择结果并形成 64-bit 写数据与 strobe |
+| `ST_C_WRITE_REQ/ST_C_WRITE_RSP` | 写 C 并等待 L1 成功响应，推进当前输出块内的行列游标 |
+| `ST_PSUM_STORE` | `GEMM_ACCUM_HOLD` 把当前输出逐项限制到 INT32 后写入 Outer 的本地部分和 RAM |
+| `ST_NEXT_TILE` | 推进输出块的行、列位置，并开始下一块或完成任务 |
 | `ST_DONE` | 保持 status、fault address 和 progress，直到 TaskScheduler 接收 |
 
-DiP 的主要状态次序为：
+外积分支的主要状态次序为：
 
 ```text
-IDLE → CHECK
-  → (B_ROW_INIT → B_LOAD/REQ/RSP → B_SEND) × logical_n
-  → (A_ROW_INIT → A_LOAD/REQ/RSP → A_SEND) × logical_n
-  → WAIT_RESULT
-  → (WRITE_ROW_LOAD → WRITE_INIT → WRITE_REQ → WRITE_RSP) × output_beats
-  → 下一个 Batch，或 DONE
+IDLE → START_TILE
+  → 可选 PSUM_LOAD_REQ / PSUM_LOAD_CAPTURE
+  → START_K_BLOCK
+  → (START_K_STEP → A_REQ/RSP → B_REQ/RSP → CORE_ISSUE → CORE_DRAIN) × K 小段
+  → 可选 C_REQ / C_RSP
+  → C_PACK → C_WRITE_REQ / C_WRITE_RSP
+  → 或 PSUM_STORE
+  → NEXT_TILE → 下一输出块，或 DONE
 ```
 
 标量执行分支的状态及功能如下：
@@ -3199,8 +3467,8 @@ IDLE → CHECK
 | `ST_A_RSP` | 等待 A 读响应并提取、符号扩展一个元素 |
 | `ST_B_REQ` | 发出当前 `B[k,n]` 所在 8B beat 的读请求 |
 | `ST_B_RSP` | 等待 B 读响应并提取、符号扩展一个元素 |
-| `ST_MAC_MUL` | 执行一次 signed16×signed16 乘法，把 signed32 乘积、末次 K 标志和后续阶段选择写入寄存器 |
-| `ST_MAC_ACC` | 把 signed32 乘积符号扩展到 signed64并加入 `accum_q`；K 未结束时增加 K 游标并返回 `ST_ADDR_PREP` |
+| `ST_MAC_MUL` | 把当前 A/B 标量打包为逐元素请求并等待共享 PE 接收，同时保存本次请求的数据类型 |
+| `ST_MAC_ACC` | 等待共享 PE 返回并检查 tag、数据类型、group 使能和结果数量；把 signed32 乘积符号扩展到 signed64并加入 `accum_q` |
 | `ST_SRC2_REQ` | `GEMM_ACCUM` 读取旧 C；内部 residual 功能也共用此状态 |
 | `ST_SRC2_RSP` | 接收旧 C 并加入累加值 |
 | `ST_BIAS_REQ` | 读取当前输出列的一个 INT32 bias |
@@ -3208,7 +3476,7 @@ IDLE → CHECK
 | `ST_REQUANT_REQ` | 当前指令使用片上 shift，直接装入乘数 1 和移位量 |
 | `ST_REQUANT_RSP` | 保留给通过 L1 读取整数缩放项的内部路径；当前指令不会进入 |
 | `ST_EPILOGUE` | 选择零值或累加值，按配置执行 ReLU，并保存后处理输入 |
-| `ST_EP_MUL` | 启用整数重缩放时，计算 signed64 输入与 32-bit 正乘数的 signed128 乘积 |
+| `ST_EP_MUL` | 持续两个周期。第一个周期并行保存 signed32 与 33-bit 非负乘数的 signed65 高半乘积，以及 unsigned32×unsigned32 的 unsigned64 低半乘积；第二个周期用 65-bit 加法合并高部，拼接低 32 bit并符号扩展为 signed128 完整乘积 |
 | `ST_EP_ABS` | 保存乘积正负号、signed128 绝对值、signed 8-bit shift 和舍入方式 |
 | `ST_EP_SHIFT` | 执行 signed128 可变移位；正 shift 产生商、余数和中点，零 shift 保留乘积，负 shift 执行左移 |
 | `ST_EP_ROUND` | 正右移时根据舍入方式、余数、中点、商最低位和正负号决定是否加一 |
@@ -3230,12 +3498,12 @@ IDLE
   → CHECK
   → START_OUTPUT × 3
   → OUTPUT_CHECK
-  → (ADDR_PREP × 3 → A_REQ → A_RSP → B_REQ → B_RSP → MAC_MUL → MAC_ACC) × K
+  → (ADDR_PREP × 3 → A_REQ → A_RSP → B_REQ → B_RSP → MAC_MUL 请求 → MAC_ACC 等待与累加) × K
   → 可选 SRC2_REQ → SRC2_RSP
   → 可选 BIAS_REQ → BIAS_RSP
   → 可选 REQUANT_REQ
   → EPILOGUE
-  → 启用整数重缩放时执行 EP_MUL → EP_ABS → EP_SHIFT
+  → 启用整数重缩放时执行 EP_MUL × 2 → EP_ABS → EP_SHIFT
   → 正右移时执行 EP_ROUND → EP_INCREMENT → EP_SIGN
   → EP_NARROW → EP_ZERO_POINT
   → EP_CLIP
@@ -3244,26 +3512,25 @@ IDLE
   → 下一个 col / row / batch，或 DONE
 ```
 
-两个分支都不存在从片外读取任务参数的状态。任务接收后，检查直接使用已经锁存的片上 Task Context。
+两个控制器都不存在从片外读取任务参数的状态。任务接收后，检查直接使用已经锁存的片上 Task Context。Outer 与 Scalar 的乘法都通过 PE ready/valid 接口完成，控制器内部不再例化活动乘法器。
 
 ### 11.10 功能时序
 
-#### 11.10.1 DiP 方阵任务
+#### 11.10.1 多数据类型分块外积任务
 
-以 INT8 的 8×8 GEMM 为例，单个 Batch 的处理次序如下：
+以 INT8 的一个输出块为例，处理次序如下：
 
-1. 顶层接收并暂存任务，下一周期判断其满足 INT8 8×8 DiP 条件，再向 DiP 执行分支提交任务。
-2. 从 L1BUF 读取 8 行 B。每行 8 个 INT8 元素正好占 64 bit；行优先 B 每行需要一个读 beat，tile B 也按既有地址规则提取正确元素。
-3. B 行依次送入阵列的权重装载端，权重到达对应 PE 后保持到本次方阵计算结束。
-4. 从 L1BUF 读取 8 行 A，每行 8 个 INT8 元素正好占 64 bit，并依次送入阵列数据端。
-5. 每个 PE 用 16 个 4×4 基础乘法器形成 4 个 INT8 逻辑乘法，经数位重组、两个局部 K 项相加和部分和更新后输出。
-6. 每次 `dip_c_valid=1` 时，DiP 执行分支在时钟上升沿把一行宽结果写入 `accum_rows_q`。每个逻辑输出都以符号扩展后的 64-bit 数值保存，结果数组使用同步一写一读存储模板。
-7. 写回每一行之前，`ST_WRITE_ROW_LOAD` 先执行一次同步读；下一周期 `ST_WRITE_INIT` 才从 `write_row_data_q` 选择相邻两个结果，执行 INT32 饱和或保留低位，组成一个 64-bit beat 写入 C。
-8. 最后一个写响应成功后，`done_progress_o` 增加到 64；若为 BMM，则更新 A/B/C Batch 基址并重复上述过程。
+1. `npu_matrix_context_dispatch` 根据操作码、`outer_task_supported_i` 与 `outer_local_psum_valid_i` 把适合分块外积的任务交给空闲 Outer。Outer 保存 Task Context，并进入自身的输出块处理状态。
+2. `ST_START_TILE` 根据剩余 M 和 N 选择 group 在行、列方向的分配。对 INT8，一个 group 每次形成 4 个逻辑乘积并产生 2×32 bit 局部贡献；四个 group 按当前输出块的行数选择 4 行×1 列组、2 行×2 列组或 1 行×4 列组。
+3. 每个 16 元素 K 块从 `ST_START_K_BLOCK` 开始。控制器按 K 小段读取 A 与 B，分别保存在 `a_local_q` 和 `b_local_q`。
+4. `ST_CORE_ISSUE` 把四组 A/B 打包数据送入共享 PE。请求同时携带本地 tag、INT8 类型、非逐元素标志和 `group_enable=4'b1111`。
+5. 共享 PE 的每个 group 使用 16 个 4×4 基础乘法器重组 4 个 INT8×INT8 逻辑乘积，并把相邻两个乘积相加为 2×32 bit 局部贡献。
+6. `npu_matrix_psum_pipeline` 检查返回 tag、数据类型和 group 使能，把四个 group 的贡献值加入当前分段累加值。控制器可在等待该返回期间装载下一 K 小段的 A/B，所以返回更新可能与 A/B 装载发生在同一周期；请求槽在返回更新的时钟沿释放，下一周期才允许该 context 发出下一项 PE 请求。
+7. 16 元素 K 块结束时，分段贡献值符号扩展后加入当前输出块的 signed64 `output_accum_q`。K 仍有剩余时开始下一 K 块。
+8. 最后一个 K 块结束后，普通 GEMM 进入 C 打包和写回；`GEMM_ACCUM` 根据本地状态读取本地部分和或旧 C；`GEMM_ACCUM_HOLD` 把当前 INT32 部分和写入 Outer 的本地 RAM。
+9. 每次 C 写响应成功后增加 `done_progress_o`。当前输出块完成后进入 `ST_NEXT_TILE`，直到处理完 M×N。
 
-INT16 的每行 4 个元素、INT8 的每行 8 个元素、INT4 的每行 16 个元素均正好占 64 bit，因此 A 行端口的有效数据带宽可以全部用于本次方阵。B 使用 INT4 tile 格式时，16 个输出列分布在 tile 的两个 8 列区，读取单元按 tile 位置选择两个区中的元素。
-
-`accum_rows_q` 的同步读延迟不会改变输出数值或 L1 写请求次序。它只要求每次切换到新结果行时先经过 `ST_WRITE_ROW_LOAD`，同一行内的后续 INT32 输出对继续从 `write_row_data_q` 取得，不重复读取结果存储。
+INT16、INT8、INT4 分别令每组一次处理 1、4、16 个逻辑乘积。局部贡献在一个 16 元素 K 块内维持 1×64 bit、2×32 bit 或 4×16 bit 的分段形式，K 块完成后再加入 signed64 输出累加寄存器。尾部 M、N 或 K 不足完整块时，只装入有效元素，其余操作数位置写零。
 
 #### 11.10.2 标量 GEMM 的一个输出元素
 
@@ -3278,13 +3545,14 @@ INT16 的每行 4 个元素、INT8 的每行 8 个元素、INT4 的每行 16 个
 | 5 | `ST_ADDR_PREP` 用三拍依次保存 `A[m,0]`、`B[0,n]` 的各类偏移，形成相对地址，再加入基地址并保存完整地址、valid 和 INT4 半字节选择 |
 | 6 | `ST_A_REQ/RSP` 使用保存且有效的 A 地址读取 `A[m,0]` |
 | 7 | `ST_B_REQ/RSP` 使用保存且有效的 B 地址读取 `B[0,n]` |
-| 8 | `ST_MAC_MUL` 把第一次 signed32 乘积写入 `mac_product_q` |
-| 9 | `ST_MAC_ACC` 把乘积加入 signed64 `accum_q` |
-| 10 | 对 `k=1` 到 `K-1` 重复三拍地址生成、A 读、B 读、乘法寄存和累加 |
+| 8 | `ST_MAC_MUL` 把 A/B 标量打包后向共享 PE 发出逐元素乘法请求 |
+| 9 | `ST_MAC_ACC` 等待共享 PE 返回，检查 tag 和格式，并把 signed32 结果加入 signed64 `accum_q` |
+| 10 | 对 `k=1` 到 `K-1` 重复三拍地址生成、A 读、B 读、共享 PE 请求和累加 |
 | 11 | 若启用 bias，先检查保存的 `bias_addr_valid_q`，再读取 `b[n]` 并加入累加值 |
 | 12 | 若 C 不是 INT32，装入指令给出的右移位数 |
 | 13 | `ST_EPILOGUE` 选择累加值并完成 ReLU，保存 signed64 后处理输入 |
-| 14 | `ST_EP_MUL` 计算 signed64×unsigned32，并保存 signed128 乘积 |
+| 14a | `ST_EP_MUL` 第一个周期把 signed64 后处理输入拆成高、低 32 bit，并行保存 signed65 高半乘积与 unsigned64 低半乘积 |
+| 14b | `ST_EP_MUL` 第二个周期完成 65-bit 高部加法，拼接低 32 bit并保存 signed128 完整乘积 |
 | 15 | `ST_EP_ABS` 保存乘积正负号、绝对值、shift 和舍入方式 |
 | 16 | `ST_EP_SHIFT` 执行可变移位；正右移保存商、余数和中点，零 shift 或负 shift 直接形成 signed128 移位结果 |
 | 17 | 正右移时，`ST_EP_ROUND` 决定是否加一 |
@@ -3309,7 +3577,7 @@ EPILOGUE → EP_MUL → EP_ABS → EP_SHIFT → EP_ROUND → EP_INCREMENT
 shift 为 0 或负数时，`ST_EP_SHIFT` 已经得到带符号结果，因此跳过 `ST_EP_ROUND`、`ST_EP_INCREMENT` 和 `ST_EP_SIGN`，直接进入 `ST_EP_NARROW`。负 shift 的绝对值表示左移位数。无论采用哪条分支，zero point 都在 signed64 限制之后加入，目标 INT4、INT8、INT16 或 INT32 范围只在 `ST_EP_CLIP` 检查。
 
 > [!example] 正右移的逐拍计算
-> 设后处理输入为 \(-13\)，乘数为 1，shift 为 1，舍入方式为最接近且中点取偶数，输出 zero point 为 3，目标格式为 INT8。`ST_EP_MUL` 保存 \(-13\)；`ST_EP_ABS` 保存负号和绝对值 13；`ST_EP_SHIFT` 得到商 6、余数 1、中点 1；`ST_EP_ROUND` 发现结果位于中点且商为偶数，因此加一标志为 0；`ST_EP_INCREMENT` 仍得到 6；`ST_EP_SIGN` 恢复为 \(-6\)；`ST_EP_NARROW` 得到 signed64 的 \(-6\)；`ST_EP_ZERO_POINT` 得到 \(-3\)；`ST_EP_CLIP` 确认 \(-3\) 可由 INT8 表示，最终写回 `0xfd`。
+> 设后处理输入为 \(-13\)，乘数为 1，shift 为 1，舍入方式为最接近且中点取偶数，输出 zero point 为 3，目标格式为 INT8。`ST_EP_MUL` 第一个周期分别保存高半乘积 \((-1)\times1=-1\) 和低半乘积 \(4294967283\times1\)，第二个周期把低半乘积的高 32 bit加到高半乘积，再拼接低 32 bit，所得 signed128 完整乘积仍为 \(-13\)。`ST_EP_ABS` 保存负号和绝对值 13；`ST_EP_SHIFT` 得到商 6、余数 1、中点 1；`ST_EP_ROUND` 发现结果位于中点且商为偶数，因此加一标志为 0；`ST_EP_INCREMENT` 仍得到 6；`ST_EP_SIGN` 恢复为 \(-6\)；`ST_EP_NARROW` 得到 signed64 的 \(-6\)；`ST_EP_ZERO_POINT` 得到 \(-3\)；`ST_EP_CLIP` 确认 \(-3\) 可由 INT8 表示，最终写回 `0xfd`。
 
 #### 11.10.3 GEMM_ACCUM
 
@@ -3320,6 +3588,17 @@ K 次 A/B 读取和 MAC → 读取旧 C[m,n] → 相加 → 写回新 C[m,n]
 ```
 
 写响应返回之前，状态机不会开始下一个输出元素。旧 C 与新 C 使用同一 L1 地址，但读和写由状态先后分开。
+
+Outer 中存在已经由 `GEMM_ZERO_LOCAL` 建立且与当前 M、N、C 地址、C 行步长一致的本地状态时，`GEMM_ACCUM` 固定进入 Outer，不读取旧 L1 C，而是在 `ST_START_TILE` 后逐项读取本地部分和 RAM。当前 K 段完成后把新贡献加入这些值，再由 C 写回状态提交最终结果。完成后本地有效状态清除。Outer 不支持当前 `GEMM_ACCUM` 且没有本地状态时，任务进入 Scalar，由 Scalar 读取旧 INT32 C。
+
+`GEMM_ACCUM_HOLD` 的处理次序为：
+
+```text
+可选读取本地部分和 → A/B 装载 → 共享 PE → 部分和更新
+  → ST_PSUM_STORE 写本地 RAM → 下一个输出块 → done
+```
+
+它不把中间 C 写到 L1BUF。第一次 HOLD 在 `has_data=0` 时把本地旧值视为 0，后续 HOLD 先读取 RAM再累加。Outer 执行该序列时，Scalar 可以接收普通 GEMM；两个 context 通过 PE 和 L1 路由轮转使用公共资源。
 
 #### 11.10.4 GEMM_ZERO
 
@@ -3346,19 +3625,7 @@ $$
 
 以及一次 C 写请求。`GEMM_ACCUM` 每个输出再增加一次旧 C 读取；INT4 的奇数列再增加一次旧 beat 读取。非 INT32 输出的右移参数由 Task Context 直接提供，不增加 L1 读取。
 
-DiP 分支按 64-bit 行装载 A/B，并在行内使用读 beat 缓存。对行优先的方阵，A 和 B 各读取 `logical_n` 个 64-bit beat，而不是为每个 $A_{m,k}$ 与 $B_{k,n}$ 重新读取；C 每个写 beat保存两个 INT32 输出，因此写请求数为：
-
-$$
-N_{\mathrm{write,DiP}}
-=
-\mathrm{logical\_n}
-\times
-\left\lceil
-\frac{\mathrm{logical\_n}}{2}
-\right\rceil.
-$$
-
-B 采用 `KT=16、NT=8` tile 格式时，具体读 beat 数由 tile 中的物理位置决定；INT4 的 16 列分成两个 8 列区。无论使用哪种 B 格式，读缓存只在当前行内复用，不能把这些小方阵的访问次数直接用于任意尺寸分块 GEMM 的估算。
+多数据类型外积分支按当前行组、列组和 K 小段装载 A/B。A 小缓存最多保存 4×4 个 signed16 位置，B 小缓存最多保存 4×16 个 signed16 位置；尾部不足的元素写零。四个 PE group 在当前 K 小段内共用已经装入的 A 行值和 B 列值，因此同一操作数可参与多个输出贡献。B 采用 `KT=16、NT=8` tile 格式时，具体读 beat 数由 tile 中的物理位置、数据类型和尾部有效数量决定。
 
 Matrix 只在以下条件都满足后报告成功：
 
@@ -3369,26 +3636,30 @@ Matrix 只在以下条件都满足后报告成功：
 任一 L1 响应非零时，Matrix 将其转换成任务错误并进入 `ST_DONE`。元素跨越单个 8B beat 或输出按配置处理失败时，`done_fault_addr_o` 保存对应地址；启动检查发现基地址高位非零时，该信号为 0。已经完成的输出不会回退，`done_progress_o` 保留错误发生前的成功写回数量。
 
 > [!important] 当前吞吐特征
-> Matrix 顶层仍是单任务并共用一个 64-bit L1 客户端端口。满足固定方阵条件的任务使用 4×4 DiP 阵列并行形成多个输出，其他任务使用逐元素、逐 K 的标量分支。DiP 执行分支当前先装载 B、再装载 A、再写 C；尚未让下一任务的数据装载与当前任务写回同时进行，也没有保存第二个 Matrix Task Context。性能估算必须先判断任务进入哪个分支，再依据对应状态机、B 的存储格式和实际握手次数计算。
+> Matrix 子系统保存两个任务 context，并与 Vector 共用可配置 PE 和一组 64-bit L1 客户端端口。一个 context 更新本地部分和或写 C 时，另一个 context 可以执行地址准备、A/B 读取或申请 PE；同一任务内，下一 K 小段的装载与上一次 PE 返回的部分和更新也可以同时发生。共享 PE 和 L1 每次仍只接收一个请求，因此性能估算必须结合两级轮转、PE 等待、L1 等待和实际数据类型计算。
 
 ---
 
-## 12. Integer Vector Engine
+## 12. Matrix-Vector Engine：Integer Vector 子系统
 
 ### 12.1 定位与片上任务展开
 
-Integer Vector Engine（IVE）执行有符号整数逐元素运算。当前 RTL 包含连续 MUL 快速分支和通用标量分支：符合连续访问条件的 INT4、INT8 或 INT16 MUL 每次各读取一个 64-bit src0 beat和一个 64-bit src1 beat，复用 16 个 4×4 基础乘法器形成整拍逻辑乘积；广播、mask、FMA、非乘法操作、未对齐地址和其他步长组合继续逐元素执行。
+Integer Vector 子系统执行有符号整数逐元素运算。当前 RTL 包含连续 MUL 快速分支和通用标量分支：符合连续访问条件的 INT4、INT8 或 INT16 MUL 每次各读取一个 64-bit src0 beat和一个 64-bit src1 beat，并向 Matrix-Vector 公共 PE 提交整拍乘法请求；广播、mask、FMA、非乘法操作、未对齐地址和其他步长组合继续逐元素执行。通用分支中的 MUL 和 FMA 也向公共 PE 提交单元素请求，ADD、SUB、MAX、MIN、CMP、SELECT、CLAMP 和 ReLU 则由 Vector 控制器内的轻量整数 ALU 计算。
 
 ```mermaid
 flowchart LR
-    TASK["IVE Task Context"] --> CHECK{"连续 MUL 条件"}
-    CHECK -->|"满足"| PACK["Packed MUL<br/>16× 4×4 基础乘法器"]
-    CHECK -->|"不满足"| SCALAR["标量状态机"]
-    PACK --> WB["2× INT32 / 64-bit 写 beat"]
-    SCALAR --> WB2["通用格式写回"]
+    TASK["IVE Task Context"] --> CHECK{"操作类型与连续 MUL 条件"}
+    CHECK -->|"连续 MUL"| FAST["整拍操作数打包"]
+    CHECK -->|"普通 MUL/FMA"| ELEM["单元素操作数打包"]
+    CHECK -->|"轻量操作"| ALU["整数 ALU"]
+    FAST --> PE["共享多精度 MAC PE"]
+    ELEM --> PE
+    PE --> POST["Vector 结果保存 / FMA 后加"]
+    ALU --> WB["通用格式写回"]
+    POST --> WB
 ```
 
-`npu_vector_packed_mul.sv` 的 16 个基础乘法器按输入格式组成：
+共享 PE 的每个 group 包含 16 个 4×4 基础乘法器；Vector 逐元素模式按输入格式选择 group 数和返回元素数：
 
 | 输入格式 | 一次请求的逻辑结果 | 一个 64-bit 输入 beat需要的请求组数 | 整个输入 beat的元素数 |
 | --- | ---: | ---: | ---: |
@@ -3396,7 +3667,7 @@ flowchart LR
 | INT8 | 4 个 8×8 | 2 | 8 |
 | INT4 | 16 个 4×4 | 1 | 16 |
 
-Packed MUL 使用三个寄存阶段：第一段保存 16 个 4×4 基础乘积；第二段用平衡加法树保存 INT16 的四组部分结果、INT8 的四个完整结果或 INT4 的符号扩展结果；第三段完成 INT16 最后一层平衡相加，并把全部结果、格式、组号与有效标志同步输出。输入位宽降低时，相同乘法器组一次形成更多逻辑结果，不需要为不同格式放置三套乘法器。
+`npu_shared_mac_pe_array` 以三段寄存标签跟随 PE 结果。每个 `npu_shared_mac_group` 先保存 16 个 4×4 基础乘积，再保存重组后的逻辑乘积，最后形成逐元素 signed32 结果或 Matrix 使用的分段贡献值。Vector 请求设置 `elementwise=1`，返回 `element_count` 和最多 16 个 signed32 结果。输入位宽降低时，相同基础乘法器一次形成更多逻辑结果，不为 Vector 另放一套乘法阵列。
 
 快速分支的使用条件如下：
 
@@ -3423,7 +3694,9 @@ flowchart LR
     SNAP["发射窄快照"]
     DEC["共享发射解码器<br/>指令字段展开"]
     STG["IVE 发射暂存<br/>opcode / id / Task Context"]
-    IVE["Integer Vector Engine<br/>Packed MUL + 标量分支"]
+    IVE["Matrix-Vector Engine<br/>Vector 控制器 / 共享 PE"]
+    MVP["MV Memory Path"]
+    RF["L1 Request FIFO<br/>2 项 / 非直通"]
     L1C["L1BUF Controller"]
     L1["L1BUF SRAM"]
 
@@ -3434,7 +3707,11 @@ flowchart LR
     SNAP -->|"稳定指令 + 基地址快照"| DEC
     DEC -->|"时钟沿装入"| STG
     STG -->|"下一周期 task ready/valid"| IVE
-    IVE <-->|"64-bit 请求/响应"| L1C
+    IVE -->|"64-bit 请求"| MVP
+    MVP -->|"93-bit 请求"| RF
+    RF -->|"64-bit L1 请求"| L1C
+    L1C -->|"64-bit 响应，绕过请求 FIFO"| MVP
+    MVP -->|"返回原请求方"| IVE
     L1C <--> L1
     IVE -->|"status / fault / progress"| TS
 ```
@@ -3469,10 +3746,20 @@ IVE 不读取外部任务参数，不经过 MIF 取得执行字段，也没有�
 | `l1_rsp_ready_o` | Output | 1 | IVE 正在等待返回 |
 | `l1_rsp_rdata_i` | Input | 64 | 读数据 |
 | `l1_rsp_status_i` | Input | 3 | L1 返回状态 |
+| `pe_req_valid_o` / `pe_req_ready_i` | Output / Input | 1 | MUL/FMA 乘法请求握手 |
+| `pe_req_local_tag_o` | Output | 11 | Vector 控制器内部请求编号 |
+| `pe_req_elementwise_o` | Output | 1 | Vector 固定为 1，要求逐元素结果 |
+| `pe_req_dtype_a_o` / `pe_req_dtype_b_o` | Output | 各 2 | 两个乘数的数据类型 |
+| `pe_req_group_enable_o` | Output | 4 | 本次使用的 PE group |
+| `pe_req_operand_a_o` / `pe_req_operand_b_o` | Output | 各 256 | 四组 64-bit 打包操作数 |
+| `pe_rsp_valid_i` | Input | 1 | 共享 PE 返回有效 |
+| `pe_rsp_local_tag_i` | Input | 11 | 返回的 Vector 内部请求编号 |
+| `pe_rsp_element_count_i` | Input | 5 | 返回的 signed32 结果数量 |
+| `pe_rsp_elements_i` | Input | 512 | 最多 16 个 signed32 逻辑乘积 |
 
-IVE 只有这一组 L1 请求和响应信号。src0、src1、src2、mask、目的旧值和目的写入在时间上共用它，不存在四组同时工作的源读端口。每个请求握手后，IVE 都先等待对应响应，再发起下一次相关访问。
+Vector 控制器只有这一组内部 L1 请求和响应信号。src0、src1、src2、mask、目的旧值和目的写入在时间上共用它，不存在四组同时工作的源读端口。该内部端口先进入 `npu_mv_memory_path`。未命中旁路的请求与 Matrix 请求完成选择后，进入深度为 2 的 `npu_mv_l1_request_fifo`，随后提交给 L1BUF。L1 响应不经过请求 FIFO，而是直接返回 `npu_mv_memory_path`，再送给 Vector 或 Matrix 请求方。Matrix 写回后的完整 64-bit beat 命中内部旁路时，Vector 读响应可由合并单元内部产生。
 
-`reset_n=0` 时，IVE 把 `state_q` 置为 `ST_IDLE`，并清除 status、fault address、progress 和快速分支活动标志。Packed MUL 清除三级流水的 valid 标志。Task Context、地址、循环计数器、输入 beat、乘积数组、结果及写回数据属于 payload 寄存器，不使用复位清零；新任务在进入相应状态前覆盖将要使用的字段。状态回到 `ST_IDLE` 后，L1 请求 valid 和 done valid 均为 0，因此复位后的无效 payload 不会被使用。
+`reset_n=0` 时，IVE 把 `state_q` 置为 `ST_IDLE`，并清除 status、fault address、progress、快速分支活动标志和 PE 未完成记录；公共 PE 清除三级 valid。Task Context、地址、循环计数器、输入 beat、乘积数组、结果及写回数据属于 payload 寄存器，不使用复位清零；新任务在进入相应状态前覆盖将要使用的字段。状态回到 `ST_IDLE` 后，L1 请求 valid、PE 请求 valid 和 done valid 均为 0，因此复位后的无效 payload 不会被使用。
 
 ### 12.3 指令展开得到的 IVE Task Context
 
@@ -3587,7 +3874,7 @@ $$
 \end{aligned}
 $$
 
-这里的 FMA 是整数乘法后加法，不是 FP32 fused multiply-add。FMA 与未进入快速分支的 MUL 把 INT4、INT8 或 INT16 输入先扩展到 signed16，乘法产生 signed32；FMA 的第三输入为 signed32。RTL 在 `ST_MUL` 保存乘积和后续控制字段，在 `ST_MUL_POST` 把乘积扩展到 signed64、执行可选加法并处理输出范围。连续 MUL 快速分支不改变数学公式：它把每个有符号整数拆成 4-bit 基 16 数位，用基础乘积和位移重新得到相同的 signed32 结果。专项测试必须逐项比较快速分支与直接有符号乘法，并覆盖三种格式的最小值、最大值、负数和零。CLAMP 要求 $l\le h$。
+这里的 FMA 是整数乘法后加法，不是 FP32 fused multiply-add。FMA 与未进入快速分支的 MUL 在 `ST_MUL` 向共享 PE 发出一个逐元素请求；FMA 的第三输入为 signed32。RTL 在 `ST_MUL_POST` 等待返回，检查 tag、数据类型、group 使能、错误标志和结果数量，再把 signed32 乘积扩展到 signed64、执行可选加法并处理输出范围。连续 MUL 快速分支不改变数学公式：共享 PE 把每个有符号整数拆成 4-bit 基 16 数位，用基础乘积和位移重新得到相同的 signed32 结果。专项测试必须逐项比较快速分支与直接有符号乘法，并覆盖三种格式的最小值、最大值、负数和零。CLAMP 要求 $l\le h$。
 
 CMP 根据 `compare_mode` 计算
 
@@ -3639,13 +3926,13 @@ IVE 的主控制状态与 RTL 枚举一致：
 | `ST_SRC2_REQ/RSP` | FMA 读取 INT32 src2 |
 | `ST_KEEP_REQ/RSP` | 直接引擎测试中的 mask-false 保持模式读取旧目的值 |
 | `ST_EXEC` | 执行 ADD、SUB、MAX、MIN、CMP、SELECT、CLAMP 或 RELU，并完成范围处理 |
-| `ST_MUL` | 执行 signed16×signed16 乘法，保存 signed32 乘积、FMA 加数、目的格式、溢出方式和目的地址 |
-| `ST_MUL_POST` | 把乘积扩展到 signed64，执行可选 FMA 加法、范围处理和写回状态选择 |
+| `ST_MUL` | 把一个元素的两个乘数打包，向共享 PE 发出请求，并保存 tag、数据类型、group 使能和预期结果数 |
+| `ST_MUL_POST` | 等待共享 PE 返回并检查保存的请求信息；把 signed32 乘积扩展到 signed64，执行可选 FMA 加法、范围处理和写回状态选择 |
 | `ST_FAST_ADDR_CHECK` | 快速分支检查当前 src0、src1 地址是否位于 20-bit L1 地址范围且按 8B 对齐 |
 | `ST_FAST_SRC0_REQ/RSP` | 快速分支读取并保存一个 64-bit src0 beat |
 | `ST_FAST_SRC1_REQ/RSP` | 快速分支读取并保存一个 64-bit src1 beat |
-| `ST_FAST_MUL_REQ` | 向三段 Packed MUL 提交当前格式和组号 |
-| `ST_FAST_MUL_WAIT` | 等待逻辑乘积，按 INT16、INT8 或 INT4 的组内位置保存结果 |
+| `ST_FAST_MUL_REQ` | 向共享 PE 提交当前输入格式、group 使能和整拍操作数 |
+| `ST_FAST_MUL_WAIT` | 等待共享 PE 返回，检查 tag 和结果数，按 INT16、INT8 或 INT4 的组内位置保存 signed32 结果 |
 | `ST_FAST_WRITE_PREP` | 保存当前输出对的 48-bit地址、64-bit写数据和 8-bit strobe；末尾剩一个结果时高 32 bit写 0，并把 strobe 设为 `8'h0f` |
 | `ST_FAST_WRITE_CHECK` | 检查 `ST_FAST_WRITE_PREP` 保存的目的地址是否位于 20-bit L1 地址范围且按 8B 对齐 |
 | `ST_FAST_WRITE_REQ` | 只用快速写寄存器和地址检查寄存器发出请求；请求握手时保存本次进度增量和写响应后的动作 |
@@ -3708,7 +3995,7 @@ stateDiagram-v2
 
 一个没有 mask 的双输入非乘法、非 INT4 元素至少包含四个地址处理周期、两次读请求/响应、一个 `ST_EXEC` 周期和一次写请求/响应。未进入快速分支的 MUL 在两次输入读取后还经过 `ST_MUL` 和 `ST_MUL_POST`；FMA 额外读取一次 src2，再经过相同的两个计算状态。SELECT 额外读取一次 mask；每个 INT4 目的元素都在写前增加一次目的 beat读取。实际周期数还包含 L1 的 `ready` 等待和响应延迟。
 
-连续 MUL 快速分支按输入 beat工作：每个 beat有两次 L1 读请求，INT16、INT8、INT4 分别发出 4、2、1 次 Packed MUL 请求，然后发出 2、4、8 次写请求；每个 64-bit 写 beat携带两个 INT32，末尾只剩一个有效元素时仅使用低 4B。全部 Packed MUL 结果保存后，首个输出对先进入 `ST_FAST_WRITE_PREP`；后续每个 `NEXT_PAIR` 也先返回该状态。该状态把 `fast_dst_write_addr`、当前两个结果组成的 64-bit数据和 strobe 分别保存到 `fast_write_addr_q`、`fast_write_data_q` 与 `fast_write_strb_q`。`ST_FAST_WRITE_REQ` 的 L1 地址、数据和 strobe 只读取这些寄存值，因此请求暂停时三项保持不变。`ST_CHECK` 保存首行元素数和是否为末行；每次进入新行时，`ST_FAST_WRITE_RSP` 提前保存下一行的元素数和末行标志，最后一行使用 `valid_length`，其他行使用 `length`。
+连续 MUL 快速分支按输入 beat工作：每个 beat有两次 L1 读请求，INT16、INT8、INT4 分别发出 4、2、1 次共享 PE 请求，然后发出 2、4、8 次写请求；每个 64-bit 写 beat携带两个 INT32，末尾只剩一个有效元素时仅使用低 4B。全部 PE 结果保存后，首个输出对先进入 `ST_FAST_WRITE_PREP`；后续每个 `NEXT_PAIR` 也先返回该状态。该状态把 `fast_dst_write_addr`、当前两个结果组成的 64-bit数据和 strobe 分别保存到 `fast_write_addr_q`、`fast_write_data_q` 与 `fast_write_strb_q`。`ST_FAST_WRITE_REQ` 的 L1 地址、数据和 strobe 只读取这些寄存值，因此请求暂停时三项保持不变。`ST_CHECK` 保存首行元素数和是否为末行；每次进入新行时，`ST_FAST_WRITE_RSP` 提前保存下一行的元素数和末行标志，最后一行使用 `valid_length`，其他行使用 `length`。
 
 在 `ST_FAST_WRITE_REQ` 与 L1 完成请求握手时，IVE 根据当前写下标、当前输入 beat有效元素数、当前列位置、当前行元素数和末行标志，把以下两项写入寄存器：
 
@@ -3717,12 +4004,16 @@ stateDiagram-v2
 | `fast_write_progress_q` | 1 或 2 | 本次成功写回的 INT32 元素数 |
 | `fast_write_action_q` | `NEXT_PAIR`、`NEXT_BEAT`、`NEXT_ROW`、`DONE` | 写响应成功后要执行的游标更新 |
 
-`ST_FAST_WRITE_RSP` 收到成功响应后只增加保存的进度，并按保存的动作更新游标。`NEXT_PAIR` 把写下标增加 2；`NEXT_BEAT` 把输入地址各增加 8B并把目的地址增加一个输入 beat对应的 INT32 字节数；`NEXT_ROW` 装入下一行基址并更新当前行元素数；`DONE` 进入完成状态。响应周期不再重新计算“是否末对、末 beat、末行”，L1 返回状态和后续控制选择之间只经过窄寄存字段。该分支在完成当前输入 beat的全部结果写入后才读取下一 beat，尚未把 L1 访问与 Packed MUL 或写回交叠。周期估算必须依据数据格式、组数、输出写 beat数和 L1 等待时间计算。
+`ST_FAST_WRITE_RSP` 收到成功响应后只增加保存的进度，并按保存的动作更新游标。`NEXT_PAIR` 把写下标增加 2；`NEXT_BEAT` 把输入地址各增加 8B并把目的地址增加一个输入 beat对应的 INT32 字节数；`NEXT_ROW` 装入下一行基址并更新当前行元素数；`DONE` 进入完成状态。响应周期不再重新计算“是否末对、末 beat、末行”，L1 返回状态和后续控制选择之间只经过窄寄存字段。该分支在完成当前输入 beat的全部结果写入后才读取下一 beat，尚未把 L1 访问与共享 PE 请求或写回交叠。周期估算必须依据数据格式、PE 请求数、输出写 beat数、Matrix 竞争和 L1 等待时间计算。
 
 > [!example] 快速写后动作
 > 对一行 9 个 INT8 元素，首个输入 beat包含 8 个有效元素，快速分支产生 4 个 64-bit目的写请求。每个输出对都先在 `ST_FAST_WRITE_PREP` 保存地址、两个 INT32 结果和 `8'hff` strobe，再进入请求状态。前三次请求分别保存 `NEXT_PAIR`，第 4 次保存 `NEXT_BEAT`；对应写响应成功后才把输入地址各增加 8B并开始读取最后 1 个元素。末拍的准备状态把最后一个结果放在低 32 bit、高 32 bit写 0，并保存 `8'h0f` strobe；请求握手时 `fast_write_progress_q=1`。若这是最后一行，动作保存为 `DONE`；若后面还有一行，则保存为 `NEXT_ROW`。因此完成进度最终增加 \(8+1=9\)。
 
-标量分支每个目的写响应成功后，`done_progress_o` 增加 1。Packed MUL 分支按本次写 beat中的有效 INT32 元素数增加 2 或 1。若第 $k$ 个元素失败，进度保留此前已经成功写完的元素数，`done_fault_addr_o` 保存当前相关地址。L1 status 1、2 分别转换成 `BUS_SLVERR`、`BUS_DECERR`，其他非零编码转换成 `ADDR_FAULT`。
+标量分支每个目的写响应成功后，`done_progress_o` 增加 1。连续 MUL 分支按本次写 beat中的有效 INT32 元素数增加 2 或 1。若第 $k$ 个元素失败，进度保留此前已经成功写完的元素数，`done_fault_addr_o` 保存当前相关地址。L1 status 1、2 分别转换成 `BUS_SLVERR`、`BUS_DECERR`，其他非零编码转换成 `ADDR_FAULT`。
+
+Vector 与 Matrix 同周期申请共享 PE 时，`npu_mv_shared_mac` 按轮转状态选择一方。未获选择的 Vector 状态保持在 `ST_MUL` 或 `ST_FAST_MUL_REQ`，操作数、tag、数据类型和 group 使能保持不变。请求被接收后才进入等待状态。ADD、SUB、MAX、MIN、CMP、SELECT、CLAMP 和 ReLU 不经过该选择，因此可在 Matrix 使用 PE 时继续计算；它们仍可能因内部 L1 端口竞争而等待。
+
+Matrix 成功写回的 64-bit beat会在 `npu_mv_memory_path` 中保存写元数据，并在 L1 成功响应后更新 2 项内部旁路缓存。Vector 读命中且该 beat 的八个字节全部有效时，合并单元直接产生 Vector 响应；未命中、部分字节无效、存在同地址待写请求或早先 Vector L1 读尚未返回时，仍通过 L1BUF 读取。Vector、DMA、CME 或外部 L1 窗口写同一 beat时，对应缓存字节失效。
 
 ---
 
@@ -4315,7 +4606,7 @@ $$
 
 若后续 SoC 采用其他 `PA_W`，则地址高于 `PA_W-1` 的全部 bit必须为 0。MIF 还使用 LSC 配置的物理地址允许范围检查访问；软件必须先配置该范围，再提交 DMA 任务。
 
-当前 MIF 每次接收一个 64-bit 读或写请求，同时处理的内部请求数为 1。AXI 事务也是一个 64-bit beat：`ARLEN=AWLEN=0`、`ARSIZE=AWSIZE=3`、`ARBURST=AWBURST=INCR`，AXI ID 固定为 0。连续数据由 DMA 逐 beat 提交，MIF 当前不合并 burst。
+当前 MIF 同时处理一个内部请求和一个 AXI 事务。读请求支持 1～16 个 64-bit beat，`ARLEN=req_burst_len_i`；写请求固定为一个 beat，`AWLEN=0`、`WLAST=1`。读写都使用 `ARSIZE=AWSIZE=3`、`ARBURST=AWBURST=INCR`，AXI ID 固定为 0。DMA 对齐快速路径直接给出读长度，MIF 不再自行合并相邻请求。
 
 ### 14.2 DMA 到 MIF 的内部接口
 
@@ -4327,6 +4618,7 @@ $$
 | `req_addr_i` | Input | 48 | 8B 对齐的物理字节地址 |
 | `req_wdata_i` | Input | 64 | 写数据；读请求忽略 |
 | `req_wstrb_i` | Input | 8 | 每个 bit 控制一个写字节 |
+| `req_burst_len_i` | Input | 8 | beat 数减 1；读请求使用，写请求必须为 0 |
 | `rsp_valid_o` | Output | 1 | 内部响应有效 |
 | `rsp_ready_i` | Input | 1 | DMA 可以接收响应 |
 | `rsp_rdata_o` | Output | 64 | 读数据；写完成时为 0 |
@@ -4334,25 +4626,34 @@ $$
 | `addr_base_i` | Input | 48 | 允许访问的第一个物理 beat 起始地址 |
 | `addr_limit_i` | Input | 48 | 允许访问的最后一个物理 beat 起始地址 |
 
-`req_valid_i && req_ready_o` 时，MIF 保存请求地址、读写方向、写数据和写使能。请求一旦保存，`req_ready_o` 保持为 0，直到内部响应与 DMA 完成握手并回到 `MIF_IDLE`。接口不携带请求 tag、任务编号或 beat 数。
+`req_valid_i && req_ready_o` 时，MIF 保存请求地址、读写方向、写数据、写使能和读长度。请求一旦保存，`req_ready_o` 保持为 0，直到整个 AXI 事务结束并回到 `MIF_IDLE`。接口不携带请求 tag或任务编号；内部响应没有 last 信号，MIF 与 DMA 分别保存剩余 beat 数。
 
 请求 valid等待 ready 时，DMA 必须保持地址、读写方向、写数据和写使能不变。响应 valid等待 ready 时，MIF 必须保持读数据和 status 不变。
 
 ### 14.3 物理地址检查
 
+令首 beat 起始地址为 \(p_0\)，读请求长度字段为 \(L=req\_burst\_len_i\)，则末 beat 起始地址为：
+
+$$
+p_{\mathrm{last}}=p_0+8L.
+$$
+
 MIF 在发出 AXI 请求前依次检查：
 
-1. `req_addr_i[2:0]=0`，即地址按 8B 对齐；
-2. 高于 AXI 地址宽度的 bit全部为 0；
-3. `addr_base_i <= req_addr_i <= addr_limit_i`；
-4. `addr_limit_i` 不小于 `addr_base_i`。
+1. `req_addr_i[2:0]=0`，即首地址按 8B 对齐；
+2. 首地址与末 beat 起始地址都能由 AXI 地址宽度表示；
+3. `p_0+8L` 的 48-bit 加法不发生回绕；
+4. `addr_base_i <= p_0` 且 `p_last <= addr_limit_i`；
+5. `addr_limit_i` 不小于 `addr_base_i`；
+6. 读请求最后一个 beat 的末字节不越过当前 4KiB 段；
+7. 写请求的 `req_burst_len_i` 必须为 0。
 
-当前请求只有一个 64-bit beat，允许范围中的 limit 表示最后一个允许的 beat 起始地址。检查失败时，MIF 不发出 AXI 请求，直接生成 `NPU_MEM_ADDR` 响应并保存出错的物理地址。
+`addr_limit_i` 表示最后允许的 beat 起始地址，不是最后允许的字节地址。检查失败时，MIF 不发出 AXI 请求，直接生成 `NPU_MEM_ADDR` 响应并保存出错的物理地址。系统顶层由 DMA 保证 `req_burst_len_i<=15`；当前 MIF 独立模块未另设大于 15 的检查，因此模块级调用方也必须遵守该限制。
 
 > [!note] 检查发生的时刻
 > 指令中的全局地址先由 TaskScheduler 展开并交给 DMA。`PA_W=40` 的高位检查和 `M_AXI_ADDR_BASE/LIMIT` 检查由 MIF 在每个内部请求握手后、发出 AXI 地址前完成，不属于 CFE 接收结果，也不保证在 DMA 任务刚启动时已经完成。软件必须等待任务终态后再认定全部物理地址有效。
 
-例如 `base=0x1000`、`limit=0x1018` 时，允许的 beat 起始地址为 `0x1000`、`0x1008`、`0x1010` 和 `0x1018`。地址 `0x1004` 未按 8B 对齐，地址 `0x1020` 超出配置范围，两者都不能进入 AXI 地址通道。
+例如 `base=0x1000`、`limit=0x1018` 时，允许的单 beat 起始地址为 `0x1000`、`0x1008`、`0x1010` 和 `0x1018`。若从 `0x1000` 发起 4 beat 读，则 `L=3`、`p_last=0x1018`，请求合法；若从 `0x1008` 发起相同读，则末 beat 起始地址为 `0x1020`，请求被拒绝。地址 `0x1004` 也因未按 8B 对齐而被拒绝。
 
 ### 14.4 状态机
 
@@ -4360,10 +4661,10 @@ MIF 在发出 AXI 请求前依次检查：
 | --- | --- | --- |
 | `MIF_IDLE` | 等待并保存一个 DMA 请求，同时完成地址检查 | 检查失败进入内部响应；读请求进入读地址状态；写请求进入写发出状态 |
 | `MIF_READ_ADDR` | 保持 AXI AR 通道字段 | AR 握手 |
-| `MIF_READ_DATA` | 等待一个 R beat | R 握手并检查 RID、RLAST、RRESP |
+| `MIF_READ_DATA` | 等待当前 R beat | R 握手并检查 RID、期望的 RLAST 和 RRESP，随后进入内部响应 |
 | `MIF_WRITE_ISSUE` | 独立保持 AWVALID 和 WVALID | AW 与 W 都完成握手 |
 | `MIF_WRITE_RESP` | 等待 B response | B 握手并检查 BID、BRESP |
-| `MIF_INTERNAL_RESP` | 保持 DMA 响应和首错信息 | DMA 响应握手 |
+| `MIF_INTERNAL_RESP` | 保持当前 DMA 响应和首错信息 | 响应握手后，读事务还有 beat 时把请求地址增加 8 并返回 `MIF_READ_DATA`，否则回到 `MIF_IDLE` |
 
 AW 与 W 可以在不同周期握手。`aw_done_q` 和 `w_done_q` 分别记录两个通道是否已经完成；只有二者都完成后才进入 `MIF_WRITE_RESP`。任一通道暂停时，已完成的通道不会重复发出请求，未完成通道的 valid 与 payload 保持不变。
 
@@ -4375,16 +4676,26 @@ sequenceDiagram
     participant MIF
     participant AXI as SoC AXI Fabric
 
-    DMA->>MIF: req_valid + read + physical_addr
-    MIF->>MIF: 对齐、高位和允许范围检查
-    MIF->>AXI: ARVALID + physical_addr + ARLEN=0 + ID=0
-    AXI-->>MIF: RVALID + 64-bit data + RID + RRESP + RLAST
-    MIF-->>DMA: rsp_valid + data + status
+    DMA->>MIF: req_valid + read + physical_addr + burst_len
+    MIF->>MIF: 对齐、高位、末地址、4KiB 和允许范围检查
+    MIF->>AXI: ARVALID + physical_addr + ARLEN=burst_len + ID=0
+    loop 每个 R beat
+        AXI-->>MIF: RVALID + 64-bit data + RID + RRESP + RLAST
+        MIF-->>DMA: rsp_valid + data + status
+        DMA-->>MIF: rsp_ready
+        MIF->>MIF: 还有 beat 时，当前地址增加 8
+    end
 ```
 
-读返回要求 `RID=0` 且 `RLAST=1`。任一条件不满足时，MIF 返回 `NPU_MEM_PROTOCOL`。`RRESP=OKAY` 返回 OK；`SLVERR` 与 `DECERR` 分别转成对应的内部状态，其他响应编码返回协议错误。
+每个读返回都要求 `RID=0`，并检查：
 
-当 `ARREADY=0` 时，MIF 保持 `ARVALID`、地址和 AXI 属性。当 `RVALID=1` 且内部不能接收时，MIF 撤销或保持 `RREADY=0`，不得改变已经保存的请求信息。
+```text
+m_axi_rlast_i == (read_beats_remaining_q == 1)
+```
+
+条件不满足时，MIF 返回 `NPU_MEM_PROTOCOL`。`RRESP=OKAY` 返回 OK；`SLVERR` 与 `DECERR` 分别转成对应的内部状态，其他响应编码返回协议错误。出错后 MIF 不自行提前终止已经发出的 AXI 事务，DMA 使用 `ST_BURST_DRAIN` 接收剩余内部响应。
+
+当 `ARREADY=0` 时，MIF 保持 `ARVALID`、地址和 AXI 属性。当当前 R beat 已经形成内部响应但 DMA 尚未接收时，MIF 令 `RREADY=0` 并保持响应数据与状态。内部响应握手后，还有 beat 时 `req_addr_q` 增加 8，再返回 `MIF_READ_DATA`。
 
 ### 14.6 写请求功能时序
 
@@ -4413,25 +4724,25 @@ sequenceDiagram
 
 `mif_idle_o` 只在 `state_q=MIF_IDLE` 且没有待返回响应时为 1。MIF 在内部响应状态发现 status 非 OK 时保存 `error_valid_o`、48-bit 物理地址和 3-bit status，并保持到 `error_clear_i=1`。清除旧错误与保存新错误同周期发生时，新错误优先保留。顶层把该错误送入 LSC 的汇总接口错误输入。
 
-地址类错误保存原始物理地址；AXI读写错误保存对应事务的物理起始地址。软件读取故障地址时得到的也是物理地址，因此可以直接与生成配置和 SoC 地址表比较。
+地址类错误保存原始物理地址。AXI 写错误保存对应事务的物理起始地址；AXI 读错误保存发生错误的当前 R beat 地址，因为 `req_addr_q` 会在每个内部响应握手后增加 8。软件读取故障地址时得到物理地址，因此可以直接与生成配置和 SoC 地址表比较。
 
 MIF 的 `reset_n` 复位状态机、请求 valid、AW/W 完成位、响应 valid 和错误 valid，并回到 `MIF_IDLE`。复位不要求清零地址、写数据和读数据 payload；相关 valid 为 0 时这些值无效。受控软复位必须先等待 `mif_idle_o=1`，再清除控制状态，避免遗留 AXI 返回被后续任务接收。
 
 ### 14.8 后续吞吐率扩展参考
 
 > [!warning] 以下内容不属于当前 RTL
-> 请求 FIFO、跨时钟 FIFO、多个 outstanding、AXI burst 和多个 AXI ID 属于后续功能。实现前需要重新定义模块端口、错误处理和验证项目。
+> DMA 到 MIF 的请求队列与 MIF 返回队列、Core/NoC 跨时钟队列、多个 outstanding、写 burst 和多个 AXI ID 属于后续功能。Matrix-Vector Engine 内深度为 2 的 L1 请求 FIFO 已在当前 RTL 中实现，不属于本节所列项目。多 beat 读已经包含在当前 MIF RTL 中。
 
 后续 MIF 仍直接接收物理地址，不增加其他地址形式。可增加的结构包括：
 
 1. DMA 请求 FIFO 和返回 FIFO；
 2. 多个读写事务表项及 AXI ID 分配器；
-3. 连续物理地址的 burst 合并；
-4. 为不跨 4KiB 地址段和不超过允许物理地址范围而进行的 burst 拆分；
+3. 连续物理写地址的 burst 合并；
+4. 为写请求提供不跨 4KiB 地址段且不超过允许物理地址范围的 burst 拆分；
 5. Core 时钟域与 NoC 时钟域之间的异步 FIFO；
 6. 复位期间对已发出 AXI 事务的排空与旧返回丢弃记录。
 
-未来的多 beat内部请求可使用以下字段：
+未来的多个活动事务接口还可增加以下字段；当前已有的 `req_burst_len_i` 保持读 beat 数减 1 的定义：
 
 | 字段                                 |     位宽 | 说明               |
 | ---------------------------------- | -----: | ---------------- |
@@ -4504,7 +4815,7 @@ LSC 最多保存一个未完成寄存器请求。T0 周期 `reg_req_valid_i && r
 | `ts_idle_i` | Input | 1 | TS 没有命令接纳项、任务表占用项或活动执行单元；等待 ACK 的终态表项会使其为 0 |
 | `ts_quiescent_i` | Input | 1 | TS 没有接纳、解码、发射、活动执行、Control、Event 发布、完成持有或 AXI 控制请求；当前顶层连接 `scheduler_quiescent_o`，不要求终态表项已经 ACK |
 | `eng_abort_o` | Output | 4 | 软复位排空阶段四位同时为 1；当前顶层取或后连接 TS 的 `abort_i` |
-| `eng_quiescent_i` | Input | 4 | 四个执行单元已回到可接收任务状态；当前顶层连接各单元的 `task_ready_o` |
+| `eng_quiescent_i` | Input | 4 | DMA、Matrix、Vector、Complex 四类任务接口已回到可接收状态；Matrix 与 Vector 两位来自同一物理模块的两组 `task_ready_o` |
 | `l1_idle_i` | Input | 1 | L1BUF Controller 请求寄存级、读等待和逐客户端响应槽均为空 |
 | `l1_write_idle_i` | Input | 1 | L1BUF 不存在待处理写请求；设置参数锁和内部复位时使用 |
 | `mif_idle_i` | Input | 1 | MIF 没有未完成的请求或 AXI 事务 |
@@ -4541,7 +4852,7 @@ core_idle_o =
 
 正常 stop 与断电准备采用分阶段停止接收。请求生效后，LSC 先令 `accept_new_cmd_o=0`，AXI Slave 不再接受新的 CMD burst；已保存的命令入口继续向 CFE 送 beat。`cmd_ingress_idle_i=1` 后，LSC 才令 `cfe_quiesce_o=1`；CFE FIFO 继续向 TS 输出。等 `cmd_ingress_idle_i=1` 且 `cfe_idle_i=1` 后，LSC 再令 `ts_quiesce_o=1`。顶层还把 TS 的 `enable_i` 接为 `accept_new_cmd_o || !cfe_idle`，所以 start 清零后，只要 CFE 尚未排空，TS 仍能接收其队首。TS 已保存的任务继续发射、执行、发布完成状态并等待软件 ACK。
 
-软复位进入 `RESET_DRAIN` 后立即令 CFE 与 TS quiesce，并向 TS 发出 abort。该流程有意不等待 `cmd_ingress_idle_i`、`cfe_idle_i` 或终态任务表项 ACK；它等待 `ts_quiescent_i`、四个执行单元、L1BUF、MIF 和 `s_axi_idle_i`，随后用内部功能复位清除 AXI Slave 的命令入口与命令响应 FIFO、CFE FIFO、任务表和 Event Table。因而软复位请求前尚未取得命令接收结果或任务查询结果的软件请求可能被丢弃，软件必须把对应提交视为未完成。
+软复位进入 `RESET_DRAIN` 后立即令 CFE 与 TS quiesce，并向 TS 发出 abort。该流程有意不等待 `cmd_ingress_idle_i`、`cfe_idle_i` 或终态任务表项 ACK；它等待 `ts_quiescent_i`、四类任务接口、三个物理执行模块、L1BUF、MIF 和 `s_axi_idle_i`，随后用内部功能复位清除 AXI Slave 的命令入口与命令响应 FIFO、CFE FIFO、任务表和 Event Table。因而软复位请求前尚未取得命令接收结果或任务查询结果的软件请求可能被丢弃，软件必须把对应提交视为未完成。
 
 #### 15.2.2 任务终态、中断与配置输出接口
 
@@ -4622,7 +4933,7 @@ RTL 的条件分支直接确定：
 | `0x0010` | `BUS_CONFIG` | RO | `BUS_DATA_W=64`、地址宽度、AXI ID 位宽 |
 | `0x0018` | `L1_CONFIG` | RO | 容量、bank 数、读延迟 |
 | `0x0020` | `MATRIX_CONFIG` | RO | `MT`、`KT`、`NT`、可接受的整数格式 |
-| `0x0028` | `VECTOR_CONFIG` | RO | 标量处理数、Packed MUL 乘积数和整数操作功能位 |
+| `0x0028` | `VECTOR_CONFIG` | RO | 标量处理数、连续 MUL 每次 PE 请求的乘积数和整数操作功能位 |
 | `0x0030` | `CME_CONFIG` | RO | 同时接受的数学请求数、函数和 `approx_mode` |
 | `0x0040` | `CORE_CONTROL` | RW | start、stop、soft reset、single step |
 | `0x0048` | `CORE_STATUS` | RO | idle、busy、accept new command、error、power ready、soft reset busy |
@@ -4837,7 +5148,7 @@ base 不大于 limit；从复位值 0 配置非空范围时，应先写 limit，
 
 1. 在执行单元的 done ready/valid 接口上接收 command ID、status、48-bit 错误地址和 64-bit progress；
 2. 检查 command ID 与 status，并更新任务表中的终态记录；
-3. Control、普通 signal Event 和完成通知共用一个连续递增的任务槽计数器；三类分别保存扫描轮开始时的候选位图，并在 16 个周期内各自保留 `submit_seq` 最小的候选；
+3. Control、普通 signal Event 和完成通知共用一个连续递增的任务槽计数器；三类分别保存扫描轮开始时的候选位图，并在 `TASK_SLOTS` 个周期内各自保留 `submit_seq` 最小的候选，基准配置为 16 个周期；
 4. 扫描轮末分别复查三类候选位图、获胜项和提交序号。某一类位图发生变化时，该类等待下一轮重新选择；
 5. Event 选择脉冲把任务表项编号写入发布暂存；下一周期把该 Event 写为 SUCCESS 或 ERROR，并置位对应任务的 `event_published`；
 6. 完成选择脉冲有效、完成持有槽为空且获胜任务的 Event 已发布时，把该任务表项编号装入完成持有槽；
@@ -4975,12 +5286,12 @@ NPU 配置完成前，LSC 的 stop 复位值为 1，`accept_new_cmd_o=0`。软�
 受控软复位按以下次序执行：
 
 1. LSC 清除 start、设置 stop，使 `accept_new_cmd_o=0`，状态从 `RESET_IDLE` 进入 `RESET_DRAIN`。
-2. `cfe_quiesce_o`、`ts_quiesce_o` 和四位 `eng_abort_o` 立即有效。当前顶层把 `eng_abort_o` 取或后送到 TS 的 `abort_i`；该信号不直接连接四个执行单元。
+2. `cfe_quiesce_o`、`ts_quiesce_o` 和四位 `eng_abort_o` 立即有效。四位分别对应 DMA、Matrix、Vector、Complex 任务类别；当前顶层把它们取或后送到 TS 的 `abort_i`，不直接连接三个物理执行模块。
 3. TS 丢弃命令接纳项，清除待解码快照、四组发射暂存、Control 执行快照、Event 发布暂存、完成持有槽以及 AXI 控制请求状态，并把全部非终态任务记录为 `ABORTED`。等待 ACK 的原有终态项和新形成的 `ABORTED` 项都不阻止 `scheduler_quiescent_o`。
 4. 已经取得任务的执行单元继续运行到 done并回到 `task_ready_o=1`；L1BUF 和 MIF 完成各自已经接受的请求。TS 的 active 标志在对应 done 到达后清除。AXI Slave 完成当前读写事务，使 `wr_state_q`、`rd_state_q`、B valid 和 R valid回到空闲状态。
 5. CFE quiesce 会阻止命令入口继续向 CFE 送 beat，TS quiesce也会阻止 CFE 队首进入任务表。LSC 的软复位等待条件不包含 `cmd_ingress_idle_i` 和 `cfe_idle_i`，所以命令入口中的 beat、CFE 中的半条或完整指令以及尚未读取的命令响应都可以保留到内部复位脉冲，再由复位清除。
 6. 当 `ts_quiescent_i`、四位 `eng_quiescent_i`、`l1_idle_i`、`mif_idle_i` 和 `s_axi_idle_i` 全部为 1 时，LSC 产生一个周期的 `internal_soft_reset_pulse_o`。这里使用 `scheduler_quiescent_o`，不使用要求任务表为空的 `scheduler_idle_o`，所以不等待软件 ACK 终态表项。
-7. 内部复位脉冲清除 AXI Slave 命令入口和命令响应 FIFO、CFE 半命令与完整指令 FIFO、任务表、Event Table、发射暂存和四个执行单元的控制状态。LSC 同时清除 `IRQ_STATUS`、`PARAM_LOCK` 和 `L1_HOST_ACCESS_ENABLE`，并记录软件复位原因。
+7. 内部复位脉冲清除 AXI Slave 命令入口和命令响应 FIFO、CFE 半命令与完整指令 FIFO、任务表、Event Table、发射暂存以及 DMA、Matrix-Vector Engine、CME 的控制状态。LSC 同时清除 `IRQ_STATUS`、`PARAM_LOCK` 和 `L1_HOST_ACCESS_ENABLE`，并记录软件复位原因。
 8. 顶层在内部复位执行完成后拉高 `internal_soft_reset_done_i`。LSC 进入 `RESET_DONE`，拉高 `soft_reset_done_o` 并保持到外部请求撤销。
 9. 请求撤销后，LSC 返回 `RESET_IDLE`，撤销 abort、quiesce 和完成信号；start 仍为 0、stop 仍为 1，软件重新配置或确认状态后再启动。
 
@@ -5040,7 +5351,7 @@ AXI Slave 前端仍要完成已经握手的总线请求；命令入口中尚未�
 LSC 只有在以下条件全部满足时才能拉高 `power_down_ack_o`：
 
 1. 软件已经设置 stop；
-2. `core_idle_o=1`，即命令入口、CFE、TS、四个执行单元、L1BUF、MIF 和 AXI Slave 前端全部空闲；
+2. `core_idle_o=1`，即命令入口、CFE、TS、四类任务接口、三个物理执行模块、L1BUF、MIF 和 AXI Slave 前端全部空闲；
 3. `power_down_req_i=1` 仍保持有效。
 
 PMU 看到 `power_down_ack_o=1` 后，依次执行输出隔离、内部复位置位、时钟停止和电源关闭。断电后的 L1BUF、任务表和 Event Table 内容全部无效。重新上电后必须从第 15.7 节的初始化流程开始。
@@ -5056,10 +5367,9 @@ PMU 撤销 `power_down_req_i` 后，LSC 立即撤销 `power_down_ack_o`，同时
 | 模块 | 复位后的状态 |
 | --- | --- |
 | CFE | 低 beat 保存寄存器无效，128-bit CMD FIFO 空，`ready=0` 直到复位释放 |
-| TaskScheduler | 命令接纳 valid 和 Control 执行快照 valid 为 0；任务表和 Event Table 为 FREE，全部 `predecessor_mask` 为 0，逐槽扫描停止且候选无效，`decode_pending_valid_q=0`，四组发射暂存 valid 为 0，`completion_hold_valid_q=0`，`event_publish_pending_valid_q=0`，所有执行单元任务请求 valid 为 0 |
+| TaskScheduler | 命令接纳 valid、WAIT_EVENT 检查结果 valid 和 Control 执行快照 valid 为 0；`wait_scan_slot_q` 为 0，任务表和 Event Table 为 FREE，全部 `predecessor_mask` 为 0，发射与选择扫描候选无效，`decode_pending_valid_q=0`，四组发射暂存 valid 为 0，`completion_hold_valid_q=0`，`event_publish_pending_valid_q=0`，四类任务请求 valid 为 0 |
 | DMA | `state_q=ST_IDLE`，MIF、L1 请求 valid 和 done valid 为 0；Task Context、游标、shape 乘法和数据寄存器的旧值无效 |
-| Matrix | `state_q=ST_IDLE`，L1 请求 valid、done valid、DiP 流水 valid 和结果行读缓存 valid 为 0；操作数、乘积、累加和写回数据在新任务中重新赋值；DiP 宽结果存储不清零，只能在本次任务写入全部有效结果行后读取 |
-| IVE | `state_q=ST_IDLE`，L1 请求 valid 和 done valid 为 0；输入、乘积、结果和写回数据在新任务中重新赋值 |
+| Matrix-Vector Engine | Outer、Scalar 与 Vector 控制器回到 `ST_IDLE`，context active、PE/L1 owner FIFO、共享 PE valid、L1 请求 FIFO计数、内部旁路有效位、L1 请求 valid和两组 done valid均为 0；Outer 本地部分和 RAM不清零，但元数据和有效状态清零 |
 | CME | 主状态为 `ST_IDLE`，数学单元状态为 `ST_IDLE`，L1 请求 valid、数学响应 valid 和 done valid 为 0；行统计与 FP32 工作寄存器在新任务中重新赋值 |
 | L1BUF Controller | 请求寄存级、读等待和逐客户端响应 valid 均清零；SRAM 数据内容不保证为 0 |
 | MIF | 回到 `MIF_IDLE`，AXI 各通道 valid 为 0；当前实现没有内部 tag 表 |
@@ -5082,8 +5392,8 @@ L1BUF 在复位后不自动全区清零。任何任务读取一个 L1 地址前�
 | 2. CFE 排队 | CFE | 两个 beat 已组成完整指令 | 操作码和命令编号检查通过，128 bit指令进入 CFE FIFO |
 | 3. TS 命令接纳 | TS / 接收检查解码器 / Event Table | CFE 队首有效、任务表存在 FREE 项且接纳寄存级为空 | 保存目标槽、检查结果、指令、五个 48 bit基地址、20 bit L1 参数区基址、事件引用和 `predecessor_mask`；暂停下一条 CFE 命令与 AXI 控制请求 |
 | 4. 写入任务表 | TS / 命令接纳寄存级 | 命令接纳 valid 为 1 且 `abort_i=0` | 只使用接纳寄存值建立任务表项、分配 `submit_seq`、更新合法 signal Event并清除接纳 valid |
-| 5. 等待事件与前序任务 | TS / Event Table | 合法任务进入 WAIT_EVENT | 任一依赖事件失败时形成错误终态；依赖事件成功且 `predecessor_mask & task_live_mask` 为 0 时进入 READY；其余情况继续等待 |
-| 6. 逐槽扫描 | TS / 扫描寄存器 | `abort_i=0` 且没有待展开快照 | 从槽 0 到槽 15 每周期检查一项；非 Control 任务必须为 READY、前序条件满足、目标执行单元没有 RUNNING 任务且对应发射暂存 valid 为 0，扫描器用一次 64-bit 比较保留 `submit_seq` 最小的候选 |
+| 5. 等待事件与前序任务 | TS / Event Table | 合法任务进入 WAIT_EVENT | WAIT_EVENT 检查器每周期读取一个槽的两个事件引用并寄存检查结果、槽号和 `submit_seq`；下一周期复查任务身份，依赖失败时形成错误终态，依赖成功且 `predecessor_mask & task_live_mask` 为 0 时进入 READY，其余情况继续等待 |
+| 6. 逐槽扫描 | TS / 扫描寄存器 | `abort_i=0` 且没有待展开快照 | 从槽 0 到槽 `TASK_SLOTS-1` 每周期检查一项；非 Control 任务必须为 READY、前序条件满足、目标执行单元没有 RUNNING 任务且对应发射暂存 valid 为 0，扫描器用一次 64-bit 比较保留 `submit_seq` 最小的候选 |
 | 7. 保存窄快照 | TS | 最后一个槽完成检查且复查后的候选仍有效 | 时钟沿保存目标执行单元、任务编号、操作码、完整指令和提交时基地址；没有候选时结束本轮但不写快照 |
 | 8. 共享展开 | TS / 共享发射解码器 | `decode_pending_valid_q=1` | 复查任务状态、执行单元字段和前序条件；任务失效时丢弃快照，目标执行单元暂时不可接收时保持快照，否则组合产生 2048 bit Task Context并在时钟沿写入目标发射暂存 |
 | 9. 任务握手 | TS / Engine | 发射暂存置 `task_valid` | `task_valid && task_ready`，任务转为 RUNNING |
@@ -5095,7 +5405,7 @@ L1BUF 在复位后不自动全区清零。任何任务读取一个 L1 地址前�
 
 阶段 3 保存的是接纳握手时的基地址，阶段 4 只把这些寄存值复制到任务表；两个阶段都不保存每任务一份 2048 bit展开结果。这样，已经进入命令接纳、WAIT_EVENT 或 READY 的任务不会因软件后续改写基地址寄存器而改变实际访问地址。新任务设置 ordered 时，`predecessor_mask` 记录全部仍未进入终态的较早任务；每条合法新任务记录仍未进入终态的较早 ordered 任务；GLOBAL_FENCE 还按照 `engine_mask` 记录所选执行单元中的较早任务。较早任务进入终态后，`task_live_mask` 使对应 bit 立即停止阻塞；槽经直接 ACK 或 AXI ACK 释放时，`released_slots_d` 和 `released_slots_q` 从全部保存值中删除该槽 bit，并过滤释放同拍及下一拍写入的新任务。
 
-阶段 6 的一轮扫描固定检查 16 个槽。扫描结束时没有候选，则后续周期从槽 0 开始新一轮。Control 任务不经过阶段 6～9；它在依赖与前序任务条件满足后进入 Control 候选位图，由 Control、Event 和完成共用的连续逐槽扫描器选择，轮末复查通过后先保存槽号和 `submit_seq`，下一周期再次复查并由 TS 内部完成。阶段 7 的窄快照和阶段 8 的发射解码器由四类执行单元共享；阶段 8 的输出写入四组独立发射暂存中的一组。某个执行单元暂停接收时，其他执行单元仍可继续运行或完成已有暂存的握手，但新的 Task Context 按最早任务次序逐项展开。
+阶段 5 的 WAIT_EVENT 检查器在槽 `TASK_SLOTS-1` 后回到槽 0，基准 16 槽配置从事件可见到对应任务状态更新最多需要 16 个周期。阶段 6 的一轮发射扫描检查 `TASK_SLOTS` 个槽。扫描结束时没有候选，则后续周期从槽 0 开始新一轮。Control 任务不经过阶段 6～9；它在依赖与前序任务条件满足后进入 Control 候选位图，由 Control、Event 和完成共用的连续逐槽扫描器选择，轮末复查通过后先保存槽号和 `submit_seq`，下一周期再次复查并由 TS 内部完成。阶段 7 的窄快照和阶段 8 的发射解码器由四类任务共享；阶段 8 的输出写入四组独立发射暂存中的一组。某类任务接口暂停接收时，其他任务接口仍可继续运行或完成已有暂存的握手，但新的 Task Context 按最早任务次序逐项展开。
 
 阶段 12 的 Event 发布、阶段 13 的完成通知以及 Control 执行共用一个任务槽计数器，同一周期对同一个槽并行检查三类条件；三类各自保存候选位图、变化标志和最早候选记录。某一类候选位图在扫描期间发生变化时，只取消该类本轮选择，下一轮从槽 0 重新检查。每轮最多选择一个待发布 Event 和一个待发送完成通知。完成持有槽一旦有效，在 LSC 接收前不会换成其他任务。AXI `CTL WAIT` 的周期计数不会暂停，配置的最大等待周期必须覆盖逐槽选择、候选变化后的重试、Event 发布暂存和前面候选等待所用的周期。
 
@@ -5309,7 +5619,7 @@ GRU 单时间步的硬件任务如下：
 | 7 | CME | 用 `VADD_RESCALE_I` 合成并转换为 $h_t$ 的整数 scale |
 | 8 | L1BUF | 最后一个 $h_t$ 写响应返回后，允许时间步 $t+1$ 开始 |
 
-单核 P0 只有一个 Matrix Engine，步骤 1 和步骤 2 按先后次序执行；DMA 可以与其重叠读取下一块权重，但不能声称两个 GEMM 同周期执行。
+单核 Matrix 子系统具有两个任务 context，步骤 1 和步骤 2 可以同时处于活动状态。两项 GEMM 共用 PE 和 L1 端口：一个任务进行地址准备、L1 读取或写回时，另一个任务可以推进其他阶段；两项同周期申请同一资源时由轮转逻辑选择。
 
 普通 RNN 每个时间步执行：
 
@@ -5515,14 +5825,12 @@ $$
 | 激活函数 | 选择函数和输入输出 scale | CME 执行 INT→FP32→INT |
 | Softmax / Norm | 生成行数、行长度、mask 和参数 | CME 多遍读取并写整数输出 |
 | 任务依赖 | 为生产者和消费者分配事件，把引用直接写入 CMD | Event Table 检查成功或失败终态 |
-| Matrix 执行 | 安排 GEMM、GEMM_ACCUM 和 GEMM_ZERO 的任务次序与 L1 区域 | 符合固定同精度方阵条件时使用 DiP；其他任务执行 `ST_MAC_MUL`、`ST_MAC_ACC`、可选旧部分和或 bias 读取以及写回 |
-| 物理地址配置 | 生成物理基地址并配置允许范围 | MIF 检查范围并发起 AXI 访问 |
+| Matrix 执行 | 安排 GEMM、GEMM_ACCUM、GEMM_ACCUM_HOLD 和清零任务的次序与 L1 区域 | Outer 与 Scalar 均使用共享 PE；本地部分和序列进入 Outer，普通 GEMM可在条件满足时轮转选择 Outer 或 Scalar |
+| 系统内存地址配置 | Python 编译器只分配存储区编号和 24-bit 区内偏移；C 工程在构建模型程序时给出各存储区物理基址和允许访问范围，驱动写入 LSC | 用提交时保存的基址加区内偏移形成物理地址；MIF 检查范围并发起 AXI 访问 |
 | 错误处理 | 读取错误状态，决定重试、复位或停止 | 停止新请求、排空并报告 |
 
 > [!important] 软件地址要求
-> 编译器生成配置、Runtime、固件和 C 驱动写入 NPU 的全局地址全部是 SoC 物理
-> 字节地址。五组 LSC 基地址、权重地址、输入输出地址和 DMA 全局地址都必须满足
-> `PA_W`，不得把 CPU 普通指针值直接写入 NPU 地址字段。
+> Python 编译器不得决定 SoC 物理基址。它只把 `base_select` 和 24-bit `byte_offset` 写入指令，并在清单中给出各存储区的已用字节数。生成的 C 头文件允许模型工程通过内存配置头或编译宏给出 `INPUT_BASE`、`WEIGHT_BASE`、`WORK_BASE`、`OUTPUT_BASE`、`KV_BASE`、`M_AXI_ADDR_BASE` 和 `M_AXI_ADDR_LIMIT`。这些值在编译 C 程序时确定。驱动必须检查 8B 对齐、40-bit 地址范围、区间容量和允许访问范围，再写入 LSC；不得把 CPU 普通指针值直接写入 NPU 地址寄存器。
 
 ### 18.1 上层模型编译器与低层汇编器
 
@@ -5557,7 +5865,7 @@ opcode、burst 参数、字节步长或显式 DMA/PACK/SPLIT。`MT/KT/NT`、L1 �
    Reshape 元素数；
 4. 把复合算子拆成 Matrix、Vector、Complex 和 DMA 任务；
 5. 把普通行主序权重整理成 Matrix 单元要求的 tile 存储形式；
-6. 依据张量使用区间分配 L1 和 DDR，保证同时有效的数据区域不会互相覆盖；若 Vector MUL 可能进入连续快速分支，还要强制 src0、src1 和 INT32 dst 三组区域两两不相交；
+6. 依据张量使用区间分配 L1 地址，并在 input、weight、work、output、kv 五类系统存储区内分别分配 24-bit 字节偏移，保证同时有效的数据区域不会互相覆盖；若 Vector MUL 可能进入连续快速分支，还要强制 src0、src1 和 INT32 dst 三组区域两两不相交；
 7. 自动加入输入 DDR→L1、常量 DDR→L1 和输出 L1→DDR 任务；
 8. 根据实际数据关系生成任务依赖；三个以上前置任务使用 `EVENT_JOIN` 树，
    不能简单地把互不相关的分支全部串行化；
@@ -5588,8 +5896,8 @@ opcode、burst 参数、字节步长或显式 DMA/PACK/SPLIT。`MT/KT/NT`、L1 �
 
 | 文件 | 内容 | 使用方 |
 | --- | --- | --- |
-| `<model>_model.h` | C 类型、数组声明、模型配置和尺寸宏 | 固件、Runtime、C 测试 |
-| `<model>_model.c` | 128-bit 指令数组、权重与常量数组、物理输入输出地址和提交批次 | 固件、Runtime、C 测试 |
+| `<model>_model.h` | C 类型、数组声明、模型配置、存储区编号与大小、可由模型工程覆盖的物理基址宏 | 固件、Runtime、C 测试 |
+| `<model>_model.c` | 128-bit 指令数组、权重与常量数组、存储区编号加区内偏移、提交批次和由 C 宏形成的设备地址配置 | 固件、Runtime、C 测试 |
 | `<model>.manifest.json` | 输入摘要、高层算子、低层任务、提交批次、目标信息和文件摘要 | 构建工具、测试程序 |
 
 使用 `--emit-raw` 时额外生成：
@@ -5602,11 +5910,10 @@ opcode、burst 参数、字节步长或显式 DMA/PACK/SPLIT。`MT/KT/NT`、L1 �
 | `<model>.runtime.json` | 输入输出信息、常量地址、提交批次和内存计划 | Runtime、测试程序 |
 
 当前指令已经包含执行参数，编译器不生成 `.desc.bin`，生成的 C 包也没有外部
-任务参数数组、地址或字节数。上层编译器在内存中调用低层汇编器；用
+任务参数数组。上层编译器在内存中调用低层汇编器；用
 `--emit-raw` 保存低层 JSON IR后，再单独调用 `npu_assembler.py`，所得命令
 镜像必须与 C 包中的指令数组逐字节一致。C 程序应从生成配置读取命令数、任务
-编号、输入输出地址、权重位置和提交批次，不允许再次手工排列权重或填写内部
-张量地址。
+编号、存储区编号、区内偏移、输入输出大小、权重位置和提交批次，不允许再次手工排列权重或填写内部张量地址。若系统内存位置发生变化，只需用新的 C 内存配置重新构建模型程序，不应重新运行 Python 编译器。
 
 ### 18.2 C 驱动的职责和文件划分要求
 
@@ -5697,6 +6004,46 @@ make regress
 manifest，`make check` 重新运行编译并比较文件摘要，`make test` 运行 24 条
 留出语句，`make regress` 依次使用 GCC、Clang 和 Sanitizer。
 
+### 18.5 大参数 Transformer 端到端测试
+
+大参数测试位于 `/home/etc/FPGA/Transformer_NPU/cmodel/examples/large_transformer`。模型输入为 `[1,4,64]`，包含一个 Transformer Encoder、4 个注意力 head、每个 head 宽度 16、FFN 宽度 1664，并为每个 token 输出 16 个词表分数。模型含 230672 个参数，估算执行 923648 次 MAC。输入、权重、中间结果与输出使用 INT8 Q5，矩阵部分和使用 INT32，LayerNorm、Softmax 和 GELU 中的复杂函数按 INT8→FP32→INT8 处理。
+
+主要矩阵如下，其中 \(C_{M\times N}=A_{M\times K}B_{K\times N}\)：
+
+| 计算 | 实例数 | M | N | K |
+| --- | ---: | ---: | ---: | ---: |
+| Q、K、V、注意力输出投影 | 4 | 4 | 64 | 64 |
+| 每个 head 的注意力分数 | 4 | 4 | 4 | 16 |
+| 每个 head 的注意力乘 V | 4 | 4 | 16 | 4 |
+| FFN 扩展 | 1 | 4 | 1664 | 64 |
+| FFN 压回 | 1 | 4 | 64 | 1664 |
+| 词表投影 | 1 | 4 | 16 | 64 |
+
+FFN 扩展的 N 轴分为 26 块，FFN 压回的 K 轴分为 26 块。K 分块先产生 INT32 部分和，全部 K 块完成后再写回 INT8 Q5 结果。底层 B 数据继续使用 `MT=8、KT=16、NT=8` 的硬件存储排列。该用例同时检查 N 分块、K 分块、部分和累加、结果重缩放、大权重数组和接近 10-bit命令编号容量的程序。
+
+固定编译结果包含 1003 条指令、126 个提交组和 230976 字节权重。模型参数数目为 230672，而生成权重数组多出 304 字节，是因为部分矩阵需要按 `KT=16、NT=8` 补齐末尾 tile，并按 8B 地址要求放置；这些填充值不属于可训练参数。CModel 执行 213881 个周期。编码器探针含 256 个 INT8 元素，其中 93 个元素与 Keras 参考完全相同，全部元素误差不超过 3 LSB，平均绝对误差为 0.86328125 LSB；词表输出含 64 个 INT8 元素，其中 24 个元素完全相同，全部元素误差不超过 2 LSB，平均绝对误差为 0.765625 LSB。两个输出均未出现 `-128` 或 `127`。
+
+RTL/Verilator 测试使用 1 MiB L1BUF 和 2 MiB 系统内存，按 126 个提交组执行全部 1003 条指令。测试输入、指令、权重、编码器输出和词表输出都带有 FNV-1a 摘要；加载前还检查命令编号连续、批次总数、opcode、8B 对齐、各系统存储区域互不重叠以及地址容量。RTL 对 256 字节编码器探针和 64 字节词表输出逐字节比较，不以少数采样点代替完整输出。
+
+当前 RTL 结果为 21181577 个周期、231232 次 AXI Master 读传输和 320 次写传输。全部 320 个输出字节与 CModel 完全相同；编码器输出摘要为 `212a0c90fedc1667`，词表输出摘要为 `51497d8a773dcb50`。测试结束标志为 `TB_LARGE_TRANSFORMER_E2E_PASS`。
+
+> [!note] 两种周期数不能直接比较
+> CModel 的 213881 个周期来自软件模型内部的任务与存储计数，主要用于同一软件模型前后版本的比较；RTL 的 21181577 个周期来自逐时钟 Verilator 仿真，包含 TaskScheduler 逐槽检查、L1 请求与响应、标量 Matrix 的逐元素乘加、AXI 传输和提交组之间的软件控制等待。两者对输出数据的要求相同，但计数层次不同，因此不能用二者相除得到硬件加速比。
+
+运行命令如下：
+
+```bash
+cd /home/etc/FPGA/Transformer_NPU/cmodel/examples/large_transformer
+make clean
+make test
+
+cd /home/etc/FPGA/Transformer_NPU/rtl
+make large-transformer-e2e
+```
+
+> [!important] 通过条件
+> CModel 测试必须同时满足完整输出误差、非零元素数、不同整数值数量、输出能量和无两端饱和值要求。RTL 测试必须接收全部 1003 条指令、执行全部 126 个提交组、完成 231232 次 AXI 读与 320 次 AXI 写，并确认 320 个输出字节及两个摘要与 CModel 一致。只有终端出现 `LARGE_TRANSFORMER_E2E_PASS` 和 `TB_LARGE_TRANSFORMER_E2E_PASS`，才表示软件参考与 RTL 两级测试全部通过。
+
 ---
 
 ## 19. 验证与验收要求
@@ -5720,6 +6067,7 @@ manifest，`make check` 重新运行编译并比较文件摘要，`make test` �
 每种 opcode 至少覆盖：
 
 - 6-bit软件操作码与内部 engine、8-bit执行单元 opcode 的解码关系；
+- 软件操作码 33、34 分别展开为 Matrix 内部操作码 `0x44`、`0x45`，并分别执行 `GEMM_ZERO_LOCAL`、`GEMM_ACCUM_HOLD`；35～63 必须返回 `ILLEGAL_OPCODE`；
 - `opcode[5:0]`、`command_id[9:0]`、三个 Event ID、任务选项、dtype 和 80-bit payload 的位段位置；
 - 三个事件字段、四个 1-bit任务选项、超时类别和 dtype；
 - CMD 低、高两拍的 `first/last` 次序、独立暂停和数据保持；
@@ -5764,28 +6112,40 @@ $$
   `DTYPE_UNSUPPORTED`；
 - 公开指令的乘数 1、右移 0、1、31、最接近且中点取偶数，以及 INT4/INT8/INT16 目的范围裁剪；
 - 标量 Matrix 模块直接 Task Context 测试中的 `[1]`、`[N]` 参数表、正/零/负 shift 与四种舍入方式；这些组合不作为公开指令编码能力；
-- 32×32-bit 乘积接近 INT64 极值时的裁剪；
+- 使用乘数 `32'hffff_ffff`，覆盖高 32 bit非零的正、负 signed64 累加值、零值、单位值和 32 组固定种子随机输入；
 - bias shape `[N]` 在全部 M 行上的使用；
 - BMM 外层计数；
 - `last_tile_valid_m/last_tile_valid_n/last_tile_valid_k`；
 - `RESIDUAL_ENABLE` 与 `ACCUM_FROM_SRC2` 非法同时设置；
 - `GEMM_ZERO`、中间 `GEMM_ACCUM` 和最终 `GEMM` 的 L1BUF 部分和次序；
-- 每个 K 位置都按 `ST_MAC_MUL` 后接 `ST_MAC_ACC` 的次序执行，signed32 乘积在两状态之间保持正确；
+- 标量分支每个 K 位置都按 `ST_MAC_MUL` 发出共享 PE 请求，再由 `ST_MAC_ACC` 等待返回、检查 tag 和格式并累加 signed32 乘积；PE 等待期间操作数和请求字段保持不变；
 - 每个 K 位置在 `ST_ADDR_PREP` 中依次经过偏移保存、相对地址形成和基地址相加三拍；A/B 请求、响应和错误地址必须使用保存的完整地址、valid 与 INT4 半字节选择，L1 暂停期间这些寄存值保持不变；
 - 每个输出元素在 `ST_START_OUTPUT` 中用三拍生成 C、src2、bias 和整数重缩放参数完整地址及 valid，再由 `ST_OUTPUT_CHECK` 检查 C valid并选择后续阶段；相关请求、响应、错误地址和写回必须使用保存值；
 - 构造 A、B、C、src2、bias 和外部整数重缩放项的高位越界、跨 8B beat及重缩放地址未对齐情况，确认对应 valid 为 0、任务返回 `ADDR_FAULT`，并且错误地址不会产生 L1 请求握手；
 - 使用 INT8 的 \(M=1,N=9,K=2\) tile B 检查第 0～7 列和第 8 列分别来自两个 N tile，输出必须为 `[14,10,6,2,-2,-6,-10,-14,-18]`；
-- 启用整数重缩放时，按 `ST_EP_MUL → ST_EP_ABS → ST_EP_SHIFT` 保存 signed128 乘积、正负号、绝对值、shift 和舍入方式；正右移继续按 `ST_EP_ROUND → ST_EP_INCREMENT → ST_EP_SIGN` 处理，零 shift 和负 shift 必须直接进入 `ST_EP_NARROW`；
+- 启用整数重缩放时，`ST_EP_MUL` 必须连续经历两个周期：第一周期保存 `requant_high_product_q` 和 `requant_low_product_q`，第二周期完成 65-bit 高部加法并保存 `requant_product_q`；所得 signed128 结果必须逐 bit 等于软件计算的 signed64×unsigned32 结果，两个乘法周期结束前不得进入 `ST_EP_ABS` 或发出写请求；
+- `ST_EP_ABS → ST_EP_SHIFT` 保存正负号、绝对值、shift 和舍入方式；正右移继续按 `ST_EP_ROUND → ST_EP_INCREMENT → ST_EP_SIGN` 处理，零 shift 和负 shift 必须直接进入 `ST_EP_NARROW`；
 - `ST_EP_NARROW` 的 signed64 最小值与最大值限制、`ST_EP_ZERO_POINT` 的 signed32 符号扩展加法以及 `ST_EP_CLIP` 的 INT4/INT8/INT16/INT32 检查必须分别与软件参考一致；
 - 128-bit 可变移位、舍入决定、128-bit 加一、符号恢复、signed64 限制和目标格式检查必须在对应寄存状态逐拍完成，验证探针不得观察到跳过必需状态或提前发出写请求；
-- INT16 4×4、INT8 8×8、INT4 16×16 的 DiP 分支逐元素结果与 signed64 软件参考一致，并检查任务确实选择 DiP 而不是标量分支；
+- Outer 的 INT16、INT8、INT4 结果逐元素与 signed64 软件参考一致，并通过 context 接收探针确认任务进入 Outer；
 - 正常指令生成的三种 `KT=16、NT=8` B tile 格式，以及模块级直接 Task Context 使用的 B 行优先格式；
-- DiP 点积三段寄存、PE 部分和一段寄存、格式/valid 对齐；物理阵列行数为 \(N\) 时，首行在 \(e_{N+3}\) 输出，第 \(m\) 个连续输入行在 \(e_{m+N+3}\) 输出；
-- `dip_segmented_adder64` 的 INT16 64-bit、INT8 两个 32-bit、INT4 四个 16-bit加法分别检查 lane 内进位和 lane 间禁止进位，并检查综合网表使用目标 FPGA 的专用进位资源；
-- DiP 的 `accum_rows_q` 必须综合成 FPGA RAM primitive，使用同步一写一读方式；综合报告不得显示该宽数组主要由触发器或 LUT 存储组成；
-- `dip_c_valid` 写入结果行、`ST_WRITE_ROW_LOAD` 同步读取结果行以及下一周期 `ST_WRITE_INIT` 使用读数据的次序必须逐拍检查；复位必须清除状态、结果行计数、读缓存 valid 和 DiP valid，不要求清除宽结果存储内容；
-- 不满足固定方阵条件、混合 INT8×INT4、bias、旧部分和、整数右移或 ReLU 时必须选择标量分支；
-- DiP 读写地址游标越过 20-bit L1 地址空间时返回 `ADDR_FAULT`，不得只截取低位继续访问；
+- `npu_shared_mac_pe_array` 的五种输入组合：INT16×INT16、INT8×INT8、INT4×INT4、INT8×INT4、INT4×INT8；检查基础乘积、逻辑乘积、1×64 bit、2×32 bit、4×16 bit贡献值和逐元素 signed32 返回；
+- 四个 group 同时启用时，dtype、group 使能、client tag 和 valid 与返回保持一致；Matrix 与 Vector 请求交错时返回 owner 正确；
+- `npu_matrix_psum_pipeline` 检查 tag、dtype、`elementwise=0`、`group_enable=4'b1111` 和 pair valid；错误返回必须结束当前计算并形成任务错误；一项请求未返回时 `request_slot_ready_o` 必须保持为 0；
+- 同一任务内，下一 K 小段 A/B 装载与上一次 PE 返回的部分和更新必须出现可观测的同时活动周期；请求未完成时不得覆盖保存的 tag 和末步标志；
+- `GEMM_ZERO_LOCAL → GEMM_ACCUM_HOLD → GEMM_ACCUM_HOLD → GEMM_ACCUM`，检查中间结果只写 Outer 的本地部分和 RAM，最终任务才提交 C；
+- 本地部分和 RAM的 M、N、C 地址或 C 行步长不一致时返回 `BAD_DESC` 并清除本地有效状态；
+- `npu_matrix_dual_context` 直接例化一个 Outer 控制器和一个 Scalar 控制器；检查不存在第二份 Outer 控制器，也不存在 Scalar/Outer 二次分类包装层；
+- 0x44 和 0x45 固定进入 Outer；0x42 在 Outer 支持或本地状态有效时进入 Outer，否则进入 Scalar；0x41、0x43 和其他任务进入 Scalar；
+- Outer 支持且没有本地状态的普通 0x40 在两个 context 都空闲时交替选择 Outer 与 Scalar；只有一侧可立即接收时选择该侧；
+- Outer 本地状态有效时，普通 GEMM仍可由 Scalar 接收；普通 GEMM与本地部分和任务同时处于活动状态时，两个 Matrix context 的 PE 请求和 L1 请求在持续冲突下都能得到服务；
+- 深度为 2 的 L1 请求 FIFO按输入握手次序输出；空 FIFO输入握手周期不得同时在输出侧直通，输出暂停时 93-bit payload保持；
+- FIFO满且同周期弹出队首时，输入侧 ready到下一周期才恢复；复位后占用数、head 与 tail回到空状态；
+- owner 必须在请求进入 FIFO的输入握手时写入内部 owner FIFO，L1 响应直接返回内部存储通道并送给匹配的 Matrix/Vector 及 Outer/Scalar 请求方；
+- Matrix 写请求进入请求 FIFO或由 L1 接受后，旁路缓存不得提前出现新数据；只有成功写响应完成握手后才允许填充，错误写响应不得填充；
+- 两个 Matrix 任务按不同于提交次序的先后完成，TaskScheduler 必须依据返回 `command_id` 更新正确任务；未知或重复编号置起协议错误，不能释放无关 active 记录；
+- 两项 Matrix active 都占用时阻止第三项握手；完成正确匹配一项的同周期允许接收新 Matrix 任务并复用该 active 项；
+- 外积分支读写地址游标越过 20-bit L1 地址范围时返回 `ADDR_FAULT`，不得只截取低位继续访问；
 - L1 请求或响应暂停时，当前 A、B、旧部分和、bias 和写回字段保持稳定；
 - 当前输出元素写响应返回后才推进到下一个列、行或 Batch；
 - `ORDERED=1`、事件等待和 Fence 禁止不符合先后要求的并行；
@@ -5804,7 +6164,10 @@ IVE 除原有逐元素操作外，还必须验证连续 MUL 快速分支：
 - 检查 src0/src1 各自的 L1 读请求数、INT32 写请求数和 `done_progress_o`；
 - 检查快速分支命中计数或内部活动状态，避免数值测试实际只经过标量分支；
 - 未对齐地址、广播、mask、不同输入格式、FMA 和非连续行距必须回到标量分支；
-- Packed MUL 的三段 valid、dtype、group 与结果保持同步，暂停写响应时结果缓存不得被覆盖；
+- 共享 PE 的三段 valid、dtype、group、Vector 本地 tag 与结果保持同步，暂停写响应时结果缓存不得被覆盖；
+- 通用 MUL 与 FMA 都必须向共享 PE 发出逐元素请求；FMA 的 INT32 `src2` 在 PE 返回后由 Vector 后处理相加；
+- ADD、SUB、MAX、MIN、CMP、SELECT、CLAMP 和 ReLU 不得申请共享 PE；Matrix 持续申请 PE 时，这些轻量操作仍能进入 `ST_EXEC`，但允许等待内部 L1 端口；
+- Matrix GEMM 与 Vector MUL/FMA 同时申请 PE时检查轮转次序、两方 tag、两方等待计数和结果；持续冲突下两方都必须得到服务；
 - 通用分支每个元素依次经过 `ST_ADDR_PREP`、`ST_ADDR_ROW_ADD`、`ST_ADDR_FINAL` 和 `ST_ADDR_CHECK`，五组地址、五组 valid 与四组 INT4 半字节选择在全部请求和响应等待周期保持不变；
 - 通用分支的普通计算结果对 INT4 低、高半字节写都必须经过 `ST_RMW_REQ/RSP`；测试分别预置相邻半字节为非零值，确认写低半字节时旧高半字节不变、写高半字节时旧低半字节不变，并确认奇数长度末字节的未使用高半字节保留旧值；模块级 `mask_false_keep_dst` 通过 `ST_KEEP_REQ/RSP` 取得旧 beat，不要求再进入 `ST_RMW_REQ/RSP`；
 - 连续 MUL 每次读取前必须经过 `ST_FAST_ADDR_CHECK`；每个输出对必须依次经过 `ST_FAST_WRITE_PREP` 和 `ST_FAST_WRITE_CHECK`，并检查保存的 48-bit地址、地址 valid、64-bit数据和 8-bit strobe；`ST_FAST_WRITE_REQ` 暂停期间这些寄存值保持不变，末尾单元素写的高 32 bit为 0 且 strobe 为 `8'h0f`；
@@ -5812,6 +6175,8 @@ IVE 除原有逐元素操作外，还必须验证连续 MUL 快速分支：
 - 使用长度 9 的 INT8 快速 MUL 覆盖 8 元素首拍、1 元素末拍和行切换，最终进度必须为 9；
 - 编译器端到端测试必须检查连续 MUL 的 src0、src1、dst 占用区域两两不相交；构造相交分配时，编译器应在生成 Task Context 前报错，因为当前 IVE 不产生相应的 `ADDR_OVERLAP`；
 - 快速分支与标量分支在复位、L1 错误和最后写响应后的完成时刻保持相同的软件可见规则。
+- Matrix 成功写回完整 64-bit beat后，Vector 对同地址的读取命中内部旁路；部分字节有效、较新 Matrix 写、Vector 写、DMA 写、CME 写和外部 L1 窗口写必须阻止旧数据命中；
+- 开启和清除内部旁路后的最终 Vector 结果逐字节一致，旁路命中只减少 L1 请求，不改变 Event 等待关系。
 
 ### 19.5 Complex Engine 测试
 
@@ -5867,6 +6232,8 @@ C model 的函数误差测试必须覆盖完整支持区间，不能只检查少
 - CFE 到 TS；
 - DMA 到 MIF；
 - TS 到执行单元；
+- Outer 与 Scalar 到 Matrix PE 路由、Matrix 到共享 PE、Vector 到共享 PE；
+- Outer 与 Scalar 到 Matrix L1 路由、Matrix 与 Vector 到内部存储通道、内部存储通道到 L1 请求 FIFO以及 FIFO到 L1BUF；
 - 每个 L1BUF 读写端口；
 - AXI AW、W、B、AR、R；
 - 执行单元 done 接口。
@@ -5879,20 +6246,39 @@ beat 的 data 和 AXI 控制字段必须保持；CFE 到 TS 暂停时，完整 1
 
 TaskScheduler 的 Event 发布和完成持有槽至少检查：
 
-1. 一个带普通 signal Event 的任务完成后，先保存终态，再把表项编号写入 `event_publish_pending_slot_q`，下一周期才修改 Event Table；
-2. Control、Event 发布和完成通知共用一个连续任务槽计数器，三类在同一周期检查同一个槽，并各自保存候选位图、变化标志和最早候选；
-3. 扫描轮中途新增较早候选，或任何候选被移除时，对应类别在轮末不得产生选择脉冲，下一轮重新检查；
-4. 扫描轮末产生选择脉冲前，必须再次检查获胜项仍符合要求，并检查其 `submit_seq` 与扫描保存值一致；
-5. 多个任务形成终态时，Event 按 `submit_seq` 从小到大可见，每个扫描轮最多选择一个；
-6. 每个普通 signal Event 恰好发布一次，处于发布暂存或 `event_published=1` 的任务不会再次写入；
-7. `EVENT_REARM` 直接完成 generation 更新，不占用普通 Event 发布暂存；
-8. 最早 `notify` 任务的 Event 尚未发布时，不得发送后提交任务的完成通知；
-9. `completion_valid_o=1 && completion_ready_i=0` 时，持有槽编号、command ID、engine、opcode、status、错误地址、progress 和中断请求字段逐周期保持不变；
-10. 完成握手清除持有槽 valid 与对应 `notify`，但任务表项在软件 ACK 前仍不可复用；
-11. `CTL WAIT` 的超时计数覆盖逐槽选择、候选变化后的重试、Event 发布暂存和前面候选等待所用的周期，并在 Event 终态可见时优先返回事件结果；
-12. 外部复位和受控软复位都清除共用扫描器状态、`completion_hold_valid_q` 与 `event_publish_pending_valid_q`，复位后不得出现旧选择脉冲、旧完成通知或旧 Event 写入；
-13. 正常 stop 先关闭 AXI CMD 接收，再依次等待命令入口和 CFE 排空；检查 TS 的 `enable_i=accept_new_cmd_o || !cfe_idle` 能把停止请求前已经进入 CFE 的命令全部写入任务表；
-14. 受控软复位在命令入口与 CFE 都非空时仍可完成，内部复位后这些前端命令和响应必须消失；构造未 ACK 的终态任务时，`scheduler_idle_o` 保持 0 而 `scheduler_quiescent_o` 可以为 1，`soft_reset_done_o` 不得等待该 ACK。
+1. WAIT_EVENT 检查器每周期只检查一个任务槽并只读取该槽的两个 Event Table 表项；AND 与 OR 两种 Event 组合必须得到正确结果；
+2. WAIT_EVENT 检查结果必须先保存槽号、`submit_seq`、成功标志和失败标志，下一周期复查任务仍为 WAIT_EVENT 且 `submit_seq` 未变后才能修改状态；
+3. Event 发布暂存与当前 WAIT_EVENT 检查引用相同时，检查器必须采用本周期即将发布的 SUCCESS 或 ERROR；普通依赖失败、`EVENT_JOIN` 的 AND/OR 组合和 generation 不同均须覆盖；
+4. 已经寄存成功结果后拉高 abort 时，任务必须进入 `ABORTED`，旧检查结果不得把任务改为 READY；槽被释放并由新任务复用时，旧结果也不得修改新任务的状态、status 或 `submit_seq`；
+5. 一个带普通 signal Event 的任务完成后，先保存终态，再把表项编号写入 `event_publish_pending_slot_q`，下一周期才修改 Event Table；
+6. Control、Event 发布和完成通知共用一个连续任务槽计数器，三类在同一周期检查同一个槽，并各自保存候选位图、变化标志和最早候选；
+7. 扫描轮中途新增较早候选，或任何候选被移除时，对应类别在轮末不得产生选择脉冲，下一轮重新检查；
+8. 扫描轮末产生选择脉冲前，必须再次检查获胜项仍符合要求，并检查其 `submit_seq` 与扫描保存值一致；
+9. 多个任务形成终态时，Event 按 `submit_seq` 从小到大可见，每个扫描轮最多选择一个；
+10. 每个普通 signal Event 恰好发布一次，处于发布暂存或 `event_published=1` 的任务不会再次写入；
+11. `EVENT_REARM` 直接完成 generation 更新，不占用普通 Event 发布暂存；
+12. 最早 `notify` 任务的 Event 尚未发布时，不得发送后提交任务的完成通知；
+13. `completion_valid_o=1 && completion_ready_i=0` 时，持有槽编号、command ID、engine、opcode、status、错误地址、progress 和中断请求字段逐周期保持不变；
+14. 完成握手清除持有槽 valid 与对应 `notify`，但任务表项在软件 ACK 前仍不可复用；
+15. `CTL WAIT` 的超时计数覆盖逐槽选择、候选变化后的重试、Event 发布暂存和前面候选等待所用的周期，并在 Event 终态可见时优先返回事件结果；
+16. 外部复位和受控软复位都清除 WAIT_EVENT 检查结果、共用扫描器状态、`completion_hold_valid_q` 与 `event_publish_pending_valid_q`，复位后不得出现旧状态更新、旧选择脉冲、旧完成通知或旧 Event 写入；
+17. 正常 stop 先关闭 AXI CMD 接收，再依次等待命令入口和 CFE 排空；检查 TS 的 `enable_i=accept_new_cmd_o || !cfe_idle` 能把停止请求前已经进入 CFE 的命令全部写入任务表；
+18. 受控软复位在命令入口与 CFE 都非空时仍可完成，内部复位后这些前端命令和响应必须消失；构造未 ACK 的终态任务时，`scheduler_idle_o` 保持 0 而 `scheduler_quiescent_o` 可以为 1，`soft_reset_done_o` 不得等待该 ACK；
+19. 任一任务仍为 WAIT_EVENT 时，`scheduler_quiescent_o` 必须保持 0。
+20. Matrix 允许两项 active；两个任务完成次序交换时，必须按 `matrix_done_command_id_i` 分别更新正确任务表项；
+21. Matrix 完成编号没有匹配项或同时匹配两项时，`matrix_done_protocol_error_o` 必须置 1，两个 active 记录和无关任务状态保持不变；
+22. Matrix 完成与新任务接收同周期发生时，只有完成编号正确匹配时才允许复用释放的 active 项；
+23. Matrix context PE/L1 owner FIFO 在请求握手时写入来源，返回握手时弹出；FIFO 满且同周期弹出时仍可接收新请求；
+24. PE 或 L1 在 owner FIFO 为空时给出返回，必须置起对应协议错误，不得把返回送给任一活动 context。
+25. `npu_mv_l1_request_fifo` 从空状态接受请求时，输出 valid最早在下一周期出现；输出暂停期间 write、20-bit addr、64-bit wdata 和 8-bit wstrb保持不变；
+26. L1 请求 FIFO深度为 2，连续接受两项后必须按相同次序输出；满状态同周期弹出时输入 ready仍为 0，下一周期才允许再次输入；
+27. Matrix/Vector owner 在请求 FIFO输入握手时记录；请求在 FIFO中等待期间，即使后续有其他请求提出，也不得改变既有 owner 次序；
+28. L1 响应不经过请求 FIFO，必须直接返回内部存储通道；成功 Matrix 写响应后才填充旁路缓存，写请求入队、L1 请求握手或失败响应均不得填充；
+29. `reset_n=0` 清空 L1 请求 FIFO及 owner FIFO；复位释放后不得输出复位前保存的请求或返回来源。
+
+TaskScheduler 参数测试必须执行 `make scheduler-param-test`，分别以 `TASK_SLOTS=1`、`3`、`5` 编译并运行 RTL。每种配置至少检查任务接纳、终态 Event 使等待者继续执行、等待任务禁止 `scheduler_quiescent_o` 置位，以及槽号在 `TASK_SLOTS-1` 后回到 0。基准 16 槽测试还要检查 Event 发布与槽 0 检查发生在同一周期时的结果前递，以及从槽 0 到槽 15 的 15 个扫描间隔。
+
+大参数 Transformer 验证必须执行第 18.5 节的 CModel 与 RTL 两级测试。固定用例至少包含 230672 个参数、`[4,64]×[64,1664]` 与 `[4,1664]×[1664,64]` 两类大矩阵、1003 条指令和 126 个提交组；RTL 必须逐字节比较全部 320 个输出元素，并核对指令、权重、输入、输出摘要及 AXI 读写次数。
 
 L1BUF 当前使用一次请求加一次响应的单 beat 接口。验证环境应随机暂停请求和响应，
 并检查：
@@ -5931,11 +6317,7 @@ L1BUF 当前使用一次请求加一次响应的单 beat 接口。验证环境�
 | `all_mask_row_count` | 64 | Softmax 全 mask 行数 |
 | `ecc_corrected_count` | 64 | 已修正 ECC 次数 |
 
-后续若实现 `PERF_COUNTER[0～15]`，可按上表顺序分配。功能级调度器的公开
-`npu_perf_t` 还保留 `matrix_accum_active_cycles`、
-`matrix_overlap_cycles` 和 `matrix_hazard_stall_cycles` 作为后续并行 Matrix
-研究使用的 C model 字段。当前顺序执行 RTL 不实现相应的两个任务区，
-这些字段也不占用当前 LSC 地址。
+后续若实现 `PERF_COUNTER[0～15]`，可按上表顺序分配。`npu_matrix_vector_engine` 当前已经输出 Matrix/Vector PE 授予次数、两方 PE 等待周期、请求冲突周期和 PE 空闲周期；`npu_matrix_dual_context` 还输出两个 context 的 active、PE/L1 请求与接收状态和 owner FIFO 占用数。这些信号目前用于验证观察，尚未连接到 LSC 的软件可见地址。
 
 后续加入硬件计数器时，需要同时增加 LSC 寄存器、计数增量端口、freeze/clear
 控制和逐项验证；在此之前，软件读取上述保留地址只能得到 0。
@@ -5944,10 +6326,7 @@ L1BUF 当前使用一次请求加一次响应的单 beat 接口。验证环境�
 
 ## 20. 当前 RTL 参考配置与后续参数
 
-下表列出当前执行单元 RTL 的固定能力。功能参考结果可以继续使用 C model，
-但 C model 中的 Matrix 双任务区、IVE lane、CME 暂存和多 outstanding 周期参数
-不代表当前 RTL 时序。第 15.3 节还列出了 LSC 能力寄存器常量与执行单元之间的
-已知差异；完成修正前，RTL 验证必须以实际状态机和端口为准。
+下表列出当前执行单元 RTL 的固定能力。Matrix 双任务 context、Matrix/Vector 共享 PE、内部旁路和深度为 2 的 L1 请求 FIFO已经进入 RTL；C model 的周期参数仍需与实际 ready/valid、L1 等待和 PE 仲裁结果分别比较。第 15.3 节还列出了 LSC 能力寄存器常量与执行单元之间的已知差异；完成修正前，RTL 验证必须以实际状态机和端口为准。
 
 功能级调度器提供 `npu_estimate_task_cycles()` 作为可重复的参考周期数。周期数
 包含内联任务展开、固定检查、输入与输出 beat、L1 或 DDR 参考延迟、逐元素
@@ -5997,17 +6376,22 @@ L1 ECC 数组及 workspace 数组。任意一组失败时返回 `BAD_DESC`，调
 | 每客户端端口未完成 L1 请求数    |                    1 | 返回队列资源                     |
 | L1 长等待提升计数器         |                  未实现 | 当前使用逐请求轮询；后续可增加等待周期提升      |
 | Matrix `MT/KT/NT`   |             `8/16/8` | 64-bit 操作数供数速度             |
-| Matrix DiP 物理阵列 |                 `4×4` | 固定同精度方阵使用；逻辑方阵为 INT16 4×4、INT8 8×8、INT4 16×16 |
+| Matrix context 数 | 2 | context0 为 Outer；context1 为 Scalar；普通 Outer 可执行 GEMM在两者均空闲时轮转选择 |
+| 共享 PE group | 4 | 每组 16 个 4×4 基础乘法器；Matrix 与 Vector MUL/FMA 共用 |
+| PE 数据类型组合 | INT16×INT16、INT8×INT8、INT4×INT4、INT8×INT4、INT4×INT8 | 逐元素乘积或分段贡献值 |
+| 本地部分和 RAM | Outer 为 4096×32 bit；Scalar 不包含 | `GEMM_ZERO_LOCAL`、`GEMM_ACCUM_HOLD` 和最终提交 |
+| Matrix-Vector 旁路缓存 | 2 项 × 64 bit beat | 保存地址标签、数据和逐字节有效状态 |
+| Matrix-Vector L1 请求 FIFO | 2 项 × 93 bit | 非直通；按接收次序保存 write、addr、wdata 和 wstrb |
 | Matrix 临时累加宽度       |             signed64 | 最大 K、bias 和 residual 测试    |
 | IVE 通用标量分支         |                    1 元素 | 广播、mask、FMA 和非乘法操作 |
-| IVE Packed MUL 每次请求 | INT16 1 个、INT8 4 个、INT4 16 个 | 一个输入 beat分别需要 4、2、1 组 |
+| IVE 连续 MUL 每次 PE 请求 | INT16 1 个、INT8 4 个、INT4 16 个 | 一个输入 beat分别需要 4、2、1 次请求 |
 | CME 同时接受数学请求数       |                    1 | 后续增加数学单元副本时的函数周期数          |
 | CME FP32 暂存数组       |                    0 | 后续可为 Softmax 或 Norm 增加片内暂存 |
 | CME 最大 `length`     |                  256 | 长序列通过多条任务拆分                |
 | `STAT_SUMSQ` 临时宽度   |             signed64 | signed32 平方与多元素累加的溢出测试     |
 | DMA 单任务 outstanding |                    1 | 后续增加请求队列时的 DDR 返回次序        |
 | MIF outstanding 总数  |                    1 | 后续增加 AXI ID 资源             |
-| AXI 最大 burst        |               1 beat | 后续合并连续访问                   |
+| AXI burst             | 读 1～16 beat，写 1 beat | 后续可增加连续写合并                |
 | Task 表项数            |                   16 | 终态 ACK 速度                  |
 | 外部任务参数槽数            |                    0 | 当前任务参数直接来自指令和片上展开          |
 | CFE FIFO 深度         |                8 CMD | 外部主控 CPU 连续提交              |
@@ -6485,5 +6869,55 @@ TFLite Interpreter 运行后的结果；$y_k^{\mathrm{Keras}}$ 是训练后 Kera
 
 CME 数学单元 `approx_mode=0` 的函数范围、误差要求和可变延迟规则见第 13.10 节。若后续加入新的 `approx_mode`，必须为每个模式增加独立的十六进制 FP32 系数表、操作次序、误差限制和周期测量结果。
 
+### 20.3 当前 Matrix-Vector 结构的综合记录
+
+当前生产 RTL 是一个 Outer 控制器、一个 Scalar 控制器、一套共享 PE、Matrix/Vector 内部存储通道以及深度为 2 的 L1 请求 FIFO。综合使用 Vivado 2024.2，命令如下：
+
+```bash
+cd rtl/syn/vivado_100mhz
+make syn BUILD_DIR=build_shared_mv_outer_scalar_fifo_final JOBS=1
+```
+
+综合报告保存在 `rtl/syn/vivado_100mhz/build_shared_mv_outer_scalar_fifo_final/`。下表数值均来自该目录中的报告，不使用估计值代替。
+
+| 项目 | 当前记录 |
+| --- | --- |
+| RTL 提交 | `4931d13` |
+| 目标器件 | `xc7a200tfbg484-3` |
+| 目标频率 | 100MHz；周期 10.000ns；时钟不确定度 0.200ns |
+| Slice LUT | 92,344 / 134,600，68.61% |
+| Slice Register | 36,594 / 269,200，13.59% |
+| BRAM | 260 个 RAMB36、4 个 RAMB18 |
+| DSP | 180 |
+| 综合后 WNS / TNS | -10.177ns / -22,634.737ns |
+| 综合后 setup 失败端点数 | 5,168 |
+| 综合后 WHS / THS | -0.010ns / -1.052ns |
+| 最差 setup 数据路径 | 19.693ns，35 级逻辑 |
+| 最差 setup 起点 | Outer context 的 `b_load_k_q_reg[0]/C` |
+| 最差 setup 终点 | Scalar context 的状态寄存器 `CE` |
+| 布局布线后 WNS / TNS | 尚无可使用结果；本轮没有生成 post-route 报告 |
+
+当前 L1BUF 使用 256 个 RAMB36，Outer 本地部分和 RAM 使用 4 个 RAMB36。报告中的 LUTRAM 数量为 0，L1 存储数组没有改用触发器阵列。主要模块面积如下：
+
+| 模块 | LUT | FF | RAMB36 | DSP |
+| --- | ---: | ---: | ---: | ---: |
+| Matrix-Vector Engine | 54,120 | 16,079 | 4 | 114 |
+| Matrix Dual Context | 42,760 | 10,048 | 4 | 72 |
+| Outer context | 37,877 | 6,672 | 4 | 16 |
+| Scalar context | 4,694 | 3,311 | 0 | 56 |
+| 共享 MAC PE | 5,633 | 2,304 | 0 | 0 |
+| 内部存储通道 | 1,240 | 1,035 | 0 | 0 |
+| L1 请求 FIFO | 99 | 190 | 0 | 0 |
+
+加入 L1 请求 FIFO 前，Outer 加 Scalar 结构的综合结果为 92,242 LUT、36,410 FF、WNS -11.855ns、TNS -31,558.292ns、5,699 个 setup 失败端点、39 级逻辑和 21.371ns 最差数据路径。加入 FIFO 后增加 102 LUT 和 184 FF，WNS 改善 1.678ns，TNS 减少 8,923.555ns，setup 失败端点减少 531 个，最差路径减少 4 级逻辑和 1.678ns。这说明请求侧寄存隔离对 ready 长组合路径有效，但仍不足以满足 100MHz。
+
+`place_design` 与 `phys_opt_design` 已完成，物理优化给出的估计 WNS 为 -8.628ns。`route_design` 在 Phase 5.2 报告拥堵，节点重叠数先为 105,299，随后降为 33,735；本轮没有生成 post-route DCP、时序摘要或资源报告。中间 WNS -8.285ns 不能作为布局布线后的验收数据。报告中没有出现 `core_clk_i` 缺少 `HD.CLK_SRC` 的警告；OOC 顶层端口仍有 `HD.PARTPIN_LOCS` 提示。
+
+100MHz 与 40,000 LUT 目标尚未满足。当前顶层比面积目标多 52,344 LUT，约为目标的 2.31 倍；Matrix-Vector Engine 本身使用 54,120 LUT。后续必须优先缩减 Outer context 的地址计算、控制选择与部分和处理逻辑，并继续在 context 请求、地址生成和写回位置加入寄存阶段。
+
+采用两套完整 Outer 控制器的对照方案保存在 `build_shared_mv_dual_final3`。该方案综合后使用 133,321 / 134,600 Slice LUT，即 99.05%，WNS 为 -12.239ns，最差数据路径为 21.501ns。当前 Outer 加 Scalar 结构相对该方案减少 40,977 LUT，并保留本地部分和任务与独立 GEMM同时 active 的能力。
+
+最终 RTL 回归在提交 `0ebd9cb` 的工作树上执行，RTL 内容与 `4931d13` 相同。`make lint`、`make -C rtl/engines test`、`make engine-test`、`make matrix-stream-test`、`make system-test` 和 `make scheduler-dual-matrix-test` 均成功。覆盖结果包括 INT16、INT8、INT4、Matrix/Vector 共用 PE、Matrix 写回到 Vector 的内部旁路、L1 请求 FIFO随机停顿，以及本地部分和任务与独立 GEMM同时 active。连续 Matrix 测试提交 12 条任务，其中 8 条 GEMM、4 条 GEMM_ACCUM，任务接收、发射和完成数量均为 12，任务间 gap 为 0。
+
 > [!summary] 首版硬件实现范围
-> 单核首版由 64-bit AXI/MIF、64-bit L1BUF 客户端接口、Command Front End、TaskScheduler、DMA、Matrix、Integer Vector、Complex Math、L1BUF、LSC、CRG 和 WDT 组成。每条 128-bit CMD 在 64-bit 接口上使用低、高两个 beat；事件和任务选项直接位于 CMD。TaskScheduler 使用命令接纳寄存级、接收检查解码器、Control 执行快照、发射窄快照、共享发射解码器和四组发射暂存；L1BUF 为每个客户端设置固定响应寄存逻辑。模型张量只采用 INT4、INT8、INT16、INT32；Matrix 的固定方阵分支使用四段寄存的 DiP 阵列、按整数格式分段的部分和加法以及同步一写一读宽结果存储，其他 Matrix 任务使用地址准备、乘法与累加分开的逐元素分支以及逐段寄存的整数重缩放；IVE 的连续 MUL 使用三段寄存的多格式乘法器组并保存快速写后的进度与动作，其他向量任务先保存当前元素地址再执行标量状态机；CME 的 SUMSQ 分成平方与累加状态，Exp 的范围整数使用五个寄存状态完成最近偶数舍入，复杂函数在 CME 内部执行 `INT→FP32→INT`，F2I 在数学响应后经过五个寄存状态。软件通过指令和 C 配置给出物理地址、shape、stride、scale 和 zero point，硬件按模块接口与功能时序完成任务。
+> 单核首版由 64-bit AXI/MIF、64-bit L1BUF 客户端接口、Command Front End、TaskScheduler、DMA、Matrix-Vector Engine、Complex Math、L1BUF、LSC、CRG 和 WDT 组成。每条 128-bit CMD 在 64-bit 接口上使用低、高两个 beat；事件和任务选项直接位于 CMD。TaskScheduler 使用命令接纳寄存级、WAIT_EVENT 逐槽检查及结果寄存、接收检查解码器、Control 执行快照、发射窄快照、共享发射解码器和四组发射暂存；Matrix 使用两项 active 记录并按完成 `command_id` 查找任务。Matrix-Vector Engine 是 Matrix 与 Vector 共用的物理执行模块，包含 Outer context、Scalar context、Vector 控制器、一套可配置多精度 MAC PE、内部 L1 仲裁、深度为 2 的 L1 请求 FIFO和 2 项 Matrix 到 Vector 旁路缓存。Outer 执行分块外积并保存本地部分和 RAM，Scalar 执行逐元素乘加和后处理。Matrix 乘法与 Vector MUL/FMA 都使用共享 PE，Vector 的其他逐元素操作使用轻量整数 ALU。模型张量只采用 INT4、INT8、INT16、INT32；CME 的 SUMSQ 分成平方与累加状态，Exp 的范围整数使用五个寄存状态完成最近偶数舍入，复杂函数在 CME 内部执行 `INT→FP32→INT`，F2I 在数学响应后经过五个寄存状态。软件通过指令和 C 配置给出物理地址、shape、stride、scale 和 zero point，硬件按模块接口与功能时序完成任务。
