@@ -24,7 +24,7 @@ sequenceDiagram
     participant P as RunCodegen
     participant R as 全局注册表
     participant C as acme_npu 编译器
-    participant M as Runtime Module
+    participant M as 运行时模块
     P->>R: 查找 relax.ext.acme_npu
     R-->>P: PackedFunc
     P->>C: functions, options, constant_names
@@ -66,7 +66,7 @@ TVM_FFI_STATIC_INIT_BLOCK() {
 
 | 格式 | 优点 | 缺点 | 推荐使用阶段 |
 | --- | --- | --- | --- |
-| JSON 图 | 容易查看、适合早期联调 | 体积大、解析慢、字段类型限制多 | 空壳与首个真实运算 |
+| JSON 图 | 容易查看、适合早期联调 | 体积大、解析慢、字段类型限制多 | 空壳与第一个真实运算 |
 | FlatBuffer / 自定义表 | 兼顾可扩展与读取速度 | 需要格式工具与兼容策略 | 稳定的图级运行时 |
 | 命令二进制 | 加载快、接近硬件 | 调试困难、重定位复杂 | 固件协议稳定后 |
 | 混合包 | 元数据可读，命令段紧凑 | 打包器更复杂 | 产品阶段 |
@@ -81,7 +81,7 @@ TVM_FFI_STATIC_INIT_BLOCK() {
 收集每个参数和返回值的：
 
 - 名称与顺序；
-- shape、dtype、设备；
+- 形状、数据类型、设备；
 - 是否为常量；
 - 允许的步长；
 - 别名与原地写要求；
@@ -95,11 +95,11 @@ TVM_FFI_STATIC_INIT_BLOCK() {
 
 ### 步骤 3：选择数据布局
 
-根据运算、dtype、tile 和消费者选择布局。若生产者与消费者在同一个组合函数内，可保留 NPU 私有布局；外部函数输入输出必须遵守 ABI，或显式插入重排运算。
+根据运算、数据类型、分块和消费者选择布局。若生产者与消费者在同一个组合函数内，可保留 NPU 私有布局；外部函数输入输出必须遵守 ABI，或显式插入重排运算。
 
 ### 步骤 4：工作区与生命周期
 
-对内部值做存活区间分析，复用不重叠的缓冲区。片上存储不足时选择更小 tile、分阶段执行或使用片外工作区。工作区大小应是输入尺寸的确定函数，并写入元数据。
+对内部值做存活区间分析，复用不重叠的缓冲区。片上存储不足时选择更小分块、分阶段执行或使用片外工作区。工作区大小应是输入尺寸的确定函数，并写入元数据。
 
 ### 步骤 5：命令生成
 
@@ -121,7 +121,7 @@ TVM_FFI_STATIC_INIT_BLOCK() {
 2. 编译器预重排后把常量嵌入 NPU 模块；
 3. 常量单独保存为权重包，多个模型函数共享。
 
-预重排可以减少每次启动工作，但必须把源常量散列值、目标布局、dtype、编译器版本和硬件型号写入缓存键。常量内容变化后不得复用旧结果。
+预重排可以减少每次启动工作，但必须把源常量散列值、目标布局、数据类型、编译器版本和硬件型号写入缓存键。常量内容变化后不得复用旧结果。
 
 ## 16.6 选项与 Target
 
@@ -145,7 +145,7 @@ npu_options = {
 若后端接受图结构，可继承 TVM 的 `JSONSerializer`。v0.24.0 Example NPU 的访问器取得组合函数 `Composite` 属性，把调用参数变为 JSON 节点输入，再以 `runtime.ExampleNPUJSONRuntimeCreate` 建立模块。这条路线适合快速搭建，但真实项目通常还要写入：
 
 - 完整运算属性；
-- 每个输入输出的 shape 与 dtype；
+- 每个输入输出的形状与数据类型；
 - 常量索引；
 - 数据布局；
 - 工作区；
@@ -181,7 +181,7 @@ endif()
 2. 一个组合函数生成一个带预期 type key 的 Module；
 3. 同一输入多次编译产物散列值稳定；
 4. 属性和常量正确进入产物；
-5. 非法尺寸、dtype、对齐和 ABI 得到明确错误；
+5. 非法尺寸、数据类型、对齐和 ABI 得到明确错误；
 6. 导出后在新进程加载；
 7. 调试产物能从命令序号回到 Relax 节点；
 8. 仅运行时构建不包含编译器依赖。
@@ -190,5 +190,5 @@ endif()
 
 - [External Library Dispatch](https://tvm.apache.org/docs/arch/external_library_dispatch.html)
 - [Code Generation](https://tvm.apache.org/docs/arch/codegen.html)
-- [Example NPU codegen](https://github.com/apache/tvm/blob/v0.24.0/src/relax/backend/contrib/example_npu/codegen.cc)
+- [Example NPU 代码生成](https://github.com/apache/tvm/blob/v0.24.0/src/relax/backend/contrib/example_npu/codegen.cc)
 - [Example NPU CMake](https://github.com/apache/tvm/blob/v0.24.0/cmake/modules/contrib/ExampleNPU.cmake)

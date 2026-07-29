@@ -21,7 +21,7 @@ updated: 2026-07-29
 
 - NPU 指令可由循环级程序稳定表达；
 - 编译器能够直接控制片上缓冲区、DMA、矩阵或向量单元；
-- 希望 TVM 调度和自动搜索决定 tile 与执行次序；
+- 希望 TVM 调度和自动搜索决定分块与执行次序；
 - 需要 TVM Tensor 直接驻留在 NPU 设备内存；
 - 需要多个 TIR 内核以统一设备队列执行；
 - 团队可以长期维护 Target、代码生成、运行时和测试。
@@ -32,7 +32,7 @@ updated: 2026-07-29
 
 ```mermaid
 flowchart LR
-    A["TargetKind<br/>编译期能力"] --> B["TIR Pipeline<br/>调度与降低"]
+    A["TargetKind<br/>编译期能力"] --> B["TIR 编译流程<br/>调度与逐级转换"]
     B --> C["target.build.acme_npu<br/>目标翻译"]
     C --> D["runtime.Module<br/>设备函数"]
     D --> E["DeviceAPI<br/>内存/复制/流/同步"]
@@ -51,7 +51,7 @@ flowchart LR
 - `firmware_abi`：所需固件协议版本；
 - `supports_async_copy`：异步复制能力。
 
-### TIR Pipeline
+### TIR 编译流程
 
 把通用 PrimFunc 转为设备可处理的形式，包括循环规范化、内存作用域、缓冲区展平、内建函数降低和主机设备函数分离。每个 Pass 的输入条件要明确。
 
@@ -112,7 +112,7 @@ bb = sch.cache_read(block, 1, "npu.sram")
 cc = sch.cache_write(block, 0, "npu.sram")
 ```
 
-调度只是建立程序组织。要真正使用矩阵指令，还需 Tensor Intrin 或后端内建调用，并保证描述函数、实现函数、缓冲区步长和 dtype 完全一致。
+调度只是建立程序组织。要真正使用矩阵指令，还需 Tensor Intrin 或后端内建调用，并保证描述函数、实现函数、缓冲区步长和数据类型完全一致。
 
 ## 18.5 Tensor Intrin
 
@@ -199,7 +199,7 @@ TVM_FFI_STATIC_INIT_BLOCK() {
 6. 增加矩阵 Tensor Intrin；
 7. 增加片上存储和 DMA；
 8. 增加多流、异步复制和自动搜索；
-9. 接到 Relax pipeline；
+9. 接到 Relax 编译流程；
 10. 测试导出、加载和远程运行。
 
 ## 18.10 官方依据

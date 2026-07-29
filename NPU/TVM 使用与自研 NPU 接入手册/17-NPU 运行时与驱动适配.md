@@ -13,7 +13,7 @@ updated: 2026-07-29
 # 17. NPU 运行时与驱动适配
 
 > [!abstract] 本章内容
-> 本章从 runtime.Module 的角度说明模块创建、常量初始化、输入输出绑定、设备内存、命令提交、事件同步、序列化和错误处理。BYOC 首版通常不需要实现完整 DeviceAPI，但仍需一个可靠的 NPU Runtime Module。
+> 本章从 runtime.Module 的角度说明模块创建、常量初始化、输入输出绑定、设备内存、命令提交、事件同步、序列化和错误处理。BYOC 第一版通常不需要实现完整 DeviceAPI，但仍需一个可靠的 NPU 运行时模块。
 
 ## 17.1 运行时的责任
 
@@ -31,7 +31,7 @@ updated: 2026-07-29
 10. 保存与恢复模块状态。
 
 > [!important] 编译期与运行期分工
-> tile、组合运算、静态工作区布局和命令结构尽量在编译期决定；实际地址、设备编号、队列、事件与本次输入尺寸在运行期决定。若运行时重新做大型图优化，产物将难以复现。
+> 分块、组合运算、静态工作区布局和命令结构尽量在编译期决定；实际地址、设备编号、队列、事件与本次输入尺寸在运行期决定。若运行时重新做大型图优化，产物将难以复现。
 
 ## 17.2 Module 骨架
 
@@ -89,9 +89,9 @@ class AcmeNPURuntimeNode final : public tvm::runtime::ModuleNode {
 | 检查项 | 说明 |
 | --- | --- |
 | 参数数量 | 与外部函数 ABI 一致 |
-| dtype | 与编译产物一致，或允许的动态集合 |
+| 数据类型 | 与编译产物一致，或允许的动态集合 |
 | ndim | 与描述一致 |
-| shape | 静态值一致，动态值在范围内 |
+| 形状 | 静态值一致，动态值在范围内 |
 | strides | 连续要求或明确支持的非连续步长 |
 | byte_offset | 设备是否支持带偏移 Tensor |
 | device | 主机、NPU 或共享内存 |
@@ -154,7 +154,7 @@ driver_code     = ioctl 或 SDK 返回码
 device_code     = 固件错误码
 function        = 外部函数符号
 submission_id   = 提交序号
-command_index   = 首个失败命令
+command_index   = 第一个失败命令
 engine          = DMA | Matrix | Vector | CME
 detail          = 可读说明
 recoverable     = true | false
@@ -203,7 +203,7 @@ type key、加载注册名与模块返回值必须一致。测试应在另一个
 
 ## 17.12 官方依据
 
-- [TVM Runtime System](https://tvm.apache.org/docs/arch/runtime.html)
+- [TVM 运行时 System](https://tvm.apache.org/docs/arch/runtime.html)
 - [Module Serialization](https://tvm.apache.org/docs/arch/introduction_to_module_serialization.html)
 - [Example NPU runtime](https://github.com/apache/tvm/blob/v0.24.0/src/runtime/contrib/example_npu/example_npu_runtime.cc)
 - [Relax VM](https://tvm.apache.org/docs/arch/relax_vm.html)
