@@ -36,6 +36,9 @@ def clean(text: str) -> str:
         "合同": "规格说明",
         "operator-contracts": "operator-specs",
         "全景": "整体说明",
+        "可落地": "可直接使用",
+        "跑通": "成功运行",
+        "复盘": "实验总结",
         "批维": "批次维度",
         "排布": "布局",
         "轴": "维度",
@@ -139,6 +142,8 @@ overview = f"""
 {callout("abstract", "手册目标", "这是一套面向初学者、编译器开发者、NPU 架构师、驱动与运行时开发者的分册手册。内容从安装、模型导入和第一个 Relax 程序开始，逐步讲到 IRModule、Relax、TensorIR、调度、Pass、Target、代码生成、运行时、虚拟机，以及如何把自研 NPU 作为外部后端或原生设备加入 TVM。")}
 
 {callout("important", "版本基准", "正文以 Apache TVM v0.24.0（Git 提交 `af3e4ba`）为源码基准，网络资料核对日期为 2026-07-29。网上大量旧文章仍使用 Relay、旧版 `tir` 和早期 BYOC API；照抄旧代码很容易遇到名称、函数签名及目录不一致的问题。")}
+
+{callout("note", "官方资料使用方式", "本手册不是对官方页面逐句照录，而是依据官方教程、架构文档、API、测试与 v0.24.0 源码进行独立中文改写。每章新增最小示例、单条件变化示例、预期现象、源码阅读任务和自研 NPU 改造说明，并在对应位置保留官方链接，便于核对接口细节。")}
 
 ## 先给出结论
 
@@ -6378,3 +6383,1618 @@ for chapter in byoc_deep_chapters:
 本章属于 BYOC 专题。建议同时参照 [[15-Relax DPL 子图识别与分区]]、[[16-BYOC 代码生成器]]、[[17-NPU 运行时与驱动适配]]、[[26-端到端参考实现骨架]] 和 [[29-官方资料与源码导航]]。
 """,
     )
+
+
+# Every numbered chapter receives a second, example-driven lesson.  The text is
+# an independent explanation based on the cited Apache TVM v0.24.0 material;
+# it is intentionally organized around observable inputs and outputs instead
+# of following the wording or paragraph order of the upstream documentation.
+def workshop(
+    no: str,
+    official: str,
+    source: str,
+    scenario: str,
+    language: str,
+    sample: str,
+    expected: str,
+    variation: str,
+    npu_extension: str,
+) -> dict:
+    return {
+        "no": no,
+        "official": official,
+        "source": source,
+        "scenario": scenario,
+        "language": language,
+        "sample": textwrap.dedent(sample).strip(),
+        "expected": expected,
+        "variation": variation,
+        "npu_extension": npu_extension,
+    }
+
+
+chapter_workshops = [
+    workshop(
+        "01",
+        f"[源码安装]({BASE_URL}/install/from_source.html) 与 [设计和架构]({BASE_URL}/arch/index.html)",
+        "`docs/install/from_source.rst`、`docs/arch/index.rst`、`python/tvm/support.py`",
+        "一台开发机上同时存在系统安装版和源码构建版 TVM。目标不是马上编译模型，而是先证明 Python 包、动态库、源码提交和构建选项来自同一版本。",
+        "bash",
+        r"""
+        git clone --recursive git@github.com:apache/tvm.git
+        cd tvm
+        git checkout v0.24.0
+        git rev-parse HEAD
+        python3 -c "import tvm; print(tvm.__file__)"
+        python3 -c "import tvm; print(tvm.base._LOADED_LIBS)"
+        python3 -c "import tvm; print(tvm.support.libinfo())"
+        """,
+        "提交号应为固定版本对应的值；Python 文件路径应位于预期源码树或安装目录；已加载动态库应来自本次构建；`libinfo()` 中的 LLVM、CUDA、外部后端和编译类型应与 `config.cmake` 一致。",
+        "故意让 `PYTHONPATH` 指向另一份 TVM，再重复执行检查。观察 Python 包路径和动态库路径是否同时变化，并记录这一类环境混用会产生哪些看似无关的错误。",
+        "增加 `USE_ACME_NPU_CODEGEN` 与 `USE_ACME_NPU_RUNTIME` 后，把两个开关、SDK 版本、驱动头文件版本和注册函数查询结果写入同一份环境报告。编译服务启动时先检查报告，再接收模型。",
+    ),
+    workshop(
+        "02",
+        f"[快速开始]({BASE_URL}/get_started/tutorials/quick_start.html)、[设计和架构]({BASE_URL}/arch/index.html) 与 [Relax VM]({BASE_URL}/arch/relax_vm.html)",
+        "`docs/get_started/tutorials/quick_start.py`、`docs/arch/index.rst`、`src/relax/backend/vm/`",
+        "用只有加法和 ReLU 的小函数观察高层 Relax、优化后模块、VM 可执行对象和最终张量。模型很小，因而每一步都能直接打印并比较。",
+        "python",
+        r"""
+        import numpy as np
+        import tvm
+        from tvm import relax
+        from tvm.script import ir as I
+        from tvm.script import relax as R
+
+        @I.ir_module
+        class Demo:
+            @R.function
+            def main(x: R.Tensor((2, 4), "float32")):
+                with R.dataflow():
+                    y = R.add(x, R.const(1.0, "float32"))
+                    z = R.nn.relu(y)
+                    R.output(z)
+                return z
+
+        optimized = relax.get_pipeline("zero")(Demo)
+        executable = tvm.compile(optimized, target="llvm")
+        vm = relax.VirtualMachine(executable, tvm.cpu())
+        x = tvm.runtime.tensor(np.arange(-4, 4).reshape(2, 4).astype("float32"))
+        print(Demo.script())
+        print(optimized.script())
+        print(vm["main"](x).numpy())
+        """,
+        "原始模块中可见 `relax.add` 与 `relax.nn.relu`；优化后通常会出现 `call_tir` 和生成的 `PrimFunc`；输出中负数加一后再经 ReLU 变为零。打印结果同时展示图层和张量程序层的分工。",
+        "把常量从 1.0 改为 -2.0，只比较原始模块、优化后模块和输出三项。若结构变化超出常量内容，应检查是否有常量折叠或函数专门化。",
+        "在 `zero` 处理前插入 NPU 分区。先记录哪些 Relax 调用进入外部函数，再运行 `RunCodegen`，最后确认 VM 中既能调用外部 NPU 模块，也能调用留在主机上的 TIR 函数。",
+    ),
+    workshop(
+        "03",
+        f"[IRModule 入门]({BASE_URL}/get_started/tutorials/ir_module.html) 与 [TVMScript]({BASE_URL}/arch/tvmscript.html)",
+        "`docs/get_started/tutorials/ir_module.py`、`src/ir/module.cc`、`python/tvm/ir/module.py`",
+        "建立包含两个全局函数的模块，然后用名称和 `GlobalVar` 两种方式取出函数。该例用来区分全局名称、函数对象和调用位置。",
+        "python",
+        r"""
+        import tvm
+        from tvm.script import ir as I
+        from tvm.script import relax as R
+
+        @I.ir_module
+        class TwoFunctions:
+            @R.function
+            def twice(x: R.Tensor((4,), "float32")):
+                return R.add(x, x)
+
+            @R.function
+            def main(x: R.Tensor((4,), "float32")):
+                return TwoFunctions.twice(x)
+
+        gv = TwoFunctions.get_global_var("twice")
+        assert TwoFunctions["twice"] == TwoFunctions[gv]
+        print([str(x.name_hint) for x in TwoFunctions.get_global_vars()])
+        print(TwoFunctions.script())
+        """,
+        "全局变量列表中应出现 `twice` 与 `main`。两种索引方式取得同一函数，但调用处使用的是 `GlobalVar`，并非复制函数正文。重命名、删除或替换函数时必须同步处理引用。",
+        "尝试把新的同名函数加入模块，并分别使用检查模式和更新模式。记录冲突发生的位置，理解为何编译器不能静默保留两个同名全局函数。",
+        "外部 NPU 函数也是模块中的全局函数。分区后检查它的 `Codegen`、`global_symbol`、参数和返回 `StructInfo`，并验证主函数只通过全局调用使用它。",
+    ),
+    workshop(
+        "04",
+        f"[Relax 创建教程]({BASE_URL}/deep_dive/relax/tutorials/relax_creation.html)、[Relax 变换教程]({BASE_URL}/deep_dive/relax/tutorials/relax_transformation.html)",
+        "`docs/deep_dive/relax/tutorials/relax_creation.py`、`docs/deep_dive/relax/tutorials/relax_transformation.py`、`src/relax/ir/`",
+        "用显式 `dataflow` 区域编写 MatMul、加法和 ReLU，随后观察普通变量与数据流变量的使用范围，以及函数输出为何必须通过 `R.output` 暴露。",
+        "python",
+        r"""
+        import tvm
+        from tvm.script import ir as I
+        from tvm.script import relax as R
+
+        @I.ir_module
+        class MLPBlock:
+            @R.function
+            def main(
+                x: R.Tensor((2, 4), "float32"),
+                w: R.Tensor((4, 8), "float32"),
+                b: R.Tensor((8,), "float32"),
+            ):
+                with R.dataflow():
+                    mm = R.matmul(x, w)
+                    biased = R.add(mm, b)
+                    out = R.nn.relu(biased)
+                    R.output(out)
+                return out
+
+        print(MLPBlock.script())
+        """,
+        "广播由张量形状推导；`mm` 与 `biased` 只在数据流区域内部使用；`out` 经 `R.output` 后可作为函数返回值。这里的形状和数据类型信息会被模式检查、内存规划和后端代码生成继续使用。",
+        "把偏置形状改为 `(7,)` 并解析模块。错误应在结构信息推导阶段出现，而不是等到设备执行。再把偏置改为 `(1, 8)`，观察合法广播与原写法的 IR 差异。",
+        "为 MatMul+Bias+ReLU 注册组合模式时，注释节点必须分别指向输入、权重、偏置和根调用。检查函数读取这些节点的形状、数据类型和属性，不能依赖变量名称。",
+    ),
+    workshop(
+        "05",
+        f"[TensorIR 抽象]({BASE_URL}/deep_dive/tensor_ir/abstraction.html) 与 [TensorIR 创建教程]({BASE_URL}/deep_dive/tensor_ir/tutorials/tir_creation.html)",
+        "`docs/deep_dive/tensor_ir/abstraction.rst`、`docs/deep_dive/tensor_ir/tutorials/tir_creation.py`、`src/tirx/`",
+        "编写长度为 16 的向量加法，从循环、计算块、读写区域和缓冲区四个角度阅读同一段 TensorIR。",
+        "python",
+        r"""
+        import tvm
+        from tvm.script import tirx as T
+
+        @T.prim_func
+        def add16(
+            a: T.Buffer((16,), "float32"),
+            b: T.Buffer((16,), "float32"),
+            c: T.Buffer((16,), "float32"),
+        ):
+            T.func_attr({"tirx.noalias": True})
+            for i in range(16):
+                with T.sblock("add"):
+                    vi = T.axis.spatial(16, i)
+                    c[vi] = a[vi] + b[vi]
+
+        print(add16.script())
+        """,
+        "循环变量 `i` 表示执行顺序，块变量 `vi` 描述计算域。块的读写集合可由正文推导，也可显式写出。`noalias` 声明三个缓冲区不重叠，后端可以据此进行更积极的优化。",
+        "去掉 `noalias`，再让输出缓冲区与输入缓冲区共用存储。比较结果正确性和后端生成代码，理解别名信息为何会影响加载、存储和重排。",
+        "如果 NPU 只接收固定长度向量，可把 16 写入能力检查；如果硬件支持任意长度，则需要尾部处理。TensorIR 后端还要把缓冲区存储范围转换为 NPU 地址空间与 DMA 描述。",
+    ),
+    workshop(
+        "06",
+        f"[TensorIR 变换教程]({BASE_URL}/deep_dive/tensor_ir/tutorials/tir_transformation.html)、[MetaSchedule]({BASE_URL}/deep_dive/tensor_ir/tutorials/meta_schedule.html)",
+        "`docs/deep_dive/tensor_ir/tutorials/tir_transformation.py`、`src/s_tir/schedule/`、`python/tvm/s_tir/meta_schedule/`",
+        "对一个已有 `mm_relu` 模块执行分块和循环重排。示例重点不是背诵调度调用，而是每执行一步就查看新的模块并保存调度轨迹。",
+        "python",
+        r"""
+        from tvm import s_tir
+
+        def schedule_mm_relu(mod):
+            sch = s_tir.Schedule(mod)
+            block = sch.get_block("Y", func_name="mm_relu")
+            i, j, k = sch.get_loops(block)
+            j_outer, j_inner = sch.split(j, factors=[None, 8])
+            sch.reorder(i, j_outer, k, j_inner)
+            return sch
+
+        # sch = schedule_mm_relu(MyModule)
+        # print(sch.mod.script())
+        # print(sch.trace)
+        """,
+        "分割后原循环对象不再有效，后续调用必须使用返回的新循环对象。`sch.mod` 展示当前程序，`sch.trace` 记录可重放步骤。相同计算可对应多种执行安排，结果应一致，性能可能明显不同。",
+        "把内层因子从 8 改为 7，测试不能整除的尺寸。观察调度是否生成保护条件、拒绝操作，或需要显式指定尾部处理。不要只用正好整除的样本。",
+        "将内层因子与 NPU 矩阵单元宽度关联。硬件固定值从 Target 能力读取，候选分块由调优器提出；若候选违反片上容量、对齐或指令限制，应在测量前排除。",
+    ),
+    workshop(
+        "07",
+        f"[Pass 基础设施]({BASE_URL}/arch/pass_infra.html) 与 [Relax 变换教程]({BASE_URL}/deep_dive/relax/tutorials/relax_transformation.html)",
+        "`docs/arch/pass_infra.rst`、`include/tvm/ir/transform.h`、`src/ir/transform.cc`",
+        "编写一个只给模块增加版本属性的模块 Pass，并使用 `Sequential` 与内置 Pass 组合。这个例子用来理解 Pass 信息、执行顺序和上下文配置。",
+        "python",
+        r"""
+        import tvm
+        from tvm import relax
+
+        @tvm.transform.module_pass(opt_level=0, name="AttachBackendRevision")
+        class AttachBackendRevision:
+            def transform_module(self, mod, ctx):
+                return mod.with_attr("acme_npu.revision", "npu-v1")
+
+        pipeline = tvm.transform.Sequential(
+            [
+                AttachBackendRevision(),
+                relax.transform.FoldConstant(),
+                relax.transform.DeadCodeElimination(),
+            ]
+        )
+        # result = pipeline(input_mod)
+        """,
+        "Pass 不应就地修改输入模块中可共享的对象；输出模块带新增属性。`Sequential` 保留明确顺序，后一个 Pass 能看到前一个 Pass 的结果。调试时应在每个 Pass 前后保存模块摘要。",
+        "交换常量折叠与自定义改写的顺序，构造一个只有在常量折叠前才能识别的模式。比较两种顺序的输出，确认变换依赖应写进组合流程而非留给偶然顺序。",
+        "NPU 分区 Pass 应明确所需前置变换和后续处理。使用 Pass Instrument 记录模型散列、Target、Pass 名称、函数数量与耗时，异常时保留最后一个成功模块。",
+    ),
+    workshop(
+        "08",
+        f"[设备与 Target 的交互]({BASE_URL}/arch/device_target_interactions.html) 与 [代码生成]({BASE_URL}/arch/codegen.html)",
+        "`docs/arch/device_target_interactions.rst`、`docs/arch/codegen.rst`、`src/target/target_kind.cc`",
+        "比较 Target 描述与运行时设备对象。前者告诉编译器要生成什么代码，后者代表执行进程当前可使用的设备实例。",
+        "python",
+        r"""
+        import tvm
+
+        target = tvm.target.Target("llvm -mtriple=x86_64-linux-gnu")
+        device = tvm.cpu(0)
+
+        print(target.kind.name)
+        print(target.attrs)
+        print(device.device_type, device.device_id, device.exist)
+        """,
+        "`Target` 可在没有目标设备的构建机上创建；`Device.exist` 查询的是运行环境。交叉编译时两者经常位于不同机器，不能用本机探测值替代目标配置。",
+        "把目标三元组改为 AArch64，但仍在 x86 主机上创建 `tvm.cpu(0)`。解释为何代码生成可以成功而本机执行会失败，以及应如何用 RPC 或目标机测试。",
+        "BYOC 第一阶段可只使用已有主机 Target，并在外部代码生成选项中放入 NPU 型号。原生接入则需要定义 TargetKind、代码生成入口和 DeviceAPI，三者的职责不能混在一个字符串中。",
+    ),
+    workshop(
+        "09",
+        f"[TVM 运行时系统]({BASE_URL}/arch/runtime.html) 与 [模块序列化]({BASE_URL}/arch/introduction_to_module_serialization.html)",
+        "`docs/arch/runtime.rst`、`src/runtime/module.cc`、`3rdparty/tvm-ffi/include/tvm/ffi/function.h`、`3rdparty/tvm-ffi/include/tvm/ffi/extra/module.h`",
+        "在 Python 侧注册一个 PackedFunc，再通过全局注册表取回并调用。随后把它与 `runtime.Module.GetFunction` 的模块内查询作比较。",
+        "python",
+        r"""
+        import tvm
+
+        @tvm.register_func("acme_npu.demo.add", override=True)
+        def add(a, b):
+            return a + b
+
+        packed = tvm.get_global_func("acme_npu.demo.add")
+        assert packed(7, 5) == 12
+        print(type(packed), packed(7, 5))
+        """,
+        "Python 函数经 TVM FFI 包装后，可由统一调用接口接收和返回受支持对象。全局函数名属于进程级注册表；模块函数名属于某个 `runtime.Module`，两者的所有权和生命周期不同。",
+        "删除或改写注册模块的导入语句后，在新进程查询同一名称。若当前进程仍能查询，说明测试受到了已有注册状态影响，应把注册类测试放在独立进程。",
+        "自研运行时模块至少提供外部函数查询、模块类型标识、序列化和加载。不要把所有设备状态放进全局注册函数；会话、队列和设备内存应归属于明确的模块或运行时对象。",
+    ),
+    workshop(
+        "10",
+        f"[Relax VM]({BASE_URL}/arch/relax_vm.html) 与 [导出和加载可执行对象]({BASE_URL}/how_to/tutorials/export_and_load_executable.html)",
+        "`docs/arch/relax_vm.rst`、`docs/how_to/tutorials/export_and_load_executable.py`、`src/relax/backend/vm/`",
+        "把一个已经编译的 Relax 可执行对象导出为共享库，在新的 Python 进程中加载并运行。重点检查代码、参数和元数据是否都随部署包提供。",
+        "python",
+        r"""
+        from pathlib import Path
+        import tvm
+        from tvm import relax
+
+        def export_executable(executable, out_dir):
+            out_dir = Path(out_dir)
+            out_dir.mkdir(parents=True, exist_ok=True)
+            lib_path = out_dir / "model.so"
+            executable.export_library(str(lib_path))
+            return lib_path
+
+        def load_vm(lib_path, device):
+            loaded = tvm.runtime.load_module(str(lib_path))
+            return relax.VirtualMachine(loaded, device)
+        """,
+        "导出文件不是可直接启动的命令行程序，而是运行时可加载模块。若参数保留为函数输入，还要单独保存参数；若参数嵌入模块，则换权重需要重新编译。部署测试必须在干净进程进行。",
+        "只复制共享库而遗漏独立参数文件，再运行加载脚本。错误信息应指出缺少哪个文件或参数，而不是在调用深处以形状错误结束。",
+        "确认外部 NPU `runtime.Module` 已作为导入模块打包。目标机只部署轻量运行时与驱动时，构建脚本不能意外依赖编译器动态库或 Python 前端。",
+    ),
+    workshop(
+        "11",
+        f"[源码安装]({BASE_URL}/install/from_source.html) 与 [快速开始]({BASE_URL}/get_started/tutorials/quick_start.html)",
+        "`docs/install/from_source.rst`、`cmake/config.cmake`、`tests/python/`",
+        "从 SSH 地址递归取得 v0.24.0 源码，建立只启用 LLVM 的最小构建，再逐项打开 NPU 代码生成器和运行时。",
+        "bash",
+        r"""
+        git clone --recursive git@github.com:apache/tvm.git
+        cd tvm
+        git checkout v0.24.0
+        mkdir -p build
+        cp cmake/config.cmake build/config.cmake
+        cmake -S . -B build \
+          -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+          -DUSE_LLVM=ON
+        cmake --build build --parallel
+        python3 -m pip install -e .
+        python3 -c "import tvm; print(tvm.support.libinfo())"
+        """,
+        "构建目录中应生成 `libtvm` 与 `libtvm_runtime`；Python 能导入当前源码；构建信息中 LLVM 为启用状态。加入自研模块后，每次只打开一个开关，以便定位配置或链接错误。",
+        "省略 `--recursive` 后检查子模块状态，再执行配置。记录缺失子模块最早会在哪一步被发现，并把 `git submodule status --recursive` 加入自动检查。",
+        "为后端建立三个构建组合：编译器与运行时均启用、只启用运行时、两者均关闭。每个组合都检查全局注册函数和动态依赖，保证部署版本不携带不需要的 SDK。",
+    ),
+    workshop(
+        "12",
+        f"[导入模型]({BASE_URL}/how_to/tutorials/import_model.html) 与 [IRModule 入门]({BASE_URL}/get_started/tutorials/ir_module.html)",
+        "`docs/how_to/tutorials/import_model.py`、`python/tvm/relax/frontend/torch/`、`python/tvm/relax/frontend/onnx/`",
+        "从 PyTorch `ExportedProgram` 导入一个小网络，保留参数为输入，并在 TVM 与 PyTorch 之间比较结果。",
+        "python",
+        r"""
+        import numpy as np
+        import torch
+        from tvm import relax
+        from tvm.relax.frontend.torch import from_exported_program
+
+        class Net(torch.nn.Module):
+            def forward(self, x, w):
+                return torch.relu(x @ w)
+
+        model = Net().eval()
+        x = torch.randn(2, 4)
+        w = torch.randn(4, 8)
+        exported = torch.export.export(model, (x, w))
+        mod = from_exported_program(
+            exported,
+            keep_params_as_input=True,
+            unwrap_unit_return_tuple=True,
+        )
+        mod, params = relax.frontend.detach_params(mod)
+        print(mod.script())
+        print(params.keys())
+        """,
+        "IRModule 的 `main` 参数顺序应能与导入器返回的参数集合对应；输入形状、数据类型和算子结构应与导出程序一致。导入成功只是第一步，还要编译运行并与源框架结果比较。",
+        "在模型中加入导入器不支持的操作，先保存完整错误名称，再用 `custom_convert_map` 添加最小转换。转换函数还要分别测试属性、动态尺寸和多输出，不能只验证一个样本。",
+        "把导入后的算子清单与 NPU 支持表比较，生成三类列表：可直接接纳、需要图改写、暂由主机执行。前端转换不要偷偷改变数值规则来迎合硬件。",
+    ),
+    workshop(
+        "13",
+        f"[自定义优化]({BASE_URL}/how_to/tutorials/customize_opt.html)、[DLight]({BASE_URL}/deep_dive/tensor_ir/tutorials/dlight_gpu_scheduling.html) 与 [MetaSchedule]({BASE_URL}/deep_dive/tensor_ir/tutorials/meta_schedule.html)",
+        "`docs/how_to/tutorials/customize_opt.py`、`python/tvm/s_tir/dlight/`、`python/tvm/s_tir/meta_schedule/`",
+        "对同一模块分别使用规则调度和搜索调优，并记录编译时间、数据库内容和设备时间。两种方法解决的问题相近，但成本与可重复性不同。",
+        "python",
+        r"""
+        import tvm
+        from tvm import relax
+
+        def prepare_for_tuning(mod):
+            return tvm.transform.Sequential(
+                [
+                    relax.transform.LegalizeOps(),
+                    relax.transform.AnnotateTIROpPattern(),
+                    relax.transform.FoldConstant(),
+                    relax.transform.FuseOps(),
+                    relax.transform.FuseTIR(),
+                ]
+            )(mod)
+
+        # lowered = prepare_for_tuning(mod)
+        # 后续可选择 DLight 默认规则，或 MetaSchedule 数据库。
+        """,
+        "调优前必须先得到可调度的 TIR 函数。规则调度编译快，适合建立基准；搜索调优需要工作目录、测量设备和试验预算，最终结果必须与数据库和 Target 一起保存。",
+        "用极小试验预算和较大试验预算处理同一任务，比较最佳记录、编译时间和设备时间。不要把教程中的小预算误当成产品参数。",
+        "BYOC 已接纳的子图由 NPU 编译器优化，剩余 TIR 才交给 DLight 或 MetaSchedule。任务提取报告应区分外部函数与 TVM 内核，避免为不会执行的函数浪费测量时间。",
+    ),
+]
+
+
+chapter_workshops.extend(
+    [
+        workshop(
+            "14",
+            f"[External Library Dispatch]({BASE_URL}/arch/external_library_dispatch.html) 与 [BYOC 教程]({BASE_URL}/how_to/tutorials/bring_your_own_codegen.html)",
+            "`docs/arch/external_library_dispatch.rst`、`docs/how_to/tutorials/bring_your_own_codegen.py`、`src/relax/backend/contrib/`",
+            "同一块 NPU 已有成熟图编译器和驱动。先比较 BYOC 与原生 Target 两种接入方式，再用可验证的需求选择，不以代码改动量作为唯一因素。",
+            "yaml",
+            r"""
+            backend:
+              name: acme_npu
+              existing_graph_compiler: true
+              existing_runtime: true
+              accepts_subgraphs: true
+              needs_tir_scheduling: false
+              needs_tvm_device_allocation: false
+            decision:
+              first_route: relax_byoc
+              revisit_native_target_when:
+                - direct_tir_codegen_required
+                - unified_device_memory_required
+            """,
+            "已有子图编译器、运行时和图输入格式时，Relax BYOC 通常能最快形成可运行系统。若必须从 TensorIR 直接生成指令，或由 TVM 管理设备分配，才需要更完整的原生设备接入。",
+            "把 `needs_tir_scheduling` 改为 `true`，重新检查现有编译器是否仍承担调度。若两个系统都修改循环和内存计划，必须明确谁先执行、谁拥有最终决定。",
+            "在方案文档中分别列出图接纳、外部代码生成、模块加载、设备内存、同步、调试和部署责任。每项只能有一个主要实现位置，并给出可以运行的验证方法。",
+        ),
+        workshop(
+            "15",
+            f"[Relax DPL]({BASE_URL}/deep_dive/relax/dpl.html) 与 [External Library Dispatch]({BASE_URL}/arch/external_library_dispatch.html)",
+            "`docs/deep_dive/relax/dpl.rst`、`python/tvm/relax/dpl/`、`python/tvm/relax/backend/pattern_registry.py`",
+            "识别 MatMul 后接 Bias 和 ReLU 的子图，同时允许 Bias 为常量或函数参数。模式只描述结构，硬件限制由检查函数处理。",
+            "python",
+            r"""
+            from tvm.relax.dpl import is_op, wildcard
+
+            x = wildcard()
+            w = wildcard()
+            bias = wildcard()
+            matmul = is_op("relax.matmul")(x, w)
+            add = is_op("relax.add")(matmul, bias)
+            root = is_op("relax.nn.relu")(add)
+
+            annotations = {
+                "x": x,
+                "weight": w,
+                "bias": bias,
+                "matmul": matmul,
+                "root": root,
+            }
+            """,
+            "模式能识别调用结构，但不会自动证明数据类型、形状、转置方式和广播方式都被硬件支持。注释字典让检查函数从匹配结果中稳定取出关键节点。",
+            "增加一个同时被其他节点使用的 MatMul 中间结果。检查 `has_leaking_intermediate_variables()`，确认不能把仍被外部使用的值隐藏进单输出组合函数。",
+            "为每个注册模式设置稳定名称和明确优先级。先注册覆盖更窄的单算子，再注册更有收益的组合时，要用重叠样本检查最终选择，而不是依赖阅读顺序猜测。",
+        ),
+        workshop(
+            "16",
+            f"[BYOC 教程]({BASE_URL}/how_to/tutorials/bring_your_own_codegen.html) 与 [External Library Dispatch]({BASE_URL}/arch/external_library_dispatch.html)",
+            "`src/relax/transform/run_codegen.cc`、`src/relax/backend/contrib/codegen_json/`、`src/relax/backend/contrib/example_npu/`",
+            "把一个带 `Codegen=\"acme_npu\"` 的外部函数转换为设备编译器可接收的 JSON，再创建自研运行时模块。",
+            "text",
+            r"""
+            Relax external function
+              -> validate attributes and StructInfo
+              -> assign stable global symbol
+              -> serialize nodes, constants and outputs
+              -> call acme compiler SDK
+              -> package command binary and metadata
+              -> return runtime.Module
+            """,
+            "代码生成入口按后端名称注册，接收一组外部函数、后端选项和常量名称。返回值是运行时模块数组；`RunCodegen` 把调用改成外部函数形式，并把模块放入 `external_mods`。",
+            "让设备编译器返回缺少输出描述的产物。代码生成器应立即拒绝，并报告外部函数名和缺失字段，不能创建一个只能到执行时才失败的模块。",
+            "序列化格式需要版本号、目标型号、输入输出、常量标识、命令数据和完整性校验。编译器 SDK 的错误必须转换为稳定原因码，同时保留厂商原始信息供诊断。",
+        ),
+        workshop(
+            "17",
+            f"[TVM 运行时系统]({BASE_URL}/arch/runtime.html)、[模块序列化]({BASE_URL}/arch/introduction_to_module_serialization.html)",
+            "`src/runtime/module.cc`、`3rdparty/tvm-ffi/include/tvm/ffi/extra/module.h`、`src/runtime/contrib/example_npu/`",
+            "设计一个最小 NPU 模块对象：加载编译产物、接收张量、提交命令、等待完成并返回输出。对象析构时清理仍由它拥有的设备资源。",
+            "cpp",
+            r"""
+            class AcmeModuleNode final : public tvm::runtime::ModuleNode {
+             public:
+              const char* type_key() const final { return "acme_npu"; }
+              tvm::ffi::Optional<tvm::ffi::Function> GetFunction(
+                  const tvm::ffi::String& name) final;
+              void SaveToBinary(tvm::ffi::Stream* stream) final;
+
+             private:
+              DeviceProgram program_;
+              DeviceSession session_;
+            };
+            """,
+            "`GetFunction` 返回的可调用对象需要持有足够的模块状态，避免模块销毁后访问无效指针。保存与加载必须恢复程序数据和必要元数据，但不应序列化当前进程中的设备句柄。",
+            "在提交成功后、等待完成前注入超时。测试模块能否报告未完成任务、阻止提前复用输出、清理临时内存，并允许调用方决定复位或终止会话。",
+            "把驱动 API 封装在独立适配层，单元测试使用模拟实现。多设备、多队列和异步事件都要有明确所有权；错误清理不能覆盖最先发生的设备错误。",
+        ),
+        workshop(
+            "18",
+            f"[设备与 Target 的交互]({BASE_URL}/arch/device_target_interactions.html) 与 [代码生成]({BASE_URL}/arch/codegen.html)",
+            "`src/target/target_kind.cc`、`src/target/`、`src/runtime/`、`python/tvm/tirx/build.py`",
+            "当项目决定采用原生接入时，用一张注册清单检查 TargetKind、构建入口、设备代码模块和 DeviceAPI 是否齐全。",
+            "text",
+            r"""
+            TargetKind "acme_npu"
+              attrs: model, revision, sram_bytes, dma_alignment
+              build key: target.build.acme_npu
+              module type: acme_npu
+
+            DeviceAPI kDLAcmeNPU
+              SetDevice / GetAttr
+              AllocDataSpace / FreeDataSpace
+              CopyDataFromTo
+              StreamCreate / StreamSync / StreamFree
+            """,
+            "TargetKind 描述编译属性；构建入口把 TIR 转成设备模块；DeviceAPI 管理执行期设备资源。只注册其中一项不会自动得到其余功能。",
+            "暂时不实现异步流，只实现默认流。调用非默认流接口时必须明确报告不支持，不能忽略参数后继续执行，否则上层会错误地认为依赖已被满足。",
+            "先用单个向量加法完成端到端，再加入动态形状、多个函数、模块导出和远程执行。每增加一项，都要在不含完整编译器的只运行构建中重复加载测试。",
+        ),
+        workshop(
+            "19",
+            f"[设备与 Target 的交互]({BASE_URL}/arch/device_target_interactions.html) 与 [TVM 运行时系统]({BASE_URL}/arch/runtime.html)",
+            "`src/relax/backend/contrib/`、`src/runtime/`、自研命令格式与固件文档",
+            "以 MatMul+Bias+ReLU 为例，从张量形状推导分块、片上缓冲区和 DMA 命令，并把所有推导结果写成可检查文件。",
+            "yaml",
+            r"""
+            function: fused_matmul_bias_relu_0
+            inputs:
+              - {name: x, shape: [32, 128], dtype: fp16}
+              - {name: w, shape: [128, 256], dtype: fp16}
+            tiling: {m: 16, n: 64, k: 32}
+            buffers:
+              - {name: x_tile, memory: l1, bytes: 1024}
+              - {name: w_tile, memory: l1, bytes: 4096}
+              - {name: acc, memory: l1, bytes: 4096}
+            commands:
+              - dma_load_x
+              - dma_load_w
+              - matmul
+              - add_bias_relu
+              - dma_store_y
+            """,
+            "每个缓冲区大小应能由分块和数据类型重新计算；命令引用的地址必须来自已分配对象；加载、计算和写回的依赖关系应可由模拟器检查。",
+            "把 `n` 分块从 64 改为 96，重新计算片上容量和指令字段。若超过容量，应在计划阶段拒绝，而不是生成被固件截断的字段。",
+            "为命令格式编写解码器和静态检查工具。代码生成测试既比较高层字段，也把二进制反解后比较，防止打包位段与文档说明不一致。",
+        ),
+        workshop(
+            "20",
+            f"[TensorIR 抽象]({BASE_URL}/deep_dive/tensor_ir/abstraction.html) 与 [TensorIR 创建教程]({BASE_URL}/deep_dive/tensor_ir/tutorials/tir_creation.html)",
+            "`docs/deep_dive/tensor_ir/abstraction.rst`、`src/tirx/op/`、自研数值规格与参考模型",
+            "为有符号 8 位乘加建立独立参考函数，显式说明乘积宽度、累加宽度、舍入顺序和饱和时机。",
+            "python",
+            r"""
+            import numpy as np
+
+            def sat_int8(x):
+                return np.clip(x, -128, 127).astype("int8")
+
+            def reference_mac(a, b, bias):
+                product = a.astype("int32") * b.astype("int32")
+                accumulated = product.sum(axis=-1, dtype="int64")
+                with_bias = accumulated + bias.astype("int64")
+                return sat_int8(with_bias)
+            """,
+            "参考函数故意使用更宽的中间类型，最后才饱和到 8 位。硬件若在每次加法后饱和，或只保留部分乘积位，结果会不同，必须作为另一种数值计算规则。",
+            "使用 `[-128, -1, 0, 1, 127]` 组合生成极值样本，再加入刚好越过饱和值的输入。比较最后饱和与逐步饱和，确认差异样本进入自动测试。",
+            "能力检查不仅看输入数据类型，还要核对累加类型、换算参数、舍入方式和特殊值处理。组合算子改变操作顺序时，应重新验证整体结果。",
+        ),
+        workshop(
+            "21",
+            f"[Relax 抽象]({BASE_URL}/deep_dive/relax/abstraction.html) 与 [Relax VM]({BASE_URL}/arch/relax_vm.html)",
+            "`docs/deep_dive/relax/abstraction.rst`、`docs/arch/relax_vm.rst`、`src/relax/analysis/`",
+            "一个模型的第一个维度为符号值 `n`。编译器需要保留符号关系，并决定 NPU 是支持任意值、只支持若干档位，还是暂由主机执行。",
+            "python",
+            r"""
+            import tvm
+            from tvm.script import ir as I
+            from tvm.script import relax as R
+            from tvm.script import tirx as T
+
+            @I.ir_module
+            class DynamicAdd:
+                @R.function
+                def main(
+                    x: R.Tensor(("n", 128), "float32"),
+                    y: R.Tensor(("n", 128), "float32"),
+                ):
+                    return R.add(x, y)
+            """,
+            "模块保留符号维度，而不是把它替换成一次测试使用的数值。外部函数输入输出也必须保存相同关系；运行时用实际形状选择命令版本或触发重新编译。",
+            "分别运行 `n=1`、`n=17` 和超过设备最大值的输入。前两者应选择正确版本或尾部实现，最后一个应得到清楚的拒绝或转交结果。",
+            "缓存键包含符号约束与实际专门化尺寸。控制流模型还要确认两个分支的设备与返回结构一致；跨设备复制必须出现在可检查的位置。",
+        ),
+        workshop(
+            "22",
+            f"[持续集成指南]({BASE_URL}/contribute/ci.html) 与 [导入模型教程]({BASE_URL}/how_to/tutorials/import_model.html)",
+            "`tests/python/relax/`、`tests/cpp/`、`docs/contribute/ci.rst`",
+            "为 MatMul 模式建立四层测试：模式识别、能力检查、编译产物解析和真实设备结果。每层使用相同样本编号。",
+            "python",
+            r"""
+            import numpy as np
+
+            CASES = [
+                ((1, 16), (16, 32)),
+                ((3, 17), (17, 31)),
+                ((16, 64), (64, 64)),
+            ]
+
+            def compare(actual, expected):
+                np.testing.assert_allclose(
+                    actual,
+                    expected,
+                    rtol=1e-4,
+                    atol=1e-5,
+                )
+            """,
+            "规则层测试结构，产物层测试字段和完整性，运行层测试数值。奇数尺寸与非对齐尺寸能暴露尾部问题；只测试方阵和整齐尺寸会遗漏大量错误。",
+            "让能力检查错误地接纳一个设备不支持的数据类型。测试应在规则层立即失败，并指出原因码；若直到设备执行才失败，说明层次划分不够清楚。",
+            "设备测试按硬件可用性分组，但模拟器与序列化测试应在每次提交运行。失败样本保存模型、输入、参考输出、编译配置、固件版本和设备日志。",
+        ),
+        workshop(
+            "23",
+            f"[MetaSchedule]({BASE_URL}/deep_dive/tensor_ir/tutorials/meta_schedule.html) 与 [端到端模型优化]({BASE_URL}/how_to/tutorials/e2e_opt_model.html)",
+            "`python/tvm/s_tir/meta_schedule/`、`docs/deep_dive/tensor_ir/tutorials/meta_schedule.py`、`docs/how_to/tutorials/e2e_opt_model.py`",
+            "先用简单性能模型估算 MatMul 是否受计算能力或内存带宽限制，再决定应搜索分块、数据复用还是并行提交。",
+            "python",
+            r"""
+            def roofline_time(flops, bytes_moved, peak_flops, bandwidth):
+                compute_time = flops / peak_flops
+                memory_time = bytes_moved / bandwidth
+                return max(compute_time, memory_time)
+
+            m, n, k = 256, 256, 256
+            flops = 2 * m * n * k
+            bytes_moved = 2 * (m * k + k * n + m * n)
+            print(roofline_time(flops, bytes_moved, 10e12, 200e9))
+            """,
+            "估算值不是设备时间预测，而是帮助判断主要限制。实际测量还要包含命令提交、同步、片上搬运和小尺寸固定开销。",
+            "把尺寸改为 `(1, 256) × (256, 256)`，比较计算量与搬运量。小 `m` 可能由固定开销主导，此时大矩阵得到的分块不一定适用。",
+            "把 NPU 候选参数写成离散搜索空间，并在生成命令前检查容量和指令限制。测量记录必须绑定固件、频率、温度区间、Target 和编译器提交。",
+        ),
+        workshop(
+            "24",
+            f"[Pass 基础设施]({BASE_URL}/arch/pass_infra.html) 与 [错误处理指南]({BASE_URL}/contribute/error_handling.html)",
+            "`docs/arch/pass_infra.rst`、`docs/contribute/error_handling.rst`、`include/tvm/ir/instrument.h`",
+            "对一次分区失败建立最小诊断包：原始模块、规范化模块、模式候选、检查结果、分区后模块和构建信息。",
+            "json",
+            r"""
+            {
+              "model_id": "matmul_relu_001",
+              "tvm_commit": "af3e4ba",
+              "target": "acme_npu-v1",
+              "stage": "pattern_check",
+              "candidate": "acme_npu.matmul_relu",
+              "accepted": false,
+              "reason_code": "shape.k_alignment",
+              "details": {"k": 63, "required_multiple": 16}
+            }
+            """,
+            "报告应回答哪个候选、在哪一阶段、因哪个具体条件被拒绝。原始 IR 与规范化后 IR 同时保存，才能区分前端结构问题和硬件能力问题。",
+            "让日志只写“unsupported”。请另一位开发者在不查看代码的情况下定位问题；如果不能，应补充节点、属性、期望值、实际值和建议动作。",
+            "驱动错误、固件错误和编译器拒绝使用不同编号范围。设备故障报告包含队列、命令序号和内存对象，但避免打印模型权重原始内容。",
+        ),
+        workshop(
+            "25",
+            f"[代码指南]({BASE_URL}/contribute/code_guide.html)、[代码评审]({BASE_URL}/contribute/code_review.html)",
+            "`docs/contribute/code_guide.rst`、`docs/contribute/code_review.rst`、`cmake/modules/contrib/`",
+            "按模式、代码生成、运行时、测试和文档划分后端目录，并为每个公共格式指定唯一维护文件。",
+            "text",
+            r"""
+            python/tvm/relax/backend/contrib/acme_npu/
+              __init__.py
+              patterns.py
+              partition.py
+            src/relax/backend/contrib/acme_npu/
+              codegen.cc
+              serializer.cc
+            src/runtime/extra/contrib/acme_npu/
+              runtime.cc
+              module.cc
+            tests/python/contrib/test_acme_npu/
+            cmake/modules/contrib/AcmeNPU.cmake
+            """,
+            "Python 负责图模式与易变策略，C++ 负责产物转换和运行时。公共命令格式、模块格式和错误编号不应在多个目录各写一份。",
+            "模拟一次格式版本升级：代码生成器先升级而运行时不升级。兼容测试应在加载时给出版本不匹配，不应把未知字段静默忽略。",
+            "把编译器、运行时、固件和 SDK 的兼容组合写成机器可读表。发布产物带构建选项、内容散列、第三方许可与最小加载测试。",
+        ),
+        workshop(
+            "26",
+            f"[BYOC 教程]({BASE_URL}/how_to/tutorials/bring_your_own_codegen.html) 与 [模块序列化]({BASE_URL}/arch/introduction_to_module_serialization.html)",
+            "`python/tvm/relax/backend/contrib/example_npu/`、`src/relax/backend/contrib/example_npu/`、`src/runtime/contrib/example_npu/`",
+            "从空目录开始只实现 MatMul+ReLU：先注册模式，再生成可读 JSON，最后让模拟运行时输出收到的函数和张量形状。",
+            "text",
+            r"""
+            milestone_1: pattern registry returns acme_npu.matmul_relu
+            milestone_2: partitioned IR has Composite and Codegen attrs
+            milestone_3: RunCodegen creates one external runtime module
+            milestone_4: exported module loads in a new process
+            milestone_5: simulator writes a correct output tensor
+            milestone_6: real driver replaces simulator
+            """,
+            "每个里程碑都有单独测试，失败时不会跨越多层定位。教学 Example NPU 不写正确数值，自研骨架必须尽早加入可执行参考模拟器。",
+            "先让模式检查总是返回 `True`，记录它错误接纳了哪些输入；再逐项加入数据类型、形状、属性和收益检查，并为每项添加一个反向样本。",
+            "真实驱动接入前，模拟器就应解析同一种最终产物并执行参考计算。这样可以独立验证 TVM 侧和设备侧，减少首次硬件联调的不确定因素。",
+        ),
+        workshop(
+            "27",
+            f"[Relax]({BASE_URL}/deep_dive/relax/index.html) 与 [External Library Dispatch]({BASE_URL}/arch/external_library_dispatch.html)",
+            "`python/tvm/relax/`、`src/relax/`、旧项目中的 Relay Pass 与当前 Relax Pass",
+            "把旧项目中“标注、合并区域、分区、外部代码生成”的 Relay 流程逐项对应到当前 Relax BYOC 处理，并用 IR 输出确认而非按名称机械替换。",
+            "text",
+            r"""
+            old Relay idea                 current Relax mechanism
+            ---------------------------------------------------------------
+            operator attribute             FusionPattern + check function
+            merge compiler regions         FuseOpsByPattern / MergeCompositeFunctions
+            partition graph                outer function with Codegen attr
+            relay.ext.acme_npu              relax.ext.acme_npu
+            external runtime module         external_mods + call_dps_packed
+            """,
+            "两代接口解决的问题相近，但 IR 节点、Pass、函数属性和 FFI 名称不同。迁移应从预期输入输出重新实现，并以 v0.24.0 测试为依据。",
+            "拿一个旧 Relay 单元测试，只替换模块导入名称后运行。记录失败位置，并将测试拆成模式、分区、代码生成和运行四层，再逐层重建。",
+            "保留迁移前后同一模型的接纳算子、外部函数数量、复制字节和数值结果报告。若覆盖变化，必须能指出是规则变化还是 IR 表达变化。",
+        ),
+        workshop(
+            "28",
+            f"[错误索引]({BASE_URL}/errors.html)、[源码安装]({BASE_URL}/install/from_source.html) 与 [BYOC 教程]({BASE_URL}/how_to/tutorials/bring_your_own_codegen.html)",
+            "`docs/errors.rst`、`tests/python/`、各注册函数的源码与测试",
+            "遇到“代码生成函数不存在”时，不直接修改 C++，而是按包路径、动态库、构建开关、注册名和导入触发顺序逐项检查。",
+            "bash",
+            r"""
+            python3 -c "import tvm; print(tvm.__file__)"
+            python3 -c "import tvm; print(tvm.base._LOADED_LIBS)"
+            python3 -c "import tvm; print(tvm.support.libinfo())"
+            python3 - <<'PY'
+            import tvm
+            for name in [
+                "relax.ext.example_npu",
+                "runtime.ExampleNPUJSONRuntimeCreate",
+            ]:
+                print(name, bool(tvm.get_global_func(name, True)))
+            PY
+            """,
+            "两项注册可分别缺失，因此要区分代码生成开关与运行时开关。若构建信息正确但函数仍缺失，再检查包含注册代码的目标是否进入动态库。",
+            "在同一终端先导入旧构建再修改环境变量。Python 进程不会自动卸载旧动态库，必须启动新进程验证，避免把进程状态误认为构建结果。",
+            "为自研后端提供 `diagnose()` 命令，一次输出版本、开关、注册函数、SDK 动态库、设备节点和驱动版本，并对每项给出通过或失败。",
+        ),
+        workshop(
+            "29",
+            f"[官方文档首页]({BASE_URL}/)、[HOW TO]({BASE_URL}/how_to/tutorials/) 与 [设计和架构]({BASE_URL}/arch/index.html)",
+            "`docs/`、`python/tvm/`、`src/`、`tests/` 四类目录",
+            "从一个 Python API 名称出发，依次找到声明、FFI 注册、C++ 实现和测试，建立可重复的源码阅读方法。",
+            "bash",
+            r"""
+            cd /tmp/apache-tvm-v0.24.0
+            rg -n 'RunCodegen' python include src tests docs
+            rg -n 'relax\\.ext\\.' src tests python
+            rg -n 'ExampleNPUJSONRuntimeCreate' src tests cmake
+            git log -S'RunCodegen' --oneline --all -- \
+              python/tvm/relax src/relax tests/python
+            """,
+            "API 文档回答如何调用，Python 文件回答组合方式，C++ 文件回答核心处理，测试回答维护者认为哪些行为必须稳定，提交历史解释设计为何改变。",
+            "只搜索类名可能找不到 FFI 字符串。改用注册名称、属性键和错误文本继续搜索，并记录哪种标识最容易贯穿多个目录。",
+            "为自研后端维护一张源码导航表：每个注册名对应定义文件、调用文件、测试文件和构建开关。升级 TVM 时先运行表中搜索并生成差异。",
+        ),
+    ]
+)
+
+
+def render_workshop(item: dict) -> str:
+    no = item["no"]
+    return f"""
+## 官方资料基础上的扩展课
+
+{callout("note", "改写与引用说明", "本节以所列 Apache TVM 官方资料和 v0.24.0 源码为依据，采用独立的中文结构、示例与解释。阅读顺序围绕“输入是什么、执行什么、输出如何检查、失败怎样定位”展开，并增加自研 NPU 场景。需要核对接口细节时，请打开官方页面并查看固定版本源码。")}
+
+### {no}.A 本节要解决的具体问题
+
+{item["scenario"]}
+
+这类小例子的价值在于变量少、输出可直接观察。第一次运行时不要同时加入图改写、外部代码生成和真实设备执行；先确认当前层的输入与输出，再增加下一层。建议为本例新建独立目录，保存命令、标准输出、IR、编译产物摘要和环境信息。
+
+### {no}.B 示例一：最小可观察输入
+
+**官方依据：** {item["official"]}。
+
+**v0.24.0 源码位置：** {item["source"]}。
+
+```{item["language"]}
+{item["sample"]}
+```
+
+按以下顺序执行：
+
+1. 在新进程中确认 `tvm.__file__`、动态库路径和 TVM 提交，避免受到旧进程注册状态影响；
+2. 复制示例到单独文件，只补充示例明确要求的输入对象，不先加入额外优化；
+3. 执行后保存完整输出；若生成 IR，同时保存 `script(show_meta=True)` 的文本；
+4. 把输出与下面的预期现象逐项比较，不以“没有抛出异常”代替功能检查；
+5. 重复执行一次并比较主要产物，确认结果没有依赖临时全局状态或未固定的遍历顺序。
+
+{callout("success", "预期现象", item["expected"])}
+
+> [!tip] 如何阅读输出
+> 先看对象类型和函数数量，再看属性、调用形式、形状与数据类型，最后看运行结果或编译产物。若前一项不符合预期，先停止后续步骤。这样能把问题限定在最早出现差异的阶段。
+
+### {no}.C 示例二：只改变一个条件
+
+{item["variation"]}
+
+执行第二个例子时，复制第一个例子的输入与环境，只修改上文指出的一项。把两个输出做结构比较，并写下以下四个答案：
+
+1. 第一次出现差异的是哪一个阶段？
+2. 差异表现为函数、属性、形状、数据类型、编译产物还是运行结果？
+3. 当前行为是明确拒绝、交给其他后端执行，还是编译错误？
+4. 日志是否足以让另一位开发者不查看本次进程状态也能复现？
+
+如果同时观察到多个变化，应把第二个例子继续拆小。教程中的成功示例说明“怎样走通”，而单条件变化说明“系统为何作出这个决定”，两者缺一不可。
+
+### {no}.D 改造成自研 NPU 示例
+
+{item["npu_extension"]}
+
+改造时建议保留三份相互独立的输入：最小 Relax 或 TensorIR、设备编译器输入、运行时调用输入。三份输入使用同一个样本编号，并记录转换前后的关键字段。这样可以分别测试 TVM 变换、NPU 编译器和驱动，不需要每次都运行完整模型。
+
+至少补充以下样本：
+
+- 一个完全满足能力要求的正向样本；
+- 一个只改变数据类型的反向样本；
+- 一个只改变形状或属性的反向样本；
+- 一个包含主机与 NPU 混合执行的样本；
+- 一个导出后在新进程加载的样本；
+- 若支持动态尺寸，再增加最小值、常用值和最大值附近的样本。
+
+### {no}.E 源码阅读任务
+
+从上文列出的源码位置选择一个公开 API，依次找到 Python 调用、FFI 注册、C++ 实现和测试。记录函数签名、主要输入、主要输出、会写入的模块属性以及失败方式。若名称只在文档出现而源码中找不到，继续搜索注册字符串、属性键或错误文本。
+
+> [!question] 章末练习
+> 1. 不运行代码，先画出示例执行前后的对象关系；2. 运行后用实际输出修正图；3. 增加一个会被明确拒绝的输入；4. 说明若接入自研 NPU，哪一层需要改动，哪一层可以保持不变；5. 把结果整理成可由自动测试检查的断言。
+
+### {no}.F 完成标准
+
+- [ ] 示例可在固定 v0.24.0 环境重复执行，或已明确列出所需可选依赖；
+- [ ] 预期现象包含可检查的结构、字段或数值，不只是“运行成功”；
+- [ ] 单条件变化能触发预期的拒绝、转交或结构差异；
+- [ ] 能从官方页面定位到固定版本源码和测试；
+- [ ] NPU 改造说明包含编译阶段、运行阶段与部署阶段；
+- [ ] 失败时保留最小输入、环境、阶段输出和第一个错误。
+"""
+
+
+def enrich_numbered_chapters() -> None:
+    seen = set()
+    for item in chapter_workshops:
+        no = item["no"]
+        if no in seen:
+            raise RuntimeError(f"duplicate workshop: {no}")
+        seen.add(no)
+        matches = sorted(ROOT.glob(f"{no}-*.md"))
+        if len(matches) != 1:
+            raise RuntimeError(f"chapter {no}: expected one file, got {matches}")
+        path = matches[0]
+        base = path.read_text(encoding="utf-8")
+        marker = "\n## 官方资料基础上的扩展课\n"
+        if marker in base:
+            base = base.split(marker, 1)[0].rstrip() + "\n"
+        path.write_text(
+            clean(base.rstrip() + "\n\n" + render_workshop(item)),
+            encoding="utf-8",
+        )
+    expected = {f"{i:02d}" for i in range(1, 50)}
+    if seen != expected:
+        missing = sorted(expected - seen)
+        extra = sorted(seen - expected)
+        raise RuntimeError(f"workshop coverage mismatch: missing={missing}, extra={extra}")
+
+
+chapter_workshops.extend(
+    [
+        workshop(
+            "30",
+            f"[External Library Dispatch]({BASE_URL}/arch/external_library_dispatch.html) 与 [Relax DPL]({BASE_URL}/deep_dive/relax/dpl.html)",
+            "`python/tvm/relax/backend/patterns.py`、各 contrib 后端的模式文件与测试",
+            "为 MatMul 编写一份机器可读规格，随后从其中生成正向尺寸、反向尺寸和模式检查项目。",
+            "yaml",
+            r"""
+            operator: matmul
+            inputs:
+              - {name: lhs, dtypes: [float16, int8]}
+              - {name: rhs, dtypes: [float16, int8]}
+            ranks: [2, 3]
+            transpose_rhs: [false, true]
+            constraints:
+              k_multiple: 16
+              n_multiple: 8
+            accumulation:
+              float16: float32
+              int8: int32
+            """,
+            "规格中的每个字段都应有检查代码和测试。`k_multiple` 与 `n_multiple` 不能只写在说明文字里；累加类型还要进入数值参考实现。",
+            "删除 `transpose_rhs` 字段后输入转置权重。工具应报告规格缺项或明确使用默认值，不能由某个代码生成分支自行猜测。",
+            "把算子规格、Target 能力和编译器检查生成为同一版本。新增一个数据类型时，同时更新单算子、组合算子、产物解析和设备结果测试。",
+        ),
+        workshop(
+            "31",
+            f"[快速开始]({BASE_URL}/get_started/tutorials/quick_start.html)、[导入模型]({BASE_URL}/how_to/tutorials/import_model.html) 与 [BYOC 教程]({BASE_URL}/how_to/tutorials/bring_your_own_codegen.html)",
+            "`docs/get_started/tutorials/`、`docs/how_to/tutorials/`、`tests/python/relax/`",
+            "每次实验只改变一个条件，并保存输入、命令、关键输出和结论。下面的记录格式可以直接用于本章全部实验。",
+            "yaml",
+            r"""
+            experiment: 07_partition_matmul_relu
+            baseline:
+              tvm_commit: af3e4ba
+              target: llvm
+            change:
+              pass: FuseOpsByPattern
+              backend: acme_npu
+            inputs:
+              shape_x: [2, 4]
+              shape_w: [4, 8]
+              dtype: float32
+            expected:
+              external_functions: 1
+              host_matmul_calls: 0
+            artifacts:
+              - before.py
+              - after.py
+              - report.json
+            """,
+            "记录中既有基准，也有本次唯一变化。预期结果是可自动检查的数量或字段，不只写“成功”。文件名稳定后可以批量比较多次运行。",
+            "一次同时改变数据类型、形状和模式优先级，然后尝试解释结果。若无法指出哪项造成变化，应拆成三次实验。",
+            "真实设备实验还要记录驱动、固件、频率、温度区间和设备编号。编译阶段实验则记录构建开关与注册函数，二者不要混成一个环境字段。",
+        ),
+        workshop(
+            "32",
+            f"[错误处理指南]({BASE_URL}/contribute/error_handling.html) 与 [BYOC 教程]({BASE_URL}/how_to/tutorials/bring_your_own_codegen.html)",
+            "`docs/contribute/error_handling.rst`、`tests/python/`、自研诊断命令",
+            "从“外部函数调用失败”开始，用二分方式判断问题位于分区、代码生成、模块加载、参数准备还是设备提交。",
+            "text",
+            r"""
+            1. partitioned IR contains Codegen="acme_npu" ?
+            2. after RunCodegen, external_mods count is nonzero ?
+            3. exported file reloads in a new process ?
+            4. module GetFunction(global_symbol) succeeds ?
+            5. input count, dtype and shape match artifact metadata ?
+            6. driver submit returns a valid event ?
+            7. event wait completes and output is written ?
+            """,
+            "每个问题把检查范围缩小一层。前一项未通过时不继续猜测后一项；报告同时保存失败项与已通过项。",
+            "把设备错误码误装成模块加载错误，交给不熟悉后端的人处理。若他会去检查共享库而不是命令参数，说明错误分类需要调整。",
+            "将速查表生成到命令行诊断工具中。工具接受外部函数名或任务编号，自动提取模块元数据、运行时状态和设备日志。",
+        ),
+        workshop(
+            "33",
+            f"[Python API]({BASE_URL}/reference/api/python/index.html) 与 [官方文档索引]({BASE_URL}/genindex.html)",
+            "`docs/reference/api/python/`、`python/tvm/`、`include/tvm/`",
+            "查找一个术语时，同时记录中文解释、源码拼写、对象类型、所属阶段和最小使用例，避免只保存孤立翻译。",
+            "yaml",
+            r"""
+            term: GlobalVar
+            chinese: 全局变量
+            object: tvm.ir.GlobalVar
+            stage: IRModule function reference
+            created_by:
+              - TVMScript parser
+              - IRModule.add
+            consumed_by:
+              - Call
+              - module lookup
+              - transformation passes
+            inspect:
+              - name_hint
+              - checked_type
+            """,
+            "同一术语在图 IR、张量程序和运行时可能属于不同对象。速查项给出类型和阶段后，读者可以定位到正确 API。",
+            "只搜索中文名称，再尝试定位 C++ 实现。若难以找到，应从 Python 类的 `_ffi_api` 调用或注册字符串继续追踪。",
+            "为后端专有对象沿用 TVM 命名风格，缩写首次出现时解释。固件字段与 TVM 属性若名称不同，在表中明确对应关系和转换位置。",
+        ),
+        workshop(
+            "34",
+            f"[代码评审]({BASE_URL}/contribute/code_review.html) 与 [代码指南]({BASE_URL}/contribute/code_guide.html)",
+            "`docs/contribute/code_review.rst`、`docs/contribute/code_guide.rst`、项目测试报告",
+            "评审一个新增 Conv2D+ReLU 模式，不只检查代码能否运行，还检查误接纳、产物稳定性和部署恢复。",
+            "text",
+            r"""
+            review evidence
+              [ ] one accepted static-shape case
+              [ ] one rejected dtype case
+              [ ] one rejected groups case
+              [ ] one leaking-intermediate case
+              [ ] structural comparison after partition
+              [ ] serialized artifact parser result
+              [ ] new-process reload result
+              [ ] simulator and device value comparison
+            """,
+            "每个勾选项都应指向测试或产物，不能只写口头结论。新增模式优先级还要与已有模式共同测试。",
+            "只提供完整模型的成功截图，不提供最小样本。评审者无法判断具体覆盖由哪个模式产生，应要求拆出小 IR 与结构比较。",
+            "硬件团队评审数值和指令限制，编译器团队评审 IR 与 Pass，运行时团队评审资源和并发，验证团队检查反向样本是否覆盖每条限制。",
+        ),
+        workshop(
+            "35",
+            f"[Pass 基础设施]({BASE_URL}/arch/pass_infra.html) 与 [External Library Dispatch]({BASE_URL}/arch/external_library_dispatch.html)",
+            "`src/relax/transform/`、`src/relax/backend/`、`python/tvm/relax/transform/`",
+            "对同一 IRModule 依次执行规范化、模式融合、外部函数分组和 `RunCodegen`，每步保存文本与结构摘要。",
+            "python",
+            r"""
+            from pathlib import Path
+
+            def save_stage(out_dir, index, name, mod):
+                out_dir = Path(out_dir)
+                out_dir.mkdir(parents=True, exist_ok=True)
+                path = out_dir / f"{index:02d}_{name}.py"
+                path.write_text(mod.script(show_meta=True))
+                return path
+
+            # save_stage("stages", 0, "imported", mod)
+            # mod = pass_1(mod)
+            # save_stage("stages", 1, "normalized", mod)
+            """,
+            "文件序号固定后可直接比较相邻阶段。结构摘要至少包含函数名、函数属性、调用种类、常量数量和 `external_mods` 数量。",
+            "跳过中间输出，只保存最终模块。当外部函数数量不符时无法确定变化发生在哪一步，这正是逐阶段文件需要解决的问题。",
+            "把设备编译器的输入与输出也作为两个阶段保存。若产物包含二进制，另存可读元数据、反解结果和内容散列。",
+        ),
+        workshop(
+            "36",
+            f"[导入模型]({BASE_URL}/how_to/tutorials/import_model.html) 与 [端到端模型优化]({BASE_URL}/how_to/tutorials/e2e_opt_model.html)",
+            "`docs/how_to/tutorials/import_model.py`、`docs/how_to/tutorials/e2e_opt_model.py`、模型分析工具",
+            "以 ResNet 与小型 Transformer 为例，先统计算子、形状和耗时，再决定 NPU 优先支持顺序。",
+            "yaml",
+            r"""
+            model: small_transformer
+            workloads:
+              - {name: prefill, sequence: 128, batch: 1}
+              - {name: decode, sequence: 1, kv_length: 128, batch: 1}
+            top_ops:
+              - {op: matmul, time_percent: 58}
+              - {op: attention, time_percent: 21}
+              - {op: rms_norm, time_percent: 8}
+            first_targets:
+              - matmul_bias
+              - rms_norm
+            host_first:
+              - sampling
+            """,
+            "支持顺序同时考虑耗时占比、组合收益、数据驻留和实现风险。预填充与逐词生成的矩阵形状不同，不能用一个性能数字代表二者。",
+            "只按算子出现次数排序。大量小逐元素算子可能次数高但耗时低；重新按设备时间和复制成本排序，比较计划差异。",
+            "每个模型家族固定若干代表形状与真实输入。接纳率按执行时间和复制字节报告，不只按节点数量报告。",
+        ),
+        workshop(
+            "37",
+            f"[文档编写指南]({BASE_URL}/contribute/document.html) 与 [模块序列化]({BASE_URL}/arch/introduction_to_module_serialization.html)",
+            "`docs/contribute/document.rst`、`docs/arch/introduction_to_module_serialization.rst`、项目 JSON Schema",
+            "为 Target 能力文件建立 JSON Schema，使数据类型、容量、对齐和版本可自动检查。",
+            "json",
+            r"""
+            {
+              "$schema": "https://json-schema.org/draft/2020-12/schema",
+              "type": "object",
+              "required": ["schema_version", "target", "sram_bytes"],
+              "properties": {
+                "schema_version": {"type": "integer", "minimum": 1},
+                "target": {"type": "string", "minLength": 1},
+                "sram_bytes": {"type": "integer", "minimum": 1},
+                "dma_alignment": {"type": "integer", "minimum": 1}
+              },
+              "additionalProperties": false
+            }
+            """,
+            "未知字段默认拒绝可尽早发现拼写错误；必填字段和数值范围由工具检查。更复杂的“2 的幂”要求可由额外验证函数完成。",
+            "把 `sram_bytes` 写成字符串 `\"1MB\"`。选择统一的字节整数或带单位结构，并让错误明确指出实际类型和所需类型。",
+            "从同一能力文件生成 Python 检查常量、C++ 读取代码和固件测试数据。生成文件带来源散列，评审时可以证明它们来自同一输入。",
+        ),
+        workshop(
+            "38",
+            f"[BYOC 教程]({BASE_URL}/how_to/tutorials/bring_your_own_codegen.html)",
+            "`docs/how_to/tutorials/bring_your_own_codegen.py` 与 Example NPU 的 Python、C++、CMake 文件",
+            "完全运行官方 Example NPU 的教学步骤，但把每个阶段拆开打印，明确教学运行时只展示调度信息而不产生可信数值。",
+            "python",
+            r"""
+            import tvm
+            import tvm.relax.backend.contrib.example_npu
+            from tvm.relax.backend.pattern_registry import get_patterns_with_prefix
+
+            patterns = get_patterns_with_prefix("example_npu")
+            print([item.name for item in patterns])
+            print(bool(tvm.get_global_func("relax.ext.example_npu", True)))
+            print(
+                bool(
+                    tvm.get_global_func(
+                        "runtime.ExampleNPUJSONRuntimeCreate",
+                        True,
+                    )
+                )
+            )
+            """,
+            "模式注册依赖 Python 模块导入；代码生成与运行时注册依赖构建开关。三者应分别检查。Example NPU 输出形状可用于流程验证，但其输出值不能作为正确性结果。",
+            "只打开代码生成开关，不打开运行时开关。分区与产物生成仍可能成功，但执行前应明确报告缺少运行时构造函数。",
+            "复制 Example NPU 前先为所有 `example_npu` 名称建立替换清单，并逐项验证构建开关、模式前缀、FFI 名称、模块类型和序列化版本都已改为项目名称。",
+        ),
+        workshop(
+            "39",
+            f"[Relax DPL]({BASE_URL}/deep_dive/relax/dpl.html) 与 [External Library Dispatch]({BASE_URL}/arch/external_library_dispatch.html)",
+            "`python/tvm/relax/backend/pattern_registry.py`、`python/tvm/relax/backend/patterns.py`",
+            "同时注册 `matmul`、`matmul_bias` 和 `matmul_bias_relu`，用同一输入确认最具体的高收益模式优先。",
+            "python",
+            r"""
+            from tvm.relax.backend.pattern_registry import (
+                get_patterns_with_prefix,
+            )
+
+            def show_priority(prefix):
+                patterns = get_patterns_with_prefix(prefix)
+                for index, pattern in enumerate(patterns):
+                    print(index, pattern.name)
+
+            show_priority("acme_npu")
+            """,
+            "注册表返回顺序直接影响重叠匹配。项目应把期望优先级写进测试，而不是假定文件顶部或字母顺序决定结果。",
+            "交换两个注册调用的位置，比较分区后外部函数的 `Composite` 属性。若结果变化，应确认这是有意设计并更新优先级测试。",
+            "组合模式只有在整体数值和中间结果使用方式都满足时才接纳。不能为了减少函数数量而吞掉仍需由主机读取的中间值。",
+        ),
+        workshop(
+            "40",
+            f"[External Library Dispatch]({BASE_URL}/arch/external_library_dispatch.html) 与 [Relax DPL]({BASE_URL}/deep_dive/relax/dpl.html)",
+            "`include/tvm/relax/transform.h`、`src/relax/transform/fuse_ops.cc`、后端检查函数",
+            "检查 MatMul 的输入数据类型、约简维度对齐、权重是否常量，以及中间结果是否被组合外部使用。",
+            "python",
+            r"""
+            def check_matmul_context(ctx):
+                annotated = ctx.annotated_expr
+                lhs = annotated["lhs"]
+                rhs = annotated["rhs"]
+                root = annotated["root"]
+                if ctx.has_leaking_intermediate_variables():
+                    return False
+                if lhs.struct_info.dtype not in {"float16", "int8"}:
+                    return False
+                if rhs.struct_info.dtype != lhs.struct_info.dtype:
+                    return False
+                return root.struct_info.ndim in {2, 3}
+            """,
+            "检查函数只在匹配成功后执行，负责硬件能力而非再次手写整套结构匹配。它应是确定性纯函数，便于缓存和单元测试。",
+            "让输入为动态约简维度。若硬件只支持固定对齐值，检查函数不能把一次示例值当成恒定值，应拒绝或保留运行时保护方案。",
+            "实际项目可返回结构化内部结果，再由 TVM 所需布尔接口取成功字段。这样编译报告能记录精确原因，而不改变上游接口。",
+        ),
+        workshop(
+            "41",
+            f"[External Library Dispatch]({BASE_URL}/arch/external_library_dispatch.html)",
+            "`src/relax/transform/fuse_ops.cc`、`tests/python/relax/test_transform_fuse_ops_by_pattern.py`",
+            "对 MatMul+ReLU 运行 `FuseOpsByPattern`，分别比较 `annotate_codegen=True` 与 `False` 的模块结构。",
+            "python",
+            r"""
+            from tvm.relax.transform import FuseOpsByPattern
+
+            def fuse(mod, patterns, annotate):
+                return FuseOpsByPattern(
+                    patterns,
+                    bind_constants=False,
+                    annotate_codegen=annotate,
+                )(mod)
+
+            # inner_only = fuse(mod, patterns, False)
+            # external = fuse(mod, patterns, True)
+            """,
+            "`False` 主要产生带 `Composite` 的内部函数，后续可由合并 Pass 组成外部函数；`True` 会建立带 `Codegen` 的外层函数。两种结果适合不同的分组策略。",
+            "把 `bind_constants` 改为 `True`，观察权重是否进入函数正文以及外部函数参数数量如何变化。大型权重的复制和缓存策略会因此改变。",
+            "为自研后端固定一种常量策略并测试导出加载。若允许两种策略，模块格式必须区分嵌入常量与外部参数，运行时不可按参数位置猜测。",
+        ),
+        workshop(
+            "42",
+            f"[External Library Dispatch]({BASE_URL}/arch/external_library_dispatch.html)",
+            "`src/relax/transform/merge_composite_functions.cc` 与对应测试",
+            "两个连续组合函数属于同一后端，检查 `MergeCompositeFunctions` 能否把它们放入一个外部函数，同时不引入循环依赖。",
+            "python",
+            r"""
+            from tvm.relax.transform import (
+                FuseOpsByPattern,
+                MergeCompositeFunctions,
+            )
+
+            def group_for_backend(mod, patterns):
+                mod = FuseOpsByPattern(
+                    patterns,
+                    bind_constants=False,
+                    annotate_codegen=False,
+                )(mod)
+                return MergeCompositeFunctions()(mod)
+            """,
+            "合并后的外层函数带 `Codegen` 与稳定全局名称，内部仍可保留多个 `Composite` 调用。函数参数只包含组外输入，返回值包含组外使用的结果。",
+            "构造交叉依赖，使两个候选组若合并会出现循环。Pass 应保守保持分开，不能为了减少调用次数破坏依赖顺序。",
+            "合并收益要与片上容量、并行机会和编译时间一起评估。外部函数过大可能降低缓存命中或让设备编译器难以处理，应提供最大节点数与资源估算。",
+        ),
+        workshop(
+            "43",
+            f"[External Library Dispatch]({BASE_URL}/arch/external_library_dispatch.html)",
+            "`src/relax/transform/run_codegen.cc`、`include/tvm/relax/transform.h`、`tests/python/relax/test_transform_codegen_pass.py`",
+            "在 `RunCodegen` 前后统计带 `Codegen` 的函数、外部调用和 `external_mods`，验证外部编译器返回模块已被附加。",
+            "python",
+            r"""
+            from tvm import relax
+
+            def run_external_codegen(mod):
+                before = [gv.name_hint for gv in mod.get_global_vars()]
+                after = relax.transform.RunCodegen()(mod)
+                external = after.get_attr("external_mods") or []
+                print("functions before:", before)
+                print("external modules:", len(external))
+                print(after.script(show_meta=True))
+                return after
+            """,
+            "原外部函数调用会被改为对 `ExternFunc` 的 `call_dps_packed`，设备模块进入 `external_mods`。普通主机函数仍留在 IRModule 供后续编译。",
+            "注册的代码生成函数返回空模块数组。`RunCodegen` 应得到可解释错误或明确空结果，测试不能只断言 Pass 没有抛出异常。",
+            "代码生成选项和常量名称进入外部编译入口前要排序或稳定化。相同模块与配置重复编译应得到相同模块元数据和缓存键。",
+        ),
+        workshop(
+            "44",
+            f"[External Library Dispatch]({BASE_URL}/arch/external_library_dispatch.html)",
+            "`src/relax/backend/contrib/codegen_json/`、`src/runtime/contrib/json/`、各 JSON 后端测试",
+            "把组合函数序列化为 JSON 后立即用独立解析器检查节点、输入、输出、属性和常量引用。",
+            "json",
+            r"""
+            {
+              "version": 1,
+              "symbol": "fused_matmul_relu_0",
+              "nodes": [
+                {"op": "input", "name": "x"},
+                {"op": "const", "name": "weight_0"},
+                {"op": "matmul", "inputs": [0, 1]},
+                {"op": "relu", "inputs": [2]}
+              ],
+              "outputs": [3]
+            }
+            """,
+            "节点编号必须有效且拓扑有序；输出只能引用已定义节点；常量名称要与外部常量表一致。序列化器与解析器分别测试可以发现遗漏字段。",
+            "把输出编号改为不存在的 9。解析器应在加载阶段拒绝并指出字段路径，运行时不能继续创建半初始化图。",
+            "真实 NPU 若使用二进制格式，仍保留等价的可读反解工具。调试包保存二进制散列和反解结果，使固件与编译器能核对同一命令。",
+        ),
+        workshop(
+            "45",
+            f"[TVM 运行时系统]({BASE_URL}/arch/runtime.html) 与 [模块序列化]({BASE_URL}/arch/introduction_to_module_serialization.html)",
+            "`src/runtime/module.cc`、`src/runtime/contrib/json/`、`src/runtime/contrib/`",
+            "从 VM 使用的外部符号出发，验证模块函数查询、参数顺序、输出对象和同步时机。",
+            "text",
+            r"""
+            VM call_dps_packed
+              symbol: fused_matmul_relu_0
+              inputs: x, weight
+              outputs: preallocated y
+                -> runtime.Module.GetFunction(symbol)
+                -> validate tensor metadata
+                -> enqueue DMA and compute
+                -> wait or return event
+                -> mark output ready
+            """,
+            "`call_dps_packed` 采用目标传递形式，输出存储由调用方准备。运行时必须核对输出大小和设备，异步执行还要保证 VM 在使用结果前看到完成依赖。",
+            "交换两个输入参数但保持形状相同。只检查字节数无法发现错误，因此产物元数据和函数封装需要稳定参数名称或角色编号。",
+            "为每次调用分配任务编号，并把它写入设备日志、性能事件和错误报告。并发调用时禁止用单个全局临时缓冲区。",
+        ),
+        workshop(
+            "46",
+            f"[External Library Dispatch]({BASE_URL}/arch/external_library_dispatch.html) 与 [Relax VM]({BASE_URL}/arch/relax_vm.html)",
+            "`src/relax/transform/run_codegen.cc`、外部后端常量处理与缓存实现",
+            "根据模块结构、常量内容、Target、编译选项和后端版本生成缓存键，防止错误复用设备程序。",
+            "python",
+            r"""
+            import hashlib
+            import json
+
+            def cache_key(ir_text, constant_hashes, target, options, version):
+                payload = {
+                    "ir": ir_text,
+                    "constants": sorted(constant_hashes),
+                    "target": target,
+                    "options": options,
+                    "backend_version": version,
+                }
+                data = json.dumps(payload, sort_keys=True).encode()
+                return hashlib.sha256(data).hexdigest()
+            """,
+            "字典排序和常量散列使键稳定；Target 型号、后端版本和影响代码生成的选项必须参与。动态形状专门化时，实际尺寸或约束也要参与。",
+            "只改变舍入方式但不改变缓存键，构造结果差异。测试应发现旧程序被错误复用，并推动把该字段加入键与产物元数据。",
+            "缓存项加载前检查模块版本、设备型号和完整性。并发编译同一键时使用临时文件和原子替换，避免读到未写完的产物。",
+        ),
+        workshop(
+            "47",
+            f"[BYOC 教程]({BASE_URL}/how_to/tutorials/bring_your_own_codegen.html)",
+            "`python/tvm/relax/backend/contrib/example_npu/`、`src/relax/backend/contrib/example_npu/`、`src/runtime/contrib/example_npu/`",
+            "把 Example NPU 的 MatMul+ReLU 教学流程替换为真实编译器 SDK 和驱动，每次只替换一层并保留前一层测试。",
+            "yaml",
+            r"""
+            migration:
+              step_1: rename registrations and build options
+              step_2: replace pattern limits with hardware specs
+              step_3: replace JSON fields with device compiler input
+              step_4: call compiler SDK and package binary
+              step_5: replace logging Run with driver submission
+              step_6: add simulator and device result comparison
+              step_7: add export, reload and runtime-only build
+            """,
+            "重命名后先证明 Example NPU 行为未变，再逐层替换。每一步都有独立回退点和对照测试，避免同时改 Python、C++、格式和驱动。",
+            "直接把教学 `Run()` 换成驱动调用但保留宽松模式。真实设备会收到不支持输入，因此必须先用硬件规格重写检查并补充反向样本。",
+            "最终后端不得保留教学运行时“不写输出”的行为。模拟器、设备和可信参考实现对同一固定输入给出一致结果后，才进入完整模型测试。",
+        ),
+        workshop(
+            "48",
+            f"[BYOC 教程]({BASE_URL}/how_to/tutorials/bring_your_own_codegen.html) 与 [External Library Dispatch]({BASE_URL}/arch/external_library_dispatch.html)",
+            "`docs/how_to/tutorials/bring_your_own_codegen.py`、BYOC 相关 Python 与 C++ 测试",
+            "把 BYOC 分成可独立执行的七个实验，每次检查一个新结构，避免一开始就执行完整模型。",
+            "text",
+            r"""
+            E1 import backend and list patterns
+            E2 match one pattern without rewriting
+            E3 FuseOpsByPattern and inspect Composite
+            E4 MergeCompositeFunctions and inspect Codegen
+            E5 RunCodegen and inspect external_mods
+            E6 export and reload in a new process
+            E7 execute simulator, then real device
+            """,
+            "每个实验的输入都来自前一实验的已保存产物，同时也可独立重建。结构断言比全文字符串比较更能容忍无关打印变化。",
+            "故意让 E4 不执行，直接运行 E5。观察代码生成器得到的函数分组是否符合预期，并理解合并 Pass 何时可选、何时是项目设计的一部分。",
+            "真实后端增加 E8：混合主机与 NPU 子图；E9：动态尺寸；E10：并发与异常注入。每个实验保留设备端任务编号。",
+        ),
+        workshop(
+            "49",
+            f"[BYOC 教程]({BASE_URL}/how_to/tutorials/bring_your_own_codegen.html)、[持续集成指南]({BASE_URL}/contribute/ci.html)",
+            "`tests/python/relax/`、`tests/cpp/`、`docs/contribute/ci.rst`、项目兼容表",
+            "建立 TVM、后端编译器、运行时、驱动和固件的版本组合测试，并固定一组小 IR 与产物。",
+            "yaml",
+            r"""
+            test_matrix:
+              - tvm: v0.24.0
+                compiler: acme-3.2
+                runtime: acme-3.2
+                driver: ">=5.1,<6.0"
+                firmware: "7.4"
+                expected: supported
+              - tvm: v0.24.0
+                compiler: acme-3.3
+                runtime: acme-3.2
+                driver: "5.2"
+                firmware: "7.4"
+                expected: reject_module_version
+            """,
+            "兼容表中的每一行都可由自动任务运行。被支持组合检查编译、导出、加载和执行；不被支持组合检查错误发生在最早且最清楚的位置。",
+            "升级 TVM 后只运行完整模型。若失败，很难判断是 API、IR、模式还是产物变化；先比较固定小 IR 的注册名、函数属性和结构输出。",
+            "发布前保留功能、异常、并发、性能和旧产物加载报告。性能变化必须附原始样本和环境，不能只保存一个平均值。",
+        ),
+    ]
+)
+
+
+enrich_numbered_chapters()
+
+
+def doc_page(
+    group: str,
+    title: str,
+    online_path: str,
+    source_path: str,
+    outline: str,
+    summary: str,
+    apis: str,
+    exercise: str,
+    npu_note: str,
+    caution: str,
+) -> dict:
+    return {
+        "group": group,
+        "title": title,
+        "url": f"{BASE_URL}/{online_path}",
+        "source": source_path,
+        "outline": outline,
+        "summary": summary,
+        "apis": apis,
+        "exercise": exercise,
+        "npu_note": npu_note,
+        "caution": caution,
+    }
+
+
+official_page_notes = [
+    doc_page(
+        "安装与入门",
+        "安装 TVM 概要",
+        "install/index.html",
+        "docs/install/index.rst",
+        "页面比较 PyPI、源码构建和 Docker 三种方式，并提醒目标设备通常只需要运行时。",
+        "初学者若只想试用，可先安装官方软件包；开发自研后端需要修改 C++、CMake 和注册代码，因此应使用源码构建。部署机器与编译机器可以分开，目标机不必安装完整前端和编译器。",
+        "`pip`、源码构建、`libtvm_runtime`、交叉编译",
+        "列出开发机、持续集成机器和 NPU 目标机各自需要的组件，确认没有把编译期依赖带到只运行环境。",
+        "后端开发至少准备“完整编译器”和“只运行”两种构建。前者含模式、代码生成和测试，后者只含模块加载、设备调用与必要驱动。",
+        "安装方式不同不代表 API 版本相同。执行示例前仍要检查 TVM 版本、提交和实际动态库。",
+    ),
+    doc_page(
+        "安装与入门",
+        "从源码构建 TVM",
+        "install/from_source.html",
+        "docs/install/from_source.rst",
+        "页面依次说明依赖、取得源码、CMake 配置、编译、Python 安装和环境验证，并补充 Windows 与可选后端设置。",
+        "构建成功不只指生成动态库，还要证明 Python 载入了正确文件、构建选项可查询、目标设备可探测。官方建议使用较新的 CMake、LLVM、Python 和支持 C++20 的编译器。",
+        "`config.cmake`、`USE_LLVM`、`tvm.support.libinfo()`、`tvm.base._LOADED_LIBS`",
+        "使用 SSH 地址递归取得 v0.24.0，建立只启用 LLVM 的构建。保存 `libinfo()`，再增加一个后端开关并比较差异。",
+        "增加 NPU 代码生成和运行时开关时分开测试。SDK 搜索失败、头文件版本不合和运行时依赖缺失应在 CMake 配置期给出明确错误。",
+        "不要通过修改系统全局 Python 路径掩盖多版本问题；新进程中的路径和动态库报告才可信。",
+    ),
+    doc_page(
+        "安装与入门",
+        "使用 Docker 镜像",
+        "install/docker.html",
+        "docs/install/docker.rst",
+        "页面介绍预构建镜像和源码树内 Docker 工具，重点是得到一致的依赖与构建环境。",
+        "容器适合快速运行教程和复现构建，但设备访问仍取决于主机驱动、设备节点和容器权限。镜像标签、源码提交和宿主驱动应一起记录。",
+        "Docker、镜像标签、挂载目录、设备访问",
+        "在容器内打印 TVM 路径、构建信息和设备探测结果，再与宿主机结果比较。",
+        "NPU SDK 可放入受控基础镜像，设备节点与驱动库通过明确配置提供。不要把宿主任意目录整体挂入编译容器。",
+        "容器能固定用户态环境，但不能自动消除内核驱动和固件差异。",
+    ),
+    doc_page(
+        "安装与入门",
+        "TVM 概述",
+        "get_started/overview.html",
+        "docs/get_started/overview.rst",
+        "页面从机器学习模型、可组合优化和通用部署说明 TVM 的定位，并给出继续学习的主要入口。",
+        "TVM 的核心不是单一模型转换命令，而是一组可组合的程序表示、变换与运行时组件。模型可以来自框架，也可以直接由 Relax 前端或 TVMScript 创建。",
+        "`IRModule`、Relax、TensorIR、Target、运行时模块",
+        "选取一个两层网络，写出导入、图变换、张量程序处理、构建、导出和运行六个阶段的输入输出。",
+        "自研 NPU 通常只替换其中一部分：BYOC 接收被选中的 Relax 子图；原生后端还会参与 TensorIR、Target 与 DeviceAPI。",
+        "“支持一种设备”可能只指外部库调用，也可能指完整原生设备。阅读项目说明时要区分层次。",
+    ),
+    doc_page(
+        "安装与入门",
+        "快速开始",
+        "get_started/tutorials/quick_start.html",
+        "docs/get_started/tutorials/quick_start.py",
+        "页面使用 Relax 神经网络前端建立两层 MLP，导出 IRModule，应用优化，编译并通过运行时调用。",
+        "官方例子的重点是展现从模型构造到部署的完整步骤，而不是追求该网络的最高性能。`IRModule` 同时容纳高层函数与低层张量程序，优化流程可以按目标组合。",
+        "`nn.Module`、`export_tvm`、`relax.get_pipeline()`、`tvm.compile()`、`VirtualMachine`",
+        "把输入从全一张量改为含负值的固定张量，保存导出前后 IR 和最终结果；再更换一个层宽并比较函数与常量。",
+        "在默认优化前加入 NPU 分区，检查外部函数数量；未被接纳部分仍由 TVM 生成普通内核。",
+        "教程中的简化优化配置用于展示步骤，不能直接当作产品性能配置。",
+    ),
+    doc_page(
+        "安装与入门",
+        "IRModule 入门",
+        "get_started/tutorials/ir_module.html",
+        "docs/get_started/tutorials/ir_module.py",
+        "页面展示从现有模型、Relax 神经网络前端和 TVMScript 创建 IRModule，随后读取函数、应用 Pass 并在 CPU 或 GPU 上部署。",
+        "IRModule 是变换的基本容器。`LegalizeOps` 会把高层调用转换为 `call_tir`，默认处理则继续完成常量折叠、融合和其他准备。",
+        "`GlobalVar`、`LegalizeOps`、`Sequential`、`DLight`、`tvm.compile()`",
+        "创建两个全局函数，通过名称和 GlobalVar 读取它们；运行 `LegalizeOps` 后列出新增 PrimFunc。",
+        "分区生成的 NPU 外部函数同样位于 IRModule。评审时检查函数属性、参数、返回信息和主函数调用。",
+        "CPU 与 GPU 部署示例使用不同调度要求；更换 Target 不等于仅替换设备对象。",
+    ),
+    doc_page(
+        "操作指南",
+        "从机器学习框架导入模型",
+        "how_to/tutorials/import_model.html",
+        "docs/how_to/tutorials/import_model.py",
+        "页面分别介绍 PyTorch、ONNX 和 TFLite 导入，并说明 PyTorch 自定义转换函数和导入后结果比较。",
+        "PyTorch 推荐由 `torch.export` 产生 `ExportedProgram`；ONNX 与 TFLite 使用各自模型对象。参数是否保留为函数输入会影响部署文件和换权重方式。",
+        "`from_exported_program`、`detach_params`、`from_onnx`、`from_tflite`、`custom_convert_map`",
+        "导入一个小卷积网络，先打印 IR，再用 `zero` 处理编译到 LLVM，最后与原框架固定输入结果比较。",
+        "导入后生成算子清单，区分可由 NPU 直接接纳、需要图改写和暂由主机执行的调用。前端转换本身不应隐藏硬件限制。",
+        "导入成功只表示前端接受模型；必须继续验证结果、多输出、动态尺寸和特殊属性。",
+    ),
+    doc_page(
+        "操作指南",
+        "端到端模型优化",
+        "how_to/tutorials/e2e_opt_model.html",
+        "docs/how_to/tutorials/e2e_opt_model.py",
+        "页面以 PyTorch ResNet-18 为例，导入 Relax，使用 MetaSchedule 调优，再构建和运行。",
+        "调优任务从低层函数中提取，试验预算决定搜索成本。教程使用较小预算以便演示，正式部署需要结合模型数量、设备时间和期望性能重新设置。",
+        "`MetaScheduleTuneTIR`、`MetaScheduleApplyDatabase`、工作目录、试验预算",
+        "用小预算执行一次任务提取和调优，记录任务数、数据库文件和最佳记录；不要求先达到最高性能。",
+        "BYOC 已接纳的 NPU 子图不应再次作为普通 TIR 任务调优。报告要区分外部函数和剩余 TVM 内核。",
+        "调优数据库必须与 Target、设备和 TVM 版本一起保存，不能只复制一个记录文件。",
+    ),
+    doc_page(
+        "操作指南",
+        "自定义优化",
+        "how_to/tutorials/customize_opt.html",
+        "docs/how_to/tutorials/customize_opt.py",
+        "页面用同一 Relax 模块说明外部库分派、MetaSchedule 与 DLight 可以组合，并展示最终构建运行。",
+        "不同优化可处理模型的不同部分。外部库先接收它能处理的组合，其余部分再由普通低层优化处理。Pass 顺序决定后续能看到的结构。",
+        "`FuseOpsByPattern`、`RunCodegen`、`MetaScheduleTuneTIR`、`ApplyDefaultSchedule`",
+        "准备一个含两个 MatMul 的模块，只让第一个符合外部模式；打印外部分派后和低层调度后的模块。",
+        "把 cuBLAS 示例替换成自研 NPU 时，先完成模式与检查，再决定剩余 CPU 或 GPU 函数使用何种优化。",
+        "可组合不代表顺序任意。每个自定义流程都要声明前置状态与输出状态。",
+    ),
+    doc_page(
+        "操作指南",
+        "导出和加载 Relax 可执行对象",
+        "how_to/tutorials/export_and_load_executable.html",
+        "docs/how_to/tutorials/export_and_load_executable.py",
+        "页面从 PyTorch MLP 开始，说明构建、`export_library`、参数保存、新进程加载、GPU 变化和远程部署。",
+        "Relax 可执行对象包含 VM 程序与编译模块；参数可以独立保存，也可以嵌入文件。共享库需要由 TVM 运行时加载，不能像普通命令行程序直接启动。",
+        "`export_library`、`load_module`、`VirtualMachine`、参数序列化、`workspace_dir`",
+        "导出 CPU 共享库，关闭当前进程，再用单独脚本加载参数和模型；比较导出前后固定输入结果。",
+        "外部 NPU 模块必须作为导入模块进入最终文件。目标机只含运行时构建时，仍应能恢复模块并查询外部函数。",
+        "复制部署文件时要同时处理参数、元数据和目标体系结构兼容性。",
+    ),
+    doc_page(
+        "操作指南",
+        "交叉编译和 RPC",
+        "how_to/tutorials/cross_compilation_and_rpc.html",
+        "docs/how_to/tutorials/cross_compilation_and_rpc.py",
+        "页面先用低层计算说明 ARM 交叉编译和 RPC，再给出完整 Relax 模型的远程上传、运行与计时。",
+        "交叉编译 Target 描述目标体系结构，运行时设备来自远程会话。RPC 适合目标机资源有限或必须在真实硬件测量的场景。",
+        "`tvm.rpc`、远程会话、交叉编译器、上传模块、远程设备计时",
+        "在本机模拟两端时，仍把构建、上传、加载和执行写成四个独立步骤，并确认计时不包含网络传输。",
+        "NPU 设备若只能在板端访问，可通过 RPC 运行已导出的模块。板端需有对应运行时、驱动和模块加载支持。",
+        "本机编译成功不能证明目标机指令集、动态库或驱动兼容。",
+    ),
+    doc_page(
+        "操作指南",
+        "将 Python 或 PyTorch 与 TVM 模块组合",
+        "how_to/tutorials/mix_python_and_tvm_with_pymodule.html",
+        "docs/how_to/tutorials/mix_python_and_tvm_with_pymodule.py",
+        "页面介绍 BasePyModule，把 Python 或 PyTorch 函数与 TVM 编译函数放在同一个可调用模块中，并讨论动态函数与状态。",
+        "这种方式适合逐步替换模型的一部分，或在 TVM 函数之间保留 Python 控制。它方便开发，但部署形态与纯运行时模块不同。",
+        "`BasePyModule`、PyTorch 包装、动态函数、状态保存",
+        "把一个前处理函数保留在 Python，把矩阵计算交给 TVM，固定输入后分别打印两部分耗时和输出。",
+        "可用它快速验证 NPU 外部函数，但产品部署若不能包含 Python，需要再实现等价运行时模块。",
+        "原型阶段的便利接口不一定能直接用于无 Python 的目标环境。",
+    ),
+    doc_page(
+        "操作指南",
+        "优化大语言模型",
+        "how_to/tutorials/optimize_llm.html",
+        "docs/how_to/tutorials/optimize_llm.py",
+        "页面围绕大语言模型的导入、低层优化、构建和生成过程说明 TVM 的组合能力。",
+        "大语言模型同时包含大矩阵、归一化、注意力、KV 缓存与逐词生成。预填充和逐词生成的形状差异很大，应分别分析和测量。",
+        "模型导入、KV 缓存、DLight、MetaSchedule、生成循环",
+        "只选一个 Transformer 块，分别记录序列长度 128 和长度 1 时的 MatMul 形状与执行时间。",
+        "NPU 第一阶段可优先接纳 MatMul、RMSNorm 和可完整处理的注意力组合，同时把采样和不支持的状态操作留给主机。",
+        "完整模型例子依赖较多软件包和设备资源；初学者应先缩小到单层与固定权重。",
+    ),
+    doc_page(
+        "操作指南",
+        "接入自定义代码生成器",
+        "how_to/tutorials/bring_your_own_codegen.html",
+        "docs/how_to/tutorials/bring_your_own_codegen.py",
+        "页面先用无真实硬件依赖的 Example NPU 展示模式注册、分区、代码生成和执行，再用 TensorRT 说明真实后端与模型部署。",
+        "BYOC 的四项核心工作是注册可处理模式、把匹配子图组成外部函数、调用后端代码生成器、由运行时执行外部模块。未接纳节点继续由其他后端处理。",
+        "`FusionPattern`、`FuseOpsByPattern`、`MergeCompositeFunctions`、`RunCodegen`、`external_mods`",
+        "运行到分区阶段并打印 IR；若构建启用了 Example NPU，再运行代码生成。教学运行时只检查形状，不把输出值当作正确结果。",
+        "自研 NPU 从 Example NPU 起步时，需要替换能力检查、产物生成、运行时执行和构建模块，并加入可信参考模拟器。",
+        "在线教程可能随主分支持续更新，固定项目必须以 v0.24.0 的函数签名和测试为准。",
+    ),
+    doc_page(
+        "架构说明",
+        "设计和架构",
+        "arch/index.html",
+        "docs/arch/index.rst",
+        "页面从一次完整编译执行说明主要数据结构和处理阶段，再从代码目录角度介绍 TVM 组成。",
+        "Relax 表示模型级计算，TensorIR 表示张量程序，Target 指导代码生成，运行时模块提供统一调用与部署。IRModule 让这些对象在同一程序容器中协作。",
+        "`IRModule`、Relax、TensorIR、`runtime.Module`、PackedFunc、Target",
+        "从快速开始中的 `tvm.compile()` 向下查找 Relax VM 生成、TIR 构建和模块链接代码，画出实际调用顺序。",
+        "将 NPU 模式、外部代码生成器和运行时模块放入该结构图，标出哪些模块仍由 TVM 提供。",
+        "架构图用于理解职责，精确接口仍要结合当前版本源码和测试。",
+    ),
+    doc_page(
+        "架构说明",
+        "算子融合",
+        "arch/fusion.html",
+        "docs/arch/fusion.rst",
+        "页面解释图融合为何减少中间内存和调用开销，并介绍 TVM 如何分析与组成函数。",
+        "融合要保持数据依赖、外部使用和结果行为。更大的组合不总是更快，它可能增加寄存器或片上存储压力，也可能降低并行机会。",
+        "`FuseOps`、算子模式类别、数据流区域、组合函数",
+        "对 MatMul、加法、ReLU 运行融合前后比较，统计中间张量是否仍写回主存。",
+        "BYOC 的模式融合还承担后端分派。NPU 检查函数必须拒绝会泄漏中间结果或超过资源限制的组合。",
+        "融合函数数量减少不能单独证明性能提高，仍需设备时间和内存流量。",
+    ),
+    doc_page(
+        "架构说明",
+        "代码生成",
+        "arch/codegen.html",
+        "docs/arch/codegen.rst",
+        "页面说明 TIR PrimFunc 如何经低层处理进入 LLVM 或源代码类后端，并介绍主机与设备函数拆分及运行时模块。",
+        "LLVM 类后端在进程内生成目标代码；源代码类后端先产生 CUDA C、OpenCL C 等文本，再交给外部编译器或驱动。最终都包装成运行时模块。",
+        "`tirx.build()`、`target.build.*`、LLVM 代码生成、源代码生成、模块导入",
+        "为同一小 TIR 函数选择 LLVM 与 C 源代码目标，比较模块类型和可查看的源代码。",
+        "原生 NPU 后端需要注册 Target 构建入口并返回设备模块；BYOC 则由 `relax.ext.<name>` 在更高层产生外部模块。",
+        "图级外部代码生成与 TIR 目标代码生成属于不同扩展位置，名称相似但输入不同。",
+    ),
+    doc_page(
+        "架构说明",
+        "外部库分派（BYOC）",
+        "arch/external_library_dispatch.html",
+        "docs/arch/external_library_dispatch.rst",
+        "页面完整说明模式注册、`FuseOpsByPattern`、可选合并、`RunCodegen`、外部模块链接和运行时调用。",
+        "带 `Composite` 的内部函数表示后端认识的组合，带 `Codegen` 的外层函数表示交给哪个后端。`RunCodegen` 根据注册名调用编译器，并用外部函数调用替换原调用。",
+        "`PatternCheckContext`、`Composite`、`Codegen`、`global_symbol`、`call_dps_packed`",
+        "保存分区前、融合后、合并后和代码生成后四份 IR，逐份列出函数属性与外部模块数量。",
+        "这是自研 NPU BYOC 的主要架构页。模式、检查、代码生成和运行时必须使用一致的后端名称与函数符号。",
+        "模式匹配成功不代表硬件一定能执行，具体数据类型、形状和属性仍由检查函数决定。",
+    ),
+    doc_page(
+        "架构说明",
+        "TVM 运行时系统",
+        "arch/runtime.html",
+        "docs/arch/runtime.rst",
+        "页面介绍运行时对象、统一函数调用、张量、设备接口和跨语言部署。",
+        "运行时把不同后端生成的模块隐藏在共同接口后面。上层通过函数名取得可调用对象，不需要知道内部是 LLVM、CUDA 还是外部 NPU 程序。",
+        "`tvm::ffi::Function`、`runtime.Module`、Tensor、DeviceAPI、对象系统",
+        "在 Python 注册一个全局函数并取回调用，再从一个已编译模块中查询模块函数，比较两种查询范围。",
+        "NPU 运行时模块负责加载产物、验证张量、提交设备任务和恢复错误；DeviceAPI 只在需要完整设备管理时实现。",
+        "进程级全局注册表不适合保存每次执行的可变设备状态。",
+    ),
+    doc_page(
+        "架构说明",
+        "运行时模块序列化",
+        "arch/introduction_to_module_serialization.html",
+        "docs/arch/introduction_to_module_serialization.rst",
+        "页面解释主机模块与导入设备模块如何被收集、保存并打包成一个可部署文件。",
+        "主机动态库可以嵌入 CUDA、OpenCL 或其他模块数据。加载时按模块类型恢复树形结构，因此每种外部模块都需要稳定类型、保存和加载实现。",
+        "`export_library`、`SaveToBinary`、模块导入树、`devc.o`、模块加载",
+        "导出一个含设备子模块的对象，保留中间工作目录，列出生成文件并在新进程查看模块树。",
+        "NPU 模块保存设备程序和元数据，但不保存当前进程句柄。加载后重新创建驱动会话和设备资源。",
+        "只验证导出成功不够；必须在干净进程和只运行构建中验证恢复。",
+    ),
+    doc_page(
+        "架构说明",
+        "Relax 虚拟机",
+        "arch/relax_vm.html",
+        "docs/arch/relax_vm.rst",
+        "页面说明 Relax 函数如何变成 VM 指令、常量池与本地模块，并比较字节码模式和编译模式。",
+        "VM 管理函数调用、寄存器和控制流程，张量计算由 TIR 内核或外部函数完成。链接阶段把 VM 程序和编译模块组合成可执行对象。",
+        "`VMCodeGen`、`ExecBuilder`、`Call`、`If`、`Goto`、`Ret`、`VMExecutable`",
+        "构建含条件分支的小 Relax 函数，检查两个输入分别选择不同分支，并查看可执行对象统计。",
+        "外部 NPU 调用最终也是 VM 可调用函数。异步执行要保证 VM 使用输出前已经建立完成依赖。",
+        "VM 是控制执行的组件，不应被理解为实现矩阵计算的数值内核。",
+    ),
+]
