@@ -1,0 +1,853 @@
+#
+# A fatal error has been detected by the Java Runtime Environment:
+#
+#  SIGBUS (0x7) at pc=0x00007f6efd67a217, pid=1240213, tid=1240270
+#
+# JRE version: OpenJDK Runtime Environment Temurin-21.0.10+7 (21.0.10+7) (build 21.0.10+7-LTS)
+# Java VM: OpenJDK 64-Bit Server VM Temurin-21.0.10+7 (21.0.10+7-LTS, mixed mode, tiered, compressed oops, compressed class ptrs, g1 gc, linux-amd64)
+# Problematic frame:
+# V  [libjvm.so+0x67a217]  CompileBroker::collect_statistics(CompilerThread*, elapsedTimer, CompileTask*)+0xb7
+#
+# Core dump will be written. Default location: Core dumps may be processed with "/usr/lib/systemd/systemd-coredump %P %u %g %s %t %c %h %d %F" (or dumping to /home/yusen/Obsidian Vault/core.1240213)
+#
+# If you would like to submit a bug report, please visit:
+#   https://github.com/adoptium/adoptium-support/issues
+#
+
+---------------  S U M M A R Y ------------
+
+Command Line: -Xms64m -Xmx2048m -Dapp.name=ltex-ls-plus -Dapp.pid=1240213 -Dapp.repo=/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib -Dapp.home=/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0 -Dbasedir=/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0 org.bsplines.ltexls.LtexLanguageServerLauncher
+
+Host: 11th Gen Intel(R) Core(TM) i7-11800H @ 2.30GHz, 16 cores, 15G, LSB_VERSION="core-2.0-noarch:core-3.2-noarch:core-4.0-noarch:core-2.0-x86_64:core-3.2-x86_64:core-4.0-x86_64"
+Time: Thu Jul 30 01:14:54 2026 CST elapsed time: 0.216517 seconds (0d 0h 0m 0s)
+
+---------------  T H R E A D  ---------------
+
+Current thread (0x00007f6ef81eadc0):  JavaThread "C1 CompilerThread0" daemon [_thread_in_vm, id=1240270, stack(0x00007f6eafcfe000,0x00007f6eafdfe000) (1024K)]
+
+
+Current CompileTask:
+C1:216  154       3       java.lang.String::indexOf (64 bytes)
+
+Stack: [0x00007f6eafcfe000,0x00007f6eafdfe000],  sp=0x00007f6eafdfc340,  free space=1016k
+Native frames: (J=compiled Java code, j=interpreted, Vv=VM code, C=native code)
+V  [libjvm.so+0x67a217]  CompileBroker::collect_statistics(CompilerThread*, elapsedTimer, CompileTask*)+0xb7
+V  [libjvm.so+0x67b659]  CompileBroker::invoke_compiler_on_method(CompileTask*)+0x729
+V  [libjvm.so+0x67ef08]  CompileBroker::compiler_thread_loop()+0x738
+V  [libjvm.so+0x92f8a8]  JavaThread::thread_main_inner()+0x1d8
+V  [libjvm.so+0xf84d48]  Thread::call_run()+0xa8
+V  [libjvm.so+0xd0e2da]  thread_native_entry(Thread*)+0xda
+
+siginfo: si_signo: 7 (SIGBUS), si_code: 2 (BUS_ADRERR), si_addr: 0x00007f6efe9ba4b0
+
+Registers:
+RAX=0x00007f6efe9ba4b0, RBX=0x00007f6ef81ead10, RCX=0x00007f6ef81eba30, RDX=0x0000000000000001
+RSP=0x00007f6eafdfc340, RBP=0x00007f6eafdfc3d0, RSI=0x000000000005154a, RDI=0x00007f6eafdfc3e0
+R8 =0x00007f6efe555360, R9 =0x000000000012ecce, R10=0x0000000000000000, R11=0x00007f6efe9ff000
+R12=0x00007f6efe555358, R13=0x0000000000000003, R14=0x00007f6ef8241090, R15=0x00007f6ef8241090
+RIP=0x00007f6efd67a217, EFLAGS=0x0000000000010202, CSGSFS=0x002b000000000033, ERR=0x0000000000000007
+  TRAPNO=0x000000000000000e
+
+XMM[0]=0x00007f6ef81eadc0 0x00007f6ec000aef8
+XMM[1]=0x0000000000000000 0x00007f6ef81eadc0
+XMM[2]=0x0000000000000000 0x0000000000000010
+XMM[3]=0x0000000000000000 0x00000000000007b0
+XMM[4]=0x0000000000000000 0x00000000000007c0
+XMM[5]=0x0000000000000000 0x0000000000000020
+XMM[6]=0x00007f6efe4c7040 0x00007f6efe4c6eb0
+XMM[7]=0x0000000000000000 0x00007f6ef81eadc0
+XMM[8]=0xffffffff00000000 0x0000000000000000
+XMM[9]=0x61616160616570d9 0x6161616161616161
+XMM[10]=0x6161616115190415 0x0f0e220d0e13150f
+XMM[11]=0x0000000000000000 0x00007f6efe1c71e0
+XMM[12]=0x0000000000000000 0x0000000000000000
+XMM[13]=0x0000000000000000 0x0000000000000000
+XMM[14]=0x0000000000000000 0x0000000000000000
+XMM[15]=0x0000000000000000 0x0000000000000000
+  MXCSR=0x00001fa2
+
+
+Register to memory mapping:
+
+RAX=0x00007f6efe9ba4b0 points into unknown readable memory: 0x00000000019a343e | 3e 34 9a 01 00 00 00 00
+RBX=0x00007f6ef81ead10 points into unknown readable memory: 0x6e616c2f6176616a | 6a 61 76 61 2f 6c 61 6e
+RCX=0x00007f6ef81eba30 points into unknown readable memory: 0x00007f6ec000aef8 | f8 ae 00 c0 6e 7f 00 00
+RDX=0x0000000000000001 is an unknown value
+RSP=0x00007f6eafdfc340 is pointing into the stack for thread: 0x00007f6ef81eadc0
+RBP=0x00007f6eafdfc3d0 is pointing into the stack for thread: 0x00007f6ef81eadc0
+RSI=0x000000000005154a is an unknown value
+RDI=0x00007f6eafdfc3e0 is pointing into the stack for thread: 0x00007f6ef81eadc0
+R8 =0x00007f6efe555360: <offset 0x0000000001555360> in /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/lib/server/libjvm.so at 0x00007f6efd000000
+R9 =0x000000000012ecce is an unknown value
+R10=0x0 is null
+R11=0x00007f6efe9ff000 points into unknown readable memory: 0x0000000103283454 | 54 34 28 03 01 00 00 00
+R12=0x00007f6efe555358: <offset 0x0000000001555358> in /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/lib/server/libjvm.so at 0x00007f6efd000000
+R13=0x0000000000000003 is an unknown value
+R14=0x00007f6ef8241090 points into unknown readable memory: 0x00007f6ef8241140 | 40 11 24 f8 6e 7f 00 00
+R15=0x00007f6ef8241090 points into unknown readable memory: 0x00007f6ef8241140 | 40 11 24 f8 6e 7f 00 00
+
+Top of Stack: (sp=0x00007f6eafdfc340)
+0x00007f6eafdfc340:   0000000000000000 00007f6ef81ead00
+0x00007f6eafdfc350:   0000000000000000 00007f6ef81eadc0
+0x00007f6eafdfc360:   00007f6eafdfc578 00007f01ffffffff
+0x00007f6eafdfc370:   00007f6ec000aef8 00007f6ef81eadc0
+0x00007f6eafdfc380:   00007f6eafdfc3d0 00007f6efd445971
+0x00007f6eafdfc390:   0000000000000008 00007f6ea40b8d80
+0x00007f6eafdfc3a0:   00007f6eafdfc3c0 00007f6efe5381e8
+0x00007f6eafdfc3b0:   00007f6ee0a962f8 00007f6efe1225d1
+0x00007f6eafdfc3c0:   00007f6ef81eadc0 00007f6ef8241090
+0x00007f6eafdfc3d0:   00007f6eafdfcba0 00007f6efd67b659
+0x00007f6eafdfc3e0:   000000000005154a 00007f6eafcfc990
+0x00007f6eafdfc3f0:   00007f6eafcfcc00 00007f6efd67b60d
+0x00007f6eafdfc400:   00007f6eafdfc4e0 0000009af81eb520
+0x00007f6eafdfc410:   00007f6ef81eb510 00007f6ef81eb550
+0x00007f6eafdfc420:   00000000000003d8 00007f6ef81eb8f8
+0x00007f6eafdfc430:   00007f6eafdfc570 00007f6ef81eb510
+0x00007f6eafdfc440:   00007f6ef81eb550 00007f6ef81eb680
+0x00007f6eafdfc450:   00007f6efe53cda0 00007f6ef81e90b0
+0x00007f6eafdfc460:   00007f6eedaeb100 00007f6ea405e390
+0x00007f6eafdfc470:   00007f6eedaeaf00 0000000000000000
+0x00007f6eafdfc480:   00007f6ee0aa40c8 00007f6efe71faa3
+0x00007f6eafdfc490:   00007f6ee0aa08c8 00007f6ee0aa40c8
+0x00007f6eafdfc4a0:   00007f6effffffff 00007f6eafcfc6c0
+0x00007f6eafdfc4b0:   00007f6eafdfc5b0 00007f6e00000003
+0x00007f6eafdfc4c0:   00007f6e00000000 00007f6efe69b449
+0x00007f6eafdfc4d0:   00007f6ea4000030 0000000000000520
+0x00007f6eafdfc4e0:   000000000005154a 00007f6eafcfc990
+0x00007f6eafdfc4f0:   00007f6eafcfcc00 00007f6eafcfc990
+0x00007f6eafdfc500:   0000000000000000 00007f6eafbfc000
+0x00007f6eafdfc510:   00000000000fff80 00007f6eafcfc6c0
+0x00007f6eafdfc520:   0000000000000000 0000000000000000
+0x00007f6eafdfc530:   0000000000000000 00007f6efe697dd8 
+
+Instructions: (pc=0x00007f6efd67a217)
+0x00007f6efd67a117:   84 66 ff ff ff e9 79 ff ff ff 0f 1f 80 00 00 00
+0x00007f6efd67a127:   00 8d 70 01 85 f6 7e 19 85 f0 75 15 48 89 df e8
+0x00007f6efd67a137:   a5 d5 c6 ff 48 63 03 e9 a1 fe ff ff 0f 1f 44 00
+0x00007f6efd67a147:   00 0f bd f6 b9 20 00 00 00 83 f6 1f 29 f1 be 01
+0x00007f6efd67a157:   00 00 00 d3 e6 eb d5 66 90 55 66 48 0f 6e cf 48
+0x00007f6efd67a167:   89 e5 41 57 41 56 49 89 f6 41 55 41 54 49 89 fc
+0x00007f6efd67a177:   53 48 83 ec 68 48 8b 5e 10 0f b6 46 25 66 48 0f
+0x00007f6efd67a187:   6e c3 88 45 9c 66 0f 6c c1 0f 29 45 a0 48 85 db
+0x00007f6efd67a197:   74 24 4c 8b af 30 03 00 00 49 63 45 00 41 3b 45
+0x00007f6efd67a1a7:   04 0f 84 b2 03 00 00 8d 48 01 41 89 4d 00 49 8b
+0x00007f6efd67a1b7:   4d 08 48 89 1c c1 41 8b 46 20 49 8b 9c 24 00 07
+0x00007f6efd67a1c7:   00 00 45 8b 6e 50 89 45 98 48 8d 05 09 94 ed 00
+0x00007f6efd67a1d7:   4c 8b 20 4d 85 e4 74 08 4c 89 e7 e8 59 6a 64 00
+0x00007f6efd67a1e7:   48 83 ec 08 ff 75 20 48 8d 3d 0b 2a eb 00 ff 75
+0x00007f6efd67a1f7:   18 ff 75 10 e8 80 9e 91 00 48 8b 05 a1 2a eb 00
+0x00007f6efd67a207:   48 8b 75 10 48 83 c4 20 48 8d 7d 10 48 8b 40 28
+0x00007f6efd67a217:   48 01 30 4c 8b 3d 1f 29 eb 00 e8 4a 9f 91 00 49
+0x00007f6efd67a227:   39 c7 4c 0f 4c f8 80 7d 9c 00 4c 89 3d 08 29 eb
+0x00007f6efd67a237:   00 0f 85 c2 00 00 00 4c 8d 2d eb dd e7 00 83 05
+0x00007f6efd67a247:   24 29 eb 00 01 41 80 7d 00 00 0f 85 c9 02 00 00
+0x00007f6efd67a257:   48 83 ec 08 ff 75 20 48 8d 3d 1b 29 eb 00 ff 75
+0x00007f6efd67a267:   18 ff 75 10 e8 10 9e 91 00 41 0f b6 45 00 48 83
+0x00007f6efd67a277:   c4 20 84 c0 74 56 31 c0 c6 83 9e 00 00 00 00 66
+0x00007f6efd67a287:   0f ef c0 48 c7 83 90 00 00 00 00 00 00 00 c7 83
+0x00007f6efd67a297:   98 00 00 00 00 00 00 00 66 89 83 9c 00 00 00 c6
+0x00007f6efd67a2a7:   83 9f 00 00 00 00 0f 11 03 0f 11 43 10 0f 11 43
+0x00007f6efd67a2b7:   20 0f 11 43 30 0f 11 43 40 0f 11 43 50 0f 11 43
+0x00007f6efd67a2c7:   60 0f 11 43 70 0f 11 83 80 00 00 00 4d 85 e4 74
+0x00007f6efd67a2d7:   08 4c 89 e7 e8 00 6b 64 00 48 8d 7d a0 e8 97 a2
+0x00007f6efd67a2e7:   22 00 48 8d 65 d8 5b 41 5c 41 5d 41 5e 41 5f 5d
+0x00007f6efd67a2f7:   c3 0f 1f 84 00 00 00 00 00 41 80 7e 25 00 75 49
+0x00007f6efd67a307:   4c 8d 2d 22 dd e7 00 41 80 7d 00 00 0f 85 7f 03 
+
+
+Stack slot to memory mapping:
+
+stack at sp + 0 slots: 0x0 is null
+stack at sp + 1 slots: 0x00007f6ef81ead00 points into unknown readable memory: 0x0000000000000003 | 03 00 00 00 00 00 00 00
+stack at sp + 2 slots: 0x0 is null
+stack at sp + 3 slots: 0x00007f6ef81eadc0 is a thread
+stack at sp + 4 slots: 0x00007f6eafdfc578 is pointing into the stack for thread: 0x00007f6ef81eadc0
+stack at sp + 5 slots: 0x00007f01ffffffff is an unknown value
+stack at sp + 6 slots: {method} {0x00007f6ec000aef8} 'indexOf' '(Ljava/lang/String;)I' in 'java/lang/String'
+stack at sp + 7 slots: 0x00007f6ef81eadc0 is a thread
+
+
+---------------  P R O C E S S  ---------------
+
+Threads class SMR info:
+_java_thread_list=0x00007f6ef82802b0, length=11, elements={
+0x00007f6ef8032c60, 0x00007f6ef81da8e0, 0x00007f6ef81db780, 0x00007f6ef81dd080,
+0x00007f6ef81de5f0, 0x00007f6ef81e81c0, 0x00007f6ef81e9700, 0x00007f6ef81eadc0,
+0x00007f6ea4075a70, 0x00007f6ef82784a0, 0x00007f6ef827f2f0
+}
+
+Java Threads: ( => current thread )
+  0x00007f6ef8032c60 JavaThread "main"                              [_thread_in_vm, id=1240230, stack(0x00007f6efcf00000,0x00007f6efd000000) (1024K)]
+  0x00007f6ef81da8e0 JavaThread "Reference Handler"          daemon [_thread_blocked, id=1240262, stack(0x00007f6ee06b8000,0x00007f6ee07b8000) (1024K)]
+  0x00007f6ef81db780 JavaThread "Finalizer"                  daemon [_thread_blocked, id=1240263, stack(0x00007f6ee0300000,0x00007f6ee0400000) (1024K)]
+  0x00007f6ef81dd080 JavaThread "Signal Dispatcher"          daemon [_thread_blocked, id=1240266, stack(0x00007f6ee01ff000,0x00007f6ee02ff000) (1024K)]
+  0x00007f6ef81de5f0 JavaThread "Service Thread"             daemon [_thread_blocked, id=1240267, stack(0x00007f6ee00fe000,0x00007f6ee01fe000) (1024K)]
+  0x00007f6ef81e81c0 JavaThread "Monitor Deflation Thread"   daemon [_thread_blocked, id=1240268, stack(0x00007f6eaff00000,0x00007f6eb0000000) (1024K)]
+  0x00007f6ef81e9700 JavaThread "C2 CompilerThread0"         daemon [_thread_blocked, id=1240269, stack(0x00007f6eafdff000,0x00007f6eafeff000) (1024K)]
+=>0x00007f6ef81eadc0 JavaThread "C1 CompilerThread0"         daemon [_thread_in_vm, id=1240270, stack(0x00007f6eafcfe000,0x00007f6eafdfe000) (1024K)]
+  0x00007f6ea4075a70 JavaThread "C1 CompilerThread1"         daemon [_thread_blocked, id=1240276, stack(0x00007f6eafbfd000,0x00007f6eafcfd000) (1024K)]
+  0x00007f6ef82784a0 JavaThread "Notification Thread"        daemon [_thread_blocked, id=1240278, stack(0x00007f6eafafc000,0x00007f6eafbfc000) (1024K)]
+  0x00007f6ef827f2f0 JavaThread "Common-Cleaner"             daemon [_thread_blocked, id=1240279, stack(0x00007f6eaf9fb000,0x00007f6eafafb000) (1024K)]
+Total: 11
+
+Other Threads:
+  0x00007f6ef810dc60 VMThread "VM Thread"                           [id=1240251, stack(0x00007f6ee0814000,0x00007f6ee0914000) (1024K)]
+  0x00007f6ef81025d0 WatcherThread "VM Periodic Task Thread"        [id=1240243, stack(0x00007f6ee0915000,0x00007f6ee0a15000) (1024K)]
+  0x00007f6ef806c230 WorkerThread "GC Thread#0"                     [id=1240233, stack(0x00007f6ee3c3b000,0x00007f6ee3d3b000) (1024K)]
+  0x00007f6ef807d7a0 ConcurrentGCThread "G1 Main Marker"            [id=1240235, stack(0x00007f6ee3b3a000,0x00007f6ee3c3a000) (1024K)]
+  0x00007f6ef807e670 WorkerThread "G1 Conc#0"                       [id=1240237, stack(0x00007f6ee3a39000,0x00007f6ee3b39000) (1024K)]
+  0x00007f6ef80f0de0 ConcurrentGCThread "G1 Refine#0"               [id=1240239, stack(0x00007f6ee0bf3000,0x00007f6ee0cf3000) (1024K)]
+  0x00007f6ef80f1cd0 ConcurrentGCThread "G1 Service"                [id=1240240, stack(0x00007f6ee0af2000,0x00007f6ee0bf2000) (1024K)]
+Total: 7
+
+Threads with active compile tasks:
+C2 CompilerThread0  220  151       4       java.lang.StringLatin1::indexOfChar (33 bytes)
+C1 CompilerThread0  220  154       3       java.lang.String::indexOf (64 bytes)
+C1 CompilerThread1  220  153       3       java.io.UnixFileSystem::normalize (41 bytes)
+Total: 3
+
+VM state: not at safepoint (normal execution)
+
+VM Mutex/Monitor currently owned by a thread:  ([mutex/lock_event])
+[0x00007f6efe555358] CompileStatistics_lock - owner thread: 0x00007f6ef81eadc0
+
+Heap address: 0x0000000080000000, size: 2048 MB, Compressed Oops mode: 32-bit
+
+CDS archive(s) not mapped
+Compressed class space mapped at: 0x0000000100000000-0x0000000140000000, reserved size: 1073741824
+Narrow klass base: 0x0000000000000000, Narrow klass shift: 3, Narrow klass range: 0x140000000
+
+GC Precious Log:
+ CardTable entry size: 512
+ Card Set container configuration: InlinePtr #cards 5 size 8 Array Of Cards #cards 12 size 40 Howl #buckets 4 coarsen threshold 1843 Howl Bitmap #cards 512 size 80 coarsen threshold 460 Card regions per heap region 1 cards per card region 2048
+ CPUs: 16 total, 16 available
+ Memory: 15716M
+ Large Page Support: Disabled
+ NUMA Support: Disabled
+ Compressed Oops: Enabled (32-bit)
+ Heap Region Size: 1M
+ Heap Min Capacity: 64M
+ Heap Initial Capacity: 64M
+ Heap Max Capacity: 2G
+ Pre-touch: Disabled
+ Parallel Workers: 13
+ Concurrent Workers: 3
+ Concurrent Refinement Workers: 13
+ Periodic GC: Disabled
+
+Heap:
+ garbage-first heap   total 65536K, used 2048K [0x0000000080000000, 0x0000000100000000)
+  region size 1024K, 4 young (4096K), 0 survivors (0K)
+ Metaspace       used 4727K, committed 4800K, reserved 1114112K
+  class space    used 410K, committed 448K, reserved 1048576K
+
+Heap Regions: E=young(eden), S=young(survivor), O=old, HS=humongous(starts), HC=humongous(continues), CS=collection set, F=free, TAMS=top-at-mark-start, PB=parsable bottom
+|   0|0x0000000080000000, 0x0000000080000000, 0x0000000080100000|  0%| F|  |TAMS 0x0000000080000000| PB 0x0000000080000000| Untracked 
+|   1|0x0000000080100000, 0x0000000080100000, 0x0000000080200000|  0%| F|  |TAMS 0x0000000080100000| PB 0x0000000080100000| Untracked 
+|   2|0x0000000080200000, 0x0000000080200000, 0x0000000080300000|  0%| F|  |TAMS 0x0000000080200000| PB 0x0000000080200000| Untracked 
+|   3|0x0000000080300000, 0x0000000080300000, 0x0000000080400000|  0%| F|  |TAMS 0x0000000080300000| PB 0x0000000080300000| Untracked 
+|   4|0x0000000080400000, 0x0000000080400000, 0x0000000080500000|  0%| F|  |TAMS 0x0000000080400000| PB 0x0000000080400000| Untracked 
+|   5|0x0000000080500000, 0x0000000080500000, 0x0000000080600000|  0%| F|  |TAMS 0x0000000080500000| PB 0x0000000080500000| Untracked 
+|   6|0x0000000080600000, 0x0000000080600000, 0x0000000080700000|  0%| F|  |TAMS 0x0000000080600000| PB 0x0000000080600000| Untracked 
+|   7|0x0000000080700000, 0x0000000080700000, 0x0000000080800000|  0%| F|  |TAMS 0x0000000080700000| PB 0x0000000080700000| Untracked 
+|   8|0x0000000080800000, 0x0000000080800000, 0x0000000080900000|  0%| F|  |TAMS 0x0000000080800000| PB 0x0000000080800000| Untracked 
+|   9|0x0000000080900000, 0x0000000080900000, 0x0000000080a00000|  0%| F|  |TAMS 0x0000000080900000| PB 0x0000000080900000| Untracked 
+|  10|0x0000000080a00000, 0x0000000080a00000, 0x0000000080b00000|  0%| F|  |TAMS 0x0000000080a00000| PB 0x0000000080a00000| Untracked 
+|  11|0x0000000080b00000, 0x0000000080b00000, 0x0000000080c00000|  0%| F|  |TAMS 0x0000000080b00000| PB 0x0000000080b00000| Untracked 
+|  12|0x0000000080c00000, 0x0000000080c00000, 0x0000000080d00000|  0%| F|  |TAMS 0x0000000080c00000| PB 0x0000000080c00000| Untracked 
+|  13|0x0000000080d00000, 0x0000000080d00000, 0x0000000080e00000|  0%| F|  |TAMS 0x0000000080d00000| PB 0x0000000080d00000| Untracked 
+|  14|0x0000000080e00000, 0x0000000080e00000, 0x0000000080f00000|  0%| F|  |TAMS 0x0000000080e00000| PB 0x0000000080e00000| Untracked 
+|  15|0x0000000080f00000, 0x0000000080f00000, 0x0000000081000000|  0%| F|  |TAMS 0x0000000080f00000| PB 0x0000000080f00000| Untracked 
+|  16|0x0000000081000000, 0x0000000081000000, 0x0000000081100000|  0%| F|  |TAMS 0x0000000081000000| PB 0x0000000081000000| Untracked 
+|  17|0x0000000081100000, 0x0000000081100000, 0x0000000081200000|  0%| F|  |TAMS 0x0000000081100000| PB 0x0000000081100000| Untracked 
+|  18|0x0000000081200000, 0x0000000081200000, 0x0000000081300000|  0%| F|  |TAMS 0x0000000081200000| PB 0x0000000081200000| Untracked 
+|  19|0x0000000081300000, 0x0000000081300000, 0x0000000081400000|  0%| F|  |TAMS 0x0000000081300000| PB 0x0000000081300000| Untracked 
+|  20|0x0000000081400000, 0x0000000081400000, 0x0000000081500000|  0%| F|  |TAMS 0x0000000081400000| PB 0x0000000081400000| Untracked 
+|  21|0x0000000081500000, 0x0000000081500000, 0x0000000081600000|  0%| F|  |TAMS 0x0000000081500000| PB 0x0000000081500000| Untracked 
+|  22|0x0000000081600000, 0x0000000081600000, 0x0000000081700000|  0%| F|  |TAMS 0x0000000081600000| PB 0x0000000081600000| Untracked 
+|  23|0x0000000081700000, 0x0000000081700000, 0x0000000081800000|  0%| F|  |TAMS 0x0000000081700000| PB 0x0000000081700000| Untracked 
+|  24|0x0000000081800000, 0x0000000081800000, 0x0000000081900000|  0%| F|  |TAMS 0x0000000081800000| PB 0x0000000081800000| Untracked 
+|  25|0x0000000081900000, 0x0000000081900000, 0x0000000081a00000|  0%| F|  |TAMS 0x0000000081900000| PB 0x0000000081900000| Untracked 
+|  26|0x0000000081a00000, 0x0000000081a00000, 0x0000000081b00000|  0%| F|  |TAMS 0x0000000081a00000| PB 0x0000000081a00000| Untracked 
+|  27|0x0000000081b00000, 0x0000000081b00000, 0x0000000081c00000|  0%| F|  |TAMS 0x0000000081b00000| PB 0x0000000081b00000| Untracked 
+|  28|0x0000000081c00000, 0x0000000081c00000, 0x0000000081d00000|  0%| F|  |TAMS 0x0000000081c00000| PB 0x0000000081c00000| Untracked 
+|  29|0x0000000081d00000, 0x0000000081d00000, 0x0000000081e00000|  0%| F|  |TAMS 0x0000000081d00000| PB 0x0000000081d00000| Untracked 
+|  30|0x0000000081e00000, 0x0000000081e00000, 0x0000000081f00000|  0%| F|  |TAMS 0x0000000081e00000| PB 0x0000000081e00000| Untracked 
+|  31|0x0000000081f00000, 0x0000000081f00000, 0x0000000082000000|  0%| F|  |TAMS 0x0000000081f00000| PB 0x0000000081f00000| Untracked 
+|  32|0x0000000082000000, 0x0000000082000000, 0x0000000082100000|  0%| F|  |TAMS 0x0000000082000000| PB 0x0000000082000000| Untracked 
+|  33|0x0000000082100000, 0x0000000082100000, 0x0000000082200000|  0%| F|  |TAMS 0x0000000082100000| PB 0x0000000082100000| Untracked 
+|  34|0x0000000082200000, 0x0000000082200000, 0x0000000082300000|  0%| F|  |TAMS 0x0000000082200000| PB 0x0000000082200000| Untracked 
+|  35|0x0000000082300000, 0x0000000082300000, 0x0000000082400000|  0%| F|  |TAMS 0x0000000082300000| PB 0x0000000082300000| Untracked 
+|  36|0x0000000082400000, 0x0000000082400000, 0x0000000082500000|  0%| F|  |TAMS 0x0000000082400000| PB 0x0000000082400000| Untracked 
+|  37|0x0000000082500000, 0x0000000082500000, 0x0000000082600000|  0%| F|  |TAMS 0x0000000082500000| PB 0x0000000082500000| Untracked 
+|  38|0x0000000082600000, 0x0000000082600000, 0x0000000082700000|  0%| F|  |TAMS 0x0000000082600000| PB 0x0000000082600000| Untracked 
+|  39|0x0000000082700000, 0x0000000082700000, 0x0000000082800000|  0%| F|  |TAMS 0x0000000082700000| PB 0x0000000082700000| Untracked 
+|  40|0x0000000082800000, 0x0000000082800000, 0x0000000082900000|  0%| F|  |TAMS 0x0000000082800000| PB 0x0000000082800000| Untracked 
+|  41|0x0000000082900000, 0x0000000082900000, 0x0000000082a00000|  0%| F|  |TAMS 0x0000000082900000| PB 0x0000000082900000| Untracked 
+|  42|0x0000000082a00000, 0x0000000082a00000, 0x0000000082b00000|  0%| F|  |TAMS 0x0000000082a00000| PB 0x0000000082a00000| Untracked 
+|  43|0x0000000082b00000, 0x0000000082b00000, 0x0000000082c00000|  0%| F|  |TAMS 0x0000000082b00000| PB 0x0000000082b00000| Untracked 
+|  44|0x0000000082c00000, 0x0000000082c00000, 0x0000000082d00000|  0%| F|  |TAMS 0x0000000082c00000| PB 0x0000000082c00000| Untracked 
+|  45|0x0000000082d00000, 0x0000000082d00000, 0x0000000082e00000|  0%| F|  |TAMS 0x0000000082d00000| PB 0x0000000082d00000| Untracked 
+|  46|0x0000000082e00000, 0x0000000082e00000, 0x0000000082f00000|  0%| F|  |TAMS 0x0000000082e00000| PB 0x0000000082e00000| Untracked 
+|  47|0x0000000082f00000, 0x0000000082f00000, 0x0000000083000000|  0%| F|  |TAMS 0x0000000082f00000| PB 0x0000000082f00000| Untracked 
+|  48|0x0000000083000000, 0x0000000083000000, 0x0000000083100000|  0%| F|  |TAMS 0x0000000083000000| PB 0x0000000083000000| Untracked 
+|  49|0x0000000083100000, 0x0000000083100000, 0x0000000083200000|  0%| F|  |TAMS 0x0000000083100000| PB 0x0000000083100000| Untracked 
+|  50|0x0000000083200000, 0x0000000083200000, 0x0000000083300000|  0%| F|  |TAMS 0x0000000083200000| PB 0x0000000083200000| Untracked 
+|  51|0x0000000083300000, 0x0000000083300000, 0x0000000083400000|  0%| F|  |TAMS 0x0000000083300000| PB 0x0000000083300000| Untracked 
+|  52|0x0000000083400000, 0x0000000083400000, 0x0000000083500000|  0%| F|  |TAMS 0x0000000083400000| PB 0x0000000083400000| Untracked 
+|  53|0x0000000083500000, 0x0000000083500000, 0x0000000083600000|  0%| F|  |TAMS 0x0000000083500000| PB 0x0000000083500000| Untracked 
+|  54|0x0000000083600000, 0x0000000083600000, 0x0000000083700000|  0%| F|  |TAMS 0x0000000083600000| PB 0x0000000083600000| Untracked 
+|  55|0x0000000083700000, 0x0000000083700000, 0x0000000083800000|  0%| F|  |TAMS 0x0000000083700000| PB 0x0000000083700000| Untracked 
+|  56|0x0000000083800000, 0x0000000083800000, 0x0000000083900000|  0%| F|  |TAMS 0x0000000083800000| PB 0x0000000083800000| Untracked 
+|  57|0x0000000083900000, 0x0000000083900000, 0x0000000083a00000|  0%| F|  |TAMS 0x0000000083900000| PB 0x0000000083900000| Untracked 
+|  58|0x0000000083a00000, 0x0000000083a00000, 0x0000000083b00000|  0%| F|  |TAMS 0x0000000083a00000| PB 0x0000000083a00000| Untracked 
+|  59|0x0000000083b00000, 0x0000000083b00000, 0x0000000083c00000|  0%| F|  |TAMS 0x0000000083b00000| PB 0x0000000083b00000| Untracked 
+|  60|0x0000000083c00000, 0x0000000083cd4a08, 0x0000000083d00000| 83%| E|  |TAMS 0x0000000083c00000| PB 0x0000000083c00000| Complete 
+|  61|0x0000000083d00000, 0x0000000083e00000, 0x0000000083e00000|100%| E|  |TAMS 0x0000000083d00000| PB 0x0000000083d00000| Complete 
+|  62|0x0000000083e00000, 0x0000000083f00000, 0x0000000083f00000|100%| E|CS|TAMS 0x0000000083e00000| PB 0x0000000083e00000| Complete 
+|  63|0x0000000083f00000, 0x0000000084000000, 0x0000000084000000|100%| E|CS|TAMS 0x0000000083f00000| PB 0x0000000083f00000| Complete 
+
+Card table byte_map: [0x00007f6ee5e00000,0x00007f6ee6200000] _byte_map_base: 0x00007f6ee5a00000
+
+Marking Bits: (CMBitMap*) 0x00007f6ef806cc90
+ Bits: [0x00007f6ee3e00000, 0x00007f6ee5e00000)
+
+Polling page: 0x00007f6efe9c0000
+
+Metaspace:
+
+Usage:
+  Non-class:      4.22 MB used.
+      Class:    410.20 KB used.
+       Both:      4.62 MB used.
+
+Virtual space:
+  Non-class space:       64.00 MB reserved,       4.25 MB (  7%) committed,  1 nodes.
+      Class space:        1.00 GB reserved,     448.00 KB ( <1%) committed,  1 nodes.
+             Both:        1.06 GB reserved,       4.69 MB ( <1%) committed. 
+
+Chunk freelists:
+   Non-Class:  11.00 MB
+       Class:  15.56 MB
+        Both:  26.56 MB
+
+MaxMetaspaceSize: unlimited
+CompressedClassSpaceSize: 1.00 GB
+Initial GC threshold: 21.00 MB
+Current GC threshold: 21.00 MB
+CDS: off
+ - commit_granule_bytes: 65536.
+ - commit_granule_words: 8192.
+ - virtual_space_node_default_size: 8388608.
+ - enlarge_chunks_in_place: 1.
+ - use_allocation_guard: 0.
+
+
+Internal statistics:
+
+num_allocs_failed_limit: 0.
+num_arena_births: 2.
+num_arena_deaths: 0.
+num_vsnodes_births: 2.
+num_vsnodes_deaths: 0.
+num_space_committed: 75.
+num_space_uncommitted: 0.
+num_chunks_returned_to_freelist: 0.
+num_chunks_taken_from_freelist: 6.
+num_chunk_merges: 0.
+num_chunk_splits: 3.
+num_chunks_enlarged: 0.
+num_inconsistent_stats: 0.
+
+CodeHeap 'non-profiled nmethods': size=119168Kb used=37Kb max_used=37Kb free=119130Kb
+ bounds [0x00007f6eee1a0000, 0x00007f6eee410000, 0x00007f6ef5600000]
+CodeHeap 'profiled nmethods': size=119164Kb used=226Kb max_used=226Kb free=118937Kb
+ bounds [0x00007f6ee6600000, 0x00007f6ee6870000, 0x00007f6eeda5f000]
+CodeHeap 'non-nmethods': size=7428Kb used=1825Kb max_used=1839Kb free=5602Kb
+ bounds [0x00007f6eeda5f000, 0x00007f6eedccf000, 0x00007f6eee1a0000]
+CodeCache: size=245760Kb, used=2088Kb, max_used=2102Kb, free=243669Kb
+ total_blobs=483, nmethods=153, adapters=235, full_count=0
+Compilation: enabled, stopped_count=0, restarted_count=0
+
+Compilation events (20 events):
+Event: 0.173 Thread 0x00007f6ef81eadc0 nmethod 141 0x00007f6ee662ea90 code [0x00007f6ee662ec80, 0x00007f6ee662f0d0]
+Event: 0.173 Thread 0x00007f6ef81eadc0  142       1       java.util.LinkedHashMap::removeEldestEntry (2 bytes)
+Event: 0.173 Thread 0x00007f6ef81eadc0 nmethod 142 0x00007f6eee1a7490 code [0x00007f6eee1a7620, 0x00007f6eee1a76e0]
+Event: 0.174 Thread 0x00007f6ef81eadc0  145       3       java.util.jar.Manifest$FastInputStream::readLine (9 bytes)
+Event: 0.174 Thread 0x00007f6ef81eadc0 nmethod 145 0x00007f6ee662f310 code [0x00007f6ee662f4c0, 0x00007f6ee662f618]
+Event: 0.175 Thread 0x00007f6ea4075a70 nmethod 140 0x00007f6ee662f710 code [0x00007f6ee66300e0, 0x00007f6ee66356c8]
+Event: 0.178 Thread 0x00007f6ef81e9700  146       4       jdk.internal.util.ArraysSupport::vectorizedHashCode (158 bytes)
+Event: 0.179 Thread 0x00007f6ea4075a70  147       1       java.lang.AbstractStringBuilder::getValue (5 bytes)
+Event: 0.179 Thread 0x00007f6ef81eadc0  148       1       java.lang.AbstractStringBuilder::length (5 bytes)
+Event: 0.179 Thread 0x00007f6ea4075a70 nmethod 147 0x00007f6eee1a8210 code [0x00007f6eee1a83a0, 0x00007f6eee1a8460]
+Event: 0.179 Thread 0x00007f6ef81eadc0 nmethod 148 0x00007f6eee1a8510 code [0x00007f6eee1a86a0, 0x00007f6eee1a8760]
+Event: 0.180 Thread 0x00007f6ef81e9700 nmethod 146 0x00007f6eee1a8810 code [0x00007f6eee1a89a0, 0x00007f6eee1a8bd0]
+Event: 0.192 Thread 0x00007f6ef81e9700  150       4       java.util.zip.ZipFile$Source::zipCoderForPos (39 bytes)
+Event: 0.193 Thread 0x00007f6ef81e9700 nmethod 150 0x00007f6eee1a9090 code [0x00007f6eee1a9220, 0x00007f6eee1a92f0]
+Event: 0.204 Thread 0x00007f6ef81e9700  151       4       java.lang.StringLatin1::indexOfChar (33 bytes)
+Event: 0.205 Thread 0x00007f6ea4075a70  153       3       java.io.UnixFileSystem::normalize (41 bytes)
+Event: 0.205 Thread 0x00007f6ef81eadc0  154       3       java.lang.String::indexOf (64 bytes)
+Event: 0.205 Thread 0x00007f6ef81eadc0 nmethod 154 0x00007f6ee6637590 code [0x00007f6ee66377a0, 0x00007f6ee6637c18]
+Event: 0.205 Thread 0x00007f6ea4075a70 nmethod 153 0x00007f6ee6637d90 code [0x00007f6ee6637fc0, 0x00007f6ee66385d0]
+Event: 0.206 Thread 0x00007f6ef81e9700 nmethod 151 0x00007f6eee1a9390 code [0x00007f6eee1a9500, 0x00007f6eee1a96d0]
+
+GC Heap History (0 events):
+No events
+
+Dll operation events (5 events):
+Event: 0.028 Loaded shared library /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/lib/libjava.so
+Event: 0.037 Loaded shared library /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/lib/libzip.so
+Event: 0.084 Loaded shared library /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/lib/libjsvml.so
+Event: 0.103 Loaded shared library /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/lib/libnio.so
+Event: 0.108 Loaded shared library /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/lib/libzip.so
+
+Deoptimization events (4 events):
+Event: 0.117 Thread 0x00007f6ef8032c60 DEOPT PACKING pc=0x00007f6ee660d6f0 sp=0x00007f6efcffd360
+Event: 0.117 Thread 0x00007f6ef8032c60 DEOPT UNPACKING pc=0x00007f6eedab714f sp=0x00007f6efcffc7a0 mode 0
+Event: 0.204 Thread 0x00007f6ef8032c60 DEOPT PACKING pc=0x00007f6ee66096c9 sp=0x00007f6efcffd330
+Event: 0.204 Thread 0x00007f6ef8032c60 DEOPT UNPACKING pc=0x00007f6eedab714f sp=0x00007f6efcffc7b8 mode 0
+
+Classes loaded (20 events):
+Event: 0.146 Loading class java/util/TreeMap$Entry
+Event: 0.146 Loading class java/util/TreeMap$Entry done
+Event: 0.147 Loading class java/util/TreeMap$KeySet
+Event: 0.147 Loading class java/util/TreeMap$KeySet done
+Event: 0.147 Loading class java/util/TreeMap$KeyIterator
+Event: 0.147 Loading class java/util/TreeMap$PrivateEntryIterator
+Event: 0.147 Loading class java/util/TreeMap$PrivateEntryIterator done
+Event: 0.147 Loading class java/util/TreeMap$KeyIterator done
+Event: 0.150 Loading class java/util/jar/Attributes
+Event: 0.150 Loading class java/util/jar/Attributes done
+Event: 0.150 Loading class java/util/LinkedHashMap
+Event: 0.150 Loading class java/util/LinkedHashMap done
+Event: 0.150 Loading class java/util/jar/Manifest$FastInputStream
+Event: 0.150 Loading class java/util/jar/Manifest$FastInputStream done
+Event: 0.150 Loading class java/io/ByteArrayOutputStream
+Event: 0.150 Loading class java/io/ByteArrayOutputStream done
+Event: 0.150 Loading class java/util/jar/Attributes$Name
+Event: 0.150 Loading class java/util/jar/Attributes$Name done
+Event: 0.151 Loading class java/lang/reflect/Array
+Event: 0.151 Loading class java/lang/reflect/Array done
+
+Classes unloaded (0 events):
+No events
+
+Classes redefined (0 events):
+No events
+
+Internal exceptions (0 events):
+No events
+
+ZGC Phase Switch (0 events):
+No events
+
+VM Operations (2 events):
+Event: 0.150 Executing non-safepoint VM operation: HandshakeAllThreads (Deoptimize)
+Event: 0.150 Executing non-safepoint VM operation: HandshakeAllThreads (Deoptimize) done
+
+Memory protections (11 events):
+Event: 0.026 Protecting memory [0x00007f6efcf00000,0x00007f6efcf04000] with protection modes 0
+Event: 0.078 Protecting memory [0x00007f6ee06b8000,0x00007f6ee06bc000] with protection modes 0
+Event: 0.078 Protecting memory [0x00007f6ee0300000,0x00007f6ee0304000] with protection modes 0
+Event: 0.079 Protecting memory [0x00007f6ee01ff000,0x00007f6ee0203000] with protection modes 0
+Event: 0.079 Protecting memory [0x00007f6ee00fe000,0x00007f6ee0102000] with protection modes 0
+Event: 0.079 Protecting memory [0x00007f6eaff00000,0x00007f6eaff04000] with protection modes 0
+Event: 0.079 Protecting memory [0x00007f6eafdff000,0x00007f6eafe03000] with protection modes 0
+Event: 0.079 Protecting memory [0x00007f6eafcfe000,0x00007f6eafd02000] with protection modes 0
+Event: 0.092 Protecting memory [0x00007f6eafbfd000,0x00007f6eafc01000] with protection modes 0
+Event: 0.096 Protecting memory [0x00007f6eafafc000,0x00007f6eafb00000] with protection modes 0
+Event: 0.099 Protecting memory [0x00007f6eaf9fb000,0x00007f6eaf9ff000] with protection modes 0
+
+Nmethod flushes (0 events):
+No events
+
+Events (11 events):
+Event: 0.031 Thread 0x00007f6ef8032c60 Thread added: 0x00007f6ef8032c60
+Event: 0.078 Thread 0x00007f6ef8032c60 Thread added: 0x00007f6ef81da8e0
+Event: 0.078 Thread 0x00007f6ef8032c60 Thread added: 0x00007f6ef81db780
+Event: 0.079 Thread 0x00007f6ef8032c60 Thread added: 0x00007f6ef81dd080
+Event: 0.079 Thread 0x00007f6ef8032c60 Thread added: 0x00007f6ef81de5f0
+Event: 0.079 Thread 0x00007f6ef8032c60 Thread added: 0x00007f6ef81e81c0
+Event: 0.079 Thread 0x00007f6ef8032c60 Thread added: 0x00007f6ef81e9700
+Event: 0.079 Thread 0x00007f6ef8032c60 Thread added: 0x00007f6ef81eadc0
+Event: 0.092 Thread 0x00007f6ef81eadc0 Thread added: 0x00007f6ea4075a70
+Event: 0.096 Thread 0x00007f6ef8032c60 Thread added: 0x00007f6ef82784a0
+Event: 0.099 Thread 0x00007f6ef8032c60 Thread added: 0x00007f6ef827f2f0
+
+
+Dynamic libraries:
+80000000-84000000 rw-p 00000000 00:00 0 
+84000000-100010000 ---p 00000000 00:00 0 
+100010000-100040000 rw-p 00000000 00:00 0 
+100040000-100080000 rw-p 00000000 00:00 0 
+100080000-140000000 ---p 00000000 00:00 0 
+5650e2c5f000-5650e2c60000 r-xp 00000000 103:04 1076469689                /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/bin/java
+5650e2c61000-5650e2c62000 r--p 00001000 103:04 1076469689                /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/bin/java
+5650e2c62000-5650e2c63000 rw-p 00002000 103:04 1076469689                /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/bin/java
+5650f51e8000-5650f522f000 rw-p 00000000 00:00 0                          [heap]
+7f6e90000000-7f6e90021000 rw-p 00000000 00:00 0 
+7f6e90021000-7f6e94000000 ---p 00000000 00:00 0 
+7f6e98000000-7f6e98115000 rw-p 00000000 00:00 0 
+7f6e98115000-7f6e9c000000 ---p 00000000 00:00 0 
+7f6e9c000000-7f6e9c021000 rw-p 00000000 00:00 0 
+7f6e9c021000-7f6ea0000000 ---p 00000000 00:00 0 
+7f6ea0000000-7f6ea009e000 rw-p 00000000 00:00 0 
+7f6ea009e000-7f6ea4000000 ---p 00000000 00:00 0 
+7f6ea4000000-7f6ea40c2000 rw-p 00000000 00:00 0 
+7f6ea40c2000-7f6ea8000000 ---p 00000000 00:00 0 
+7f6ea8000000-7f6ea8021000 rw-p 00000000 00:00 0 
+7f6ea8021000-7f6eac000000 ---p 00000000 00:00 0 
+7f6eaf58e000-7f6eaf9fa000 rw-p 00000000 00:00 0 
+7f6eaf9fa000-7f6eaf9fb000 rw-p 00000000 00:00 0 
+7f6eaf9fb000-7f6eaf9ff000 ---p 00000000 00:00 0 
+7f6eaf9ff000-7f6eafafc000 rw-p 00000000 00:00 0 
+7f6eafafc000-7f6eafb00000 ---p 00000000 00:00 0 
+7f6eafb00000-7f6eafbfd000 rw-p 00000000 00:00 0 
+7f6eafbfd000-7f6eafc01000 ---p 00000000 00:00 0 
+7f6eafc01000-7f6eafcfe000 rw-p 00000000 00:00 0 
+7f6eafcfe000-7f6eafd02000 ---p 00000000 00:00 0 
+7f6eafd02000-7f6eafdff000 rw-p 00000000 00:00 0 
+7f6eafdff000-7f6eafe03000 ---p 00000000 00:00 0 
+7f6eafe03000-7f6eaff00000 rw-p 00000000 00:00 0 
+7f6eaff00000-7f6eaff04000 ---p 00000000 00:00 0 
+7f6eaff04000-7f6eb0000000 rw-p 00000000 00:00 0 
+7f6eb0000000-7f6eb0021000 rw-p 00000000 00:00 0 
+7f6eb0021000-7f6eb4000000 ---p 00000000 00:00 0 
+7f6eb4000000-7f6eb4021000 rw-p 00000000 00:00 0 
+7f6eb4021000-7f6eb8000000 ---p 00000000 00:00 0 
+7f6eb8000000-7f6eb8021000 rw-p 00000000 00:00 0 
+7f6eb8021000-7f6ebc000000 ---p 00000000 00:00 0 
+7f6ebc000000-7f6ebc021000 rw-p 00000000 00:00 0 
+7f6ebc021000-7f6ec0000000 ---p 00000000 00:00 0 
+7f6ec0000000-7f6ec0440000 rw-p 00000000 00:00 0 
+7f6ec0440000-7f6ec4000000 ---p 00000000 00:00 0 
+7f6ec4000000-7f6ec4021000 rw-p 00000000 00:00 0 
+7f6ec4021000-7f6ec8000000 ---p 00000000 00:00 0 
+7f6ec8000000-7f6ec8021000 rw-p 00000000 00:00 0 
+7f6ec8021000-7f6ecc000000 ---p 00000000 00:00 0 
+7f6ecc000000-7f6ecc021000 rw-p 00000000 00:00 0 
+7f6ecc021000-7f6ed0000000 ---p 00000000 00:00 0 
+7f6ed0000000-7f6ed0021000 rw-p 00000000 00:00 0 
+7f6ed0021000-7f6ed4000000 ---p 00000000 00:00 0 
+7f6ed4000000-7f6ed4021000 rw-p 00000000 00:00 0 
+7f6ed4021000-7f6ed8000000 ---p 00000000 00:00 0 
+7f6ed8000000-7f6ed8021000 rw-p 00000000 00:00 0 
+7f6ed8021000-7f6edc000000 ---p 00000000 00:00 0 
+7f6edc000000-7f6edc021000 rw-p 00000000 00:00 0 
+7f6edc021000-7f6ee0000000 ---p 00000000 00:00 0 
+7f6ee002d000-7f6ee00fb000 r-xp 00000000 103:04 271519629                 /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/lib/libjsvml.so
+7f6ee00fb000-7f6ee00fc000 r--p 000cd000 103:04 271519629                 /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/lib/libjsvml.so
+7f6ee00fc000-7f6ee00fd000 rw-p 000ce000 103:04 271519629                 /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/lib/libjsvml.so
+7f6ee00fd000-7f6ee00fe000 rw-p 00000000 00:00 0 
+7f6ee00fe000-7f6ee0102000 ---p 00000000 00:00 0 
+7f6ee0102000-7f6ee01ff000 rw-p 00000000 00:00 0 
+7f6ee01ff000-7f6ee0203000 ---p 00000000 00:00 0 
+7f6ee0203000-7f6ee0300000 rw-p 00000000 00:00 0 
+7f6ee0300000-7f6ee0304000 ---p 00000000 00:00 0 
+7f6ee0304000-7f6ee0400000 rw-p 00000000 00:00 0 
+7f6ee0400000-7f6ee06ad000 r--p 00000000 00:25 2501648                    /usr/lib/locale/zh_CN.utf8/LC_COLLATE
+7f6ee06b7000-7f6ee06b8000 rw-p 00000000 00:00 0 
+7f6ee06b8000-7f6ee06bc000 ---p 00000000 00:00 0 
+7f6ee06bc000-7f6ee07b8000 rw-p 00000000 00:00 0 
+7f6ee07b8000-7f6ee0813000 r--p 00000000 00:25 13144675                   /usr/lib/locale/zh_CN.utf8/LC_CTYPE
+7f6ee0813000-7f6ee0a15000 rw-p 00000000 00:00 0 
+7f6ee0a15000-7f6ee0af1000 rw-p 00000000 00:00 0 
+7f6ee0af1000-7f6ee0cf3000 rw-p 00000000 00:00 0 
+7f6ee0cf3000-7f6ee3a00000 rw-p 00000000 00:00 0 
+7f6ee3a38000-7f6ee3d3b000 rw-p 00000000 00:00 0 
+7f6ee3d3b000-7f6ee3f00000 rw-p 00000000 00:00 0 
+7f6ee3f00000-7f6ee5e00000 ---p 00000000 00:00 0 
+7f6ee5e00000-7f6ee5e20000 rw-p 00000000 00:00 0 
+7f6ee5e20000-7f6ee6200000 ---p 00000000 00:00 0 
+7f6ee6200000-7f6ee6220000 rw-p 00000000 00:00 0 
+7f6ee6220000-7f6ee6600000 ---p 00000000 00:00 0 
+7f6ee6600000-7f6ee6870000 rwxp 00000000 00:00 0 
+7f6ee6870000-7f6eeda5f000 ---p 00000000 00:00 0 
+7f6eeda5f000-7f6eedccf000 rwxp 00000000 00:00 0 
+7f6eedccf000-7f6eee1a0000 ---p 00000000 00:00 0 
+7f6eee1a0000-7f6eee410000 rwxp 00000000 00:00 0 
+7f6eee410000-7f6ef5600000 ---p 00000000 00:00 0 
+7f6ef5600000-7f6ef7fc3000 r--s 00000000 103:04 271523230                 /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/lib/modules
+7f6ef8000000-7f6ef8389000 rw-p 00000000 00:00 0 
+7f6ef8389000-7f6efc000000 ---p 00000000 00:00 0 
+7f6efc021000-7f6efcd33000 rw-p 00000000 00:00 0 
+7f6efcd33000-7f6efce17000 ---p 00000000 00:00 0 
+7f6efce17000-7f6efce1c000 rw-p 00000000 00:00 0 
+7f6efce1c000-7f6efcf00000 ---p 00000000 00:00 0 
+7f6efcf00000-7f6efcf04000 ---p 00000000 00:00 0 
+7f6efcf04000-7f6efd000000 rw-p 00000000 00:00 0 
+7f6efd000000-7f6efe41d000 r-xp 00000000 103:04 1073877836                /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/lib/server/libjvm.so
+7f6efe41d000-7f6efe4f2000 r--p 0141c000 103:04 1073877836                /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/lib/server/libjvm.so
+7f6efe4f2000-7f6efe522000 rw-p 014f1000 103:04 1073877836                /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/lib/server/libjvm.so
+7f6efe522000-7f6efe588000 rw-p 00000000 00:00 0 
+7f6efe58c000-7f6efe5a0000 r-xp 00000000 103:04 271519673                 /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/lib/libnio.so
+7f6efe5a0000-7f6efe5a1000 r--p 00013000 103:04 271519673                 /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/lib/libnio.so
+7f6efe5a1000-7f6efe5a2000 rw-p 00014000 103:04 271519673                 /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/lib/libnio.so
+7f6efe5a2000-7f6efe5bd000 r-xp 00000000 103:04 271523227                 /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/lib/libzip.so
+7f6efe5bd000-7f6efe5be000 r--p 0001a000 103:04 271523227                 /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/lib/libzip.so
+7f6efe5be000-7f6efe5bf000 rw-p 0001b000 103:04 271523227                 /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/lib/libzip.so
+7f6efe5bf000-7f6efe600000 rw-p 00000000 00:00 0 
+7f6efe600000-7f6efe628000 r--p 00000000 00:25 13143423                   /usr/lib64/libc.so.6
+7f6efe628000-7f6efe79e000 r-xp 00028000 00:25 13143423                   /usr/lib64/libc.so.6
+7f6efe79e000-7f6efe7f1000 r--p 0019e000 00:25 13143423                   /usr/lib64/libc.so.6
+7f6efe7f1000-7f6efe7f5000 r--p 001f0000 00:25 13143423                   /usr/lib64/libc.so.6
+7f6efe7f5000-7f6efe7fd000 rw-p 001f4000 00:25 13143423                   /usr/lib64/libc.so.6
+7f6efe7fd000-7f6efe806000 rw-p 00000000 00:00 0 
+7f6efe80a000-7f6efe816000 r-xp 00000000 103:04 271519668                 /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/lib/libnet.so
+7f6efe816000-7f6efe817000 r--p 0000b000 103:04 271519668                 /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/lib/libnet.so
+7f6efe817000-7f6efe818000 rw-p 0000c000 103:04 271519668                 /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/lib/libnet.so
+7f6efe818000-7f6efe819000 r--p 00000000 00:25 13144291                   /usr/lib/locale/zh_CN.utf8/LC_NUMERIC
+7f6efe819000-7f6efe81a000 r--p 00000000 00:25 2501650                    /usr/lib/locale/zh_CN.utf8/LC_TIME
+7f6efe81a000-7f6efe81b000 r--p 00000000 00:25 13144368                   /usr/lib/locale/zh_CN.utf8/LC_MONETARY
+7f6efe81b000-7f6efe81c000 r--p 00000000 00:25 13144407                   /usr/lib/locale/zh_CN.utf8/LC_MESSAGES/SYS_LC_MESSAGES
+7f6efe81c000-7f6efe81d000 r--p 00000000 00:25 13144278                   /usr/lib/locale/zh_CN.utf8/LC_PAPER
+7f6efe81d000-7f6efe81e000 r--p 00000000 00:25 13144672                   /usr/lib/locale/zh_CN.utf8/LC_NAME
+7f6efe81e000-7f6efe81f000 r--p 00000000 00:25 2501647                    /usr/lib/locale/zh_CN.utf8/LC_ADDRESS
+7f6efe81f000-7f6efe845000 rw-p 00000000 00:00 0 
+7f6efe845000-7f6efe84f000 ---p 00000000 00:00 0 
+7f6efe84f000-7f6efe851000 r--p 00000000 00:25 13143428                   /usr/lib64/libnss_compat.so.2
+7f6efe851000-7f6efe857000 r-xp 00002000 00:25 13143428                   /usr/lib64/libnss_compat.so.2
+7f6efe857000-7f6efe858000 r--p 00008000 00:25 13143428                   /usr/lib64/libnss_compat.so.2
+7f6efe858000-7f6efe859000 r--p 00009000 00:25 13143428                   /usr/lib64/libnss_compat.so.2
+7f6efe859000-7f6efe85a000 rw-p 0000a000 00:25 13143428                   /usr/lib64/libnss_compat.so.2
+7f6efe85a000-7f6efe85b000 r--p 00000000 00:25 13144370                   /usr/lib/locale/zh_CN.utf8/LC_TELEPHONE
+7f6efe85b000-7f6efe862000 r--s 00000000 00:25 13143691                   /usr/lib64/gconv/gconv-modules.cache
+7f6efe862000-7f6efe883000 r-xp 00000000 103:04 271515597                 /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/lib/libjava.so
+7f6efe883000-7f6efe884000 r--p 00020000 103:04 271515597                 /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/lib/libjava.so
+7f6efe884000-7f6efe885000 rw-p 00021000 103:04 271515597                 /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/lib/libjava.so
+7f6efe885000-7f6efe886000 rw-p 00000000 00:00 0 
+7f6efe886000-7f6efe898000 r--p 00000000 00:25 13143426                   /usr/lib64/libm.so.6
+7f6efe898000-7f6efe92c000 r-xp 00012000 00:25 13143426                   /usr/lib64/libm.so.6
+7f6efe92c000-7f6efe99f000 r--p 000a6000 00:25 13143426                   /usr/lib64/libm.so.6
+7f6efe99f000-7f6efe9a0000 r--p 00118000 00:25 13143426                   /usr/lib64/libm.so.6
+7f6efe9a0000-7f6efe9a2000 rw-p 00119000 00:25 13143426                   /usr/lib64/libm.so.6
+7f6efe9a2000-7f6efe9a3000 r--p 00000000 00:25 13143435                   /usr/lib64/librt.so.1
+7f6efe9a3000-7f6efe9a4000 r-xp 00001000 00:25 13143435                   /usr/lib64/librt.so.1
+7f6efe9a4000-7f6efe9a5000 r--p 00002000 00:25 13143435                   /usr/lib64/librt.so.1
+7f6efe9a5000-7f6efe9a6000 r--p 00002000 00:25 13143435                   /usr/lib64/librt.so.1
+7f6efe9a6000-7f6efe9a7000 rw-p 00003000 00:25 13143435                   /usr/lib64/librt.so.1
+7f6efe9a7000-7f6efe9aa000 rw-p 00000000 00:00 0 
+7f6efe9aa000-7f6efe9ab000 r--p 00000000 00:25 13143425                   /usr/lib64/libdl.so.2
+7f6efe9ab000-7f6efe9ac000 r-xp 00001000 00:25 13143425                   /usr/lib64/libdl.so.2
+7f6efe9ac000-7f6efe9ad000 r--p 00002000 00:25 13143425                   /usr/lib64/libdl.so.2
+7f6efe9ad000-7f6efe9ae000 r--p 00002000 00:25 13143425                   /usr/lib64/libdl.so.2
+7f6efe9ae000-7f6efe9af000 rw-p 00003000 00:25 13143425                   /usr/lib64/libdl.so.2
+7f6efe9af000-7f6efe9b1000 rw-p 00000000 00:00 0 
+7f6efe9b1000-7f6efe9b2000 r--p 00000000 00:25 13143433                   /usr/lib64/libpthread.so.0
+7f6efe9b2000-7f6efe9b3000 r-xp 00001000 00:25 13143433                   /usr/lib64/libpthread.so.0
+7f6efe9b3000-7f6efe9b4000 r--p 00002000 00:25 13143433                   /usr/lib64/libpthread.so.0
+7f6efe9b4000-7f6efe9b5000 r--p 00002000 00:25 13143433                   /usr/lib64/libpthread.so.0
+7f6efe9b5000-7f6efe9b6000 rw-p 00003000 00:25 13143433                   /usr/lib64/libpthread.so.0
+7f6efe9b6000-7f6efe9b7000 r--p 00000000 00:25 13144273                   /usr/lib/locale/zh_CN.utf8/LC_MEASUREMENT
+7f6efe9b7000-7f6efe9b8000 r--p 00000000 00:25 2501649                    /usr/lib/locale/zh_CN.utf8/LC_IDENTIFICATION
+7f6efe9b8000-7f6efe9c0000 rw-s 00000000 00:33 16530773                   /tmp/hsperfdata_yusen/1240213
+7f6efe9c0000-7f6efe9c1000 ---p 00000000 00:00 0 
+7f6efe9c1000-7f6efe9c2000 r--p 00000000 00:00 0 
+7f6efe9c2000-7f6efe9c3000 ---p 00000000 00:00 0 
+7f6efe9c3000-7f6efe9de000 r-xp 00000000 103:04 271518541                 /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/lib/libjimage.so
+7f6efe9de000-7f6efe9df000 ---p 0001b000 103:04 271518541                 /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/lib/libjimage.so
+7f6efe9df000-7f6efe9e1000 r--p 0001b000 103:04 271518541                 /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/lib/libjimage.so
+7f6efe9e1000-7f6efe9e2000 rw-p 0001d000 103:04 271518541                 /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/lib/libjimage.so
+7f6efe9e2000-7f6efe9fb000 r-xp 00000000 103:04 271518590                 /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/lib/libjli.so
+7f6efe9fb000-7f6efe9fc000 r--p 00018000 103:04 271518590                 /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/lib/libjli.so
+7f6efe9fc000-7f6efe9fd000 rw-p 00019000 103:04 271518590                 /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/jdk-21.0.10+7/lib/libjli.so
+7f6efe9fd000-7f6efe9ff000 rw-p 00000000 00:00 0 
+7f6efe9ff000-7f6efea03000 r--p 00000000 00:00 0                          [vvar]
+7f6efea03000-7f6efea05000 r--p 00000000 00:00 0                          [vvar_vclock]
+7f6efea05000-7f6efea07000 r-xp 00000000 00:00 0                          [vdso]
+7f6efea07000-7f6efea08000 r--p 00000000 00:25 13143420                   /usr/lib64/ld-linux-x86-64.so.2
+7f6efea08000-7f6efea33000 r-xp 00001000 00:25 13143420                   /usr/lib64/ld-linux-x86-64.so.2
+7f6efea33000-7f6efea3e000 r--p 0002c000 00:25 13143420                   /usr/lib64/ld-linux-x86-64.so.2
+7f6efea3e000-7f6efea40000 r--p 00037000 00:25 13143420                   /usr/lib64/ld-linux-x86-64.so.2
+7f6efea40000-7f6efea42000 rw-p 00039000 00:25 13143420                   /usr/lib64/ld-linux-x86-64.so.2
+7ffe0d66d000-7ffe0d68f000 rw-p 00000000 00:00 0                          [stack]
+ffffffffff600000-ffffffffff601000 --xp 00000000 00:00 0                  [vsyscall]
+Total number of mappings: 186
+
+JVMTI agents: none
+
+
+VM Arguments:
+jvm_args: -Xms64m -Xmx2048m -Dapp.name=ltex-ls-plus -Dapp.pid=1240213 -Dapp.repo=/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib -Dapp.home=/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0 -Dbasedir=/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0 
+java_command: org.bsplines.ltexls.LtexLanguageServerLauncher
+java_class_path (initial): /home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/etc:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/HdrHistogram-2.1.12.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/LatencyUtils-2.0.3.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/aho-corasick-double-array-trie-1.2.2.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/angus-activation-2.0.2.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/animal-sniffer-annotations-1.24.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/annotations-12.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/annotations-13.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/annotations-4.1.1.4.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/asturian-pos-dict-0.1.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/catalan-pos-dict-3.3.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/commons-digester-2.1.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/commons-lang3-3.18.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/commons-logging-1.3.4.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/commons-pool2-2.12.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/commons-text-1.12.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/commons-validator-1.9.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/dutch-pos-dict-0.1.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/english-pos-dict-0.6.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/error_prone_annotations-2.48.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/failureaccess-1.0.3.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/fastutil-core-8.5.14.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/flexmark-0.64.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/flexmark-ext-definition-0.64.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/flexmark-ext-gfm-strikethrough-0.64.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/flexmark-ext-gitlab-0.64.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/flexmark-ext-tables-0.64.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/flexmark-ext-yaml-front-matter-0.64.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/flexmark-test-util-0.64.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/flexmark-util-0.64.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/flexmark-util-ast-0.64.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/flexmark-util-builder-0.64.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/flexmark-util-collection-0.64.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/flexmark-util-data-0.64.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/flexmark-util-dependency-0.64.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/flexmark-util-format-0.64.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/flexmark-util-html-0.64.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/flexmark-util-misc-0.64.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/flexmark-util-options-0.64.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/flexmark-util-sequence-0.64.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/flexmark-util-visitor-0.64.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/french-pos-dict-0.7.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/german-pos-dict-1.2.4.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/grpc-api-1.75.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/grpc-context-1.75.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/grpc-core-1.75.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/grpc-netty-shaded-1.75.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/grpc-protobuf-1.75.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/grpc-protobuf-lite-1.75.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/grpc-stub-1.75.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/grpc-util-1.75.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/gson-2.14.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/guava-33.5.0-jre.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/hamcrest-core-1.3.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/hanlp-portable-1.8.2.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/hppc-0.8.2.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/hunspell-2.1.2.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/icu4j-77.1.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/indriya-1.3.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/istack-commons-runtime-4.1.2.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/j2objc-annotations-3.1.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/jackson-annotations-2.18.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/jackson-core-2.18.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/jackson-databind-2.18.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/jakarta.activation-1.2.2.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/jakarta.activation-api-2.1.3.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/jakarta.xml.bind-api-2.3.3.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/jansi-2.4.3.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/java-diff-utils-4.12.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/javax.activation-api-1.2.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/javax.annotation-api-1.3.2.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/jaxb-api-2.3.1.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/jaxb-core-2.3.0.1.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/jaxb-core-4.0.5.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/jaxb-impl-2.3.3.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/jaxb-runtime-4.0.5.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/jna-5.12.1.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/jna-platform-5.12.1.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/json-20240303.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/jsonic-1.2.11.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/jspecify-1.0.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/jsr305-3.0.2.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/junit-4.13.2.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/jwordsplitter-4.7.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/kotlin-stdlib-2.3.21.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/language-all-6.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/language-ar-6.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/language-ast-6.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/language-be-6.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/language-br-6.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/language-ca-6.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/language-crh-6.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/language-da-6.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/language-de-6.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/language-de-DE-x-simple-language-6.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/language-detector-0.6.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/language-el-6.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/language-en-6.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/language-eo-6.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/language-es-6.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/language-fa-6.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/language-fr-6.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/language-ga-6.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/language-gl-6.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/language-it-6.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/language-ja-6.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/language-km-6.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/language-nl-6.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/language-pl-6.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/language-pt-6.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/language-ro-6.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/language-ru-6.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/language-sk-6.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/language-sl-6.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/language-sv-6.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/language-ta-6.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/language-tl-6.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/language-uk-6.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/language-zh-6.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/languagetool-core-6.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/languagetool-ga-dicts-0.02.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/linguistics.grammardb.spell.languagetool-1.0.2.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/lspcli-2.3.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/ltexls-plus-18.7.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/lucene-backward-codecs-5.5.5.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/lucene-core-5.5.5.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/lucene-gosen-6.2.1-ipadic.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/micrometer-core-1.7.12.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/micrometer-registry-prometheus-1.7.12.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/morfologik-crh-lt-1.0.1.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/morfologik-fsa-2.1.9.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/morfologik-fsa-builders-2.1.9.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/morfologik-speller-2.1.9.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/morfologik-stemming-2.1.9.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/morfologik-ukrainian-lt-6.8.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/morphology-el-1.0.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/opennlp-chunk-models-1.5.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/opennlp-postag-models-1.5.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/opennlp-tokenize-models-1.5.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/opennlp-tools-1.9.4.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/openregex-1.1.1.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/opentelemetry-api-1.42.1.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/opentelemetry-context-1.42.1.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/opentelemetry-semconv-1.30.1-alpha.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/org.eclipse.lsp4j-0.24.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/org.eclipse.lsp4j.jsonrpc-0.24.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/perfmark-api-0.27.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/picocli-4.7.7.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/portuguese-pos-dict-1.2.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/proto-google-common-protos-2.59.2.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/protobuf-java-3.25.8.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/resilience4j-circuitbreaker-1.7.1.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/resilience4j-core-1.7.1.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/resilience4j-micrometer-1.7.1.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/segment-2.0.3.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/simpleclient-0.16.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/simpleclient_common-0.10.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/simpleclient_guava-0.16.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/simpleclient_tracer_common-0.16.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/simpleclient_tracer_otel-0.16.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/simpleclient_tracer_otel_agent-0.16.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/slf4j-api-2.0.16.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/slf4j-nop-2.0.18.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/spanish-pos-dict-2.5.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/stax2-api-4.3.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/txw2-4.0.5.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/unit-api-1.0.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/uom-lib-common-1.1.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/vavr-0.10.2.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/vavr-match-0.10.2.jar:/home/yusen/.vscode/extensions/ltex-plus.vscode-ltex-plus-15.7.1/lib/ltex-ls-plus-18.7.0/lib/woodstox-core-7.2.0.jar
+Launcher Type: SUN_STANDARD
+
+[Global flags]
+     intx CICompilerCount                          = 12                                        {product} {ergonomic}
+     uint ConcGCThreads                            = 3                                         {product} {ergonomic}
+     uint G1ConcRefinementThreads                  = 13                                        {product} {ergonomic}
+   size_t G1HeapRegionSize                         = 1048576                                   {product} {ergonomic}
+    uintx GCDrainStackTargetSize                   = 64                                        {product} {ergonomic}
+   size_t InitialHeapSize                          = 67108864                                  {product} {command line}
+   size_t MarkStackSize                            = 4194304                                   {product} {ergonomic}
+   size_t MaxHeapSize                              = 2147483648                                {product} {command line}
+   size_t MaxNewSize                               = 1287651328                                {product} {ergonomic}
+   size_t MinHeapDeltaBytes                        = 1048576                                   {product} {ergonomic}
+   size_t MinHeapSize                              = 67108864                                  {product} {command line}
+    uintx NonNMethodCodeHeapSize                   = 7602480                                {pd product} {ergonomic}
+    uintx NonProfiledCodeHeapSize                  = 122027880                              {pd product} {ergonomic}
+    uintx ProfiledCodeHeapSize                     = 122027880                              {pd product} {ergonomic}
+    uintx ReservedCodeCacheSize                    = 251658240                              {pd product} {ergonomic}
+     bool SegmentedCodeCache                       = true                                      {product} {ergonomic}
+   size_t SoftMaxHeapSize                          = 2147483648                             {manageable} {ergonomic}
+     bool UseCompressedOops                        = true                           {product lp64_product} {ergonomic}
+     bool UseG1GC                                  = true                                      {product} {ergonomic}
+
+Logging:
+Log output configuration:
+ #0: stdout all=warning uptime,level,tags foldmultilines=false
+ #1: stderr all=off uptime,level,tags foldmultilines=false
+
+Release file:
+JAVA_VERSION="21.0.10"
+MODULES="java.base java.compiler java.datatransfer java.xml java.prefs java.desktop java.instrument java.logging java.management java.security.sasl java.naming java.rmi java.management.rmi java.net.http java.scripting java.security.jgss java.transaction.xa java.sql java.sql.rowset java.xml.crypto java.se java.smartcardio jdk.accessibility jdk.charsets jdk.crypto.ec jdk.crypto.cryptoki jdk.dynalink jdk.httpserver jdk.incubator.vector jdk.internal.vm.ci jdk.internal.vm.compiler jdk.internal.vm.compiler.management jdk.jdwp.agent jdk.jfr jdk.jsobject jdk.localedata jdk.management jdk.management.agent jdk.naming.dns jdk.naming.rmi jdk.net jdk.nio.mapmode jdk.sctp jdk.security.auth jdk.security.jgss jdk.unsupported jdk.xml.dom jdk.zipfs"
+
+Environment Variables:
+JAVA_OPTS=-Xms64m -Xmx2048m
+PATH=/home/yusen/opt/Xilinx/Vivado/2024.2/bin:/home/yusen/opt/anaconda3/bin:/home/yusen/opt/anaconda3/condabin:/home/yusen/opt/anaconda3/bin:/home/yusen/.zinit/polaris/bin:/home/yusen/.local/bin:/home/yusen/opt/Xilinx/Vivado/2024.2/bin:/opt/st/stm32cubeclt_1.19.0:/opt/st/stm32cubeclt_1.19.0/STM32CubeProgrammer/bin:/opt/st/stm32cubeclt_1.19.0/STLink-gdb-server/bin:/opt/st/stm32cubeclt_1.19.0/CMake/bin:/opt/st/stm32cubeclt_1.19.0/Ninja/bin:/opt/st/stm32cubeclt_1.19.0/st-arm-clang/bin:/opt/st/stm32cubeclt_1.19.0/GNU-tools-for-STM32/bin:/home/yusen/.local/bin:/usr/local/bin:/usr/bin:/bin
+XDG_CACHE_HOME=/home/yusen/.cache
+XDG_CONFIG_HOME=/home/yusen/.config
+SHELL=/usr/bin/zsh
+DISPLAY=:0
+WAYLAND_DISPLAY=wayland-0
+HOSTTYPE=x86_64
+OSTYPE=linux-gnu
+MACHTYPE=x86_64
+LANG=zh_CN.UTF-8
+
+Active Locale:
+LC_ALL=zh_CN.UTF-8
+LC_COLLATE=zh_CN.UTF-8
+LC_CTYPE=zh_CN.UTF-8
+LC_MESSAGES=zh_CN.UTF-8
+LC_MONETARY=zh_CN.UTF-8
+LC_NUMERIC=zh_CN.UTF-8
+LC_TIME=zh_CN.UTF-8
+
+Signal Handlers:
+   SIGSEGV: crash_handler in libjvm.so, mask=11100100010111111101111111111110, flags=SA_RESTART|SA_SIGINFO, unblocked
+    SIGBUS: crash_handler in libjvm.so, mask=11100100010111111101111111111110, flags=SA_RESTART|SA_SIGINFO, unblocked
+    SIGFPE: crash_handler in libjvm.so, mask=11100100010111111101111111111110, flags=SA_RESTART|SA_SIGINFO, unblocked
+   SIGPIPE: javaSignalHandler in libjvm.so, mask=11100100010111111101111111111110, flags=SA_RESTART|SA_SIGINFO, blocked
+   SIGXFSZ: javaSignalHandler in libjvm.so, mask=11100100010111111101111111111110, flags=SA_RESTART|SA_SIGINFO, blocked
+    SIGILL: crash_handler in libjvm.so, mask=11100100010111111101111111111110, flags=SA_RESTART|SA_SIGINFO, unblocked
+   SIGUSR2: SR_handler in libjvm.so, mask=00000000000000000000000000000000, flags=SA_RESTART|SA_SIGINFO, blocked
+    SIGHUP: UserHandler in libjvm.so, mask=11100100010111111101111111111110, flags=SA_RESTART|SA_SIGINFO, blocked
+    SIGINT: UserHandler in libjvm.so, mask=11100100010111111101111111111110, flags=SA_RESTART|SA_SIGINFO, blocked
+   SIGTERM: UserHandler in libjvm.so, mask=11100100010111111101111111111110, flags=SA_RESTART|SA_SIGINFO, blocked
+   SIGQUIT: UserHandler in libjvm.so, mask=11100100010111111101111111111110, flags=SA_RESTART|SA_SIGINFO, blocked
+   SIGTRAP: crash_handler in libjvm.so, mask=11100100010111111101111111111110, flags=SA_RESTART|SA_SIGINFO, unblocked
+
+
+Periodic native trim disabled
+
+---------------  S Y S T E M  ---------------
+
+OS:
+LSB_VERSION="core-2.0-noarch:core-3.2-noarch:core-4.0-noarch:core-2.0-x86_64:core-3.2-x86_64:core-4.0-x86_64"
+uname: Linux 7.0.11-1-default #1 SMP PREEMPT_DYNAMIC Tue Jun  2 05:49:18 UTC 2026 (d1677f1) x86_64
+OS uptime: 0 days 7:21 hours
+libc: glibc 2.43 NPTL 2.43 
+rlimit (soft/hard): STACK 8192k/infinity , CORE infinity/infinity , NPROC 62105/62105 , NOFILE 524288/524288 , AS infinity/infinity , CPU infinity/infinity , DATA infinity/infinity , FSIZE infinity/infinity , MEMLOCK 8192k/8192k
+load average: 4.05 4.67 5.49
+
+/proc/meminfo:
+MemTotal:       16093468 kB
+MemFree:         2107488 kB
+MemAvailable:    7718152 kB
+Buffers:          523856 kB
+Cached:          5107428 kB
+SwapCached:      1886920 kB
+Active:          6233924 kB
+Inactive:        4693992 kB
+Active(anon):    2895924 kB
+Inactive(anon):  2684328 kB
+Active(file):    3338000 kB
+Inactive(file):  2009664 kB
+Unevictable:      251964 kB
+Mlocked:             284 kB
+SwapTotal:      41943036 kB
+SwapFree:       26553652 kB
+Zswap:                 0 kB
+Zswapped:              0 kB
+Dirty:            101064 kB
+Writeback:           652 kB
+AnonPages:       5507280 kB
+Mapped:          1685512 kB
+Shmem:             30860 kB
+KReclaimable:     621972 kB
+Slab:            1132324 kB
+SReclaimable:     621972 kB
+SUnreclaim:       510352 kB
+KernelStack:       48892 kB
+PageTables:       336028 kB
+SecPageTables:      3084 kB
+NFS_Unstable:          0 kB
+Bounce:                0 kB
+WritebackTmp:          0 kB
+CommitLimit:    49989768 kB
+Committed_AS:   68265816 kB
+VmallocTotal:   34359738367 kB
+VmallocUsed:      215820 kB
+VmallocChunk:          0 kB
+Percpu:            15232 kB
+HardwareCorrupted:     0 kB
+AnonHugePages:     51200 kB
+ShmemHugePages:        0 kB
+ShmemPmdMapped:        0 kB
+FileHugePages:     28672 kB
+FilePmdMapped:     28672 kB
+CmaTotal:              0 kB
+CmaFree:               0 kB
+Unaccepted:            0 kB
+Balloon:               0 kB
+HugePages_Total:       0
+HugePages_Free:        0
+HugePages_Rsvd:        0
+HugePages_Surp:        0
+Hugepagesize:       2048 kB
+Hugetlb:               0 kB
+DirectMap4k:     3787948 kB
+DirectMap2M:    12713984 kB
+DirectMap1G:     1048576 kB
+
+/sys/kernel/mm/transparent_hugepage/enabled: [always] madvise never
+/sys/kernel/mm/transparent_hugepage/hpage_pmd_size: 2097152
+/sys/kernel/mm/transparent_hugepage/defrag (defrag/compaction efforts parameter): always defer defer+madvise [madvise] never
+
+Process Memory:
+Virtual Size: 4837676K (peak: 4898540K)
+Resident Set Size: 49808K (peak: 49808K) (anon: 24380K, file: 25428K, shmem: 0K)
+Swapped out: 0K
+C-Heap outstanding allocations: 38752K, retained: 2059K
+glibc malloc tunables: (default)
+
+/proc/sys/kernel/threads-max (system-wide limit on the number of threads): 124211
+/proc/sys/vm/max_map_count (maximum number of memory map areas a process may have): 1048576
+/proc/sys/vm/swappiness (control to define how aggressively the kernel swaps out anonymous memory): 60
+/proc/sys/kernel/pid_max (system-wide limit on number of process identifiers): 4194304
+
+container information not found.
+Steal ticks since vm start: 0
+Steal ticks percentage since vm start:  0.000
+
+CPU: total 16 (initial active 16) (8 cores per cpu, 2 threads per core) family 6 model 141 stepping 1 microcode 0x58, cx8, cmov, fxsr, ht, mmx, 3dnowpref, sse, sse2, sse3, ssse3, sse4.1, sse4.2, popcnt, lzcnt, tsc, tscinvbit, avx, avx2, aes, erms, clmul, bmi1, bmi2, adx, avx512f, avx512dq, avx512cd, avx512bw, avx512vl, sha, fma, vzeroupper, avx512_vpopcntdq, avx512_vpclmulqdq, avx512_vaes, avx512_vnni, clflush, clflushopt, clwb, avx512_vbmi2, avx512_vbmi, rdtscp, rdpid, fsrm, gfni, avx512_bitalg, f16c, pku, ospke, cet_ibt, cet_ss, avx512_ifma
+CPU Model and flags from /proc/cpuinfo:
+model name	: 11th Gen Intel(R) Core(TM) i7-11800H @ 2.30GHz
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf tsc_known_freq pni pclmulqdq dtes64 monitor ds_cpl vmx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb cat_l2 cdp_l2 ssbd ibrs ibpb stibp ibrs_enhanced tpr_shadow flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid rdt_a avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb intel_pt avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves split_lock_detect user_shstk dtherm ida arat pln pts hwp hwp_notify hwp_act_window hwp_epp hwp_pkg_req vnmi avx512vbmi umip pku ospke avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg avx512_vpopcntdq rdpid movdiri movdir64b fsrm avx512_vp2intersect md_clear ibt flush_l1d arch_capabilities
+
+Online cpus: 0-15
+Offline cpus: 
+BIOS frequency limitation: <Not Available>
+Frequency switch latency (ns): 0
+Available cpu frequencies: <Not Available>
+Current governor: powersave
+Core performance/turbo boost: <Not Available>
+
+Memory: 4k page, physical 16093468k(7719772k free), swap 41943036k(26553664k free)
+Page Sizes: 4k
+
+vm_info: OpenJDK 64-Bit Server VM (21.0.10+7-LTS) for linux-amd64 JRE (21.0.10+7-LTS), built on 2026-01-20T00:00:00Z by "admin" with gcc 11.3.0
+
+END.
