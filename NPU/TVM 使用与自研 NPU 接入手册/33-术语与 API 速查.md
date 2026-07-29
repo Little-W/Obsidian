@@ -1066,7 +1066,12 @@ inspect:
 - [ ] NPU 改造说明包含编译阶段、运行阶段与部署阶段；
 - [ ] 失败时保留最小输入、环境、阶段输出和第一个错误。
 
-## 对象定义与参数补充
+## 详细说明所在章节
 
-> [!note] 继续查阅
-> 速查表中的对象分类和比较规则 需要准确构造签名、字段、参数限制和最小对象例子时，请转到 [[51-TVM 对象模型与定义规则]]。
+| 对象类别 | 本手册位置 |
+| --- | --- |
+| 节点、表达式、变量、函数、IRModule、结构比较 | [[03-IRModule 与统一对象系统]] |
+| Relax 表达式、绑定、数据流块、函数、结构信息 | [[04-Relax 图级 IR]] |
+| TensorIR 基础表达式、语句、Buffer、SBlock、PrimFunc | [[05-TensorIR 程序表示]] |
+| PackedFunc、Device、运行时 Tensor、运行时 Module | [[09-PackedFunc Module 与运行时]] |
+| Executable、VirtualMachine、闭包、导出与加载 | [[10-Relax VM 导出与加载]] |

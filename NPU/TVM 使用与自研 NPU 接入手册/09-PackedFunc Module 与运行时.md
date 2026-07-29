@@ -10,120 +10,245 @@ baseline: Apache TVM v0.24.0
 updated: 2026-07-29
 ---
 
-# 09. PackedFunc Module 与运行时
+# 09. PackedFunc、Module 与运行时
 
 > [!abstract] 本章内容
-> 说明 PackedFunc、runtime.Module、Tensor、DLPack、全局注册和最小部署运行时。
+> 本章直接定义 PackedFunc、Device、运行时 Tensor 和运行时 Module，说明它们的字段、查询方式、参数转换和生命周期。这里的 Module 是可执行代码与资源容器，不是保存 Relax Function 和 PrimFunc 的 IRModule。
 
-## 一句话理解
+## 从编译对象到运行时对象
 
-PackedFunc 是统一调用接口，Module 是一组可查询函数及其被导入模块，Tensor 是带设备和形状信息的数据容器。
+| 对象 | 严格定义 | 主要使用阶段 |
+| --- | --- | --- |
+| `IRModule` | 保存全局 IR 函数及模块属性的编译阶段容器 | 导入、变换、编译 |
+| `PackedFunc` | 通过 TVM FFI 统一调用约定暴露的动态可调用函数 | 编译扩展与运行阶段 |
+| `runtime.Module` | 按名称提供 PackedFunc，并可导入子模块的代码或资源容器 | 加载、执行、导出 |
+| `Device` | 由设备种类和设备编号组成的运行阶段设备标识 | 分配、复制、同步 |
+| `runtime.Tensor` | 持有或引用实际张量存储的运行时容器 | 函数输入、输出与设备数据 |
 
-## 核心要点
+## PackedFunc
 
-1. PackedFunc 用类型擦除方式跨 Python、C++ 与其他语言传递常见对象。
-2. 编译器 API 与生成后的函数都使用同一注册和调用机制。
-3. runtime.Module 可按名称取得函数、导入其他模块、保存并重新加载。
-4. DLPack 允许与 PyTorch 等框架共享张量，是否零复制取决于设备与所有权条件。
-5. 部署端可只链接较小的 TVM runtime，而不带完整编译器。
+PackedFunc 是 TVM 跨 Python、C++、运行时模块和设备后端使用的统一可调用接口。它把参数装入 TVM 的通用参数表示，由被调用函数按约定读取，再把返回值转换回调用方。PackedFunc 不是 Relax Function，也不保存 Relax 函数体。
 
-```mermaid
-flowchart LR
-    A["输入程序状态"] --> B["分析信息"]
-    B --> C["本章所述处理"]
-    C --> D["输出程序状态"]
-    D --> E["日志与可复现记录"]
+### 全局 PackedFunc 与模块 PackedFunc
+
+| 种类 | 注册或产生位置 | 查询方式 | 典型用途 |
+| --- | --- | --- | --- |
+| 全局函数 | `register_global_func` 或 C++ 全局注册 | `tvm.get_global_func(name)` | Pass 入口、外部代码生成构造函数、工具函数 |
+| 模块函数 | 某个 `runtime.Module` 的实现 | `mod.get_function(name, query_imports=True)` | 已编译内核、外部子图、VM 入口 |
+
+```python
+import tvm
+
+def require_global(name):
+    func = tvm.get_global_func(name, allow_missing=True)
+    if func is None:
+        raise RuntimeError(f"global function is not registered: {name}")
+    return func
+
+def require_module_function(mod, name):
+    func = mod.get_function(name, query_imports=True)
+    if func is None:
+        raise RuntimeError(f"module function is missing: {name}")
+    return func
 ```
 
-## 逐项解析
+### 参数转换
 
-### 1. PackedFunc 用类型擦除方式跨 Python、C++ 与其他语言传递常见对象。
+Python 标量、字符串、TVM Object、运行时 Tensor、Device、数组和字典能否作为参数，取决于 FFI 转换规则和被调用函数的签名。外部 NPU 函数应明确列出参数数量、顺序、数据类型、所有权和错误返回方式，不能只依赖一次成功调用推断接口。
 
-PackedFunc 用类型擦除方式跨 Python、C++ 与其他语言传递常见对象。
+## 运行时核心对象
 
-阅读时先定位产生该信息的函数，再查找消费它的下一阶段。把两处代码和中间 IR 放在一起观察，比单独记忆类名更容易理解。
+### `tvm.runtime.Device`
 
-**实现建议：** 把 NPU 提交接口包装成粗粒度 PackedFunc，避免每个标量运算都跨接口调用。
+**规范定义**：运行阶段的设备标识，包含 DLPack 设备种类和设备编号，并通过 DeviceAPI 查询能力、分配内存和同步。
 
-> [!warning] 本小节常见问题
-> 返回指向临时内存的 Tensor 会在异步执行时产生难以复现的错误。
+**Python 构造签名**
 
-### 2. 编译器 API 与生成后的函数都使用同一注册和调用机制。
+```text
+tvm.runtime.device(device_type: str | int | DLDeviceType, index: int | None = None) -> Device
+```
 
-编译器 API 与生成后的函数都使用同一注册和调用机制。
+### 参数
 
-把变换前后的 IR 并排比较，重点查看函数参数、调用、属性、StructInfo 和返回值。只记录最终 IR 会丢失变化发生的位置。
+| 参数 | 接受的类型 | 默认值 | 功能与要求 |
+| --- | --- | --- | --- |
+| `device_type` | `str | int | DLDeviceType` | 无 | 设备种类名称或编号，例如 `cpu`、`cuda` 或已注册自研设备。 |
+| `index` | `int | None` | `None` | 设备编号；省略时通常为零。 |
 
-**实现建议：** 规定 Tensor 所有权、生命周期、对齐和缓存维护责任。
+### 返回对象与可观察字段
 
-> [!warning] 本小节常见问题
-> 运行时模块未实现保存函数时，内存内执行成功但导出失败。
+返回 `Device`。常用字段或属性包括 `device_type`、`index`、`exist`；可用能力属性取决于 DeviceAPI 实现。
 
-### 3. runtime.Module 可按名称取得函数、导入其他模块、保存并重新加载。
+### 必须满足的条件
 
-runtime.Module 可按名称取得函数、导入其他模块、保存并重新加载。
+- 设备种类必须已注册。
+- `exist` 同时受到构建支持、物理设备、驱动和访问权限影响。
+- 自研 NPU 的设备编号含义必须稳定。
 
-实现时将硬件固定限制放入 Target 或能力文件，把用户可选策略放入编译配置；二者发生冲突时应报告具体字段。
+### 产生位置与使用位置
 
-**实现建议：** 实现模块的二进制保存与加载，并在新进程中测试。
+- 常见产生位置：应用、VM 初始化、RPC 会话和运行时测试。
+- 常见使用位置：Tensor 分配、函数调用、VM 内存分配器、性能测量和 DeviceAPI。
 
-> [!warning] 本小节常见问题
-> 函数名注册成功不表示参数协议正确，必须做类型与数量检查。
+### 最小例子
 
-### 4. DLPack 允许与 PyTorch 等框架共享张量
+```python
+import tvm
 
-DLPack 允许与 PyTorch 等框架共享张量，是否零复制取决于设备与所有权条件。
+cpu0 = tvm.device("cpu", 0)
+assert cpu0.index == 0
+assert cpu0.exist
+```
 
-测试至少包含一个正常样本和一个只改变单一条件的反向样本。这样，结构或结果变化时能直接找到对应规则。
+### 常见错误
 
-**实现建议：** 为每个全局注册函数添加存在性检查和清晰错误信息。
+- 只因设备对象能构造就认为驱动和硬件可用。
+- 把 Target 名称与运行时设备种类视为自动相同。
+- 多设备程序忽略设备编号。
 
-> [!warning] 本小节常见问题
-> 返回指向临时内存的 Tensor 会在异步执行时产生难以复现的错误。
+**固定版本源码**：[device.py](https://github.com/apache/tvm/blob/v0.24.0/python/tvm/runtime/device.py)
 
-### 5. 部署端可只链接较小的 TVM runtime
+### `tvm.runtime.Tensor`
 
-部署端可只链接较小的 TVM runtime，而不带完整编译器。
+**规范定义**：运行阶段的轻量张量容器，保存数据指针、形状、数据类型、设备和可选存储区域。它不提供 NumPy 式算术运算。
 
-保存可由工具读取的阶段报告，其中包含输入摘要、输出摘要、Pass 配置、Target、耗时和错误；文本日志用于辅助阅读。
+**Python 构造签名**
 
-**实现建议：** 把 NPU 提交接口包装成粗粒度 PackedFunc，避免每个标量运算都跨接口调用。
+```text
+tvm.runtime.tensor(arr, device=None, mem_scope=None) -> tvm.runtime.Tensor
+```
 
-> [!warning] 本小节常见问题
-> 运行时模块未实现保存函数时，内存内执行成功但导出失败。
+### 参数
 
-## 实施清单
+| 参数 | 接受的类型 | 默认值 | 功能与要求 |
+| --- | --- | --- | --- |
+| `arr` | `array-like | DLPack compatible` | 无 | 源数组或可转换数据。 |
+| `device` | `Device | None` | `None` | 目标设备；省略时通常使用 CPU。 |
+| `mem_scope` | `str | None` | `None` | 可选存储区域。 |
 
-- [ ] 把 NPU 提交接口包装成粗粒度 PackedFunc，避免每个标量运算都跨接口调用。
-- [ ] 规定 Tensor 所有权、生命周期、对齐和缓存维护责任。
-- [ ] 实现模块的二进制保存与加载，并在新进程中测试。
-- [ ] 为每个全局注册函数添加存在性检查和清晰错误信息。
+### 返回对象与可观察字段
 
-## 设计评审问题
+返回 `runtime.Tensor`。常用属性与方法为 `shape`、`dtype`、`device`、`numpy()`、`copyfrom()` 和 `copyto()`。
 
-1. 本阶段接收哪一种 IR，要求哪些属性已经存在？
-2. 本阶段产生哪些新函数、属性、常量或模块？
-3. 遇到不被支持的输入时，是保留给其他后端、报告编译错误，还是插入转换？
-4. 哪些配置属于硬件固定限制，哪些配置允许自动搜索？
-5. 如何证明重复执行本阶段不会产生额外变化？
-6. 如何在日志中解释每个重要决定？
+### 必须满足的条件
 
-## 自测
+- 复制时形状必须一致。
+- 非连续 NumPy 数据可能先被转换为连续存储。
+- 设备数据转为 NumPy 通常会触发同步复制。
 
-> [!question] 请先独立回答
-> 把一个两层 MLP 的 IR 在本章处理前后分别打印出来，指出函数数量、调用形式、张量类型和模块属性发生了什么变化。如果无法运行代码，可先画出预期结构，再与实际输出比较。
+### 产生位置与使用位置
 
-## 参考资料
+- 常见产生位置：`runtime.tensor`、`runtime.empty`、DLPack 导入和 VM 输出。
+- 常见使用位置：PackedFunc、VM、DeviceAPI、RPC 与应用接口。
 
-| 资料 | 类型 |
-| --- | --- |
-| [TVM 运行时系统](https://tvm.apache.org/docs/arch/runtime.html) | 官方资料 |
-| [模块序列化](https://tvm.apache.org/docs/arch/introduction_to_module_serialization.html) | 官方资料 |
-| [runtime Python API](https://tvm.apache.org/docs/reference/api/python/runtime/runtime.html) | 官方资料 |
+### 最小例子
 
-## 章末小结
+```python
+import numpy as np
+import tvm
 
-本章的重点不是记住所有类名，而是明确输入状态、处理动作、输出状态和失败处理。接入自研 NPU 时，每一层都应保留可检查的中间结果，使图分区、代码生成、设备提交和数值对照可以分别验证。
+x = tvm.runtime.tensor(
+    np.arange(8, dtype="float32").reshape(2, 4),
+    device=tvm.cpu(),
+)
+assert x.shape == (2, 4)
+np.testing.assert_array_equal(x.numpy(), np.arange(8).reshape(2, 4))
+```
+
+### 常见错误
+
+- 对 `runtime.Tensor` 直接执行 `x + y`。
+- 在计时范围内调用 `numpy()`，把设备同步和回传时间混入设备内核时间。
+- 忽略外部张量的连续存储和对齐要求。
+
+**固定版本源码**：[_tensor.py](https://github.com/apache/tvm/blob/v0.24.0/python/tvm/runtime/_tensor.py)
+
+### `tvm.runtime.Module`
+
+**规范定义**：运行阶段的代码与资源容器。模块按名称提供 PackedFunc，可以导入子模块，也可以支持保存、导出或二进制序列化。
+
+**Python 构造签名**
+
+```text
+通常由 tvm.runtime.load_module(path)、Executable.jit() 或后端构造函数产生
+```
+
+### 参数
+
+| 参数 | 接受的类型 | 默认值 | 功能与要求 |
+| --- | --- | --- | --- |
+
+### 返回对象与可观察字段
+
+模块常用接口为 `get_function(name, query_imports=False)`、`__getitem__(name)`、`imports`、`import_module()`、`export_library()`、`kind` 和 `time_evaluator()`。
+
+### 必须满足的条件
+
+- 函数名称必须与编译端导出的全局符号一致。
+- 需要随主库发布的外部模块必须可序列化或被正确打包。
+- 模块导入树不能依赖仅在编译进程存在的 Python 对象。
+
+### 产生位置与使用位置
+
+- 常见产生位置：LLVM/CUDA 等代码生成、BYOC 外部运行时构造函数、`load_module` 和 `Executable.jit()`。
+- 常见使用位置：VirtualMachine、应用、RPC、模块导出与函数查询。
+
+### 最小例子
+
+```python
+import tvm
+
+def require_func(mod, name):
+    func = mod.get_function(name, query_imports=True)
+    if func is None:
+        raise RuntimeError(f"missing runtime function: {name}")
+    return func
+```
+
+### 常见错误
+
+- 只在根模块查询函数，忽略导入模块。
+- 外部模块能在当前进程运行，却不能导出后重新加载。
+- 把模块 `kind` 当作 Target 字符串。
+
+**固定版本源码**：[module.py](https://github.com/apache/tvm/blob/v0.24.0/python/tvm/runtime/module.py)
+
+## Module 导入关系
+
+根模块可以导入主机模块、设备模块和外部 BYOC 模块。`query_imports=True` 会在导入关系中继续查找函数。导出时，每个子模块必须能够编译进主库或采用稳定格式保存和重新加载。
+
+```python
+def list_module_tree(root):
+    visited = set()
+
+    def visit(mod, depth):
+        if mod in visited:
+            return
+        visited.add(mod)
+        print("  " * depth, mod.kind)
+        for child in mod.imports:
+            visit(child, depth + 1)
+
+    visit(root, 0)
+```
+
+## 自研 NPU 运行时必须明确的内容
+
+1. 模块类型键、全局函数名和序列化版本；
+2. Tensor 的设备、形状、数据类型、步幅和对齐检查；
+3. 设备内存的申请、释放和所有权；
+4. 命令提交、事件等待、超时和错误转换；
+5. 模块导出后在新进程中的加载行为；
+6. 多设备编号和并发调用规则；
+7. 驱动与固件最低版本。
+
+## 本章参考资料
+
+- [Python 运行时 API](https://tvm.apache.org/docs/reference/api/python/runtime/runtime.html)
+- [TVM 运行时系统](https://tvm.apache.org/docs/arch/runtime.html)
+- [模块序列化](https://tvm.apache.org/docs/arch/introduction_to_module_serialization.html)
+- [`python/tvm/runtime/module.py`](https://github.com/apache/tvm/blob/v0.24.0/python/tvm/runtime/module.py)
+- [`python/tvm/runtime/_tensor.py`](https://github.com/apache/tvm/blob/v0.24.0/python/tvm/runtime/_tensor.py)
 
 ## 官方资料基础上的扩展课
 
@@ -211,8 +336,3 @@ print(type(packed), packed(7, 5))
 - [ ] 能从官方页面定位到固定版本源码和测试；
 - [ ] NPU 改造说明包含编译阶段、运行阶段与部署阶段；
 - [ ] 失败时保留最小输入、环境、阶段输出和第一个错误。
-
-## 对象定义与参数补充
-
-> [!note] 继续查阅
-> PackedFunc、运行时模块、Device 与 Tensor 需要准确构造签名、字段、参数限制和最小对象例子时，请转到 [[54-IRModule 运行时模块与虚拟机参数手册]]。

@@ -13,117 +13,233 @@ updated: 2026-07-29
 # 10. Relax VM 导出与加载
 
 > [!abstract] 本章内容
-> 解释 Relax VM 字节码、TIR 本地函数、常量、寄存器、控制指令和可执行对象。
+> 本章直接定义 Executable、运行时 Module、VirtualMachine、VM 函数、闭包和有状态调用接口，并逐项说明构造参数。读者不需要先假定“编译结果可以直接运行”，而是能够判断当前对象是否还需要链接、加载或设备初始化。
 
-## 一句话理解
-
-VM 负责函数调用与控制流程，真正的张量计算由已经编译好的内核或外部模块执行。
-
-## 核心要点
-
-1. 默认字节码模式使用 `Call`、`Ret`、`Goto`、`If` 组织执行。
-2. 编译模式可把 VM 控制改成 TIR，以减少解释分派开销，但会增加代码量。
-3. VMExecutable 组合字节码、常量池与本地或外部模块。
-4. 多设备调用需要明确每个 Tensor 所在设备与复制位置。
-5. 状态型调用和普通纯函数调用的生命周期不同。
+## 对象转换顺序
 
 ```mermaid
 flowchart LR
-    A["输入程序状态"] --> B["分析信息"]
-    B --> C["本章所述处理"]
-    C --> D["输出程序状态"]
-    D --> E["日志与可复现记录"]
+    A["IRModule"] -->|tvm.compile| B["Executable"]
+    B -->|jit 或 export_library| C["runtime.Module"]
+    C -->|VirtualMachine 初始化| D["VM 实例"]
+    E["Device"] --> D
+    F["runtime.Tensor 输入"] --> D
+    D --> G["runtime.Tensor 或元组输出"]
 ```
 
-## 逐项解析
+## Executable 与 VirtualMachine
 
-### 1. 默认字节码模式使用 `Call`、`Ret`、`Goto`、`If` 组织执行。
+### `tvm.runtime.Executable`
 
-默认字节码模式使用 `Call`、`Ret`、`Goto`、`If` 组织执行。
+**规范定义**：`tvm.compile` 产生的可执行包装对象，持有尚可能需要最终编译或链接的运行时模块，并提供即时链接和导出接口。
 
-阅读时先定位产生该信息的函数，再查找消费它的下一阶段。把两处代码和中间 IR 放在一起观察，比单独记忆类名更容易理解。
+**Python 构造签名**
 
-**实现建议：** 先用字节码模式调试，再评估是否需要编译模式。
+```text
+tvm.runtime.Executable(mod: tvm.runtime.Module)
+```
 
-> [!warning] 本小节常见问题
-> 只序列化主机模块而遗漏外部 NPU 模块，会在加载后找不到函数。
+### 参数
 
-### 2. 编译模式可把 VM 控制改成 TIR
+| 参数 | 接受的类型 | 默认值 | 功能与要求 |
+| --- | --- | --- | --- |
+| `mod` | `tvm.runtime.Module` | 无 | 编译产生的运行时模块及其导入模块。 |
 
-编译模式可把 VM 控制改成 TIR，以减少解释分派开销，但会增加代码量。
+### 返回对象与可观察字段
 
-把变换前后的 IR 并排比较，重点查看函数参数、调用、属性、StructInfo 和返回值。只记录最终 IR 会丢失变化发生的位置。
+返回 `Executable`。`mod` 是原始模块；`jit()` 返回可运行 `runtime.Module`；`export_library()` 生成可部署库；下标按名称获取函数。
 
-**实现建议：** 导出后在干净进程加载，确认外部 NPU 模块也被恢复。
+### 必须满足的条件
 
-> [!warning] 本小节常见问题
-> 在主机计时器中包含 RPC 传输会高估设备执行时间。
+- 包含 C 源码或静态对象时，执行前必须完成编译和链接。
+- 导出所需工具链与附加对象必须可用。
+- 设备子模块必须支持相应保存方式。
 
-### 3. VMExecutable 组合字节码、常量池与本地或外部模块。
+### 产生位置与使用位置
 
-VMExecutable 组合字节码、常量池与本地或外部模块。
+- 常见产生位置：`tvm.compile(mod, target)`。
+- 常见使用位置：应用、`VirtualMachine`、部署工具与性能测试。
 
-实现时将硬件固定限制放入 Target 或能力文件，把用户可选策略放入编译配置；二者发生冲突时应报告具体字段。
+### 最小例子
 
-**实现建议：** 用 VM 的计时接口测量设备执行，排除网络传输。
+```python
+import tvm
 
-> [!warning] 本小节常见问题
-> 将动态分支错误地在编译期固定，会使部分输入得到错误结果。
+def prepare(executable):
+    rt_mod = executable.jit()
+    return tvm.relax.VirtualMachine(rt_mod, tvm.cpu())
+```
 
-### 4. 多设备调用需要明确每个 Tensor 所在设备与复制位置。
+### 常见错误
 
-多设备调用需要明确每个 Tensor 所在设备与复制位置。
+- 把 `Executable` 内的源代码模块当作一定可直接运行。
+- 在部署环境首次调用时才发现缺少链接器或设备库。
 
-测试至少包含一个正常样本和一个只改变单一条件的反向样本。这样，结构或结果变化时能直接找到对应规则。
+**固定版本源码**：[executable.py](https://github.com/apache/tvm/blob/v0.24.0/python/tvm/runtime/executable.py)
 
-**实现建议：** 控制流模型要分别覆盖两个分支和循环极端次数。
+### `relax.VirtualMachine`
 
-> [!warning] 本小节常见问题
-> 只序列化主机模块而遗漏外部 NPU 模块，会在加载后找不到函数。
+**规范定义**：Relax 字节码的运行时执行器，负责加载可执行程序、初始化设备和内存分配器、转换输入并调用命名函数。
 
-### 5. 状态型调用和普通纯函数调用的生命周期不同。
+**Python 构造签名**
 
-状态型调用和普通纯函数调用的生命周期不同。
+```text
+relax.VirtualMachine(rt_mod: runtime.Module | runtime.Executable, device: Device | list[Device], memory_cfg: str | dict[Device, str] | None = None)
+```
 
-保存可由工具读取的阶段报告，其中包含输入摘要、输出摘要、Pass 配置、Target、耗时和错误；文本日志用于辅助阅读。
+### 参数
 
-**实现建议：** 先用字节码模式调试，再评估是否需要编译模式。
+| 参数 | 接受的类型 | 默认值 | 功能与要求 |
+| --- | --- | --- | --- |
+| `rt_mod` | `runtime.Module | runtime.Executable` | 无 | 包含 `vm_load_executable` 的模块；Executable 会先执行 `jit()`。 |
+| `device` | `Device | list[Device]` | 无 | 执行设备或设备列表。VM 还需要 CPU 执行形状相关功能。 |
+| `memory_cfg` | `str | dict[Device, str] | None` | `None` | `naive` 或 `pooled`，也可按设备指定；默认使用池式分配器。 |
 
-> [!warning] 本小节常见问题
-> 在主机计时器中包含 RPC 传输会高估设备执行时间。
+### 返回对象与可观察字段
 
-## 实施清单
+返回 `VirtualMachine`。可通过 `vm[name]` 取得函数，也可使用 `set_input`、`invoke_stateful`、`get_outputs`、`save_function` 和 `time_evaluator`。
 
-- [ ] 先用字节码模式调试，再评估是否需要编译模式。
-- [ ] 导出后在干净进程加载，确认外部 NPU 模块也被恢复。
-- [ ] 用 VM 的计时接口测量设备执行，排除网络传输。
-- [ ] 控制流模型要分别覆盖两个分支和循环极端次数。
+### 必须满足的条件
 
-## 设计评审问题
+- 运行时模块必须提供 VM 加载入口。
+- 设备列表顺序必须与编译期虚拟设备安排一致。
+- 调用有状态接口时必须遵循设置输入、执行、取输出的顺序。
 
-1. 本阶段接收哪一种 IR，要求哪些属性已经存在？
-2. 本阶段产生哪些新函数、属性、常量或模块？
-3. 遇到不被支持的输入时，是保留给其他后端、报告编译错误，还是插入转换？
-4. 哪些配置属于硬件固定限制，哪些配置允许自动搜索？
-5. 如何证明重复执行本阶段不会产生额外变化？
-6. 如何在日志中解释每个重要决定？
+### 产生位置与使用位置
 
-## 自测
+- 常见产生位置：应用、测试、RPC 客户端和部署服务。
+- 常见使用位置：模型推理、调试仪器与性能测量。
 
-> [!question] 请先独立回答
-> 把一个两层 MLP 的 IR 在本章处理前后分别打印出来，指出函数数量、调用形式、张量类型和模块属性发生了什么变化。如果无法运行代码，可先画出预期结构，再与实际输出比较。
+### 最小例子
 
-## 参考资料
+```python
+import tvm
 
-| 资料 | 类型 |
+def run_main(executable, x):
+    vm = tvm.relax.VirtualMachine(executable, tvm.cpu())
+    return vm["main"](x)
+```
+
+### 常见错误
+
+- 在 NPU 模块中缺少设备函数，却只检查 VM 是否构造成功。
+- 调用 `set_input` 后又直接调用 `vm['main']`。
+- 计时前未预热，或把输入转换和结果回传混在内核测量中。
+
+**固定版本源码**：[vm.py](https://github.com/apache/tvm/blob/v0.24.0/python/tvm/runtime/vm.py)
+
+## VM 函数
+
+VM 函数是 Relax Function 编译后的可执行入口。`vm["main"]` 返回一个可调用 PackedFunc 包装；调用时 VM 根据函数参数顺序转换输入，并返回 Tensor、基础值、运行时对象或嵌套元组。
+
+```python
+output = vm["main"](x, weight)
+```
+
+关键要求如下：
+
+- 函数名必须存在于 VM 可执行程序；
+- 位置参数顺序必须与 Relax Function 的 `params` 一致；
+- 命名参数会按函数参数名重新排列；
+- 输入 Tensor 的设备和结构必须符合编译结果；
+- 首次调用可能包含延迟初始化，不应直接作为稳定性能结果。
+
+## VM 闭包
+
+闭包是函数与其已保存参数的组合。`save_function` 可以把函数名和一组固定参数保存为模块中的新可调用函数，常用于减少性能测量中的名称查找和参数准备开销。
+
+```text
+vm.save_function(
+    func_name: str,
+    saved_name: str,
+    *args,
+    include_return: bool = True,
+    **kwargs,
+) -> None
+```
+
+| 参数 | 功能 |
 | --- | --- |
-| [Relax VM 架构](https://tvm.apache.org/docs/arch/relax_vm.html) | 官方资料 |
-| [导出与加载](https://tvm.apache.org/docs/how_to/tutorials/export_and_load_executable.html) | 官方资料 |
-| [交叉编译与 RPC](https://tvm.apache.org/docs/how_to/tutorials/cross_compilation_and_rpc.html) | 官方资料 |
+| `func_name` | 原 VM 函数名 |
+| `saved_name` | 新保存函数的名称 |
+| `args`、`kwargs` | 与闭包一起保存的参数 |
+| `include_return` | 是否把函数结果返回给调用方 |
 
-## 章末小结
+## 直接调用与有状态调用
 
-本章的重点不是记住所有类名，而是明确输入状态、处理动作、输出状态和失败处理。接入自研 NPU 时，每一层都应保留可检查的中间结果，使图分区、代码生成、设备提交和数值对照可以分别验证。
+### 直接调用
+
+```python
+output = vm["main"](x, weight)
+```
+
+适合功能验证和普通推理。
+
+### 有状态调用
+
+```python
+vm.set_input("main", x, weight=weight)
+vm.invoke_stateful("main")
+output = vm.get_outputs("main")
+```
+
+有状态接口必须遵循“设置输入、执行、读取输出”的顺序。调用 `set_input` 后不应绕过 `invoke_stateful` 直接调用同一函数。`get_outputs` 会递归处理嵌套元组。
+
+## 内存分配器参数
+
+`memory_cfg` 接受 `None`、`"naive"`、`"pooled"` 或按 Device 指定的字典。默认池式分配器会复用存储，适合重复推理；简单分配器更适合定位生命周期问题。自研 NPU 若需要专有存储区域，DeviceAPI 和 VM 分配规则必须对同一设备给出一致实现。
+
+## 性能测量
+
+```text
+vm.time_evaluator(
+    func_name,
+    dev,
+    number=10,
+    repeat=1,
+    min_repeat_ms=0,
+    cooldown_interval_ms=0,
+    repeats_to_cooldown=1,
+    f_preproc="",
+)
+```
+
+| 参数 | 功能 |
+| --- | --- |
+| `func_name` | 被测函数名 |
+| `dev` | 执行计时函数的设备 |
+| `number` | 每组内的调用次数 |
+| `repeat` | 测量组数 |
+| `min_repeat_ms` | 每组最短时间，不足时增加调用次数 |
+| `cooldown_interval_ms` | 组间暂停时间 |
+| `repeats_to_cooldown` | 每隔多少组执行暂停 |
+| `f_preproc` | 每组前执行的预处理函数 |
+
+对于 NPU，需要另行说明测量是否包括输入准备、数据复制、设备执行、同步等待和结果回传。
+
+## 导出后重新加载
+
+```python
+from pathlib import Path
+import tvm
+
+def reload_vm(library_path, device):
+    path = Path(library_path).resolve()
+    if not path.is_file():
+        raise FileNotFoundError(path)
+    rt_mod = tvm.runtime.load_module(str(path))
+    return tvm.relax.VirtualMachine(rt_mod, device)
+```
+
+重新加载测试应在新进程执行，避免使用编译进程中的全局注册状态。BYOC 外部模块还应检查产物版本、固件要求、常量摘要和函数参数元数据。
+
+## 本章参考资料
+
+- [Relax Python API](https://tvm.apache.org/docs/reference/api/python/relax/relax.html)
+- [Relax 虚拟机](https://tvm.apache.org/docs/arch/relax_vm.html)
+- [导出与加载 Relax 可执行程序](https://tvm.apache.org/docs/how_to/tutorials/export_and_load_executable.html)
+- [`python/tvm/runtime/executable.py`](https://github.com/apache/tvm/blob/v0.24.0/python/tvm/runtime/executable.py)
+- [`python/tvm/runtime/vm.py`](https://github.com/apache/tvm/blob/v0.24.0/python/tvm/runtime/vm.py)
 
 ## 官方资料基础上的扩展课
 
@@ -216,8 +332,3 @@ def load_vm(lib_path, device):
 - [ ] 能从官方页面定位到固定版本源码和测试；
 - [ ] NPU 改造说明包含编译阶段、运行阶段与部署阶段；
 - [ ] 失败时保留最小输入、环境、阶段输出和第一个错误。
-
-## 对象定义与参数补充
-
-> [!note] 继续查阅
-> Executable、VirtualMachine 与运行时调用 需要准确构造签名、字段、参数限制和最小对象例子时，请转到 [[54-IRModule 运行时模块与虚拟机参数手册]]。
