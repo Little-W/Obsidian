@@ -110,7 +110,7 @@
 <polygon fill="none" stroke="#94a3b8" points="1074.62,-1752.69 1074.62,-1800.69 1176.88,-1800.69 1176.88,-1752.69 1074.62,-1752.69"/>
 <text xml:space="preserve" text-anchor="start" x="1100.25" y="-1774.34" font-family="Microsoft YaHei" font-weight="bold" font-size="13.00" fill="#475569">数值格式</text>
 <polygon fill="none" stroke="#94a3b8" points="1176.88,-1752.69 1176.88,-1800.69 1423.12,-1800.69 1423.12,-1752.69 1176.88,-1752.69"/>
-<text xml:space="preserve" text-anchor="start" x="1203.62" y="-1778.34" font-family="Microsoft YaHei" font-weight="bold" font-size="13.00" fill="#17324d">INT4 / INT8 / INT16 输入与权重</text>
+<text xml:space="preserve" text-anchor="start" x="1225.38" y="-1778.34" font-family="Microsoft YaHei" font-weight="bold" font-size="13.00" fill="#17324d">INT8 / INT16 输入与权重</text>
 <text xml:space="preserve" text-anchor="start" x="1187.88" y="-1765.34" font-family="Microsoft YaHei" font-weight="bold" font-size="13.00" fill="#17324d">INT32 累加 · Complex 局部使用 FP32</text>
 </g>
 <!-- axi_bus_in -->

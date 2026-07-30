@@ -1,7 +1,7 @@
 # NPU 指令与硬件架构设计 Spec
 
 > [!abstract] 文档目的
-> 本文定义面向 Transformer、RNN、GRU 和 LSTM 整数推理的单核 NPU 规格，重点说明 128-bit 指令、模块划分、模块连接、片上存储、模块级接口和功能时序。模型张量只使用 INT4、INT8、INT16 和 INT32；复杂数学函数在专用单元内部按照 `INT → FP → INT` 的次序计算。本文可作为 RTL 设计、验证环境、模型编译器、C 驱动、Runtime、固件和 SoC 集成工作的共同输入。
+> 本文定义面向 Transformer、RNN、GRU 和 LSTM 整数推理的单核 NPU 规格，重点说明 128-bit 指令、模块划分、模块连接、片上存储、模块级接口和功能时序。模型张量只使用 INT8、INT16 和 INT32；复杂数学函数在专用单元内部按照 `INT → FP → INT` 的次序计算。本文可作为 RTL 设计、验证环境、模型编译器、C 驱动、Runtime、固件和 SoC 集成工作的共同输入。
 
 | 项目   | 内容                                                                                     |
 | ---- | -------------------------------------------------------------------------------------- |
@@ -55,7 +55,7 @@
 2. 外部主控 CPU 经 SoC AXI Fabric 访问 NPU AXI Slave 的命令、控制和 L1BUF 接口；
 3. TaskScheduler、DMA、Matrix、Vector、CME、L1BUF、MIF 和 LSC；
 4. 由两个 64-bit beat 组成的 128-bit 指令，以及各操作的 80 bit payload；
-5. INT4、INT8、INT16、INT32 的 GEMM、BMM、逐元素运算、按维度统计、特殊函数和多维 DMA；
+5. INT8、INT16、INT32 的 GEMM、BMM、逐元素运算、按维度统计、特殊函数和多维 DMA；
 6. 单核事件、完成通知和错误传播；
 7. 上电、复位、初始化、任务启动、任务完成和低功耗时序；
 8. 模块级接口和基础验证要求。
@@ -87,7 +87,7 @@ NPU 子系统必须满足以下要求：
 6. 首版任务只在一个 Core 内执行，不依赖其他 Core 的计算结果或片上存储。
 7. DDR Channel 选择或交织方式由 SoC 配置决定，NPU 指令不因该配置变化而改变。
 8. 地址错误、命令字段错误、数据格式不被接受、依赖任务失败和看门狗超时必须产生可读取的错误状态。
-9. DDR 和 L1BUF 中的模型张量只采用 INT4、INT8、INT16、INT32；FP32 可以作为只读 scale、$\epsilon$、函数系数或查找表元数据，也可以用于复杂数学函数的内部计算过程，但不能作为软件可见的模型张量格式。
+9. DDR 和 L1BUF 中的模型张量只采用 INT8、INT16、INT32；FP32 可以作为只读 scale、$\epsilon$、函数系数或查找表元数据，也可以用于复杂数学函数的内部计算过程，但不能作为软件可见的模型张量格式。
 10. Matrix 与 Vector 是两类调度任务，但由一个 `npu_matrix_vector_engine` 物理模块执行。Matrix 内含 Outer context 与 Scalar context：Outer context 执行分块外积并保存本地部分和，Scalar context 执行逐元素乘加与后处理。两个 context 先共用 Matrix PE/L1 路由，再与 Vector 共用一套可配置多精度 MAC PE和内部存储通道。
 11. Generic Core 是 NPU 外部的主控 CPU，不属于 NPU RTL。它通过软件驱动发起 AXI 访问，不使用 NPU 内部取指端口或自定义指令端口。
 12. NPU 对外提供 AXI Slave 和 AXI Master：AXI Slave 接收指令、CSR 与 L1BUF 窗口访问；AXI Master 由 DMA/MIF 发起全局内存访问。
@@ -122,13 +122,13 @@ NPU 子系统必须满足以下要求：
 | Matrix 临时累加宽度 | `accum_q`        |          64 bit | 当前 RTL | signed32 乘积经符号扩展后加入 signed64 累加寄存器 |
 | Matrix Scalar context 计算速率 | — | 1 个乘积/计算步骤 | 当前 RTL | context1 每次向共享 PE 提交一个逐元素乘法请求 |
 | Vector 标量分支处理数 | — | 1 个元素/计算步骤 | 当前 RTL | 每个源读请求和目的写请求均等待对应响应 |
-| Vector 连续 MUL 每次请求的乘积数 | — | INT16 为 1、INT8 为 4、INT4 为 16 | 当前 RTL | 使用共享 PE；INT16、INT8 对同一个输入 beat分别提交 4、2 次请求 |
+| Vector 连续 MUL 每次请求的乘积数 | — | INT16 为 1、INT8 为 4 | 当前 RTL | 使用共享 PE；INT16、INT8 对同一个输入 beat分别提交 4、2 次请求 |
 | CME 同时接受数学请求数 | — | 1 | 当前 RTL | 共享数学单元完成当前请求后再接受下一项 |
 | CME 私有 FP32 数组 | — | 0 | 当前 RTL | 当前使用标量和每行统计寄存器，不包含 4096 项暂存数组 |
 | DMA 未完成存储请求数 | `DMA_OUTSTANDING` |           1 | 当前 RTL | DMA 等待当前 L1BUF 或 MIF 响应后再发下一项请求 |
 | MIF 未完成事务数 | `MIF_OUTSTANDING` |           1 | 当前 RTL | MIF 完成当前 AXI 事务后再接收下一项请求 |
 | MIF AXI burst 长度 | `MIF_AXI_BURST_BEATS` | 读 1～16 beat，写 1 beat | 当前 RTL | 正常 DMA 指令的一次对齐读最多 8 beat；模块级 Task Context 可给出 1～16 beat |
-| 模型张量格式集合       | `MODEL_DTYPE_SET` | INT4、INT8、INT16、INT32 | 用户要求   | DMA、L1BUF、Matrix 和 Vector 的软件可见张量格式   |
+| 模型张量格式集合       | `MODEL_DTYPE_SET` | INT8、INT16、INT32 | 当前设计   | DMA、L1BUF、Matrix 和 Vector 的软件可见张量格式   |
 | Matrix 部分和格式 | `MAT_PARTIAL_DTYPE` | INT32 | 用户要求 | `GEMM_ACCUM`、`GEMM_ZERO` 的 L1 C 和 Outer context 本地部分和 RAM 使用 INT32；计算阶段使用 signed64 |
 | 内部浮点工作格式       | `CME_FP_DTYPE`    |            FP32 | 本文基准定义 | 当前只存在于 Complex Math Engine 的状态和统计寄存器 |
 
@@ -149,16 +149,18 @@ NPU 子系统必须满足以下要求：
 
 #### 2.3.1 软件可见的数据格式
 
-模型输入、权重、bias、中间张量、KV Cache 和模型输出只允许以下四种整数格式：
+模型输入、权重、bias、中间张量、KV Cache 和模型输出只允许以下三种整数格式：
 
 | 格式 | 数值范围 | 典型用途 | 存储方式 |
 | --- | ---: | --- | --- |
-| INT4 | $[-8,7]$ | 权重、经过误差测试的激活或 KV Cache | 两个元素放入一个字节 |
 | INT8 | $[-128,127]$ | 激活、权重、门值、Softmax 或 Norm 的整数输出 | 每个元素一个字节 |
 | INT16 | $[-32768,32767]$ | 回归输入、回归权重、需要更细数值间隔的中间张量或输出 | 每个元素两个字节，低地址保存低 8 bit |
 | INT32 | $[-2^{31},2^{31}-1]$ | Matrix 累加结果、bias、需要较大数值范围的中间结果 | 每个元素四个字节 |
 
-P0 采用有符号二进制补码。INT4 的第 $2i$ 个元素放在字节 $i$ 的低 4 bit，第 $2i+1$ 个元素放在高 4 bit；读取后必须执行符号扩展。张量含奇数个 INT4 元素时，最后一个高 4 bit不属于张量，读取端不得把它当作有效元素。DMA 和 Matrix 创建新 INT4 张量时可把该位置写 0；IVE 对任一 INT4 写都先读旧 beat，只替换目标半字节，因此未使用的高 4 bit保留写入前的值。INT16 和 INT32 均按小端字节次序保存。例如，INT16 数值 `0x1234` 在较低地址保存 `0x34`，在下一地址保存 `0x12`。
+P0 采用有符号二进制补码。INT16 和 INT32 均按小端字节次序保存。例如，INT16 数值 `0x1234` 在较低地址保存 `0x34`，在下一地址保存 `0x12`。
+
+> [!important] 数据格式编码 0 的处理
+> 指令中的 2-bit 数据格式编码保持 `1=INT8`、`2=INT32`、`3=INT16`。编码 0 为保留值，不能作为任何有效输入、权重、中间张量或输出的数据格式。编译器和驱动不得生成编码 0。正常指令入口在内联解码时拒绝该编码并建立 `BAD_DESC` 终态；模块级 Task Context 直接把编码 0 送入执行单元时返回 `DTYPE_UNSUPPORTED`。
 
 > [!important] FP 不是模型张量格式
 > FP32 中间结果只允许存在于 Complex Engine 的状态寄存器、标量寄存器或后续设计明确增加的内部暂存区。当前 RTL 使用状态寄存器和每行统计寄存器，不实现 FP32 暂存数组。FP32 scale、$\epsilon$、函数系数和查找表可以由指令中的字段确定，或保存在任务指定的 L1BUF 参数区，但不能被选择为模型输入、权重、中间张量、KV Cache 或模型输出的数据格式。指令中的张量 dtype 不得选择任何浮点格式。
@@ -175,7 +177,7 @@ $$
 
 | 符号 | 含义 |
 | --- | --- |
-| $q$ | INT4、INT8、INT16 或 INT32 的存储值 |
+| $q$ | INT8、INT16 或 INT32 的存储值 |
 | $z$ | 与 $q$ 使用相同数值范围的整数 zero point |
 | $s$ | FP32 缩放系数；它由指令中的字段或任务拥有的 L1BUF 参数区提供，不是模型张量 |
 | $x_{\mathrm{fp}}$ | 专用单元内部使用的 FP32 数值 |
@@ -186,7 +188,7 @@ P0 Matrix 输入采用对称形式，即 $z=0$。激活函数、Softmax 和 Norm
 
 Sigmoid、Tanh、GELU、SiLU、Exp、Reciprocal、ReciprocalSqrt、Softmax、LayerNorm 和 RMSNorm 按以下次序处理：
 
-1. 从 L1BUF 读取 INT4、INT8、INT16 或 INT32。
+1. 从 L1BUF 读取 INT8、INT16 或 INT32。
 2. 执行符号扩展，得到 INT32。
 3. 根据输入 $s_x,z_x$ 转为内部 FP32：
 
@@ -205,26 +207,26 @@ Sigmoid、Tanh、GELU、SiLU、Exp、Reciprocal、ReciprocalSqrt、Softmax、Lay
    \right).
    $$
 
-6. 将 INT4、INT8、INT16 或 INT32 结果写回 L1BUF。
+6. 将 INT8、INT16 或 INT32 结果写回 L1BUF。
 
 其中 `round_mode` 必须明确选择最接近偶数、向零、向正无穷或向负无穷；P0 默认使用最接近偶数。`clip` 把结果限制在目的整数格式的数值范围内。
 
 ```mermaid
 %%{init: {"flowchart": {"useMaxWidth": true, "nodeSpacing": 12, "rankSpacing": 18}, "themeVariables": {"fontSize": "11px"}}}%%
 flowchart TB
-    I["L1BUF 整数输入<br/>INT4 / INT8 / INT16 / INT32"]
+    I["L1BUF 整数输入<br/>INT8 / INT16 / INT32"]
     EXT["解包与符号扩展<br/>得到 INT32"]
     I2F["减 zero point<br/>乘输入 scale<br/>转为内部 FP32"]
     FUNC["FP32 数学函数<br/>Activation / Softmax / Norm"]
     F2I["除输出 scale<br/>舍入 + zero point + 裁剪"]
-    O["L1BUF 整数输出<br/>INT4 / INT8 / INT16 / INT32"]
+    O["L1BUF 整数输出<br/>INT8 / INT16 / INT32"]
 
     I --> EXT --> I2F --> FUNC --> F2I --> O
 ```
 
 #### 2.3.4 Matrix 的整数计算
 
-Matrix 子系统支持 INT4、INT8 和 INT16 输入。标量分支还支持 INT8 激活乘 INT4 权重。每个输入元素先符号扩展，再通过共享 PE 执行有符号乘法；乘积加入 signed 64-bit 临时累加寄存器。先定义不含 bias 的乘累加结果：
+Matrix 子系统支持 INT8 和 INT16 输入。A 与 B 必须使用相同的数据格式。每个输入元素先符号扩展，再通过共享 PE 执行有符号乘法；乘积加入 signed 64-bit 临时累加寄存器。先定义不含 bias 的乘累加结果：
 
 $$
 p_{m,n}
@@ -267,7 +269,7 @@ $$
 公开指令有两种写回方式：
 
 1. 目的格式为 INT32 时，执行饱和后写回 \(a_{m,n}\)。
-2. 目的格式为 INT4、INT8 或 INT16 时，使用指令中的 5-bit `requant_shift`。公开指令固定乘数为 1、整数 zero point 为 0，并使用最接近且中点取偶数的舍入方式。
+2. 目的格式为 INT8 或 INT16 时，使用指令中的 5-bit `requant_shift`。公开指令固定乘数为 1、整数 zero point 为 0，并使用最接近且中点取偶数的舍入方式。
 
 令 \(r=\texttt{requant\_shift}\)，其范围为 0～31，则非 INT32 输出为：
 
@@ -323,7 +325,7 @@ $$
 2. 第二遍重新读取整数输入，计算 $\exp(x_i-m)$ 并累加分母；
 3. 第三遍再次读取整数输入，重新计算指数、除以分母并转换为整数输出。
 
-该方法增加 L1BUF 读取次数，但保证软件可见张量始终是 INT4、INT8、INT16 或 INT32。若后续芯片增加足够大的 CME 私有暂存区，可缓存第二遍的 FP32 指数结果，以减少第三次读取；接口行为不变。
+该方法增加 L1BUF 读取次数，但保证软件可见张量始终是 INT8、INT16 或 INT32。若后续芯片增加足够大的 CME 私有暂存区，可缓存第二遍的 FP32 指数结果，以减少第三次读取；接口行为不变。
 
 ---
 
@@ -486,7 +488,7 @@ flowchart TB
 | Matrix-Vector Engine     | Matrix 与 Vector Task Context、L1BUF 数据 | 矩阵和向量结果、两组完成消息 | `npu_matrix_vector_engine` 组合双 Matrix context、Vector 控制器、共享多精度 MAC PE 和内部存储通道；保留原有指令与两组任务接口 |
 | Matrix Dual Context      | Matrix 任务、共享 PE 和 L1 返回 | Matrix PE/L1 请求、带 `command_id` 的完成消息 | context0 直接例化 Outer 控制器，context1 直接例化 Scalar 控制器；任务分配器按操作码、Outer 支持状态和本地部分和状态选择 context |
 | Matrix-Vector L1 请求 FIFO | 内部存储通道输出的 L1 请求 | 排队后的 L1 请求 | 保存两项 93-bit 请求，按接收次序送到 L1BUF；响应不经过该 FIFO |
-| Shared MAC PE            | Matrix 乘法请求、Vector MUL/FMA 请求 | 分段贡献值或逐元素 INT32 乘积 | 四个 group 共 64 个 4×4 基础乘法器；支持 INT16、INT8、INT4 和 INT4/INT8 混合输入 |
+| Shared MAC PE            | Matrix 乘法请求、Vector MUL/FMA 请求 | 分段贡献值或逐元素 INT32 乘积 | 四个 group 共 64 个内部 4×4 基础乘法器；这些小乘法器组合成 INT8 或 INT16 乘法，不构成软件可选的数据格式 |
 | Vector 轻量整数 ALU      | ADD、SUB、MAX、MIN、CMP、SELECT、CLAMP、ReLU | 逐元素整数结果 | 不申请共享 PE；MUL/FMA 的乘法部分才送入共享 PE |
 | CME 内部统计逻辑      | 行或向量段                   | 和、最大值、平方和 | 行初始化时保存 STAT 目的地址；逐元素更新统计寄存器，SUMSQ 的平方和累加分成两个寄存阶段 |
 | CME 内部数学单元          | FP32 标量请求                | 函数结果 | 顺序执行 Exp、Reciprocal、ReciprocalSqrt、Sigmoid、Tanh、GELU、SiLU；Exp 用五个状态完成范围整数舍入 |
@@ -543,7 +545,7 @@ flowchart TB
 | payload 保持 | `valid=1` 且 `ready=0` 时，发送端必须保持 payload 不变 |
 | ID | 带 ID 的接口必须按 ID 对应请求与返回；当前 DMA 到 MIF 的内部接口不携带 ID |
 | 字节地址 | 所有地址、stride 和长度都以字节为单位，只有 shape 以元素个数表示 |
-| 保留位 | 发送端写 0；接收端忽略，但可在严格检查模式下报告非零 |
+| 保留位 | 发送端写 0；指令与 Task Context 中要求写 0 的位若非零，接收端拒绝该请求；CSR 保留位按各寄存器表规定处理 |
 | 跨时钟域 | 必须经过异步 FIFO、握手同步器或经验证的 CDC 组件 |
 
 > [!warning] 不允许组合回授
@@ -1056,7 +1058,7 @@ AXI Slave 前端会为每对 beat 产生内部 `first/last` 标志：低 word �
 
 | 编码 | 数据格式 | 每个元素的有效位数 | 常规字节存储 |
 | ---: | --- | ---: | --- |
-| `0` | INT4 | 4 | 两个元素共用 1B |
+| `0` | 保留 | — | 正常指令入口返回 `BAD_DESC`；执行单元直接接口返回 `DTYPE_UNSUPPORTED` |
 | `1` | INT8 | 8 | 1B |
 | `2` | INT32 | 32 | 4B |
 | `3` | INT16 | 16 | 2B |
@@ -1152,16 +1154,16 @@ GEMM 的 A、B 和 C 使用 `LREF14`；bias 使用 `LREF12`。在 GEMM 中，bia
 | `2` | `0x02` | `EVENT_REARM` | Control | 已实现 | `signal`；`payload=0` | 旧 Event 已结束且没有等待者时，使该 Event 进入下一代。 |
 | `3` | `0x03` | `EVENT_JOIN` | Control | 已实现 | `wait0`、`wait1`、`signal`、`join_mode` | 合并两个前置 Event；可选择“两个都成功”或“至少一个成功”。 |
 | `4` | `0x04` | `GLOBAL_FENCE` | Control | 已实现 | `engine_mask` | 等待所选执行单元中更早提交的任务结束。 |
-| `5` | `0x20` | `DMA_COPY_1D` | DMA | 已实现 | `src_aref`、`dst_aref`、`count`、源/目标 dtype、INT4 起始半字节 | 连续复制元素并执行整数位宽转换；宽格式写 INT4 时先检查每个源值是否位于 `[-8,7]`，越出时返回 `NUMERIC_EXCEPTION`。 |
+| `5` | `0x20` | `DMA_COPY_1D` | DMA | 已实现 | `src_aref`、`dst_aref`、`count`、源/目标 dtype、两个必须为 0 的保留位 | 连续复制元素并执行整数位宽转换；支持 INT8、INT16 和 INT32。 |
 | `6` | `0x21` | `DMA_COPY_ND` | DMA | 已实现 | 与 `DMA_COPY_1D` 相同 | 复制连续存储区。带步长的多维访问由编译器拆成多条命令，或组合 PACK、SPLIT、TRANSPOSE。 |
 | `7` | `0x22` | `DMA_FILL` | DMA | 已实现 | `dst_aref`、`count`、`fill_value`、目标 dtype | 用一个立即数连续填充目标元素。 |
-| `8` | `0x23` | `DMA_TRANSPOSE_2D` | DMA | 已实现 | `src_aref`、`dst_aref`、`rows`、`columns`、dtype、INT4 起始半字节 | 转置连续行优先二维数组，不包含行步长字段。 |
+| `8` | `0x23` | `DMA_TRANSPOSE_2D` | DMA | 已实现 | `src_aref`、`dst_aref`、`rows`、`columns`、dtype、两个必须为 0 的保留位 | 转置连续行优先二维数组，不包含行步长字段。 |
 | `9` | `0x24` | `DMA_PACK` | DMA | 已实现 | `src_aref`、`dst_aref`、`segment_count`、`segment_bytes`、`segment_stride` | 从等间隔数据段读取并连续写入。 |
 | `10` | `0x25` | `DMA_SPLIT` | DMA | 已实现 | 与 PACK 相同 | 从连续数据区读取并按固定间隔写入。 |
 | `11` | `0x28` | `DMA_GATHER_ND` | DMA | 编码已分配，功能关闭 | 全局源 `AREF28`、索引表 `LREF16`、目标 `LREF16`、块数、每块字节数 | 根据 L1 中的 UINT32 索引读取全局内存数据块；当前返回 `ILLEGAL_OPCODE`。 |
-| `12` | `0x40` | `GEMM` | Matrix | 已实现 | A/B/C `LREF14`、bias `LREF12`、M/N/K、`b_int4`、C dtype、右移位数 | 矩阵乘法后可加 INT32 bias；B 使用 `KT×NT` tile 存储。 |
-| `13` | `0x41` | `BMM` | Matrix | 已实现 | A/B/C `LREF14`、batch、M/N/K、`b_int4`、C dtype、右移位数 | 连续保存的多组矩阵乘法，不带 bias。 |
-| `14` | `0x42` | `GEMM_ACCUM` | Matrix | 已实现 | A/B/C `LREF14`、M/N/K、`b_int4` | 把新的乘加结果加入原 C；C 必须为 INT32，bias 和右移位数必须为 0。 |
+| `12` | `0x40` | `GEMM` | Matrix | 已实现 | A/B/C `LREF14`、bias `LREF12`、M/N/K、保留位、C dtype、右移位数 | 矩阵乘法后可加 INT32 bias；B 使用 `KT×NT` tile 存储，保留位必须为 0。 |
+| `13` | `0x41` | `BMM` | Matrix | 已实现 | A/B/C `LREF14`、batch、M/N/K、保留位、C dtype、右移位数 | 连续保存的多组矩阵乘法，不带 bias，保留位必须为 0。 |
+| `14` | `0x42` | `GEMM_ACCUM` | Matrix | 已实现 | A/B/C `LREF14`、M/N/K、保留位 | 把新的乘加结果加入原 C；C 必须为 INT32，bias、保留位和右移位数必须为 0。 |
 | `15` | `0x43` | `GEMM_ZERO` | Matrix | 已实现 | C `LREF14`、M/N | 清零 C 指向的 INT32 部分和区域，为后续 `GEMM_ACCUM` 准备初值。 |
 | `16` | `0x60` | `VECTOR_ADD` | IVE | 已实现 | `src0`、`src1`、`dst`、rows、length、广播方式 | 逐元素相加，输出数据格式与公共输入格式相同。 |
 | `17` | `0x61` | `VECTOR_SUB` | IVE | 已实现 | 与 ADD 相同 | 逐元素相减。 |
@@ -1209,10 +1211,10 @@ GEMM 的 A、B 和 C 使用 `LREF14`；bias 使用 `LREF12`。在 GEMM 中，bia
 | `[51:24]` | `dst_aref` |
 | `[23:4]` | `count`，元素数，范围 1～1048575 |
 | `[3:2]` | `dst_dtype` |
-| `[1]` | `src_nibble`，INT4 首元素所在半字节 |
-| `[0]` | `dst_nibble`，当前必须为 0 |
+| `[1]` | 保留位，必须为 0 |
+| `[0]` | 保留位，必须为 0 |
 
-命令头 `dtype` 是源数据格式。源和目标格式相同时原样复制；目标更宽时执行符号扩展；目标缩窄到 INT8 或 INT16 时执行饱和处理。目标为 INT4 且源格式更宽时，内联解码固定选择 `PACK_INT4`：DMA 先完成一次只读检查，所有源值都位于 `[-8,7]` 后才写入，任一源值越出时返回 `NUMERIC_EXCEPTION` 且不写目的区。`DMA_COPY_ND` 当前也表示连续区域，不直接携带 rank、shape 或 stride。
+命令头 `dtype` 是源数据格式。源和目标格式相同时原样复制；目标更宽时执行符号扩展；目标缩窄到 INT8 或 INT16 时执行饱和处理。`DMA_COPY_ND` 当前也表示连续区域，不直接携带 rank、shape 或 stride。编码 0 或任一非零保留位都会使指令被拒绝。
 
 `DMA_FILL`：
 
@@ -1222,7 +1224,7 @@ GEMM 的 A、B 和 C 使用 `LREF14`；bias 使用 `LREF12`。在 GEMM 中，bia
 | `[51:32]` | `count`，元素数，范围 1～1048575 |
 | `[31:0]` | `fill_value` |
 
-命令头 `dtype` 是目标数据格式。硬件取 `fill_value` 的低 4、8、16 或 32 bit，并对每个目标元素重复写入。
+命令头 `dtype` 是目标数据格式。硬件对 INT8、INT16、INT32 分别取 `fill_value` 的低 8、16、32 bit，并对每个目标元素重复写入。编码 0 会使指令被拒绝。
 
 `DMA_TRANSPOSE_2D`：
 
@@ -1233,8 +1235,8 @@ GEMM 的 A、B 和 C 使用 `LREF14`；bias 使用 `LREF12`。在 GEMM 中，bia
 | `[23:16]` | `rows`，范围 1～255 |
 | `[15:8]` | `columns`，范围 1～255 |
 | `[7:6]` | `dst_dtype` |
-| `[5]` | `src_nibble` |
-| `[4]` | `dst_nibble`，当前必须为 0 |
+| `[5]` | 保留位，必须为 0 |
+| `[4]` | 保留位，必须为 0 |
 | `[3:0]` | 必须为 0 |
 
 输入按 `[rows][columns]` 连续行优先保存，输出按 `[columns][rows]` 连续行优先保存。源和目标数据格式必须相同。
@@ -1276,13 +1278,13 @@ GEMM 的 A、B 和 C 使用 `LREF14`；bias 使用 `LREF12`。在 GEMM 中，bia
 | `[25:20]` | `M - 1`，实际范围 1～64 |
 | `[19:14]` | `N - 1`，实际范围 1～64 |
 | `[13:8]` | `K - 1`，实际范围 1～64 |
-| `[7]` | `b_int4` |
+| `[7]` | 保留位，必须为 0 |
 | `[6:5]` | `C_dtype` |
 | `[4:0]` | `requant_shift`，范围 0～31 |
 
-命令头 `dtype` 是 A 的数据格式。通常 B 与 A 相同；只有 A 为 INT8 且 `b_int4=1` 时，B 使用 INT4。A 按 `[M][K]` 连续行优先保存；B 按 `KT=16、NT=8` 的 tile 顺序保存；C 按 `[M][N]` 连续行优先保存。
+命令头 `dtype` 是 A 和 B 的数据格式，只允许 INT8 或 INT16。A 按 `[M][K]` 连续行优先保存；B 按 `KT=16、NT=8` 的 tile 顺序保存；C 按 `[M][N]` 连续行优先保存。编码 0 或非零保留位都会使指令被拒绝。
 
-`GEMM_ACCUM` 要求 C 为 INT32、bias 为 0、`requant_shift=0`，并把新结果加到原 C。`GEMM_ZERO` 要求 A、B、bias、`b_int4` 和 `requant_shift` 都为 0，`C_dtype=INT32`，编码的 K 字段为 0；该操作不执行 K 方向计算，只清零 `[M][N]` 的 INT32 C 区域。
+`GEMM_ACCUM` 要求 C 为 INT32、bias 为 0、保留位为 0、`requant_shift=0`，并把新结果加到原 C。`GEMM_ZERO` 要求 A、B、bias、保留位和 `requant_shift` 都为 0，`C_dtype=INT32`，编码的 K 字段为 0；该操作不执行 K 方向计算，只清零 `[M][N]` 的 INT32 C 区域。
 
 `GEMM_ZERO_LOCAL` 使用与 `GEMM_ZERO` 相同的字段限制，但不访问 L1 中的 C。它在 Outer context 保存 C 基地址、M、N 和行步长等元数据，清除对应本地部分和有效状态，为后续 `GEMM_ACCUM_HOLD` 建立初值。`GEMM_ACCUM_HOLD` 使用与 `GEMM_ACCUM` 相同的字段限制，把新结果加入 Outer context 的本地部分和 RAM，并保持本地状态，不写最终 C。后续 `GEMM_ACCUM` 读取匹配的本地状态、加入最后一段结果并写回 C，完成后清除该本地状态。`GEMM_ZERO_LOCAL` 和 `GEMM_ACCUM_HOLD` 固定由 Outer context 执行；`GEMM_ACCUM` 在 Outer 支持当前任务或本地部分和状态有效时也由 Outer context 执行，否则交给 Scalar context。
 
@@ -1297,7 +1299,7 @@ GEMM 的 A、B 和 C 使用 `LREF14`；bias 使用 `LREF12`。在 GEMM 中，bia
 | `[31:26]` | `M - 1` |
 | `[25:20]` | `N - 1` |
 | `[19:14]` | `K - 1` |
-| `[13]` | `b_int4` |
+| `[13]` | 保留位，必须为 0 |
 | `[12:11]` | `C_dtype` |
 | `[10:6]` | `requant_shift` |
 | `[5:0]` | 必须为 0 |
@@ -1368,7 +1370,7 @@ STAT 的 `stat_mode` 为 0、1、2 时分别计算 SUM、MAX、SUMSQ，编码 3 
 5. 地址引用格式、对齐和加法是否有效。
 6. 数据格式组合是否受该操作支持。
 7. `count`、M/N/K、rows、length、segment 等尺寸字段是否在允许范围。
-8. INT4 起始半字节、奇数个元素的最后半字节和完整访问字节数是否正确。
+8. 数据格式编码 0 是否被拒绝，DMA 的两个保留位和 Matrix 的保留位是否保持为 0；任一保留位非零时是否返回正确错误。
 9. DMA 在任务开始时检查可预先计算的完整源区和目标区；Matrix 与 IVE 还会在逐项访问时检查计算所得地址是否仍位于 20-bit L1 地址空间。当前 CME 在任务开始时检查各基址的高位，逐项访问时检查元素是否跨越 8B beat，但没有再次检查行、列步长计算所得地址的高位；因此软件和编译器必须保证 CME 的全部实际访问地址都小于 `0x100000`。
 10. 源区与目标区重叠时，该操作是否明确允许重叠；DMA 在硬件中检查，连续 Vector MUL 由编译器保证 src0、src1、dst 两两不相交。
 
@@ -2066,7 +2068,7 @@ Control 执行、普通 signal Event 发布和完成通知共用一组连续逐�
 
 ### 9.1 模块组成与功能
 
-DMA / Layout Engine 在 L1BUF 与全局存储之间搬运数据，也可以在 L1BUF 内或全局存储内复制数据。当前 RTL 包含 Task Context 锁存器、字段检查器、元素地址生成器、整数格式转换器、INT4 读写单元、二维转置地址生成器、PACK/SPLIT 地址生成器、对齐整 beat 快速复制单元、L1BUF 请求端口、MIF 请求端口、错误记录和进度计数器。
+DMA / Layout Engine 在 L1BUF 与全局存储之间搬运数据，也可以在 L1BUF 内或全局存储内复制数据。当前 RTL 包含 Task Context 锁存器、字段检查器、元素地址生成器、整数格式转换器、二维转置地址生成器、PACK/SPLIT 地址生成器、对齐整 beat 快速复制单元、L1BUF 请求端口、MIF 请求端口、错误记录和进度计数器。
 
 当前实现一次执行一条 DMA 任务。普通路径一次处理一个元素，完成“源读取、可选格式转换、目的写入”后才处理下一个元素。对齐整 beat 快速路径一次处理一个或多个 64-bit beat，省去逐元素选择与合并。多 beat AXI 读只用于 GADDR→L1BUF；L1BUF→GADDR、L1BUF→L1BUF 和 GADDR→GADDR 的快速复制每次仍处理一个 beat。MIF 同时保留一个 AXI 事务，DMA 用 `fast_beats_remaining_q` 跟踪已经发出的多 beat 读。
 
@@ -2075,13 +2077,12 @@ DMA / Layout Engine 在 L1BUF 与全局存储之间搬运数据，也可以在 L
 - 操作为 `DMA_COPY_1D` 或 `DMA_COPY_ND`；
 - `convert_mode=0`，且源、目的 dtype 相同；
 - 源、目的当前地址均按 8B 对齐；
-- INT4 源、目的均从低半字节开始；
 - 当前内层至少剩余一个完整 beat 的元素；
 - 源、目的当前区域都至少剩余 8B。
 
-一个 64-bit beat 可保存 16 个 INT4、8 个 INT8、4 个 INT16 或 2 个 INT32 元素。GADDR→L1BUF 的本次读 beat 数取以下四者的最小值：当前内层剩余的完整 beat 数、源和目的区域剩余的完整 beat 数、`burst_beats_minus1+1`，以及从当前 AXI 地址到本 4KiB 段末尾可容纳的完整 beat 数。
+一个 64-bit beat 可保存 8 个 INT8、4 个 INT16 或 2 个 INT32 元素。GADDR→L1BUF 的本次读 beat 数取以下四者的最小值：当前内层剩余的完整 beat 数、源和目的区域剩余的完整 beat 数、`burst_beats_minus1+1`，以及从当前 AXI 地址到本 4KiB 段末尾可容纳的完整 beat 数。
 
-地址生成使用递增游标，不在每个元素上重新求多维线性编号。DMA 保存五个维度的 `index_q`、源和目的外层累计偏移、内层起点、当前源地址、当前目的地址以及 INT4 半字节相位。连续内层元素只增加元素字节数；INT4 通过翻转半字节相位，并在越过高半字节后把字节地址加 1。外层维度通过 stride 增加起点，在某一维结束时减去该维已经累计的偏移，再继续处理更外层维度。
+地址生成使用递增游标，不在每个元素上重新求多维线性编号。DMA 保存五个维度的 `index_q`、源和目的外层累计偏移、内层起点、当前源地址和当前目的地址。连续内层元素按数据格式对应的元素字节数递增。外层维度通过 stride 增加起点，在某一维结束时减去该维已经累计的偏移，再继续处理更外层维度。
 
 任务开始时，DMA 还要检查 shape 各维乘积。该检查采用 128×32 bit串行乘法：每个维度先装入 32-bit shape，随后每周期根据乘数最低位选择是否执行一次 128-bit 加法，并把乘数右移、被乘数左移。一个维度固定处理 32 个乘法位，因此不会在组合数据通路中串接多个宽乘法器。PACK 和 SPLIT 使用段计数，不进入 shape 乘法状态。
 
@@ -2089,8 +2090,7 @@ DMA 不执行带 scale 的数值调整。若两个张量的实数单位不同，
 
 - 位宽相同：保持整数值；
 - 目的位宽更大：执行符号扩展；
-- 目的位宽更小：执行饱和处理；
-- 写 INT4 的检查模式：先确认源值处于 $[-8,7]$，再打包；超出范围时返回 `NUMERIC_EXCEPTION`。
+- 目的位宽更小：执行饱和处理。
 
 > [!note] “搬运”不等于简单复制字节
 > 例如 INT8 数值 `-3` 的存储字节是 `0xfd`。把它搬到 INT16 时，DMA 先按 INT8 解释为有符号整数 `-3`，再写成 INT16 二进制补码 `0xfffd`，低地址保存 `0xfd`，下一地址保存 `0xff`。只有源、目的 dtype 相同时，搬运结果才与逐字节复制相同。
@@ -2156,11 +2156,11 @@ MIF 请求与响应端口如下：
 | `0x40` | `rank` | 8 | COPY、FILL、PACK、SPLIT 为 1；TRANSPOSE 为 2 |
 | `0x41` | `src_space` | 8 | L1BUF 或 GADDR |
 | `0x42` | `dst_space` | 8 | L1BUF 或 GADDR |
-| `0x43` | `convert_mode` | 8 | 不转换、符号扩展、裁剪或 INT4 打包 |
+| `0x43` | `convert_mode` | 8 | 不转换、符号扩展或饱和处理 |
 | `0x44` | `burst_beats_minus1` | 8 | 当前由内联解码器写 7；GADDR→L1BUF 对齐 COPY 用它限制一次 AXI 读的长度 |
 | `0x45` | `max_outstanding` | 8 | 当前由内联解码器写 1；允许值为 1～16，当前数据通路不使用它增加活动事务数 |
-| `0x46` | `src_nibble` | 1 | INT4 起始元素位于低半字节或高半字节；该字节 `[7:1]` 写 0 |
-| `0x47` | `dst_nibble` | 1 | 当前必须为 0；该字节 `[7:1]` 写 0 |
+| `0x46` | `reserved0` | 8 | 内联解码器写 0；执行单元收到非零值时返回 `BAD_DESC` |
+| `0x47` | `reserved1` | 8 | 内联解码器写 0；执行单元收到非零值时返回 `BAD_DESC` |
 | `0x48` | `shape[0]` | 32 | 第 0 维元素数 |
 | `0x4C` | `shape[1]` | 32 | 第 1 维元素数 |
 | `0x50` | `shape[2]` | 32 | 第 2 维元素数 |
@@ -2183,19 +2183,16 @@ MIF 请求与响应端口如下：
 | 编码 | 名称 | 行为 |
 | ---: | --- | --- |
 | 0 | `NONE` | 按原始位模式搬运，src/dst dtype 必须相同 |
-| 1 | `SIGN_EXTEND` | INT4→INT8/INT16/INT32、INT8→INT16/INT32 或 INT16→INT32 |
-| 2 | `SATURATE_NARROW` | INT32→INT16/INT8/INT4、INT16→INT8/INT4 或 INT8→INT4，超出目的格式范围时裁剪 |
-| 3 | `PACK_INT4` | 把 INT8、INT16 或 INT32 输入打包为 INT4；任一输入超出 `[-8,7]` 时返回 `NUMERIC_EXCEPTION` |
-| 4～255 | `RESERVED` | 返回 `BAD_DESC` |
-
-`SATURATE_NARROW` 与 `PACK_INT4` 的差别是：前者在缩窄时裁剪，后者要求源整数已经位于 INT4 范围内。两者写 INT4 时都按照低半字节在前的次序打包，奇数个元素的末字节高半部写 0。
+| 1 | `SIGN_EXTEND` | INT8→INT16/INT32 或 INT16→INT32 |
+| 2 | `SATURATE_NARROW` | INT32→INT16/INT8 或 INT16→INT8，超出目的格式范围时裁剪 |
+| 3～255 | `RESERVED` | 返回 `BAD_DESC` |
 
 各 DMA 指令展开后的内部值如下：
 
 | Opcode | rank 与 shape | `convert_mode` | 专有字段 |
 | --- | --- | --- | --- |
-| `DMA_COPY_1D` | `rank=1`，`shape[0]` 是元素数 | 允许 0～3 | stride、fill 和 segment 字段写 0 |
-| `DMA_COPY_ND` | `rank=1`，`shape[0]` 是元素数 | 允许 0～3 | 当前指令表示连续存储区；带步长操作由编译器拆分 |
+| `DMA_COPY_1D` | `rank=1`，`shape[0]` 是元素数 | 允许 0～2 | stride、fill 和 segment 字段写 0 |
+| `DMA_COPY_ND` | `rank=1`，`shape[0]` 是元素数 | 允许 0～2 | 当前指令表示连续存储区；带步长操作由编译器拆分 |
 | `DMA_FILL` | `rank=1`，`shape[0]` 是元素数 | 必须为 NONE | 使用 `fill_value`；源地址和 `src_region_bytes` 为 0 |
 | `DMA_TRANSPOSE_2D` | `rank=2`，`shape[0]=rows`、`shape[1]=cols` | 必须为 NONE | 源、目的 dtype 必须相同；只使用第 0 个行 stride |
 | `DMA_PACK` | `rank=1`，`shape[0]=segment_count` | 必须为 NONE | 使用 segment 三字段，全部多维 stride 写 0 |
@@ -2203,13 +2200,11 @@ MIF 请求与响应端口如下：
 
 `DMA_PACK` 和 `DMA_SPLIT` 要求 `segment_count>0`、`segment_bytes>0` 且 `segment_stride>=segment_bytes`。该限制保证相邻的间隔段不互相覆盖；一个段结束后可以紧接下一个段，也可以留出空隙。它们按字节原样复制，不执行数值格式转换。`shape[0]` 等于 `segment_count`；段计数或段字节数为 0、stride 小于段字节数等字段错误返回 `BAD_DESC`。
 
-当前 COPY 指令处理连续的一维元素序列。INT8、INT16 和 INT32 按元素字节数递增；INT4 按半字节递增，`src_nibble` 和 `dst_nibble` 给出第一个元素的位置。TRANSPOSE 的行间隔由解码器依据行长度和数据格式计算，PACK/SPLIT 的段间隔直接来自指令中的 `segment_stride`。
-
-INT4 源可以从高半字节开始，但 INT4 目的必须从一个字节的低半字节开始。若元素数为奇数，最后一个字节的高半字节写 0。需要保留同一字节中相邻的已有半字节时，软件应把输出安排到独立字节区域。
+当前 COPY 指令处理连续的一维元素序列。INT8、INT16 和 INT32 按元素字节数递增。TRANSPOSE 的行间隔由解码器依据行长度和数据格式计算，PACK/SPLIT 的段间隔直接来自指令中的 `segment_stride`。
 
 指令中的 stride 是无符号字节数，不接受负值。反向序列读取由软件把起始地址设为最后一个时间步，并拆成多条正向 DMA 任务。
 
-`DMA_FILL` 把 `fill_value` 解释为一个整数标量并重复写到全部有效元素：INT4 取低 4 bit，INT8 取低 8 bit，INT16 取低 16 bit，INT32 取低 32 bit。该标量按目的 dtype 的二进制补码解释。INT4 仍按两个元素一个字节打包，奇数尾部的高半字节写 0。
+`DMA_FILL` 把 `fill_value` 解释为一个整数标量并重复写到全部有效元素：INT8 取低 8 bit，INT16 取低 16 bit，INT32 取低 32 bit。该标量按目的 dtype 的二进制补码解释。
 
 当前内联解码器把内部 `burst_beats_minus1` 写为 7，把 `max_outstanding` 写为 1。DMA 检查 `burst_beats_minus1<=15`，并在 GADDR→L1BUF 对齐 COPY 中用该值限制 AXI 读长度，因此正常指令最多发出 8 beat 读；模块级 Task Context 可以测试 1～16 beat。`max_outstanding` 仍只参加合法性检查。
 
@@ -2225,27 +2220,11 @@ $$
 \operatorname{dst\_addr}(t)=d_0+t e_d.
 $$
 
-其中 $s_0$ 和 $d_0$ 是内联解码后得到的实际字节地址。格式转换分别按照源和目的元素大小前进，因此第 $t$ 个源元素与第 $t$ 个目的元素保持对应，但源、目的字节偏移可以不同。INT4 的源和目的分别使用自己的起始半字节计算：
-
-$$
-n_{\mathrm{half},s}
-=\operatorname{src\_nibble}+t,
-\qquad
-n_{\mathrm{half},d}
-=\operatorname{dst\_nibble}+t,
-$$
-
-$$
-\operatorname{byte\_offset}_{s/d}
-=\left\lfloor\frac{n_{\mathrm{half},s/d}}{2}\right\rfloor,
-\qquad
-\operatorname{nibble\_select}_{s/d}
-=n_{\mathrm{half},s/d}\bmod2.
-$$
+其中 $s_0$ 和 $d_0$ 是内联解码后得到的实际字节地址。格式转换分别按照源和目的元素大小前进，因此第 $t$ 个源元素与第 $t$ 个目的元素保持对应，但源、目的字节偏移可以不同。
 
 每次访问前，DMA 检查当前元素的起始地址和结束地址均位于 `src_region_bytes` 或 `dst_region_bytes` 所限定的范围内。地址加法回绕或超出范围时返回 `ADDR_FAULT`，`done_fault_addr_o` 保存本次失败的当前元素字节地址。
 
-上述公式定义每个元素应访问的位置，不表示 RTL 每次都执行乘法、除法或取余。普通 COPY/FILL 路径保存 `current_src_addr_q`、`current_dst_addr_q` 和半字节相位；最内层直接递增，外层使用 `src_stride_at()`、`dst_stride_at()` 和每维累计偏移推进。TRANSPOSE 另外保存行、列、源行起点和目的内层起点；PACK/SPLIT 保存段编号、段内字节编号和源、目的段起点。逐元素地址推进只使用比较、加减和半字节相位翻转。
+上述公式定义每个元素应访问的位置，不表示 RTL 每次都执行宽乘法。普通 COPY/FILL 数据通路保存 `current_src_addr_q` 和 `current_dst_addr_q`；最内层直接递增，外层使用 `src_stride_at()`、`dst_stride_at()` 和每维累计偏移推进。TRANSPOSE 另外保存行、列、源行起点和目的内层起点；PACK/SPLIT 保存段编号、段内字节编号和源、目的段起点。逐元素地址推进只使用比较和加减。
 
 DMA Task Context 可以表示 rank 1～5。当前软件可见 COPY 指令仍展开为连续的一维任务，TRANSPOSE 展开为二维任务；更高 rank 的 stride 游标主要供模块级接口验证和后续指令扩展使用。文档中的当前指令能力不得由这一内部字段误推为任意多维 COPY。
 
@@ -2266,7 +2245,7 @@ $$
 
 每段内部连续复制 `segment_bytes` 字节。任意长度或任意地址的数据段列表不能由一条指令表示，软件应拆成多条 `DMA_COPY_1D`。这三个字段也不能在一次任务中把逐行交错的 Q、K、V 整理为三个完整连续张量；该情况使用三条连续复制指令，或者先转置再复制。
 
-对 `DMA_TRANSPOSE_2D`，内联解码器令 `shape[0]=rows`、`shape[1]=columns`，并根据连续行优先存储计算源行字节数和目的行字节数。源、目的 dtype 必须相同。设非 INT4 元素的字节数为 $e$：
+对 `DMA_TRANSPOSE_2D`，内联解码器令 `shape[0]=rows`、`shape[1]=columns`，并根据连续行优先存储计算源行字节数和目的行字节数。源、目的 dtype 必须相同。设元素字节数为 $e$：
 
 $$
 \operatorname{src}(i,j)=s_0+i\,s_{\mathrm{row}}+j\,e,
@@ -2276,7 +2255,7 @@ $$
 \operatorname{dst}(j,i)=d_0+j\,d_{\mathrm{row}}+i\,e,
 $$
 
-其中 $0\le i<rows$，$0\le j<columns$，$s_{\mathrm{row}}=columns\times e$，$d_{\mathrm{row}}=rows\times e$。INT4 使用相同的元素次序，但地址生成器以半字节编号计算源位置，并按低半字节起始规则打包目的数据。
+其中 $0\le i<rows$，$0\le j<columns$，$s_{\mathrm{row}}=columns\times e$，$d_{\mathrm{row}}=rows\times e$。
 
 > [!example] 2×3 INT8 转置
 > 输入连续保存为 `[1,2,3,4,5,6]`，形状为 `[2][3]`，也就是第一行 `[1,2,3]`、第二行 `[4,5,6]`。转置输出形状为 `[3][2]`，连续字节次序是 `[1,4,2,5,3,6]`。当处理输入位置 $(i=1,j=2)$ 时，源偏移为 $1\times3+2=5$，读到数值 6；目的位置是 $(j=2,i=1)$，目的偏移为 $2\times2+1=5$，仍写到输出第 5 个元素。
@@ -2290,27 +2269,22 @@ $$
 | `ST_SHAPE_LOAD` | 把当前累计 shape 乘积和一个维度的 32-bit shape 装入串行乘法寄存器 |
 | `ST_SHAPE_MUL` | 每周期处理一个乘数 bit；完成当前维后处理下一维，最后检查零维和 64-bit 元素总数溢出 |
 | `ST_REGION_CHECK` | 检查源、目的区域字节数以及同地址空间的区域重叠；FILL 不检查源区域 |
-| `ST_CURSOR_INIT` | 清零多维索引与累计偏移，装入当前地址、INT4 半字节相位、段游标和转置行列游标 |
+| `ST_CURSOR_INIT` | 清零多维索引与累计偏移，装入当前地址、段游标和转置行列游标 |
 | `ST_PREP` | 检查源、目的元素范围和跨 beat 条件，同时判断是否满足整 beat 快速复制要求并计算本次 beat 数 |
 | `ST_READ_REQ` | 向 L1BUF 或 MIF 发送读请求；GADDR 快速读把 `fast_beats_remaining_q-1` 送给 MIF |
 | `ST_READ_RSP` | 普通路径选择一个元素；快速同空间复制保存完整 beat；GADDR→L1BUF 直接以当前 MIF 返回数据形成 L1 满 strobe 写请求；L1BUF→GADDR 直接以 L1 返回数据形成 MIF 写请求 |
-| `ST_CONVERT` | 执行符号扩展、饱和处理或 INT4 范围检查 |
-| `ST_RMW_REQ` | 写 INT4 高半字节前读取目的 64-bit beat |
-| `ST_RMW_RSP` | 保存目的旧数据，使同一字节中的低半字节保持不变 |
+| `ST_CONVERT` | 执行符号扩展或饱和处理 |
 | `ST_WRITE_REQ` | 形成 64-bit 写数据和 8-bit `WSTRB`，向 L1BUF 或 MIF 发请求 |
 | `ST_WRITE_RSP` | 接收写完成状态；普通路径按实际目的字节数增加进度，快速路径增加 8B，并推进地址、索引和 burst 计数 |
 | `ST_BURST_DRAIN` | GADDR 多 beat 读中途发生 MIF 或 L1 错误时保存首次错误，接收并丢弃剩余 MIF 返回，然后进入完成状态 |
 | `ST_ADVANCE` | 推进连续元素、外层维度、转置行列或 PACK/SPLIT 段游标；全部元素结束时完成任务 |
 | `ST_DONE` | 保持完成状态，直到与 TaskScheduler 握手，然后回到 `ST_IDLE` |
 
-非 PACK/SPLIT 任务在 `ST_CHECK` 后进入 shape 乘法。任一有效维度为 0 时，乘法检查完成后直接返回成功且不访问存储。shape 乘积高 64 bit非零，或低 64 bit为 `64'hffff_ffff_ffff_ffff` 时返回 `BAD_SHAPE`。正常任务经 `ST_REGION_CHECK` 和 `ST_CURSOR_INIT` 后进入处理循环。符合快速要求的 COPY 每次推进一个或多个完整 beat；其他任务进入普通元素路径。`convert_mode=PACK_INT4` 先执行一次只读范围检查；检查通过后重新初始化游标，再执行实际写入。
+非 PACK/SPLIT 任务在 `ST_CHECK` 后进入 shape 乘法。任一有效维度为 0 时，乘法检查完成后直接返回成功且不访问存储。shape 乘积高 64 bit非零，或低 64 bit为 `64'hffff_ffff_ffff_ffff` 时返回 `BAD_SHAPE`。正常任务经 `ST_REGION_CHECK` 和 `ST_CURSOR_INIT` 后进入处理循环。符合快速要求的 COPY 每次推进一个或多个完整 beat；其他任务进入普通元素数据通路。
 
 DMA 的异步复位只把 `state_q` 置为 `ST_IDLE`。因此复位后 `l1_req_valid_o`、`mif_req_valid_o` 和 `done_valid_o` 均为 0，模块可以在复位释放后接收新任务。Task Context、地址、数据、shape 乘法和进度相关寄存器不依赖复位清零：`ST_IDLE` 接收任务时装入新的 Task Context，`ST_CURSOR_INIT` 初始化地址与游标，其他寄存器在进入使用它们的状态前赋值。
 
-`done_progress_o` 统计已经获得目的端写完成响应的数据量。INT8、INT16 和 INT32 分别按每个元素 1B、2B 和 4B 增加；INT4 按实际占用的字节数增加，两个 INT4 元素共计 1B，奇数个元素的最后一个低半字节也计 1B；PACK/SPLIT 成功时等于 `segment_count×segment_bytes`。错误发生后，进度保留此前已经完成的目的写入量。
-
-> [!note] 为什么写 INT4 高半字节前需要读取目的数据
-> 假设某个目的字节已经写入第 0 个元素 `3`，此时字节是 `0x03`。第 1 个元素为 `-2`，其 4-bit 二进制补码是 `0xe`，应写入高半字节。DMA 先读回 `0x03`，只把 `[7:4]` 改为 `0xe`，再写出 `0xe3`。若不读取旧数据而直接写高半字节，先前保存的低半字节可能被覆盖。
+`done_progress_o` 统计已经获得目的端写完成响应的数据量。INT8、INT16 和 INT32 分别按每个元素 1B、2B 和 4B 增加；PACK/SPLIT 成功时等于 `segment_count×segment_bytes`。错误发生后，进度保留此前已经完成的目的写入量。
 
 ### 9.6 DDR 到 L1BUF 时序
 
@@ -2360,13 +2334,13 @@ MIF 的 AXI 事务在 DMA 与 MIF 的内部接口之后完成。DMA 只依据 `m
 
 1. DMA 向 L1BUF 发出 8B 对齐读请求。
 2. L1BUF 返回完整 64-bit beat。普通路径根据元素地址低位和 dtype 取得一个元素；满足快速要求时保留全部 64 bit。
-3. 普通路径执行可选的符号扩展、饱和处理或 INT4 范围检查；快速路径不改变数据。
-4. DMA 向 MIF 发出 8B 对齐写请求。普通路径使用 `WSTRB` 选择目的字节；写 INT4 高半字节时，先经 MIF 读回目的 beat，再合并低、高半字节。快速路径使用完整数据和 `WSTRB=8'hff`。
+3. 普通数据通路执行可选的符号扩展或饱和处理；快速数据通路不改变数据。
+4. DMA 向 MIF 发出 8B 对齐写请求。普通数据通路使用 `WSTRB` 选择目的字节；快速数据通路使用完整数据和 `WSTRB=8'hff`。
 5. 当前 MIF 的 AXI 写固定为一个 beat，因此快速路径也为每个 L1 beat 分别发出一次 AXI 写。
 6. MIF 检查物理地址并完成 AXI 写事务，只有在 `BID=0` 且 `BRESP=OKAY` 时返回成功。
 7. DMA 收到写完成响应后增加 `progress`。处理完最后一个元素后向 TaskScheduler 报告成功。
 
-当前一次只保留一个请求，因此不存在两个元素的返回次序问题。若后续增加并发请求，必须为每个请求保存元素编号、源或目的类型、字节 lane 和 INT4 半字节位置，并保证最终整数结果与本节定义相同。
+当前一次只保留一个请求，因此不存在两个元素的返回次序问题。若后续增加并发请求，必须为每个请求保存元素编号、源或目的类型和字节 lane，并保证最终整数结果与本节定义相同。
 
 ---
 
@@ -2408,12 +2382,11 @@ $$
 
 | 数据格式 | 每个元素占用 | 每个 64-bit beat 的元素数 |
 | --- | ---: | ---: |
-| INT4 | 4 bit | 16 |
 | INT8 | 1B | 8 |
 | INT16 | 2B | 4 |
 | INT32 | 4B | 2 |
 
-INT4 的偶数编号元素放在一个字节的低 4 bit，奇数编号元素放在同一字节的高 4 bit。INT16 和 INT32 使用小端字节次序。例如，INT16 数值 `16'h1234` 在相邻两个地址中保存为 `8'h34, 8'h12`。
+INT16 和 INT32 使用小端字节次序。例如，INT16 数值 `16'h1234` 在相邻两个地址中保存为 `8'h34, 8'h12`。
 
 ### 10.3 bank 和 row 的选择
 
@@ -2683,7 +2656,7 @@ flowchart TB
 | `engines/npu_matrix_multi_dtype_outer_engine.sv` | Outer context；执行多数据类型分块外积、部分和更新、本地部分和保存和最终 C 写回 |
 | `engines/npu_matrix_scalar_engine.sv` | Scalar context；支持较广的 M/N/K、bias、旧部分和、整数重缩放、ReLU 和多种输出格式；标量乘法也经共享 PE |
 | `engines/npu_matrix_psum_pipeline.sv` | 保存一项未返回 PE 请求的 tag 与末次 K 标志；返回到达时更新四组分段累加值并释放请求槽 |
-| `engines/npu_matrix_segmented_adder64.sv` | 根据 INT16、INT8 或 INT4 分段宽度完成部分和相加，各段之间不传递进位 |
+| `engines/npu_matrix_segmented_adder64.sv` | 根据 INT16 或 INT8 分段宽度完成部分和相加，各段之间不传递进位 |
 | `engines/npu_mv_shared_mac.sv` | 在 Matrix 与 Vector 乘法请求之间轮转，加入 owner 标签并统计授予、等待、冲突和空闲周期 |
 | `engines/npu_shared_mac_pe_array.sv` | 四个多精度 group 的公共 PE 阵列，返回分段贡献值或逐元素 INT32 乘积 |
 | `engines/npu_shared_mac_group.sv` | 每组使用 16 个 4×4 基础乘法器，按数据格式组合逻辑乘积和 64-bit 局部贡献 |
@@ -2695,7 +2668,7 @@ flowchart TB
 
 `npu_matrix_dual_context` 把当前操作码和 Task Context 同时提供给两个控制器。Outer context 的 `task_supported_o` 表明分块外积分支是否能执行当前任务，`local_psum_valid_o` 表明是否存在由本地累加序列保存且尚未最终提交的状态。任务分配器结合这两个信号与操作码决定 Outer 是否必须接收、Outer 是否可以接收以及 Scalar 是否可以接收。
 
-共享 PE 包含四个 group，每个 group 使用 16 个 4×4 基础乘法器。一个 group 可以组成 1 个 INT16×INT16、4 个 INT8×INT8、16 个 INT4×INT4，或 8 个 INT8/INT4 混合逻辑乘法。每个 group 的 64-bit 局部贡献分别按 1×64 bit、2×32 bit 或 4×16 bit 保存；四个 group 的贡献值由 Matrix 的分段加法器继续累加。Vector 的 MUL/FMA 请求使用逐元素返回方式，PE 返回每个逻辑乘积的 signed32 结果。
+共享 PE 包含四个 group，每个 group 使用 16 个内部 4×4 基础乘法器。一个 group 可以组成 1 个 INT16×INT16 或 4 个 INT8×INT8 逻辑乘法。每个 group 的 64-bit 局部贡献按 1×64 bit 或 2×32 bit 保存；四个 group 的贡献值由 Matrix 的分段加法器继续累加。Vector 的 MUL/FMA 请求使用逐元素返回方式，PE 返回每个逻辑乘积的 signed32 结果。4×4 乘法器是组成较宽乘法的内部计算单元，不是软件可选的数据格式。
 
 Outer 与 Scalar 先通过 `npu_matrix_context_pe_router` 共用一组 Matrix PE 请求端口，再通过 `npu_mv_shared_mac` 与 Vector MUL/FMA 请求共用 PE。两级选择都采用轮转方式。Matrix context PE 路由在请求握手时把来源写入 owner FIFO；返回时按 FIFO 头部选择 context。Matrix 与 Vector 的来源位位于 PE client tag 最高位，返回阶段按该位选择 Matrix 或 Vector。
 
@@ -2737,12 +2710,10 @@ $$
 
 | A 数据格式 | B 数据格式 | 说明 |
 | --- | --- | --- |
-| INT4 | INT4 | 两路都从 4-bit 有符号数扩展 |
 | INT8 | INT8 | 常规整数矩阵乘法 |
-| INT8 | INT4 | 激活为 INT8，权重为 INT4 |
 | INT16 | INT16 | 两路都按 16-bit 有符号数读取 |
 
-A 为 INT32，或者 A 与 B 使用表中未列出的组合时，任务返回 `DTYPE_UNSUPPORTED`。最终 GEMM/BMM 输出可选择 INT4、INT8、INT16 或 INT32；`GEMM_ACCUM` 和 `GEMM_ZERO` 的 C 必须是 INT32。
+A 为 INT32、编码 0，或者 A 与 B 使用不同数据格式时，任务返回 `DTYPE_UNSUPPORTED`。最终 GEMM/BMM 输出可选择 INT8、INT16 或 INT32；`GEMM_ACCUM` 和 `GEMM_ZERO` 的 C 必须是 INT32。
 
 ### 11.2 模块级信号
 
@@ -2841,7 +2812,7 @@ Outer 生成分块外积的分段贡献请求，Scalar 生成逐元素乘积请�
 
 #### 11.2.4 Matrix 与 Vector 公共 PE
 
-`npu_mv_shared_mac` 在合并后的 Matrix 请求与 Vector MUL/FMA 请求之间轮转。请求标签扩展为 12 bit，其中最高位表示 Matrix 或 Vector，低 11 bit保留请求方编号。`ISSUE_INTERVAL=1` 时，只要 PE 接收端允许，连续周期都可接收请求。`npu_shared_mac_pe_array` 的四个 group 共使用 64 个 4×4 基础乘法器，支持 INT16×INT16、INT8×INT8、INT4×INT4、INT8×INT4 和 INT4×INT8。返回最高 owner 位选择 Matrix 或 Vector；Matrix 返回随后还要经过 context PE 路由。
+`npu_mv_shared_mac` 在合并后的 Matrix 请求与 Vector MUL/FMA 请求之间轮转。请求标签扩展为 12 bit，其中最高位表示 Matrix 或 Vector，低 11 bit保留请求方编号。`ISSUE_INTERVAL=1` 时，只要 PE 接收端允许，连续周期都可接收请求。`npu_shared_mac_pe_array` 的四个 group 共使用 64 个内部 4×4 基础乘法器，支持 INT16×INT16 和 INT8×INT8。返回最高 owner 位选择 Matrix 或 Vector；Matrix 返回随后还要经过 context PE 路由。
 
 共享 PE 能够连续接收来自不同客户端的请求，不代表每个客户端都能连续提交。多数据类型外积分支中的 `npu_matrix_psum_pipeline` 只保存一项未返回请求：请求握手后 `request_outstanding_q=1`，`request_slot_ready_o` 保持为 0；匹配的 PE 返回到达时，模块在时钟沿更新四组 64-bit 分段部分和并清除未返回标志，下一周期才允许该 context 发出同一外积块的下一项请求。标量 Matrix 和 Vector 控制器也按各自状态机等待所需返回。
 
@@ -2913,13 +2884,13 @@ TaskScheduler 可保存两项 Matrix active 记录，`npu_matrix_context_dispatc
 | C 的 `LREF14` | 14 | C 基地址，实际地址为字段值左移 6 bit |
 | bias 的 `LREF12` | 12 | GEMM 的 INT32 bias 基地址；0 表示不使用 |
 | `M-1`、`N-1`、`K-1` | 各 6 | 解码后得到 1～64 的 M、N、K |
-| `b_int4` | 1 | A 为 INT8 时允许 B 改用 INT4 |
+| 保留位 | 1 | 必须为 0；非零时拒绝指令 |
 | `C_dtype` | 2 | C 的数据格式 |
 | `requant_shift` | 5 | 非 INT32 输出的整数右移位数 |
 
 `GEMM_ZERO_LOCAL` 采用 `GEMM_ZERO` 的字段限制，建立 Outer context 本地部分和状态但不清零 L1 中的 C。`GEMM_ACCUM_HOLD` 采用 `GEMM_ACCUM` 的字段限制，把本次结果保存在 Outer 本地部分和 RAM 中但不写最终 C。
 
-`BMM` 使用 A、B、C 三个 `LREF14`，并直接携带 `batch-1`、`M-1`、`N-1`、`K-1`、`b_int4`、`C_dtype` 和 `requant_shift`。BMM 指令没有 bias 字段。
+`BMM` 使用 A、B、C 三个 `LREF14`，并直接携带 `batch-1`、`M-1`、`N-1`、`K-1`、1-bit 保留位、`C_dtype` 和 `requant_shift`。BMM 指令没有 bias 字段，保留位必须为 0。
 
 解码器根据这些直接字段生成 Matrix 所需的派生信息：
 
@@ -2928,7 +2899,7 @@ TaskScheduler 可保存两项 Matrix active 记录，`npu_matrix_context_dispatc
 | `a_base`、`b_base`、`c_base` | `LREF14 << 6` |
 | `bias_base` | `LREF12 << 6` |
 | `src2_base` | `GEMM_ACCUM` 或 `GEMM_ACCUM_HOLD` 时取 C 地址，其他 Matrix 指令为 0 |
-| A/B/C 数据格式 | 由指令头数据格式、`b_int4` 和 `C_dtype` 得到 |
+| A/B/C 数据格式 | A 与 B 使用指令头数据格式，C 使用 `C_dtype`；Matrix 输入只接受 INT8 或 INT16 |
 | `batch_count` | GEMM 类操作为 1；BMM 为指令中的 batch |
 | `last_valid_m/n/k` | 分别由 M 对 8、N 对 8、K 对 16 的余数得到，整除时取 tile 大小 |
 | `lda_bytes` | 一行 K 个 A 元素占用的字节数 |
@@ -2976,14 +2947,14 @@ Matrix 在任何 A、B 或 C 访问之前完成以下检查：
 | 编号 | 名称 | 物理保存方式 |
 | ---: | --- | --- |
 | 0 | `ROW_MAJOR_INT8` | 行优先，每个元素 1B |
-| 1 | `ROW_MAJOR_INT4` | 行优先，偶数元素在低 4 bit，奇数元素在高 4 bit |
+| 1 | `RESERVED` | 保留编号，收到时返回 `BAD_DESC` |
 | 2 | `B_KN_TILE_INT8` | B 按 `KT=16`、`NT=8` 分块，每个元素 1B |
-| 3 | `B_KN_TILE_INT4` | B 按相同 tile 次序保存，每字节两个元素 |
+| 3 | `RESERVED` | 保留编号，收到时返回 `BAD_DESC` |
 | 4 | `C_ROW_INT32` | C 行优先，每个元素 4B |
 | 5 | `ROW_MAJOR_INT16` | 行优先，每个元素 2B |
 | 6 | `B_KN_TILE_INT16` | B 按相同 tile 次序保存，每个元素 2B |
 
-A 使用编号 1、0、5 分别表示 INT4、INT8、INT16。B 使用编号 3、2、6 分别表示 tile INT4、INT8、INT16。C 使用编号 1、0、5、4 分别表示 INT4、INT8、INT16、INT32。
+A 使用编号 0、5 分别表示 INT8、INT16。B 使用编号 2、6 分别表示 tile INT8、INT16。C 使用编号 0、5、4 分别表示 INT8、INT16、INT32。编号 1 和 3 不参与任何有效任务。
 
 #### 11.5.2 A 的行优先地址
 
@@ -2995,13 +2966,12 @@ $$
 m\cdot\operatorname{lda\_bytes}
 +
 \begin{cases}
-\left\lfloor k/2\right\rfloor,&\text{A 为 INT4},\\
 k,&\text{A 为 INT8},\\
 2k,&\text{A 为 INT16}.
 \end{cases}
 $$
 
-INT4 中 $k$ 为偶数时取低 4 bit，$k$ 为奇数时取高 4 bit。读取后统一执行有符号扩展，再送入乘法器。
+读取后统一执行有符号扩展，再送入乘法器。
 
 #### 11.5.3 B 的 `16×8` tile 地址
 
@@ -3027,17 +2997,15 @@ e_B=
 \right)\cdot8+n_i.
 $$
 
-因此，INT8、INT4、INT16 的字节偏移分别为：
+因此，INT8、INT16 的字节偏移分别为：
 
 $$
 \operatorname{B\_offset}_{\mathrm{INT8}}=e_B,
 \qquad
-\operatorname{B\_offset}_{\mathrm{INT4}}=\left\lfloor\frac{e_B}{2}\right\rfloor,
-\qquad
 \operatorname{B\_offset}_{\mathrm{INT16}}=2e_B.
 $$
 
-INT4 的 $e_B$ 为偶数时取低 4 bit，为奇数时取高 4 bit。tile 中超出 K 或 N 的位置由模型编译器填 0。一个完整 `16×8` tile 含 128 个逻辑位置，因此分别占 64B、128B、256B 的 INT4、INT8、INT16 存储。
+tile 中超出 K 或 N 的位置由模型编译器填 0。一个完整 `16×8` tile 含 128 个逻辑位置，因此 INT8、INT16 分别占 128B、256B。
 
 标量分支在 `ST_CHECK` 计算一次
 
@@ -3046,7 +3014,7 @@ $$
 =\frac{N+7}{8}
 $$
 
-的整数结果。处理每个 K 项之前，`ST_ADDR_PREP` 根据当前 `batch_q`、`row_q`、`col_q`、`k_q` 和保存的 tile 数分三拍生成 A/B 地址：先保存元素偏移、Batch 偏移和 INT4 高低半字节选择，再形成相对地址，最后加入基地址并保存 `a_addr_q`、`b_addr_q` 及对应 valid。后续 `ST_A_REQ/RSP` 与 `ST_B_REQ/RSP` 只使用这些寄存值。即使 A 请求在 L1BUF 仲裁中等待，B 的 tile 地址也不会随着组合乘除运算或计数器状态变化。
+的整数结果。处理每个 K 项之前，`ST_ADDR_PREP` 根据当前 `batch_q`、`row_q`、`col_q`、`k_q` 和保存的 tile 数分三拍生成 A/B 地址：先保存元素偏移和 Batch 偏移，再形成相对地址，最后加入基地址并保存 `a_addr_q`、`b_addr_q` 及对应 valid。后续 `ST_A_REQ/RSP` 与 `ST_B_REQ/RSP` 只使用这些寄存值。即使 A 请求在 L1BUF 仲裁中等待，B 的 tile 地址也不会随着组合乘除运算或计数器状态变化。
 
 > [!example] \(N=9,K=2\) 时跨两个 N tile
 > 取 INT8 B，基地址为 `0x0520`，\(N_T=\lceil9/8\rceil=2\)。输出列 \(n=0\ldots7\) 位于第 0 个 N tile：\(B[0,n]\) 的相对偏移为 \(0\ldots7\)，\(B[1,n]\) 的相对偏移为 \(8\ldots15\)。输出列 \(n=8\) 位于第 1 个 N tile：\(B[0,8]\) 的 \(e_B=128\)，地址为 `0x05a0`；\(B[1,8]\) 的 \(e_B=136\)，地址为 `0x05a8`。令 A 的一行是 `[2,-3]`，令 \(B[0,n]=n+1\)、\(B[1,n]=2n-4\)，则
@@ -3065,18 +3033,15 @@ $$
 m\cdot\operatorname{ldc\_bytes}
 +
 \begin{cases}
-\left\lfloor n/2\right\rfloor,&\text{C 为 INT4},\\
 n,&\text{C 为 INT8},\\
 2n,&\text{C 为 INT16},\\
 4n,&\text{C 为 INT32}.
 \end{cases}
 $$
 
-INT4 的每行从低 4 bit 开始。若 N 为奇数，最后一个字节的高 4 bit 保持为 0。
+处理每个输出元素前，`ST_START_OUTPUT` 用 `output_addr_phase_q` 分三拍生成地址。第 1 拍保存 C、旧部分和、bias、整数重缩放项的元素偏移与 Batch 偏移；第 2 拍分别形成“Batch 偏移加元素偏移”的相对地址；第 3 拍把相对地址与基地址相加，保存 `c_addr_q`、`src2_addr_q`、`bias_addr_q`、`requant_addr_q` 以及各自的 valid。随后 `ST_OUTPUT_CHECK` 先检查 C valid，并根据操作码、K、旧部分和、bias 与整数重缩放配置选择后续状态。A/B、src2、bias、整数重缩放参数和 C 的 L1 请求都在该检查之后发出，等待请求或响应时继续使用保存的地址。
 
-处理每个输出元素前，`ST_START_OUTPUT` 用 `output_addr_phase_q` 分三拍生成地址。第 1 拍保存 C、旧部分和、bias、整数重缩放项的元素偏移、Batch 偏移和 INT4 C 半字节选择；第 2 拍分别形成“Batch 偏移加元素偏移”的相对地址；第 3 拍把相对地址与基地址相加，保存 `c_addr_q`、`src2_addr_q`、`bias_addr_q`、`requant_addr_q` 以及各自的 valid。随后 `ST_OUTPUT_CHECK` 先检查 C valid，并根据操作码、K、旧部分和、bias 与整数重缩放配置选择后续状态。A/B、src2、bias、整数重缩放参数和 C 的 L1 请求都在该检查之后发出，等待请求或响应时继续使用保存的地址与半字节选择。
-
-每个 K 位置的 A/B 地址也分三拍生成。第 1 拍保存元素偏移、Batch 偏移和 INT4 半字节选择；第 2 拍形成相对地址；第 3 拍加入基地址并保存完整 A/B 地址与 valid。地址检查和 L1 请求不在同一拍组合贯通，L1 暂停时完整地址、valid 与半字节选择均保持不变。
+每个 K 位置的 A/B 地址也分三拍生成。第 1 拍保存元素偏移和 Batch 偏移；第 2 拍形成相对地址；第 3 拍加入基地址并保存完整 A/B 地址与 valid。地址检查和 L1 请求不在同一拍组合贯通，L1 暂停时完整地址和 valid 均保持不变。
 
 #### 11.5.5 bias 的形状和地址
 
@@ -3116,9 +3081,6 @@ $$
 A 是连续行优先数据，`0x1000`～`0x1005` 依次保存 `1,2,3,4,5,6`。B 使用 `16×8` tile：`B[0,0]`、`B[0,1]` 位于线性编号 0、1；`B[1,0]`、`B[1,1]` 位于编号 8、9；`B[2,0]`、`B[2,1]` 位于编号 16、17。因此相对 `0x2000` 的偏移 `0,1,8,9,16,17` 分别保存 `7,8,9,10,11,12`，其余 tile 位置填 0。
 
 C 为 INT32 行优先数据，四个元素的地址依次是 `0x3000`、`0x3004`、`0x3008`、`0x300c`。bias 的两个 INT32 元素位于 `0x4000` 和 `0x4004`。Matrix 每次向 L1BUF 发出对齐后的 8B 地址，再用地址低 3 bit 从返回 beat 中选出所需元素。
-
-> [!example] INT4 字节示例
-> 两个相邻 INT4 数值 `[-3,5]` 使用 4-bit 二进制补码保存。`-3` 的低 4 bit 是 `4'hd`，放在低半字节；`5` 放在高半字节，因此内存中的一个字节是 `8'h5d`。
 
 ### 11.6 四条 Matrix 指令的计算公式
 
@@ -3392,7 +3354,7 @@ $$
 
 指令解码生成的溢出处理方式是饱和：过大的正数写为 $2^{31}-1$，过小的负数写为 $-2^{31}$。
 
-#### 11.8.2 INT4、INT8 和 INT16 输出
+#### 11.8.2 INT8 和 INT16 输出
 
 非 INT32 输出使用指令中的 `requant_shift=r`，内部乘数固定为 1，整数 zero point 固定为 0：
 
@@ -3405,17 +3367,7 @@ Q_{m,n}
 \right),
 $$
 
-其中 $D$ 是目标 INT4、INT8 或 INT16 格式。当前解码路径使用最接近且中点取偶数的舍入方式。例如，$13/2=6.5$ 写为 6，$15/2=7.5$ 写为 8。舍入完成后再按目标格式的最小值和最大值进行饱和。
-
-#### 11.8.3 INT4 的读后改写
-
-写 INT4 时，一个字节包含两个输出。偶数列先写低 4 bit，写数据的高 4 bit 为 0；随后处理奇数列时，Matrix 先读取该 8B beat，保留已经写好的低 4 bit，再把新结果写入高 4 bit。这一过程使用：
-
-```text
-ST_RMW_REQ → ST_RMW_RSP → ST_WRITE_REQ → ST_WRITE_RSP
-```
-
-因此，INT4 奇数列比其他格式多一次 L1 读访问。N 为奇数时，最后一个字节只有低 4 bit 有效，高 4 bit 保持为 0。
+其中 $D$ 是目标 INT8 或 INT16 格式。当前解码数据通路使用最接近且中点取偶数的舍入方式。例如，$13/2=6.5$ 写为 6，$15/2=7.5$ 写为 8。舍入完成后再按目标格式的最小值和最大值进行饱和。
 
 ### 11.9 状态机
 
@@ -3460,9 +3412,9 @@ IDLE → START_TILE
 | --- | --- |
 | `ST_IDLE` | `task_ready_o=1`；接收操作码与片上 Task Context |
 | `ST_CHECK` | 检查操作、形状、数据格式、存储格式和地址 |
-| `ST_START_OUTPUT` | 用 `output_addr_phase_q` 分三拍生成当前 `(batch,row,col)` 的 C、src2、bias 和整数重缩放参数完整地址：依次保存各类偏移、形成相对地址、加入基地址并保存 valid；第 1 拍同时清零 K 计数与累加值并保存 C 的 INT4 半字节选择 |
+| `ST_START_OUTPUT` | 用 `output_addr_phase_q` 分三拍生成当前 `(batch,row,col)` 的 C、src2、bias 和整数重缩放参数完整地址：依次保存各类偏移、形成相对地址、加入基地址并保存 valid；第 1 拍同时清零 K 计数与累加值 |
 | `ST_OUTPUT_CHECK` | 使用保存的 C 地址检查元素是否跨越 64-bit beat，并根据操作码、K 和后处理配置选择 A/B 读取、src2、bias、整数重缩放或后处理阶段 |
-| `ST_ADDR_PREP` | 用 `operand_addr_phase_q` 分三拍生成 A/B 完整字节地址：依次保存元素与 Batch 偏移、形成相对地址、加入基地址并保存 valid 与 INT4 半字节选择 |
+| `ST_ADDR_PREP` | 用 `operand_addr_phase_q` 分三拍生成 A/B 完整字节地址：依次保存元素与 Batch 偏移、形成相对地址、加入基地址并保存 valid |
 | `ST_A_REQ` | 发出当前 `A[m,k]` 所在 8B beat 的读请求 |
 | `ST_A_RSP` | 等待 A 读响应并提取、符号扩展一个元素 |
 | `ST_B_REQ` | 发出当前 `B[k,n]` 所在 8B beat 的读请求 |
@@ -3485,8 +3437,6 @@ IDLE → START_TILE
 | `ST_EP_NARROW` | 检查高 64 bit是否等于 bit 63 的符号扩展；超出 signed64 范围时限制到最小值或最大值 |
 | `ST_EP_ZERO_POINT` | 将 signed32 `output_zero_point` 符号扩展后加入 signed64 结果 |
 | `ST_EP_CLIP` | 检查目标数据格式范围；按配置报告数值错误、保留低位或执行饱和 |
-| `ST_RMW_REQ` | INT4 高 4 bit 写回前读取旧 beat |
-| `ST_RMW_RSP` | 保存旧 beat |
 | `ST_WRITE_REQ` | 发送一个 C 元素对应的单 beat 写请求 |
 | `ST_WRITE_RSP` | 等待写响应，增加进度并推进 col、row、batch |
 | `ST_DONE` | 保持完成状态，直到 TaskScheduler 接收 |
@@ -3507,7 +3457,6 @@ IDLE
   → 正右移时执行 EP_ROUND → EP_INCREMENT → EP_SIGN
   → EP_NARROW → EP_ZERO_POINT
   → EP_CLIP
-  → 可选 RMW_REQ → RMW_RSP
   → WRITE_REQ → WRITE_RSP
   → 下一个 col / row / batch，或 DONE
 ```
@@ -3530,7 +3479,7 @@ IDLE
 8. 最后一个 K 块结束后，普通 GEMM 进入 C 打包和写回；`GEMM_ACCUM` 根据本地状态读取本地部分和或旧 C；`GEMM_ACCUM_HOLD` 把当前 INT32 部分和写入 Outer 的本地 RAM。
 9. 每次 C 写响应成功后增加 `done_progress_o`。当前输出块完成后进入 `ST_NEXT_TILE`，直到处理完 M×N。
 
-INT16、INT8、INT4 分别令每组一次处理 1、4、16 个逻辑乘积。局部贡献在一个 16 元素 K 块内维持 1×64 bit、2×32 bit 或 4×16 bit 的分段形式，K 块完成后再加入 signed64 输出累加寄存器。尾部 M、N 或 K 不足完整块时，只装入有效元素，其余操作数位置写零。
+INT16、INT8 分别令每组一次处理 1、4 个逻辑乘积。局部贡献在一个 16 元素 K 块内维持 1×64 bit 或 2×32 bit 的分段形式，K 块完成后再加入 signed64 输出累加寄存器。尾部 M、N 或 K 不足完整块时，只装入有效元素，其余操作数位置写零。
 
 #### 11.10.2 标量 GEMM 的一个输出元素
 
@@ -3538,11 +3487,11 @@ INT16、INT8、INT4 分别令每组一次处理 1、4、16 个逻辑乘积。局
 
 | 阶段 | 动作 |
 | --- | --- |
-| 1 | `ST_START_OUTPUT` 第 1 拍把 `accum_q` 和 `k_q` 清零，保存 C、src2、bias、整数重缩放项的各类偏移及 C 的 INT4 半字节选择 |
+| 1 | `ST_START_OUTPUT` 第 1 拍把 `accum_q` 和 `k_q` 清零，保存 C、src2、bias、整数重缩放项的各类偏移 |
 | 2 | `ST_START_OUTPUT` 第 2 拍把 Batch 偏移与元素偏移相加，保存四类相对地址 |
 | 3 | `ST_START_OUTPUT` 第 3 拍加入各自基地址，保存四类完整地址与 valid |
 | 4 | `ST_OUTPUT_CHECK` 检查 C valid并选择后续阶段 |
-| 5 | `ST_ADDR_PREP` 用三拍依次保存 `A[m,0]`、`B[0,n]` 的各类偏移，形成相对地址，再加入基地址并保存完整地址、valid 和 INT4 半字节选择 |
+| 5 | `ST_ADDR_PREP` 用三拍依次保存 `A[m,0]`、`B[0,n]` 的各类偏移，形成相对地址，再加入基地址并保存完整地址和 valid |
 | 6 | `ST_A_REQ/RSP` 使用保存且有效的 A 地址读取 `A[m,0]` |
 | 7 | `ST_B_REQ/RSP` 使用保存且有效的 B 地址读取 `B[0,n]` |
 | 8 | `ST_MAC_MUL` 把 A/B 标量打包后向共享 PE 发出逐元素乘法请求 |
@@ -3561,9 +3510,8 @@ INT16、INT8、INT4 分别令每组一次处理 1、4、16 个逻辑乘积。局
 | 20 | `ST_EP_NARROW` 把超出 signed64 范围的结果限制到 signed64 最小值或最大值 |
 | 21 | `ST_EP_ZERO_POINT` 加入符号扩展后的输出 zero point |
 | 22 | `ST_EP_CLIP` 检查目标格式范围，并按 `overflow_mode` 形成写回整数或报告错误 |
-| 23 | 必要时使用保存的 C 地址和半字节选择执行 INT4 读后改写 |
-| 24 | 使用保存且有效的 C 地址写回并等待写响应 |
-| 25 | `done_progress_o` 增加 1，状态机推进到下一个输出位置 |
+| 23 | 使用保存且有效的 C 地址写回并等待写响应 |
+| 24 | `done_progress_o` 增加 1，状态机推进到下一个输出位置 |
 
 A 和 B 不能并行读取。即使多个相邻元素位于同一个 64-bit beat，当前 Matrix 也会为每个元素重新发送一次读请求。
 
@@ -3574,7 +3522,7 @@ EPILOGUE → EP_MUL → EP_ABS → EP_SHIFT → EP_ROUND → EP_INCREMENT
   → EP_SIGN → EP_NARROW → EP_ZERO_POINT → EP_CLIP
 ```
 
-shift 为 0 或负数时，`ST_EP_SHIFT` 已经得到带符号结果，因此跳过 `ST_EP_ROUND`、`ST_EP_INCREMENT` 和 `ST_EP_SIGN`，直接进入 `ST_EP_NARROW`。负 shift 的绝对值表示左移位数。无论采用哪条分支，zero point 都在 signed64 限制之后加入，目标 INT4、INT8、INT16 或 INT32 范围只在 `ST_EP_CLIP` 检查。
+shift 为 0 或负数时，`ST_EP_SHIFT` 已经得到带符号结果，因此跳过 `ST_EP_ROUND`、`ST_EP_INCREMENT` 和 `ST_EP_SIGN`，直接进入 `ST_EP_NARROW`。负 shift 的绝对值表示左移位数。无论采用哪条分支，zero point 都在 signed64 限制之后加入，目标 INT8、INT16 或 INT32 范围只在 `ST_EP_CLIP` 检查。
 
 > [!example] 正右移的逐拍计算
 > 设后处理输入为 \(-13\)，乘数为 1，shift 为 1，舍入方式为最接近且中点取偶数，输出 zero point 为 3，目标格式为 INT8。`ST_EP_MUL` 第一个周期分别保存高半乘积 \((-1)\times1=-1\) 和低半乘积 \(4294967283\times1\)，第二个周期把低半乘积的高 32 bit加到高半乘积，再拼接低 32 bit，所得 signed128 完整乘积仍为 \(-13\)。`ST_EP_ABS` 保存负号和绝对值 13；`ST_EP_SHIFT` 得到商 6、余数 1、中点 1；`ST_EP_ROUND` 发现结果位于中点且商为偶数，因此加一标志为 0；`ST_EP_INCREMENT` 仍得到 6；`ST_EP_SIGN` 恢复为 \(-6\)；`ST_EP_NARROW` 得到 signed64 的 \(-6\)；`ST_EP_ZERO_POINT` 得到 \(-3\)；`ST_EP_CLIP` 确认 \(-3\) 可由 INT8 表示，最终写回 `0xfd`。
@@ -3610,7 +3558,7 @@ BMM 先完成当前 Batch 的全部 M×N 个输出，再把 `batch_q` 加 1，�
 
 ### 11.11 访问次数、完成条件与错误处理
 
-忽略 INT4 高半字节的读后改写时，标量分支的一个普通 GEMM 输出元素需要：
+标量分支的一个普通 GEMM 输出元素需要：
 
 $$
 N_{\mathrm{read}}
@@ -3623,7 +3571,7 @@ N_{\mathrm{read}}
 \end{cases}
 $$
 
-以及一次 C 写请求。`GEMM_ACCUM` 每个输出再增加一次旧 C 读取；INT4 的奇数列再增加一次旧 beat 读取。非 INT32 输出的右移参数由 Task Context 直接提供，不增加 L1 读取。
+以及一次 C 写请求。`GEMM_ACCUM` 每个输出再增加一次旧 C 读取。非 INT32 输出的右移参数由 Task Context 直接提供，不增加 L1 读取。
 
 多数据类型外积分支按当前行组、列组和 K 小段装载 A/B。A 小缓存最多保存 4×4 个 signed16 位置，B 小缓存最多保存 4×16 个 signed16 位置；尾部不足的元素写零。四个 PE group 在当前 K 小段内共用已经装入的 A 行值和 B 列值，因此同一操作数可参与多个输出贡献。B 采用 `KT=16、NT=8` tile 格式时，具体读 beat 数由 tile 中的物理位置、数据类型和尾部有效数量决定。
 
@@ -3644,7 +3592,7 @@ Matrix 只在以下条件都满足后报告成功：
 
 ### 12.1 定位与片上任务展开
 
-Integer Vector 子系统执行有符号整数逐元素运算。当前 RTL 包含连续 MUL 快速分支和通用标量分支：符合连续访问条件的 INT4、INT8 或 INT16 MUL 每次各读取一个 64-bit src0 beat和一个 64-bit src1 beat，并向 Matrix-Vector 公共 PE 提交整拍乘法请求；广播、mask、FMA、非乘法操作、未对齐地址和其他步长组合继续逐元素执行。通用分支中的 MUL 和 FMA 也向公共 PE 提交单元素请求，ADD、SUB、MAX、MIN、CMP、SELECT、CLAMP 和 ReLU 则由 Vector 控制器内的轻量整数 ALU 计算。
+Integer Vector 子系统执行有符号整数逐元素运算。当前 RTL 包含连续 MUL 快速分支和通用标量分支：符合连续访问条件的 INT8 或 INT16 MUL 每次各读取一个 64-bit src0 beat和一个 64-bit src1 beat，并向 Matrix-Vector 公共 PE 提交整拍乘法请求；广播、mask、FMA、非乘法操作、未对齐地址和其他步长组合继续逐元素执行。通用分支中的 MUL 和 FMA 也向公共 PE 提交单元素请求，ADD、SUB、MAX、MIN、CMP、SELECT、CLAMP 和 ReLU 则由 Vector 控制器内的轻量整数 ALU 计算。
 
 ```mermaid
 flowchart LR
@@ -3665,23 +3613,22 @@ flowchart LR
 | --- | ---: | ---: | ---: |
 | INT16 | 1 个 16×16 | 4 | 4 |
 | INT8 | 4 个 8×8 | 2 | 8 |
-| INT4 | 16 个 4×4 | 1 | 16 |
 
-`npu_shared_mac_pe_array` 以三段寄存标签跟随 PE 结果。每个 `npu_shared_mac_group` 先保存 16 个 4×4 基础乘积，再保存重组后的逻辑乘积，最后形成逐元素 signed32 结果或 Matrix 使用的分段贡献值。Vector 请求设置 `elementwise=1`，返回 `element_count` 和最多 16 个 signed32 结果。输入位宽降低时，相同基础乘法器一次形成更多逻辑结果，不为 Vector 另放一套乘法阵列。
+`npu_shared_mac_pe_array` 以三段寄存标签跟随 PE 结果。每个 `npu_shared_mac_group` 先保存 16 个内部 4×4 基础乘积，再保存重组后的逻辑乘积，最后形成逐元素 signed32 结果或 Matrix 使用的分段贡献值。Vector 请求设置 `elementwise=1`，返回 `element_count` 和最多 4 个有效 signed32 结果。INT8 与 INT16 共用这些基础乘法器，不为 Vector 另放一套乘法阵列。
 
 快速分支的使用条件如下：
 
-- 操作为 `VECTOR_MUL`，src0 与 src1 的格式相同且为 INT4、INT8 或 INT16，目的格式为 INT32；
+- 操作为 `VECTOR_MUL`，src0 与 src1 的格式相同且为 INT8 或 INT16，目的格式为 INT32；
 - 不启用 mask、广播、立即数输入或其他 vector flag；
 - src0、src1、dst 基地址均按 8B 对齐，输入元素步长分别为 0、1 或 2B，目的元素步长为 4B；
 - 多行任务的输入行距等于该行实际字节数，目的行距等于 `length×4`，并且三组行距均满足 8B 请求要求。
 
-快速 MUL 不在 IVE 内计算 src0、src1 与 dst 的完整存储区域是否相交。上层编译器必须根据 rows、length、各行步长和元素字节数计算三组占用区域，并把 src0、src1、dst 安排为两两不相交的 L1 区域；不满足该条件时不得生成快速 MUL 可接受的 Task Context。特别是 dst 为 INT32，写入字节数大于 INT4 或 INT8 输入，把 dst 放在任一输入起点附近可能在后续输入 beat读取前覆盖源数据。
+快速 MUL 不在 IVE 内计算 src0、src1 与 dst 的完整存储区域是否相交。上层编译器必须根据 rows、length、各行步长和元素字节数计算三组占用区域，并把 src0、src1、dst 安排为两两不相交的 L1 区域；不满足该条件时不得生成快速 MUL 可接受的 Task Context。特别是 dst 为 INT32，写入字节数大于 INT8 输入，把 dst 放在任一输入起点附近可能在后续输入 beat读取前覆盖源数据。
 
 > [!example] 为什么快速 MUL 的目的区要避开输入区
 > 一行 16 个 INT8 输入只占 16B，而 16 个 INT32 输出占 64B。若 src0 从 `0x100` 开始，dst 也从 `0x100` 开始，首个结果 beat会改写 src0 的前 8B，后续结果还会覆盖 src0 的第二个输入 beat。当前快速分支不会为此返回 `ADDR_OVERLAP`，所以编译器必须在提交前改用另一段 L1 空间。
 
-每对输入 beat只读取一次。INT16 和 INT8 在已保存的 beat上依次切换 4 组或 2 组，INT4 直接处理整拍；结果缓存随后每次取相邻两个 INT32 元素组成一个 64-bit 写请求。地址使用行基址和当前 beat游标递增，L1 请求不经过 `row×stride+col×stride` 的当拍宽乘法。末拍不足完整输入 beat时只写 `valid_length` 指定的有效结果。
+每对输入 beat只读取一次。INT16 和 INT8 在已保存的 beat上依次切换 4 组或 2 组；结果缓存随后每次取相邻两个 INT32 元素组成一个 64-bit 写请求。地址使用行基址和当前 beat游标递增，L1 请求不经过 `row×stride+col×stride` 的当拍宽乘法。末拍不足完整输入 beat时只写 `valid_length` 指定的有效结果。
 
 外部 Generic Core 是 SoC 主控 CPU，不属于 NPU RTL，也不直接连接 IVE。它通过 NPU 的 64 bit AXI Slave 提交指令；Command Front End 把完整指令交给 TaskScheduler。TaskScheduler 任务表保存指令、提交时基地址快照、事件和状态字段，不为每个等待任务保存 2048 bit Task Context。IVE READY 任务在逐槽扫描中获胜并通过结束时复查后，TS 保存发射窄快照，共享发射解码器随后产生展开数据并写入 IVE 发射暂存；下一周期 IVE 接收到 `opcode_i`、`command_id_i` 和 `desc_i[2047:0]`。
 
@@ -3790,7 +3737,7 @@ Vector 控制器只有这一组内部 L1 请求和响应信号。src0、src1、s
 | `0x79` | `compare_mode` | 8 | CMP 的 EQ、NE、LT、LE、GT、GE 编码 |
 | `0x7A` | `overflow_mode` | 8 | 当前指令展开固定为 0，即饱和 |
 | `0x7B` | `mask_mode` | 8 | SELECT 为 1，其他当前指令为 0 |
-| `0x7C～0x7F` | 四个起始 nibble | 各 1 | 当前指令展开均为 0 |
+| `0x7C～0x7F` | 保留字节 | 各 8 | 当前指令展开均为 0；非零时返回 `BAD_DESC` |
 | `0x90` | `mask_elem_stride` | 32 | SELECT 固定为 1B |
 | `0x94` | `mask_row_stride` | 32 | SELECT 固定为 `length` |
 
@@ -3808,7 +3755,7 @@ Vector 控制器只有这一组内部 L1 请求和响应信号。src0、src1、s
 | CLAMP | 公共 dtype | signed16 下限立即数 | signed16 上限立即数 | 与 src0 相同 |
 | RELU | 公共 dtype | 不使用 | 不使用 | 与 src0 相同 |
 
-公共 dtype 可以是 INT4、INT8、INT16 或 INT32。MUL 和 FMA 只排除 INT32 乘数，因此当前 RTL 也接受 INT16 乘数；乘积和 FMA 结果写 INT32。
+公共 dtype 可以是 INT8、INT16 或 INT32。MUL 和 FMA 只接受 INT8 或 INT16 乘数；乘积和 FMA 结果写 INT32。编码 0 作为公共 dtype 时返回 `DTYPE_UNSUPPORTED`。
 
 ### 12.4 Shape、整数格式与广播
 
@@ -3824,7 +3771,7 @@ IVE 从 64 bit L1 返回中按 little-endian 次序取元素，并把全部输�
 
 | dtype | 编码 | 数值范围 | 连续存储 |
 | --- | ---: | ---: | --- |
-| INT4 | 0 | `[-8,7]` | 每字节先低 nibble、后高 nibble |
+| 保留 | 0 | — | 不能用于有效输入或输出 |
 | INT8 | 1 | `[-128,127]` | 1B/元素 |
 | INT32 | 2 | `[-2147483648,2147483647]` | 4B/元素 |
 | INT16 | 3 | `[-32768,32767]` | 2B/元素 |
@@ -3842,20 +3789,7 @@ B=3:\quad &a(r,c)=a_0+c\,s_e.
 \end{aligned}
 $$
 
-其中 $B=0,1,2,3$ 分别表示输入 shape 为 `[R][N]`、`[1][1]`、`[R][1]`、`[1][N]`。对 INT4，地址中的列字节偏移改为
-
-$$
-\operatorname{byte\_offset}(c)=\left\lfloor\frac{c+n_0}{2}\right\rfloor,
-\qquad
-\operatorname{high}(c)=(c\bmod2)\oplus n_0,
-$$
-
-其中 $n_0$ 是起始 nibble；当前指令固定 $n_0=0$。标量和 `[R][1]` 广播始终读取起始 nibble。
-
-目的张量不使用广播。INT4 目的从低 nibble 开始，但低、高半字节都使用读后改写：IVE 先读取目的 64-bit beat，再只替换当前元素所在的 4 bit，随后写回原 beat。普通计算结果通过 `ST_RMW_REQ/RSP` 取得旧 beat；模块级直接测试中的 `mask_false_keep_dst` 已在 `ST_KEEP_REQ/RSP` 取得旧目的值，因此不重复读取。写低半字节时保留原高半字节，写高半字节时保留原低半字节。若一行含奇数个输出元素，最后一个字节的高半部不属于该张量，并保留任务执行前的值。
-
-> [!example] 低半字节写入也要保留相邻数据
-> 假设目的字节原值为 `0xa5`，当前任务只写低半字节，结果整数为 `-2`，其 4-bit 二进制补码为 `0xe`。IVE 先读出 `0xa5`，再把低 4 bit改为 `0xe`，最终写回 `0xae`；高 4 bit中的 `0xa` 不变。若这一行只有一个 INT4 元素，高半字节仍不是有效输出元素。
+其中 $B=0,1,2,3$ 分别表示输入 shape 为 `[R][N]`、`[1][1]`、`[R][1]`、`[1][N]`。目的张量不使用广播。
 
 ### 12.5 运算、CMP mask 与 SELECT
 
@@ -3874,7 +3808,7 @@ $$
 \end{aligned}
 $$
 
-这里的 FMA 是整数乘法后加法，不是 FP32 fused multiply-add。FMA 与未进入快速分支的 MUL 在 `ST_MUL` 向共享 PE 发出一个逐元素请求；FMA 的第三输入为 signed32。RTL 在 `ST_MUL_POST` 等待返回，检查 tag、数据类型、group 使能、错误标志和结果数量，再把 signed32 乘积扩展到 signed64、执行可选加法并处理输出范围。连续 MUL 快速分支不改变数学公式：共享 PE 把每个有符号整数拆成 4-bit 基 16 数位，用基础乘积和位移重新得到相同的 signed32 结果。专项测试必须逐项比较快速分支与直接有符号乘法，并覆盖三种格式的最小值、最大值、负数和零。CLAMP 要求 $l\le h$。
+这里的 FMA 是整数乘法后加法，不是 FP32 fused multiply-add。FMA 与未进入快速分支的 MUL 在 `ST_MUL` 向共享 PE 发出一个逐元素请求；FMA 的第三输入为 signed32。RTL 在 `ST_MUL_POST` 等待返回，检查 tag、数据类型、group 使能、错误标志和结果数量，再把 signed32 乘积扩展到 signed64、执行可选加法并处理输出范围。连续 MUL 快速分支不改变数学公式：共享 PE 把每个有符号整数拆成 4-bit 基 16 数位，用基础乘积和位移重新得到相同的 signed32 结果。专项测试必须逐项比较快速分支与直接有符号乘法，并覆盖 INT8、INT16 的最小值、最大值、负数和零。CLAMP 要求 $l\le h$。
 
 CMP 根据 `compare_mode` 计算
 
@@ -3916,7 +3850,7 @@ IVE 的主控制状态与 RTL 枚举一致：
 | --- | --- |
 | `ST_IDLE` | `task_ready_o=1`；与 IVE 发射暂存握手后锁存操作码和完整 Task Context |
 | `ST_CHECK` | 检查结构编号、执行单元类型、有效字节数、dtype、shape、mask、地址和操作组合；初始化行列游标以及快速分支的行基址、当前行元素数和末行标志 |
-| `ST_ADDR_PREP` | 通用分支保存当前元素的五组行偏移和 INT4 高低半字节选择 |
+| `ST_ADDR_PREP` | 通用分支保存当前元素的五组行偏移 |
 | `ST_ADDR_ROW_ADD` | 分别计算 src0、src1、src2、mask、dst 的基址加行偏移，同时保存五组列偏移 |
 | `ST_ADDR_FINAL` | 在前一拍结果上加入列偏移，形成五组完整字节地址 |
 | `ST_ADDR_CHECK` | 检查五组地址是否位于 20-bit L1 地址范围，并检查各数据元素是否跨越 8B beat；检查结果写入专用 valid 寄存器 |
@@ -3932,12 +3866,11 @@ IVE 的主控制状态与 RTL 枚举一致：
 | `ST_FAST_SRC0_REQ/RSP` | 快速分支读取并保存一个 64-bit src0 beat |
 | `ST_FAST_SRC1_REQ/RSP` | 快速分支读取并保存一个 64-bit src1 beat |
 | `ST_FAST_MUL_REQ` | 向共享 PE 提交当前输入格式、group 使能和整拍操作数 |
-| `ST_FAST_MUL_WAIT` | 等待共享 PE 返回，检查 tag 和结果数，按 INT16、INT8 或 INT4 的组内位置保存 signed32 结果 |
+| `ST_FAST_MUL_WAIT` | 等待共享 PE 返回，检查 tag 和结果数，按 INT16 或 INT8 的组内位置保存 signed32 结果 |
 | `ST_FAST_WRITE_PREP` | 保存当前输出对的 48-bit地址、64-bit写数据和 8-bit strobe；末尾剩一个结果时高 32 bit写 0，并把 strobe 设为 `8'h0f` |
 | `ST_FAST_WRITE_CHECK` | 检查 `ST_FAST_WRITE_PREP` 保存的目的地址是否位于 20-bit L1 地址范围且按 8B 对齐 |
 | `ST_FAST_WRITE_REQ` | 只用快速写寄存器和地址检查寄存器发出请求；请求握手时保存本次进度增量和写响应后的动作 |
 | `ST_FAST_WRITE_RSP` | 等待写响应；成功时使用保存的进度和动作进入下一输出对、下一输入 beat、下一行或完成状态 |
-| `ST_RMW_REQ/RSP` | 普通计算产生任一 INT4 目的值时读取旧 beat；低半字节写保留旧高半字节，高半字节写保留旧低半字节 |
 | `ST_WRITE_REQ/RSP` | 发出带 `WSTRB` 的目的写，并等待写完成状态 |
 | `ST_DONE` | 保持完成 payload，直到 `done_ready_i=1` |
 
@@ -3978,24 +3911,20 @@ stateDiagram-v2
     ST_SRC1_RSP --> ST_EXEC: other non-multiply op
     ST_SRC2_REQ --> ST_SRC2_RSP
     ST_SRC2_RSP --> ST_MUL
-    ST_EXEC --> ST_RMW_REQ: INT4 destination
     ST_EXEC --> ST_WRITE_REQ: direct write
     ST_MUL --> ST_MUL_POST
-    ST_MUL_POST --> ST_RMW_REQ: INT4 destination
     ST_MUL_POST --> ST_WRITE_REQ: direct write
-    ST_RMW_REQ --> ST_RMW_RSP
-    ST_RMW_RSP --> ST_WRITE_REQ
     ST_WRITE_REQ --> ST_WRITE_RSP
     ST_WRITE_RSP --> ST_ADDR_PREP: next element or row
     ST_WRITE_RSP --> ST_DONE: final element
     ST_DONE --> ST_IDLE: done handshake
 ```
 
-通用标量分支中，每个元素依次经过 `ST_ADDR_PREP → ST_ADDR_ROW_ADD → ST_ADDR_FINAL → ST_ADDR_CHECK`。第一拍保存行偏移和半字节选择，第二拍执行基址加行偏移并保存列偏移，第三拍加入列偏移，第四拍检查完整地址和跨 beat 条件。后续请求、响应、计算与写回状态都读取 `element_src0_addr_q`、`element_src1_addr_q`、`element_src2_addr_q`、`element_mask_addr_q`、`element_dst_addr_q`、对应 nibble 寄存器和地址 valid 寄存器。写响应成功后先更新行列游标，再返回 `ST_ADDR_PREP`，因此下一元素的行步长、列步长与广播地址运算不会串接到当前写响应的状态选择中。
+通用标量分支中，每个元素依次经过 `ST_ADDR_PREP → ST_ADDR_ROW_ADD → ST_ADDR_FINAL → ST_ADDR_CHECK`。第一拍保存行偏移，第二拍执行基址加行偏移并保存列偏移，第三拍加入列偏移，第四拍检查完整地址和跨 beat 条件。后续请求、响应、计算与写回状态都读取 `element_src0_addr_q`、`element_src1_addr_q`、`element_src2_addr_q`、`element_mask_addr_q`、`element_dst_addr_q` 和地址 valid 寄存器。写响应成功后先更新行列游标，再返回 `ST_ADDR_PREP`，因此下一元素的行步长、列步长与广播地址运算不会串接到当前写响应的状态选择中。
 
-一个没有 mask 的双输入非乘法、非 INT4 元素至少包含四个地址处理周期、两次读请求/响应、一个 `ST_EXEC` 周期和一次写请求/响应。未进入快速分支的 MUL 在两次输入读取后还经过 `ST_MUL` 和 `ST_MUL_POST`；FMA 额外读取一次 src2，再经过相同的两个计算状态。SELECT 额外读取一次 mask；每个 INT4 目的元素都在写前增加一次目的 beat读取。实际周期数还包含 L1 的 `ready` 等待和响应延迟。
+一个没有 mask 的双输入非乘法元素至少包含四个地址处理周期、两次读请求/响应、一个 `ST_EXEC` 周期和一次写请求/响应。未进入快速分支的 MUL 在两次输入读取后还经过 `ST_MUL` 和 `ST_MUL_POST`；FMA 额外读取一次 src2，再经过相同的两个计算状态。SELECT 额外读取一次 mask。实际周期数还包含 L1 的 `ready` 等待和响应延迟。
 
-连续 MUL 快速分支按输入 beat工作：每个 beat有两次 L1 读请求，INT16、INT8、INT4 分别发出 4、2、1 次共享 PE 请求，然后发出 2、4、8 次写请求；每个 64-bit 写 beat携带两个 INT32，末尾只剩一个有效元素时仅使用低 4B。全部 PE 结果保存后，首个输出对先进入 `ST_FAST_WRITE_PREP`；后续每个 `NEXT_PAIR` 也先返回该状态。该状态把 `fast_dst_write_addr`、当前两个结果组成的 64-bit数据和 strobe 分别保存到 `fast_write_addr_q`、`fast_write_data_q` 与 `fast_write_strb_q`。`ST_FAST_WRITE_REQ` 的 L1 地址、数据和 strobe 只读取这些寄存值，因此请求暂停时三项保持不变。`ST_CHECK` 保存首行元素数和是否为末行；每次进入新行时，`ST_FAST_WRITE_RSP` 提前保存下一行的元素数和末行标志，最后一行使用 `valid_length`，其他行使用 `length`。
+连续 MUL 快速分支按输入 beat工作：每个 beat有两次 L1 读请求，INT16、INT8 分别发出 4、2 次共享 PE 请求，然后发出 2、4 次写请求；每个 64-bit 写 beat携带两个 INT32，末尾只剩一个有效元素时仅使用低 4B。全部 PE 结果保存后，首个输出对先进入 `ST_FAST_WRITE_PREP`；后续每个 `NEXT_PAIR` 也先返回该状态。该状态把 `fast_dst_write_addr`、当前两个结果组成的 64-bit数据和 strobe 分别保存到 `fast_write_addr_q`、`fast_write_data_q` 与 `fast_write_strb_q`。`ST_FAST_WRITE_REQ` 的 L1 地址、数据和 strobe 只读取这些寄存值，因此请求暂停时三项保持不变。`ST_CHECK` 保存首行元素数和是否为末行；每次进入新行时，`ST_FAST_WRITE_RSP` 提前保存下一行的元素数和末行标志，最后一行使用 `valid_length`，其他行使用 `length`。
 
 在 `ST_FAST_WRITE_REQ` 与 L1 完成请求握手时，IVE 根据当前写下标、当前输入 beat有效元素数、当前列位置、当前行元素数和末行标志，把以下两项写入寄存器：
 
@@ -4021,7 +3950,7 @@ Matrix 成功写回的 64-bit beat会在 `npu_mv_memory_path` 中保存写元数
 
 ### 13.1 定位与内部结构
 
-Complex Math Engine（CME）接收整数张量，把元素转换成内部 IEEE 754 binary32，执行激活函数、Softmax、Norm 或不同 scale 加法，再转换回 INT4、INT8、INT16 或 INT32。FP32 只存在于 CME 寄存器和共享数学单元内，不写成软件可见张量。
+Complex Math Engine（CME）接收整数张量，把元素转换成内部 IEEE 754 binary32，执行激活函数、Softmax、Norm 或不同 scale 加法，再转换回 INT8、INT16 或 INT32。FP32 只存在于 CME 寄存器和共享数学单元内，不写成软件可见张量。
 
 当前 CME 不是四 lane 连续发射结构。`npu_complex_engine` 逐元素控制 L1 访问；`npu_complex_math_seq` 一次只接受一个数学请求；其中所有 FP32 加、减、乘又共用一个 `npu_fp32_alu_seq`。复合函数由显式微状态依次调用 Exp、Reciprocal、ReciprocalSqrt 和基础 ALU 运算。
 
@@ -4130,11 +4059,11 @@ CME READY 任务在逐槽扫描中获胜并通过结束时复查后，TaskSchedu
 
 | 指令 | src0 | 辅助输入 | dst | scale 与参数 |
 | --- | --- | --- | --- | --- |
-| ACT | 公共 dtype | 无 | 指令选择 INT4/8/16/32 | src、dst 各一个 signed4 指数；函数与 clip profile 来自指令 |
-| SOFTMAX | 公共 dtype | boolean mask 或逐行 INT32 长度 | 指令选择 INT4/8/16/32 | src、dst 各一个 signed4 指数 |
-| NORM | 公共 dtype | gamma 与可选 beta 都使用公共 dtype | 指令选择 INT4/8/16/32 | src、参数、dst 各一个 signed4 指数；epsilon 使用 profile |
+| ACT | 公共 dtype | 无 | 指令选择 INT8、INT16 或 INT32 | src、dst 各一个 signed4 指数；函数与 clip profile 来自指令 |
+| SOFTMAX | 公共 dtype | boolean mask 或逐行 INT32 长度 | 指令选择 INT8、INT16 或 INT32 | src、dst 各一个 signed4 指数 |
+| NORM | 公共 dtype | gamma 与可选 beta 都使用公共 dtype | 指令选择 INT8、INT16 或 INT32 | src、参数、dst 各一个 signed4 指数；epsilon 使用 profile |
 | STAT | 公共 dtype | 无 | INT32，每行一个 | 不使用 FP32 scale |
-| ADD_RESCALE | 公共 dtype | 第二输入也使用公共 dtype | 指令选择 INT4/8/16/32 | src0、src1、dst 各一个 signed4 指数 |
+| ADD_RESCALE | 公共 dtype | 第二输入也使用公共 dtype | 指令选择 INT8、INT16 或 INT32 | src0、src1、dst 各一个 signed4 指数 |
 
 signed4 指数 $e\in[-8,7]$ 展开成精确 FP32 幂
 
@@ -4426,7 +4355,7 @@ CME 外层状态机与当前 RTL 枚举一致：
 | `ST_ROW_INIT` | 清零当前行的统计寄存器，寄存 causal query 位置，并选择初始 phase；STAT 目的地址已在任务检查结束时保存，后续在每行写成功后增加 stride |
 | `ST_VLEN_CHECK` | 每行有效长度模式下，检查当前 INT32 长度元素是否跨越 8B beat；通过后才能发出读取请求 |
 | `ST_VLEN_REQ/RSP` | Softmax 读取当前行有效长度 |
-| `ST_ELEMENT_BEGIN` | 保存当前 src0、src1、src2、dst、mask 地址，保存 INT4 半字节选择和派生 mask 结果 |
+| `ST_ELEMENT_BEGIN` | 保存当前 src0、src1、src2、dst、mask 地址和派生 mask 结果 |
 | `ST_ADDR_PREP` | 根据 mask 模式和派生 mask 决定读取 boolean mask、跳过当前项、写零或读取 src0；同时检查 src0 元素是否跨越 8B beat |
 | `ST_MASK_REQ/RSP` | 读取 boolean mask |
 | `ST_SRC0_REQ/RSP` | 读取主输入 |
@@ -4440,9 +4369,8 @@ CME 外层状态机与当前 RTL 枚举一致：
 | `ST_F2I_MAG` | 把加一标志加入 64-bit 商；Inf 或指数过大时选择 signed64 限制值对应的幅值 |
 | `ST_F2I_SIGN` | 恢复正负号，并把超出 signed64 范围的结果限制到 signed64 最小值或最大值 |
 | `ST_F2I_OFFSET` | 把保存的 signed32 目标 zero point 符号扩展并加入 signed64 整数 |
-| `ST_F2I_FINISH` | 检查目标数据格式范围，形成裁剪后的写回值，并选择普通写或 INT4 读后改写 |
+| `ST_F2I_FINISH` | 检查目标数据格式范围，形成裁剪后的写回值和对应字节写使能 |
 | `ST_ADVANCE` | 推进列、合成行统计量或切换 phase |
-| `ST_RMW_REQ/RSP` | INT4 高 nibble写入前读取目的 beat |
 | `ST_WRITE_REQ/RSP` | 写一个输出元素并等待完成状态 |
 | `ST_DONE` | 保持完成状态直到 TaskScheduler 接收 |
 
@@ -4495,10 +4423,10 @@ ST_MATH_RSP(MA_F2I)
   → ST_F2I_SIGN
   → ST_F2I_OFFSET
   → ST_F2I_FINISH
-  → ST_RMW_REQ 或 ST_WRITE_REQ
+  → ST_WRITE_REQ
 ```
 
-从数学响应握手到写请求状态之间固定经过上述五个状态，因此每个产生输出的 F2I 操作包含额外 5 个时钟周期。舍入方式、目标数据格式、异常标志、溢出处理方式、phase、目标地址和 INT4 高半字节选择都在数学响应时保存，后续状态只读取这些寄存值。这样，即使目标 L1 端口暂停或完成接口暂停，本次输出的控制信息也不会被下一元素改写。
+从数学响应握手到写请求状态之间固定经过上述五个状态，因此每个产生输出的 F2I 操作包含额外 5 个时钟周期。舍入方式、目标数据格式、异常标志、溢出处理方式、phase 和目标地址都在数学响应时保存，后续状态只读取这些寄存值。这样，即使目标 L1 端口暂停或完成接口暂停，本次输出的控制信息也不会被下一元素改写。
 
 > [!example] F2I 的五个寄存周期
 > 假设数学单元返回 FP32 的 \(1.5\)，舍入方式为最接近且中点取偶数，目标 zero point 为 0，目标格式为 INT8。数学响应周期保存商 1、余数、中点和正号；`ST_F2I_ROUND` 得到加一标志 1；`ST_F2I_MAG` 得到幅值 2；`ST_F2I_SIGN` 得到 signed64 整数 2；`ST_F2I_OFFSET` 加入 0 后仍为 2；`ST_F2I_FINISH` 确认结果位于 INT8 范围内，随后写出 `0x02`。当前公开指令和 CME 启动检查要求目标 zero point 为 0，但保留独立加法阶段可以避免该加法与舍入、符号恢复和格式检查串接。
@@ -4553,7 +4481,7 @@ sequenceDiagram
 | RMSNorm | src0 在 ACC、OUT 各一次；OUT 再读 gamma | 每元素一次 |
 | STAT | src0 每元素一次 | 每行一次 |
 
-含有至少一个有效位置的 boolean Softmax 还会在三个 phase 各读取一次 mask 字节；全无效行跳过 SUM，因此只在 MAX 和 OUT 读取。有效长度模式每行额外读取一个 INT32。INT4 输出奇数列在写前增加一次目的 beat 读取。
+含有至少一个有效位置的 boolean Softmax 还会在三个 phase 各读取一次 mask 字节；全无效行跳过 SUM，因此只在 MAX 和 OUT 读取。有效长度模式每行额外读取一个 INT32。
 
 普通逐元素、Softmax 和 Norm 每次成功目的写响应使 `done_progress_o` 增加 1，成功任务最终为 $R\,H$；STAT 每行只写一个值，成功任务最终为 $R$。出现字段、地址、L1 或数值错误时立即转到 `ST_DONE`，已成功写完的进度不回退。完成响应在 `done_ready_i=0` 时保持不变。
 
@@ -5019,7 +4947,7 @@ RTL 的条件分支直接确定：
 | 7:0 | `MT` | 8 | M 方向 tile 大小 |
 | 15:8 | `KT` | 16 | K 方向 tile 大小 |
 | 23:16 | `NT` | 8 | N 方向 tile 大小 |
-| 27:24 | `DTYPE_MASK` | `0b0111` | 当前 LSC 读回值；bit 0～3 依次表示 INT4、INT8、INT32、INT16 |
+| 27:24 | `DTYPE_MASK` | `0b1110` | bit 0 对应保留编码 0，固定为 0；bit 1～3 分别表示 INT8、INT32、INT16 |
 | 63:28 | `RESERVED` | 0 | 固定读 0 |
 
 `VECTOR_CONFIG` 位段固定如下：
@@ -5042,8 +4970,7 @@ RTL 的条件分支直接确定：
 | 63:48 | `RESERVED1` | 0 | 固定读 0 |
 
 > [!warning] 当前能力寄存器与执行单元存在差异
-> `npu_lsc.sv` 当前把 Matrix `DTYPE_MASK` 读回为 `0b0111`，但 Matrix 和
-> 其他整数执行单元的数据通路支持 INT16；IVE 每次实际处理 1 个元素，而
+> IVE 每次实际处理 1 个元素，而
 > `VECTOR_CONFIG` 读回 8；CME 每次实际接受 1 个数学请求且没有 FP32 暂存数组，
 > 而 `CME_CONFIG` 读回 4 和 4096。这些 CSR 常量需要在 RTL 中修正。修正前，
 > 编译器和验证环境应采用第 2.2 节与第 20 节记录的实际执行能力，不能根据这些
@@ -5459,7 +5386,7 @@ sequenceDiagram
 7. Matrix 执行整数 Softmax 权重与 V 的 BMM。
 8. Matrix 执行输出投影，IVE 或 CME 完成 residual add。
 
-`VSOFTMAX_I` 的输出 scale 必须与后续 BMM 的左输入 scale 一致。Softmax 结果通常使用 INT8；若使用 INT4，必须单独测试长序列下的输出误差。
+`VSOFTMAX_I` 的输出 scale 必须与后续 BMM 的左输入 scale 一致。Softmax 结果通常使用 INT8；需要更细数值间隔时可以使用 INT16，并检查它与后续 BMM 输入格式和 scale 是否一致。
 
 ### 16.4 LSTM 单时间步
 
@@ -5505,7 +5432,7 @@ $$
 | 步骤 | 单元 | 整数与内部 FP 处理 |
 | ---: | --- | --- |
 | 1 | DMA / IVE | 准备 `[x_t,h_{t-1}]` |
-| 2 | Matrix | INT4/INT8 GEMM，INT32 累加，产生四门整数仿射结果 |
+| 2 | Matrix | INT8 或 INT16 GEMM，INT32 累加，产生四门整数仿射结果 |
 | 3 | CME | 三段 Sigmoid、一段 Tanh；每段执行 INT→FP32→INT |
 | 4 | IVE | 分别计算 $f_t\odot c_{t-1}$ 与 $i_t\odot g_t$ 的 INT32 乘法结果 |
 | 5 | CME | 使用 `VADD_RESCALE_I` 合成 $c_t$，写成指定 INT8 或 INT32 scale |
@@ -5689,22 +5616,9 @@ AXI Slave 协议错误、MIF 错误和 CFE 错误由顶层按固定次序合成
 - `data[63:56]` 对应最高字节地址；
 - `strb[i]` 控制 `data[8i+7:8i]`。
 
-### 17.2 INT4 存储
+### 17.2 二维行优先张量
 
-设连续 INT4 元素为 $q_0,q_1,\ldots$：
-
-```text
-byte[0][3:0] = q0
-byte[0][7:4] = q1
-byte[1][3:0] = q2
-byte[1][7:4] = q3
-```
-
-每个 4-bit 值采用有符号二进制补码。`0b1000` 表示 $-8$，`0b0111` 表示 $7$。64-bit beat 中最少地址的字节放在 `data[7:0]`，因此一个满 beat 保存 $q_0$ 到 $q_{15}$。
-
-### 17.3 二维行优先张量
-
-对 INT8/INT32 的 `[R,C]`：
+对 INT8、INT16 或 INT32 的 `[R,C]`：
 
 $$
 \operatorname{addr}(r,c)
@@ -5714,19 +5628,9 @@ $$
 +c\cdot\operatorname{elem\_bytes}.
 $$
 
-对行起点字节对齐的 INT4：
+其中 `elem_bytes` 对 INT8、INT16、INT32 分别为 1、2、4。`row_stride` 以字节为单位，可以等于一行的连续字节数，也可以包含行末填充。
 
-$$
-\operatorname{byte\_addr}(r,c)
-=
-\operatorname{base}
-+r\cdot\operatorname{row\_stride}
-+\left\lfloor\frac c2\right\rfloor.
-$$
-
-$c$ 为偶数时选择低 4 bit，为奇数时选择高 4 bit。
-
-### 17.4 GEMM 输入、Kernel 与输出
+### 17.3 GEMM 输入、Kernel 与输出
 
 逻辑 shape：
 
@@ -5745,7 +5649,7 @@ Kernel 在 DDR 中可以先保存为普通 `[K,N]` 行优先格式。编译器�
 > [!note] Matrix 内部参数表
 > 标量 Matrix 模块的直接 Task Context 测试可以提供形状为 `[1]` 或 `[N]` 的整数参数表，每项含 INT32 multiplier 和 signed 8-bit shift。公开指令没有该参数表的地址字段，只能使用乘数 1 和 0～31 的右移位数。
 
-### 17.5 Transformer 布局
+### 17.4 Transformer 布局
 
 P0 接受以下两种逻辑布局：
 
@@ -5759,7 +5663,7 @@ QKV 融合 GEMM 输出 BSH `[B,S,3H]`。由于 Q、K、V 在每个 token 的最�
 所有 stride 都由指令字段展开到片上 Task Context。硬件不假设 Batch Size、
 序列长度或 Head 数为固定值。
 
-### 17.6 循环层布局
+### 17.5 循环层布局
 
 | 对象 | shape | 说明 |
 | --- | --- | --- |
@@ -5778,13 +5682,13 @@ time t + 1: read state_B, write state_A
 
 事件必须保证写入完成后再交换两个区域的用途。
 
-### 17.7 Scale 与函数参数区
+### 17.6 Scale 与函数参数区
 
 FP32 scale、$\epsilon$ 和函数系数是 CME 的只读元数据，不是模型张量。公开 Matrix 指令直接携带 0～31 的右移位数，不从 L1BUF 读取整数参数表。CME 参数区要求：
 
 - 起始地址至少 4B 对齐；
 - CME 每 Feature scale 表的 shape 为 `[length]`；
-- Norm 的 $\gamma,\beta$ 仍是 INT4、INT8、INT16 或 INT32 模型参数，各自具有 scale；
+- Norm 的 $\gamma,\beta$ 是 INT8、INT16 或 INT32 模型参数，各自具有 scale；
 - 参数区在所有读取它的任务进入终态前不得修改；
 - DMA 可以搬运参数区的原始字节，但不得把 FP32 选作模型张量 dtype。
 
@@ -6075,10 +5979,10 @@ make large-transformer-e2e
 - CFE 队首必须来自 128-bit `output_cmd_q`；TS 暂停时队首保持，FIFO 满且队首同拍出队时允许后续命令进入，单项 FIFO 同拍入出时不得重复或丢失；
 - CFE 响应暂停时，status、`command_id` 和 `fifo_free_entries` 保持不变；`FIFO_DEPTH=8` 时最多保存 8 条完整指令，队首寄存副本不增加容量；
 - 当前未定义的 6-bit opcode，以及各操作要求写 0 的 payload 位；
-- INT4、INT8、INT16、INT32 的所有合法输入输出组合；
+- INT8、INT16、INT32 的所有合法输入输出组合；编码 0 出现在正常指令的数据格式字段时必须形成 `BAD_DESC` 终态，直接送入执行单元的 Task Context 使用编码 0 时必须返回 `DTYPE_UNSUPPORTED`；
 - `rows/length/M/N/K` 为 0、1、tile 减 1、tile、tile 加 1 和较大值；
 - 非整 64-bit beat 尾部；
-- INT4 奇数元素、输入高/低半字节起点、输出低半字节起点，以及非法 `dst_nibble=1`；
+- 1B、2B、4B 元素在非整 64-bit beat 尾部的地址、写数据和字节写使能；
 - 最大正数、最小负数、0 和重复值；
 - 物理地址对齐错误、高于 `PA_W-1` 的 bit非零、地址加法溢出、允许范围超限和非法重叠；
 - payload 保留位非零和不被接受的 dtype；
@@ -6103,14 +6007,12 @@ $$
 
 必须分别测试：
 
-- INT4×INT4；
 - INT8×INT8；
-- INT8×INT4；
 - INT16×INT16；
 - INT32 累加；
-- A/B/C 的 64 组 dtype 配置，其中 16 组必须成功，其余组合必须返回
+- A/B/C 的 64 组 dtype 配置，其中 A/B 同为 INT8 或同为 INT16、C 为 INT8、INT16 或 INT32 的 6 组必须成功，其余组合必须返回
   `DTYPE_UNSUPPORTED`；
-- 公开指令的乘数 1、右移 0、1、31、最接近且中点取偶数，以及 INT4/INT8/INT16 目的范围裁剪；
+- 公开指令的乘数 1、右移 0、1、31、最接近且中点取偶数，以及 INT8、INT16 目的范围裁剪；
 - 标量 Matrix 模块直接 Task Context 测试中的 `[1]`、`[N]` 参数表、正/零/负 shift 与四种舍入方式；这些组合不作为公开指令编码能力；
 - 使用乘数 `32'hffff_ffff`，覆盖高 32 bit非零的正、负 signed64 累加值、零值、单位值和 32 组固定种子随机输入；
 - bias shape `[N]` 在全部 M 行上的使用；
@@ -6119,17 +6021,17 @@ $$
 - `RESIDUAL_ENABLE` 与 `ACCUM_FROM_SRC2` 非法同时设置；
 - `GEMM_ZERO`、中间 `GEMM_ACCUM` 和最终 `GEMM` 的 L1BUF 部分和次序；
 - 标量分支每个 K 位置都按 `ST_MAC_MUL` 发出共享 PE 请求，再由 `ST_MAC_ACC` 等待返回、检查 tag 和格式并累加 signed32 乘积；PE 等待期间操作数和请求字段保持不变；
-- 每个 K 位置在 `ST_ADDR_PREP` 中依次经过偏移保存、相对地址形成和基地址相加三拍；A/B 请求、响应和错误地址必须使用保存的完整地址、valid 与 INT4 半字节选择，L1 暂停期间这些寄存值保持不变；
+- 每个 K 位置在 `ST_ADDR_PREP` 中依次经过偏移保存、相对地址形成和基地址相加三拍；A/B 请求、响应和错误地址必须使用保存的完整地址与 valid，L1 暂停期间这些寄存值保持不变；
 - 每个输出元素在 `ST_START_OUTPUT` 中用三拍生成 C、src2、bias 和整数重缩放参数完整地址及 valid，再由 `ST_OUTPUT_CHECK` 检查 C valid并选择后续阶段；相关请求、响应、错误地址和写回必须使用保存值；
 - 构造 A、B、C、src2、bias 和外部整数重缩放项的高位越界、跨 8B beat及重缩放地址未对齐情况，确认对应 valid 为 0、任务返回 `ADDR_FAULT`，并且错误地址不会产生 L1 请求握手；
 - 使用 INT8 的 \(M=1,N=9,K=2\) tile B 检查第 0～7 列和第 8 列分别来自两个 N tile，输出必须为 `[14,10,6,2,-2,-6,-10,-14,-18]`；
 - 启用整数重缩放时，`ST_EP_MUL` 必须连续经历两个周期：第一周期保存 `requant_high_product_q` 和 `requant_low_product_q`，第二周期完成 65-bit 高部加法并保存 `requant_product_q`；所得 signed128 结果必须逐 bit 等于软件计算的 signed64×unsigned32 结果，两个乘法周期结束前不得进入 `ST_EP_ABS` 或发出写请求；
 - `ST_EP_ABS → ST_EP_SHIFT` 保存正负号、绝对值、shift 和舍入方式；正右移继续按 `ST_EP_ROUND → ST_EP_INCREMENT → ST_EP_SIGN` 处理，零 shift 和负 shift 必须直接进入 `ST_EP_NARROW`；
-- `ST_EP_NARROW` 的 signed64 最小值与最大值限制、`ST_EP_ZERO_POINT` 的 signed32 符号扩展加法以及 `ST_EP_CLIP` 的 INT4/INT8/INT16/INT32 检查必须分别与软件参考一致；
+- `ST_EP_NARROW` 的 signed64 最小值与最大值限制、`ST_EP_ZERO_POINT` 的 signed32 符号扩展加法以及 `ST_EP_CLIP` 的 INT8、INT16、INT32 检查必须分别与软件参考一致；
 - 128-bit 可变移位、舍入决定、128-bit 加一、符号恢复、signed64 限制和目标格式检查必须在对应寄存状态逐拍完成，验证探针不得观察到跳过必需状态或提前发出写请求；
-- Outer 的 INT16、INT8、INT4 结果逐元素与 signed64 软件参考一致，并通过 context 接收探针确认任务进入 Outer；
-- 正常指令生成的三种 `KT=16、NT=8` B tile 格式，以及模块级直接 Task Context 使用的 B 行优先格式；
-- `npu_shared_mac_pe_array` 的五种输入组合：INT16×INT16、INT8×INT8、INT4×INT4、INT8×INT4、INT4×INT8；检查基础乘积、逻辑乘积、1×64 bit、2×32 bit、4×16 bit贡献值和逐元素 signed32 返回；
+- Outer 的 INT16、INT8 结果逐元素与 signed64 软件参考一致，并通过 context 接收探针确认任务进入 Outer；
+- 正常指令生成的两种 `KT=16、NT=8` B tile 格式，以及模块级直接 Task Context 使用的 B 行优先格式；
+- `npu_shared_mac_pe_array` 的两种输入组合：INT16×INT16、INT8×INT8；检查每个 group 的 16 个内部 4×4 基础乘积、重组后的逻辑乘积、1×64 bit或 2×32 bit贡献值，以及逐元素 signed32 返回；
 - 四个 group 同时启用时，dtype、group 使能、client tag 和 valid 与返回保持一致；Matrix 与 Vector 请求交错时返回 owner 正确；
 - `npu_matrix_psum_pipeline` 检查 tag、dtype、`elementwise=0`、`group_enable=4'b1111` 和 pair valid；错误返回必须结束当前计算并形成任务错误；一项请求未返回时 `request_slot_ready_o` 必须保持为 0；
 - 同一任务内，下一 K 小段 A/B 装载与上一次 PE 返回的部分和更新必须出现可观测的同时活动周期；请求未完成时不得覆盖保存的 tag 和末步标志；
@@ -6159,7 +6061,6 @@ IVE 除原有逐元素操作外，还必须验证连续 MUL 快速分支：
 
 - INT16 两行输入，覆盖 `-32768`、`32767`、负数和 0，每个 64-bit 输入 beat执行 4 个组；
 - INT8 两行输入，覆盖 `-128`、`127`、负数和 0，每个输入 beat执行 2 个组；
-- INT4 两行输入，覆盖 `-8`、`7`、负数和 0，每个输入 beat执行 1 个组；
 - 每个输出逐项等于 signed32 的 `src0×src1`，并检查末尾不足完整 beat时只写有效元素；
 - 检查 src0/src1 各自的 L1 读请求数、INT32 写请求数和 `done_progress_o`；
 - 检查快速分支命中计数或内部活动状态，避免数值测试实际只经过标量分支；
@@ -6168,8 +6069,8 @@ IVE 除原有逐元素操作外，还必须验证连续 MUL 快速分支：
 - 通用 MUL 与 FMA 都必须向共享 PE 发出逐元素请求；FMA 的 INT32 `src2` 在 PE 返回后由 Vector 后处理相加；
 - ADD、SUB、MAX、MIN、CMP、SELECT、CLAMP 和 ReLU 不得申请共享 PE；Matrix 持续申请 PE 时，这些轻量操作仍能进入 `ST_EXEC`，但允许等待内部 L1 端口；
 - Matrix GEMM 与 Vector MUL/FMA 同时申请 PE时检查轮转次序、两方 tag、两方等待计数和结果；持续冲突下两方都必须得到服务；
-- 通用分支每个元素依次经过 `ST_ADDR_PREP`、`ST_ADDR_ROW_ADD`、`ST_ADDR_FINAL` 和 `ST_ADDR_CHECK`，五组地址、五组 valid 与四组 INT4 半字节选择在全部请求和响应等待周期保持不变；
-- 通用分支的普通计算结果对 INT4 低、高半字节写都必须经过 `ST_RMW_REQ/RSP`；测试分别预置相邻半字节为非零值，确认写低半字节时旧高半字节不变、写高半字节时旧低半字节不变，并确认奇数长度末字节的未使用高半字节保留旧值；模块级 `mask_false_keep_dst` 通过 `ST_KEEP_REQ/RSP` 取得旧 beat，不要求再进入 `ST_RMW_REQ/RSP`；
+- 通用分支每个元素依次经过 `ST_ADDR_PREP`、`ST_ADDR_ROW_ADD`、`ST_ADDR_FINAL` 和 `ST_ADDR_CHECK`，五组地址和五组 valid 在全部请求和响应等待周期保持不变；
+- 通用分支按 INT8、INT16 或 INT32 目的格式生成字节写使能；测试预置同一 64-bit beat 中未选中的字节为非零值，确认部分写不会修改这些字节；模块级 `mask_false_keep_dst` 通过 `ST_KEEP_REQ/RSP` 取得旧 beat；
 - 连续 MUL 每次读取前必须经过 `ST_FAST_ADDR_CHECK`；每个输出对必须依次经过 `ST_FAST_WRITE_PREP` 和 `ST_FAST_WRITE_CHECK`，并检查保存的 48-bit地址、地址 valid、64-bit数据和 8-bit strobe；`ST_FAST_WRITE_REQ` 暂停期间这些寄存值保持不变，末尾单元素写的高 32 bit为 0 且 strobe 为 `8'h0f`；
 - 快速写请求握手时保存 1 或 2 的进度增量以及 `NEXT_PAIR/NEXT_BEAT/NEXT_ROW/DONE` 动作，写响应暂停时两项寄存值保持不变，成功响应后只能执行保存的动作；
 - 使用长度 9 的 INT8 快速 MUL 覆盖 8 元素首拍、1 元素末拍和行切换，最终进度必须为 9；
@@ -6200,15 +6101,15 @@ IVE 除原有逐元素操作外，还必须验证连续 MUL 快速分支：
 
 F2I 还必须检查以下状态和数值：
 
-- `MA_F2I` 数学响应保存商、余数、中点、正负号、NaN/Inf 标志、舍入方式、目标格式、溢出处理方式、phase、目标地址和 INT4 半字节选择；
+- `MA_F2I` 数学响应保存商、余数、中点、正负号、NaN/Inf 标志、舍入方式、目标格式、溢出处理方式、phase 和目标地址；
 - 每个输出依次经过 `ST_F2I_ROUND`、`ST_F2I_MAG`、`ST_F2I_SIGN`、`ST_F2I_OFFSET` 和 `ST_F2I_FINISH`，从数学响应握手到写请求状态包含额外 5 个时钟周期；
 - 使用 \(+0.5\)、\(-0.5\)、\(+1.5\) 和 \(-1.5\) 检查四种舍入方式，并覆盖商最低位为 0 和 1 的中点情况；
-- 覆盖正负溢出、INT4/INT8/INT16/INT32 最小值与最大值、NaN、正负 Inf、次正规数和极小非零数；
+- 覆盖正负溢出、INT8、INT16、INT32 最小值与最大值、NaN、正负 Inf、次正规数和极小非零数；
 - `done_ready_i=0` 时完成状态、错误地址和进度保持不变，F2I 中间寄存值不能引起重复写回。
 - STAT 在任务检查结束时把 `dst_base[47:0]` 保存到 `stat_dst_addr_q`；每行写响应成功后只在还有下一行时把该寄存器增加 `dst_row_stride`。SUM、MAX、SUMSQ 写请求、地址检查和错误报告都使用该寄存器，`ST_ROW_INIT` 与 `ST_STAT_SQUARE` 不重新计算或改写当前行地址。
 - 正常指令入口提交 `COMPLEX_SOFTMAX mask_mode=2` 时，内联解码必须返回无效，TS 建立 `BAD_DESC` 终态且 CME 不接收任务；CME 模块级直接 Task Context 测试要覆盖 `query_position_base`、`key_position_base` 和 `query_position_step`，确认每行先保存 `causal_query_position_q`，并按 `key_position_base+col_q <= causal_query_position_q` 选择有效位置。
 - 每行有效长度模式必须先进入 `ST_VLEN_CHECK`；INT32 长度元素跨越 8B beat时返回 `ADDR_FAULT`，通过检查后才能进入 `ST_VLEN_REQ/RSP`。
-- 每个元素必须先在 `ST_ELEMENT_BEGIN` 保存五组地址、四组 INT4 半字节选择和派生 mask，再由 `ST_ADDR_PREP` 决定读取 boolean mask、跳过、写零或读取 src0；请求暂停时只能使用这些保存值，不能重新读取已经变化的行列游标。
+- 每个元素必须先在 `ST_ELEMENT_BEGIN` 保存五组地址和派生 mask，再由 `ST_ADDR_PREP` 决定读取 boolean mask、跳过、写零或读取 src0；请求暂停时只能使用这些保存值，不能重新读取已经变化的行列游标。
 - 分别构造派生 mask 无效且处于 `PH_SOFT_OUT`、派生 mask 无效且处于统计阶段、boolean mask 和普通有效元素四类情况，检查 `ST_ADDR_PREP` 的后续状态、写零行为和 `done_progress_o`。
 
 Exp 范围整数处理还必须检查：
@@ -6378,13 +6279,13 @@ L1 ECC 数组及 workspace 数组。任意一组失败时返回 `BAD_DESC`，调
 | Matrix `MT/KT/NT`   |             `8/16/8` | 64-bit 操作数供数速度             |
 | Matrix context 数 | 2 | context0 为 Outer；context1 为 Scalar；普通 Outer 可执行 GEMM在两者均空闲时轮转选择 |
 | 共享 PE group | 4 | 每组 16 个 4×4 基础乘法器；Matrix 与 Vector MUL/FMA 共用 |
-| PE 数据类型组合 | INT16×INT16、INT8×INT8、INT4×INT4、INT8×INT4、INT4×INT8 | 逐元素乘积或分段贡献值 |
+| PE 数据类型组合 | INT16×INT16、INT8×INT8 | 逐元素乘积或分段贡献值 |
 | 本地部分和 RAM | Outer 为 4096×32 bit；Scalar 不包含 | `GEMM_ZERO_LOCAL`、`GEMM_ACCUM_HOLD` 和最终提交 |
 | Matrix-Vector 旁路缓存 | 2 项 × 64 bit beat | 保存地址标签、数据和逐字节有效状态 |
 | Matrix-Vector L1 请求 FIFO | 2 项 × 93 bit | 非直通；按接收次序保存 write、addr、wdata 和 wstrb |
 | Matrix 临时累加宽度       |             signed64 | 最大 K、bias 和 residual 测试    |
 | IVE 通用标量分支         |                    1 元素 | 广播、mask、FMA 和非乘法操作 |
-| IVE 连续 MUL 每次 PE 请求 | INT16 1 个、INT8 4 个、INT4 16 个 | 一个输入 beat分别需要 4、2、1 次请求 |
+| IVE 连续 MUL 每次 PE 请求 | INT16 1 个、INT8 4 个 | 一个输入 beat分别需要 4、2 次请求 |
 | CME 同时接受数学请求数       |                    1 | 后续增加数学单元副本时的函数周期数          |
 | CME FP32 暂存数组       |                    0 | 后续可为 Softmax 或 Norm 增加片内暂存 |
 | CME 最大 `length`     |                  256 | 长序列通过多条任务拆分                |
@@ -6402,7 +6303,7 @@ L1 ECC 数组及 workspace 数组。任意一组失败时返回 `BAD_DESC`，调
 | DDR 写响应延迟           |            12 cycles | 从最后一个 W beat 握手后计数         |
 | 外部任务参数 CRC          |                  不适用 | 当前执行参数位于指令和片上 Task Context |
 | L1 ECC              |           当前 RTL 未实现 | 后续增加 ECC 数据与错误注入测试         |
-| INT4 激活与 KV Cache   |                   启用 | 需要模型误差测试                   |
+| 数据格式编码 0 | 保留并拒绝 | 编译器、驱动、CModel 和 RTL 保持一致检查 |
 | INT16 输入、权重和输出      |                   启用 | 回归模型精度与额外带宽开销测试            |
 | `VROPE_I`           |            P1，功能位为 0 | 公式和模型需求确定后启用               |
 | `VRECIP_I`          |            P1，功能位为 0 | 软件可见接口完成验收后启用              |
@@ -6917,7 +6818,7 @@ make syn BUILD_DIR=build_shared_mv_outer_scalar_fifo_final JOBS=1
 
 采用两套完整 Outer 控制器的对照方案保存在 `build_shared_mv_dual_final3`。该方案综合后使用 133,321 / 134,600 Slice LUT，即 99.05%，WNS 为 -12.239ns，最差数据路径为 21.501ns。当前 Outer 加 Scalar 结构相对该方案减少 40,977 LUT，并保留本地部分和任务与独立 GEMM同时 active 的能力。
 
-最终 RTL 回归在提交 `0ebd9cb` 的工作树上执行，RTL 内容与 `4931d13` 相同。`make lint`、`make -C rtl/engines test`、`make engine-test`、`make matrix-stream-test`、`make system-test` 和 `make scheduler-dual-matrix-test` 均成功。覆盖结果包括 INT16、INT8、INT4、Matrix/Vector 共用 PE、Matrix 写回到 Vector 的内部旁路、L1 请求 FIFO随机停顿，以及本地部分和任务与独立 GEMM同时 active。连续 Matrix 测试提交 12 条任务，其中 8 条 GEMM、4 条 GEMM_ACCUM，任务接收、发射和完成数量均为 12，任务间 gap 为 0。
+最终 RTL 回归在提交 `0ebd9cb` 的工作树上执行，RTL 内容与 `4931d13` 相同。`make lint`、`make -C rtl/engines test`、`make engine-test`、`make matrix-stream-test`、`make system-test` 和 `make scheduler-dual-matrix-test` 均成功。覆盖结果包括 INT16、INT8、Matrix/Vector 共用 PE、Matrix 写回到 Vector 的内部旁路、L1 请求 FIFO随机停顿，以及本地部分和任务与独立 GEMM同时 active。连续 Matrix 测试提交 12 条任务，其中 8 条 GEMM、4 条 GEMM_ACCUM，任务接收、发射和完成数量均为 12，任务间 gap 为 0。
 
 > [!summary] 首版硬件实现范围
-> 单核首版由 64-bit AXI/MIF、64-bit L1BUF 客户端接口、Command Front End、TaskScheduler、DMA、Matrix-Vector Engine、Complex Math、L1BUF、LSC、CRG 和 WDT 组成。每条 128-bit CMD 在 64-bit 接口上使用低、高两个 beat；事件和任务选项直接位于 CMD。TaskScheduler 使用命令接纳寄存级、WAIT_EVENT 逐槽检查及结果寄存、接收检查解码器、Control 执行快照、发射窄快照、共享发射解码器和四组发射暂存；Matrix 使用两项 active 记录并按完成 `command_id` 查找任务。Matrix-Vector Engine 是 Matrix 与 Vector 共用的物理执行模块，包含 Outer context、Scalar context、Vector 控制器、一套可配置多精度 MAC PE、内部 L1 仲裁、深度为 2 的 L1 请求 FIFO和 2 项 Matrix 到 Vector 旁路缓存。Outer 执行分块外积并保存本地部分和 RAM，Scalar 执行逐元素乘加和后处理。Matrix 乘法与 Vector MUL/FMA 都使用共享 PE，Vector 的其他逐元素操作使用轻量整数 ALU。模型张量只采用 INT4、INT8、INT16、INT32；CME 的 SUMSQ 分成平方与累加状态，Exp 的范围整数使用五个寄存状态完成最近偶数舍入，复杂函数在 CME 内部执行 `INT→FP32→INT`，F2I 在数学响应后经过五个寄存状态。软件通过指令和 C 配置给出物理地址、shape、stride、scale 和 zero point，硬件按模块接口与功能时序完成任务。
+> 单核首版由 64-bit AXI/MIF、64-bit L1BUF 客户端接口、Command Front End、TaskScheduler、DMA、Matrix-Vector Engine、Complex Math、L1BUF、LSC、CRG 和 WDT 组成。每条 128-bit CMD 在 64-bit 接口上使用低、高两个 beat；事件和任务选项直接位于 CMD。TaskScheduler 使用命令接纳寄存级、WAIT_EVENT 逐槽检查及结果寄存、接收检查解码器、Control 执行快照、发射窄快照、共享发射解码器和四组发射暂存；Matrix 使用两项 active 记录并按完成 `command_id` 查找任务。Matrix-Vector Engine 是 Matrix 与 Vector 共用的物理执行模块，包含 Outer context、Scalar context、Vector 控制器、一套可配置多精度 MAC PE、内部 L1 仲裁、深度为 2 的 L1 请求 FIFO和 2 项 Matrix 到 Vector 旁路缓存。Outer 执行分块外积并保存本地部分和 RAM，Scalar 执行逐元素乘加和后处理。Matrix 乘法与 Vector MUL/FMA 都使用共享 PE，Vector 的其他逐元素操作使用轻量整数 ALU。模型张量只采用 INT8、INT16、INT32；共享 PE 的内部 4×4 基础乘法器用于组成 INT8 和 INT16 乘法，不构成软件可选的数据格式；CME 的 SUMSQ 分成平方与累加状态，Exp 的范围整数使用五个寄存状态完成最近偶数舍入，复杂函数在 CME 内部执行 `INT→FP32→INT`，F2I 在数学响应后经过五个寄存状态。软件通过指令和 C 配置给出物理地址、shape、stride、scale 和 zero point，硬件按模块接口与功能时序完成任务。

@@ -136,7 +136,7 @@ digraph NPU_SINGLE_CORE_PPT {
         </TR>
         <TR>
           <TD BGCOLOR="#F8FAFC" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" COLOR="#475569" POINT-SIZE="13"><B>数值格式</B></FONT></TD>
-          <TD ALIGN="LEFT" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="13"><B>INT4 / INT8 / INT16 输入与权重<BR/>INT32 累加 · Complex 局部使用 FP32</B></FONT></TD>
+          <TD ALIGN="LEFT" VALIGN="MIDDLE"><FONT FACE="Microsoft YaHei" POINT-SIZE="13"><B>INT8 / INT16 输入与权重<BR/>INT32 累加 · Complex 局部使用 FP32</B></FONT></TD>
         </TR>
       </TABLE>
     >

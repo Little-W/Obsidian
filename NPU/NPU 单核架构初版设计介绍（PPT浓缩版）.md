@@ -6,7 +6,7 @@
 ## 1. 设计目标
 
 - 面向 Transformer、RNN、GRU、LSTM 和常见全连接网络。
-- 软件可见张量支持 INT4、INT8、INT16、INT32；Matrix 使用 INT32 保存乘加结果。
+- 软件可见张量支持 INT8、INT16、INT32；Matrix 使用 INT32 保存乘加结果。
 - Sigmoid、Tanh、GELU、SiLU、Softmax 和 Norm 在 Complex Engine 内部执行 `INT → FP32 → INT`，FP32 中间值不写入软件可见张量。
 - 总线数据宽度为 64 bit；一条 128-bit 指令使用相邻的 low、high 两个 beat。
 - 本设计不设置卷积执行单元。Conv2D 由编译器拆成数据整理、im2col、GEMM、bias 和输出整理；CPU 可处理硬件指令不适合承担的步骤。
@@ -52,7 +52,7 @@ NPU AXI Slave 提供三类访问入口：
 |      `[85]` | `strict_numeric` | 复杂函数出现非法数值时返回错误                       |
 |      `[84]` | `ordered`        | 要求按提交次序检查发射条件                         |
 |   `[83:82]` | `timeout_class`  | 选择四档超时配置                              |
-|   `[81:80]` | `dtype`          | `0=INT4`、`1=INT8`、`2=INT32`、`3=INT16` |
+|   `[81:80]` | `dtype`          | `0=保留，作为有效数据格式时拒绝`、`1=INT8`、`2=INT32`、`3=INT16` |
 |    `[79:0]` | `payload`        | 按操作类型解释的任务参数                          |
 
 `opcode` 占用最高 6 bit。数值 0～32 的含义见下表；33～63 返回 `ILLEGAL_OPCODE`。
@@ -70,10 +70,10 @@ CFE 和 TS 保存收到的 16 字节指令，内联解码器从 `payload` 直接
 |   2 | `EVENT_REARM`      | Control | 复用已经完成且没有等待者的 Event，并开始新的代次。                    | `signal_event` 指定待复用的 Event；Event 仍被占用时返回错误。                                                | 已实现                       |
 |   3 | `EVENT_JOIN`       | Control | 把两个前置 Event 的结果合并后写入一个新 Event。                  | `wait_event0`、`wait_event1`、`signal_event` 均有效；`join_mode=0` 要求两者成功，`join_mode=1` 表示任一成功即可。 | 已实现                       |
 |   4 | `GLOBAL_FENCE`     | Control | 等待所选执行单元中更早提交的任务全部结束。                           | `engine_mask[3:0]` 依次选择 DMA、Matrix、Vector、Complex，至少选择一项。                                   | 已实现                       |
-|   5 | `DMA_COPY_1D`      | DMA     | 连续复制一段元素，并可在不同整数宽度之间转换。                         | 源/目标 `AREF28`、元素数、源/目标 dtype、INT4 起始半字节；变窄时执行饱和。                                            | 已实现                       |
+|   5 | `DMA_COPY_1D`      | DMA     | 连续复制一段元素，并可在不同整数宽度之间转换。                         | 源/目标 `AREF28`、元素数、源/目标 dtype；变窄时执行饱和。                                            | 已实现                       |
 |   6 | `DMA_COPY_ND`      | DMA     | 复制连续保存的张量区域。                                    | 字段与 `DMA_COPY_1D` 相同；不含 rank、shape、src/dst stride，带间隔访问由编译器拆成多条任务。                              | 已实现                       |
 |   7 | `DMA_FILL`         | DMA     | 用同一个数值连续填充目标区域。                                 | 目标 `AREF28`、元素数、`fill_value[31:0]` 和目标 dtype；不含多维 shape。                                      | 已实现                       |
-|   8 | `DMA_TRANSPOSE_2D` | DMA     | 将连续行优先二维数组从 `[rows, columns]` 改排为 `[columns, rows]`。 | 源/目标 `AREF28`、行数、列数、dtype 和 INT4 半字节选择；不含行间隔字段。                                         | 已实现                       |
+|   8 | `DMA_TRANSPOSE_2D` | DMA     | 将连续行优先二维数组从 `[rows, columns]` 改排为 `[columns, rows]`。 | 源/目标 `AREF28`、行数、列数和 dtype；不含行间隔字段。                                         | 已实现                       |
 |   9 | `DMA_PACK`         | DMA     | 从等间隔数据段读取并连续写入目标区域。                             | 源/目标 `AREF28`、段数、每段字节数、段间隔；后三项均为 8 bit，且段间隔不得小于段字节数。                                | 已实现                       |
 |  10 | `DMA_SPLIT`        | DMA     | 从连续区域读取，并按固定间隔写入多个数据段。                          | 源/目标 `AREF28`、段数、每段字节数、段间隔；后三项均为 8 bit。                                                  | 已实现                       |
 |  11 | `DMA_GATHER_ND`    | DMA     | 根据索引表从全局内存读取多个数据块，并连续写入 L1。                    | 全局源 `AREF28`、索引表和目标 `LREF16`、块数、每块字节数；索引表元素为 UINT32。                                    | P1，功能位关闭，返回 `ILLEGAL_OPCODE` |
@@ -119,7 +119,7 @@ Matrix 使用 14-bit `LREF14`，实际 L1BUF 字节地址为 `LREF14 × 64`；Ve
 
 | 指令 | `[79:0]` |
 | --- | --- |
-| COPY_1D / COPY_ND | `src AREF28`、`dst AREF28`、`count[19:0]`、目的 dtype、INT4 起始半字节 |
+| COPY_1D / COPY_ND | `src AREF28`、`dst AREF28`、`count[19:0]`、目的 dtype；最低 2 bit 为保留位并且必须写 0 |
 | FILL | `dst AREF28`、`count[19:0]`、`fill_value[31:0]` |
 | TRANSPOSE_2D | `src AREF28`、`dst AREF28`、`rows[7:0]`、`cols[7:0]`、目的 dtype |
 | PACK / SPLIT | `src AREF28`、`dst AREF28`、段数、每段字节数、段间隔，各 8 bit |
@@ -138,13 +138,13 @@ GEMM、GEMM_ACCUM 和 GEMM_ZERO：
 | `[79:66]`、`[65:52]`、`[51:38]` | A、B、C 的 `LREF14` |
 | `[37:26]` | bias 的 `LREF12`，0 表示不用 |
 | `[25:20]`、`[19:14]`、`[13:8]` | `M-1`、`N-1`、`K-1` |
-| `[7]` | `b_int4` |
+| `[7]` | 保留位，必须写 0 |
 | `[6:5]` | C 的 dtype |
 | `[4:0]` | 直接给出 0～31 的右移位数 |
 
-当 A 为 INT8 且 `b_int4=1` 时，B 为 INT4；否则 B 与 A 使用相同格式。允许的乘法组合是 INT4×INT4、INT8×INT8、INT8×INT4 和 INT16×INT16。
+矩阵 A 与 B 必须使用相同的数据格式。允许的乘法组合是 INT8×INT8 和 INT16×INT16；编码 0 和非零保留位都会使指令被拒绝。
 
-BMM 使用 A、B、C 三个 `LREF14`，随后是 6-bit `batch-1`、`M-1`、`N-1`、`K-1`、1-bit `b_int4`、2-bit C dtype 和 5-bit 右移位数，最低 6 bit 写 0。
+BMM 使用 A、B、C 三个 `LREF14`，随后是 6-bit `batch-1`、`M-1`、`N-1`、`K-1`、1-bit 保留位、2-bit C dtype 和 5-bit 右移位数，最低 6 bit 写 0。该保留位也必须写 0。
 
 > [!example]
 > 设 A 的形状是 `[M,K]`，B 的形状是 `[K,N]`，bias 的形状必须是 `[N]` 且元素为 INT32。对输出元素 $C_{i,j}$，硬件计算：

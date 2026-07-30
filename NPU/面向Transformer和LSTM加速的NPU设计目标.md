@@ -509,7 +509,7 @@ Matrix 单元应执行：
 - bias 融合；
 - 可选残差相加、激活和输出写回；
 - 非整 tile 尺寸的掩码处理；
-- P0 的 INT4/INT8 输入与 INT32 累加；复杂函数只在专用单元内部临时使用
+- P0 的 INT8/INT16 输入与 INT32 累加；复杂函数只在专用单元内部临时使用
   FP32，写回前转成整数。
 
 对 Transformer，把 QKV 三次线性层合并为一次：
@@ -705,7 +705,7 @@ flowchart TD
 | 硬件项 | 设计要求 | 直接用途 |
 | --- | --- | --- |
 | Tile GEMM | 接受可配置 $M_t\times K_t\times N_t$ tile | 执行 FFN、QKV、LSTM/GRU/RNN 递推 |
-| 多格式乘累加 | P0：INT4/INT8 输入、INT32 累加 | 按描述符选择整数数据路径 |
+| 多格式乘累加 | P0：INT8/INT16 输入、INT32 累加 | 按描述符选择整数数据通路 |
 | 权重复用 | 同一权重 tile 服务多个 token 或 Batch 样本 | 减少外部读取 |
 | 输入复用 | 激活 tile 在多个输出通道上复用 | 提高 SRAM 利用率 |
 | 转置访问 | 接受逻辑转置视图或 DMA 预处理后的数据 | 执行 $QK^{\mathsf T}$ |
@@ -1179,13 +1179,13 @@ P1 `RECURRENT_DESC` 若未列出 `proj_size`、投影权重地址和 peephole �
 
 | 数据类型 | 用途 | 设计原因 |
 | --- | --- | --- |
-| INT4 | 压缩后的权重或激活 | 每字节保存两个元素，降低存储和传输量 |
 | INT8 | 常规激活、权重和状态 | 数据处理简单，适合作为第一版主要格式 |
+| INT16 | 需要更细数值间隔的输入、权重、中间张量或输出 | 每个元素占两个字节，避免过早缩小数值范围 |
 | INT32 | GEMM/BMM 累加、bias 和部分和 | 避免乘累加过早截断 |
 | FP32 | 仅用于 Complex Math Engine 内部的激活函数、Softmax 和 Norm 临时值 | 通过 `INT→FP32→INT` 完成复杂公式，不能作为软件可见张量格式 |
 
-P0 Matrix 数据路径采用 INT4/INT8 输入和 INT32 累加。Complex Math Engine
-接收整数张量，在内部转为 FP32，完成函数计算后再写回 INT4、INT8 或 INT32。
+P0 Matrix 数据通路采用 INT8/INT16 输入和 INT32 累加。Complex Math Engine
+接收整数张量，在内部转为 FP32，完成函数计算后再写回 INT8、INT16 或 INT32。
 
 ### 8.2 特殊函数近似
 
@@ -1203,7 +1203,7 @@ Exp、倒数、倒数平方根、Sigmoid 和 Tanh 可采用：
 
 ### 8.3 累加精度
 
-- GEMM/BMM：INT4 或 INT8 乘法结果在 INT32 中累加。
+- GEMM/BMM：INT8 或 INT16 乘法结果在 INT32 中累加。
 - LayerNorm/RMSNorm：整数输入在 Complex Math Engine 内转为 FP32，平方和与
   均值使用内部 FP32 临时值。
 - Softmax：最大值、分母和倒数使用 FP32 或等效精度。
@@ -1281,7 +1281,7 @@ $$
 数据描述符应带有 `dtype`、`elem_bytes`、`layout`、`base_addr`、`shape` 和
 `stride`。整数张量若使用 scale 与 zero point，也应在描述符中显式给出；
 带尾块的 tile 还需记录有效元素范围。地址计算必须以字节为单位定义，使
-INT4、INT8 和 INT32 使用同一描述符时仍能得到一致的地址。
+INT8、INT16 和 INT32 使用同一描述符时仍能得到一致的地址。
 
 ### 9.4 公共字段、完成规则和精度控制
 
@@ -1309,8 +1309,7 @@ $$
 
 且 $A$ 对 L1BUF 或全局内存的写入在 $B$ 读取前可见。若 $A$ 失败，$B$ 不读取操作数，而是以 `DEPENDENCY_FAILED` 结束并把上游错误编号写入状态区。事件只有在所有等待者退出后才能换用新的 `event_generation`。从命令入队到事件进入终态期间，软件不得修改描述符、地址表、scale 数组和常量表。
 
-P0 Matrix 精度模式包含 `INT4_ACC_INT32`、`INT8_ACC_INT32` 和
-`INT8_INT4_ACC_INT32`。Complex Math Engine 的 FP32 只用于单元内部临时值，
+P0 Matrix 精度模式包含 `INT8_ACC_INT32` 和 `INT16_ACC_INT32`。Complex Math Engine 的 FP32 只用于单元内部临时值，
 不允许 Matrix 执行 FP32 乘法，也不允许软件把 FP32 张量提交给 NPU。设输入
 整数为 $x_q$、权重整数为 $w_q$，则 INT32 累加值为：
 
@@ -1711,7 +1710,7 @@ $$
 ### 第一阶段：P0 基础任务
 
 - DMA：`DMA_LOAD`/`DMA_STORE`/`DMA_COPY_ND`/`DMA_FILL`、双缓冲、基础转置与 QKV 切分；
-- Matrix：INT4/INT8 `GEMM`/`BMM`、INT32 累加、bias/scale/residual/ReLU
+- Matrix：INT8/INT16 `GEMM`/`BMM`、INT32 累加、bias/scale/residual/ReLU
   Epilogue、非整 tile 的 `valid_m/valid_n/valid_k`；
 - Vector：`VADD`、`VSUB`、`VMUL`、`VFMA`、`VBIAS`、`VCMP`、`VSEL`、`VREDUCE_*`、`VEXP`、`VRECIP`、`VRSQRT`、Sigmoid、Tanh、GELU、SiLU、ReLU；
 - 控制：`EVENT_WAIT`/`EVENT_SIGNAL`、`BARRIER`、`STATE_LOAD`/`STATE_STORE`、失败传播与事件代次；
