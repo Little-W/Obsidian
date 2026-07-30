@@ -55,7 +55,7 @@ NPU AXI Slave 提供三类访问入口：
 |   `[81:80]` | `dtype`          | `0=保留，作为有效数据格式时拒绝`、`1=INT8`、`2=INT32`、`3=INT16` |
 |    `[79:0]` | `payload`        | 按操作类型解释的任务参数                          |
 
-`opcode` 占用最高 6 bit。数值 0～32 的含义见下表；33～63 返回 `ILLEGAL_OPCODE`。
+`opcode` 占用最高 6 bit。数值 0～34 的含义见下表；35～63 返回 `ILLEGAL_OPCODE`。
 
 CFE 和 TS 保存收到的 16 字节指令，内联解码器从 `payload` 直接得到地址引用、尺寸、数据格式和函数选项。`opcode[127:122]` 是线上 6-bit 值，不是执行单元内部枚举；全部任务操作数都在命令头和 `payload` 内。
 
@@ -98,8 +98,10 @@ CFE 和 TS 保存收到的 16 字节指令，内联解码器从 `payload` 直接
 |  30 | `VSTAT`            | Complex | 按行计算 SUM、MAX 或 SUMSQ，并写出 INT32 结果。              | `src0`、`dst`、`rows/length` 和统计模式；每行输出一个值。                                                   | 已实现                       |
 |  31 | `VRECIP`           | Complex | 计算倒数，供除法类公式使用。                                  | 操作码和命令位置已经分配；功能寄存器未声明支持时不得写目标数据。                                                            | P1，功能位关闭，返回 `ILLEGAL_OPCODE` |
 |  32 | `VADD_RESCALE`     | Complex | 先按各自 scale 还原两个输入，相加后按目标 scale 写回整数。            | `src0`、`aux`、`dst`、`rows/length`、三个 scale 指数和目标 dtype。                                      | 已实现                       |
+|  33 | `GEMM_ZERO_LOCAL`  | Matrix  | 建立并清除 Outer context 的本地部分和状态，不读写 L1 中的 C。          | C 的 `LREF14` 和 `M/N`；其余计算字段必须为 0。                                                         | 已实现                       |
+|  34 | `GEMM_ACCUM_HOLD`  | Matrix  | 把新的乘加结果保存在 Outer context 的本地部分和 RAM 中，不提交最终 C。    | 字段与 `GEMM_ACCUM` 相同；输入为 INT8 或 INT16，部分和为 INT32。                                         | 已实现                       |
 
-数值 33～63 没有定义，CFE 必须返回 `ILLEGAL_OPCODE`。`DMA_GATHER_ND`、`VROPE` 和 `VRECIP` 只有在功能寄存器声明支持后才能执行，其余表项属于当前硬件功能。
+数值 35～63 没有定义，CFE 必须返回 `ILLEGAL_OPCODE`。`DMA_GATHER_ND`、`VROPE` 和 `VRECIP` 只有在功能寄存器声明支持后才能执行，其余表项属于当前硬件功能。
 
 ### 4.3 地址引用
 

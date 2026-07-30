@@ -4,23 +4,23 @@
 
 本文面向模块级验证工程师，聚焦两个核心问题：
 
-1. 模型算子在语义上做了什么。
-2. 算子如何映射到硬件模块与指令链路。
+1. 模型算子完成什么数学功能。
+2. 算子如何分配到硬件模块与指令数据流程。
 
-写作顺序采用“模型语义 -> 算子分类 -> 硬件映射 -> 验证关注点”，目标是提供可复用的分析框架，而不是零散记忆单条指令。
+写作顺序采用“模型功能 -> 算子分类 -> 硬件对应关系 -> 验证关注点”，目标是提供可复用的分析框架，而不是零散记忆单条指令。
 
 ## 阅读建议
 
 1. 先看第 1-2 章，建立 GEMM/Conv 的主计算路径。
 2. 再看第 3 章，理解布局和重排为什么影响性能与正确性。
-3. 然后看第 4-6 章，建立算子到硬件模块的映射关系。
+3. 然后看第 4-6 章，建立算子与硬件模块的对应关系。
 4. 最后看第 7-8 章，形成误差分析与验证回归方法。
 
 ## 术语与模块约定
 
 - AILS：负责调度、搬运组织、tile 级数据编排。
 - Matrix：核心乘加计算阵列（GEMM 主引擎）。
-- PPROC：后处理模块，承担元素级处理、部分量化相关处理。
+- PPROC：后处理模块，承担元素级处理、部分低比特整数转换。
 - VA：向量/归一化类计算模块（如 softmax、layernorm 路径）。
 - DMA/CP：数据搬运与重排模块（split/permute/padding 等）。
 
@@ -29,7 +29,7 @@
 端侧 NPU 关注点不是训练能力，而是：
 
 - 在有限面积、带宽、功耗下提升吞吐与时延表现。
-- 对主干算子（GEMM、Conv、元素级、归一化、量化）做工程最优化。
+- 对主干算子（GEMM、Conv、元素级、归一化、低比特整数转换）做工程最优化。
 - 在精度可接受范围内，最大化能效比（performance per watt）。
 
 背景资料：
@@ -49,7 +49,7 @@ $$
 C_{m,n}=\sum_{k=0}^{K-1}A_{m,k}\cdot B_{k,n}
 $$
 
-几乎所有主流推理算子都可归约为 GEMM 或 GEMM 变体（Linear、Conv 展开后、Attention 中 QK^T 和 AV 等）。
+几乎所有主流推理算子都可转化为 GEMM 或 GEMM 变体（Linear、Conv 展开后、Attention 中 QK^T 和 AV 等）。
 
 ![矩阵乘法基础示意](https://ncnkvwuxka57.feishu.cn/space/api/box/stream/download/asynccode/?code=YTE1NzQ3OWJmZjIyOTNjM2EwOGYyZTlmMTIxNzFmZmFfaktlNURQVHZPRE1kdzFJSkF6NmZsWGJSaDhLSm8zelZfVG9rZW46SE5hTGJEcHRKb0Q4SFJ4dDhDdWN4QmpvblBlXzE3NzU3MTk2MTE6MTc3NTcyMzIxMV9WNA)
 
@@ -64,7 +64,7 @@ $$
 3. 结果 tile 交给 PPROC 进行后处理或 bypass。
 4. AILS 负责结果回写与下一轮调度。
 
-关键结论：硬件不是“按元素计算”，而是“按 tile 流水执行”。验证中要重点对齐 tile 边界与累加边界行为。
+关键结论：硬件不是“按元素计算”，而是“按 tile 流水执行”。验证中要重点检查 tile 尾块与累加末端行为。
 
 ![分块 tile 与矩阵单元协同示意](https://ncnkvwuxka57.feishu.cn/space/api/box/stream/download/asynccode/?code=NGMxN2U2Yzc3MWU2ODQ3ZWMxNjRlNTMwZmIwOWFmNjJfczFwT2ZhZ3dIbFVpckNqNHViT3lVU1kzM1VVNUxRUGxfVG9rZW46UnBxMGJuTFFwb0VLSEZ4MVg4b2Nvb3BabkRjXzE3NzU3MTk2MTE6MTc3NTcyMzIxMV9WNA)
 
@@ -76,7 +76,7 @@ $$
 
 - 维度一致性：$A(M,K)$ 与 $B(K,N)$ 的 K 维必须一致。
 - tile 拼接正确性：跨 tile 累加顺序是否正确。
-- 边界块处理：尾块（不足整 tile）是否补零/掩码正确。
+- 尾块处理：不足整 tile 时是否正确补零或使用掩码。
 - 累加精度：混合精度路径（如 INT8 accumulate 到 INT32）是否按规格。
 
 ---
@@ -86,7 +86,7 @@ $$
 ### 2.1 卷积本质
 
 卷积是“滑动窗口上的局部乘加”。
-对硬件而言，核心不是“是否支持 Conv 指令名”，而是“是否稳定完成卷积到规则矩阵乘的映射”。
+对硬件而言，核心不是“是否支持 Conv 指令名”，而是“是否稳定地把卷积转换为规则矩阵乘”。
 
 二维卷积输出尺寸公式：
 
@@ -121,9 +121,9 @@ $$
 
 ## 3. 数据排布与张量重排
 
-### 3.1 维度语义与内存排布是两件事
+### 3.1 维度含义与内存排布是两件事
 
-- 维度语义：张量逻辑结构（N、C、H、W）。
+- 维度含义：张量逻辑结构（N、C、H、W）。
 - 内存排布：数据在地址空间中的线性组织。
 
 排布决定访存连续性、cache 命中、DMA 事务粒度与带宽利用率。
@@ -135,7 +135,7 @@ $$
 - NCHW：GPU/CUDA 生态常见，卷积优化成熟。
 - NHWC：CPU/移动端常见，像素内通道连续，缓存友好。
 
-两种排布可以从“线性地址映射”直接看出差异。设张量形状为 $(N,C,H,W)$，元素类型大小为 $s$ 字节，忽略 batch 跨距时：
+两种排布可以从“线性地址计算”直接看出差异。设张量形状为 $(N,C,H,W)$，元素类型大小为 $s$ 字节，忽略 batch 跨距时：
 
 - NCHW 的线性偏移（按元素计）可写为：
 
@@ -157,13 +157,13 @@ $$
 
 1. 若主要算子是卷积/GEMM 且后端对 NCHW 优化充分，优先 NCHW。
 2. 若目标是移动端 CPU 或需要高效逐像素后处理，优先 NHWC。
-3. 若链路跨多个后端，优先减少中间转置次数，而不是只看单算子峰值性能。
+3. 若处理流程跨多个后端，优先减少中间转置次数，而不是只看单算子峰值性能。
 
 验证时建议显式覆盖 NCHW <-> NHWC 互转：
 
 - 关注维度元数据是否同步更新。
 - 关注 stride/step 是否与新布局一致。
-- 关注量化逐通道参数在变换后是否仍对齐到正确通道。
+- 关注低比特整数逐通道参数在变换后是否仍对齐到正确通道。
 
 ### 3.3 分块表达法（建议统一）
 
@@ -178,7 +178,7 @@ $$
 
 ### 3.4 DMA 视角下的 `NSliceHWC32` 内存排布
 
-DMA spec 中提到 DMA 可以将一个一至五维的 `NSliceHWC32` Tensor 从 `src memory` 搬到 `dst memory`。这里的重点是：DMA 不理解“图片”“token”“特征图”这些高级语义，它看到的是描述符给出的源地址、目的地址、形状、步长和 layout，然后按地址映射规则发起读写。
+DMA spec 中提到 DMA 可以将一个一至五维的 `NSliceHWC32` Tensor 从 `src memory` 搬到 `dst memory`。这里的重点是：DMA 不理解“图片”“token”“特征图”这些高级概念，它看到的是描述符给出的源地址、目的地址、形状、步长和 layout，然后按地址计算规则发起读写。
 
 `NSliceHWC32` 可以理解为把逻辑通道维 `C` 按 32 个元素一组切块：
 
@@ -201,7 +201,7 @@ slice = c / 32
 c32   = c % 32
 ```
 
-设元素大小为 `elem_bytes`，`S = ceil(C / 32)`，则连续紧凑排布时，线性偏移为：
+设元素大小为 `elem_bytes`，`S = ceil(C / 32)`，则连续排布时，线性偏移为：
 
 ```text
 offset_elem = ((((n * S + slice) * H + h) * W + w) * 32 + c32)
@@ -348,7 +348,7 @@ dst_offset = ((((0 * 2 + 1) * 2 + 0) * 3 + 0) * 32 + 0) = 192
 - 尾块 padding 是否被搬运、清零或保持 don't-care，需要和 spec 对齐。
 - 源 layout 与目的 layout 不同时，scoreboard 应按逻辑坐标比对，不要直接 `memcmp`。
 - 描述符中的长度单位要明确是元素数、byte 数、还是按 32B/128B 对齐后的 beat 数。
-- L1BUF 对齐约束要单独检查：即使逻辑 tensor 很小，DMA burst 也可能按硬件要求对齐到更大的边界。
+- L1BUF 对齐约束要单独检查：即使逻辑 tensor 很小，DMA burst 也可能按硬件要求对齐到更大的地址单位。
 
 ### 3.5 Spec Layout 表解读
 
@@ -361,7 +361,7 @@ dst_offset = ((((0 * 2 + 1) * 2 + 0) * 3 + 0) * 32 + 0) = 192
 | Weight | Conv | `NSlice(32B)WH32` | `NSlice(32B)WH32` | 权重在 DDR 中已经按硬件计算格式离线排好，DMA 主要负责搬运。 |
 | Weight | MatMul | `NSlice(32B)WH32` | `NSlice(32B)WH32` | Linear 权重同样采用硬件友好格式，备注里的“Linear 传输，只读”可理解为该路径主要面向权重只读搬入。 |
 | KV Cache | Transpose | `NHW` | `NSlice(32B)HW32` | 需要转置。当前 DDR 受 MC 限制，KV cache 暂按 `NHW` 放置，搬入 L1BUF 时转成硬件计算格式。 |
-| KV Cache | Normal | `NHW` | `NSlice(32B)WH32` | 不做 transpose 语义时，仍按 L1BUF 中 weight 类格式摆放。 |
+| KV Cache | Normal | `NHW` | `NSlice(32B)WH32` | 不要求 transpose 操作时，仍按 L1BUF 中 weight 类格式摆放。 |
 
 这里可以把几种 layout 名字拆开看：
 
@@ -377,7 +377,7 @@ NSlice(32B)HW32: n -> slice -> h -> w -> lane32
 NSlice(32B)WH32: n -> slice -> w -> h -> lane32
 ```
 
-如果用连续紧凑排布近似，二者的地址公式可以写成：
+如果用连续排布近似，二者的地址公式可以写成：
 
 ```text
 // HW32
@@ -459,9 +459,9 @@ KV cache 搬运的特殊性在于：它不是一次性搬一块普通 activation
 - KV cache 按 `head_size` 大小均匀存储在 4 个 DDR channel 中。
 - 支持 KV cache 搬运，也支持多通道 interleave 读。
 - 支持 1/2/4 个 DDR channel 交织。
-- 支持 KV cache 量化参数搬运。
+- 支持 KV cache 低比特整数参数搬运。
 - 支持普通搬运，即没有滑动窗口。
-- 支持 ring 搬运，即有滑动窗口，读/写地址到结束边界后回到起始地址。
+- 支持 ring 搬运，即有滑动窗口，读/写地址到结束地址后回到起始地址。
 - 读写可以覆盖多个 chunk；当前需求中写只需要写一个 chunk。
 
 `head_size` 和 `interleave_num` 的关系：
@@ -519,7 +519,7 @@ window     = 4
 6, 7, 0, 1
 ```
 
-因为读地址到达结束边界 `8` 后，会回到起始地址 `0` 继续读。写 ring 也是同理：写地址到结束边界后回到起始地址写入。
+因为读地址到达结束地址 `8` 后，会回到起始地址 `0` 继续读。写 ring 也是同理：写地址到达结束地址后回到起始地址写入。
 
 这个场景的 scoreboard 不能简单地期望 DDR 地址单调递增，而要按 ring 规则生成 golden：
 
@@ -534,7 +534,7 @@ if next_idx == ring_end:
 当前需求是“写只需要写一个 chunk”，但读可以读多个 chunk。可以这样理解：
 
 - 写路径：通常是当前 step 新生成的 K/V，只追加一个新 token 或一小段 token，所以写一个 chunk 足够。
-- 读路径：attention 需要读取历史窗口内多个 token，可能跨多个 chunk，尤其在 ring 场景中还可能跨 ring 边界。
+- 读路径：attention 需要读取历史窗口内多个 token，可能跨多个 chunk，尤其在 ring 场景中还可能越过 ring 末端。
 
 假设：
 
@@ -557,22 +557,22 @@ ring range = [0, 16)
 12, 13, 14, 15, 0, 1, 2, 3, 4, 5
 ```
 
-这类 case 很适合验证 ring 边界：一个 case 覆盖不回绕，一个 case 覆盖读回绕，一个 case 覆盖写回绕，一个 case 覆盖读写同时接近边界。
+这类 case 很适合验证 ring 回绕：一个 case 覆盖不回绕，一个 case 覆盖读回绕，一个 case 覆盖写回绕，一个 case 覆盖读写同时接近末端。
 
 #### KV cache 搬运验证检查点
 
-- `head_size` 到 `interleave_num` 的映射是否正确：`1 -> 4`、`2 -> 2`、`>=4 -> 1`。
+- `head_size` 与 `interleave_num` 的对应关系是否正确：`1 -> 4`、`2 -> 2`、`>=4 -> 1`。
 - 4 个 DDR channel 中 KV cache 是否按 `head_size` 粒度均匀分布。
-- 普通搬运时地址是否线性递增，chunk 边界是否正确。
-- ring 搬运时读地址和写地址是否在结束边界回绕到起始地址。
+- 普通搬运时地址是否线性递增，chunk 末尾是否正确。
+- ring 搬运时读地址和写地址是否在结束地址处回绕到起始地址。
 - 读多个 chunk 时，跨 chunk 的数据顺序是否和逻辑 token 顺序一致。
 - 写一个 chunk 时，是否只更新目标 chunk，没有覆盖相邻 chunk。
-- KV cache 量化参数是否和对应 K/V 数据使用同一套 head/token 索引规则，避免参数和数据错位。
+- KV cache 低比特整数参数是否和对应 K/V 数据使用同一套 head/token 索引规则，避免参数和数据错位。
 - DDR `NHW` 到 L1BUF `NSlice(32B)HW32/WH32` 的转换是否和 transpose/normal 模式一致。
 
-### 3.7 验证建议：先数学映射，后代码实现
+### 3.7 验证建议：先写数学对应关系，后写代码
 
-先写映射关系，再写 C/SV/PyTorch 实现，可显著降低重排类 bug 定位成本。
+先写对应关系，再写 C/SV/PyTorch 实现，可显著降低重排类 bug 定位成本。
 
 建议每个重排算子至少覆盖：
 
@@ -583,7 +583,7 @@ ring range = [0, 16)
 
 ---
 
-## 4. 简单算子分类与模块映射
+## 4. 简单算子分类与模块对应关系
 
 本文将简单算子分为 5 类：元素级、规约、归一化、线性代数、维度变换。
 
@@ -603,7 +603,7 @@ ring range = [0, 16)
 - 比较：gt/lt/eq/ge/le。
 - 逻辑：and/or/xor（布尔张量）。
 
-在本硬件中的典型映射：
+在本硬件中的典型安排：
 
 - PPROC：承担大部分元素级后处理。
 - VA：向量类元素计算。
@@ -623,7 +623,7 @@ ring range = [0, 16)
 | 方差标准差 | `var/std` | `dim`、`unbiased` |
 | 逻辑规约 | `all/any` | `dim`、`keepdim` |
 
-验证重点：规约维度、keepdim 语义、数值稳定性。
+验证重点：规约维度、keepdim 含义、数值稳定性。
 
 ### 4.3 归一化算子（Normalization）
 
@@ -635,7 +635,7 @@ ring range = [0, 16)
 | LayerNorm | 单样本特征维 | 无 batch 依赖 | Transformer |
 | RMSNorm | 单样本特征维 | 不减均值，计算轻 | LLM 推理 |
 | Softmax | 指定维度 | 输出概率和为 1 | 分类/注意力 |
-| L2Norm | 指定维度 | 单位向量化 | 检索/匹配 |
+| L2Norm | 指定维度 | 归一为单位向量 | 检索/匹配 |
 
 本硬件常由 VA 路径处理归一化相关算子。
 
@@ -660,7 +660,7 @@ ring range = [0, 16)
 | repeat/repeat_interleave | 增加 | 扩展复制 |
 | flatten | 不变 | 降维输入线性层 |
 
-通常由 DMA/CP 路径承担，属于“有语义的数据搬运”。
+通常由 DMA/CP 路径承担，属于“携带操作含义的数据搬运”。
 
 ### 4.6 算子公式总表（按本文出现的算子）
 
@@ -855,15 +855,15 @@ $$
 y=\frac{x}{\|x\|_2+\varepsilon}
 $$
 
-#### 4.6.5 量化与反量化
+#### 4.6.5 低比特整数转换与实数恢复
 
-- 线性量化（scale/zero-point 形式）：
+- 线性整数转换（scale/zero-point 形式）：
 
 $$
 q=\mathrm{clip}(\mathrm{round}(x/s)+z, q_{\min}, q_{\max})
 $$
 
-- 反量化：
+- 恢复为实数：
 
 $$
 \hat{x}=s\cdot(q-z)
@@ -871,9 +871,9 @@ $$
 
 可与本文前述 $\alpha,\beta$ 形式互相等价变换。
 
-#### 4.6.6 维度变换与索引映射
+#### 4.6.6 维度变换与索引计算
 
-- reshape/view/permute/split/cat/flatten 的共同点：本质是索引映射函数
+- reshape/view/permute/split/cat/flatten 的共同点：本质是索引计算函数
 
 $$
 \mathrm{dst}[i']=\mathrm{src}[f(i')]
@@ -895,11 +895,11 @@ $$
 \mathrm{dst}=\mathrm{repeat}(\mathrm{src}, r)
 $$
 
-本质是规则复制映射，不引入新数值计算。
+本质是规则复制关系，不引入新数值计算。
 
 ---
 
-## 5. PyTorch 算子到硬件能力的参考映射
+## 5. PyTorch 算子与硬件能力参考
 
 | PyTorch 算子 | 模块归属 | 硬件侧说明 |
 |---|---|---|
@@ -912,17 +912,17 @@ $$
 | `nn.Linear` | Matrix + PPROC | MatMul + Bias Add |
 | `nn.Conv1d/2d/3d` | AILS + Matrix + PPROC | 展开后进入 GEMM 主路径 |
 
-说明：此表是“工程映射参考”，具体以指令规格和版本实现为准。
+说明：此表是工程参考，具体以指令规格和版本实现为准。
 
 ---
 
-## 6. 量化技术：性能收益与精度代价
+## 6. 低比特整数计算：性能收益与精度代价
 
-### 6.1 量化不是算子，是执行优化策略
+### 6.1 低比特整数转换不是单独算子
 
-量化通过低比特表示降低存储带宽与计算成本，典型目标格式为 INT8/INT4/FP8。
+低比特整数表示可以降低存储带宽与计算成本。当前 NPU 的外部数据格式为 INT8、INT16 和 INT32；矩阵乘法输入使用 INT8 或 INT16，累加结果使用 INT32。
 
-常见线性量化表达：
+常见线性整数转换表达：
 
 $$
 Q = \mathrm{round}(\alpha X - \beta), \quad
@@ -933,11 +933,11 @@ $$
 
 ### 6.2 硬件路径示例
 
-典型 GEMM 量化链：
+典型 GEMM 整数执行流程：
 
-`FP32/FP16 -> 低比特量化 -> 低比特乘法 -> 高位宽累加 -> 反量化`
+`FP32/FP16 -> INT8/INT16 转换 -> 整数乘法 -> INT32 累加 -> 按 scale 写回`
 
-例如 INT8 路径常见为“INT8 乘 + INT32 累加 + 反量化输出”。
+例如 INT8 路径常见为“INT8 乘 + INT32 累加 + 按 scale 写回整数或恢复实数”。
 
 ### 6.3 粒度选择
 
@@ -949,30 +949,29 @@ $$
 
 资料：
 
-- 量化粒度：https://ncnkvwuxka57.feishu.cn/wiki/NCM7wHBx4iVfjQkiUoNccgVFn8f
+- 参数粒度：https://ncnkvwuxka57.feishu.cn/wiki/NCM7wHBx4iVfjQkiUoNccgVFn8f
 - round 规则：https://ncnkvwuxka57.feishu.cn/wiki/F6gFwIQRaiyxXGkP8DscrNgenge
 
-### 6.4 量化收益参考
+### 6.4 当前数据格式的职责
 
-| 目标格式 | 比特数 | 理论计算提升 | 典型功耗收益 |
-|---|---|---|---|
-| INT8 | 8 | 约 4x | 50%-70% |
-| FP8 | 8 | 约 3x-4x | 40%-60% |
-| INT4 | 4 | 约 8x | 70%-80% |
-| INT2 | 2 | 约 16x | 85%-90% |
+| 数据格式 | 每元素字节数 | 主要用途 |
+|---|---:|---|
+| INT8 | 1 | 常用激活、权重和向量输入 |
+| INT16 | 2 | 需要更大整数动态范围的激活与权重 |
+| INT32 | 4 | 矩阵乘法部分和、统计结果和高位宽中间结果 |
 
 ### 6.5 验证重点
 
 - scale/zero-point（或等价参数）加载与生效时序。
-- 饱和/截断边界行为。
-- 反量化位置是否符合规格（Matrix/PPROC/VA 路径差异）。
+- 饱和或截断发生在极值附近时的行为。
+- 实数恢复或整数重缩放的位置是否符合规格（Matrix/PPROC/VA 路径差异）。
 - 与融合算子串联时的精度漂移。
 
 ---
 
 ## 7. Transformer 融合算子与带宽优化
 
-### 7.1 常见推理链路
+### 7.1 常见推理流程
 
 `QKV 线性投影 -> reshape/transpose -> QK^T -> mask -> softmax -> AV -> residual add -> layernorm -> MLP`
 
@@ -982,7 +981,7 @@ $$
 
 1. 融合前后数学等价性是否成立。
 2. 被省略的中间结果是否被正确复用。
-3. mask/softmax/量化顺序是否严格符合规格。
+3. mask、softmax 与整数转换的次序是否严格符合规格。
 
 ### 7.3 模块协作视角
 
@@ -1004,8 +1003,8 @@ $$
 
 - 浮点舍入误差：有限精度表示不可避免。
 - 累加误差：MAC 次数越多，误差越容易累积。
-- 量化误差：离散化、截断、饱和引入偏差。
-- 布局/切分误差：索引映射或边界拼接错误导致系统性偏差。
+- 低比特整数误差：离散化、截断、饱和引入偏差。
+- 布局/切分误差：索引计算或尾部拼接错误导致系统性偏差。
 
 ![GEMM 乘累加误差示意](https://ncnkvwuxka57.feishu.cn/space/api/box/stream/download/asynccode/?code=NmQwZjU5ZWY5NTAyOTc2NzExMmY0ZmNlMjE1MmU0YjVfTHVDM0ZGc0RMYTFQTFJhOVgxSFJFemNTRVNleHZ6Z0NfVG9rZW46S3FDbWIxdDYyb2RmUGF4cDBTcGNUdDhpbndoXzE3NzU3MTk2MTE6MTc3NTcyMzIxMV9WNA)
 
@@ -1026,26 +1025,26 @@ $$
 1. 极值输入（max/min、接近溢出）。
 2. 全零与稀疏输入。
 3. 长序列输入（Transformer 典型）。
-4. 非对齐 shape 与 padding 边界。
+4. 非对齐 shape 与 padding 尾部。
 5. 融合开关前后对齐（数值误差阈值内一致）。
 
 误差分析建议分层：
 
 - 第 1 层：先区分“实现错误”还是“数值可接受误差”。
-- 第 2 层：定位误差来源于浮点、量化还是重排映射。
-- 第 3 层：用分段对比（模块边界 dump）缩小问题域。
+- 第 2 层：定位误差来源于浮点、低比特整数转换还是重排计算。
+- 第 3 层：用分段对比（模块接口 dump）缩小问题域。
 
 ---
 
 ## 9. 总结
 
-对验证工程师而言，最重要的是把这条链路打通：
+对验证工程师而言，最重要的是把这套处理流程验证完整：
 
-`模型算子语义 -> 硬件模块职责 -> 数据排布/重排 -> 量化与误差行为`
+`模型算子功能 -> 硬件模块职责 -> 数据排布/重排 -> 低比特整数计算与误差行为`
 
-当这条链路清晰后，波形阅读、指令审查、覆盖率分析和误差定位都会更高效。
+当这套处理流程清晰后，波形阅读、指令审查、覆盖率分析和误差定位都会更高效。
 
 如果后续继续扩展本文，建议优先补充两类内容：
 
 1. 各模块“输入约束 + 输出约束 + 失败模式”清单。
-2. 典型模型（CNN/LLM）端到端算子映射实例。
+2. 典型模型（CNN/LLM）端到端算子与硬件对应实例。
