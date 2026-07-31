@@ -6823,7 +6823,7 @@ make syn BUILD_DIR=build_shared_mv_outer_scalar_fifo_final JOBS=1
 
 `place_design` 与 `phys_opt_design` 已完成，物理优化给出的估计 WNS 为 -8.628ns。`route_design` 在 Phase 5.2 报告拥堵，节点重叠数先为 105,299，随后降为 33,735；本轮没有生成 post-route DCP、时序摘要或资源报告。中间 WNS -8.285ns 不能作为布局布线后的验收数据。报告中没有出现 `core_clk_i` 缺少 `HD.CLK_SRC` 的警告；OOC 顶层端口仍有 `HD.PARTPIN_LOCS` 提示。
 
-100MHz 与 40,000 LUT 目标尚未满足。当前顶层比面积目标多 52,344 LUT，约为目标的 2.31 倍；Matrix-Vector Engine 本身使用 54,120 LUT。后续必须优先缩减 Outer context 的地址计算、控制选择与部分和处理逻辑，并继续在 context 请求、地址生成和写回位置加入寄存阶段。
+本节记录的是两套完整 Outer 控制器的历史综合结果，不代表当前 DiP 面积配置。当前顶层 DiP 配置已将 `DIP_ARRAY_N` 默认值恢复为 16，并在顶层采用可复用的 4×4 物理算术 tile；最新结果见 20.4。
 
 采用两套完整 Outer 控制器的对照方案保存在 `build_shared_mv_dual_final3`。该方案综合后使用 133,321 / 134,600 Slice LUT，即 99.05%，WNS 为 -12.239ns，最差数据路径为 21.501ns。当前 Outer 加 Scalar 结构相对该方案减少 40,977 LUT，并保留本地部分和任务与独立 GEMM同时 active 的能力。
 
@@ -6831,19 +6831,19 @@ make syn BUILD_DIR=build_shared_mv_outer_scalar_fifo_final JOBS=1
 
 ### 20.4 `DIP_ARRAY_N=16` 面积配置结果
 
-当前顶层保留 `DIP_ARRAY_N=16` 的任务容量。为满足 40,000 LUT 的面积目标，`npu_matrix_dip_engine` 在顶层集成时使用折叠 4×4 算术 tile；独立 `dip_gemm_core` 仍可使用 `ARRAY_N=16` 验证完整物理阵列的数据路径。Vivado post-synthesis 使用 `xc7a200tfbg484-3` 和 100 MHz 时钟约束，报告目录为 `/tmp/npu_folded16_synth`。
+当前顶层保留 `DIP_ARRAY_N=16` 的配置入口。为满足 40,000 LUT 的面积目标，`npu_matrix_dip_engine` 在顶层集成时使用可复用的 4×4 物理算术 tile；独立 `dip_gemm_core` 仍可使用 `ARRAY_N=16` 验证完整 16×16 数据路径。Vivado post-synthesis 使用 `xc7a200tfbg484-3` 和 100 MHz 时钟约束，报告目录为 `/tmp/npu_folded_final`。
 
 | 资源或时序指标 | post-synthesis 结果 |
 | --- | ---: |
-| Slice LUTs | 39,613 / 134,600（29.43%） |
-| Slice Registers | 26,549 / 269,200（9.86%） |
+| Slice LUTs | 37,096 / 134,600（27.56%） |
+| Slice Registers | 25,416 / 269,200（9.44%） |
 | Block RAM Tile | 267.5 / 365（73.29%） |
-| DSP | 39 / 740（5.27%） |
+| DSP | 71 / 740（9.59%） |
 | Setup WNS | +0.058 ns |
 | Setup TNS | 0 ns |
 | Setup 失败端点 | 0 |
 | Hold WHS | -0.010 ns |
-| Hold THS | -1.102 ns |
+| Hold THS | -1.088 ns |
 | Hold 失败端点 | 127 |
 
 L1 存储检查结果为 256 个 RAMB36、0 个 RAMB18、0 个 LUTRAM；其他小型控制存储包含 1,536 个 LUTRAM 原语。当前资源结果低于 40,000 LUT，setup 满足 100 MHz 约束；hold 仍需结合时钟树和局部布线继续处理。上述数字来自综合后报告，不能替代最终布局布线报告。
