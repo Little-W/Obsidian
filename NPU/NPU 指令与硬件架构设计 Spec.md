@@ -3586,6 +3586,10 @@ Matrix 只在以下条件都满足后报告成功：
 > [!important] 当前吞吐特征
 > Matrix 子系统保存两个任务 context，并与 Vector 共用可配置 PE 和一组 64-bit L1 客户端端口。一个 context 更新本地部分和或写 C 时，另一个 context 可以执行地址准备、A/B 读取或申请 PE；同一任务内，下一 K 小段的装载与上一次 PE 返回的部分和更新也可以同时发生。共享 PE 和 L1 每次仍只接收一个请求，因此性能估算必须结合两级轮转、PE 等待、L1 等待和实际数据类型计算。
 
+DiP 快速分支的顶层参数 `DIP_ARRAY_N` 默认值为 16，接受 1、2、4、8 或 16 的阵列描述。为满足 40,000 LUT 的面积目标，当前顶层配置采用 4×4 算术 tile；16×16 及更大的矩阵任务由外部 Matrix 路径执行，DiP 快速分支仅接收符合 4×4 tile 条件的任务。每个 DiP PE 保存数据、权重和部分和寄存器，并通过按数据类型复用的乘法流水段产生局部贡献。INT16 每周期处理一个乘积；INT8 把四个 8×8 乘积分成四个微周期，完成后输出两个 32-bit 局部和。INT8 微周期运行时 `data_ready_o=0`，输入端必须保持当前行，直到阵列再次允许接收。结果路径依次经过贡献有效、部分和相加和结果寄存三个阶段，因此不会把尚未完成的 INT8 局部结果误认为下一行输入。独立的 `dip_gemm_core` 仍可用 `ARRAY_N=16` 构建并进行功能验证。
+
+DiP 与外积分支承担不同任务：外积分支继续使用共享 MAC group 处理一般分块任务，DiP 分支处理满足 tile 条件的矩阵乘法。两条路径都保留 INT16、INT8 和 INT32 的输入、累加与输出格式，编译器根据矩阵尺寸、K 长度和数据类型选择路径，并在指令描述中给出相应的阵列尺寸和行数。
+
 ---
 
 ## 12. Matrix-Vector Engine：Integer Vector 子系统
@@ -3607,12 +3611,17 @@ flowchart LR
     POST --> WB
 ```
 
-共享 PE 的每个 group 包含 16 个 4×4 基础乘法器；Vector 逐元素模式按输入格式选择 group 数和返回元素数：
+通用共享 PE 的每个 group 包含 16 个 4×4 基础乘法器；Vector 逐元素模式按输入格式选择 group 数和返回元素数。DiP 快速分支使用可配置的算术 tile，当前面积配置为 4×4，顶层参数仍按 16×16 任务容量接收描述：
 
 | 输入格式 | 一次请求的逻辑结果 | 一个 64-bit 输入 beat需要的请求组数 | 整个输入 beat的元素数 |
 | --- | ---: | ---: | ---: |
 | INT16 | 1 个 16×16 | 4 | 4 |
 | INT8 | 4 个 8×8 | 2 | 8 |
+
+| DiP 模式 | 算术 tile | 每个 PE 的乘法时序 | 局部结果 |
+| --- | ---: | --- | --- |
+| INT16 | 4×4（顶层参数默认 16） | 每周期 1 个乘积 | 1×64 bit |
+| INT8 | 4×4（顶层参数默认 16） | 4 个微周期完成 4 个 8×8 乘积 | 2×32 bit |
 
 `npu_shared_mac_pe_array` 以三段寄存标签跟随 PE 结果。每个 `npu_shared_mac_group` 先保存 16 个内部 4×4 基础乘积，再保存重组后的逻辑乘积，最后形成逐元素 signed32 结果或 Matrix 使用的分段贡献值。Vector 请求设置 `elementwise=1`，返回 `element_count` 和最多 4 个有效 signed32 结果。INT8 与 INT16 共用这些基础乘法器，不为 Vector 另放一套乘法阵列。
 
@@ -6819,6 +6828,25 @@ make syn BUILD_DIR=build_shared_mv_outer_scalar_fifo_final JOBS=1
 采用两套完整 Outer 控制器的对照方案保存在 `build_shared_mv_dual_final3`。该方案综合后使用 133,321 / 134,600 Slice LUT，即 99.05%，WNS 为 -12.239ns，最差数据路径为 21.501ns。当前 Outer 加 Scalar 结构相对该方案减少 40,977 LUT，并保留本地部分和任务与独立 GEMM同时 active 的能力。
 
 最终 RTL 回归在提交 `0ebd9cb` 的工作树上执行，RTL 内容与 `4931d13` 相同。`make lint`、`make -C rtl/engines test`、`make engine-test`、`make matrix-stream-test`、`make system-test` 和 `make scheduler-dual-matrix-test` 均成功。覆盖结果包括 INT16、INT8、Matrix/Vector 共用 PE、Matrix 写回到 Vector 的内部旁路、L1 请求 FIFO随机停顿，以及本地部分和任务与独立 GEMM同时 active。连续 Matrix 测试提交 12 条任务，其中 8 条 GEMM、4 条 GEMM_ACCUM，任务接收、发射和完成数量均为 12，任务间 gap 为 0。
+
+### 20.4 `DIP_ARRAY_N=16` 面积配置结果
+
+当前顶层保留 `DIP_ARRAY_N=16` 的任务容量。为满足 40,000 LUT 的面积目标，`npu_matrix_dip_engine` 在顶层集成时使用折叠 4×4 算术 tile；独立 `dip_gemm_core` 仍可使用 `ARRAY_N=16` 验证完整物理阵列的数据路径。Vivado post-synthesis 使用 `xc7a200tfbg484-3` 和 100 MHz 时钟约束，报告目录为 `/tmp/npu_folded16_synth`。
+
+| 资源或时序指标 | post-synthesis 结果 |
+| --- | ---: |
+| Slice LUTs | 39,613 / 134,600（29.43%） |
+| Slice Registers | 26,549 / 269,200（9.86%） |
+| Block RAM Tile | 267.5 / 365（73.29%） |
+| DSP | 39 / 740（5.27%） |
+| Setup WNS | +0.058 ns |
+| Setup TNS | 0 ns |
+| Setup 失败端点 | 0 |
+| Hold WHS | -0.010 ns |
+| Hold THS | -1.102 ns |
+| Hold 失败端点 | 127 |
+
+L1 存储检查结果为 256 个 RAMB36、0 个 RAMB18、0 个 LUTRAM；其他小型控制存储包含 1,536 个 LUTRAM 原语。当前资源结果低于 40,000 LUT，setup 满足 100 MHz 约束；hold 仍需结合时钟树和局部布线继续处理。上述数字来自综合后报告，不能替代最终布局布线报告。
 
 > [!summary] 首版硬件实现范围
 > 单核首版由 64-bit AXI/MIF、64-bit L1BUF 客户端接口、Command Front End、TaskScheduler、DMA、Matrix-Vector Engine、Complex Math、L1BUF、LSC、CRG 和 WDT 组成。每条 128-bit CMD 在 64-bit 接口上使用低、高两个 beat；事件和任务选项直接位于 CMD。TaskScheduler 使用命令接纳寄存级、WAIT_EVENT 逐槽检查及结果寄存、接收检查解码器、Control 执行快照、发射窄快照、共享发射解码器和四组发射暂存；Matrix 使用两项 active 记录并按完成 `command_id` 查找任务。Matrix-Vector Engine 是 Matrix 与 Vector 共用的物理执行模块，包含 Outer context、Scalar context、Vector 控制器、一套可配置多精度 MAC PE、内部 L1 仲裁、深度为 2 的 L1 请求 FIFO和 2 项 Matrix 到 Vector 旁路缓存。Outer 执行分块外积并保存本地部分和 RAM，Scalar 执行逐元素乘加和后处理。Matrix 乘法与 Vector MUL/FMA 都使用共享 PE，Vector 的其他逐元素操作使用轻量整数 ALU。模型张量只采用 INT8、INT16、INT32；共享 PE 的内部 4×4 基础乘法器用于组成 INT8 和 INT16 乘法，不构成软件可选的数据格式；CME 的 SUMSQ 分成平方与累加状态，Exp 的范围整数使用五个寄存状态完成最近偶数舍入，复杂函数在 CME 内部执行 `INT→FP32→INT`，F2I 在数学响应后经过五个寄存状态。软件通过指令和 C 配置给出物理地址、shape、stride、scale 和 zero point，硬件按模块接口与功能时序完成任务。
