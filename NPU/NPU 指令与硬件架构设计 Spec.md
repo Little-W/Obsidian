@@ -485,23 +485,46 @@ flowchart TB
 | Event Table / Scoreboard | CMD 中的依赖事件、各单元完成消息      | 可发射任务、事件状态、错误状态                  | 检查依赖、保存任务状态、传播错误                                     |
 | Inline Decode            | 指令、任务表保存的基地址快照       | 接收检查结果或内部展开的 Task Context | 接收检查实例判断字段是否合法；共享发射实例根据窄快照生成 Task Context，均不访问全局内存 |
 | Task Decode / Dispatch   | 任务表中的指令与基地址快照   | 各执行单元任务 | 每周期检查一个非 Control 任务槽；轮末复查后保存发射窄快照。Control 获胜项保存槽号和提交序号，下一周期复查并执行 |
-| Matrix-Vector Engine     | Matrix 与 Vector Task Context、L1BUF 数据 | 矩阵和向量结果、两组完成消息 | `npu_matrix_vector_engine` 组合双 Matrix context、Vector 顶层、共享多精度 MAC PE 和内部存储通道；保留原有指令与两组任务接口 |
-| Matrix Dual Context      | Matrix 任务、共享 PE 和 L1 返回 | Matrix PE/L1 请求、带 `command_id` 的完成消息 | context0 由 Outer 地址生成、操作数暂存、部分和流水、累加 bank 和输出级组成；context1 包含 Scalar 控制器与 Scalar 数据通路；任务分配器按操作码、Outer 支持状态和本地部分和状态选择 context |
-| Matrix Scalar 控制器     | Scalar Task Context、L1 与共享 PE ready/valid | 数据通路操作信号、请求地址、完成消息 | 保存任务状态、描述符检查、矩阵游标、地址游标和完成状态，发射源读、PE 请求、后处理与写回阶段 |
-| Matrix Scalar 数据通路   | 控制器操作信号、L1 读数据、共享 PE 返回 | PE 操作数、部分和、写数据与写 strobe | 保存 A/B 操作数、整数累加值、局部部分和 RAM、后处理寄存器和写回数据；完成整数乘加、局部部分和读写与结果格式化 |
+| Matrix-Vector Engine 顶层 | Matrix 与 Vector Task Context、L1BUF 数据 | 矩阵和向量结果、两组完成消息 | `npu_matrix_vector_engine` 是物理集成层，连接双 Matrix context、Vector 顶层、共享多精度 MAC PE、内部存储通道和旁路缓存；不保存逐元素操作数、乘加值或结果 RAM |
+| Matrix Dual Context      | Matrix 任务、共享 PE 和 L1 返回 | Matrix PE/L1 请求、带 `command_id` 的完成消息 | `npu_matrix_dual_context` 连接任务分配器、Outer、Scalar、PE 路由和 L1 请求级；任务分配器按操作码、Outer 支持状态和本地部分和状态选择 context，数值计算留在两个 context 的数据通路中 |
+| Matrix Multi-Dtype Outer 顶层 | Outer Task Context、L1 返回、共享 PE 返回 | L1/PE 请求、完成消息 | `npu_matrix_multi_dtype_outer_engine` 只连接 Outer 控制器与数据通路，传递任务、存储和 PE 接口；顶层不保存操作数、部分和或输出值 |
+| Matrix Multi-Dtype Outer 控制器 | Outer Task Context、L1/PE ready/valid、数据通路进度 | 数据通路配置和操作信号、请求阶段、完成消息 | `npu_matrix_multi_dtype_outer_controller` 负责任务接收、描述符检查、tile 与 K 步调度、L1 请求发起和完成状态、ready/valid 握手、地址范围检查、PE 发射次序、错误处理及 done/status |
+| Matrix Multi-Dtype Outer 数据通路 | 控制器配置与操作信号、L1 读返回、共享 PE 返回 | PE 操作数、读写地址与数据字段、部分和及写回数据 | `npu_matrix_multi_dtype_outer_datapath` 生成 A/B/C 地址，保存读缓存、操作数和结果寄存器，形成 PE 请求并检查 PE 返回，维护本地部分和 RAM、累加 bank 和输出级；L1BUF 写数据与 byte strobe 在此处形成 |
+| Matrix Scalar 控制器     | Scalar Task Context、L1 与共享 PE ready/valid | 数据通路操作信号、请求阶段、完成消息 | `npu_matrix_scalar_engine` 的控制层入口保存任务状态、描述符检查、矩阵游标、地址游标和完成状态，推进源读、PE 请求、后处理与写回阶段 |
+| Matrix Scalar 数据通路   | 控制器操作信号、L1 读数据、共享 PE 返回 | PE 操作数、部分和、写数据与写 strobe | `npu_matrix_scalar_datapath` 保存 A/B 操作数、整数累加值、局部部分和 RAM、后处理寄存器和写回数据，完成整数乘加、局部部分和读写与结果格式化 |
 | Matrix-Vector L1 请求 FIFO | 内部存储通道输出的 L1 请求 | 排队后的 L1 请求 | 保存两项 93-bit 请求，按接收次序送到 L1BUF；响应不经过该 FIFO |
-| Shared MAC PE            | Matrix 乘法请求、Vector MUL/FMA 请求 | 分段贡献值或逐元素 INT32 乘积 | 四个 group 共 64 个内部 4×4 基础乘法器；这些小乘法器组合成 INT8 或 INT16 乘法，不构成软件可选的数据格式 |
+| Shared MAC 顶层          | Matrix 与 Vector PE 请求 | Matrix 与 Vector PE 返回、计数器 | `npu_mv_shared_mac` 只连接仲裁控制器与计算数据通路；顶层不保存客户端操作数和乘法结果 |
+| Shared MAC 控制器        | Matrix/Vector 请求 valid、数据通路 ready | 客户端 ready、发射许可、请求所有者、计数器 | `npu_mv_shared_mac_controller` 负责轮转选择、发射间隔、ready/valid 握手和 Matrix/Vector 等待及授予计数 |
+| Shared MAC 数据通路      | 控制器发射许可与所有者、Matrix/Vector 操作数 | 分段贡献值或逐元素 INT32 乘积 | `npu_mv_shared_mac_datapath` 选择请求、保存并传递 client tag、组织操作数字段，接收 PE 返回后按请求方拆分并整理结果 |
+| Shared MAC PE 阵列       | 数据通路给出的 tag、数据格式、group 使能与操作数 | 原始乘法结果 | PE 阵列以及基础乘法、精度组合、求和树和结果寄存器是 Shared MAC 数据通路的子模块；四个 group 共 64 个内部 4×4 基础乘法器，组合成 INT8 或 INT16 乘法，不构成软件可选的数据格式 |
+| Vector 顶层              | Vector Task Context、L1 返回、共享 PE 返回 | L1/PE 请求、完成消息 | `npu_vector_engine` 只连接 Vector 控制器、数据通路和整数流水级，保持外部接口；顶层不保存源操作数、mask 或运算结果 |
 | Vector 控制器            | Vector Task Context、L1 请求/返回状态、共享 PE ready/valid | 数据通路控制信号、完成消息 | 锁存并检查任务字段，推进读源、计算、写回和完成状态；保存元素游标与 L1 地址游标 |
 | Vector 数据通路          | 控制器操作信号、L1 读数据、共享 PE 返回 | 共享 PE 请求、L1 写数据与写 strobe、计算状态 | 保存源操作数、mask、结果、快速 MUL beat 和乘法累加值；接收逐元素流水级结果，形成 MUL/FMA 返回处理和写回数据 |
 | Vector 整数流水级        | 操作码、源操作数、标量与数据格式 | 逐元素整数结果与数值错误标志 | ADD、SUB、MAX、MIN、CMP、SELECT、CLAMP 和 ReLU 使用两级寄存流水；MUL/FMA 的乘法部分才送入共享 PE |
-| Complex 控制器        | Complex Task Context、L1 请求/返回状态、数学单元 ready/valid | 数据通路控制信号、完成消息 | 锁存并检查任务字段，推进按行统计、读源、计算、写回和完成状态；保存行列游标、统计寄存器和数学动作编号 |
-| Complex 数据通路      | 控制器访存和数学动作信号、L1 读数据 | L1 写数据与写 strobe、数学请求/返回、源操作数 | 格式化 L1 请求与字节选通，保存源操作数和 mask，解析读返回，并连接 `npu_complex_math_seq` 的请求和返回接口 |
-| CME 内部数学单元      | FP32 标量请求                | 函数结果 | 顺序执行 Exp、Reciprocal、ReciprocalSqrt、Sigmoid、Tanh、GELU、SiLU；Exp 用五个状态完成范围整数舍入 |
-| DMA 控制器               | DMA Task Context、L1BUF/AXI ready/valid 与返回状态 | 数据通路操作信号、存储请求、完成消息 | 锁存并检查任务字段，推进形状检查、读写请求、响应、错误处理和完成状态 |
-| DMA 数据通路             | 控制器操作信号、读返回数据与 Task Context | 当前地址、区域检查结果、写数据与写 strobe、进度 | 执行形状位串计算、地址游标推进、类型转换、RMW 数据合并和快速传输计数 |
+| Complex 顶层          | Complex Task Context、L1 返回 | L1 请求、完成消息 | `npu_complex_engine` 只连接 Complex 控制器和数据通路；顶层不保存行级源值、函数中间值或 FP32 数学状态 |
+| Complex 控制器        | Complex Task Context、L1 请求/返回状态、数学单元 ready/valid | 数据通路控制信号、完成消息 | `npu_complex_controller` 锁存并检查任务字段，推进按行统计、读源、数学操作、写回和完成状态；保存行列游标、统计控制值和数学动作编号 |
+| Complex 数据通路      | 控制器访存和数学动作信号、L1 读数据 | L1 写数据与写 strobe、数学请求/返回、源操作数 | `npu_complex_datapath` 格式化 L1BUF 访问，保存源操作数和 mask，解析读返回，并连接 `npu_complex_math_seq` 的请求和返回接口 |
+| CME 数学序列与算术单元 | 数据通路给出的 FP32 标量请求 | 函数结果 | `npu_complex_math_seq` 与 `npu_fp32_alu_seq` 只由 Complex 数据通路使用，顺序执行 Exp、Reciprocal、ReciprocalSqrt、Sigmoid、Tanh、GELU、SiLU；Exp 用五个状态完成范围整数舍入 |
+| DMA 顶层                 | DMA Task Context、L1BUF/AXI 返回 | L1BUF/AXI 请求、完成消息 | `npu_dma_engine` 只连接 DMA 控制器和数据通路；顶层不保存传输游标、读返回值或写数据 |
+| DMA 控制器               | DMA Task Context、L1BUF/AXI ready/valid 与返回状态 | 数据通路操作信号、存储请求、完成消息 | `npu_dma_controller` 锁存并检查任务字段，推进形状检查、读写请求、响应、错误处理和完成状态；它控制 L1BUF 与 AXI 的 valid/ready 握手和请求次序 |
+| DMA 数据通路             | 控制器操作信号、读返回数据与 Task Context | 当前地址、区域检查结果、写数据与写 strobe、进度 | `npu_dma_datapath` 保存形状和地址游标，执行形状位串计算、类型转换、RMW 数据合并和快速传输计数；L1BUF/AXI 访问的地址、写数据和 byte strobe 在此处形成 |
 | L1BUF Controller         | 各客户端读写请求                | 读返回、写完成                          | 轮询仲裁，请求先寄存再访问 bank，逐客户端保存响应                   |
 | MIF                      | DMA 物理地址请求              | `m_axi_*` 请求与返回                  | 物理地址范围检查、AXI 请求生成、返回状态处理                                |
 | LSC                      | 配置访问、中断状态、各模块状态         | 控制信号、中断                          | 启停、基地址、功能查询、错误记录、性能计数                                |
+
+#### 3.3.1 执行单元的控制通路、数据通路与功能时序
+
+Vector、Matrix Multi-Dtype Outer、Shared MAC、Complex 和 DMA 都采用顶层、控制器、数据通路三层组织。具备独立顶层的 `*_engine` 模块只完成端口连接以及控制器和数据通路之间的信号传递；顶层不新增任务状态机、操作数或结果寄存器、算术单元或本地 RAM 状态。为保留既有模块名，`npu_matrix_scalar_engine` 作为 Scalar 的控制层入口，数值处理和局部 RAM 读写由 `npu_matrix_scalar_datapath` 承担。
+
+控制通路负责接收任务、保存任务状态、检查描述符、管理 ready/valid 握手、安排读写和计算阶段、记录错误并提交完成消息。数据通路负责操作数和结果寄存器、地址计算、数据整理、算术、结果格式化以及本地 RAM 与 L1BUF 访问的数据字段。PE 阵列、整数流水级、部分和流水、FP32 数学序列和各类算术叶模块均属于数据通路；它们不接收 Task Context，也不独立产生完成消息。
+
+| 阶段 | 控制通路 | 数据通路 | 进入下一阶段的条件 |
+| --- | --- | --- | --- |
+| 任务接收 | 以 `task_valid/task_ready` 接收任务，保存描述符和任务状态，完成初始检查并选择执行阶段 | 初始化操作数、结果和局部 RAM 的工作寄存器；装载数据格式和固定参数 | 任务字段有效，或控制器已形成错误完成状态 |
+| 请求发出 | 选择 L1BUF 读写、AXI 读写、共享 PE 或数学单元请求，维持 valid 直到对方接受 | 根据游标给出地址、读写数据、byte strobe、PE 操作数、tag 和数据格式 | 请求 ready/valid 握手完成，或地址检查失败 |
+| 返回捕获 | 检查返回状态和 tag，决定重试、错误处理或下一状态 | 保存读返回值，提取元素或 mask，更新操作数、部分和或结果寄存器 | 返回 valid 被接收且状态正确，或转入错误完成状态 |
+| 计算 | 安排 PE、整数流水级或数学序列的发射次序，并等待对应返回 | 执行乘加、逐元素运算、部分和累加、函数计算和结果格式化 | 当前计算结果有效，且所需流水级或 PE 返回已经捕获 |
+| 写回与完成 | 发出写请求，等待写确认，更新进度并在全部元素完成后提交 `done_valid` | 形成写数据与 byte strobe，写入本地部分和 RAM 或输出数据字段 | 最后一项写确认完成，或任务不需要写回 |
 
 ### 3.4 主要数据路径
 
