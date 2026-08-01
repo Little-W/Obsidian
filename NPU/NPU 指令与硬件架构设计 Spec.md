@@ -6889,13 +6889,13 @@ L1BUF 检查通过：256 个 RAMB36、0 个 RAMB18、0 个 LUTRAM，且以 `memo
 
 | 模块 | LUT | FF | RAMB36 | DSP |
 | --- | ---: | ---: | ---: | ---: |
-| Matrix-Vector Engine | 189,074 | 37,190 | 8 | 8 |
-| Matrix Engine | 180,122 | 31,288 | 8 | 8 |
-| Multi-Dtype Outer Engine | 175,278 | 27,715 | 4 | 0 |
-| Outer 控制器 | 82,488 | 671 | 0 | 0 |
-| Outer 数据通路 | 92,790 | 27,044 | 4 | 0 |
-| 16×16 Outer PE 阵列 | 65,360 | 18,432 | 0 | 0 |
-| Complex Engine | 6,002 | 3,395 | 0 | 6 |
+| Matrix-Vector Engine | 186,895 | 30,984 | 8 | 8 |
+| Matrix Engine | 177,907 | 25,082 | 8 | 8 |
+| Multi-Dtype Outer Engine | 173,049 | 21,505 | 4 | 0 |
+| Outer 控制器 | 92,714 | 606 | 0 | 0 |
+| Outer 数据通路 | 80,335 | 20,899 | 4 | 0 |
+| 16×16 Outer PE 阵列 | 52,416 | 12,288 | 0 | 0 |
+| Complex Engine | 6,001 | 3,395 | 0 | 6 |
 
 40,000 LUT 目标在该配置下未达到，且综合后 LUT 已超过目标器件容量。仅 16×16 阵列中的 256 个 PE 就使用 65,360 LUT；每个 PE 同时保留四个 8×8 乘法器。这说明在保持“256 个 PE、每个 PE 四个 8×8 乘法器”的前提下，不能把完整设计压到 40,000 LUT。后续面积工作应优先去除 Outer 中未被直接阵列使用的流式计算和部分和数据通路，再重新测量；若仍要求 40,000 LUT，需要改变 PE 数量、每 PE 的乘法器数量，或改用更多 DSP48E1。这三种选择都会改变计算资源配置，不能在未确认前替代当前结构。
 
@@ -6905,6 +6905,8 @@ L1BUF 检查通过：256 个 RAMB36、0 个 RAMB18、0 个 LUTRAM，且以 `memo
 
 > [!warning] 当前时序处理方向
 > 描述符字段不应依靠保留属性阻止工具改写。当前 RTL 已把共享解码器的扁平描述符先写入独立寄存器，再在下一拍复制到 DMA、Matrix、Vector、Complex 的发射寄存器。这样切断“命令字寄存器→共享解码器→发射描述符寄存器”的长组合计算，同时四个发射队列仍可独立保持 ready/valid。调度器双 Matrix 回归与连续发射回归均已通过；后者的首个任务完成时刻由 344 拍变为 346 拍，但 DMA 的下一任务同拍发射，Vector 和 Complex 仅相隔 1 拍，未产生空闲拍。该改动仍须重新进行完整 RTL 回归、综合、布局和布线。
+
+描述符寄存级版本的后续综合已完成：Slice LUT 为 207,104（153.87%），Slice Register 为 44,038，RAMB36/RAMB18 为 267/4，DSP48E1 为 18。setup WNS 为 +0.101ns、TNS 为 0、失败端点为 0，说明该寄存级消除了前述 -0.047ns 的 setup 失败；hold 仍为 WHS -0.019ns、THS -1.466ns、162 个失败端点。L1BUF 仍使用 256 个 RAMB36，未使用 LUTRAM。该设计超过器件 LUT 容量，因此不能进行有意义的布局和布线；面积降至目标以下后才可执行完整实现并以布局布线报告验收。
 
 > [!summary] 首版硬件实现范围
 > 单核首版由 64-bit AXI/MIF、64-bit L1BUF 客户端接口、Command Front End、TaskScheduler、DMA、Matrix-Vector Engine、Complex Math、L1BUF、LSC、CRG 和 WDT 组成。每条 128-bit CMD 在 64-bit 接口上使用低、高两个 beat；事件和任务选项直接位于 CMD。TaskScheduler 使用命令接纳寄存级、WAIT_EVENT 逐槽检查及结果寄存、接收检查解码器、Control 执行快照、发射窄快照、共享发射解码器和四组发射暂存；Matrix 使用两项 active 记录并按完成 `command_id` 查找任务。Matrix-Vector Engine 是 Matrix 与 Vector 共用的物理执行模块，包含 Outer context、Scalar context、Vector 控制器、一套 16×16 Outer PE 阵列、一套 Scalar/Vector 可配置多精度 MAC PE、内部 L1 仲裁、深度为 2 的 L1 请求 FIFO和 2 项 Matrix 到 Vector 旁路缓存。Outer 执行分块外积并保存本地部分和 RAM，Scalar 执行逐元素乘加和后处理。完整 16×16 Matrix tile由 Outer PE 阵列计算；其余 Matrix 乘法与 Vector MUL/FMA 使用共享 MAC PE，Vector 的其他逐元素操作使用轻量整数 ALU。模型张量只采用 INT8、INT16、INT32；共享 MAC PE 的内部 4×4 基础乘法器用于组成 INT8 和 INT16 乘法，不构成软件可选的数据格式；CME 的 SUMSQ 分成平方与累加状态，Exp 的范围整数使用五个寄存状态完成最近偶数舍入，复杂函数在 CME 内部执行 `INT→FP32→INT`，F2I 在数学响应后经过五个寄存状态。软件通过指令和 C 配置给出物理地址、shape、stride、scale 和 zero point，硬件按模块接口与功能时序完成任务。
