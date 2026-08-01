@@ -6106,6 +6106,29 @@ $$
 > [!warning] Outer PE 的验收要求
 > 大型 TVM 用例的 `outer_path`、`pe_array_compute`、`active_pe_slots` 都为 0，原因是当前编译器对 K 分块生成 `GEMM_ZERO_LOCAL`、`GEMM_ACCUM_HOLD`、`GEMM_ACCUM`，这些任务进入 Scalar context。Outer PE 的功能和空间占用须另行使用 16×16 直接 GEMM、INT8/INT16、尾 tile、L1 暂停和本地部分和序列测试；端到端时间利用率须使用实现新的多端口 Matrix 面板接口后的大矩阵用例重新测量。
 
+#### 19.3.2 直接 Outer PE 的任务级测量
+
+`tb_npu_matrix_multi_dtype_outer_engine` 已增加完整 16×16、INT8、`K=512` 的直接阵列测试。该任务不经过 TaskScheduler，因此其 `task_cycles` 尚未包含指令接收、任务表选择和 Event 操作；它已经包含 Outer 控制器、单端口 L1 请求/响应、直接阵列发射和 C 写回的全部周期。结果如下：
+
+| 用例 | `task_cycles` | `array_compute_window_cycles` | 阵列时间利用率 | 阵列空间利用率 |
+| --- | ---: | ---: | ---: | ---: |
+| INT8，16×16×64 | 3,497 | 16 | 0.458% | 100% |
+| INT8，16×16×512 | 20,773 | 128 | 0.616% | 100% |
+
+阵列时间利用率按下式计算：
+
+$$
+U_{\mathrm{time}}
+=
+\frac{\texttt{array\_compute\_window\_cycles}}
+     {\texttt{task\_cycles}}
+\times100\%.
+$$
+
+每个直接阵列计算拍中，16×16 个 PE 都被使能，所以空间利用率为 100%。但控制器仍按 A 读、A 返回、B 读、B 返回的次序装载每一个元素；在此期间阵列没有计算。因此，当前结构远未达到 85% 的任务级目标。即使不计 TaskScheduler，`K=512` 用例已有 99.384% 的任务周期不在阵列计算窗口内；加入完整指令调度后只会进一步降低该比例。
+
+要使该指标达到目标，必须把按元素读取改为面板预取：至少同时读取 4 个独立 64-bit Matrix bank，使用 A/B 双缓冲，并在当前 K 小段执行时装入下一 K 小段。编译器须按 bank 放置 A、B、C；L1 仲裁器须允许 Matrix 面板读与结果写回同时进行。该表记录的是当前测量结果，不表示这些硬件已经完成。
+
 ### 19.4 Integer Vector 测试
 
 IVE 除原有逐元素操作外，还必须验证连续 MUL 快速分支：
@@ -6821,55 +6844,50 @@ TFLite Interpreter 运行后的结果；$y_k^{\mathrm{Keras}}$ 是训练后 Kera
 
 CME 数学单元 `approx_mode=0` 的函数范围、误差要求和可变延迟规则见第 13.10 节。若后续加入新的 `approx_mode`，必须为每个模式增加独立的十六进制 FP32 系数表、操作次序、误差限制和周期测量结果。
 
-### 20.3 当前 Matrix-Vector 结构的综合记录
+### 20.3 2026-08-01 综合后记录
 
-当前生产 RTL 是一个 Outer 控制器、一个 Scalar 控制器、一套 16×16 Outer PE 阵列、一套 Scalar/Vector 共享 MAC PE、Matrix/Vector 内部存储通道以及深度为 2 的 L1 请求 FIFO。综合使用 Vivado 2024.2，命令如下：
+本次综合使用 Vivado 2024.2、器件 `xc7a200tfbg484-3`、10.000ns 时钟周期和 OOC 顶层 `npu_single_core_top`。命令如下：
 
 ```bash
-cd rtl/syn/vivado_100mhz
-make syn BUILD_DIR=build_shared_mv_outer_scalar_fifo_final JOBS=1
+cd /home/etc/FPGA/Transformer_NPU/rtl/syn/vivado_100mhz
+make synth-only \
+  BUILD_DIR=/home/etc/FPGA/Transformer_NPU/.work/vivado_counter_width_synth \
+  JOBS=1
 ```
 
-综合报告保存在 `rtl/syn/vivado_100mhz/build_shared_mv_outer_scalar_fifo_final/`。下表数值均来自该目录中的报告，不使用估计值代替。
+构建目录的 `summary_post_synth.txt`、`utilization_post_synth.rpt` 和 `utilization_hierarchical_post_synth.rpt` 是下表的来源。该次运行于统一 Outer PE 累加寄存器改动之前启动，因此只能用于定位面积和时序热点；后续 RTL 改动必须重新执行综合和布局布线。
 
-| 项目 | 当前记录 |
-| --- | --- |
-| RTL 提交 | `4931d13` |
-| 目标器件 | `xc7a200tfbg484-3` |
-| 目标频率 | 100MHz；周期 10.000ns；时钟不确定度 0.200ns |
-| Slice LUT | 92,344 / 134,600，68.61% |
-| Slice Register | 36,594 / 269,200，13.59% |
-| BRAM | 260 个 RAMB36、4 个 RAMB18 |
-| DSP | 180 |
-| 综合后 WNS / TNS | -10.177ns / -22,634.737ns |
-| 综合后 setup 失败端点数 | 5,168 |
-| 综合后 WHS / THS | -0.010ns / -1.052ns |
-| 最差 setup 数据路径 | 19.693ns，35 级逻辑 |
-| 最差 setup 起点 | Outer context 的 `b_load_k_q_reg[0]/C` |
-| 最差 setup 终点 | Scalar context 的状态寄存器 `CE` |
-| 布局布线后 WNS / TNS | 尚无可使用结果；本轮没有生成 post-route 报告 |
+| 项目 | 综合后结果 |
+| --- | ---: |
+| Slice LUT | 208,757 / 134,600（155.09%） |
+| Slice Register | 49,532 / 269,200（18.40%） |
+| RAMB36 / RAMB18 | 267 / 4 |
+| DSP48E1 | 18 / 740 |
+| setup WNS / TNS | +0.053ns / 0ns |
+| setup 失败端点数 | 0 |
+| hold WHS / THS | -0.019ns / -1.481ns |
+| hold 失败端点数 | 162 |
+| 最差 setup 数据路径 | 9.641ns，10 级逻辑 |
+| 最差 setup 起点 | `u_task_scheduler/u_task_cmd_mem/memory_q_reg_0/CLKARDCLK` |
+| 最差 setup 终点 | `u_task_scheduler/complex_dispatch_desc_q_reg[1095]/D` |
 
-当前 L1BUF 使用 256 个 RAMB36，Outer 本地部分和 RAM 使用 4 个 RAMB36。报告中的 LUTRAM 数量为 0，L1 存储数组没有改用触发器阵列。主要模块面积如下：
+L1BUF 检查通过：256 个 RAMB36、0 个 RAMB18、0 个 LUTRAM，且以 `memory_q` 命名的触发器数为 0。这个结果证明大容量 L1 数组仍由同步 BRAM 实现。
+
+层级资源报告中的主要热点如下：
 
 | 模块 | LUT | FF | RAMB36 | DSP |
 | --- | ---: | ---: | ---: | ---: |
-| Matrix-Vector Engine | 54,120 | 16,079 | 4 | 114 |
-| Matrix Dual Context | 42,760 | 10,048 | 4 | 72 |
-| Outer context | 37,877 | 6,672 | 4 | 16 |
-| Scalar context | 4,694 | 3,311 | 0 | 56 |
-| 共享 MAC PE | 5,633 | 2,304 | 0 | 0 |
-| 内部存储通道 | 1,240 | 1,035 | 0 | 0 |
-| L1 请求 FIFO | 99 | 190 | 0 | 0 |
+| Matrix-Vector Engine | 189,074 | 37,190 | 8 | 8 |
+| Matrix Engine | 180,122 | 31,288 | 8 | 8 |
+| Multi-Dtype Outer Engine | 175,278 | 27,715 | 4 | 0 |
+| Outer 控制器 | 82,488 | 671 | 0 | 0 |
+| Outer 数据通路 | 92,790 | 27,044 | 4 | 0 |
+| 16×16 Outer PE 阵列 | 65,360 | 18,432 | 0 | 0 |
+| Complex Engine | 6,002 | 3,395 | 0 | 6 |
 
-加入 L1 请求 FIFO 前，Outer 加 Scalar 结构的综合结果为 92,242 LUT、36,410 FF、WNS -11.855ns、TNS -31,558.292ns、5,699 个 setup 失败端点、39 级逻辑和 21.371ns 最差数据路径。加入 FIFO 后增加 102 LUT 和 184 FF，WNS 改善 1.678ns，TNS 减少 8,923.555ns，setup 失败端点减少 531 个，最差路径减少 4 级逻辑和 1.678ns。这说明请求侧寄存隔离对 ready 长组合路径有效，但仍不足以满足 100MHz。
+40,000 LUT 目标在该配置下未达到，且综合后 LUT 已超过目标器件容量。仅 16×16 阵列中的 256 个 PE 就使用 65,360 LUT；每个 PE 同时保留四个 8×8 乘法器。这说明在保持“256 个 PE、每个 PE 四个 8×8 乘法器”的前提下，不能把完整设计压到 40,000 LUT。后续面积工作应优先去除 Outer 中未被直接阵列使用的流式计算和部分和数据通路，再重新测量；若仍要求 40,000 LUT，需要改变 PE 数量、每 PE 的乘法器数量，或改用更多 DSP48E1。这三种选择都会改变计算资源配置，不能在未确认前替代当前结构。
 
-`place_design` 与 `phys_opt_design` 已完成，物理优化给出的估计 WNS 为 -8.628ns。`route_design` 在 Phase 5.2 报告拥堵，节点重叠数先为 105,299，随后降为 33,735；本轮没有生成 post-route DCP、时序摘要或资源报告。中间 WNS -8.285ns 不能作为布局布线后的验收数据。报告中没有出现 `core_clk_i` 缺少 `HD.CLK_SRC` 的警告；OOC 顶层端口仍有 `HD.PARTPIN_LOCS` 提示。
-
-本节记录的是此前一次 Outer 与 Scalar 结构的历史综合结果，不代表当前工作树。后续综合结果必须以对应构建目录中生成的 `summary_post_synth.txt`、资源报告和布局布线报告为准。
-
-采用两套完整 Outer 控制器的对照方案保存在 `build_shared_mv_dual_final3`。该方案综合后使用 133,321 / 134,600 Slice LUT，即 99.05%，WNS 为 -12.239ns，最差数据路径为 21.501ns。当前 Outer 加 Scalar 结构相对该方案减少 40,977 LUT，并保留本地部分和任务与独立 GEMM同时 active 的能力。
-
-最终 RTL 回归在提交 `0ebd9cb` 的工作树上执行，RTL 内容与 `4931d13` 相同。`make lint`、`make -C rtl/engines test`、`make engine-test`、`make matrix-stream-test`、`make system-test` 和 `make scheduler-dual-matrix-test` 均成功。覆盖结果包括 INT16、INT8、Matrix/Vector 共用 PE、Matrix 写回到 Vector 的内部旁路、L1 请求 FIFO随机停顿，以及本地部分和任务与独立 GEMM同时 active。连续 Matrix 测试提交 12 条任务，其中 8 条 GEMM、4 条 GEMM_ACCUM，任务接收、发射和完成数量均为 12，任务间 gap 为 0。
+100MHz 的 setup 在综合后暂时通过，但裕量只有 0.053ns，不能作为布局布线完成后的结论；hold 仍有 162 个失败端点。最差 setup 从任务命令 BRAM 到 Complex 描述符寄存器，说明描述符解码和描述符暂存之间仍应增加寄存级。后续应先把解码结果分段暂存，再执行 `place_design`、`phys_opt_design` 和 `route_design`，以布局布线后的 setup 与 hold 报告作为验收依据。
 
 > [!summary] 首版硬件实现范围
 > 单核首版由 64-bit AXI/MIF、64-bit L1BUF 客户端接口、Command Front End、TaskScheduler、DMA、Matrix-Vector Engine、Complex Math、L1BUF、LSC、CRG 和 WDT 组成。每条 128-bit CMD 在 64-bit 接口上使用低、高两个 beat；事件和任务选项直接位于 CMD。TaskScheduler 使用命令接纳寄存级、WAIT_EVENT 逐槽检查及结果寄存、接收检查解码器、Control 执行快照、发射窄快照、共享发射解码器和四组发射暂存；Matrix 使用两项 active 记录并按完成 `command_id` 查找任务。Matrix-Vector Engine 是 Matrix 与 Vector 共用的物理执行模块，包含 Outer context、Scalar context、Vector 控制器、一套 16×16 Outer PE 阵列、一套 Scalar/Vector 可配置多精度 MAC PE、内部 L1 仲裁、深度为 2 的 L1 请求 FIFO和 2 项 Matrix 到 Vector 旁路缓存。Outer 执行分块外积并保存本地部分和 RAM，Scalar 执行逐元素乘加和后处理。完整 16×16 Matrix tile由 Outer PE 阵列计算；其余 Matrix 乘法与 Vector MUL/FMA 使用共享 MAC PE，Vector 的其他逐元素操作使用轻量整数 ALU。模型张量只采用 INT8、INT16、INT32；共享 MAC PE 的内部 4×4 基础乘法器用于组成 INT8 和 INT16 乘法，不构成软件可选的数据格式；CME 的 SUMSQ 分成平方与累加状态，Exp 的范围整数使用五个寄存状态完成最近偶数舍入，复杂函数在 CME 内部执行 `INT→FP32→INT`，F2I 在数学响应后经过五个寄存状态。软件通过指令和 C 配置给出物理地址、shape、stride、scale 和 zero point，硬件按模块接口与功能时序完成任务。
