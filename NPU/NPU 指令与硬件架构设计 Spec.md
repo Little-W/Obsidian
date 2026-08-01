@@ -88,7 +88,7 @@ NPU 子系统必须满足以下要求：
 7. DDR Channel 选择或交织方式由 SoC 配置决定，NPU 指令不因该配置变化而改变。
 8. 地址错误、命令字段错误、数据格式不被接受、依赖任务失败和看门狗超时必须产生可读取的错误状态。
 9. DDR 和 L1BUF 中的模型张量只采用 INT8、INT16、INT32；FP32 可以作为只读 scale、$\epsilon$、函数系数或查找表元数据，也可以用于复杂数学函数的内部计算过程，但不能作为软件可见的模型张量格式。
-10. Matrix 与 Vector 是两类调度任务，但由一个 `npu_matrix_vector_engine` 物理模块执行。Matrix 内含 Outer context 与 Scalar context：Outer context 执行分块外积并保存本地部分和，Scalar context 执行逐元素乘加与后处理。两个 context 先共用 Matrix PE/L1 路由，再与 Vector 共用一套可配置多精度 MAC PE和内部存储通道。
+10. Matrix 与 Vector 是两类调度任务，由 `npu_matrix_vector_engine` 统一接收任务。Matrix 内含 Outer context 与 Scalar context：Outer context 使用独立的 16×16 外积 PE 阵列执行整块矩阵乘法；Scalar context 执行逐元素乘加与后处理，并与 Vector 的 MUL/FMA 使用共享多精度 MAC PE。三个 context 通过内部存储通道访问 L1BUF。
 11. Generic Core 是 NPU 外部的主控 CPU，不属于 NPU RTL。它通过软件驱动发起 AXI 访问，不使用 NPU 内部取指端口或自定义指令端口。
 12. NPU 对外提供 AXI Slave 和 AXI Master：AXI Slave 接收指令、CSR 与 L1BUF 窗口访问；AXI Master 由 DMA/MIF 发起全局内存访问。
 
@@ -113,12 +113,13 @@ NPU 子系统必须满足以下要求：
 | L1BUF 容量       | `L1_BYTES`        |           1 MiB | C model 参考配置 | 每 Core 独立配置                           |
 | L1BUF bank 数   | `L1_BANKS`        |              16 | C model 参考配置 | bank 采用 64-bit 单端口 1RW                  |
 | L1 SRAM 读延迟    | `L1_RD_LATENCY`   |        2 cycles | C model 参考配置 | 从读请求握手后的下一周期开始计算                     |
-| L1 等待提升计数器 | — | 未实现 | 当前 RTL | 使用逐请求轮询；后续可以增加等待周期提升 |
+| L1 等待计数器 | — | 已实现 | 当前 RTL | 记录 Matrix 请求未被 L1 接收或等待返回的周期 |
 | Matrix context 数 | — | 2 | 当前 RTL | context0 是 Outer context并含本地部分和 RAM；context1 是 Scalar context |
 | 共享 PE group 数 | — | 4 | 当前 RTL | 每组 16 个 4×4 基础乘法器，Matrix 与 Vector MUL/FMA 共用 |
 | Matrix-Vector 旁路缓存项数 | `BYPASS_ENTRIES` | 2 | 单核顶层配置 | 每项保存一个 64-bit beat 的地址标签、数据和逐字节有效位 |
 | Matrix-Vector L1 请求 FIFO | — | 2 项 × 93 bit | 当前 RTL | 非直通；保存 write、20-bit addr、64-bit wdata 和 8-bit wstrb |
-| Matrix B tile | `MT×KT×NT` | `8×16×8` | 当前格式配置 | 多数据类型外积分支按行组、列组和 K 小段推进；B 以 `16×8` 小块保存 |
+| Outer PE 阵列 | `PE_M×PE_N` | `16×16` | 当前 RTL | 256 个 PE；INT8 每个 PE 每拍完成 4 个 8×8 乘法并按 INT24 保存局部和，INT16 使用 INT48 局部和 |
+| Matrix B tile | `MT×KT×NT` | `8×16×8` | 当前格式配置 | 当前 Outer 分支按行组、列组和 K 小段推进；B 以 `16×8` 小块保存 |
 | Matrix 临时累加宽度 | `accum_q`        |          64 bit | 当前 RTL | signed32 乘积经符号扩展后加入 signed64 累加寄存器 |
 | Matrix Scalar context 计算速率 | — | 1 个乘积/计算步骤 | 当前 RTL | context1 每次向共享 PE 提交一个逐元素乘法请求 |
 | Vector 标量分支处理数 | — | 1 个元素/计算步骤 | 当前 RTL | 每个源读请求和目的写请求均等待对应响应 |
@@ -143,7 +144,14 @@ NPU 子系统必须满足以下要求：
 > 表中的 C model 参考值用于当前软件模型、测试向量和简单周期模型。后续 RTL 可以通过只读功能寄存器公布不同物理值，但不得改变指令中各字段的解释、整数结果或 ready/valid 规则。C model 分别由 Core tick 与 NoC tick 推进；常规回归默认按 `core_clk:noc_clk=1:1` 调用，也支持两者采用不同的整数 tick 节奏。DDR 读请求到首个返回 beat 的固定延迟为 20 个 NoC 存储目标 tick，连续返回时每个 NoC tick 最多一个 beat；写请求在最后一个数据 beat 握手后 12 个 NoC 存储目标 tick 返回响应。
 
 > [!important] 64-bit 总线要求
-> 本文所有软件可见总线和模块间数据接口均以 64 bit 为一个 beat。一条指令固定使用两个 beat，传送顺序为低 64 bit在前、高 64 bit在后。Matrix 与 Vector 的乘法经共享 PE 完成；Matrix 使用分段贡献值或逐元素 signed32 乘积，Vector 使用逐元素 signed32 结果。Outer、Scalar 和 Vector 在合并单元内共用一组 64-bit L1 端口；端口前设置深度为 2 的寄存请求 FIFO。
+> 所有软件可见总线均以 64 bit 为一个 beat。一条指令固定使用两个 beat，传送顺序为低 64 bit在前、高 64 bit在后。Scalar 与 Vector 的乘法使用共享 MAC PE；Outer 使用独立 PE 阵列。当前 RTL 的 Outer、Scalar 和 Vector 通过合并单元访问一组 64-bit L1 请求端口，端口前设置深度为 2 的寄存请求 FIFO。
+
+> [!warning] 大矩阵吞吐率的当前限制与后续硬件要求
+> `tvm_large_matrix` 的 RTL 统计表明，当前 TVM 程序的矩阵任务全部进入 Scalar context，Outer PE 阵列计数为 0。因此该用例只能证明 TVM 到 RTL 的结果正确，不能证明 Outer PE 的利用率。
+>
+> 对 64×64×1024 的 INT8 MatMul，16×16 阵列每拍可完成 `16×16×4=1024` 个乘积。即使 A、B 面板已经完整复用，读取 A 与 B 共需 131072 B；单个 64-bit L1 读端口每拍提供 8 B，理论上限为 `4194304 / (131072 / 8) = 256` 个乘积每拍，即 PE 时间利用率不超过 25%。当前控制器逐元素经过 A 请求、A 返回、B 请求、B 返回阶段，实际供数占比远低于该上限。
+>
+> 因而，85% 的端到端 PE 时间利用率不是当前单请求 L1 接口可以达到的指标。后续硬件必须在保持外部 AXI 64-bit 的前提下，提供至少 4 个并行的 64-bit Matrix 面板读端口、独立的结果写回端口、双缓冲 A/B 面板和跨 M/N tile 的面板复用。编译器还必须按 bank 分配 A、B、C 的 L1 地址，避免同拍访问同一 bank。上述内部接口尚未进入当前 RTL，不能写为已实现功能。
 
 ### 2.3 整数推理与内部浮点计算
 
@@ -226,7 +234,7 @@ flowchart TB
 
 #### 2.3.4 Matrix 的整数计算
 
-Matrix 子系统支持 INT8 和 INT16 输入。A 与 B 必须使用相同的数据格式。每个输入元素先符号扩展，再通过共享 PE 执行有符号乘法；乘积加入 signed 64-bit 临时累加寄存器。先定义不含 bias 的乘累加结果：
+Matrix 子系统支持 INT8 和 INT16 输入。A 与 B 必须使用相同的数据格式。完整 16×16 输出 tile 的普通 `GEMM` 由 Outer 的独立 PE 阵列执行；未满足该条件的 Matrix 任务由 Scalar context 通过共享 MAC PE 执行。两种路径都先对输入元素进行符号扩展，再执行有符号乘法。Scalar 的乘积加入 signed 64-bit 临时累加寄存器；Outer 在阵列中保留 INT8 的 signed24 或 INT16 的 signed48 临时累加值，随后扩展为写回使用的 INT32 结果。先定义不含 bias 的乘累加结果：
 
 $$
 p_{m,n}
@@ -356,7 +364,7 @@ flowchart TB
         LSC0["LSC / IRQ / CRG / WDT"]
         CFE0["Command Front End<br/>128-bit 指令 FIFO"]
         TS0["TaskScheduler<br/>Admission / Task / Event / Control Snapshot"]
-        MVE0["Matrix-Vector Engine<br/>Outer + Scalar + Vector<br/>共享多精度 MAC PE / 2 项内部旁路"]
+        MVE0["Matrix-Vector Engine<br/>Outer 16×16 PE 阵列 + Scalar/Vector 共享 MAC PE<br/>2 项内部旁路"]
         CE0["Complex Math Engine"]
         DMA0["DMA / Layout Engine"]
         L10["L1BUF Controller + SRAM"]
@@ -486,10 +494,10 @@ flowchart TB
 | Inline Decode            | 指令、任务表保存的基地址快照       | 接收检查结果或内部展开的 Task Context | 接收检查实例判断字段是否合法；共享发射实例根据窄快照生成 Task Context，均不访问全局内存 |
 | Task Decode / Dispatch   | 任务表中的指令与基地址快照   | 各执行单元任务 | 每周期检查一个非 Control 任务槽；轮末复查后保存发射窄快照。Control 获胜项保存槽号和提交序号，下一周期复查并执行 |
 | Matrix-Vector Engine 顶层 | Matrix 与 Vector Task Context、L1BUF 数据 | 矩阵和向量结果、两组完成消息 | `npu_matrix_vector_engine` 是物理集成层，连接双 Matrix context、Vector 顶层、共享多精度 MAC PE、内部存储通道和旁路缓存；不保存逐元素操作数、乘加值或结果 RAM |
-| Matrix Dual Context      | Matrix 任务、共享 PE 和 L1 返回 | Matrix PE/L1 请求、带 `command_id` 的完成消息 | `npu_matrix_dual_context` 连接任务分配器、Outer、Scalar、PE 路由和 L1 请求级；任务分配器按操作码、Outer 支持状态和本地部分和状态选择 context，数值计算留在两个 context 的数据通路中 |
-| Matrix Multi-Dtype Outer 顶层 | Outer Task Context、L1 返回、共享 PE 返回 | L1/PE 请求、完成消息 | `npu_matrix_multi_dtype_outer_engine` 只连接 Outer 控制器与数据通路，传递任务、存储和 PE 接口；顶层不保存操作数、部分和或输出值 |
+| Matrix Dual Context      | Matrix 任务、MAC PE 和 L1 返回 | Matrix PE/L1 请求、带 `command_id` 的完成消息 | `npu_matrix_dual_context` 连接任务分配器、Outer、Scalar、PE 路由和 L1 请求级；任务分配器按操作码、Outer 支持状态和本地部分和状态选择 context，数值计算留在两个 context 的数据通路中 |
+| Matrix Multi-Dtype Outer 顶层 | Outer Task Context、L1 返回、直接 PE 阵列或共享 MAC PE 返回 | L1/PE 请求、完成消息 | `npu_matrix_multi_dtype_outer_engine` 只连接 Outer 控制器与数据通路，传递任务、存储和 PE 接口；完整 16×16 的普通 `GEMM` 使用直接 PE 阵列，其他 Outer 可接受任务使用共享 MAC PE；顶层不保存操作数、部分和或输出值 |
 | Matrix Multi-Dtype Outer 控制器 | Outer Task Context、L1/PE ready/valid、数据通路进度 | 数据通路配置和操作信号、请求阶段、完成消息 | `npu_matrix_multi_dtype_outer_controller` 负责任务接收、描述符检查、tile 与 K 步调度、L1 请求发起和完成状态、ready/valid 握手、地址范围检查、PE 发射次序、错误处理及 done/status |
-| Matrix Multi-Dtype Outer 数据通路 | 控制器配置与操作信号、L1 读返回、共享 PE 返回 | PE 操作数、读写地址与数据字段、部分和及写回数据 | `npu_matrix_multi_dtype_outer_datapath` 生成 A/B/C 地址，保存读缓存、操作数和结果寄存器，形成 PE 请求并检查 PE 返回，维护本地部分和 RAM、累加 bank 和输出级；L1BUF 写数据与 byte strobe 在此处形成 |
+| Matrix Multi-Dtype Outer 数据通路 | 控制器配置与操作信号、L1 读返回、直接 PE 阵列或共享 MAC PE 返回 | PE 操作数、读写地址与数据字段、部分和及写回数据 | `npu_matrix_multi_dtype_outer_datapath` 生成 A/B/C 地址，保存读缓存、操作数和结果寄存器；完整 16×16 tile 送往直接 PE 阵列，其他形状或需要本地部分和保存的任务使用共享 MAC PE；数据通路维护本地部分和 RAM、累加 bank 和输出级，并形成 L1BUF 写数据与 byte strobe |
 | Matrix Scalar 控制器     | Scalar Task Context、L1 与共享 PE ready/valid | 数据通路操作信号、请求阶段、完成消息 | `npu_matrix_scalar_engine` 的控制层入口保存任务状态、描述符检查、矩阵游标、地址游标和完成状态，推进源读、PE 请求、后处理与写回阶段 |
 | Matrix Scalar 数据通路   | 控制器操作信号、L1 读数据、共享 PE 返回 | PE 操作数、部分和、写数据与写 strobe | `npu_matrix_scalar_datapath` 保存 A/B 操作数、整数累加值、局部部分和 RAM、后处理寄存器和写回数据，完成整数乘加、局部部分和读写与结果格式化 |
 | Matrix-Vector L1 请求 FIFO | 内部存储通道输出的 L1 请求 | 排队后的 L1 请求 | 保存两项 93-bit 请求，按接收次序送到 L1BUF；响应不经过该 FIFO |
@@ -2639,7 +2647,7 @@ Matrix 子系统包含两个物理 context，但不复制两套 Matrix 顶层控
 - `GEMM_ZERO_LOCAL`（0x44）和 `GEMM_ACCUM_HOLD`（0x45）固定进入 Outer context；
 - `GEMM_ACCUM`（0x42）在 Outer 能处理当前任务或 Outer 本地部分和状态有效时进入 Outer context，否则进入 Scalar context；
 - 普通 `GEMM`（0x40）被 Outer 接受且 Outer 没有待提交的本地部分和时，Outer 与 Scalar 都可以执行。两者都空闲时按轮转状态选择；其他普通 `GEMM`、`BMM`（0x41）、`GEMM_ZERO`（0x43）由 Scalar context执行；
-- Outer 保存本地部分和并处理后续累加任务时，Scalar 可以同时推进另一个普通 `GEMM`。两者共享 PE 和 L1 访问资源，不复制乘法阵列。
+- Outer 保存本地部分和并处理后续累加任务时，Scalar 可以同时推进另一个普通 `GEMM`。Outer 的完整 16×16 tile 使用独立 PE 阵列；其余乘法请求与 Scalar/Vector 共用 MAC PE，所有任务仍竞争 L1 访问资源。
 
 ```mermaid
 %%{init: {"flowchart": {"useMaxWidth": true, "nodeSpacing": 16, "rankSpacing": 20}, "themeVariables": {"fontSize": "13px"}}}%%
@@ -2682,7 +2690,7 @@ flowchart TB
 | `engines/npu_matrix_vector_engine.sv` | 合并执行单元顶层；连接双 Matrix context、Vector 控制器、共享 PE、内部旁路和外部 L1 端口 |
 | `engines/npu_matrix_dual_context.sv` | 直接例化 Outer context 与 Scalar context，并组合任务分配、完成选择、PE 路由和 L1 路由 |
 | `engines/npu_matrix_context_dispatch.sv` | 保存两个 context 的 active 状态和 `command_id`；依据操作码、`outer_task_supported_i` 和 `outer_local_psum_valid_i` 选择目标 context |
-| `engines/npu_matrix_context_pe_router.sv` | 两个 Matrix context 的 PE 请求轮转选择；owner FIFO 把返回送回原 context |
+| `engines/npu_matrix_context_pe_router.sv` | 使用共享 MAC PE 的 Matrix 请求选择；owner FIFO 把返回送回原 context。直接 Outer PE 阵列不经过该模块 |
 | `engines/npu_matrix_context_l1_router.sv` | 两个 Matrix context 的 L1 请求轮转选择；owner FIFO 按请求次序分发 L1 返回 |
 | `engines/npu_matrix_multi_dtype_outer_engine.sv` | Outer context；执行多数据类型分块外积、部分和更新、本地部分和保存和最终 C 写回 |
 | `engines/npu_matrix_scalar_engine.sv` | Scalar context；支持较广的 M/N/K、bias、旧部分和、整数重缩放、ReLU 和多种输出格式；标量乘法也经共享 PE |
@@ -2701,7 +2709,7 @@ flowchart TB
 
 共享 PE 包含四个 group，每个 group 使用 16 个内部 4×4 基础乘法器。一个 group 可以组成 1 个 INT16×INT16 或 4 个 INT8×INT8 逻辑乘法。每个 group 的 64-bit 局部贡献按 1×64 bit 或 2×32 bit 保存；四个 group 的贡献值由 Matrix 的分段加法器继续累加。Vector 的 MUL/FMA 请求使用逐元素返回方式，PE 返回每个逻辑乘积的 signed32 结果。4×4 乘法器是组成较宽乘法的内部计算单元，不是软件可选的数据格式。
 
-Outer 与 Scalar 先通过 `npu_matrix_context_pe_router` 共用一组 Matrix PE 请求端口，再通过 `npu_mv_shared_mac` 与 Vector MUL/FMA 请求共用 PE。两级选择都采用轮转方式。Matrix context PE 路由在请求握手时把来源写入 owner FIFO；返回时按 FIFO 头部选择 context。Matrix 与 Vector 的来源位位于 PE client tag 最高位，返回阶段按该位选择 Matrix 或 Vector。
+Scalar 与 Vector 通过 `npu_mv_shared_mac` 使用同一组 MAC PE，并按轮转方式选择请求。Scalar 请求握手时把来源写入 owner FIFO；返回时按 FIFO 头部选择请求方。Matrix 与 Vector 的来源位位于 PE client tag 最高位，返回阶段按该位选择 Matrix 或 Vector。Outer 的完整 16×16 普通 `GEMM` 直接驱动专用 PE 阵列，不进入该仲裁。
 
 Outer 与 Scalar 的 L1 请求先进入 `npu_matrix_context_l1_router`，然后与 Vector 请求一起进入 `npu_mv_memory_path`。两级 L1 选择都使用 owner FIFO。`npu_mv_memory_path` 的请求输出还要进入 `npu_mv_l1_request_fifo`，再送到 L1BUF。这样，Outer 可以在更新或写回部分和时保留 active，Scalar 同时执行普通 GEMM 的地址准备、A/B 读取或 PE 请求；两者在申请同一资源时按轮转结果推进。
 
@@ -2803,11 +2811,11 @@ A 为 INT32、编码 0，或者 A 与 B 使用不同数据格式时，任务返�
 | `vector_l1_count_o` | Output | 32 | Vector 请求实际送往 L1BUF 的次数 |
 | `l1_outstanding_o` | Output | 4 | 单核配置下已由内部存储通道送入请求 FIFO、但响应尚未完成的请求数，范围 0～8 |
 | `bypass_occupancy_o` | Output | 2 | 2 项旁路缓存中当前有效项数，范围 0～2 |
-| `matrix_pe_grant_count_o` | Output | 32 | Matrix 请求被共享 PE 接收的次数 |
+| `matrix_pe_grant_count_o` | Output | 32 | Scalar Matrix 请求被共享 PE 接收的次数；Outer 的直接阵列发射不计入该值 |
 | `vector_pe_grant_count_o` | Output | 32 | Vector 请求被共享 PE 接收的次数 |
-| `matrix_pe_wait_cycle_count_o` | Output | 32 | Matrix 请求等待共享 PE 的周期数 |
+| `matrix_pe_wait_cycle_count_o` | Output | 32 | Scalar Matrix 请求等待共享 PE 的周期数；Outer 的直接阵列不等待共享 MAC PE |
 | `vector_pe_wait_cycle_count_o` | Output | 32 | Vector 请求等待共享 PE 的周期数 |
-| `pe_conflict_cycle_count_o` | Output | 32 | Matrix 与 Vector 同周期申请共享 PE 的周期数 |
+| `pe_conflict_cycle_count_o` | Output | 32 | Scalar Matrix 与 Vector 同周期申请共享 PE 的周期数 |
 | `pe_idle_cycle_count_o` | Output | 32 | 共享 PE 本周期没有接收新请求的周期数 |
 | `protocol_error_o` | Output | 1 | context 路由、L1 路由或内部返回次序错误 |
 
@@ -2833,9 +2841,9 @@ A 为 INT32、编码 0，或者 A 与 B 使用不同数据格式时，任务返�
 
 #### 11.2.2 Matrix context PE 路由
 
-`npu_matrix_context_pe_router` 的请求 payload 包含本地 tag 11 bit、逐元素标志 1 bit、两个 dtype 各 2 bit、group 使能 4 bit以及两组 256-bit 操作数。两侧同时 valid 时按轮转状态选择；外部 PE 完成请求握手后，来源写入默认深度为 8 的 owner FIFO。PE 返回不带 context 位，路由器读取 FIFO 头部并只向对应 context 拉高返回 valid。返回有效但 FIFO 为空时置起保持型协议错误。
+`npu_matrix_context_pe_router` 的请求 payload 包含本地 tag 11 bit、逐元素标志 1 bit、两个 dtype 各 2 bit、group 使能 4 bit以及两组 256-bit 操作数。对当前 RTL，Scalar 的流式 Matrix 请求通过该模块送往共享 MAC PE；若日后启用更多共享 MAC 的 Matrix context，两侧同时 valid 时按轮转状态选择。外部 PE 完成请求握手后，来源写入默认深度为 8 的 owner FIFO。PE 返回不带 context 位，路由器读取 FIFO 头部并只向对应 context 拉高返回 valid。返回有效但 FIFO 为空时置起保持型协议错误。
 
-Outer 生成分块外积的分段贡献请求，Scalar 生成逐元素乘积请求。路由器不重新解释计算内容，只保存请求来源并保持全部 payload 字段。
+直接 Outer 阵列在 `npu_matrix_multi_dtype_outer_datapath` 内部接收行、列操作数并保留本地累加值，不生成经过该路由器的 PE 请求。Scalar 生成逐元素乘积请求；路由器不重新解释计算内容，只保存请求来源并保持全部 payload 字段。
 
 #### 11.2.3 Matrix context L1 路由
 
@@ -2845,7 +2853,7 @@ Outer 生成分块外积的分段贡献请求，Scalar 生成逐元素乘积请�
 
 `npu_mv_shared_mac` 在合并后的 Matrix 请求与 Vector MUL/FMA 请求之间轮转。请求标签扩展为 12 bit，其中最高位表示 Matrix 或 Vector，低 11 bit保留请求方编号。`ISSUE_INTERVAL=1` 时，只要 PE 接收端允许，连续周期都可接收请求。`npu_shared_mac_pe_array` 的四个 group 共使用 64 个内部 4×4 基础乘法器，支持 INT16×INT16 和 INT8×INT8。返回最高 owner 位选择 Matrix 或 Vector；Matrix 返回随后还要经过 context PE 路由。
 
-共享 PE 能够连续接收来自不同客户端的请求，不代表每个客户端都能连续提交。多数据类型外积分支中的 `npu_matrix_psum_pipeline` 只保存一项未返回请求：请求握手后 `request_outstanding_q=1`，`request_slot_ready_o` 保持为 0；匹配的 PE 返回到达时，模块在时钟沿更新四组 64-bit 分段部分和并清除未返回标志，下一周期才允许该 context 发出同一外积块的下一项请求。标量 Matrix 和 Vector 控制器也按各自状态机等待所需返回。
+共享 MAC PE 能够连续接收来自不同客户端的请求，不代表每个客户端都能连续提交。使用共享 MAC PE 的流式 Outer 分支中的 `npu_matrix_psum_pipeline` 只保存一项未返回请求：请求握手后 `request_outstanding_q=1`，`request_slot_ready_o` 保持为 0；匹配的 PE 返回到达时，模块在时钟沿更新四组 64-bit 分段部分和并清除未返回标志，下一周期才允许该分支发出下一项请求。Scalar Matrix 和 Vector 控制器也按各自状态机等待所需返回。直接 Outer 阵列在 `ST_CORE_ISSUE` 期间不经过共享 MAC PE。
 
 #### 11.2.5 合并单元内部存储通道
 
@@ -2896,7 +2904,7 @@ TaskScheduler 可保存两项 Matrix active 记录，`npu_matrix_context_dispatc
 4. 选出的 Matrix 请求还要与 Vector MUL/FMA 在 `npu_mv_shared_mac` 中进行选择；
 5. 两个 context 同周期申请 L1 时，`npu_matrix_context_l1_router` 选择一项，之后还要与 Vector 请求在 `npu_mv_memory_path` 中进行选择；被接受请求进入深度为 2 的请求 FIFO。
 
-因此，矩阵乘法任务和部分和累加任务可以在控制、地址准备、L1 访问、本地 RAM 访问、PE 等待和写回等阶段交错运行。它们不会各自占用一套乘法器，共享 PE 每周期至多接收一项 Matrix 或 Vector 请求。Outer 本地部分和 RAM 与 Scalar 普通 GEMM 的寄存状态彼此独立，所以一个任务等待存储响应时，另一个任务仍可推进不冲突的阶段。特别是 `outer_local_psum_valid_i=1` 时，普通 GEMM不再进入 Outer，仍可由空闲 Scalar 接收；这保证本地累加序列与普通 GEMM可以同时处于活动状态。
+因此，矩阵乘法任务和部分和累加任务可以在控制、地址准备、L1 访问、本地 RAM 访问、PE 等待和写回等阶段交错运行。完整 16×16 Outer tile 使用独立 PE 阵列；不满足直接阵列条件的请求与 Vector MUL/FMA 共用 MAC PE，每周期至多接收一项请求。Outer 本地部分和 RAM 与 Scalar 普通 GEMM 的寄存状态彼此独立，所以一个任务等待存储响应时，另一个任务仍可推进不冲突的阶段。特别是 `outer_local_psum_valid_i=1` 时，普通 GEMM不再进入 Outer，仍可由空闲 Scalar 接收；这保证本地累加序列与普通 GEMM可以同时处于活动状态。
 
 ### 11.3 从指令到片上 Task Context
 
@@ -3415,8 +3423,8 @@ $$
 | `ST_START_K_STEP` | 计算本次 PE 请求的有效 K 数，清理 A/B 小缓存并初始化装载游标 |
 | `ST_A_REQ/ST_A_RSP` | 从 L1 读取当前行组和 K 小段的 A 元素，写入 `a_local_q` |
 | `ST_B_REQ/ST_B_RSP` | 从 L1 读取当前 K 小段和列组的 B 元素，写入 `b_local_q` |
-| `ST_CORE_ISSUE` | 按数据类型打包四组 64-bit A/B 操作数，向共享 PE 发出带 tag 的请求 |
-| `ST_CORE_DRAIN` | 等待 `npu_matrix_psum_pipeline` 完成当前 K 小段的贡献值更新；若 16 元素 K 块未结束，则开始下一 K 小段 |
+| `ST_CORE_ISSUE` | 对完整 16×16 普通 `GEMM`，把 A/B 操作数送入直接 Outer PE 阵列并在该拍执行一次 K 小段；其他 Outer 任务把操作数打包为共享 MAC PE 请求 |
+| `ST_CORE_DRAIN` | 仅共享 MAC PE 分支使用；等待 `npu_matrix_psum_pipeline` 完成当前 K 小段的贡献值更新。直接阵列在 `ST_CORE_ISSUE` 后立即开始下一 K 小段或输出阶段 |
 | `ST_C_REQ/ST_C_RSP` | 最终提交需要旧 INT32 C 时读取 C，并与当前输出累加值相加 |
 | `ST_C_PACK` | 按输出数据类型选择结果并形成 64-bit 写数据与 strobe |
 | `ST_C_WRITE_REQ/ST_C_WRITE_RSP` | 写 C 并等待 L1 成功响应，推进当前输出块内的行列游标 |
@@ -3503,10 +3511,10 @@ IDLE
 1. `npu_matrix_context_dispatch` 根据操作码、`outer_task_supported_i` 与 `outer_local_psum_valid_i` 把适合分块外积的任务交给空闲 Outer。Outer 保存 Task Context，并进入自身的输出块处理状态。
 2. `ST_START_TILE` 根据剩余 M 和 N 选择 group 在行、列方向的分配。对 INT8，一个 group 每次形成 4 个逻辑乘积并产生 2×32 bit 局部贡献；四个 group 按当前输出块的行数选择 4 行×1 列组、2 行×2 列组或 1 行×4 列组。
 3. 每个 16 元素 K 块从 `ST_START_K_BLOCK` 开始。控制器按 K 小段读取 A 与 B，分别保存在 `a_local_q` 和 `b_local_q`。
-4. `ST_CORE_ISSUE` 把四组 A/B 打包数据送入共享 PE。请求同时携带本地 tag、INT8 类型、非逐元素标志和 `group_enable=4'b1111`。
-5. 共享 PE 的每个 group 使用 16 个 4×4 基础乘法器重组 4 个 INT8×INT8 逻辑乘积，并把相邻两个乘积相加为 2×32 bit 局部贡献。
-6. `npu_matrix_psum_pipeline` 检查返回 tag、数据类型和 group 使能，把四个 group 的贡献值加入当前分段累加值。控制器可在等待该返回期间装载下一 K 小段的 A/B，所以返回更新可能与 A/B 装载发生在同一周期；请求槽在返回更新的时钟沿释放，下一周期才允许该 context 发出下一项 PE 请求。
-7. 16 元素 K 块结束时，分段贡献值符号扩展后加入当前输出块的 signed64 `output_accum_q`。K 仍有剩余时开始下一 K 块。
+4. 对完整 16×16 普通 `GEMM`，`ST_CORE_ISSUE` 将本 K 小段的 A 行数据广播到 16 行 PE，将 B 列数据广播到 16 列 PE。每个 PE 同拍完成 INT16 的一个乘积，或 INT8 的四个乘积，并更新本 PE 的局部累加寄存器。
+5. 直接阵列的 INT8 局部累加寄存器为 signed24，INT16 局部累加寄存器为 signed48。为了避免 INT8 局部值超出可表示范围，当前直接阵列只接收 `K≤512` 的普通 `GEMM`；较长 K 或带局部部分和保存的任务改走共享 MAC PE 的流式分支。
+6. 使用共享 MAC PE 的流式分支中，`npu_matrix_psum_pipeline` 检查返回 tag、数据类型和 group 使能，把四个 group 的贡献值加入当前分段累加值。请求槽在返回更新的时钟沿释放，下一周期才允许该分支发出下一项请求。
+7. 16 元素 K 块结束时，流式分支的分段贡献值符号扩展后加入当前输出块的 signed64 `output_accum_q`。直接阵列在最后一个 K 小段后逐个读取 PE 局部累加值，并进入输出阶段。K 仍有剩余时开始下一 K 块。
 8. 最后一个 K 块结束后，普通 GEMM 进入 C 打包和写回；`GEMM_ACCUM` 根据本地状态读取本地部分和或旧 C；`GEMM_ACCUM_HOLD` 把当前 INT32 部分和写入 Outer 的本地 RAM。
 9. 每次 C 写响应成功后增加 `done_progress_o`。当前输出块完成后进入 `ST_NEXT_TILE`，直到处理完 M×N。
 
@@ -3573,7 +3581,7 @@ Outer 中存在已经由 `GEMM_ZERO_LOCAL` 建立且与当前 M、N、C 地址�
 `GEMM_ACCUM_HOLD` 的处理次序为：
 
 ```text
-可选读取本地部分和 → A/B 装载 → 共享 PE → 部分和更新
+可选读取本地部分和 → A/B 装载 → 共享 MAC PE → 部分和更新
   → ST_PSUM_STORE 写本地 RAM → 下一个输出块 → done
 ```
 
@@ -3615,11 +3623,7 @@ Matrix 只在以下条件都满足后报告成功：
 任一 L1 响应非零时，Matrix 将其转换成任务错误并进入 `ST_DONE`。元素跨越单个 8B beat 或输出按配置处理失败时，`done_fault_addr_o` 保存对应地址；启动检查发现基地址高位非零时，该信号为 0。已经完成的输出不会回退，`done_progress_o` 保留错误发生前的成功写回数量。
 
 > [!important] 当前吞吐特征
-> Matrix 子系统保存两个任务 context，并与 Vector 共用可配置 PE 和一组 64-bit L1 客户端端口。一个 context 更新本地部分和或写 C 时，另一个 context 可以执行地址准备、A/B 读取或申请 PE；同一任务内，下一 K 小段的装载与上一次 PE 返回的部分和更新也可以同时发生。共享 PE 和 L1 每次仍只接收一个请求，因此性能估算必须结合两级轮转、PE 等待、L1 等待和实际数据类型计算。
-
-DiP 快速分支的顶层参数 `DIP_ARRAY_N` 默认值为 16，接受 1、2、4、8 或 16 的阵列描述。为满足 40,000 LUT 的面积目标，当前顶层配置采用 4×4 算术 tile；16×16 及更大的矩阵任务由外部 Matrix 路径执行，DiP 快速分支仅接收符合 4×4 tile 条件的任务。每个 DiP PE 保存数据、权重和部分和寄存器，并通过按数据类型复用的乘法流水段产生局部贡献。INT16 每周期处理一个乘积；INT8 把四个 8×8 乘积分成四个微周期，完成后输出两个 32-bit 局部和。INT8 微周期运行时 `data_ready_o=0`，输入端必须保持当前行，直到阵列再次允许接收。结果路径依次经过贡献有效、部分和相加和结果寄存三个阶段，因此不会把尚未完成的 INT8 局部结果误认为下一行输入。独立的 `dip_gemm_core` 仍可用 `ARRAY_N=16` 构建并进行功能验证。
-
-DiP 与外积分支承担不同任务：外积分支继续使用共享 MAC group 处理一般分块任务，DiP 分支处理满足 tile 条件的矩阵乘法。两条路径都保留 INT16、INT8 和 INT32 的输入、累加与输出格式，编译器根据矩阵尺寸、K 长度和数据类型选择路径，并在指令描述中给出相应的阵列尺寸和行数。
+> Matrix 子系统保存两个任务 context。完整 16×16 Outer tile 使用独立 PE 阵列，Scalar 与 Vector 共用可配置 MAC PE；三个任务都使用一组 64-bit L1 客户端端口。一个 context 更新本地部分和或写 C 时，另一个 context 可以执行地址准备、A/B 读取或申请计算资源；同一任务内，下一 K 小段的装载与上一次 MAC 返回的部分和更新也可以同时发生。共享 MAC PE 和 L1 每次仍只接收一个请求，因此性能估算必须结合两级轮转、PE 等待、L1 等待和实际数据类型计算。
 
 ---
 
@@ -3642,17 +3646,12 @@ flowchart LR
     POST --> WB
 ```
 
-通用共享 PE 的每个 group 包含 16 个 4×4 基础乘法器；Vector 逐元素模式按输入格式选择 group 数和返回元素数。DiP 快速分支使用可配置的算术 tile，当前面积配置为 4×4，顶层参数仍按 16×16 任务容量接收描述：
+通用共享 MAC PE 的每个 group 包含 16 个 4×4 基础乘法器；Vector 逐元素模式按输入格式选择 group 数和返回元素数：
 
 | 输入格式 | 一次请求的逻辑结果 | 一个 64-bit 输入 beat需要的请求组数 | 整个输入 beat的元素数 |
 | --- | ---: | ---: | ---: |
 | INT16 | 1 个 16×16 | 4 | 4 |
 | INT8 | 4 个 8×8 | 2 | 8 |
-
-| DiP 模式 | 算术 tile | 每个 PE 的乘法时序 | 局部结果 |
-| --- | ---: | --- | --- |
-| INT16 | 4×4（顶层参数默认 16） | 每周期 1 个乘积 | 1×64 bit |
-| INT8 | 4×4（顶层参数默认 16） | 4 个微周期完成 4 个 8×8 乘积 | 2×32 bit |
 
 `npu_shared_mac_pe_array` 以三段寄存标签跟随 PE 结果。每个 `npu_shared_mac_group` 先保存 16 个内部 4×4 基础乘积，再保存重组后的逻辑乘积，最后形成逐元素 signed32 结果或 Matrix 使用的分段贡献值。Vector 请求设置 `elementwise=1`，返回 `element_count` 和最多 4 个有效 signed32 结果。INT8 与 INT16 共用这些基础乘法器，不为 Vector 另放一套乘法阵列。
 
@@ -5769,7 +5768,7 @@ $$
 | 激活函数 | 选择函数和输入输出 scale | CME 执行 INT→FP32→INT |
 | Softmax / Norm | 生成行数、行长度、mask 和参数 | CME 多遍读取并写整数输出 |
 | 任务依赖 | 为生产者和消费者分配事件，把引用直接写入 CMD | Event Table 检查成功或失败终态 |
-| Matrix 执行 | 安排 GEMM、GEMM_ACCUM、GEMM_ACCUM_HOLD 和清零任务的次序与 L1 区域 | Outer 与 Scalar 均使用共享 PE；本地部分和序列进入 Outer，普通 GEMM可在条件满足时轮转选择 Outer 或 Scalar |
+| Matrix 执行 | 安排 GEMM、GEMM_ACCUM、GEMM_ACCUM_HOLD 和清零任务的次序与 L1 区域 | 完整 16×16 Outer GEMM使用独立 PE 阵列；本地部分和序列与不规则形状使用 Scalar 的共享 MAC PE，普通 GEMM可在条件满足时轮转选择 Outer 或 Scalar |
 | 系统内存地址配置 | Python 编译器只分配存储区编号和 24-bit 区内偏移；C 工程在构建模型程序时给出各存储区物理基址和允许访问范围，驱动写入 LSC | 用提交时保存的基址加区内偏移形成物理地址；MIF 检查范围并发起 AXI 访问 |
 | 错误处理 | 读取错误状态，决定重试、复位或停止 | 停止新请求、排空并报告 |
 
@@ -6095,6 +6094,18 @@ $$
 - C model 的 `npu_perf_t` 按第 19.7 节所列事件增加；当前 LSC RTL 不提供这些性能 CSR；
 - 公开指令的 SATURATE，以及模块级直接 Task Context 的 ERROR 和 WRAP。
 
+#### 19.3.1 已执行的 TVM 到 RTL 回归
+
+2026-08-01 已在 `verif/` 完成 Transformer、RNN、GRU、LSTM、CNN 的 TVM 到 RTL UVM 回归。五个用例均生成 TVM fixture，由 RTL 执行 TVM 划分出的固定权重 MatMul；DPI 使用 RTL 写回的 MatMul 结果继续完成未下放的 Add、激活、循环状态、注意力 Softmax 或卷积计算。每个用例都要求 `TVM_MODEL_RELAX_ADD_DPI_PASS`、`TVM_MODEL_CPU_DPI_PASS` 和 `MODEL_E2E_PASS` 同时出现，UVM 的 ERROR、FATAL 均为 0。
+
+大型 `tvm_large_matrix` 用例进一步验证了 `[64,1024]×[1024,64]` 的 INT8 MatMul：共提交 2342 条指令、294 个批次，RTL 执行 68102772 个周期。16384 B 编码输出与 512 B logits 的 FNV 摘要均与参考文件一致；DPI 预检 8 个位置，并对 64 个位置比较独立计算结果与 DDR 输出。性能数据保存在 `Transformer_NPU/.work/rtl_verilator/tvm_large_matrix_e2e/performance.json`。
+
+> [!note] 当前回归覆盖范围
+> 上述模型回归验证了 TVM 生成的数据、指令、DMA、标量 Matrix 路径和 RTL 结果的配合。注意力 Softmax、循环门控、状态更新与 Conv2D 仍由 CPU/DPI 完成；不得把该结果描述为所有模型算子均在 NPU 内执行。
+
+> [!warning] Outer PE 的验收要求
+> 大型 TVM 用例的 `outer_path`、`pe_array_compute`、`active_pe_slots` 都为 0，原因是当前编译器对 K 分块生成 `GEMM_ZERO_LOCAL`、`GEMM_ACCUM_HOLD`、`GEMM_ACCUM`，这些任务进入 Scalar context。Outer PE 的功能和空间占用须另行使用 16×16 直接 GEMM、INT8/INT16、尾 tile、L1 暂停和本地部分和序列测试；端到端时间利用率须使用实现新的多端口 Matrix 面板接口后的大矩阵用例重新测量。
+
 ### 19.4 Integer Vector 测试
 
 IVE 除原有逐元素操作外，还必须验证连续 MUL 快速分支：
@@ -6173,7 +6184,7 @@ C model 的函数误差测试必须覆盖完整支持区间，不能只检查少
 - CFE 到 TS；
 - DMA 到 MIF；
 - TS 到执行单元；
-- Outer 与 Scalar 到 Matrix PE 路由、Matrix 到共享 PE、Vector 到共享 PE；
+- 使用共享 MAC PE 的 Outer 流式分支、Scalar 与 Vector 到共享 MAC PE；直接 Outer PE 阵列的行/列操作数发射；
 - Outer 与 Scalar 到 Matrix L1 路由、Matrix 与 Vector 到内部存储通道、内部存储通道到 L1 请求 FIFO以及 FIFO到 L1BUF；
 - 每个 L1BUF 读写端口；
 - AXI AW、W、B、AR、R；
@@ -6267,7 +6278,7 @@ L1BUF 当前使用一次请求加一次响应的单 beat 接口。验证环境�
 
 ## 20. 当前 RTL 参考配置与后续参数
 
-下表列出当前执行单元 RTL 的固定能力。Matrix 双任务 context、Matrix/Vector 共享 PE、内部旁路和深度为 2 的 L1 请求 FIFO已经进入 RTL；C model 的周期参数仍需与实际 ready/valid、L1 等待和 PE 仲裁结果分别比较。第 15.3 节还列出了 LSC 能力寄存器常量与执行单元之间的已知差异；完成修正前，RTL 验证必须以实际状态机和端口为准。
+下表列出当前执行单元 RTL 的固定能力。Matrix 双任务 context、Outer 的独立 PE 阵列、Scalar/Vector 共享 MAC PE、内部旁路和深度为 2 的 L1 请求 FIFO已经进入 RTL；C model 的周期参数仍需与实际 ready/valid、L1 等待和 PE 仲裁结果分别比较。第 15.3 节还列出了 LSC 能力寄存器常量与执行单元之间的已知差异；完成修正前，RTL 验证必须以实际状态机和端口为准。
 
 功能级调度器提供 `npu_estimate_task_cycles()` 作为可重复的参考周期数。周期数
 包含内联任务展开、固定检查、输入与输出 beat、L1 或 DDR 参考延迟、逐元素
@@ -6812,7 +6823,7 @@ CME 数学单元 `approx_mode=0` 的函数范围、误差要求和可变延迟�
 
 ### 20.3 当前 Matrix-Vector 结构的综合记录
 
-当前生产 RTL 是一个 Outer 控制器、一个 Scalar 控制器、一套共享 PE、Matrix/Vector 内部存储通道以及深度为 2 的 L1 请求 FIFO。综合使用 Vivado 2024.2，命令如下：
+当前生产 RTL 是一个 Outer 控制器、一个 Scalar 控制器、一套 16×16 Outer PE 阵列、一套 Scalar/Vector 共享 MAC PE、Matrix/Vector 内部存储通道以及深度为 2 的 L1 请求 FIFO。综合使用 Vivado 2024.2，命令如下：
 
 ```bash
 cd rtl/syn/vivado_100mhz
@@ -6854,30 +6865,11 @@ make syn BUILD_DIR=build_shared_mv_outer_scalar_fifo_final JOBS=1
 
 `place_design` 与 `phys_opt_design` 已完成，物理优化给出的估计 WNS 为 -8.628ns。`route_design` 在 Phase 5.2 报告拥堵，节点重叠数先为 105,299，随后降为 33,735；本轮没有生成 post-route DCP、时序摘要或资源报告。中间 WNS -8.285ns 不能作为布局布线后的验收数据。报告中没有出现 `core_clk_i` 缺少 `HD.CLK_SRC` 的警告；OOC 顶层端口仍有 `HD.PARTPIN_LOCS` 提示。
 
-本节记录的是两套完整 Outer 控制器的历史综合结果，不代表当前 DiP 面积配置。当前顶层 DiP 配置已将 `DIP_ARRAY_N` 默认值恢复为 16，并在顶层采用可复用的 4×4 物理算术 tile；最新结果见 20.4。
+本节记录的是此前一次 Outer 与 Scalar 结构的历史综合结果，不代表当前工作树。后续综合结果必须以对应构建目录中生成的 `summary_post_synth.txt`、资源报告和布局布线报告为准。
 
 采用两套完整 Outer 控制器的对照方案保存在 `build_shared_mv_dual_final3`。该方案综合后使用 133,321 / 134,600 Slice LUT，即 99.05%，WNS 为 -12.239ns，最差数据路径为 21.501ns。当前 Outer 加 Scalar 结构相对该方案减少 40,977 LUT，并保留本地部分和任务与独立 GEMM同时 active 的能力。
 
 最终 RTL 回归在提交 `0ebd9cb` 的工作树上执行，RTL 内容与 `4931d13` 相同。`make lint`、`make -C rtl/engines test`、`make engine-test`、`make matrix-stream-test`、`make system-test` 和 `make scheduler-dual-matrix-test` 均成功。覆盖结果包括 INT16、INT8、Matrix/Vector 共用 PE、Matrix 写回到 Vector 的内部旁路、L1 请求 FIFO随机停顿，以及本地部分和任务与独立 GEMM同时 active。连续 Matrix 测试提交 12 条任务，其中 8 条 GEMM、4 条 GEMM_ACCUM，任务接收、发射和完成数量均为 12，任务间 gap 为 0。
 
-### 20.4 `DIP_ARRAY_N=16` 面积配置结果
-
-当前顶层保留 `DIP_ARRAY_N=16` 的配置入口。为满足 40,000 LUT 的面积目标，`npu_matrix_dip_engine` 在顶层集成时使用可复用的 4×4 物理算术 tile；独立 `dip_gemm_core` 仍可使用 `ARRAY_N=16` 验证完整 16×16 数据路径。Vivado post-synthesis 使用 `xc7a200tfbg484-3` 和 100 MHz 时钟约束，报告目录为 `/tmp/npu_folded_final`。
-
-| 资源或时序指标 | post-synthesis 结果 |
-| --- | ---: |
-| Slice LUTs | 37,096 / 134,600（27.56%） |
-| Slice Registers | 25,416 / 269,200（9.44%） |
-| Block RAM Tile | 267.5 / 365（73.29%） |
-| DSP | 71 / 740（9.59%） |
-| Setup WNS | +0.058 ns |
-| Setup TNS | 0 ns |
-| Setup 失败端点 | 0 |
-| Hold WHS | -0.010 ns |
-| Hold THS | -1.088 ns |
-| Hold 失败端点 | 127 |
-
-L1 存储检查结果为 256 个 RAMB36、0 个 RAMB18、0 个 LUTRAM；其他小型控制存储包含 1,536 个 LUTRAM 原语。当前资源结果低于 40,000 LUT，setup 满足 100 MHz 约束；hold 仍需结合时钟树和局部布线继续处理。上述数字来自综合后报告，不能替代最终布局布线报告。
-
 > [!summary] 首版硬件实现范围
-> 单核首版由 64-bit AXI/MIF、64-bit L1BUF 客户端接口、Command Front End、TaskScheduler、DMA、Matrix-Vector Engine、Complex Math、L1BUF、LSC、CRG 和 WDT 组成。每条 128-bit CMD 在 64-bit 接口上使用低、高两个 beat；事件和任务选项直接位于 CMD。TaskScheduler 使用命令接纳寄存级、WAIT_EVENT 逐槽检查及结果寄存、接收检查解码器、Control 执行快照、发射窄快照、共享发射解码器和四组发射暂存；Matrix 使用两项 active 记录并按完成 `command_id` 查找任务。Matrix-Vector Engine 是 Matrix 与 Vector 共用的物理执行模块，包含 Outer context、Scalar context、Vector 控制器、一套可配置多精度 MAC PE、内部 L1 仲裁、深度为 2 的 L1 请求 FIFO和 2 项 Matrix 到 Vector 旁路缓存。Outer 执行分块外积并保存本地部分和 RAM，Scalar 执行逐元素乘加和后处理。Matrix 乘法与 Vector MUL/FMA 都使用共享 PE，Vector 的其他逐元素操作使用轻量整数 ALU。模型张量只采用 INT8、INT16、INT32；共享 PE 的内部 4×4 基础乘法器用于组成 INT8 和 INT16 乘法，不构成软件可选的数据格式；CME 的 SUMSQ 分成平方与累加状态，Exp 的范围整数使用五个寄存状态完成最近偶数舍入，复杂函数在 CME 内部执行 `INT→FP32→INT`，F2I 在数学响应后经过五个寄存状态。软件通过指令和 C 配置给出物理地址、shape、stride、scale 和 zero point，硬件按模块接口与功能时序完成任务。
+> 单核首版由 64-bit AXI/MIF、64-bit L1BUF 客户端接口、Command Front End、TaskScheduler、DMA、Matrix-Vector Engine、Complex Math、L1BUF、LSC、CRG 和 WDT 组成。每条 128-bit CMD 在 64-bit 接口上使用低、高两个 beat；事件和任务选项直接位于 CMD。TaskScheduler 使用命令接纳寄存级、WAIT_EVENT 逐槽检查及结果寄存、接收检查解码器、Control 执行快照、发射窄快照、共享发射解码器和四组发射暂存；Matrix 使用两项 active 记录并按完成 `command_id` 查找任务。Matrix-Vector Engine 是 Matrix 与 Vector 共用的物理执行模块，包含 Outer context、Scalar context、Vector 控制器、一套 16×16 Outer PE 阵列、一套 Scalar/Vector 可配置多精度 MAC PE、内部 L1 仲裁、深度为 2 的 L1 请求 FIFO和 2 项 Matrix 到 Vector 旁路缓存。Outer 执行分块外积并保存本地部分和 RAM，Scalar 执行逐元素乘加和后处理。完整 16×16 Matrix tile由 Outer PE 阵列计算；其余 Matrix 乘法与 Vector MUL/FMA 使用共享 MAC PE，Vector 的其他逐元素操作使用轻量整数 ALU。模型张量只采用 INT8、INT16、INT32；共享 MAC PE 的内部 4×4 基础乘法器用于组成 INT8 和 INT16 乘法，不构成软件可选的数据格式；CME 的 SUMSQ 分成平方与累加状态，Exp 的范围整数使用五个寄存状态完成最近偶数舍入，复杂函数在 CME 内部执行 `INT→FP32→INT`，F2I 在数学响应后经过五个寄存状态。软件通过指令和 C 配置给出物理地址、shape、stride、scale 和 zero point，硬件按模块接口与功能时序完成任务。
