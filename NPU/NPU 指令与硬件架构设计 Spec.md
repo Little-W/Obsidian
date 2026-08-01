@@ -1213,8 +1213,8 @@ GEMM 的 A、B 和 C 使用 `LREF14`；bias 使用 `LREF12`。在 GEMM 中，bia
 | `30` | `0x84` | `COMPLEX_STAT` | CME | 已实现 | `src0`、`dst`、rows、length、统计方式 | 按行计算 SUM、MAX 或 SUMSQ，每行写一个 INT32。 |
 | `31` | `0x85` | `COMPLEX_RECIP` | CME | 编码已分配，功能关闭 | 操作码位置已分配 | 当前返回 `ILLEGAL_OPCODE`，不得启动 CME 或写目标张量。 |
 | `32` | `0x86` | `COMPLEX_ADD_RESCALE` | CME | 已实现 | `src0`、第二输入、`dst`、rows、length、三个 scale 指数、目标 dtype | 按两个输入 scale 相加，再按目标 scale 写回整数结果。 |
-| `33` | `0x44` | `GEMM_ZERO_LOCAL` | Matrix | 已实现 | C `LREF14`、M/N；其余计算字段必须为 0 | 在 Outer context 建立本地部分和区域并清除有效数据状态，不读取或写回 L1 中的 C。 |
-| `34` | `0x45` | `GEMM_ACCUM_HOLD` | Matrix | 已实现 | 与 `GEMM_ACCUM` 相同 | 把新的乘加结果保存到 Outer context 本地部分和 RAM，不提交最终 C。 |
+| `33` | `0x44` | `GEMM_ZERO_LOCAL` | Matrix | 已实现 | C `LREF14`、M/N；其余计算字段必须为 0 | 在 Scalar Matrix 建立本地部分和区域并清除有效数据状态，不读取或写回 L1 中的 C。 |
+| `34` | `0x45` | `GEMM_ACCUM_HOLD` | Matrix | 已实现 | 与 `GEMM_ACCUM` 相同 | 把新的乘加结果保存到 Scalar Matrix 的本地部分和 RAM，不提交最终 C。 |
 
 数值 35～63 当前没有定义，必须返回 `ILLEGAL_OPCODE`。`DMA_GATHER_ND`、`COMPLEX_ROPE` 和 `COMPLEX_RECIP` 只有在功能寄存器声明支持后才能执行。
 
@@ -1317,7 +1317,7 @@ GEMM 的 A、B 和 C 使用 `LREF14`；bias 使用 `LREF12`。在 GEMM 中，bia
 
 `GEMM_ACCUM` 要求 C 为 INT32、bias 为 0、保留位为 0、`requant_shift=0`，并把新结果加到原 C。`GEMM_ZERO` 要求 A、B、bias、保留位和 `requant_shift` 都为 0，`C_dtype=INT32`，编码的 K 字段为 0；该操作不执行 K 方向计算，只清零 `[M][N]` 的 INT32 C 区域。
 
-`GEMM_ZERO_LOCAL` 使用与 `GEMM_ZERO` 相同的字段限制，但不访问 L1 中的 C。它在 Outer context 保存 C 基地址、M、N 和行步长等元数据，清除对应本地部分和有效状态，为后续 `GEMM_ACCUM_HOLD` 建立初值。`GEMM_ACCUM_HOLD` 使用与 `GEMM_ACCUM` 相同的字段限制，把新结果加入 Outer context 的本地部分和 RAM，并保持本地状态，不写最终 C。后续 `GEMM_ACCUM` 读取匹配的本地状态、加入最后一段结果并写回 C，完成后清除该本地状态。`GEMM_ZERO_LOCAL` 和 `GEMM_ACCUM_HOLD` 固定由 Outer context 执行；`GEMM_ACCUM` 在 Outer 支持当前任务或本地部分和状态有效时也由 Outer context 执行，否则交给 Scalar context。
+`GEMM_ZERO_LOCAL` 使用与 `GEMM_ZERO` 相同的字段限制，但不访问 L1 中的 C。它在 Scalar Matrix 保存 C 基地址、M、N 和行步长等元数据，清除对应本地部分和有效状态，为后续 `GEMM_ACCUM_HOLD` 建立初值。`GEMM_ACCUM_HOLD` 使用与 `GEMM_ACCUM` 相同的字段限制，把新结果加入 Scalar Matrix 的本地部分和 RAM，并保持本地状态，不写最终 C。后续 `GEMM_ACCUM` 读取匹配的本地状态、加入最后一段结果并写回 C，完成后清除该本地状态。`GEMM_ZERO_LOCAL`、`GEMM_ACCUM_HOLD` 和 `GEMM_ACCUM` 均由 Scalar Matrix 执行。
 
 `BMM`：
 
