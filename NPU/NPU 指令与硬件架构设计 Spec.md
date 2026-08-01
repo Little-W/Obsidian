@@ -411,8 +411,8 @@ flowchart TB
     SNAP["发射窄快照<br/>指令 / 基地址 / 任务编号"]
     DEC["共享发射解码器<br/>Task Context 展开"]
     DISP["Task Dispatch<br/>DMA / Matrix / Vector / Complex<br/>四组发射暂存"]
-    DMA["DMA / Layout"]
-    CME["Complex Math Engine"]
+    DMA["DMA / Layout<br/>Controller / Datapath"]
+    CME["Complex Engine<br/>Controller / Datapath / Math Sequence"]
     L1C["L1BUF Controller"]
     SRAM["Banked L1BUF SRAM"]
     MIF["MIF<br/>AXI Master"]
@@ -422,10 +422,10 @@ flowchart TB
         direction TB
         MDISP["Matrix Context Dispatch"]
         C0["context0 / Outer<br/>分块外积 / 本地部分和 RAM"]
-        C1["context1 / Scalar<br/>逐元素乘加 / 后处理"]
+        C1["context1 / Scalar<br/>Controller + Datapath"]
         MPR["Matrix PE Router"]
         MLR["Matrix L1 Router"]
-        VEC["Vector Controller<br/>轻量整数 ALU"]
+        VEC["Vector Engine<br/>Controller / Datapath / Integer Pipeline"]
         SHMAC["Shared MAC Arbiter"]
         MVPE["Shared MAC PE<br/>4 groups × 16 个 4×4 乘法器"]
         MVMEM["MV Memory Path<br/>2 项旁路缓存"]
@@ -485,14 +485,20 @@ flowchart TB
 | Event Table / Scoreboard | CMD 中的依赖事件、各单元完成消息      | 可发射任务、事件状态、错误状态                  | 检查依赖、保存任务状态、传播错误                                     |
 | Inline Decode            | 指令、任务表保存的基地址快照       | 接收检查结果或内部展开的 Task Context | 接收检查实例判断字段是否合法；共享发射实例根据窄快照生成 Task Context，均不访问全局内存 |
 | Task Decode / Dispatch   | 任务表中的指令与基地址快照   | 各执行单元任务 | 每周期检查一个非 Control 任务槽；轮末复查后保存发射窄快照。Control 获胜项保存槽号和提交序号，下一周期复查并执行 |
-| Matrix-Vector Engine     | Matrix 与 Vector Task Context、L1BUF 数据 | 矩阵和向量结果、两组完成消息 | `npu_matrix_vector_engine` 组合双 Matrix context、Vector 控制器、共享多精度 MAC PE 和内部存储通道；保留原有指令与两组任务接口 |
-| Matrix Dual Context      | Matrix 任务、共享 PE 和 L1 返回 | Matrix PE/L1 请求、带 `command_id` 的完成消息 | context0 直接例化 Outer 控制器，context1 直接例化 Scalar 控制器；任务分配器按操作码、Outer 支持状态和本地部分和状态选择 context |
+| Matrix-Vector Engine     | Matrix 与 Vector Task Context、L1BUF 数据 | 矩阵和向量结果、两组完成消息 | `npu_matrix_vector_engine` 组合双 Matrix context、Vector 顶层、共享多精度 MAC PE 和内部存储通道；保留原有指令与两组任务接口 |
+| Matrix Dual Context      | Matrix 任务、共享 PE 和 L1 返回 | Matrix PE/L1 请求、带 `command_id` 的完成消息 | context0 由 Outer 地址生成、操作数暂存、部分和流水、累加 bank 和输出级组成；context1 包含 Scalar 控制器与 Scalar 数据通路；任务分配器按操作码、Outer 支持状态和本地部分和状态选择 context |
+| Matrix Scalar 控制器     | Scalar Task Context、L1 与共享 PE ready/valid | 数据通路操作信号、请求地址、完成消息 | 保存任务状态、描述符检查、矩阵游标、地址游标和完成状态，发射源读、PE 请求、后处理与写回阶段 |
+| Matrix Scalar 数据通路   | 控制器操作信号、L1 读数据、共享 PE 返回 | PE 操作数、部分和、写数据与写 strobe | 保存 A/B 操作数、整数累加值、局部部分和 RAM、后处理寄存器和写回数据；完成整数乘加、局部部分和读写与结果格式化 |
 | Matrix-Vector L1 请求 FIFO | 内部存储通道输出的 L1 请求 | 排队后的 L1 请求 | 保存两项 93-bit 请求，按接收次序送到 L1BUF；响应不经过该 FIFO |
 | Shared MAC PE            | Matrix 乘法请求、Vector MUL/FMA 请求 | 分段贡献值或逐元素 INT32 乘积 | 四个 group 共 64 个内部 4×4 基础乘法器；这些小乘法器组合成 INT8 或 INT16 乘法，不构成软件可选的数据格式 |
-| Vector 轻量整数 ALU      | ADD、SUB、MAX、MIN、CMP、SELECT、CLAMP、ReLU | 逐元素整数结果 | 不申请共享 PE；MUL/FMA 的乘法部分才送入共享 PE |
-| CME 内部统计逻辑      | 行或向量段                   | 和、最大值、平方和 | 行初始化时保存 STAT 目的地址；逐元素更新统计寄存器，SUMSQ 的平方和累加分成两个寄存阶段 |
-| CME 内部数学单元          | FP32 标量请求                | 函数结果 | 顺序执行 Exp、Reciprocal、ReciprocalSqrt、Sigmoid、Tanh、GELU、SiLU；Exp 用五个状态完成范围整数舍入 |
-| DMA / Layout Engine      | DMA Task Context          | L1BUF 或全局内存写入、完成消息               | 连续复制、转置、pack、split、fill                           |
+| Vector 控制器            | Vector Task Context、L1 请求/返回状态、共享 PE ready/valid | 数据通路控制信号、完成消息 | 锁存并检查任务字段，推进读源、计算、写回和完成状态；保存元素游标与 L1 地址游标 |
+| Vector 数据通路          | 控制器操作信号、L1 读数据、共享 PE 返回 | 共享 PE 请求、L1 写数据与写 strobe、计算状态 | 保存源操作数、mask、结果、快速 MUL beat 和乘法累加值；接收逐元素流水级结果，形成 MUL/FMA 返回处理和写回数据 |
+| Vector 整数流水级        | 操作码、源操作数、标量与数据格式 | 逐元素整数结果与数值错误标志 | ADD、SUB、MAX、MIN、CMP、SELECT、CLAMP 和 ReLU 使用两级寄存流水；MUL/FMA 的乘法部分才送入共享 PE |
+| Complex 控制器        | Complex Task Context、L1 请求/返回状态、数学单元 ready/valid | 数据通路控制信号、完成消息 | 锁存并检查任务字段，推进按行统计、读源、计算、写回和完成状态；保存行列游标、统计寄存器和数学动作编号 |
+| Complex 数据通路      | 控制器访存和数学动作信号、L1 读数据 | L1 写数据与写 strobe、数学请求/返回、源操作数 | 格式化 L1 请求与字节选通，保存源操作数和 mask，解析读返回，并连接 `npu_complex_math_seq` 的请求和返回接口 |
+| CME 内部数学单元      | FP32 标量请求                | 函数结果 | 顺序执行 Exp、Reciprocal、ReciprocalSqrt、Sigmoid、Tanh、GELU、SiLU；Exp 用五个状态完成范围整数舍入 |
+| DMA 控制器               | DMA Task Context、L1BUF/AXI ready/valid 与返回状态 | 数据通路操作信号、存储请求、完成消息 | 锁存并检查任务字段，推进形状检查、读写请求、响应、错误处理和完成状态 |
+| DMA 数据通路             | 控制器操作信号、读返回数据与 Task Context | 当前地址、区域检查结果、写数据与写 strobe、进度 | 执行形状位串计算、地址游标推进、类型转换、RMW 数据合并和快速传输计数 |
 | L1BUF Controller         | 各客户端读写请求                | 读返回、写完成                          | 轮询仲裁，请求先寄存再访问 bank，逐客户端保存响应                   |
 | MIF                      | DMA 物理地址请求              | `m_axi_*` 请求与返回                  | 物理地址范围检查、AXI 请求生成、返回状态处理                                |
 | LSC                      | 配置访问、中断状态、各模块状态         | 控制信号、中断                          | 启停、基地址、功能查询、错误记录、性能计数                                |
@@ -2067,6 +2073,8 @@ Control 执行、普通 signal Event 发布和完成通知共用一组连续逐�
 ## 9. DMA / Layout Engine
 
 ### 9.1 模块组成与功能
+
+`npu_dma_engine` 是 DMA 的顶层集成模块，外部端口保持 TaskScheduler、L1BUF 和 MIF 的既有定义。`npu_dma_controller` 保存任务状态，检查 Task Context，并发射或接收 L1BUF、MIF 事务；`npu_dma_datapath` 保存形状计算寄存器、地址游标、快速传输计数、类型转换数据、RMW beat 和进度计数。顶层在两者之间传递状态、操作脉冲、当前地址、检查结果和写数据。
 
 DMA / Layout Engine 在 L1BUF 与全局存储之间搬运数据，也可以在 L1BUF 内或全局存储内复制数据。当前 RTL 包含 Task Context 锁存器、字段检查器、元素地址生成器、整数格式转换器、二维转置地址生成器、PACK/SPLIT 地址生成器、对齐整 beat 快速复制单元、L1BUF 请求端口、MIF 请求端口、错误记录和进度计数器。
 
