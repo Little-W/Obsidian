@@ -2801,45 +2801,30 @@ A 为 INT32、编码 0，或者 A 与 B 使用不同数据格式时，任务返�
 | `pe_idle_cycle_count_o` | Output | 32 | 共享 PE 本周期没有接收新请求的周期数 |
 | `protocol_error_o` | Output | 1 | 共享 MAC、L1 返回次序或内部旁路状态错误 |
 
-当 `matrix_task_valid_i && matrix_task_ready_o` 为 1 时，`npu_matrix_context_dispatch` 依据本节的操作码规则选择 Outer 或 Scalar，并把操作码、编号和 Task Context 送给被选控制器。两个控制器都是直接例化的执行模块，不再经过按任务选择 Scalar/Outer 分支的 Matrix 包装层。被选控制器的 `done_valid` 保持到完成握手；任务分配器在两个完成输入之间选择一项，并把该 context 保存的 `command_id` 一同返回 TaskScheduler。一个 context 正在执行时，另一个 context 仍可接收符合自身条件的 Matrix 任务。
+当 `matrix_task_valid_i && matrix_task_ready_o` 为 1 时，`npu_matrix_engine` 在同一时钟沿锁存操作码、任务编号和 2048-bit Task Context。该单元只保留一项正在执行的 Matrix 任务，因此 `matrix_task_ready_o` 仅在空闲状态为 1。锁存后的 `PATH_CLASSIFY` 检查描述符；满足 Direct Array 条件的普通 `GEMM` 进入 Direct Array，其他受支持任务进入 Scalar Matrix。检查失败时直接产生完成状态，不访问 L1。
 
-`reset_n=0` 时，两个 context 的 active 状态、PE/L1 owner FIFO、共享 PE valid、L1 请求 FIFO计数、内部旁路有效位和完成 valid 全部清零。本地部分和 RAM 内容不要求清零，但 Outer 的元数据和有效状态清零，因此复位前内容不能被新任务使用。复位期间 L1 请求 valid 和 done valid 均为 0。
+`reset_n=0` 时，当前任务状态、完成保持寄存器、共享 MAC owner FIFO、L1 请求 FIFO 计数和旁路缓存有效位均清零。L1 RAM 本身的内容不要求清零，但复位后不存在可引用的 Matrix 局部部分和状态。复位期间 L1 请求 valid 和 done valid 均为 0。
 
-#### 11.2.1 Matrix context 分配与完成时序
+#### 11.2.1 Matrix 路径选择与完成时序
 
-`npu_matrix_context_dispatch` 保存两组 active 位和 12-bit `command_id`。组合选择规则如下：
+| 任务类别 | 选择的执行部分 | 说明 |
+| --- | --- | --- |
+| 普通 `GEMM`，INT8 输入、INT32 输出、M/N 不超过 64、K 不超过 511 | Direct Array | 由 16×16 PE 阵列完成，每次计算步处理 4 个 K 元素 |
+| `BMM`、带 bias 的 `GEMM`、INT16 `GEMM`、非 INT32 输出或不满足 Direct Array 条件的 `GEMM` | Scalar Matrix | 通过共享 MAC 逐组计算并写回 |
+| `GEMM_ZERO`、`GEMM_ACCUM`、`GEMM_ZERO_LOCAL`、`GEMM_ACCUM_HOLD` | Scalar Matrix | 使用 Scalar Matrix 的部分和与写回流程 |
+| 描述符、地址或数据格式检查失败 | 不启动计算 | `matrix_done_valid_o` 返回对应错误状态 |
 
-| 操作码与运行状态 | Outer context | Scalar context | 选择方式 |
-| --- | --- | --- | --- |
-| `GEMM_ZERO_LOCAL`（0x44）或 `GEMM_ACCUM_HOLD`（0x45） | 必须使用 | 不可使用 | 等待 Outer 空闲并 ready |
-| `GEMM_ACCUM`（0x42），且 `outer_task_supported_i=1` 或 `outer_local_psum_valid_i=1` | 必须使用 | 不可使用 | 等待 Outer 空闲并 ready |
-| `GEMM_ACCUM`（0x42），且上述两个信号均为 0 | 不可使用 | 可以使用 | 等待 Scalar 空闲并 ready |
-| 普通 `GEMM`（0x40），Outer 支持且没有本地部分和状态 | 可以使用 | 可以使用 | 两者都空闲并 ready 时由 `next_task_context_q` 轮转；否则选择可以立即接收的一侧 |
-| 其他普通 `GEMM`、`BMM`（0x41）或 `GEMM_ZERO`（0x43） | 不可使用 | 可以使用 | 等待 Scalar 空闲并 ready |
+在 `PATH_DIRECT` 或 `PATH_SCALAR` 中，任务仅将选定执行部分的 L1 请求、响应 ready 与 done 信息转发到模块输出。done valid 保持到 `matrix_done_ready_i=1`；握手完成后清除当前任务并回到空闲状态。Direct Array 不经过共享 MAC；Scalar Matrix 与 Vector 的乘法请求由 `npu_mv_shared_mac` 轮流接收。
 
-任务握手的同一时钟沿写 active 位与编号。Outer 接收任务后，下一个双可选普通 GEMM优先 Scalar；Scalar 接收任务后，下一个双可选普通 GEMM优先 Outer。
+#### 11.2.2 Direct Array 与共享 MAC
 
-两个 context 的 done 同时有效时，`next_done_context_q` 选择一项；只有被选项得到 `done_ready`。完成握手时清除对应 active 位，并把下一次同时完成的优先 context 切到另一侧。输出 `matrix_done_command_id_o`、status、fault address 和 progress 均来自同一被选 context。
+Direct Array 包含 16×16 个 `npu_matrix_outer_pe`。每个 PE 有 4 个 INT8×INT8 乘法器；INT8 模式每个计算步得到 4 项乘积并写入 24-bit 局部和。Direct Array 当前仅接受 K 不大于 511 的 INT8→INT32 普通 GEMM，避免 24-bit 局部和在完整 INT8 数值范围内溢出。控制器先把本次 K=4 的 A、B 操作数装入寄存器阵列，再发出一个计算步；最终结果以两个输出列为一组写回 L1。
 
-#### 11.2.2 Matrix context PE 路由
+Scalar Matrix 和 Vector 使用 `npu_mv_shared_mac`。其请求包含 11-bit 本地 tag、逐元素标志、两种输入数据格式、4-bit group 使能以及两组 256-bit 操作数。共享 MAC 的返回根据请求接受顺序送回 Matrix 或 Vector；FIFO 空却收到返回时置起协议错误。`PE_ISSUE_INTERVAL=1` 表示共享 MAC 能够在连续时钟周期接收请求，但 Scalar 控制器是否有下一项请求还取决于操作数读取和前一项结果。
 
-`npu_matrix_context_pe_router` 的请求 payload 包含本地 tag 11 bit、逐元素标志 1 bit、两个 dtype 各 2 bit、group 使能 4 bit以及两组 256-bit 操作数。对当前 RTL，Scalar 的流式 Matrix 请求通过该模块送往共享 MAC PE；若日后启用更多共享 MAC 的 Matrix context，两侧同时 valid 时按轮转状态选择。外部 PE 完成请求握手后，来源写入默认深度为 8 的 owner FIFO。PE 返回不带 context 位，路由器读取 FIFO 头部并只向对应 context 拉高返回 valid。返回有效但 FIFO 为空时置起保持型协议错误。
+#### 11.2.3 合并单元内部存储通道
 
-直接 Outer 阵列在 `npu_matrix_multi_dtype_outer_datapath` 内部接收行、列操作数并保留本地累加值，不生成经过该路由器的 PE 请求。Scalar 生成逐元素乘积请求；路由器不重新解释计算内容，只保存请求来源并保持全部 payload 字段。
-
-#### 11.2.3 Matrix context L1 路由
-
-`npu_matrix_context_l1_router` 接收 Outer 与 Scalar 的两组 20-bit 地址、64-bit 写数据、8-bit strobe 和读写标志，输出一组 Matrix L1 请求。请求握手时把 context 来源写入默认深度为 8 的 owner FIFO。L1 返回到达时，FIFO头部属于 Outer 就采用 Outer 的响应 ready，属于 Scalar 就采用 Scalar 的响应 ready；只有返回握手后才弹出 owner。该规则允许两个 context 保留多个已接收请求的来源次序。
-
-#### 11.2.4 Matrix 与 Vector 公共 PE
-
-`npu_mv_shared_mac` 在合并后的 Matrix 请求与 Vector MUL/FMA 请求之间轮转。请求标签扩展为 12 bit，其中最高位表示 Matrix 或 Vector，低 11 bit保留请求方编号。`ISSUE_INTERVAL=1` 时，只要 PE 接收端允许，连续周期都可接收请求。`npu_shared_mac_pe_array` 的四个 group 共使用 64 个内部 4×4 基础乘法器，支持 INT16×INT16 和 INT8×INT8。返回最高 owner 位选择 Matrix 或 Vector；Matrix 返回随后还要经过 context PE 路由。
-
-共享 MAC PE 能够连续接收来自不同客户端的请求，不代表每个客户端都能连续提交。使用共享 MAC PE 的流式 Outer 分支中的 `npu_matrix_psum_pipeline` 只保存一项未返回请求：请求握手后 `request_outstanding_q=1`，`request_slot_ready_o` 保持为 0；匹配的 PE 返回到达时，模块在时钟沿更新四组 64-bit 分段部分和并清除未返回标志，下一周期才允许该分支发出下一项请求。Scalar Matrix 和 Vector 控制器也按各自状态机等待所需返回。直接 Outer 阵列在 `ST_CORE_ISSUE` 期间不经过共享 MAC PE。
-
-#### 11.2.5 合并单元内部存储通道
-
-`npu_mv_memory_path` 在 Matrix 与 Vector 请求之间轮转，并用默认深度为 8 的 owner FIFO分发 L1 返回。请求在该模块与后级 FIFO完成输入握手时，来源 owner 和 Matrix 写回元数据已经写入各自队列。后级 `npu_mv_l1_request_fifo` 只保存请求 payload：
+`npu_mv_memory_path` 在 Matrix 与 Vector 请求之间轮流选择，并用深度为 2 的 owner FIFO 把 L1 读返回送给原请求方。请求在该模块与后级 FIFO 完成输入握手时，来源 owner 和 Matrix 写回元数据已经写入队列。后级 `npu_mv_l1_request_fifo` 只保存请求 payload：
 
 $$
 1\text{ bit write}+20\text{ bit addr}+64\text{ bit wdata}+8\text{ bit wstrb}=93\text{ bit}.
@@ -2847,7 +2832,7 @@ $$
 
 该 FIFO深度为 2，使用寄存的 head、tail 和 count，按输入握手次序向 L1BUF 提交。`s_ready_o` 只由寄存占用数决定，`m_valid_o` 只在 FIFO已有项目时为 1，因此它不是直通结构。FIFO满时，即使同周期 `m_valid_o && m_ready_i` 弹出队首，输入侧也要到下一周期才恢复 ready。输出暂停时，队首 write、addr、wdata 和 wstrb保持不变。
 
-L1 响应不进入请求 FIFO，而是直接送回 `npu_mv_memory_path`。L1 按请求接受次序返回响应，内部 owner FIFO据此选择 Matrix 或 Vector；Matrix L1 路由再把返回送给 Outer 或 Scalar。`npu_mv_memory_path` 还保存 Matrix 写请求的地址、数据与 strobe，只有对应 L1 写响应握手且 status 为成功时才更新内部旁路缓存。请求只是进入 FIFO、等待 L1 接受或等待写响应时，均不得提前填充旁路。单核顶层把 `BYPASS_ENTRIES` 设置为 2，因此缓存包含 2 项，每项保存一个对齐 64-bit beat 的地址标签、数据和 8-bit逐字节有效状态。
+L1 响应不进入请求 FIFO，而是直接送回 `npu_mv_memory_path`。L1 按请求接受顺序返回响应，owner FIFO 据此选择 Matrix 或 Vector。`npu_mv_memory_path` 还保存 Matrix 写请求的地址、数据与 strobe，只有对应 L1 写响应握手且 status 为成功时才更新内部旁路缓存。请求只是进入 FIFO、等待 L1 接受或等待写响应时，均不得提前填充旁路。单核顶层把 `BYPASS_ENTRIES` 设置为 2，因此缓存包含 2 项，每项保存一个对齐 64-bit beat 的地址标签、数据和 8-bit 逐字节有效状态。
 
 请求 FIFO的内部信号如下。`s_*` 位于内部存储通道一侧，`m_*` 位于 L1BUF 客户端一侧：
 
@@ -2872,21 +2857,13 @@ L1 响应不进入请求 FIFO，而是直接送回 `npu_mv_memory_path`。L1 按
 2. T0 时钟沿，请求写入 tail，计数从 0 变为 1。由于输出只读取已寄存项目，T0 组合阶段不会把该请求直接送到 `m_*`。
 3. T1 组合阶段，`m_valid_o=1`，输出 head对应的完整 payload。若 `m_ready_i=0`，这些输出逐周期保持。
 4. 某一时钟沿出现 `m_valid_o && m_ready_i` 后，队首从请求 FIFO弹出；后续响应不回到该 FIFO。
-5. L1 响应到达时直接与 `npu_mv_memory_path` 握手。owner FIFO头部决定响应目标；成功的 Matrix 写响应还触发旁路填充，失败响应只报告状态并禁止填充。
+5. L1 响应到达时直接与 `npu_mv_memory_path` 握手。owner FIFO 头部决定响应目标；成功的 Matrix 写响应还触发旁路填充，失败响应只报告状态并禁止填充。
 
 Vector 读只有在该 beat 的八个字节全部有效时才由内部寄存响应返回，未命中时进入 L1 仲裁。存在较早已送往 L1 但尚未返回的 Vector 请求、当前 Matrix 对同一 beat 的待接收写请求，或顶层报告同地址外部写风险时，Vector 读不能采用旁路。Matrix 较新写请求、Vector 写和顶层报告的 DMA、CME、外部 L1 窗口写会使同 beat中相应字节失效。
 
-#### 11.2.6 Matrix 乘法与本地部分和任务同时推进
+#### 11.2.4 Matrix 与 Vector 的并行条件
 
-TaskScheduler 可保存两项 Matrix active 记录，`npu_matrix_context_dispatch` 也可同时保持两个 context 为 active。典型安排是 Outer 执行 `GEMM_ACCUM_HOLD` 或使用本地状态的 `GEMM_ACCUM`，Scalar 执行另一个普通 `GEMM`。此时：
-
-1. Outer 可以访问本地部分和 RAM、准备 A/B 地址、等待 L1 返回或写回最终 C；
-2. Scalar 可以准备另一个 GEMM 的地址、读取 A/B 或申请共享 PE；
-3. 两个 context 同周期申请 Matrix PE 时，`npu_matrix_context_pe_router` 选择一项；
-4. 选出的 Matrix 请求还要与 Vector MUL/FMA 在 `npu_mv_shared_mac` 中进行选择；
-5. 两个 context 同周期申请 L1 时，`npu_matrix_context_l1_router` 选择一项，之后还要与 Vector 请求在 `npu_mv_memory_path` 中进行选择；被接受请求进入深度为 2 的请求 FIFO。
-
-因此，矩阵乘法任务和部分和累加任务可以在控制、地址准备、L1 访问、本地 RAM 访问、PE 等待和写回等阶段交错运行。完整 16×16 Outer tile 使用独立 PE 阵列；不满足直接阵列条件的请求与 Vector MUL/FMA 共用 MAC PE，每周期至多接收一项请求。Outer 本地部分和 RAM 与 Scalar 普通 GEMM 的寄存状态彼此独立，所以一个任务等待存储响应时，另一个任务仍可推进不冲突的阶段。特别是 `outer_local_psum_valid_i=1` 时，普通 GEMM不再进入 Outer，仍可由空闲 Scalar 接收；这保证本地累加序列与普通 GEMM可以同时处于活动状态。
+Matrix 单元本身每次只执行一条任务。Direct Array 运行期间不使用共享 MAC，因此 Vector 可以在没有 L1 请求冲突时使用共享 MAC；两者仍经过同一 Matrix/Vector L1 请求 FIFO。Scalar Matrix 与 Vector 同周期申请共享 MAC 时，`npu_mv_shared_mac` 按轮转状态选择一项，未被选择的一方保持请求直到被接收。两个执行部分都访问 L1 时，`npu_mv_memory_path` 使用同样的轮转方式；请求 FIFO 满时，上游在下一周期继续保持请求。
 
 ### 11.3 从指令到片上 Task Context
 
@@ -2909,7 +2886,7 @@ TaskScheduler 可保存两项 Matrix active 记录，`npu_matrix_context_dispatc
 | `C_dtype` | 2 | C 的数据格式 |
 | `requant_shift` | 5 | 非 INT32 输出的整数右移位数 |
 
-`GEMM_ZERO_LOCAL` 采用 `GEMM_ZERO` 的字段限制，建立 Outer context 本地部分和状态但不清零 L1 中的 C。`GEMM_ACCUM_HOLD` 采用 `GEMM_ACCUM` 的字段限制，把本次结果保存在 Outer 本地部分和 RAM 中但不写最终 C。
+`GEMM_ZERO_LOCAL` 采用 `GEMM_ZERO` 的字段限制，在 Scalar Matrix 中建立本地部分和状态但不清零 L1 中的 C。`GEMM_ACCUM_HOLD` 采用 `GEMM_ACCUM` 的字段限制，把本次结果保存到 Scalar Matrix 的本地部分和 RAM 中但不写最终 C。
 
 `BMM` 使用 A、B、C 三个 `LREF14`，并直接携带 `batch-1`、`M-1`、`N-1`、`K-1`、1-bit 保留位、`C_dtype` 和 `requant_shift`。BMM 指令没有 bias 字段，保留位必须为 0。
 
@@ -2949,12 +2926,12 @@ Matrix 在任何 A、B 或 C 访问之前完成以下检查：
 7. A、B、C 的存储格式编号必须与各自数据格式一致。
 8. tile 格式的 B 不允许再启用逻辑转置；当前指令解码也不会启用 A 或 B 转置。
 9. 输出整数 zero point 固定为 0。
-10. `GEMM_ACCUM` 必须处理 INT32 部分和并写 INT32 C；Outer 本地部分和有效时由 Outer 读取本地 RAM并完成最终提交；Outer 不支持当前任务且没有本地状态时，Scalar 读取旧 INT32 C；不能启用 bias、ReLU 或整数右移。
+10. `GEMM_ACCUM` 必须处理 INT32 部分和并写 INT32 C；Scalar Matrix 的本地部分和有效时从本地 RAM 读取并完成最终提交，否则从 L1 读取旧 INT32 C；不能启用 bias、ReLU 或整数右移。
 11. `GEMM_ZERO` 必须写 INT32，不能读取 A、B、旧 C 或 bias。
 12. 非 INT32 最终输出必须启用解码器生成的整数右移配置；INT32 输出不能启用该步骤。
 13. 启用 bias 时，bias 元素数量必须为 N，步长必须是大于或等于 4 的 4B 整数倍；指令解码固定生成 4B。
-14. `GEMM_ZERO_LOCAL` 与 `GEMM_ACCUM_HOLD` 固定进入 Outer；`GEMM_ACCUM` 在 Outer 支持当前任务或本地状态有效时进入 Outer，否则进入 Scalar。
-15. `BMM`、`GEMM_ZERO`、带 bias 的 GEMM以及不符合 Outer 条件的普通 GEMM由 Scalar 执行。Outer 支持且没有本地状态的普通 GEMM可由 Outer 或 Scalar 执行。
+14. `GEMM_ZERO_LOCAL`、`GEMM_ACCUM_HOLD` 与 `GEMM_ACCUM` 由 Scalar Matrix 执行，并在匹配形状、C 地址和 C 行步长时使用 Scalar Matrix 的本地部分和 RAM。
+15. `BMM`、`GEMM_ZERO`、带 bias 的 GEMM、INT16 GEMM、非 INT32 输出 GEMM 以及不符合 Direct Array 条件的普通 GEMM均由 Scalar Matrix 执行；符合 Direct Array 条件的普通 INT8→INT32 GEMM由 Direct Array 执行。
 
 字段或组合不合法时返回 `BAD_DESC` 或 `BAD_SHAPE`；数据格式组合不支持时返回 `DTYPE_UNSUPPORTED`；基地址高位非零时返回 `ADDR_FAULT`。检查失败后不写 C。
 
