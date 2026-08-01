@@ -88,7 +88,7 @@ NPU 子系统必须满足以下要求：
 7. DDR Channel 选择或交织方式由 SoC 配置决定，NPU 指令不因该配置变化而改变。
 8. 地址错误、命令字段错误、数据格式不被接受、依赖任务失败和看门狗超时必须产生可读取的错误状态。
 9. DDR 和 L1BUF 中的模型张量只采用 INT8、INT16、INT32；FP32 可以作为只读 scale、$\epsilon$、函数系数或查找表元数据，也可以用于复杂数学函数的内部计算过程，但不能作为软件可见的模型张量格式。
-10. Matrix 与 Vector 是两类调度任务，由 `npu_matrix_vector_engine` 统一接收任务。Matrix 内含 Outer context 与 Scalar context：Outer context 使用独立的 16×16 外积 PE 阵列执行整块矩阵乘法；Scalar context 执行逐元素乘加与后处理，并与 Vector 的 MUL/FMA 使用共享多精度 MAC PE。三个 context 通过内部存储通道访问 L1BUF。
+10. Matrix 与 Vector 是两类调度任务，由 `npu_matrix_vector_engine` 统一接收。Matrix 先检查普通 `GEMM` 是否符合直接阵列条件；符合条件的任务交给独立的 16×16 PE 阵列，不符合条件的矩阵任务交给 Scalar 路径。Scalar 路径与 Vector 的 MUL/FMA 共用多精度 MAC PE。两条 Matrix 路径以及 Vector 通过内部存储通道访问 L1BUF。
 11. Generic Core 是 NPU 外部的主控 CPU，不属于 NPU RTL。它通过软件驱动发起 AXI 访问，不使用 NPU 内部取指端口或自定义指令端口。
 12. NPU 对外提供 AXI Slave 和 AXI Master：AXI Slave 接收指令、CSR 与 L1BUF 窗口访问；AXI Master 由 DMA/MIF 发起全局内存访问。
 
@@ -114,12 +114,12 @@ NPU 子系统必须满足以下要求：
 | L1BUF bank 数   | `L1_BANKS`        |              16 | C model 参考配置 | bank 采用 64-bit 单端口 1RW                  |
 | L1 SRAM 读延迟    | `L1_RD_LATENCY`   |        2 cycles | C model 参考配置 | 从读请求握手后的下一周期开始计算                     |
 | L1 等待计数器 | — | 已实现 | 当前 RTL | 记录 Matrix 请求未被 L1 接收或等待返回的周期 |
-| Matrix context 数 | — | 2 | 当前 RTL | context0 是 Outer context并含本地部分和 RAM；context1 是 Scalar context |
+| Matrix 执行路径数 | — | 2 | 当前 RTL | 直接阵列路径处理满足条件的普通 `GEMM`；Scalar 路径处理其他 Matrix 描述符 |
 | 共享 PE group 数 | — | 4 | 当前 RTL | 每组 16 个 4×4 基础乘法器，Matrix 与 Vector MUL/FMA 共用 |
 | Matrix-Vector 旁路缓存项数 | `BYPASS_ENTRIES` | 2 | 单核顶层配置 | 每项保存一个 64-bit beat 的地址标签、数据和逐字节有效位 |
 | Matrix-Vector L1 请求 FIFO | — | 2 项 × 93 bit | 当前 RTL | 非直通；保存 write、20-bit addr、64-bit wdata 和 8-bit wstrb |
-| Outer PE 阵列 | `PE_M×PE_N` | `16×16` | 当前 RTL | 256 个 PE；INT8 每个 PE 每拍完成 4 个 8×8 乘法并按 INT24 保存局部和，INT16 使用 INT48 局部和 |
-| Matrix B tile | `MT×KT×NT` | `8×16×8` | 当前格式配置 | 当前 Outer 分支按行组、列组和 K 小段推进；B 以 `16×8` 小块保存 |
+| 直接阵列 PE 阵列 | `PE_M×PE_N` | `16×16` | 当前 RTL | 256 个 PE；INT8 每个 PE 每拍完成 4 个 8×8 乘法并按 INT24 保存局部和，INT16 使用 INT48 局部和 |
+| 直接阵列 B 面板 | `KT×NT` | `16×8` | 当前格式配置 | B 按连续 K 位置和 8 列小块保存；16 列输出 tile 使用两个 B 小块 |
 | Matrix 临时累加宽度 | `accum_q`        |          64 bit | 当前 RTL | signed32 乘积经符号扩展后加入 signed64 累加寄存器 |
 | Matrix Scalar context 计算速率 | — | 1 个乘积/计算步骤 | 当前 RTL | context1 每次向共享 PE 提交一个逐元素乘法请求 |
 | Vector 标量分支处理数 | — | 1 个元素/计算步骤 | 当前 RTL | 每个源读请求和目的写请求均等待对应响应 |
@@ -130,7 +130,7 @@ NPU 子系统必须满足以下要求：
 | MIF 未完成事务数 | `MIF_OUTSTANDING` |           1 | 当前 RTL | MIF 完成当前 AXI 事务后再接收下一项请求 |
 | MIF AXI burst 长度 | `MIF_AXI_BURST_BEATS` | 读 1～16 beat，写 1 beat | 当前 RTL | 正常 DMA 指令的一次对齐读最多 8 beat；模块级 Task Context 可给出 1～16 beat |
 | 模型张量格式集合       | `MODEL_DTYPE_SET` | INT8、INT16、INT32 | 当前设计   | DMA、L1BUF、Matrix 和 Vector 的软件可见张量格式   |
-| Matrix 部分和格式 | `MAT_PARTIAL_DTYPE` | INT32 | 用户要求 | `GEMM_ACCUM`、`GEMM_ZERO` 的 L1 C 和 Outer context 本地部分和 RAM 使用 INT32；计算阶段使用 signed64 |
+| Matrix 部分和格式 | `MAT_PARTIAL_DTYPE` | INT32 | 用户要求 | Scalar 路径的 `GEMM_ACCUM`、`GEMM_ZERO` 使用 L1 C 中的 INT32 部分和；直接阵列只处理不带外部部分和的普通 `GEMM` |
 | 内部浮点工作格式       | `CME_FP_DTYPE`    |            FP32 | 本文基准定义 | 当前只存在于 Complex Math Engine 的状态和统计寄存器 |
 
 > [!note] 参数化要求
@@ -144,12 +144,12 @@ NPU 子系统必须满足以下要求：
 > 表中的 C model 参考值用于当前软件模型、测试向量和简单周期模型。后续 RTL 可以通过只读功能寄存器公布不同物理值，但不得改变指令中各字段的解释、整数结果或 ready/valid 规则。C model 分别由 Core tick 与 NoC tick 推进；常规回归默认按 `core_clk:noc_clk=1:1` 调用，也支持两者采用不同的整数 tick 节奏。DDR 读请求到首个返回 beat 的固定延迟为 20 个 NoC 存储目标 tick，连续返回时每个 NoC tick 最多一个 beat；写请求在最后一个数据 beat 握手后 12 个 NoC 存储目标 tick 返回响应。
 
 > [!important] 64-bit 总线要求
-> 所有软件可见总线均以 64 bit 为一个 beat。一条指令固定使用两个 beat，传送顺序为低 64 bit在前、高 64 bit在后。Scalar 与 Vector 的乘法使用共享 MAC PE；Outer 使用独立 PE 阵列。当前 RTL 的 Outer、Scalar 和 Vector 通过合并单元访问一组 64-bit L1 请求端口，端口前设置深度为 2 的寄存请求 FIFO。
+> 所有软件可见总线均以 64 bit 为一个 beat。一条指令固定使用两个 beat，传送顺序为低 64 bit在前、高 64 bit在后。Scalar 与 Vector 的乘法使用共享 MAC PE；直接阵列使用独立 PE 阵列。当前 RTL 的直接阵列、Scalar 和 Vector 通过合并单元访问一组 64-bit L1 请求端口，端口前设置深度为 2 的寄存请求 FIFO。
 
 > [!warning] 大矩阵吞吐率的当前限制与后续硬件要求
-> `tvm_large_matrix` 的 RTL 统计表明，当前 TVM 程序的矩阵任务全部进入 Scalar context，Outer PE 阵列计数为 0。因此该用例只能证明 TVM 到 RTL 的结果正确，不能证明 Outer PE 的利用率。
+> `tvm_large_matrix` 的 RTL 统计表明，当前 TVM 程序的矩阵任务全部进入 Scalar 路径，直接阵列计数为 0。因此该用例只能证明 TVM 到 RTL 的结果正确，不能证明直接阵列的利用率。
 >
-> 对 64×64×1024 的 INT8 MatMul，16×16 阵列每拍可完成 `16×16×4=1024` 个乘积。即使 A、B 面板已经完整复用，读取 A 与 B 共需 131072 B；单个 64-bit L1 读端口每拍提供 8 B，理论上限为 `4194304 / (131072 / 8) = 256` 个乘积每拍，即 PE 时间利用率不超过 25%。当前控制器逐元素经过 A 请求、A 返回、B 请求、B 返回阶段，实际供数占比远低于该上限。
+> 对 64×64×1024 的 INT8 MatMul，16×16 阵列每拍可完成 `16×16×4=1024` 个乘积。单个 64-bit L1 端口每拍最多提供 8 B，因而不能以阵列峰值速率持续供给 A、B 面板。直接阵列控制器已按整条 64-bit L1 数据读取 A 和 B；INT8 路径把一条 A 数据保存为两个连续的 4 元素 K 小段后再使用。独立 16×16×511 INT8 用例在 2-cycle、可连续接收请求的 L1 模型中使用 2818 个时钟周期，其中阵列计算 128 个时钟周期，PE 时间利用率为 `128 / 2818 = 4.5%`。该数值包含任务接收、A/B 读取、结果写回和完成等待。
 >
 > 因而，85% 的端到端 PE 时间利用率不是当前单请求 L1 接口可以达到的指标。后续硬件必须在保持外部 AXI 64-bit 的前提下，提供至少 4 个并行的 64-bit Matrix 面板读端口、独立的结果写回端口、双缓冲 A/B 面板和跨 M/N tile 的面板复用。编译器还必须按 bank 分配 A、B、C 的 L1 地址，避免同拍访问同一 bank。上述内部接口尚未进入当前 RTL，不能写为已实现功能。
 
@@ -234,7 +234,7 @@ flowchart TB
 
 #### 2.3.4 Matrix 的整数计算
 
-Matrix 子系统支持 INT8 和 INT16 输入。A 与 B 必须使用相同的数据格式。完整 16×16 输出 tile 的普通 `GEMM` 由 Outer 的独立 PE 阵列执行；未满足该条件的 Matrix 任务由 Scalar context 通过共享 MAC PE 执行。两种路径都先对输入元素进行符号扩展，再执行有符号乘法。Scalar 的乘积加入 signed 64-bit 临时累加寄存器；Outer 在阵列中保留 INT8 的 signed24 或 INT16 的 signed48 临时累加值，随后扩展为写回使用的 INT32 结果。先定义不含 bias 的乘累加结果：
+Matrix 子系统支持 INT8 和 INT16 输入。A 与 B 必须使用相同的数据格式。直接阵列接受普通 `GEMM` 的一个受限子集：`M`、`N` 均为 16～64 且是 16 的整数倍，`K` 为 1～511，A、B、C 基址与 A、C 行步长满足 8B 对齐，C 格式为 INT32，且描述符不包含 bias、外部部分和、缩放或截断。直接阵列以完整 16×16 输出 tile 计算该子集；其他 Matrix 任务由 Scalar 路径通过共享 MAC PE 执行。两条路径都先对输入元素进行符号扩展，再执行有符号乘法。Scalar 的乘积加入 signed 64-bit 临时累加寄存器；直接阵列在 PE 内保留 INT8 的 signed24 或 INT16 的 signed48 临时累加值，随后扩展为写回使用的 INT32 结果。先定义不含 bias 的乘累加结果：
 
 $$
 p_{m,n}
@@ -253,7 +253,7 @@ $$
 | \(q^W_{k,n}\) | B 或权重矩阵第 \(k\) 行、第 \(n\) 列的有符号整数 |
 | \(p_{m,n}\) | 尚未加入 bias 的临时累加结果 |
 
-当前 Matrix 整数路径要求输入 zero point 为 0，因此公式中不再写减 zero point。`GEMM` 可以加入形状为 \([N]\) 的 INT32 bias：
+当前 Matrix 整数路径要求输入 zero point 为 0，因此公式中不再写减 zero point。Scalar 路径的 `GEMM` 可以加入形状为 \([N]\) 的 INT32 bias；直接阵列收到带 bias 的描述符时由 Matrix 顶层选择 Scalar 路径：
 
 $$
 a_{m,n}=p_{m,n}+b^{\mathrm{acc}}_n.
@@ -364,7 +364,7 @@ flowchart TB
         LSC0["LSC / IRQ / CRG / WDT"]
         CFE0["Command Front End<br/>128-bit 指令 FIFO"]
         TS0["TaskScheduler<br/>Admission / Task / Event / Control Snapshot"]
-        MVE0["Matrix-Vector Engine<br/>Outer 16×16 PE 阵列 + Scalar/Vector 共享 MAC PE<br/>2 项内部旁路"]
+        MVE0["Matrix-Vector Engine<br/>Direct 16×16 PE 阵列 + Scalar/Vector 共享 MAC PE<br/>2 项内部旁路"]
         CE0["Complex Math Engine"]
         DMA0["DMA / Layout Engine"]
         L10["L1BUF Controller + SRAM"]
@@ -426,29 +426,22 @@ flowchart TB
     MIF["MIF<br/>AXI Master"]
     LSC["LSC / IRQ / CRG / WDT"]
 
-    subgraph MVE["npu_matrix_vector_engine<br/>Matrix 与 Vector 共用的物理执行模块"]
+    subgraph MVE["npu_matrix_vector_engine<br/>Matrix 与 Vector 使用的物理执行模块"]
         direction TB
-        MDISP["Matrix Context Dispatch"]
-        C0["context0 / Outer<br/>分块外积 / 本地部分和 RAM"]
-        C1["context1 / Scalar<br/>Controller + Datapath"]
-        MPR["Matrix PE Router"]
-        MLR["Matrix L1 Router"]
+        MDISP["Matrix Path Select<br/>Direct 条件检查 / Scalar 选择"]
+        DIRECT["Direct Matrix Array<br/>Controller / Datapath / 16×16 PE Array"]
+        SCALAR["Matrix Scalar<br/>Controller / Datapath"]
         VEC["Vector Engine<br/>Controller / Datapath / Integer Pipeline"]
-        SHMAC["Shared MAC Arbiter"]
-        MVPE["Shared MAC PE<br/>4 groups × 16 个 4×4 乘法器"]
-        MVMEM["MV Memory Path<br/>2 项旁路缓存"]
+        SHMAC["Shared MAC<br/>Arbiter / Controller / Datapath / PE"]
+        MVMEM["MV Memory Path<br/>请求选择 / 旁路缓存 / 响应返回"]
         REQF["L1 Request FIFO<br/>深度 2 / 93 bit / 非直通"]
 
-        MDISP --> C0
-        MDISP --> C1
-        C0 --> MPR
-        C1 --> MPR
-        MPR --> SHMAC
+        MDISP --> DIRECT
+        MDISP --> SCALAR
+        SCALAR --> SHMAC
         VEC --> SHMAC
-        SHMAC <--> MVPE
-        C0 --> MLR
-        C1 --> MLR
-        MLR --> MVMEM
+        DIRECT --> MVMEM
+        SCALAR --> MVMEM
         VEC --> MVMEM
         MVMEM --> REQF
     end
@@ -473,7 +466,8 @@ flowchart TB
     L1C <--> SRAM
     DMA <-->|"全局数据"| MIF
     DMA -->|"done"| TS
-    MDISP -->|"Matrix done + command_id"| TS
+    DIRECT -->|"Matrix done + command_id"| TS
+    SCALAR -->|"Matrix done + command_id"| TS
     VEC -->|"Vector done"| TS
     CME -->|"done"| TS
     TS -->|"completion"| LSC
@@ -493,18 +487,18 @@ flowchart TB
 | Event Table / Scoreboard | CMD 中的依赖事件、各单元完成消息      | 可发射任务、事件状态、错误状态                  | 检查依赖、保存任务状态、传播错误                                     |
 | Inline Decode            | 指令、任务表保存的基地址快照       | 接收检查结果或内部展开的 Task Context | 接收检查实例判断字段是否合法；共享发射实例根据窄快照生成 Task Context，均不访问全局内存 |
 | Task Decode / Dispatch   | 任务表中的指令与基地址快照   | 各执行单元任务 | 每周期检查一个非 Control 任务槽；轮末复查后保存发射窄快照。Control 获胜项保存槽号和提交序号，下一周期复查并执行 |
-| Matrix-Vector Engine 顶层 | Matrix 与 Vector Task Context、L1BUF 数据 | 矩阵和向量结果、两组完成消息 | `npu_matrix_vector_engine` 是物理集成层，连接双 Matrix context、Vector 顶层、共享多精度 MAC PE、内部存储通道和旁路缓存；不保存逐元素操作数、乘加值或结果 RAM |
-| Matrix Dual Context      | Matrix 任务、MAC PE 和 L1 返回 | Matrix PE/L1 请求、带 `command_id` 的完成消息 | `npu_matrix_dual_context` 连接任务分配器、Outer、Scalar、PE 路由和 L1 请求级；任务分配器按操作码、Outer 支持状态和本地部分和状态选择 context，数值计算留在两个 context 的数据通路中 |
-| Matrix Multi-Dtype Outer 顶层 | Outer Task Context、L1 返回、直接 PE 阵列或共享 MAC PE 返回 | L1/PE 请求、完成消息 | `npu_matrix_multi_dtype_outer_engine` 只连接 Outer 控制器与数据通路，传递任务、存储和 PE 接口；完整 16×16 的普通 `GEMM` 使用直接 PE 阵列，其他 Outer 可接受任务使用共享 MAC PE；顶层不保存操作数、部分和或输出值 |
-| Matrix Multi-Dtype Outer 控制器 | Outer Task Context、L1/PE ready/valid、数据通路进度 | 数据通路配置和操作信号、请求阶段、完成消息 | `npu_matrix_multi_dtype_outer_controller` 负责任务接收、描述符检查、tile 与 K 步调度、L1 请求发起和完成状态、ready/valid 握手、地址范围检查、PE 发射次序、错误处理及 done/status |
-| Matrix Multi-Dtype Outer 数据通路 | 控制器配置与操作信号、L1 读返回、直接 PE 阵列或共享 MAC PE 返回 | PE 操作数、读写地址与数据字段、部分和及写回数据 | `npu_matrix_multi_dtype_outer_datapath` 生成 A/B/C 地址，保存读缓存、操作数和结果寄存器；完整 16×16 tile 送往直接 PE 阵列，其他形状或需要本地部分和保存的任务使用共享 MAC PE；数据通路维护本地部分和 RAM、累加 bank 和输出级，并形成 L1BUF 写数据与 byte strobe |
+| Matrix-Vector Engine 顶层 | Matrix 与 Vector Task Context、L1BUF 数据 | 矩阵和向量结果、两组完成消息 | `npu_matrix_vector_engine` 是物理集成层，连接 Matrix 路径选择、Direct Matrix Array、Matrix Scalar、Vector、Shared MAC、内部存储通道和旁路缓存；不保存逐元素操作数、乘加值或结果 RAM |
+| Matrix 路径选择          | Matrix 任务、Direct 条件检查结果 | Direct 或 Scalar 任务握手、带 `command_id` 的完成消息 | `npu_matrix_engine` 先保存任务，再检查是否满足 Direct Matrix Array 的形状、数据格式、地址和功能限制；满足时选择 Direct，否则选择 Scalar；两条路径一次只运行一项 Matrix 任务 |
+| Direct Matrix Array 顶层 | Direct Task Context、L1 返回 | L1 请求、完成消息 | `npu_matrix_direct_array_engine` 只连接 Direct 控制器和数据通路；它不向 Shared MAC 发送计算请求，完整 16×16 tile 由内部 16×16 PE 阵列计算 |
+| Direct Matrix 控制器     | Direct Task Context、L1 ready/valid、数据通路进度 | 数据通路配置和操作信号、请求阶段、完成消息 | `npu_matrix_direct_array_controller` 负责任务接收、描述符检查、tile 与 K 步调度、连续 L1 请求发起和响应计数、PE 发射次序、结果写回次序、错误处理及 done/status |
+| Direct Matrix 数据通路   | 控制器配置与操作信号、L1 读返回 | PE 操作数、读写地址与数据字段、累加值及写回数据 | `npu_matrix_direct_array_datapath` 保存 A 行缓存和 B 行缓存，组织 16×16 PE 的操作数，维护 PE 累加器；结果沿每行移位后从首两列读取，形成 L1BUF 写数据与 byte strobe |
 | Matrix Scalar 控制器     | Scalar Task Context、L1 与共享 PE ready/valid | 数据通路操作信号、请求阶段、完成消息 | `npu_matrix_scalar_engine` 的控制层入口保存任务状态、描述符检查、矩阵游标、地址游标和完成状态，推进源读、PE 请求、后处理与写回阶段 |
 | Matrix Scalar 数据通路   | 控制器操作信号、L1 读数据、共享 PE 返回 | PE 操作数、部分和、写数据与写 strobe | `npu_matrix_scalar_datapath` 保存 A/B 操作数、整数累加值、局部部分和 RAM、后处理寄存器和写回数据，完成整数乘加、局部部分和读写与结果格式化 |
 | Matrix-Vector L1 请求 FIFO | 内部存储通道输出的 L1 请求 | 排队后的 L1 请求 | 保存两项 93-bit 请求，按接收次序送到 L1BUF；响应不经过该 FIFO |
 | Shared MAC 顶层          | Matrix 与 Vector PE 请求 | Matrix 与 Vector PE 返回、计数器 | `npu_mv_shared_mac` 只连接仲裁控制器与计算数据通路；顶层不保存客户端操作数和乘法结果 |
 | Shared MAC 控制器        | Matrix/Vector 请求 valid、数据通路 ready | 客户端 ready、发射许可、请求所有者、计数器 | `npu_mv_shared_mac_controller` 负责轮转选择、发射间隔、ready/valid 握手和 Matrix/Vector 等待及授予计数 |
 | Shared MAC 数据通路      | 控制器发射许可与所有者、Matrix/Vector 操作数 | 分段贡献值或逐元素 INT32 乘积 | `npu_mv_shared_mac_datapath` 选择请求、保存并传递 client tag、组织操作数字段，接收 PE 返回后按请求方拆分并整理结果 |
-| Shared MAC PE 阵列       | 数据通路给出的 tag、数据格式、group 使能与操作数 | 原始乘法结果 | PE 阵列以及基础乘法、精度组合、求和树和结果寄存器是 Shared MAC 数据通路的子模块；四个 group 共 64 个内部 4×4 基础乘法器，组合成 INT8 或 INT16 乘法，不构成软件可选的数据格式 |
+| Shared MAC PE 阵列       | 数据通路给出的 tag、数据格式、group 使能与操作数 | 原始乘法结果 | PE 阵列以及基础乘法、精度组合、求和树和结果寄存器是 Shared MAC 数据通路的子模块；供 Scalar 与 Vector 使用，不参与 Direct Matrix Array 的 16×16 PE 计算 |
 | Vector 顶层              | Vector Task Context、L1 返回、共享 PE 返回 | L1/PE 请求、完成消息 | `npu_vector_engine` 只连接 Vector 控制器、数据通路和整数流水级，保持外部接口；顶层不保存源操作数、mask 或运算结果 |
 | Vector 控制器            | Vector Task Context、L1 请求/返回状态、共享 PE ready/valid | 数据通路控制信号、完成消息 | 锁存并检查任务字段，推进读源、计算、写回和完成状态；保存元素游标与 L1 地址游标 |
 | Vector 数据通路          | 控制器操作信号、L1 读数据、共享 PE 返回 | 共享 PE 请求、L1 写数据与写 strobe、计算状态 | 保存源操作数、mask、结果、快速 MUL beat 和乘法累加值；接收逐元素流水级结果，形成 MUL/FMA 返回处理和写回数据 |
@@ -522,7 +516,7 @@ flowchart TB
 
 #### 3.3.1 执行单元的控制通路、数据通路与功能时序
 
-Vector、Matrix Multi-Dtype Outer、Shared MAC、Complex 和 DMA 都采用顶层、控制器、数据通路三层组织。具备独立顶层的 `*_engine` 模块只完成端口连接以及控制器和数据通路之间的信号传递；顶层不新增任务状态机、操作数或结果寄存器、算术单元或本地 RAM 状态。为保留既有模块名，`npu_matrix_scalar_engine` 作为 Scalar 的控制层入口，数值处理和局部 RAM 读写由 `npu_matrix_scalar_datapath` 承担。
+Vector、Direct Matrix Array、Shared MAC、Complex 和 DMA 都采用顶层、控制器、数据通路三层组织。具备独立顶层的 `*_engine` 模块只完成端口连接以及控制器和数据通路之间的信号传递；顶层不新增任务状态机、操作数或结果寄存器、算术单元或本地 RAM 状态。为保留既有模块名，`npu_matrix_scalar_engine` 作为 Scalar 的控制层入口，数值处理和局部 RAM 读写由 `npu_matrix_scalar_datapath` 承担。
 
 控制通路负责接收任务、保存任务状态、检查描述符、管理 ready/valid 握手、安排读写和计算阶段、记录错误并提交完成消息。数据通路负责操作数和结果寄存器、地址计算、数据整理、算术、结果格式化以及本地 RAM 与 L1BUF 访问的数据字段。PE 阵列、整数流水级、部分和流水、FP32 数学序列和各类算术叶模块均属于数据通路；它们不接收 Task Context，也不独立产生完成消息。
 
@@ -542,7 +536,7 @@ Vector、Matrix Multi-Dtype Outer、Shared MAC、Complex 和 DMA 都采用顶层
 | 配置与状态 | 外部主控 CPU | SoC AXI Fabric、AXI Slave Frontend | LSC | 写配置、读取状态、查询完成和 ACK |
 | L1BUF 外部访问 | 外部主控 CPU | SoC AXI Fabric、AXI Slave Frontend、L1 Host 端口 | L1BUF | 装载输入与权重，读取输出或调试数据 |
 | 激活/权重加载 | DMA | MIF、SoC AXI Fabric、L1BUF Controller | L1BUF | 计算前预取 |
-| Matrix 请求 | Matrix-Vector Engine | Matrix context 路由、MV Memory Path、L1 Request FIFO、L1BUF Controller | L1BUF bank | 读取 A、B、bias、旧 C 和 residual，或写回 Matrix 结果 |
+| Matrix 请求 | Matrix-Vector Engine | Matrix 路径选择、Direct 或 Scalar、MV Memory Path、L1 Request FIFO、L1BUF Controller | L1BUF bank | Direct 读取 A、B 并写回 C；Scalar 还可读取 bias、旧 C 和 residual |
 | Vector 请求 | Matrix-Vector Engine | MV Memory Path、L1 Request FIFO、L1BUF Controller | L1BUF bank | 读取逐元素或行级输入，或写回 Vector 结果；旁路命中时不提交 L1 请求 |
 | Matrix / Vector 响应 | L1BUF Controller | MV Memory Path；Matrix 响应还经过 Matrix context 路由 | Matrix-Vector Engine | 响应不经过 L1 Request FIFO，返回原请求方 |
 | CME 请求与响应 | CME | CME L1 端口、L1BUF Controller | L1BUF bank | 读取行级输入并写回结果 |
@@ -565,7 +559,7 @@ Vector、Matrix Multi-Dtype Outer、Shared MAC、Complex 和 DMA 都采用顶层
 | AXI Slave Frontend | LSC | register | 64 bit | request/response |
 | AXI Slave Frontend | L1BUF Controller | L1 Host read/write | 64 bit | request/response |
 
-64 bit 是每个 AXI 和 L1 端口的单 beat 数据宽度。当前 DMA、Matrix-Vector Engine 和 CME 各使用一组 64-bit L1 请求与响应端口，并在时间上复用该端口完成各类读写。Matrix-Vector Engine 内部先在 Outer 与 Scalar 之间选择 Matrix 请求，再在 Matrix 与 Vector 之间选择请求；请求随后进入深度为 2 的寄存 FIFO。owner 信息在内部存储通道接受请求时已经记录，FIFO 只保存读写标志、地址、写数据和写 strobe。L1 响应直接返回内部存储通道，并由 owner FIFO 送给原请求方。外部主控在 AXI W 通道先发送 `CMD[63:0]`，再发送 `CMD[127:64]`；AXI Slave Frontend 为这两个 beat 产生内部 `first/last` 标志，CFE 组合出完整指令后再交给 TaskScheduler。
+64 bit 是每个 AXI 和 L1 端口的单 beat 数据宽度。当前 DMA、Matrix-Vector Engine 和 CME 各使用一组 64-bit L1 请求与响应端口，并在时间上复用该端口完成各类读写。Matrix-Vector Engine 内部先在 Direct Matrix Array 与 Scalar 之间选择 Matrix 请求，再在 Matrix 与 Vector 之间选择请求；请求随后进入深度为 2 的寄存 FIFO。owner 信息在内部存储通道接受请求时已经记录，FIFO 只保存读写标志、地址、写数据和写 strobe。L1 响应直接返回内部存储通道，并由 owner FIFO 送给原请求方。外部主控在 AXI W 通道先发送 `CMD[63:0]`，再发送 `CMD[127:64]`；AXI Slave Frontend 为这两个 beat 产生内部 `first/last` 标志，CFE 组合出完整指令后再交给 TaskScheduler。
 
 ---
 
