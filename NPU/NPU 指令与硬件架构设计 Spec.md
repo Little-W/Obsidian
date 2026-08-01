@@ -147,12 +147,14 @@ NPU 子系统必须满足以下要求：
 > 所有软件可见总线均以 64 bit 为一个 beat。一条指令固定使用两个 beat，传送顺序为低 64 bit在前、高 64 bit在后。Scalar 与 Vector 的乘法使用共享 MAC PE，并通过深度为 2 的寄存请求 FIFO访问普通 64-bit L1 请求端口。Direct Matrix Array 使用独立 PE 阵列和 L1BUF 的 24-lane 面板端口；该端口只在片上使用，不改变 AXI Slave、AXI Master 或软件可见 L1 窗口的 64-bit beat 定义。
 
 > [!note] L1BUF bank 的 RAM 结构
-> `npu_l1buf_bank` 的每个 bank 是一个 64-bit、同步读取的双端口 RAM。普通客户端走 port0，Direct Matrix Array 的面板请求走 port1；两个端口各自使用一个时钟过程，因此可在同一拍访问不同地址。存储内容没有复位值。RTL 不使用 `ram_style` 属性，Vivado 综合会把该结构识别为 true dual port Block RAM。
+> `npu_l1buf_bank` 的每个 bank 是一个 64-bit、同步读取的双端口 RAM。普通客户端使用 port0；Direct Matrix Array 的面板访问可同时使用两个端口。两个端口各自使用一个时钟过程，因此可在同一拍访问不同地址。存储内容没有复位值。RTL 不使用 `ram_style` 属性，Vivado 综合会把该结构识别为 true dual port Block RAM。
 
 > [!warning] 大矩阵吞吐率的已验证范围
 > `tvm_large_matrix` 的 RTL 统计表明，当前 TVM 后端生成的矩阵任务全部进入 Scalar 路径，Direct Matrix Array 计数为 0。因此该用例证明 TVM 到 RTL 的数值结果与调用次序正确，但不能作为直接阵列 PE 利用率的测试结果。
 >
 > 对一个 INT8 的 16×16 输出 tile，单个 K 计算步处理连续 4 个 K 位置，PE 阵列每拍完成 `16×16×4=1024` 个乘积。直接阵列从面板端口读取 16 个 A word 和 8 个 B word，共 24 个 64-bit lane；A 面板 word 的低 4 个字节是本 K 步的 4 个 A 元素，B 的 8 个 word 覆盖 4 行、16 列。L1BUF 有 16 个 bank、每个 bank 两个同步端口，A 的 16 个 word 各占一个 bank，连续 B word 使用相应 bank 的另一个端口，因此面板在一次请求中可被接受。控制器在当前面板被阵列使用时接收下一面板响应并发出下一请求，稳定阶段每拍发射一个 K 计算步。
+>
+> 面板 lane 的 bank 位置固定：lane `0…15` 分别使用 bank `0…15` 的 port0；lane `16…23` 分别使用 bank `0…7` 的 port1。A 使用前 16 个 lane，B 使用后 8 个 lane，C 写回只使用前 16 个 lane。Direct 编译结果中的 A、B、C tile 基址均按 64B 对齐，K 面板步长是 64B 或 128B，因而每次面板请求都保持该 bank 排列。L1BUF 对不符合此排列、未按 8B 对齐或超过 L1 地址范围的 lane 返回错误状态；Direct 控制器据此提交失败完成消息。
 >
 > 一个 16×16 C tile 需要 8 次、每次两列的写回。PE 内的累加值在 8 次写回期间保持不动；数据通路根据 `output_pair=0…7` 选择当前两列并交给面板写端口。这样结果列的选择逻辑只位于输出侧，不在每个 PE 的累加寄存器前放置宽数据反馈选择器。
 >
