@@ -6901,5 +6901,10 @@ L1BUF 检查通过：256 个 RAMB36、0 个 RAMB18、0 个 LUTRAM，且以 `memo
 
 100MHz 的 setup 在综合后暂时通过，但裕量只有 0.053ns，不能作为布局布线完成后的结论；hold 仍有 162 个失败端点。最差 setup 从任务命令 BRAM 到 Complex 描述符寄存器，说明描述符解码和描述符暂存之间仍应增加寄存级。后续应先把解码结果分段暂存，再执行 `place_design`、`phys_opt_design` 和 `route_design`，以布局布线后的 setup 与 hold 报告作为验收依据。
 
+随后执行了一次包含统一 Outer PE 累加寄存器和描述符暂存保留属性的对比综合，构建目录为 `Transformer_NPU/.work/vivado_pipelined_current`。统一累加寄存器使 Slice LUT 降为 205,036，较上表减少 3,721；但描述符暂存保留属性使最差路径变为描述符寄存器到各执行单元描述符寄存器，setup WNS 变为 -0.047ns、TNS 为 -0.235ns、失败端点为 5，hold WHS 为 -0.019ns、THS 为 -1.466ns、失败端点为 162。因此该属性已从当前 RTL 删除，不能作为保留的时序优化方式。该次综合仍超过器件 LUT 容量，且不是布局布线结果。
+
+> [!warning] 当前时序处理方向
+> 描述符字段不应依靠保留属性阻止工具改写。当前 RTL 已把共享解码器的扁平描述符先写入独立寄存器，再在下一拍复制到 DMA、Matrix、Vector、Complex 的发射寄存器。这样切断“命令字寄存器→共享解码器→发射描述符寄存器”的长组合计算，同时四个发射队列仍可独立保持 ready/valid。调度器双 Matrix 回归与连续发射回归均已通过；后者的首个任务完成时刻由 344 拍变为 346 拍，但 DMA 的下一任务同拍发射，Vector 和 Complex 仅相隔 1 拍，未产生空闲拍。该改动仍须重新进行完整 RTL 回归、综合、布局和布线。
+
 > [!summary] 首版硬件实现范围
 > 单核首版由 64-bit AXI/MIF、64-bit L1BUF 客户端接口、Command Front End、TaskScheduler、DMA、Matrix-Vector Engine、Complex Math、L1BUF、LSC、CRG 和 WDT 组成。每条 128-bit CMD 在 64-bit 接口上使用低、高两个 beat；事件和任务选项直接位于 CMD。TaskScheduler 使用命令接纳寄存级、WAIT_EVENT 逐槽检查及结果寄存、接收检查解码器、Control 执行快照、发射窄快照、共享发射解码器和四组发射暂存；Matrix 使用两项 active 记录并按完成 `command_id` 查找任务。Matrix-Vector Engine 是 Matrix 与 Vector 共用的物理执行模块，包含 Outer context、Scalar context、Vector 控制器、一套 16×16 Outer PE 阵列、一套 Scalar/Vector 可配置多精度 MAC PE、内部 L1 仲裁、深度为 2 的 L1 请求 FIFO和 2 项 Matrix 到 Vector 旁路缓存。Outer 执行分块外积并保存本地部分和 RAM，Scalar 执行逐元素乘加和后处理。完整 16×16 Matrix tile由 Outer PE 阵列计算；其余 Matrix 乘法与 Vector MUL/FMA 使用共享 MAC PE，Vector 的其他逐元素操作使用轻量整数 ALU。模型张量只采用 INT8、INT16、INT32；共享 MAC PE 的内部 4×4 基础乘法器用于组成 INT8 和 INT16 乘法，不构成软件可选的数据格式；CME 的 SUMSQ 分成平方与累加状态，Exp 的范围整数使用五个寄存状态完成最近偶数舍入，复杂函数在 CME 内部执行 `INT→FP32→INT`，F2I 在数学响应后经过五个寄存状态。软件通过指令和 C 配置给出物理地址、shape、stride、scale 和 zero point，硬件按模块接口与功能时序完成任务。
