@@ -149,9 +149,9 @@ NPU 子系统必须满足以下要求：
 > [!warning] 大矩阵吞吐率的当前限制与后续硬件要求
 > `tvm_large_matrix` 的 RTL 统计表明，当前 TVM 程序的矩阵任务全部进入 Scalar 路径，直接阵列计数为 0。因此该用例只能证明 TVM 到 RTL 的结果正确，不能证明直接阵列的利用率。
 >
-> 对 64×64×1024 的 INT8 MatMul，16×16 阵列每拍可完成 `16×16×4=1024` 个乘积。单个 64-bit L1 端口每拍最多提供 8 B，因而不能以阵列峰值速率持续供给 A、B 面板。直接阵列控制器已按整条 64-bit L1 数据读取 A 和 B；INT8 路径把一条 A 数据保存为两个连续的 4 元素 K 小段后再使用。独立 16×16×511 INT8 用例在 2-cycle、可连续接收请求的 L1 模型中使用 2818 个时钟周期，其中阵列计算 128 个时钟周期，PE 时间利用率为 `128 / 2818 = 4.5%`。该数值包含任务接收、A/B 读取、结果写回和完成等待。
+> 对 64×64×1024 的 INT8 MatMul，16×16 阵列每拍可完成 `16×16×4=1024` 个乘积。一个 K 步计算 4 个连续 K 位置：B 面板需要 `4×16=64 B`；A 面板每两个 K 步读取 16 行、每行 8 B，平均每个 K 步也需要 64 B。因此，稳定发射一个 K 步平均需要 128 B 输入。单个 64-bit L1 端口每拍最多提供 8 B，因而不能以阵列峰值速率持续供给 A、B 面板。直接阵列控制器已按整条 64-bit L1 数据读取 A 和 B；INT8 路径把一条 A 数据保存为两个连续的 4 元素 K 小段后再使用。独立 16×16×511 INT8 用例在 2-cycle、可连续接收请求的 L1 模型中使用 2819 个时钟周期，其中阵列计算 128 个时钟周期，PE 时间利用率为 `128 / 2819 = 4.5%`。该数值包含任务接收、A/B 读取、结果写回和完成等待。
 >
-> 因而，85% 的端到端 PE 时间利用率不是当前单请求 L1 接口可以达到的指标。后续硬件必须在保持外部 AXI 64-bit 的前提下，提供至少 4 个并行的 64-bit Matrix 面板读端口、独立的结果写回端口、双缓冲 A/B 面板和跨 M/N tile 的面板复用。编译器还必须按 bank 分配 A、B、C 的 L1 地址，避免同拍访问同一 bank。上述内部接口尚未进入当前 RTL，不能写为已实现功能。
+> 因而，85% 的端到端 PE 时间利用率不是当前单请求 L1 接口可以达到的指标。为使一个 INT8 K 步在一个时钟周期内取得所需的 128 B，后续硬件必须在保持外部 AXI 64-bit 的前提下，提供 1024-bit Matrix 面板读接口，或提供可在同一拍从 16 个不同 L1 bank 读取的 16 个 64-bit 读端口；结果写回端口必须与该读接口分开。还需要 A/B 双缓冲和跨 M/N tile 的面板复用。编译器必须把同拍读取的数据分散到不同 bank，并在 DMA 装载阶段按该布局写入 L1。上述内部接口尚未进入当前 RTL，不能写为已实现功能。
 
 ### 2.3 整数推理与内部浮点计算
 
@@ -234,7 +234,7 @@ flowchart TB
 
 #### 2.3.4 Matrix 的整数计算
 
-Matrix 子系统支持 INT8 和 INT16 输入。A 与 B 必须使用相同的数据格式。直接阵列接受普通 `GEMM` 的一个受限子集：`M`、`N` 均为 16～64 且是 16 的整数倍，`K` 为 1～511，A、B、C 基址与 A、C 行步长满足 8B 对齐，C 格式为 INT32，且描述符不包含 bias、外部部分和、缩放或截断。直接阵列以完整 16×16 输出 tile 计算该子集；其他 Matrix 任务由 Scalar 路径通过共享 MAC PE 执行。两条路径都先对输入元素进行符号扩展，再执行有符号乘法。Scalar 的乘积加入 signed 64-bit 临时累加寄存器；直接阵列在 PE 内保留 INT8 的 signed24 或 INT16 的 signed48 临时累加值，随后扩展为写回使用的 INT32 结果。先定义不含 bias 的乘累加结果：
+Matrix 子系统支持 INT8 和 INT16 输入。A 与 B 必须使用相同的数据格式。直接阵列接受普通 `GEMM` 的一个受限子集：`M`、`N` 均为 16～64 且是 16 的整数倍，`K` 为 1～511，A、B、C 的 L1 基址均小于 `0x100000`，A、C 行步长不超过 16,383 B 且满足 8B 对齐，C 格式为 INT32，且描述符不包含 bias、外部部分和、缩放或截断。控制器在每个实际读写请求前再次检查计算得到的地址没有超过 L1 地址范围。直接阵列以完整 16×16 输出 tile 计算该子集；其他 Matrix 任务由 Scalar 路径通过共享 MAC PE 执行。两条路径都先对输入元素进行符号扩展，再执行有符号乘法。Scalar 的乘积加入 signed 64-bit 临时累加寄存器；直接阵列在 PE 内保留 INT8 的 signed24 或 INT16 的 signed48 临时累加值，随后扩展为写回使用的 INT32 结果。先定义不含 bias 的乘累加结果：
 
 $$
 p_{m,n}
@@ -6852,57 +6852,80 @@ TFLite Interpreter 运行后的结果；$y_k^{\mathrm{Keras}}$ 是训练后 Kera
 
 CME 数学单元 `approx_mode=0` 的函数范围、误差要求和可变延迟规则见第 13.10 节。若后续加入新的 `approx_mode`，必须为每个模式增加独立的十六进制 FP32 系数表、操作次序、误差限制和周期测量结果。
 
-### 20.3 2026-08-01 综合后记录
+### 20.3 2026-08-02 RTL 回归与综合记录
 
-本次综合使用 Vivado 2024.2、器件 `xc7a200tfbg484-3`、10.000ns 时钟周期和 OOC 顶层 `npu_single_core_top`。命令如下：
+本节的 RTL 为 `npu_matrix_direct_array_engine`、Scalar 路径、Vector、CME、DMA 和单核顶层的当前组合。综合使用 Vivado 2024.2、器件 `xc7a200tfbg484-3`、10.000ns 时钟周期和顶层 `npu_single_core_top`。`summary_post_synth.txt`、`utilization_post_synth.rpt` 与 `utilization_hierarchical_post_synth.rpt` 是资源和时序数据的来源。
+
+#### 20.3.1 TVM 到 RTL 的模型回归
+
+执行命令如下：
 
 ```bash
-cd /home/etc/FPGA/Transformer_NPU/rtl/syn/vivado_100mhz
-make synth-only \
-  BUILD_DIR=/home/etc/FPGA/Transformer_NPU/.work/vivado_counter_width_synth \
-  JOBS=1
+make -C /home/etc/FPGA/Transformer_NPU/verif tvm-uvm-model-e2e
 ```
 
-构建目录的 `summary_post_synth.txt`、`utilization_post_synth.rpt` 和 `utilization_hierarchical_post_synth.rpt` 是下表的来源。该次运行于统一 Outer PE 累加寄存器改动之前启动，因此只能用于定位面积和时序热点；后续 RTL 改动必须重新执行综合和布局布线。
+该命令重新生成 Transformer、RNN、GRU、LSTM 与 CNN 的 TVM 用例文件，随后用 UVM 驱动 AXI Slave、命令 FIFO、DMA、L1BUF、AXI Master 和 RTL 执行单元。每项测试都检查 NPU MatMul 输出、Relax 加法参考计算以及 CPU/DPI 执行的其余模型计算；CPU/DPI 负责尚未下放给 NPU 的模型算子。
 
-| 项目 | 综合后结果 |
+| 模型 | NPU MatMul 输出数 | 最终输出数 | 指令数 | AXI Master 读 / 写 | UVM error / fatal |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Transformer | 36 | 12 | 8 | 52 / 18 | 0 / 0 |
+| RNN | 16 | 16 | 10 | 36 / 8 | 0 / 0 |
+| GRU | 48 | 16 | 10 | 52 / 24 | 0 / 0 |
+| LSTM | 64 | 32 | 10 | 52 / 32 | 0 / 0 |
+| CNN | 8 | 8 | 10 | 40 / 4 | 0 / 0 |
+
+五个日志均包含 `TVM_MODEL_RELAX_ADD_DPI_PASS`、`TVM_MODEL_CPU_DPI_PASS` 与 `MODEL_E2E_PASS`。Transformer 的 NPU 原始结果包含正负小整数，不是全部固定为 `-1`、`0` 或 `1`。
+
+#### 20.3.2 直接阵列的寄存流水与测量
+
+每个直接阵列 PE 先在产品寄存器中保存四个 16-bit 基础乘积和数据格式，再在下一拍更新 INT24 或 INT48 累加器。该寄存级把“操作数选择和乘法”与“宽累加器”分开。直接阵列控制器对非末尾 K 步在产品寄存器接收数据后的下一拍立即开始下一组操作数读取；只有最后一个 K 步保留一次排空周期，保证结果写回读取到最后一次累加值。
+
+```bash
+make -C /home/etc/FPGA/Transformer_NPU/rtl/engines matrix-direct-array
+```
+
+| 用例 | 周期数 | 有效计算周期 | PE 时间利用率 | PE 空间利用率 |
+| --- | ---: | ---: | ---: | ---: |
+| INT8，16×16×5 | 169 | 2 | 1.1% | 100% |
+| INT8，16×16×511 | 2,819 | 128 | 4.5% | 100% |
+| INT16，16×16×3 | 175 | 3 | 1.7% | 100% |
+| INT8，32×32×8 | 697 | 8 | 1.1% | 100% |
+
+空间利用率说明完整 16×16 tile 的 256 个 PE 均收到工作；时间利用率低的原因是当前控制器在读完一组 A/B 面板后才发射一个 K 步。每个 INT8 K 步的平均输入量为 128 B，而当前 Matrix 请求端口每拍只能读取 8 B。任务调度、数据读取、结果写回和完成等待均已计入上表周期数。因此，中大型矩阵的 85% 目标尚未达到。
+
+#### 20.3.3 当前综合结果与差距
+
+产品寄存器加入前，最差 setup 路径穿过操作数选择、DSP48E1 乘法器和 48-bit 累加器，后综合 WNS 为 `-0.934ns`。加入产品寄存器后的对比综合目录为 `Transformer_NPU/.work/vivado_direct_array_productpipe_20260801`：
+
+| 项目 | 后综合结果 |
 | --- | ---: |
-| Slice LUT | 208,757 / 134,600（155.09%） |
-| Slice Register | 49,532 / 269,200（18.40%） |
-| RAMB36 / RAMB18 | 267 / 4 |
-| DSP48E1 | 18 / 740 |
-| setup WNS / TNS | +0.053ns / 0ns |
-| setup 失败端点数 | 0 |
+| Slice LUT | 118,976 / 134,600（88.39%） |
+| Slice Register | 39,846 / 269,200（14.80%） |
+| RAMB36 / RAMB18 | 263 / 4 |
+| DSP48E1 | 714 / 740（96.49%） |
+| setup WNS / TNS | -0.107ns / -19.046ns |
+| setup 失败端点数 | 178 |
 | hold WHS / THS | -0.019ns / -1.481ns |
 | hold 失败端点数 | 162 |
-| 最差 setup 数据路径 | 9.641ns，10 级逻辑 |
-| 最差 setup 起点 | `u_task_scheduler/u_task_cmd_mem/memory_q_reg_0/CLKARDCLK` |
-| 最差 setup 终点 | `u_task_scheduler/complex_dispatch_desc_q_reg[1095]/D` |
+| 最差 setup 数据路径 | 9.623ns，18 级逻辑 |
+| 最差 setup 起点 | `u_matrix_vector_engine/u_matrix_engine/g_outer_engine.u_multi_dtype_outer_engine/u_controller/dtype_q_reg[1]` |
+| 最差 setup 终点 | `u_matrix_vector_engine/u_memory_path/matrix_meta_addr_q_reg[0][10]` |
 
-L1BUF 检查通过：256 个 RAMB36、0 个 RAMB18、0 个 LUTRAM，且以 `memory_q` 命名的触发器数为 0。这个结果证明大容量 L1 数组仍由同步 BRAM 实现。
-
-层级资源报告中的主要热点如下：
+L1BUF 检查通过：256 个 RAMB36、0 个 RAMB18、0 个 LUTRAM，且以 `memory_q` 命名的触发器数为 0。大容量 L1 数组仍使用同步 BRAM。
 
 | 模块 | LUT | FF | RAMB36 | DSP |
 | --- | ---: | ---: | ---: | ---: |
-| Matrix-Vector Engine | 186,895 | 30,984 | 8 | 8 |
-| Matrix Engine | 177,907 | 25,082 | 8 | 8 |
-| Multi-Dtype Outer Engine | 173,049 | 21,505 | 4 | 0 |
-| Outer 控制器 | 92,714 | 606 | 0 | 0 |
-| Outer 数据通路 | 80,335 | 20,899 | 4 | 0 |
-| 16×16 Outer PE 阵列 | 52,416 | 12,288 | 0 | 0 |
-| Complex Engine | 6,001 | 3,395 | 0 | 6 |
+| Matrix-Vector Engine | 98,786 | 26,547 | 4 | 704 |
+| Matrix Engine | 94,732 | 23,637 | 4 | 704 |
+| Direct Matrix Array | 89,481 | 20,056 | 0 | 696 |
+| Direct 控制器 | 20,682 | 211 | 0 | 4 |
+| Direct 数据通路 | 68,799 | 19,845 | 0 | 692 |
+| 16×16 PE 阵列 | 68,799 | 17,669 | 0 | 692 |
+| Complex Engine | 6,121 | 3,395 | 0 | 6 |
 
-40,000 LUT 目标在该配置下未达到，且综合后 LUT 已超过目标器件容量。仅 16×16 阵列中的 256 个 PE 就使用 65,360 LUT；每个 PE 同时保留四个 8×8 乘法器。这说明在保持“256 个 PE、每个 PE 四个 8×8 乘法器”的前提下，不能把完整设计压到 40,000 LUT。后续面积工作应优先去除 Outer 中未被直接阵列使用的流式计算和部分和数据通路，再重新测量；若仍要求 40,000 LUT，需要改变 PE 数量、每 PE 的乘法器数量，或改用更多 DSP48E1。这三种选择都会改变计算资源配置，不能在未确认前替代当前结构。
+40,000 LUT 目标尚未达到。16×16 阵列包含 256 个 PE，每个 PE 保留四个 8×8 基础乘法器；完整阵列需要 1,024 个基础乘法。器件只有 740 个 DSP48E1，当前实现已使用 714 个，其余乘法和数据整理逻辑使用 LUT。后续必须同时减少 Direct 控制和数据整理逻辑，并重新组织 PE 内的基础乘法实现；不能把 40,000 LUT 写成已满足的结果。
 
-100MHz 的 setup 在综合后暂时通过，但裕量只有 0.053ns，不能作为布局布线完成后的结论；hold 仍有 162 个失败端点。最差 setup 从任务命令 BRAM 到 Complex 描述符寄存器，说明描述符解码和描述符暂存之间仍应增加寄存级。后续应先把解码结果分段暂存，再执行 `place_design`、`phys_opt_design` 和 `route_design`，以布局布线后的 setup 与 hold 报告作为验收依据。
-
-随后执行了一次包含统一 Outer PE 累加寄存器和描述符暂存保留属性的对比综合，构建目录为 `Transformer_NPU/.work/vivado_pipelined_current`。统一累加寄存器使 Slice LUT 降为 205,036，较上表减少 3,721；但描述符暂存保留属性使最差路径变为描述符寄存器到各执行单元描述符寄存器，setup WNS 变为 -0.047ns、TNS 为 -0.235ns、失败端点为 5，hold WHS 为 -0.019ns、THS 为 -1.466ns、失败端点为 162。因此该属性已从当前 RTL 删除，不能作为保留的时序优化方式。该次综合仍超过器件 LUT 容量，且不是布局布线结果。
-
-> [!warning] 当前时序处理方向
-> 描述符字段不应依靠保留属性阻止工具改写。当前 RTL 已把共享解码器的扁平描述符先写入独立寄存器，再在下一拍复制到 DMA、Matrix、Vector、Complex 的发射寄存器。这样切断“命令字寄存器→共享解码器→发射描述符寄存器”的长组合计算，同时四个发射队列仍可独立保持 ready/valid。调度器双 Matrix 回归与连续发射回归均已通过；后者的首个任务完成时刻由 344 拍变为 346 拍，但 DMA 的下一任务同拍发射，Vector 和 Complex 仅相隔 1 拍，未产生空闲拍。该改动仍须重新进行完整 RTL 回归、综合、布局和布线。
-
-描述符寄存级版本的后续综合已完成：Slice LUT 为 207,104（153.87%），Slice Register 为 44,038，RAMB36/RAMB18 为 267/4，DSP48E1 为 18。setup WNS 为 +0.101ns、TNS 为 0、失败端点为 0，说明该寄存级消除了前述 -0.047ns 的 setup 失败；hold 仍为 WHS -0.019ns、THS -1.466ns、162 个失败端点。L1BUF 仍使用 256 个 RAMB36，未使用 LUTRAM。该设计超过器件 LUT 容量，因此不能进行有意义的布局和布线；面积降至目标以下后才可执行完整实现并以布局布线报告验收。
+当前后综合 setup 和 hold 均未通过，因而还不能把实现后的时序写为通过。下一轮实现应使用与当前源代码一致的后综合检查点，再执行 `place_design`、`phys_opt_design` 与 `route_design`。对于 85% PE 时间利用率，必须先加入 1024-bit Matrix 面板读接口或等效的 16-bank 并行读端口、独立结果写端口及 A/B 双缓冲，然后用直接阵列的大矩阵端到端用例重新测量。
 
 > [!summary] 首版硬件实现范围
-> 单核首版由 64-bit AXI/MIF、64-bit L1BUF 客户端接口、Command Front End、TaskScheduler、DMA、Matrix-Vector Engine、Complex Math、L1BUF、LSC、CRG 和 WDT 组成。每条 128-bit CMD 在 64-bit 接口上使用低、高两个 beat；事件和任务选项直接位于 CMD。TaskScheduler 使用命令接纳寄存级、WAIT_EVENT 逐槽检查及结果寄存、接收检查解码器、Control 执行快照、发射窄快照、共享发射解码器和四组发射暂存；Matrix 使用两项 active 记录并按完成 `command_id` 查找任务。Matrix-Vector Engine 是 Matrix 与 Vector 共用的物理执行模块，包含 Outer context、Scalar context、Vector 控制器、一套 16×16 Outer PE 阵列、一套 Scalar/Vector 可配置多精度 MAC PE、内部 L1 仲裁、深度为 2 的 L1 请求 FIFO和 2 项 Matrix 到 Vector 旁路缓存。Outer 执行分块外积并保存本地部分和 RAM，Scalar 执行逐元素乘加和后处理。完整 16×16 Matrix tile由 Outer PE 阵列计算；其余 Matrix 乘法与 Vector MUL/FMA 使用共享 MAC PE，Vector 的其他逐元素操作使用轻量整数 ALU。模型张量只采用 INT8、INT16、INT32；共享 MAC PE 的内部 4×4 基础乘法器用于组成 INT8 和 INT16 乘法，不构成软件可选的数据格式；CME 的 SUMSQ 分成平方与累加状态，Exp 的范围整数使用五个寄存状态完成最近偶数舍入，复杂函数在 CME 内部执行 `INT→FP32→INT`，F2I 在数学响应后经过五个寄存状态。软件通过指令和 C 配置给出物理地址、shape、stride、scale 和 zero point，硬件按模块接口与功能时序完成任务。
+> 单核首版由 64-bit AXI/MIF、64-bit L1BUF 客户端接口、Command Front End、TaskScheduler、DMA、Matrix-Vector Engine、Complex Math、L1BUF、LSC、CRG 和 WDT 组成。每条 128-bit 指令在 64-bit 接口上使用低、高两个 beat；事件和任务选项直接位于指令。TaskScheduler 使用命令接纳寄存级、WAIT_EVENT 逐槽检查及结果寄存、接收检查解码器、Control 执行快照、发射窄快照、共享发射解码器和四组发射暂存；Matrix 使用两项 active 记录并按完成 `command_id` 查找任务。Matrix-Vector Engine 是 Matrix 与 Vector 共用的物理执行模块，包含 Direct Matrix Array、Matrix Scalar、Vector 控制器、一套 16×16 PE 阵列、一套 Scalar/Vector 可配置多精度 MAC PE、内部 L1 仲裁、深度为 2 的 L1 请求 FIFO 和 2 项 Matrix 到 Vector 旁路缓存。Direct Matrix Array 为完整 16×16 输出 tile 保存 A/B 面板和 PE 局部累加器；它只处理不带 bias、外部部分和、缩放和截断的普通 GEMM。Scalar 执行其他 Matrix 乘法、外部 INT32 部分和与后处理；Vector 的 MUL/FMA 使用共享 MAC PE，其他逐元素操作使用轻量整数 ALU。模型张量只采用 INT8、INT16、INT32；共享 MAC PE 的内部 4×4 基础乘法器用于组成 INT8 和 INT16 乘法，不构成软件可选的数据格式；CME 的 SUMSQ 分成平方与累加状态，Exp 的范围整数使用五个寄存状态完成最近偶数舍入，复杂函数在 CME 内部执行 `INT→FP32→INT`，F2I 在数学响应后经过五个寄存状态。软件通过指令和 C 配置给出物理地址、shape、stride、scale 和 zero point，硬件按模块接口与功能时序完成任务。
