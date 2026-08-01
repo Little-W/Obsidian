@@ -234,7 +234,7 @@ flowchart TB
 
 #### 2.3.4 Matrix 的整数计算
 
-Matrix 子系统支持 INT8 和 INT16 输入。A 与 B 必须使用相同的数据格式。专用 `DIRECT_GEMM` 使用直接阵列：`M`、`N` 均为 16～64 且是 16 的整数倍，`K` 为 1～511，A、B、C 的 L1 基址均小于 `0x100000`，C 格式为 INT32，且任务不包含 bias、外部部分和、缩放或截断。控制器在每个实际面板请求前再次检查计算得到的地址没有超过 L1 地址范围。直接阵列以完整 16×16 输出 tile 计算该子集；公开 `GEMM`、BMM 和其他 Matrix 任务由 Scalar 路径通过共享 MAC PE 执行。两条路径都先对输入元素进行符号扩展，再执行有符号乘法。Scalar 的乘积加入 signed 64-bit 临时累加寄存器；直接阵列在 PE 内保留 INT8 的 signed24 或 INT16 的 signed48 临时累加值，随后扩展为写回使用的 INT32 结果。先定义不含 bias 的乘累加结果：
+Matrix 子系统支持 INT8 和 INT16 输入。A 与 B 必须使用相同的数据格式。专用 `DIRECT_GEMM` 使用直接阵列：`M`、`N` 均为 16～64 且是 16 的整数倍，`K` 为 1～511，A、B、C 的 L1 基址均小于 `0x100000`，C 格式为 INT32，且任务不包含 bias、外部部分和、缩放或截断。`npu_inline_desc_decode` 在命令接收和发射时生成这些固定字段，并拒绝数据格式、尺寸或保留位不符合要求的指令；Direct 控制器只接收已经通过该检查的 Task Context。实际面板访问由 L1BUF 返回状态；控制器收到失败状态后提交 `BUS_SLVERR` 完成消息。直接阵列以完整 16×16 输出 tile 计算该子集；公开 `GEMM`、BMM 和其他 Matrix 任务由 Scalar 路径通过共享 MAC PE 执行。两条路径都先对输入元素进行符号扩展，再执行有符号乘法。Scalar 的乘积加入 signed 64-bit 临时累加寄存器；直接阵列在 PE 内保留 INT8 的 signed24 或 INT16 的 signed48 临时累加值，随后扩展为写回使用的 INT32 结果。先定义不含 bias 的乘累加结果：
 
 $$
 p_{m,n}
@@ -488,9 +488,9 @@ flowchart TB
 | Inline Decode            | 指令、任务表保存的基地址快照       | 接收检查结果或内部展开的 Task Context | 接收检查实例判断字段是否合法；共享发射实例根据窄快照生成 Task Context，均不访问全局内存 |
 | Task Decode / Dispatch   | 任务表中的指令与基地址快照   | 各执行单元任务 | 每周期检查一个非 Control 任务槽；轮末复查后保存发射窄快照。Control 获胜项保存槽号和提交序号，下一周期复查并执行 |
 | Matrix-Vector Engine 顶层 | Matrix 与 Vector Task Context、普通 L1 数据和面板数据 | 矩阵和向量结果、两组完成消息 | `npu_matrix_vector_engine` 是物理集成层，连接 Matrix 路径选择、Direct Matrix Array、Matrix Scalar、Vector、Shared MAC、内部存储通道和旁路缓存；不保存逐元素操作数、乘加值或结果 RAM |
-| Matrix 路径选择          | Matrix 任务、操作码和 Direct 限制检查结果 | Direct 或 Scalar 任务握手、带 `command_id` 的完成消息 | `npu_matrix_engine` 先保存任务；`DIRECT_GEMM` 满足形状、数据格式、地址和功能限制时选择 Direct，公开 Matrix 指令选择 Scalar；两条路径一次只运行一项 Matrix 任务 |
+| Matrix 路径选择          | Matrix 任务和操作码 | Direct 或 Scalar 任务握手、带 `command_id` 的完成消息 | `npu_matrix_engine` 先保存任务；已经由 Inline Decode 展开并检查通过的 `DIRECT_GEMM` 选择 Direct，公开 Matrix 指令选择 Scalar；两条路径一次只运行一项 Matrix 任务 |
 | Direct Matrix Array 顶层 | Direct Task Context、L1 面板响应 | 面板读写请求、完成消息 | `npu_matrix_direct_array_engine` 只连接 Direct 控制器和数据通路；它不向 Shared MAC 发送计算请求，完整 16×16 tile 由内部 16×16 PE 阵列计算 |
-| Direct Matrix 控制器     | Direct Task Context、L1 ready/valid、数据通路进度 | 数据通路配置和操作信号、请求阶段、完成消息 | `npu_matrix_direct_array_controller` 负责任务接收、描述符检查、tile 与 K 步调度、连续 L1 请求发起和响应计数、PE 发射次序、结果写回次序、错误处理及 done/status |
+| Direct Matrix 控制器     | Direct Task Context、L1 ready/valid、数据通路进度 | 数据通路配置和操作信号、请求阶段、完成消息 | `npu_matrix_direct_array_controller` 负责任务接收、tile 与 K 步调度、连续 L1 请求发起和响应计数、PE 发射次序、结果写回次序、错误处理及 done/status。它依赖 Inline Decode 已完成的 Direct 指令字段检查，不重复比较整条 2048-bit Task Context |
 | Direct Matrix 数据通路   | 控制器配置与操作信号、L1 读返回 | PE 操作数、读写地址与数据字段、累加值及写回数据 | `npu_matrix_direct_array_datapath` 保存 A 行缓存和 B 行缓存，组织 16×16 PE 的操作数，维护 PE 累加器；结果沿每行移位后从首两列读取，形成 L1BUF 写数据与 byte strobe |
 | Matrix Scalar 控制器     | Scalar Task Context、L1 与共享 PE ready/valid | 数据通路操作信号、请求阶段、完成消息 | `npu_matrix_scalar_engine` 的控制层入口保存任务状态、描述符检查、矩阵游标、地址游标和完成状态，推进源读、PE 请求、后处理与写回阶段 |
 | Matrix Scalar 数据通路   | 控制器操作信号、L1 读数据、共享 PE 返回 | PE 操作数、部分和、写数据与写 strobe | `npu_matrix_scalar_datapath` 保存 A/B 操作数、整数累加值、局部部分和 RAM、后处理寄存器和写回数据，完成整数乘加、局部部分和读写与结果格式化 |
@@ -518,7 +518,7 @@ flowchart TB
 
 Vector、Direct Matrix Array、Shared MAC、Complex 和 DMA 都采用顶层、控制器、数据通路三层组织。具备独立顶层的 `*_engine` 模块只完成端口连接以及控制器和数据通路之间的信号传递；顶层不新增任务状态机、操作数或结果寄存器、算术单元或本地 RAM 状态。为保留既有模块名，`npu_matrix_scalar_engine` 作为 Scalar 的控制层入口，数值处理和局部 RAM 读写由 `npu_matrix_scalar_datapath` 承担。
 
-控制通路负责接收任务、保存任务状态、检查描述符、管理 ready/valid 握手、安排读写和计算阶段、记录错误并提交完成消息。数据通路负责操作数和结果寄存器、地址计算、数据整理、算术、结果格式化以及本地 RAM 与 L1BUF 访问的数据字段。PE 阵列、整数流水级、部分和流水、FP32 数学序列和各类算术叶模块均属于数据通路；它们不接收 Task Context，也不独立产生完成消息。
+控制通路负责接收任务、保存任务状态、管理 ready/valid 握手、安排读写和计算阶段、记录错误并提交完成消息。指令字段的通用检查由 Inline Decode 在任务进入表项前完成；执行单元只检查运行期间才能确定的返回状态、资源状态和地址访问错误。数据通路负责操作数和结果寄存器、地址计算、数据整理、算术、结果格式化以及本地 RAM 与 L1BUF 访问的数据字段。PE 阵列、整数流水级、部分和流水、FP32 数学序列和各类算术叶模块均属于数据通路；它们不接收 Task Context，也不独立产生完成消息。
 
 | 阶段 | 控制通路 | 数据通路 | 进入下一阶段的条件 |
 | --- | --- | --- | --- |
