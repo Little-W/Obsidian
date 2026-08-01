@@ -88,7 +88,7 @@ NPU 子系统必须满足以下要求：
 7. DDR Channel 选择或交织方式由 SoC 配置决定，NPU 指令不因该配置变化而改变。
 8. 地址错误、命令字段错误、数据格式不被接受、依赖任务失败和看门狗超时必须产生可读取的错误状态。
 9. DDR 和 L1BUF 中的模型张量只采用 INT8、INT16、INT32；FP32 可以作为只读 scale、$\epsilon$、函数系数或查找表元数据，也可以用于复杂数学函数的内部计算过程，但不能作为软件可见的模型张量格式。
-10. Matrix 与 Vector 是两类调度任务，由 `npu_matrix_vector_engine` 统一接收。Matrix 先检查普通 `GEMM` 是否符合直接阵列条件；符合条件的任务交给独立的 16×16 PE 阵列，不符合条件的矩阵任务交给 Scalar 路径。Scalar 路径与 Vector 的 MUL/FMA 共用多精度 MAC PE。两条 Matrix 路径以及 Vector 通过内部存储通道访问 L1BUF。
+10. Matrix 与 Vector 是两类调度任务，由 `npu_matrix_vector_engine` 统一接收。公开 `GEMM`、`BMM` 和带部分和的 Matrix 指令进入 Scalar 路径；专用 `DIRECT_GEMM` 进入独立的 16×16 PE 阵列。Scalar 路径与 Vector 的 MUL/FMA 共用多精度 MAC PE。Scalar 与 Vector 通过内部存储通道访问 L1BUF；Direct Matrix Array 使用专用面板端口读取 A、B 面板并写回 C tile。
 11. Generic Core 是 NPU 外部的主控 CPU，不属于 NPU RTL。它通过软件驱动发起 AXI 访问，不使用 NPU 内部取指端口或自定义指令端口。
 12. NPU 对外提供 AXI Slave 和 AXI Master：AXI Slave 接收指令、CSR 与 L1BUF 窗口访问；AXI Master 由 DMA/MIF 发起全局内存访问。
 
@@ -111,10 +111,10 @@ NPU 子系统必须满足以下要求：
 | DDR 交织粒度       | `DDR_INTLV_BYTES` |            256B | 参考设计确定 | 半静态配置                                 |
 | FPGA 目标频率      | `CORE_FMAX`       |          100MHz | 当前实现目标 | `xc7a200tfbg484-3`，时钟周期 10ns             |
 | L1BUF 容量       | `L1_BYTES`        |           1 MiB | C model 参考配置 | 每 Core 独立配置                           |
-| L1BUF bank 数   | `L1_BANKS`        |              16 | C model 参考配置 | bank 采用 64-bit 单端口 1RW                  |
+| L1BUF bank 数   | `L1_BANKS`        |              16 | C model 参考配置 | 每个 bank 具有两个 64-bit 同步端口；普通客户端使用 port0，面板请求可同时使用两个端口 |
 | L1 SRAM 读延迟    | `L1_RD_LATENCY`   |        2 cycles | C model 参考配置 | 从读请求握手后的下一周期开始计算                     |
 | L1 等待计数器 | — | 已实现 | 当前 RTL | 记录 Matrix 请求未被 L1 接收或等待返回的周期 |
-| Matrix 执行路径数 | — | 2 | 当前 RTL | 直接阵列路径处理满足条件的普通 `GEMM`；Scalar 路径处理其他 Matrix 描述符 |
+| Matrix 执行路径数 | — | 2 | 当前 RTL | Direct Matrix Array 处理 `DIRECT_GEMM`；Scalar 路径处理公开 `GEMM`、BMM 和部分和描述符 |
 | 共享 PE group 数 | — | 4 | 当前 RTL | 每组 16 个 4×4 基础乘法器，Matrix 与 Vector MUL/FMA 共用 |
 | Matrix-Vector 旁路缓存项数 | `BYPASS_ENTRIES` | 2 | 单核顶层配置 | 每项保存一个 64-bit beat 的地址标签、数据和逐字节有效位 |
 | Matrix-Vector L1 请求 FIFO | — | 2 项 × 93 bit | 当前 RTL | 非直通；保存 write、20-bit addr、64-bit wdata 和 8-bit wstrb |
@@ -130,7 +130,7 @@ NPU 子系统必须满足以下要求：
 | MIF 未完成事务数 | `MIF_OUTSTANDING` |           1 | 当前 RTL | MIF 完成当前 AXI 事务后再接收下一项请求 |
 | MIF AXI burst 长度 | `MIF_AXI_BURST_BEATS` | 读 1～16 beat，写 1 beat | 当前 RTL | 正常 DMA 指令的一次对齐读最多 8 beat；模块级 Task Context 可给出 1～16 beat |
 | 模型张量格式集合       | `MODEL_DTYPE_SET` | INT8、INT16、INT32 | 当前设计   | DMA、L1BUF、Matrix 和 Vector 的软件可见张量格式   |
-| Matrix 部分和格式 | `MAT_PARTIAL_DTYPE` | INT32 | 用户要求 | Scalar 路径的 `GEMM_ACCUM`、`GEMM_ZERO` 使用 L1 C 中的 INT32 部分和；直接阵列只处理不带外部部分和的普通 `GEMM` |
+| Matrix 部分和格式 | `MAT_PARTIAL_DTYPE` | INT32 | 用户要求 | Scalar 路径的 `GEMM_ACCUM`、`GEMM_ZERO` 使用 L1 C 中的 INT32 部分和；Direct Matrix Array 不读取外部部分和 |
 | 内部浮点工作格式       | `CME_FP_DTYPE`    |            FP32 | 本文基准定义 | 当前只存在于 Complex Math Engine 的状态和统计寄存器 |
 
 > [!note] 参数化要求
@@ -234,7 +234,7 @@ flowchart TB
 
 #### 2.3.4 Matrix 的整数计算
 
-Matrix 子系统支持 INT8 和 INT16 输入。A 与 B 必须使用相同的数据格式。直接阵列接受普通 `GEMM` 的一个受限子集：`M`、`N` 均为 16～64 且是 16 的整数倍，`K` 为 1～511，A、B、C 的 L1 基址均小于 `0x100000`，A、C 行步长不超过 16,383 B 且满足 8B 对齐，C 格式为 INT32，且描述符不包含 bias、外部部分和、缩放或截断。控制器在每个实际读写请求前再次检查计算得到的地址没有超过 L1 地址范围。直接阵列以完整 16×16 输出 tile 计算该子集；其他 Matrix 任务由 Scalar 路径通过共享 MAC PE 执行。两条路径都先对输入元素进行符号扩展，再执行有符号乘法。Scalar 的乘积加入 signed 64-bit 临时累加寄存器；直接阵列在 PE 内保留 INT8 的 signed24 或 INT16 的 signed48 临时累加值，随后扩展为写回使用的 INT32 结果。先定义不含 bias 的乘累加结果：
+Matrix 子系统支持 INT8 和 INT16 输入。A 与 B 必须使用相同的数据格式。专用 `DIRECT_GEMM` 使用直接阵列：`M`、`N` 均为 16～64 且是 16 的整数倍，`K` 为 1～511，A、B、C 的 L1 基址均小于 `0x100000`，C 格式为 INT32，且任务不包含 bias、外部部分和、缩放或截断。控制器在每个实际面板请求前再次检查计算得到的地址没有超过 L1 地址范围。直接阵列以完整 16×16 输出 tile 计算该子集；公开 `GEMM`、BMM 和其他 Matrix 任务由 Scalar 路径通过共享 MAC PE 执行。两条路径都先对输入元素进行符号扩展，再执行有符号乘法。Scalar 的乘积加入 signed 64-bit 临时累加寄存器；直接阵列在 PE 内保留 INT8 的 signed24 或 INT16 的 signed48 临时累加值，随后扩展为写回使用的 INT32 结果。先定义不含 bias 的乘累加结果：
 
 $$
 p_{m,n}
@@ -253,7 +253,7 @@ $$
 | \(q^W_{k,n}\) | B 或权重矩阵第 \(k\) 行、第 \(n\) 列的有符号整数 |
 | \(p_{m,n}\) | 尚未加入 bias 的临时累加结果 |
 
-当前 Matrix 整数路径要求输入 zero point 为 0，因此公式中不再写减 zero point。Scalar 路径的 `GEMM` 可以加入形状为 \([N]\) 的 INT32 bias；直接阵列收到带 bias 的描述符时由 Matrix 顶层选择 Scalar 路径：
+当前 Matrix 整数路径要求输入 zero point 为 0，因此公式中不再写减 zero point。Scalar 路径的 `GEMM` 可以加入形状为 \([N]\) 的 INT32 bias；`DIRECT_GEMM` 没有 bias 字段：
 
 $$
 a_{m,n}=p_{m,n}+b^{\mathrm{acc}}_n.
@@ -428,7 +428,7 @@ flowchart TB
 
     subgraph MVE["npu_matrix_vector_engine<br/>Matrix 与 Vector 使用的物理执行模块"]
         direction TB
-        MDISP["Matrix Path Select<br/>Direct 条件检查 / Scalar 选择"]
+        MDISP["Matrix Path Select<br/>DIRECT_GEMM / Scalar 选择"]
         DIRECT["Direct Matrix Array<br/>Controller / Datapath / 16×16 PE Array"]
         SCALAR["Matrix Scalar<br/>Controller / Datapath"]
         VEC["Vector Engine<br/>Controller / Datapath / Integer Pipeline"]
@@ -440,7 +440,6 @@ flowchart TB
         MDISP --> SCALAR
         SCALAR --> SHMAC
         VEC --> SHMAC
-        DIRECT --> MVMEM
         SCALAR --> MVMEM
         VEC --> MVMEM
         MVMEM --> REQF
@@ -466,6 +465,7 @@ flowchart TB
     L1C <--> SRAM
     DMA <-->|"全局数据"| MIF
     DMA -->|"done"| TS
+    DIRECT -->|"面板读写"| L1C
     DIRECT -->|"Matrix done + command_id"| TS
     SCALAR -->|"Matrix done + command_id"| TS
     VEC -->|"Vector done"| TS
@@ -487,9 +487,9 @@ flowchart TB
 | Event Table / Scoreboard | CMD 中的依赖事件、各单元完成消息      | 可发射任务、事件状态、错误状态                  | 检查依赖、保存任务状态、传播错误                                     |
 | Inline Decode            | 指令、任务表保存的基地址快照       | 接收检查结果或内部展开的 Task Context | 接收检查实例判断字段是否合法；共享发射实例根据窄快照生成 Task Context，均不访问全局内存 |
 | Task Decode / Dispatch   | 任务表中的指令与基地址快照   | 各执行单元任务 | 每周期检查一个非 Control 任务槽；轮末复查后保存发射窄快照。Control 获胜项保存槽号和提交序号，下一周期复查并执行 |
-| Matrix-Vector Engine 顶层 | Matrix 与 Vector Task Context、L1BUF 数据 | 矩阵和向量结果、两组完成消息 | `npu_matrix_vector_engine` 是物理集成层，连接 Matrix 路径选择、Direct Matrix Array、Matrix Scalar、Vector、Shared MAC、内部存储通道和旁路缓存；不保存逐元素操作数、乘加值或结果 RAM |
-| Matrix 路径选择          | Matrix 任务、Direct 条件检查结果 | Direct 或 Scalar 任务握手、带 `command_id` 的完成消息 | `npu_matrix_engine` 先保存任务，再检查是否满足 Direct Matrix Array 的形状、数据格式、地址和功能限制；满足时选择 Direct，否则选择 Scalar；两条路径一次只运行一项 Matrix 任务 |
-| Direct Matrix Array 顶层 | Direct Task Context、L1 返回 | L1 请求、完成消息 | `npu_matrix_direct_array_engine` 只连接 Direct 控制器和数据通路；它不向 Shared MAC 发送计算请求，完整 16×16 tile 由内部 16×16 PE 阵列计算 |
+| Matrix-Vector Engine 顶层 | Matrix 与 Vector Task Context、普通 L1 数据和面板数据 | 矩阵和向量结果、两组完成消息 | `npu_matrix_vector_engine` 是物理集成层，连接 Matrix 路径选择、Direct Matrix Array、Matrix Scalar、Vector、Shared MAC、内部存储通道和旁路缓存；不保存逐元素操作数、乘加值或结果 RAM |
+| Matrix 路径选择          | Matrix 任务、操作码和 Direct 限制检查结果 | Direct 或 Scalar 任务握手、带 `command_id` 的完成消息 | `npu_matrix_engine` 先保存任务；`DIRECT_GEMM` 满足形状、数据格式、地址和功能限制时选择 Direct，公开 Matrix 指令选择 Scalar；两条路径一次只运行一项 Matrix 任务 |
+| Direct Matrix Array 顶层 | Direct Task Context、L1 面板响应 | 面板读写请求、完成消息 | `npu_matrix_direct_array_engine` 只连接 Direct 控制器和数据通路；它不向 Shared MAC 发送计算请求，完整 16×16 tile 由内部 16×16 PE 阵列计算 |
 | Direct Matrix 控制器     | Direct Task Context、L1 ready/valid、数据通路进度 | 数据通路配置和操作信号、请求阶段、完成消息 | `npu_matrix_direct_array_controller` 负责任务接收、描述符检查、tile 与 K 步调度、连续 L1 请求发起和响应计数、PE 发射次序、结果写回次序、错误处理及 done/status |
 | Direct Matrix 数据通路   | 控制器配置与操作信号、L1 读返回 | PE 操作数、读写地址与数据字段、累加值及写回数据 | `npu_matrix_direct_array_datapath` 保存 A 行缓存和 B 行缓存，组织 16×16 PE 的操作数，维护 PE 累加器；结果沿每行移位后从首两列读取，形成 L1BUF 写数据与 byte strobe |
 | Matrix Scalar 控制器     | Scalar Task Context、L1 与共享 PE ready/valid | 数据通路操作信号、请求阶段、完成消息 | `npu_matrix_scalar_engine` 的控制层入口保存任务状态、描述符检查、矩阵游标、地址游标和完成状态，推进源读、PE 请求、后处理与写回阶段 |
@@ -559,7 +559,7 @@ Vector、Direct Matrix Array、Shared MAC、Complex 和 DMA 都采用顶层、�
 | AXI Slave Frontend | LSC | register | 64 bit | request/response |
 | AXI Slave Frontend | L1BUF Controller | L1 Host read/write | 64 bit | request/response |
 
-64 bit 是每个 AXI 和 L1 端口的单 beat 数据宽度。当前 DMA、Matrix-Vector Engine 和 CME 各使用一组 64-bit L1 请求与响应端口，并在时间上复用该端口完成各类读写。Matrix-Vector Engine 内部先在 Direct Matrix Array 与 Scalar 之间选择 Matrix 请求，再在 Matrix 与 Vector 之间选择请求；请求随后进入深度为 2 的寄存 FIFO。owner 信息在内部存储通道接受请求时已经记录，FIFO 只保存读写标志、地址、写数据和写 strobe。L1 响应直接返回内部存储通道，并由 owner FIFO 送给原请求方。外部主控在 AXI W 通道先发送 `CMD[63:0]`，再发送 `CMD[127:64]`；AXI Slave Frontend 为这两个 beat 产生内部 `first/last` 标志，CFE 组合出完整指令后再交给 TaskScheduler。
+64 bit 是每个 AXI、普通 L1 客户端端口以及 Direct 面板 lane 的单 beat 数据宽度。DMA、Scalar、Vector 和 CME 各使用普通 64-bit L1 请求与响应端口，并在时间上复用该端口完成各类读写。Scalar 与 Vector 的请求随后进入深度为 2 的寄存 FIFO。owner 信息在内部存储通道接受请求时已经记录，FIFO 只保存读写标志、地址、写数据和写 strobe。L1 响应直接返回内部存储通道，并由 owner FIFO 送给原请求方。Direct Matrix Array 不使用该 FIFO，而是通过每次最多 24 个 64-bit lane 的面板端口访问 L1。外部主控在 AXI W 通道先发送 `CMD[63:0]`，再发送 `CMD[127:64]`；AXI Slave Frontend 为这两个 beat 产生内部 `first/last` 标志，CFE 组合出完整指令后再交给 TaskScheduler。
 
 ---
 
@@ -1215,8 +1215,9 @@ GEMM 的 A、B 和 C 使用 `LREF14`；bias 使用 `LREF12`。在 GEMM 中，bia
 | `32` | `0x86` | `COMPLEX_ADD_RESCALE` | CME | 已实现 | `src0`、第二输入、`dst`、rows、length、三个 scale 指数、目标 dtype | 按两个输入 scale 相加，再按目标 scale 写回整数结果。 |
 | `33` | `0x44` | `GEMM_ZERO_LOCAL` | Matrix | 已实现 | C `LREF14`、M/N；其余计算字段必须为 0 | 在 Scalar Matrix 建立本地部分和区域并清除有效数据状态，不读取或写回 L1 中的 C。 |
 | `34` | `0x45` | `GEMM_ACCUM_HOLD` | Matrix | 已实现 | 与 `GEMM_ACCUM` 相同 | 把新的乘加结果保存到 Scalar Matrix 的本地部分和 RAM，不提交最终 C。 |
+| `35` | `0x46` | `DIRECT_GEMM` | Matrix | 已实现 | A/B/C `LREF14`、M/N/K | 专用 16×16 阵列矩阵乘法。A/B 为 INT8 或 INT16，C 为 INT32；M、N 为 16～64 的 16 整数倍，K 为 1～511；不支持 bias、外部部分和和整数右移。 |
 
-数值 35～63 当前没有定义，必须返回 `ILLEGAL_OPCODE`。`DMA_GATHER_ND`、`COMPLEX_ROPE` 和 `COMPLEX_RECIP` 只有在功能寄存器声明支持后才能执行。
+数值 36～63 当前没有定义，必须返回 `ILLEGAL_OPCODE`。`DMA_GATHER_ND`、`COMPLEX_ROPE` 和 `COMPLEX_RECIP` 只有在功能寄存器声明支持后才能执行。
 
 ### 6.7 操作专有 payload 位段
 
@@ -1318,6 +1319,20 @@ GEMM 的 A、B 和 C 使用 `LREF14`；bias 使用 `LREF12`。在 GEMM 中，bia
 `GEMM_ACCUM` 要求 C 为 INT32、bias 为 0、保留位为 0、`requant_shift=0`，并把新结果加到原 C。`GEMM_ZERO` 要求 A、B、bias、保留位和 `requant_shift` 都为 0，`C_dtype=INT32`，编码的 K 字段为 0；该操作不执行 K 方向计算，只清零 `[M][N]` 的 INT32 C 区域。
 
 `GEMM_ZERO_LOCAL` 使用与 `GEMM_ZERO` 相同的字段限制，但不访问 L1 中的 C。它在 Scalar Matrix 保存 C 基地址、M、N 和行步长等元数据，清除对应本地部分和有效状态，为后续 `GEMM_ACCUM_HOLD` 建立初值。`GEMM_ACCUM_HOLD` 使用与 `GEMM_ACCUM` 相同的字段限制，把新结果加入 Scalar Matrix 的本地部分和 RAM，并保持本地状态，不写最终 C。后续 `GEMM_ACCUM` 读取匹配的本地状态、加入最后一段结果并写回 C，完成后清除该本地状态。`GEMM_ZERO_LOCAL`、`GEMM_ACCUM_HOLD` 和 `GEMM_ACCUM` 均由 Scalar Matrix 执行。
+
+`DIRECT_GEMM`：
+
+| payload bit | 字段 |
+| ---: | --- |
+| `[79:66]` | `a_lref`，A 的 64B 单位 L1 地址 |
+| `[65:52]` | `b_lref`，B 的 64B 单位 L1 地址 |
+| `[51:38]` | `c_lref`，C 的 64B 单位 L1 地址 |
+| `[37:32]` | `M-1`，实际范围 16～64，且必须是 16 的整数倍 |
+| `[31:26]` | `N-1`，实际范围 16～64，且必须是 16 的整数倍 |
+| `[25:17]` | `K-1`，实际范围 1～511 |
+| `[16:0]` | 必须为 0 |
+
+命令头 `dtype` 同时指定 A、B 的格式，只允许 INT8 或 INT16。C 固定为 INT32。A、B、C 的地址都必须 64B 对齐；`DIRECT_GEMM` 没有 bias、`C_dtype`、`requant_shift`、部分和或激活字段。A 和 B 必须按直接阵列的面板排布存放，不能沿用 Scalar `GEMM` 的 B tile 格式；具体排布和每次面板请求的地址次序见第 11.5.7 节。
 
 `BMM`：
 
@@ -1870,7 +1885,7 @@ TaskScheduler 使用 DMA、Matrix、Vector 和 Complex 四类任务接口。它�
 | `<eng>_task_desc_flat_o` | Output | 2048 | 对应执行单元发射暂存中的 Task Context |
 | `<eng>_done_valid_i` | Input | 1 | 执行单元完成结果有效 |
 | `<eng>_done_ready_o` | Output | 1 | TS 可以接收完成结果 |
-| `<eng>_done_command_id_i` | Input | 12 | 完成任务编号；Matrix 由 `npu_matrix_context_dispatch` 返回所选 context 保存的编号，其他执行单元由其活动任务记录提供 |
+| `<eng>_done_command_id_i` | Input | 12 | 完成任务编号；Matrix 由 `npu_matrix_engine` 返回当前任务保存的编号，其他执行单元由其活动任务记录提供 |
 | `<eng>_done_status_i` | Input | 8 | 第 4.3 节状态 |
 | `<eng>_done_fault_addr_i` | Input | 48 | 第一个错误地址，无错误时为 0 |
 | `<eng>_done_progress_i` | Input | 64 | 已完成字节数或元素数 |
@@ -2383,10 +2398,10 @@ MIF 的 AXI 事务在 DMA 与 MIF 的内部接口之后完成。DMA 只依据 `m
 
 L1BUF 是单核 NPU 内部的共享片上存储。当前 RTL 由 `/home/etc/FPGA/Transformer_NPU/rtl/memory/npu_l1buf.sv` 实现，文件中包含两个模块：
 
-- `npu_l1buf_bank`：一组 64-bit 同步 SRAM，支持逐字节写使能；
-- `npu_l1buf`：完成客户端仲裁、请求寄存、地址检查、bank 与 row 计算、读请求流水、写入控制和逐客户端响应保持。
+- `npu_l1buf_bank`：一组带 port0、port1 的 64-bit 同步 SRAM，两个端口均支持逐字节写使能；
+- `npu_l1buf`：完成普通客户端仲裁、请求寄存、地址检查、bank 与 row 计算、读请求流水、写入控制、逐客户端响应保持，以及 Direct Matrix Array 的面板读写请求。
 
-本文把 `npu_l1buf` 中的控制逻辑称为 L1BUF Controller，但它不是另一个 RTL 模块。当前实现每次请求只访问一个 64-bit beat，不含多 beat 请求、请求 tag、ECC 检查、参数区写保护或客户端专用读写端口。所有客户端共用一组请求接口，Controller 每周期最多接受一个客户端请求。握手后的请求先保存到 `request_*_q` 寄存级，下一拍才驱动 SRAM bank 或产生地址错误响应，因此执行单元到 bank 的地址和写数据路径经过寄存器。
+本文把 `npu_l1buf` 中的控制逻辑称为 L1BUF Controller，但它不是另一个 RTL 模块。普通客户端每次请求只访问一个 64-bit beat，不含多 beat 请求、请求 tag、ECC 检查或参数区写保护。普通客户端共用一组请求接口，Controller 每周期最多接受一个普通客户端请求。Direct Matrix Array 另有 24 lane 面板端口；每个 lane 为一个 64-bit 对齐读或写，可在同一拍使用每个 bank 的两个同步端口。普通请求握手后先保存到 `request_*_q` 寄存级，下一拍才驱动 SRAM bank 或产生地址错误响应，因此普通执行单元到 bank 的地址和写数据路径经过寄存器。
 
 > [!note] 为什么必须按当前接口理解
 > Matrix、DMA、Vector、Complex 和 AXI Slave 前端虽然可能连续访问很多元素，但每个 `req_valid/req_ready` 握手都只代表一次 8B 访问。执行单元负责把张量操作拆成一系列单 beat 请求，L1BUF 不会根据张量形状自动产生后续地址。
@@ -2450,8 +2465,8 @@ $$
 
 一个 word 内，第 $j$ 个字节对应 `memory_q[row][8j +: 8]`，其中 $j=0,\ldots,7$。写请求的 `wstrb_i[j]` 为 1 时，只更新地址 $A+j$ 对应的字节；其余字节保持原值。
 
-> [!important] bank 数不等于当前每周期并发请求数
-> SRAM 被分成多个 bank，但 `npu_l1buf` 目前只有一个全局 grant。一个周期内只有一个 `bank_enable` 位可能为 1，因此不能在同一周期接受两个来自不同客户端的请求。bank 划分主要用于明确物理存储排列并便于综合为多个 SRAM 实例。
+> [!important] 普通客户端与面板端口的并发能力不同
+> 普通客户端仍只有一个全局 grant，一个周期内只接受一项普通 64-bit 请求。Direct Matrix Array 的面板端口不经过该 grant：同一面板请求可访问最多 24 个 64-bit lane，每个 bank 最多服务其中两个 lane。若某个 bank 被请求超过两次，`panel_req_ready_o` 保持为 0，控制器不接收该面板请求。编译器的面板排布必须满足这一限制。
 
 ### 10.4 顶层客户端编号
 
@@ -2464,7 +2479,7 @@ $$
 | 2 | Matrix-Vector Engine | A、B、旧部分和、bias、C 与整数逐元素访问 |
 | 3 | Complex Engine | 激活函数、Softmax、Norm 等操作 |
 
-Matrix-Vector Engine 没有 A、B、bias、C 和各 Vector 源的多组独立 L1 物理端口。Outer 与 Scalar 先通过 Matrix L1 路由，随后 Matrix 与 Vector 再通过内部存储通道；排队后的请求由深度为 2 的寄存 FIFO送到客户端 2，L1 响应直接返回内部存储通道。
+Scalar Matrix、Vector 没有 A、B、bias、C 和各 Vector 源的多组独立 L1 物理端口。它们先通过 Matrix L1 路由和内部存储通道；排队后的请求由深度为 2 的寄存 FIFO送到客户端 2，L1 响应直接返回内部存储通道。Direct Matrix Array 不使用该 FIFO，而是通过面板端口访问 bank 的两个同步端口。
 
 ### 10.5 模块级信号
 
@@ -2484,6 +2499,17 @@ Matrix-Vector Engine 没有 A、B、bias、C 和各 Vector 源的多组独立 L1
 | `rsp_ready_i` | Input | `CLIENTS` | 客户端可接收响应 |
 | `rsp_rdata_o` | Output | `CLIENTS × 64` | 读数据；写响应和错误响应返回 0 |
 | `rsp_status_o` | Output | `CLIENTS × 3` | 每个客户端的 L1 状态 |
+| `panel_req_valid_i` | Input | 1 | Direct Matrix Array 面板请求有效 |
+| `panel_req_ready_o` | Output | 1 | 本周期可接收完整面板请求 |
+| `panel_req_write_i` | Input | 1 | 1 为面板写，0 为面板读 |
+| `panel_req_mask_i` | Input | 24 | 24 个 64-bit lane 的有效位 |
+| `panel_req_addr_i` | Input | `24 × 20` | 每个 lane 的 20-bit、8B 对齐 L1 字节地址 |
+| `panel_req_wdata_i` | Input | `24 × 64` | 面板写的各 lane 数据 |
+| `panel_req_wstrb_i` | Input | `24 × 8` | 面板写的各 lane 逐字节写使能 |
+| `panel_rsp_valid_o` | Output | 1 | 面板读写响应有效 |
+| `panel_rsp_ready_i` | Input | 1 | Direct Matrix Array 可接收面板响应 |
+| `panel_rsp_rdata_o` | Output | `24 × 64` | 面板读出的各 lane 数据；写响应返回 0 |
+| `panel_rsp_status_o` | Output | `24 × 3` | 每个 lane 的地址或对齐检查状态 |
 | `l1_idle_o` | Output | 1 | 请求寄存级为空、没有待读结果，也没有尚未接收的响应 |
 
 扁平总线中，第 $i$ 个客户端使用下列切片：
@@ -2623,7 +2649,7 @@ response                     ↑ T4
 - 连续地址通常依次访问不同 bank，但当前 Controller 不利用这一点同时服务多个客户端。
 - 读写同一地址不会在同一周期被 Controller 接受，因为全局 grant 只有一个。
 - 请求没有 tag；每个客户端必须按照“一个响应槽可用”的限制管理未完成访问。
-- Matrix-Vector Engine 内部允许 Outer、Scalar 和 Vector 同时提出请求，但经两级仲裁和深度为 2 的请求 FIFO后，每周期最多向 L1BUF 提交一个请求，不能按多端口 SRAM 的吞吐估算当前 RTL 性能。
+- Scalar 与 Vector 可以同时提出普通 L1 请求，但经两级仲裁和深度为 2 的请求 FIFO后，每周期最多向 L1BUF 提交一个普通 64-bit 请求，不能按多端口 SRAM 的吞吐估算该路径性能。Direct Matrix Array 的面板端口不经过此 FIFO。
 - 请求 FIFO不是直通结构。空 FIFO在某个时钟沿接受请求后，最早从下一周期拉高输出 valid；FIFO 已满时，即使同周期 L1 接受队首，请求侧 ready 仍保持为 0。
 
 ---
@@ -2636,8 +2662,8 @@ Matrix 和 Integer Vector 在物理结构中属于 `npu_matrix_vector_engine`，
 
 执行路径的分工如下：
 
-- 完整的普通 `GEMM` 经过直接阵列候选检查后进入 `npu_matrix_direct_array_engine`。候选要求 INT8 或 INT16、INT32 C、M/N 为 16 到 64 的 16 整数倍、K 为 1 到 511，且不带 bias、外部部分和、重缩放、截断、残差或激活后处理。该路径有 16×16 个 PE；每个 PE 含四个 8×8 基础乘法器，INT8 使用 INT24 局部和，INT16 使用 INT48 局部和。
-- 不符合上述条件的 `GEMM`、`BMM`、`GEMM_ZERO`、`GEMM_ACCUM`、`GEMM_ZERO_LOCAL` 与 `GEMM_ACCUM_HOLD` 进入 `npu_matrix_scalar_engine`。Scalar 逐个输出元素推进，支持局部部分和、旧 C、bias、整数重缩放、ReLU 和多种输出格式。
+- 专用 `DIRECT_GEMM` 进入 `npu_matrix_direct_array_engine`。该操作要求 INT8 或 INT16 输入、INT32 C、M/N 为 16 到 64 的 16 整数倍、K 为 1 到 511；不带 bias、外部部分和、整数右移、截断、残差或激活后处理。该路径有 16×16 个 PE；每个 PE 含四个 8×8 基础乘法器，INT8 使用 INT24 局部和，INT16 使用 INT48 局部和。
+- 公开 `GEMM`、`BMM`、`GEMM_ZERO`、`GEMM_ACCUM`、`GEMM_ZERO_LOCAL` 与 `GEMM_ACCUM_HOLD` 进入 `npu_matrix_scalar_engine`。Scalar 逐个输出元素推进，支持局部部分和、旧 C、bias、整数重缩放、ReLU 和多种输出格式。
 - Vector 的 ADD、SUB、MAX、MIN、比较、选择和 ReLU 使用轻量整数数据通路。Vector 的 MUL/FMA 与 Scalar Matrix 的乘法请求经过 `npu_mv_shared_mac`；Direct Matrix Array 不经过该共享 MAC PE。
 
 ```mermaid
@@ -2652,21 +2678,21 @@ flowchart TB
     PE["npu_shared_mac_pe_array<br/>4 groups × 16 个 4×4 乘法器"]
     MEM["npu_mv_memory_path<br/>2 项旁路缓存"]
     RF["npu_mv_l1_request_fifo<br/>深度 2 / 93 bit / 非直通"]
-    L1["L1BUF Controller<br/>64-bit 客户端端口"]
+    L1["L1BUF Controller<br/>普通 64-bit 端口 + 24-lane 面板端口"]
 
     TS -->|"Matrix Task"| ME
     TS -->|"Vector Task"| VEC
-    ME -->|"完整普通 GEMM"| DA
-    ME -->|"其余 Matrix 指令"| SC
+    ME -->|"DIRECT_GEMM"| DA
+    ME -->|"GEMM / BMM / 部分和"| SC
     SC <-->|"Scalar 乘法请求 / 返回"| MVPE
     VEC <-->|"Vector MUL/FMA 请求 / 返回"| MVPE
     MVPE <--> PE
-    DA <-->|"Matrix L1 请求 / 返回"| MEM
     SC <-->|"Matrix L1 请求 / 返回"| MEM
     VEC <-->|"Vector L1 请求 / 返回"| MEM
     MEM -->|"排队前请求"| RF
     RF -->|"按接收次序提交"| L1
     L1 -->|"响应直接返回"| MEM
+    DA <-->|"24-lane 面板读写"| L1
     DA -->|"Matrix done + command_id"| TS
     SC -->|"Matrix done + command_id"| TS
     VEC -->|"Vector done"| TS
@@ -2687,13 +2713,13 @@ flowchart TB
 | `engines/context/npu_mv_memory_path.sv` | Matrix、Vector 请求选择、L1 返回分发、写后旁路和写入风险处理 |
 | `engines/context/npu_mv_l1_request_fifo.sv` | 两项、93-bit、非直通的 L1 请求 FIFO |
 
-`npu_matrix_engine` 在直接阵列候选检查完成后，只向已选的一个子模块给出 `task_valid`。它保存原始 `command_id`，并在对应子模块与上游完成握手时返回该编号。`PATH_OUTER` 是 RTL 中直接阵列分支保留的枚举名称，实际模块为 `npu_matrix_direct_array_engine`，不包含旧的多数据类型 Outer context。
+`npu_matrix_engine` 检查操作码和 Direct Matrix Array 的 shape、数据格式及限制条件后，只向已选的一个子模块给出 `task_valid`。它保存原始 `command_id`，并在对应子模块与上游完成握手时返回该编号。Direct 分支的实际模块为 `npu_matrix_direct_array_engine`；公开 Matrix 指令不经 Direct 分支。
 
 Direct Matrix Array 的 PE 不使用 `npu_mv_shared_mac`。每个 PE 对四组 8-bit 操作数形成四个 16-bit 乘积；产品寄存器在一个时钟周期保存这些乘积，下一周期更新 INT24 或 INT48 局部和。这个寄存级把乘法与宽累加分开，最后一个 K 步后额外等待一次排空周期，才开始读取结果并写回 C。
 
 Scalar 与 Vector 通过 `npu_mv_shared_mac` 使用同一组小型 MAC PE。请求握手时，来源写入 owner FIFO；返回时按 FIFO 头部选择 Scalar Matrix 或 Vector。Direct Matrix Array 的完整 16×16 输出块通过独立 PE 阵列计算，不进入此仲裁器。
 
-Direct、Scalar 和 Vector 的 L1 请求都进入 `npu_mv_memory_path`，再经 `npu_mv_l1_request_fifo` 交给 L1BUF。FIFO 深度为 2，保存 write、20-bit 地址、64-bit 写数据和 8-bit strobe；它不是直通结构。L1 返回按请求接收次序回到内部存储通道，再由 owner FIFO送给 Direct、Scalar 或 Vector。
+Scalar 和 Vector 的 L1 请求进入 `npu_mv_memory_path`，再经 `npu_mv_l1_request_fifo` 交给 L1BUF。FIFO 深度为 2，保存 write、20-bit 地址、64-bit 写数据和 8-bit strobe；它不是直通结构。L1 返回按请求接收次序回到内部存储通道，再由 owner FIFO送给 Scalar 或 Vector。Direct Matrix Array 直接使用 L1BUF 的 24-lane 面板读写接口，不经过该 FIFO或 owner FIFO。
 
 Scalar 的 `batch_q`、`row_q`、`col_q`、`k_q` 逐个输出元素推进。`MATRIX_MT=8`、`MATRIX_KT=16`、`MATRIX_NT=8` 只用于检查末尾 tile 和确定 B 的存储排列，不代表 Scalar 在一个时钟周期计算 8×8 个结果。Scalar 在 `ST_MAC_MUL` 发出一个逐元素请求，收到 signed32 乘积后把它符号扩展并加入 signed64 累加值。
 
@@ -2782,6 +2808,17 @@ A 为 INT32、编码 0，或者 A 与 B 使用不同数据格式时，任务返�
 | `l1_rsp_ready_o` | Output | 1 | owner FIFO 指定的内部接收方可以接收响应 |
 | `l1_rsp_rdata_i` | Input | 64 | L1 读数据 |
 | `l1_rsp_status_i` | Input | 3 | L1 访问状态 |
+| `panel_req_valid_o` | Output | 1 | Direct Matrix Array 面板请求有效 |
+| `panel_req_ready_i` | Input | 1 | L1BUF 接受面板请求 |
+| `panel_req_write_o` | Output | 1 | 1 为面板写，0 为面板读 |
+| `panel_req_mask_o` | Output | 24 | 面板内有效的 64-bit lane |
+| `panel_req_addr_o` | Output | `24 × 20` | 面板内各 lane 的 8B 对齐 L1 地址 |
+| `panel_req_wdata_o` | Output | `24 × 64` | 面板写数据 |
+| `panel_req_wstrb_o` | Output | `24 × 8` | 面板写逐字节写使能 |
+| `panel_rsp_valid_i` | Input | 1 | L1BUF 面板响应有效 |
+| `panel_rsp_ready_o` | Output | 1 | Direct Matrix Array 可接收面板响应 |
+| `panel_rsp_rdata_i` | Input | `24 × 64` | 面板读数据 |
+| `panel_rsp_status_i` | Input | `24 × 3` | 面板内各 lane 的访问状态 |
 | `protocol_error_clear_i` | Input | 1 | 清除共享 MAC、内部存储通道和旁路缓存的保持型协议错误 |
 | `bypass_clear_i` | Input | 1 | 清除 2 项旁路缓存的全部有效状态 |
 | `external_write_valid_i` | Input | 1 | DMA、CME 或 L1 外部窗口已经接受一次写请求 |
@@ -2801,7 +2838,7 @@ A 为 INT32、编码 0，或者 A 与 B 使用不同数据格式时，任务返�
 | `pe_idle_cycle_count_o` | Output | 32 | 共享 PE 本周期没有接收新请求的周期数 |
 | `protocol_error_o` | Output | 1 | 共享 MAC、L1 返回次序或内部旁路状态错误 |
 
-当 `matrix_task_valid_i && matrix_task_ready_o` 为 1 时，`npu_matrix_engine` 在同一时钟沿锁存操作码、任务编号和 2048-bit Task Context。该单元只保留一项正在执行的 Matrix 任务，因此 `matrix_task_ready_o` 仅在空闲状态为 1。锁存后的 `PATH_CLASSIFY` 检查描述符；满足 Direct Array 条件的普通 `GEMM` 进入 Direct Array，其他受支持任务进入 Scalar Matrix。检查失败时直接产生完成状态，不访问 L1。
+当 `matrix_task_valid_i && matrix_task_ready_o` 为 1 时，`npu_matrix_engine` 在同一时钟沿锁存操作码、任务编号和 2048-bit Task Context。该单元只保留一项正在执行的 Matrix 任务，因此 `matrix_task_ready_o` 仅在空闲状态为 1。锁存后的 `PATH_CLASSIFY` 检查描述符；受支持的 `DIRECT_GEMM` 进入 Direct Array，其他受支持任务进入 Scalar Matrix。检查失败时直接产生完成状态，不访问 L1。
 
 `reset_n=0` 时，当前任务状态、完成保持寄存器、共享 MAC owner FIFO、L1 请求 FIFO 计数和旁路缓存有效位均清零。L1 RAM 本身的内容不要求清零，但复位后不存在可引用的 Matrix 局部部分和状态。复位期间 L1 请求 valid 和 done valid 均为 0。
 
@@ -2809,16 +2846,16 @@ A 为 INT32、编码 0，或者 A 与 B 使用不同数据格式时，任务返�
 
 | 任务类别 | 选择的执行部分 | 说明 |
 | --- | --- | --- |
-| 普通 `GEMM`，INT8 输入、INT32 输出、M/N 不超过 64、K 不超过 511 | Direct Array | 由 16×16 PE 阵列完成，每次计算步处理 4 个 K 元素 |
-| `BMM`、带 bias 的 `GEMM`、INT16 `GEMM`、非 INT32 输出或不满足 Direct Array 条件的 `GEMM` | Scalar Matrix | 通过共享 MAC 逐组计算并写回 |
+| `DIRECT_GEMM`，INT8 或 INT16 输入、INT32 输出、M/N 为 16 的整数倍且不超过 64、K 不超过 511 | Direct Array | 由 16×16 PE 阵列完成；INT8 每次计算步处理 4 个 K 元素，INT16 每次处理 1 个 K 元素 |
+| `GEMM`、`BMM` 以及带 bias、部分和或整数后处理的 Matrix 指令 | Scalar Matrix | 通过共享 MAC 逐组计算并写回 |
 | `GEMM_ZERO`、`GEMM_ACCUM`、`GEMM_ZERO_LOCAL`、`GEMM_ACCUM_HOLD` | Scalar Matrix | 使用 Scalar Matrix 的部分和与写回流程 |
 | 描述符、地址或数据格式检查失败 | 不启动计算 | `matrix_done_valid_o` 返回对应错误状态 |
 
-在 `PATH_DIRECT` 或 `PATH_SCALAR` 中，任务仅将选定执行部分的 L1 请求、响应 ready 与 done 信息转发到模块输出。done valid 保持到 `matrix_done_ready_i=1`；握手完成后清除当前任务并回到空闲状态。Direct Array 不经过共享 MAC；Scalar Matrix 与 Vector 的乘法请求由 `npu_mv_shared_mac` 轮流接收。
+在 `PATH_DIRECT` 或 `PATH_SCALAR` 中，任务仅将选定执行部分的 L1 接口和 done 信息转发到模块输出。Direct Array 使用面板接口；Scalar 使用普通 64-bit 接口。done valid 保持到 `matrix_done_ready_i=1`；握手完成后清除当前任务并回到空闲状态。Direct Array 不经过共享 MAC；Scalar Matrix 与 Vector 的乘法请求由 `npu_mv_shared_mac` 轮流接收。
 
 #### 11.2.2 Direct Array 与共享 MAC
 
-Direct Array 包含 16×16 个 `npu_matrix_outer_pe`。每个 PE 有 4 个 INT8×INT8 乘法器；INT8 模式每个计算步得到 4 项乘积并写入 24-bit 局部和。Direct Array 当前仅接受 K 不大于 511 的 INT8→INT32 普通 GEMM，避免 24-bit 局部和在完整 INT8 数值范围内溢出。控制器先把本次 K=4 的 A、B 操作数装入寄存器阵列，再发出一个计算步；最终结果以两个输出列为一组写回 L1。
+Direct Array 包含 16×16 个 `npu_matrix_outer_pe`。每个 PE 有 4 个 INT8×INT8 乘法器；INT8 模式每个计算步得到 4 项乘积并写入 24-bit 局部和。`DIRECT_GEMM` 的 INT8 K 不大于 511，避免 24-bit 局部和在完整 INT8 数值范围内溢出；INT16 使用 48-bit 局部和，每个计算步处理一个 K 元素。控制器从面板端口装入本次 A、B 操作数，再发出一个计算步；最终 INT32 结果按两个输出列为一组，通过面板写请求写回 L1。
 
 Scalar Matrix 和 Vector 使用 `npu_mv_shared_mac`。其请求包含 11-bit 本地 tag、逐元素标志、两种输入数据格式、4-bit group 使能以及两组 256-bit 操作数。共享 MAC 的返回根据请求接受顺序送回 Matrix 或 Vector；FIFO 空却收到返回时置起协议错误。`PE_ISSUE_INTERVAL=1` 表示共享 MAC 能够在连续时钟周期接收请求，但 Scalar 控制器是否有下一项请求还取决于操作数读取和前一项结果。
 
@@ -2931,12 +2968,12 @@ Matrix 在任何 A、B 或 C 访问之前完成以下检查：
 12. 非 INT32 最终输出必须启用解码器生成的整数右移配置；INT32 输出不能启用该步骤。
 13. 启用 bias 时，bias 元素数量必须为 N，步长必须是大于或等于 4 的 4B 整数倍；指令解码固定生成 4B。
 14. `GEMM_ZERO_LOCAL`、`GEMM_ACCUM_HOLD` 与 `GEMM_ACCUM` 由 Scalar Matrix 执行，并在匹配形状、C 地址和 C 行步长时使用 Scalar Matrix 的本地部分和 RAM。
-15. `BMM`、`GEMM_ZERO`、带 bias 的 GEMM、INT16 GEMM、非 INT32 输出 GEMM 以及不符合 Direct Array 条件的普通 GEMM均由 Scalar Matrix 执行；符合 Direct Array 条件的普通 INT8→INT32 GEMM由 Direct Array 执行。
+15. `GEMM`、`BMM`、`GEMM_ZERO`、带 bias 的 GEMM、INT16 GEMM、非 INT32 输出 GEMM 以及全部部分和指令均由 Scalar Matrix 执行；只有满足 Direct Array 限制的专用 `DIRECT_GEMM` 由 Direct Array 执行。
 
 字段或组合不合法时返回 `BAD_DESC` 或 `BAD_SHAPE`；数据格式组合不支持时返回 `DTYPE_UNSUPPORTED`；基地址高位非零时返回 `ADDR_FAULT`。检查失败后不写 C。
 
 > [!important] 最终元素地址在发请求前检查
-> 两个分支都会在启动时检查各基地址的 `[63:20]`。外积分支还在每次请求前检查行基址和读写游标。标量分支不会把未经检查的地址截成 20 bit 后发往 L1：C、旧部分和、bias 和外部整数重缩放项使用三拍输出地址生成，A/B 使用三拍操作数地址生成；最后一拍保存完整地址和对应 valid。完整地址高于 `0xfffff`、INT16 或 INT32 元素跨越 8B beat，或外部整数重缩放项没有按 8B 对齐时，valid 为 0。各请求状态先检查 valid，组合输出的 `l1_req_valid_o` 也受同一 valid 控制，因此无效地址只形成 `ADDR_FAULT`，不会产生 L1 请求握手。模型编译器仍应检查整个数组的地址范围，以便在提交前报告模型配置错误。
+> 两个分支都会在启动时检查各基地址的 `[63:20]`。Direct Matrix Array 还在每次面板请求前检查面板地址与写回游标。Scalar 分支不会把未经检查的地址截成 20 bit 后发往 L1：C、旧部分和、bias 和外部整数重缩放项使用三拍输出地址生成，A/B 使用三拍操作数地址生成；最后一拍保存完整地址和对应 valid。完整地址高于 `0xfffff`、INT16 或 INT32 元素跨越 8B beat，或外部整数重缩放项没有按 8B 对齐时，valid 为 0。各请求状态先检查 valid，组合输出的 `l1_req_valid_o` 也受同一 valid 控制，因此无效地址只形成 `ADDR_FAULT`，不会产生 L1 请求握手。模型编译器仍应检查整个数组的地址范围，以便在提交前报告模型配置错误。
 
 ### 11.5 A、B、C 与 bias 的存储排列
 
@@ -3019,7 +3056,7 @@ $$
 > $$
 > C[0,n]=2(n+1)-3(2n-4)=14-4n,
 > $$
-> 9 个输出依次为 `[14,10,6,2,-2,-6,-10,-14,-18]`。该任务的格式或选项不满足 Outer 要求，因此进入 Scalar context，并同时检查列 8 的两个 B 地址确实来自第 1 个 N tile。
+> 9 个输出依次为 `[14,10,6,2,-2,-6,-10,-14,-18]`。该任务的形状不满足 `DIRECT_GEMM` 的完整 16×16 tile 要求，因此由 Scalar Matrix 执行，并同时检查列 8 的两个 B 地址确实来自第 1 个 N tile。
 
 #### 11.5.4 C 的行优先地址
 
@@ -3079,6 +3116,53 @@ $$
 A 是连续行优先数据，`0x1000`～`0x1005` 依次保存 `1,2,3,4,5,6`。B 使用 `16×8` tile：`B[0,0]`、`B[0,1]` 位于线性编号 0、1；`B[1,0]`、`B[1,1]` 位于编号 8、9；`B[2,0]`、`B[2,1]` 位于编号 16、17。因此相对 `0x2000` 的偏移 `0,1,8,9,16,17` 分别保存 `7,8,9,10,11,12`，其余 tile 位置填 0。
 
 C 为 INT32 行优先数据，四个元素的地址依次是 `0x3000`、`0x3004`、`0x3008`、`0x300c`。bias 的两个 INT32 元素位于 `0x4000` 和 `0x4004`。Matrix 每次向 L1BUF 发出对齐后的 8B 地址，再用地址低 3 bit 从返回 beat 中选出所需元素。
+
+#### 11.5.7 `DIRECT_GEMM` 的面板排布
+
+`DIRECT_GEMM` 不使用第 11.5.2 与第 11.5.3 节的 Scalar 行优先 A 和 `16×8` B tile 格式。它把一个完整的 (16\times16) 输出 tile 拆成 K 方向的若干组，并把每组数据排成可由 16 个 bank 同时读取的面板。
+
+对于 INT8，令
+
+$$
+g=0,1,\ldots,\left\lceil\frac{K}{4}\right\rceil-1.
+$$
+
+第 (g) 个面板包含 16 个 A word 和 8 个 B word，总长度为 192B：
+
+$$
+\begin{aligned}
+\operatorname{Aword}(g,r) &= A_{\mathrm{tile}} + 128g + 8r, &&0\le r<16,\\
+\operatorname{Bword}(g,w) &= B_{\mathrm{tile}} + 64g + 8w, &&0\le w<8.
+\end{aligned}
+$$
+
+`Aword` 的低 4 个字节依次为 (A[r,4g+0]\) 到 (A[r,4g+3]\)，不足 K 的位置填 0。8 个 `Bword` 按 (k_i=0\ldots3)、每行两个 8B word 保存该 K 位置的 16 个输出列：
+
+$$
+\operatorname{Bword}(g,2k_i+q)[8j+:8]
+=B[4g+k_i,8q+j],
+\quad q\in\{0,1\},\quad 0\le j<8.
+$$
+
+一次 INT8 面板读在 lane 0～15 放置 16 个 A word；lane 16～23 放置 8 个 B word。A 的 16 个 word 顺次落在 16 个 bank，B 的 8 个 word 与 bank 0～7 的 A word 同拍使用第二端口。因此每个 bank 最多使用两个端口。
+
+对于 INT16，一个 K 位置为一组。每组仍有 16 个 A word，每个 word 的低 16 bit 为 (A[r,g]\)；B 使用 4 个 word，每个 word 保存连续 4 个 INT16 输出列：
+
+$$
+\operatorname{Bword}(g,q)[16j+:16]=B[g,4q+j],
+\quad 0\le q<4,\quad 0\le j<4.
+$$
+
+对应的 A、B 组间距分别为 128B、32B。lane 20～23 在 INT16 面板中无效。
+
+一个 `DIRECT_GEMM` 任务可含多个 (16\times16) 输出 tile。`a_tile_stride` 是相邻 16 行 A tile 的字节间距，`b_tile_stride` 是相邻 16 列 B tile 的字节间距，`ldc` 是相邻 16 列 C tile 的字节间距。每个 C tile 固定占 1024B。输出以两个连续列为一组：第 (p\) 组的 16 个 64-bit 写 word 地址为
+
+$$
+\operatorname{Cword}(p,r)=C_{\mathrm{tile}}+128p+8r,
+\quad 0\le p<8,\quad 0\le r<16.
+$$
+
+每个 word 的低、高 32 bit分别是 (C[r,2p]\)、(C[r,2p+1]\)。因此一次 C 面板写使用 16 个 lane，并让 16 个输出行同时写入不同 bank。编译器必须为不足 16 的 K 末组补零；M、N 不允许存在不足 16 的末 tile。
 
 ### 11.6 四条 Matrix 指令的计算公式
 
@@ -3180,7 +3264,7 @@ P^{\mathrm{local,old}}_{m,n}
 \sum_{k=0}^{K-1}A_{m,k}B_{k,n}.
 $$
 
-结果限制到 INT32 后写回 Outer context 本地 RAM，不写 L1 中的 C。最后一条 `GEMM_ACCUM` 读取匹配的本地值并加入最后一段矩阵乘法结果：
+结果限制到 INT32 后写回 Scalar Matrix 的本地部分和 RAM，不写 L1 中的 C。最后一条 `GEMM_ACCUM` 读取匹配的本地值并加入最后一段矩阵乘法结果：
 
 $$
 C_{m,n}
@@ -3190,7 +3274,7 @@ P^{\mathrm{local}}_{m,n}
 \sum_{k=0}^{K-1}A_{m,k}B_{k,n}.
 $$
 
-最终 C 写响应全部成功后，本地有效状态和 `has_data` 清除。上述本地部分和任务由 Outer context执行，因此这份本地 RAM不会被 Scalar 修改。
+最终 C 写响应全部成功后，本地有效状态和 `has_data` 清除。上述本地部分和任务由 Scalar Matrix 执行；Direct Matrix Array 不访问这份本地 RAM。
 
 ### 11.7 具体数值例子
 
@@ -3367,41 +3451,32 @@ $$
 
 其中 $D$ 是目标 INT8 或 INT16 格式。当前解码数据通路使用最接近且中点取偶数的舍入方式。例如，$13/2=6.5$ 写为 6，$15/2=7.5$ 写为 8。舍入完成后再按目标格式的最小值和最大值进行饱和。
 
-### 11.9 状态机
+### 11.9 控制器状态
 
-`npu_matrix_context_dispatch` 在任务握手前选择 Outer 或 Scalar；被选控制器直接接收操作码与 Task Context，并进入自身状态机。两个控制器之间没有任务分类包装状态。Outer 和 Scalar 各自保持 done，任务分配器完成返回选择和 `command_id` 补充。
+`npu_matrix_engine` 在 `PATH_CLASSIFY` 后把任务交给 Direct Matrix Array 或 Scalar Matrix。两个子模块各自保持完成信息，顶层只转发当前选中子模块的完成信息及 `command_id`。
 
-多数据类型外积分支的状态及功能如下：
+Direct Matrix Array 控制器的状态及功能如下：
 
 | 状态 | 功能 |
 | --- | --- |
-| `ST_IDLE` | 接收 Task Context并检查任务；`GEMM_ZERO_LOCAL` 在此保存 M、N、C 地址和行步长，清除 `has_data` 后直接完成 |
-| `ST_START_TILE` | 根据剩余 M、N 和数据类型选择行并行数、列组数和当前输出块有效范围；必要时转入本地部分和读取 |
-| `ST_PSUM_LOAD_REQ/ST_PSUM_LOAD_CAPTURE` | Outer 从本地部分和 RAM逐项读取当前输出块的 INT32 值，并符号扩展到 64-bit 输出累加寄存器 |
-| `ST_START_K_BLOCK` | 清零当前 16 个 K 元素块的分段累加状态 |
-| `ST_START_K_STEP` | 计算本次 PE 请求的有效 K 数，清理 A/B 小缓存并初始化装载游标 |
-| `ST_A_REQ/ST_A_RSP` | 从 L1 读取当前行组和 K 小段的 A 元素，写入 `a_local_q` |
-| `ST_B_REQ/ST_B_RSP` | 从 L1 读取当前 K 小段和列组的 B 元素，写入 `b_local_q` |
-| `ST_CORE_ISSUE` | 对完整 16×16 普通 `GEMM`，把 A/B 操作数送入直接 Outer PE 阵列并在该拍执行一次 K 小段；其他 Outer 任务把操作数打包为共享 MAC PE 请求 |
-| `ST_CORE_DRAIN` | 仅共享 MAC PE 分支使用；等待 `npu_matrix_psum_pipeline` 完成当前 K 小段的贡献值更新。直接阵列在 `ST_CORE_ISSUE` 后立即开始下一 K 小段或输出阶段 |
-| `ST_C_REQ/ST_C_RSP` | 最终提交需要旧 INT32 C 时读取 C，并与当前输出累加值相加 |
-| `ST_C_PACK` | 按输出数据类型选择结果并形成 64-bit 写数据与 strobe |
-| `ST_C_WRITE_REQ/ST_C_WRITE_RSP` | 写 C 并等待 L1 成功响应，推进当前输出块内的行列游标 |
-| `ST_PSUM_STORE` | `GEMM_ACCUM_HOLD` 把当前输出逐项限制到 INT32 后写入 Outer 的本地部分和 RAM |
-| `ST_NEXT_TILE` | 推进输出块的行、列位置，并开始下一块或完成任务 |
-| `ST_DONE` | 保持 status、fault address 和 progress，直到 TaskScheduler 接收 |
+| `ST_IDLE` | 接收专用 `DIRECT_GEMM` Task Context，并检查操作码、内部版本、形状、数据格式、面板格式、地址和步长。检查不通过时产生错误完成信息。 |
+| `ST_TILE_SETUP` | 清零 16×16 PE 局部累加器，复位当前输出 tile 的 K 组读写游标。 |
+| `ST_PANEL_PRIME` | 发出第一个 A/B 面板读请求。INT8 使用 16 个 A lane 和 8 个 B lane，INT16 使用 16 个 A lane 和 4 个 B lane。 |
+| `ST_PANEL_WAIT` | 等待第一个面板响应；响应正确时把面板送入操作数寄存器并进入计算。 |
+| `ST_COMPUTE` | 每拍向 PE 阵列发出一个 K 组。收到当前面板响应时，同时请求下一面板，使后续 K 组连续进入产品流水级。 |
+| `ST_COMPUTE_DRAIN` | 等待最后一个产品寄存器内容完成累加。 |
+| `ST_OUT_STORE` | 每次形成两个输出列，使用 16 个 lane 同时写出 16 个 INT32 行结果。 |
+| `ST_OUT_WAIT` | 等待最后一个 C 面板写响应；随后推进到下一列 tile、下一行 tile，或者结束任务。 |
+| `ST_DONE` | 保持状态、错误地址和写回元素数，直到 TaskScheduler 接收完成信息。 |
 
-外积分支的主要状态次序为：
+Direct Matrix Array 的主要状态次序为：
 
 ```text
-IDLE → START_TILE
-  → 可选 PSUM_LOAD_REQ / PSUM_LOAD_CAPTURE
-  → START_K_BLOCK
-  → (START_K_STEP → A_REQ/RSP → B_REQ/RSP → CORE_ISSUE → CORE_DRAIN) × K 小段
-  → 可选 C_REQ / C_RSP
-  → C_PACK → C_WRITE_REQ / C_WRITE_RSP
-  → 或 PSUM_STORE
-  → NEXT_TILE → 下一输出块，或 DONE
+IDLE → TILE_SETUP → PANEL_PRIME → PANEL_WAIT
+  → COMPUTE（连续请求下一面板）
+  → COMPUTE_DRAIN
+  → OUT_STORE（8 个输出列对）→ OUT_WAIT
+  → 下一 16×16 tile，或 DONE
 ```
 
 标量执行分支的状态及功能如下：
@@ -3459,25 +3534,23 @@ IDLE
   → 下一个 col / row / batch，或 DONE
 ```
 
-两个控制器都不存在从片外读取任务参数的状态。任务接收后，检查直接使用已经锁存的片上 Task Context。Outer 与 Scalar 的乘法都通过 PE ready/valid 接口完成，控制器内部不再例化活动乘法器。
+两个控制器都不存在从片外读取任务参数的状态。任务接收后，检查直接使用已经锁存的片上 Task Context。Direct Matrix Array 使用专用 16×16 PE 阵列，Scalar 通过共享 MAC PE 完成逐元素乘法。
 
 ### 11.10 功能时序
 
-#### 11.10.1 多数据类型分块外积任务
+#### 11.10.1 `DIRECT_GEMM` 的面板预取与计算
 
-以 INT8 的一个输出块为例，处理次序如下：
+以 INT8 的一个 (16\times16\) 输出 tile 为例，处理次序如下：
 
-1. `npu_matrix_context_dispatch` 根据操作码、`outer_task_supported_i` 与 `outer_local_psum_valid_i` 把适合分块外积的任务交给空闲 Outer。Outer 保存 Task Context，并进入自身的输出块处理状态。
-2. `ST_START_TILE` 根据剩余 M 和 N 选择 group 在行、列方向的分配。对 INT8，一个 group 每次形成 4 个逻辑乘积并产生 2×32 bit 局部贡献；四个 group 按当前输出块的行数选择 4 行×1 列组、2 行×2 列组或 1 行×4 列组。
-3. 每个 16 元素 K 块从 `ST_START_K_BLOCK` 开始。控制器按 K 小段读取 A 与 B，分别保存在 `a_local_q` 和 `b_local_q`。
-4. 对完整 16×16 普通 `GEMM`，`ST_CORE_ISSUE` 将本 K 小段的 A 行数据广播到 16 行 PE，将 B 列数据广播到 16 列 PE。每个 PE 同拍完成 INT16 的一个乘积，或 INT8 的四个乘积，并更新本 PE 的局部累加寄存器。
-5. 直接阵列的 INT8 局部累加寄存器为 signed24，INT16 局部累加寄存器为 signed48。为了避免 INT8 局部值超出可表示范围，当前直接阵列只接收 `K≤512` 的普通 `GEMM`；较长 K 或带局部部分和保存的任务改走共享 MAC PE 的流式分支。
-6. 使用共享 MAC PE 的流式分支中，`npu_matrix_psum_pipeline` 检查返回 tag、数据类型和 group 使能，把四个 group 的贡献值加入当前分段累加值。请求槽在返回更新的时钟沿释放，下一周期才允许该分支发出下一项请求。
-7. 16 元素 K 块结束时，流式分支的分段贡献值符号扩展后加入当前输出块的 signed64 `output_accum_q`。直接阵列在最后一个 K 小段后逐个读取 PE 局部累加值，并进入输出阶段。K 仍有剩余时开始下一 K 块。
-8. 最后一个 K 块结束后，普通 GEMM 进入 C 打包和写回；`GEMM_ACCUM` 根据本地状态读取本地部分和或旧 C；`GEMM_ACCUM_HOLD` 把当前 INT32 部分和写入 Outer 的本地 RAM。
-9. 每次 C 写响应成功后增加 `done_progress_o`。当前输出块完成后进入 `ST_NEXT_TILE`，直到处理完 M×N。
+1. `npu_matrix_engine` 把 `DIRECT_GEMM` 交给 Direct Matrix Array。控制器检查形状、数据格式、面板格式、步长和 L1 地址。
+2. `ST_TILE_SETUP` 清零 256 个 PE 的局部累加器，并把 A、B、C 基址设为当前 tile 的起点。
+3. `ST_PANEL_PRIME` 同时发出 16 个 A word 和 8 个 B word 的面板读。A word 使用 16 个 bank 的 port0；B word 使用 bank 0～7 的 port1。
+4. 第一个响应到达后，`ST_PANEL_WAIT` 把面板写入寄存器阵列。`ST_COMPUTE` 用该面板发出第一个 K=4 计算步。
+5. 后续每个计算周期，PE 阵列使用已装入的面板进行一次 K=4 计算，同时控制器在接收下一面板响应时发起再下一面板请求。产品寄存器把乘法和局部累加分为相邻两拍；最后一组经过 `ST_COMPUTE_DRAIN` 排空。
+6. `ST_OUT_STORE` 连续执行 8 次面板写。每次将两个输出列的 16 个 INT32 结果组成 16 个 64-bit word，并同时写入 16 个 bank。
+7. `ST_OUT_WAIT` 收到最后一次写响应后推进列 tile，再推进行 tile；全部 (M\times N) 个 INT32 结果写回后报告完成。
 
-INT16、INT8 分别令每组一次处理 1、4 个逻辑乘积。局部贡献在一个 16 元素 K 块内维持 1×64 bit 或 2×32 bit 的分段形式，K 块完成后再加入 signed64 输出累加寄存器。尾部 M、N 或 K 不足完整块时，只装入有效元素，其余操作数位置写零。
+INT16 每个面板对应一个 K 位置：16 个 A word 与 4 个 B word 同时读取，每个 PE 在一个计算步处理一个 INT16 乘积。INT8 的 K 末组不足 4 个元素时，编译器把无效位置写为 0；M、N 必须恰好由完整 16×16 tile 组成。
 
 #### 11.10.2 标量 GEMM 的一个输出元素
 
@@ -3535,16 +3608,16 @@ K 次 A/B 读取和 MAC → 读取旧 C[m,n] → 相加 → 写回新 C[m,n]
 
 写响应返回之前，状态机不会开始下一个输出元素。旧 C 与新 C 使用同一 L1 地址，但读和写由状态先后分开。
 
-Outer 中存在已经由 `GEMM_ZERO_LOCAL` 建立且与当前 M、N、C 地址、C 行步长一致的本地状态时，`GEMM_ACCUM` 固定进入 Outer，不读取旧 L1 C，而是在 `ST_START_TILE` 后逐项读取本地部分和 RAM。当前 K 段完成后把新贡献加入这些值，再由 C 写回状态提交最终结果。完成后本地有效状态清除。Outer 不支持当前 `GEMM_ACCUM` 且没有本地状态时，任务进入 Scalar，由 Scalar 读取旧 INT32 C。
+`GEMM_ACCUM` 与 `GEMM_ACCUM_HOLD` 均由 Scalar Matrix 执行。匹配的本地部分和状态有效时，`GEMM_ACCUM` 从 Scalar 的本地部分和 RAM 读取旧值；否则从 L1 读取旧 INT32 C。当前 K 段完成后，Scalar 将新贡献加入旧值并写回 C，完成后清除本地有效状态。
 
 `GEMM_ACCUM_HOLD` 的处理次序为：
 
 ```text
-可选读取本地部分和 → A/B 装载 → 共享 MAC PE → 部分和更新
-  → ST_PSUM_STORE 写本地 RAM → 下一个输出块 → done
+可选读取本地部分和 → A/B 读取 → 共享 MAC PE → 累加
+  → 写 Scalar 本地部分和 RAM → 下一个输出元素 → done
 ```
 
-它不把中间 C 写到 L1BUF。第一次 HOLD 在 `has_data=0` 时把本地旧值视为 0，后续 HOLD 先读取 RAM再累加。Outer 执行该序列时，Scalar 可以接收普通 GEMM；两个 context 通过 PE 和 L1 路由轮转使用公共资源。
+它不把中间 C 写到 L1BUF。第一次 HOLD 在 `has_data=0` 时把本地旧值视为 0，后续 HOLD 先读取 RAM再累加。Matrix 顶层一次只接收一项 Matrix 任务，因此这些任务不与 Direct Matrix Array 并行执行。
 
 #### 11.10.4 GEMM_ZERO
 
@@ -3571,7 +3644,7 @@ $$
 
 以及一次 C 写请求。`GEMM_ACCUM` 每个输出再增加一次旧 C 读取。非 INT32 输出的右移参数由 Task Context 直接提供，不增加 L1 读取。
 
-多数据类型外积分支按当前行组、列组和 K 小段装载 A/B。A 小缓存最多保存 4×4 个 signed16 位置，B 小缓存最多保存 4×16 个 signed16 位置；尾部不足的元素写零。四个 PE group 在当前 K 小段内共用已经装入的 A 行值和 B 列值，因此同一操作数可参与多个输出贡献。B 采用 `KT=16、NT=8` tile 格式时，具体读 beat 数由 tile 中的物理位置、数据类型和尾部有效数量决定。
+Direct Matrix Array 按当前输出 tile 和 K 组装载 A/B 面板。INT8 每个面板含 16 个 A word 与 8 个 B word，INT16 每个面板含 16 个 A word 与 4 个 B word；K 末组的无效操作数填 0。16×16 PE 阵列在一个计算步中共用已装入的 A 行值和 B 列值，因此同一 A 值参与 16 个输出列计算，同一 B 值参与 16 个输出行计算。具体面板格式见第 11.5.7 节。
 
 Matrix 只在以下条件都满足后报告成功：
 
@@ -3582,7 +3655,7 @@ Matrix 只在以下条件都满足后报告成功：
 任一 L1 响应非零时，Matrix 将其转换成任务错误并进入 `ST_DONE`。元素跨越单个 8B beat 或输出按配置处理失败时，`done_fault_addr_o` 保存对应地址；启动检查发现基地址高位非零时，该信号为 0。已经完成的输出不会回退，`done_progress_o` 保留错误发生前的成功写回数量。
 
 > [!important] 当前吞吐特征
-> Matrix 子系统保存两个任务 context。完整 16×16 Outer tile 使用独立 PE 阵列，Scalar 与 Vector 共用可配置 MAC PE；三个任务都使用一组 64-bit L1 客户端端口。一个 context 更新本地部分和或写 C 时，另一个 context 可以执行地址准备、A/B 读取或申请计算资源；同一任务内，下一 K 小段的装载与上一次 MAC 返回的部分和更新也可以同时发生。共享 MAC PE 和 L1 每次仍只接收一个请求，因此性能估算必须结合两级轮转、PE 等待、L1 等待和实际数据类型计算。
+> Matrix 顶层一次保存一项 Matrix 任务。Direct Matrix Array 使用独立 16×16 PE 阵列和 L1 面板端口；Scalar 与 Vector 共用可配置 MAC PE，并使用普通 64-bit L1 客户端端口。Direct 任务内部可使下一 A/B 面板请求与当前 K 组计算重叠；Scalar 和 Vector 仍受共享 MAC 与普通 L1 请求 FIFO 限制。性能估算必须分别统计 Direct 面板等待、Scalar/Vector 的 PE 等待、普通 L1 等待以及任务接收和完成周期。
 
 ---
 
@@ -5294,7 +5367,7 @@ PMU 撤销 `power_down_req_i` 后，LSC 立即撤销 `power_down_ack_o`，同时
 | CFE | 低 beat 保存寄存器无效，128-bit CMD FIFO 空，`ready=0` 直到复位释放 |
 | TaskScheduler | 命令接纳 valid、WAIT_EVENT 检查结果 valid 和 Control 执行快照 valid 为 0；`wait_scan_slot_q` 为 0，任务表和 Event Table 为 FREE，全部 `predecessor_mask` 为 0，发射与选择扫描候选无效，`decode_pending_valid_q=0`，四组发射暂存 valid 为 0，`completion_hold_valid_q=0`，`event_publish_pending_valid_q=0`，四类任务请求 valid 为 0 |
 | DMA | `state_q=ST_IDLE`，MIF、L1 请求 valid 和 done valid 为 0；Task Context、游标、shape 乘法和数据寄存器的旧值无效 |
-| Matrix-Vector Engine | Outer、Scalar 与 Vector 控制器回到 `ST_IDLE`，context active、PE/L1 owner FIFO、共享 PE valid、L1 请求 FIFO计数、内部旁路有效位、L1 请求 valid和两组 done valid均为 0；Outer 本地部分和 RAM不清零，但元数据和有效状态清零 |
+| Matrix-Vector Engine | Direct、Scalar 与 Vector 控制器回到 `ST_IDLE`，当前 Matrix 任务无效、PE/L1 owner FIFO、共享 PE valid、普通 L1 请求 FIFO计数、内部旁路有效位、普通和面板 L1 请求 valid以及两组 done valid均为 0；Scalar 本地部分和 RAM不清零，但元数据和有效状态清零 |
 | CME | 主状态为 `ST_IDLE`，数学单元状态为 `ST_IDLE`，L1 请求 valid、数学响应 valid 和 done valid 为 0；行统计与 FP32 工作寄存器在新任务中重新赋值 |
 | L1BUF Controller | 请求寄存级、读等待和逐客户端响应 valid 均清零；SRAM 数据内容不保证为 0 |
 | MIF | 回到 `MIF_IDLE`，AXI 各通道 valid 为 0；当前实现没有内部 tag 表 |
@@ -5727,7 +5800,7 @@ $$
 | 激活函数 | 选择函数和输入输出 scale | CME 执行 INT→FP32→INT |
 | Softmax / Norm | 生成行数、行长度、mask 和参数 | CME 多遍读取并写整数输出 |
 | 任务依赖 | 为生产者和消费者分配事件，把引用直接写入 CMD | Event Table 检查成功或失败终态 |
-| Matrix 执行 | 安排 GEMM、GEMM_ACCUM、GEMM_ACCUM_HOLD 和清零任务的次序与 L1 区域 | 完整 16×16 Outer GEMM使用独立 PE 阵列；本地部分和序列与不规则形状使用 Scalar 的共享 MAC PE，普通 GEMM可在条件满足时轮转选择 Outer 或 Scalar |
+| Matrix 执行 | 安排 `DIRECT_GEMM`、GEMM、GEMM_ACCUM、GEMM_ACCUM_HOLD 和清零任务的次序与 L1 区域 | 专用 `DIRECT_GEMM` 使用独立 16×16 PE 阵列和面板端口；公开 GEMM、本地部分和序列与不规则形状使用 Scalar 的共享 MAC PE |
 | 系统内存地址配置 | Python 编译器只分配存储区编号和 24-bit 区内偏移；C 工程在构建模型程序时给出各存储区物理基址和允许访问范围，驱动写入 LSC | 用提交时保存的基址加区内偏移形成物理地址；MIF 检查范围并发起 AXI 访问 |
 | 错误处理 | 读取错误状态，决定重试、复位或停止 | 停止新请求、排空并报告 |
 
@@ -6027,25 +6100,22 @@ $$
 - `ST_EP_ABS → ST_EP_SHIFT` 保存正负号、绝对值、shift 和舍入方式；正右移继续按 `ST_EP_ROUND → ST_EP_INCREMENT → ST_EP_SIGN` 处理，零 shift 和负 shift 必须直接进入 `ST_EP_NARROW`；
 - `ST_EP_NARROW` 的 signed64 最小值与最大值限制、`ST_EP_ZERO_POINT` 的 signed32 符号扩展加法以及 `ST_EP_CLIP` 的 INT8、INT16、INT32 检查必须分别与软件参考一致；
 - 128-bit 可变移位、舍入决定、128-bit 加一、符号恢复、signed64 限制和目标格式检查必须在对应寄存状态逐拍完成，验证探针不得观察到跳过必需状态或提前发出写请求；
-- Outer 的 INT16、INT8 结果逐元素与 signed64 软件参考一致，并通过 context 接收探针确认任务进入 Outer；
-- 正常指令生成的两种 `KT=16、NT=8` B tile 格式，以及模块级直接 Task Context 使用的 B 行优先格式；
+- `DIRECT_GEMM` 的 INT8、INT16 结果逐元素与 signed64 软件参考一致，并确认任务进入 Direct Matrix Array；
+- Scalar `GEMM` 的两种 `KT=16、NT=8` B tile 格式，以及 `DIRECT_GEMM` 的 A/B/C 面板格式；
 - `npu_shared_mac_pe_array` 的两种输入组合：INT16×INT16、INT8×INT8；检查每个 group 的 16 个内部 4×4 基础乘积、重组后的逻辑乘积、1×64 bit或 2×32 bit贡献值，以及逐元素 signed32 返回；
 - 四个 group 同时启用时，dtype、group 使能、client tag 和 valid 与返回保持一致；Matrix 与 Vector 请求交错时返回 owner 正确；
-- `npu_matrix_psum_pipeline` 检查 tag、dtype、`elementwise=0`、`group_enable=4'b1111` 和 pair valid；错误返回必须结束当前计算并形成任务错误；一项请求未返回时 `request_slot_ready_o` 必须保持为 0；
-- 同一任务内，下一 K 小段 A/B 装载与上一次 PE 返回的部分和更新必须出现可观测的同时活动周期；请求未完成时不得覆盖保存的 tag 和末步标志；
-- `GEMM_ZERO_LOCAL → GEMM_ACCUM_HOLD → GEMM_ACCUM_HOLD → GEMM_ACCUM`，检查中间结果只写 Outer 的本地部分和 RAM，最终任务才提交 C；
+- `DIRECT_GEMM` 的 INT8 面板使用 16 个 A lane、8 个 B lane，INT16 面板使用 16 个 A lane、4 个 B lane；同一个 bank 不得被一个面板请求使用超过两次；
+- 连续 INT8 K 组中，当前面板计算和下一面板请求必须存在同时活动周期；产品流水最后一拍排空后才能开始结果写回；
+- `GEMM_ZERO_LOCAL → GEMM_ACCUM_HOLD → GEMM_ACCUM_HOLD → GEMM_ACCUM`，检查中间结果只写 Scalar Matrix 的本地部分和 RAM，最终任务才提交 C；
 - 本地部分和 RAM的 M、N、C 地址或 C 行步长不一致时返回 `BAD_DESC` 并清除本地有效状态；
-- `npu_matrix_dual_context` 直接例化一个 Outer 控制器和一个 Scalar 控制器；检查不存在第二份 Outer 控制器，也不存在 Scalar/Outer 二次分类包装层；
-- 0x44 和 0x45 固定进入 Outer；0x42 在 Outer 支持或本地状态有效时进入 Outer，否则进入 Scalar；0x41、0x43 和其他任务进入 Scalar；
-- Outer 支持且没有本地状态的普通 0x40 在两个 context 都空闲时交替选择 Outer 与 Scalar；只有一侧可立即接收时选择该侧；
-- Outer 本地状态有效时，普通 GEMM仍可由 Scalar 接收；普通 GEMM与本地部分和任务同时处于活动状态时，两个 Matrix context 的 PE 请求和 L1 请求在持续冲突下都能得到服务；
+- `npu_matrix_engine` 只例化一个 Direct Matrix Array 和一个 Scalar Matrix；每次只接受一项 Matrix 任务；
+- 内联 opcode 35 必须展开为内部 `0x46`，并只在 `DIRECT_GEMM` 限制通过时进入 Direct；公开 `GEMM`、BMM、清零和部分和指令必须进入 Scalar；
+- `DIRECT_GEMM` 任务活动期间，Matrix 顶层不得接收第二项 Matrix 任务；Direct 完成握手后才能接收下一项；
 - 深度为 2 的 L1 请求 FIFO按输入握手次序输出；空 FIFO输入握手周期不得同时在输出侧直通，输出暂停时 93-bit payload保持；
 - FIFO满且同周期弹出队首时，输入侧 ready到下一周期才恢复；复位后占用数、head 与 tail回到空状态；
-- owner 必须在请求进入 FIFO的输入握手时写入内部 owner FIFO，L1 响应直接返回内部存储通道并送给匹配的 Matrix/Vector 及 Outer/Scalar 请求方；
+- owner 必须在请求进入 FIFO的输入握手时写入内部 owner FIFO，L1 响应直接返回内部存储通道并送给匹配的 Scalar Matrix 或 Vector 请求方；
 - Matrix 写请求进入请求 FIFO或由 L1 接受后，旁路缓存不得提前出现新数据；只有成功写响应完成握手后才允许填充，错误写响应不得填充；
-- 两个 Matrix 任务按不同于提交次序的先后完成，TaskScheduler 必须依据返回 `command_id` 更新正确任务；未知或重复编号置起协议错误，不能释放无关 active 记录；
-- 两项 Matrix active 都占用时阻止第三项握手；完成正确匹配一项的同周期允许接收新 Matrix 任务并复用该 active 项；
-- 外积分支读写地址游标越过 20-bit L1 地址范围时返回 `ADDR_FAULT`，不得只截取低位继续访问；
+- Direct 面板读写地址游标越过 20-bit L1 地址范围时返回 `ADDR_FAULT`，不得只截取低位继续访问；
 - L1 请求或响应暂停时，当前 A、B、旧部分和、bias 和写回字段保持稳定；
 - 当前输出元素写响应返回后才推进到下一个列、行或 Batch；
 - `ORDERED=1`、事件等待和 Fence 禁止不符合先后要求的并行；
@@ -6071,20 +6141,22 @@ $$
 > 上述模型回归验证了 TVM 生成的数据、指令、DMA、标量 Matrix 路径和 RTL 结果的配合。注意力 Softmax、循环门控、状态更新与 Conv2D 仍由 CPU/DPI 完成；不得把该结果描述为所有模型算子均在 NPU 内执行。
 
 > [!warning] Direct Matrix Array 的验收要求
-> 大型 TVM 用例的 `outer_path`、`pe_array_compute`、`active_pe_slots` 都为 0，原因是当前编译器对 K 分块生成 `GEMM_ZERO_LOCAL`、`GEMM_ACCUM_HOLD`、`GEMM_ACCUM`，这些任务进入 Scalar 路径。Direct Matrix Array 的功能和空间占用须另行使用 16×16 直接 GEMM、INT8/INT16、尾 K、L1 暂停和部分和序列测试；端到端时间利用率须使用具备面板读端口的大矩阵用例重新测量。
+> 大型 TVM 用例当前只发射公开 `GEMM` 和部分和指令，因此由 Scalar Matrix 执行，并不触发 `DIRECT_GEMM`。Direct Matrix Array 的功能和空间占用须另行使用 `DIRECT_GEMM`、INT8/INT16、K 末组、面板暂停和多 tile 用例测试。任务级测量不能替代包含 Command Front End、TaskScheduler、DMA 装载和提交等待的模型级测量。
 
 #### 19.3.2 Direct Matrix Array 的任务级测量
 
-`tb_npu_matrix_direct_array_engine` 向 `npu_matrix_direct_array_engine` 提交完整的内部 Task Context，并使用可连续接收请求、固定两周期返回的 64-bit L1 存储模型。该测试不经过 Command Front End、TaskScheduler 和 Matrix-Vector Engine 的 L1 请求 FIFO；计数从 Direct Matrix Array 接收任务开始，到最后一个 C 写响应后完成。它覆盖 Direct 控制器、整 beat A/B 装载、A 行缓存、16×16 PE 阵列、结果行内移位与 C 写回。
+`tb_npu_matrix_direct_array_engine` 向 `npu_matrix_direct_array_engine` 提交完整的内部 Task Context，并通过行为模型模拟 24-lane L1 面板接口。该测试不经过 Command Front End、TaskScheduler、DMA 和普通 Matrix-Vector L1 请求 FIFO；计数从 Direct Matrix Array 接收任务开始，到最后一个 C 面板写响应后完成。它覆盖 Direct 控制器、A/B 双面板寄存器、16×16 PE 阵列、产品流水、结果移位与 C 面板写回。
 
-Direct 路径只接受完整的对齐 GEMM：M、N 为 16～64 的 16 整数倍，K 为 1～511，A/B 同为 INT8 或同为 INT16，C 为 INT32，且不带 bias、外部部分和、整数右移或结果截断。INT8 使用 INT24 累加；完整带符号 INT8 范围内，`511×(-128)×(-128)=8,372,224`，仍小于 signed INT24 的最大值 `8,388,607`。K=512 时该上限溢出，因此该任务必须由 Scalar 路径计算。
+Direct 路径只接受专用 `DIRECT_GEMM`：M、N 为 16～64 的 16 整数倍，K 为 1～511，A/B 同为 INT8 或同为 INT16，C 为 INT32，且不带 bias、外部部分和、整数右移或结果截断。INT8 使用 INT24 累加；完整带符号 INT8 范围内，`511×(-128)×(-128)=8,372,224`，仍小于 signed INT24 的最大值 `8,388,607`。K=512 时该上限溢出，因此该任务必须由 Scalar 路径计算。
 
 | 用例 | 总周期 | PE 计算周期 | 阵列时间利用率 | 阵列空间利用率 | 结果 |
 | --- | ---: | ---: | ---: | ---: | --- |
-| INT8，16×16×5 | 168 | 2 | 1.19% | 100% | 通过 |
-| INT8，16×16×511 | 2,818 | 128 | 4.54% | 100% | 通过 |
-| INT16，16×16×3 | 174 | 3 | 1.72% | 100% | 通过 |
-| INT8，32×32×8 | 693 | 8 | 1.15% | 100% | 通过 |
+| INT8，16×16×5 | 17 | 2 | 11.7% | 100% | 通过 |
+| INT8，16×16×511 | 143 | 128 | 89.5% | 100% | 通过 |
+| INT16，16×16×3 | 18 | 3 | 16.6% | 100% | 通过 |
+| INT16，32×32×5 | 77 | 20 | 25.9% | 100% | 通过 |
+| INT8，32×32×8 | 65 | 8 | 12.3% | 100% | 通过 |
+| INT8，64×64×511 | 2,273 | 2,048 | 90.1% | 100% | 通过 |
 
 阵列时间利用率按下式计算：
 
@@ -6096,11 +6168,9 @@ U_{\mathrm{time}}
 \times100\%.
 $$
 
-每个 Direct Matrix Array 计算周期中，16×16 个 PE 都被使能，所以空间利用率为 100%。A 行缓存使一个 INT8 A beat 供两个 4-K 计算步使用，控制器也可连续发出 A、B 和 C 的 L1 请求；不过当前实现只使用一条 64-bit L1 请求端口，且每个 16×16 输出块仍需要 128 次 C 写响应。因此，K=511 用例的任务级时间利用率仍只有 4.54%，尚未达到 85% 的目标；计入 TaskScheduler 和 Matrix-Vector Engine 的请求排队后，数值只会更低。
+每个 Direct Matrix Array 计算周期中，16×16 个 PE 都被使能，所以空间利用率为 100%。INT8 的一个 K=4 面板含 16 个 A word 和 8 个 B word，共 192B；A word 分布在 16 个 bank 的 port0，B word 使用 bank 0～7 的 port1。控制器在当前面板进入 PE 阵列时请求下一面板，因此 K 较大时只在第一个面板、最后一个产品排空以及输出写回处出现空拍。
 
-对于一个完整 INT8 4-K 计算步，16×16 阵列需要 64 B 的 A 数据和 64 B 的 B 数据，共 128 B。单条 64-bit 读取端口每周期只能提供 8 B；即使所有读写等待都被隐藏，仅装入这 128 B 也至少需要 16 个周期。因此，只计算一个 16×16 输出块时，单端口 L1 不可能提供 85% 的阵列时间利用率。
-
-达到目标需要改用更大的输出区域和并行数据供给。例如 64×64 输出区域的一个 4-K 小段需要 64×4 的 A 面板和 4×64 的 B 面板，共 512 B；这些数据可完成 16 个 16×16 输出块。A 面板供四个列块使用，B 面板供四个行块使用。后续硬件需要面板读端口、独立结果写端口、A/B 双缓冲和能保存 64×64 INT32 部分和的存储区；编译器还需要把同一宏块的 K 小段、面板预取和 C 写回安排为可重叠的任务。以上内容是后续设计目标，当前 RTL 尚未提供这些部件。
+64×64×511 用例含 16 个完整输出 tile，共执行 2,048 个 INT8 K 步。任务级时间利用率为 (2048/2273=90.1\%\)，超过 85% 的阵列任务级目标。该数值不包含指令接收、TaskScheduler 等待、DMA 装载和模型中其他算子，不能作为模型级 PE 时间利用率；模型编译器尚未输出 `DIRECT_GEMM`，因此需要在 TVM 后端加入该操作的分块与面板布局后重新测量完整模型。
 
 ### 19.4 Integer Vector 测试
 
@@ -6180,8 +6250,8 @@ C model 的函数误差测试必须覆盖完整支持区间，不能只检查少
 - CFE 到 TS；
 - DMA 到 MIF；
 - TS 到执行单元；
-- 使用共享 MAC PE 的 Outer 流式分支、Scalar 与 Vector 到共享 MAC PE；直接 Outer PE 阵列的行/列操作数发射；
-- Outer 与 Scalar 到 Matrix L1 路由、Matrix 与 Vector 到内部存储通道、内部存储通道到 L1 请求 FIFO以及 FIFO到 L1BUF；
+- Scalar 与 Vector 到共享 MAC PE；Direct Matrix Array 的 A/B 面板读取和 C 面板写回；
+- Scalar 与 Vector 到内部存储通道、内部存储通道到 L1 请求 FIFO以及 FIFO到 L1BUF；Direct Matrix Array 到 L1BUF 面板端口；
 - 每个 L1BUF 读写端口；
 - AXI AW、W、B、AR、R；
 - 执行单元 done 接口。
@@ -6265,7 +6335,7 @@ L1BUF 当前使用一次请求加一次响应的单 beat 接口。验证环境�
 | `all_mask_row_count` | 64 | Softmax 全 mask 行数 |
 | `ecc_corrected_count` | 64 | 已修正 ECC 次数 |
 
-后续若实现 `PERF_COUNTER[0～15]`，可按上表顺序分配。`npu_matrix_vector_engine` 当前已经输出 Matrix/Vector PE 授予次数、两方 PE 等待周期、请求冲突周期和 PE 空闲周期；`npu_matrix_dual_context` 还输出两个 context 的 active、PE/L1 请求与接收状态和 owner FIFO 占用数。这些信号目前用于验证观察，尚未连接到 LSC 的软件可见地址。
+后续若实现 `PERF_COUNTER[0～15]`，可按上表顺序分配。`npu_matrix_vector_engine` 当前已经输出 Matrix/Vector PE 授予次数、两方 PE 等待周期、请求冲突周期和 PE 空闲周期；Direct Matrix Array 的任务级测试还统计计算周期和有效 PE slot。这些信号目前用于验证观察，尚未连接到 LSC 的软件可见地址。
 
 后续加入硬件计数器时，需要同时增加 LSC 寄存器、计数增量端口、freeze/clear
 控制和逐项验证；在此之前，软件读取上述保留地址只能得到 0。
@@ -6274,7 +6344,7 @@ L1BUF 当前使用一次请求加一次响应的单 beat 接口。验证环境�
 
 ## 20. 当前 RTL 参考配置与后续参数
 
-下表列出当前执行单元 RTL 的固定能力。Matrix 双任务 context、Outer 的独立 PE 阵列、Scalar/Vector 共享 MAC PE、内部旁路和深度为 2 的 L1 请求 FIFO已经进入 RTL；C model 的周期参数仍需与实际 ready/valid、L1 等待和 PE 仲裁结果分别比较。第 15.3 节还列出了 LSC 能力寄存器常量与执行单元之间的已知差异；完成修正前，RTL 验证必须以实际状态机和端口为准。
+下表列出当前执行单元 RTL 的固定能力。Direct Matrix Array 的独立 PE 阵列、Scalar/Vector 共享 MAC PE、内部旁路、深度为 2 的普通 L1 请求 FIFO和 Direct 面板端口已经进入 RTL；C model 的周期参数仍需与实际 ready/valid、L1 等待和 PE 仲裁结果分别比较。第 15.3 节还列出了 LSC 能力寄存器常量与执行单元之间的已知差异；完成修正前，RTL 验证必须以实际状态机和端口为准。
 
 功能级调度器提供 `npu_estimate_task_cycles()` 作为可重复的参考周期数。周期数
 包含内联任务展开、固定检查、输入与输出 beat、L1 或 DDR 参考延迟、逐元素
@@ -6319,15 +6389,15 @@ L1 ECC 数组及 workspace 数组。任意一组失败时返回 `BAD_DESC`，调
 | ------------------- | -------------------: | -------------------------- |
 | L1BUF 容量            |                1 MiB | 目标模型 tile 与片上 SRAM 资源      |
 | L1BUF bank 数        |                   16 | Matrix、IVE、CME、DMA 同时访问    |
-| bank 端口             |              单端口 1RW | SRAM 宏类型                   |
+| bank 端口             |              两个同步 64-bit 端口 | 普通请求使用 port0；面板请求可使用两个端口 |
 | L1 SRAM 读延迟         |             2 cycles | SRAM 宏实际延迟                 |
 | 每客户端端口未完成 L1 请求数    |                    1 | 返回队列资源                     |
 | L1 长等待提升计数器         |                  未实现 | 当前使用逐请求轮询；后续可增加等待周期提升      |
 | Matrix `MT/KT/NT`   |             `8/16/8` | 64-bit 操作数供数速度             |
-| Matrix context 数 | 2 | context0 为 Outer；context1 为 Scalar；普通 Outer 可执行 GEMM在两者均空闲时轮转选择 |
+| Matrix 活动任务数 | 1 | `npu_matrix_engine` 每次在 Direct Matrix Array 与 Scalar Matrix 中选择一条路径 |
 | 共享 PE group | 4 | 每组 16 个 4×4 基础乘法器；Matrix 与 Vector MUL/FMA 共用 |
 | PE 数据类型组合 | INT16×INT16、INT8×INT8 | 逐元素乘积或分段贡献值 |
-| 本地部分和 RAM | Outer 为 4096×32 bit；Scalar 不包含 | `GEMM_ZERO_LOCAL`、`GEMM_ACCUM_HOLD` 和最终提交 |
+| 本地部分和 RAM | Scalar 使用 | `GEMM_ZERO_LOCAL`、`GEMM_ACCUM_HOLD` 和最终提交 |
 | Matrix-Vector 旁路缓存 | 2 项 × 64 bit beat | 保存地址标签、数据和逐字节有效状态 |
 | Matrix-Vector L1 请求 FIFO | 2 项 × 93 bit | 非直通；按接收次序保存 write、addr、wdata 和 wstrb |
 | Matrix 临时累加宽度       |             signed64 | 最大 K、bias 和 residual 测试    |
@@ -6819,7 +6889,7 @@ CME 数学单元 `approx_mode=0` 的函数范围、误差要求和可变延迟�
 
 ### 20.3 2026-08-02 RTL 回归与综合记录
 
-本节的 RTL 为 `npu_matrix_direct_array_engine`、Scalar 路径、Vector、CME、DMA 和单核顶层的当前组合。综合使用 Vivado 2024.2、器件 `xc7a200tfbg484-3`、10.000ns 时钟周期和顶层 `npu_single_core_top`。`summary_post_synth.txt`、`utilization_post_synth.rpt` 与 `utilization_hierarchical_post_synth.rpt` 是资源和时序数据的来源。
+本节记录 `npu_matrix_direct_array_engine`、Scalar 路径、Vector、CME、DMA 和单核顶层的回归与综合。综合使用 Vivado 2024.2、器件 `xc7a200tfbg484-3`、10.000ns 时钟周期和顶层 `npu_single_core_top`。面板端口加入前的资源和时序数据来自 `summary_post_synth.txt`、`utilization_post_synth.rpt` 与 `utilization_hierarchical_post_synth.rpt`；当前源码的实现后报告须单独更新，不能与该基线混用。
 
 #### 20.3.1 TVM 到 RTL 的模型回归
 
@@ -6851,17 +6921,18 @@ make -C /home/etc/FPGA/Transformer_NPU/rtl/engines matrix-direct-array
 
 | 用例 | 周期数 | 有效计算周期 | PE 时间利用率 | PE 空间利用率 |
 | --- | ---: | ---: | ---: | ---: |
-| INT8，16×16×5 | 169 | 2 | 1.1% | 100% |
-| INT8，16×16×511 | 2,819 | 128 | 4.5% | 100% |
-| INT8，64×64×511 | 45,089 | 2,048 | 4.5% | 100% |
-| INT16，16×16×3 | 175 | 3 | 1.7% | 100% |
-| INT8，32×32×8 | 697 | 8 | 1.1% | 100% |
+| INT8，16×16×5 | 17 | 2 | 11.7% | 100% |
+| INT8，16×16×511 | 143 | 128 | 89.5% | 100% |
+| INT8，64×64×511 | 2,273 | 2,048 | 90.1% | 100% |
+| INT16，16×16×3 | 18 | 3 | 16.6% | 100% |
+| INT16，32×32×5 | 77 | 20 | 25.9% | 100% |
+| INT8，32×32×8 | 65 | 8 | 12.3% | 100% |
 
-空间利用率说明完整 16×16 tile 的 256 个 PE 均收到工作。64×64×511 用例包含 16 个完整输出 tile，共执行 2,048 个 K 步，测得的时间利用率仍为 4.5%，说明瓶颈并非尾块造成的闲置。当前控制器必须先顺序读完 A/B 面板才能发射一个 K 步：每个 INT8 K 步需要 16 条 A 行各 4 B 和 4 条 B 行各 16 B，合计 128 B；当前 Matrix 请求端口每拍只能读取 8 B。任务调度、数据读取、结果写回和完成等待均已计入上表周期数。因此，中大型矩阵的 85% 目标尚未达到。
+空间利用率说明完整 16×16 tile 的 256 个 PE 均收到工作。64×64×511 用例包含 16 个完整输出 tile，共执行 2,048 个 K 步，测得任务级时间利用率为 90.1%。当前控制器用 24-lane 面板端口一次读入每个 INT8 K=4 步的 16 个 A word 与 8 个 B word，并在当前面板计算时请求下一面板；每个输出列对使用 16-lane 面板写回。因此 K 较大时，面板预取能够隐藏绝大部分 A/B 等待。该测量不经过 TaskScheduler、DMA 或 TVM 后端，不能说明模型级利用率已经达到目标。
 
-#### 20.3.3 当前综合结果与差距
+#### 20.3.3 面板端口加入前的综合基线与差距
 
-产品寄存器加入前，最差 setup 路径穿过操作数选择、DSP48E1 乘法器和 48-bit 累加器，后综合 WNS 为 `-0.934ns`。加入产品寄存器后的对比综合目录为 `Transformer_NPU/.work/vivado_direct_array_productpipe_20260801`：
+产品寄存器加入前，最差 setup 路径穿过操作数选择、DSP48E1 乘法器和 48-bit 累加器，后综合 WNS 为 `-0.934ns`。加入产品寄存器后的对比综合目录为 `Transformer_NPU/.work/vivado_direct_array_productpipe_20260801`。以下数据来自面板端口和双端口 L1BUF 加入前的 RTL 快照，只用于识别面积与时序瓶颈，不能作为当前源码的实现后结果：
 
 | 项目 | 后综合结果 |
 | --- | ---: |
@@ -6891,7 +6962,7 @@ L1BUF 检查通过：256 个 RAMB36、0 个 RAMB18、0 个 LUTRAM，且以 `memo
 
 40,000 LUT 目标尚未达到。16×16 阵列包含 256 个 PE，每个 PE 保留四个 8×8 基础乘法器；完整阵列需要 1,024 个基础乘法。器件只有 740 个 DSP48E1，当前实现已使用 714 个，其余乘法和数据整理逻辑使用 LUT。后续必须同时减少 Direct 控制和数据整理逻辑，并重新组织 PE 内的基础乘法实现；不能把 40,000 LUT 写成已满足的结果。
 
-当前后综合 setup 和 hold 均未通过，因而还不能把实现后的时序写为通过。下一轮实现应使用与当前源代码一致的后综合检查点，再执行 `place_design`、`phys_opt_design` 与 `route_design`。对于 85% PE 时间利用率，必须先加入 1024-bit Matrix 面板读接口或等效的 16-bank 并行读端口、独立结果写端口及 A/B 双缓冲，然后用直接阵列的大矩阵端到端用例重新测量。
+该基线的后综合 setup 和 hold 均未通过，40,000 LUT 目标也未达到。当前源码已加入 24-lane 面板端口、双端口同步 bank、A/B 面板预取和面板结果写回；必须使用当前源码重新完成 `synth_design`、`place_design`、`phys_opt_design` 与 `route_design` 后，才能记录新的 WNS、WHS、LUT 和 BRAM 结果。Direct 阵列任务级测试已经超过 85%，仍须在编译器能够发射 `DIRECT_GEMM` 后测量包含调度和 DMA 的模型级利用率。
 
 > [!summary] 首版硬件实现范围
-> 单核首版由 64-bit AXI/MIF、64-bit L1BUF 客户端接口、Command Front End、TaskScheduler、DMA、Matrix-Vector Engine、Complex Math、L1BUF、LSC、CRG 和 WDT 组成。每条 128-bit 指令在 64-bit 接口上使用低、高两个 beat；事件和任务选项直接位于指令。TaskScheduler 使用命令接纳寄存级、WAIT_EVENT 逐槽检查及结果寄存、接收检查解码器、Control 执行快照、发射窄快照、共享发射解码器和四组发射暂存；Matrix 使用两项 active 记录并按完成 `command_id` 查找任务。Matrix-Vector Engine 是 Matrix 与 Vector 共用的物理执行模块，包含 Direct Matrix Array、Matrix Scalar、Vector 控制器、一套 16×16 PE 阵列、一套 Scalar/Vector 可配置多精度 MAC PE、内部 L1 仲裁、深度为 2 的 L1 请求 FIFO 和 2 项 Matrix 到 Vector 旁路缓存。Direct Matrix Array 为完整 16×16 输出 tile 保存 A/B 面板和 PE 局部累加器；它只处理不带 bias、外部部分和、缩放和截断的普通 GEMM。Scalar 执行其他 Matrix 乘法、外部 INT32 部分和与后处理；Vector 的 MUL/FMA 使用共享 MAC PE，其他逐元素操作使用轻量整数 ALU。模型张量只采用 INT8、INT16、INT32；共享 MAC PE 的内部 4×4 基础乘法器用于组成 INT8 和 INT16 乘法，不构成软件可选的数据格式；CME 的 SUMSQ 分成平方与累加状态，Exp 的范围整数使用五个寄存状态完成最近偶数舍入，复杂函数在 CME 内部执行 `INT→FP32→INT`，F2I 在数学响应后经过五个寄存状态。软件通过指令和 C 配置给出物理地址、shape、stride、scale 和 zero point，硬件按模块接口与功能时序完成任务。
+> 单核首版由 64-bit AXI/MIF、普通 64-bit L1BUF 客户端接口、24-lane Direct 面板接口、Command Front End、TaskScheduler、DMA、Matrix-Vector Engine、Complex Math、L1BUF、LSC、CRG 和 WDT 组成。每条 128-bit 指令在 64-bit 接口上使用低、高两个 beat；事件和任务选项直接位于指令。TaskScheduler 使用命令接纳寄存级、WAIT_EVENT 逐槽检查及结果寄存、接收检查解码器、Control 执行快照、发射窄快照、共享发射解码器和四组发射暂存；Matrix 一次保存一项活动任务并按完成 `command_id` 返回。Matrix-Vector Engine 是 Matrix 与 Vector 共用的物理执行模块，包含 Direct Matrix Array、Matrix Scalar、Vector 控制器、一套 16×16 PE 阵列、一套 Scalar/Vector 可配置多精度 MAC PE、内部 L1 仲裁、深度为 2 的 L1 请求 FIFO 和 2 项 Matrix 到 Vector 旁路缓存。Direct Matrix Array 为完整 16×16 输出 tile 保存 A/B 面板和 PE 局部累加器；它只处理专用 `DIRECT_GEMM`，不支持 bias、外部部分和、缩放和截断。Scalar 执行公开 `GEMM`、BMM、外部 INT32 部分和与后处理；Vector 的 MUL/FMA 使用共享 MAC PE，其他逐元素操作使用轻量整数 ALU。模型张量只采用 INT8、INT16、INT32；共享 MAC PE 的内部 4×4 基础乘法器用于组成 INT8 和 INT16 乘法，不构成软件可选的数据格式；CME 的 SUMSQ 分成平方与累加状态，Exp 的范围整数使用五个寄存状态完成最近偶数舍入，复杂函数在 CME 内部执行 `INT→FP32→INT`，F2I 在数学响应后经过五个寄存状态。软件通过指令和 C 配置给出物理地址、shape、stride、scale 和 zero point，硬件按模块接口与功能时序完成任务。
