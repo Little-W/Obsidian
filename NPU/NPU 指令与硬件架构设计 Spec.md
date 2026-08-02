@@ -6946,41 +6946,29 @@ RTL 在 `2026-08-02` 使用 Vivado 2024.2、`xc7a200tfbg484-3`、10.000ns 时钟
 
 ```bash
 make -C /home/etc/FPGA/Transformer_NPU/rtl/syn/vivado_100mhz synth-only \
-  BUILD_DIR=/home/etc/FPGA/Transformer_NPU/.work/vivado_sign_wiring_20260802 \
+  BUILD_DIR=/home/etc/FPGA/Transformer_NPU/.work/vivado_final_20260802 \
   JOBS=1
 ```
 
-本次构建保留产品寄存器、A/B 面板预取、固定第 0/1 列结果读取和逐对列移动。16×16 PE 阵列中，每个 PE 的 lane 0 和 lane 3 使用 DSP48E1，前 192 个 PE 的 lane 1 也使用 DSP48E1；剩余 byte 乘法和数据整理由逻辑单元完成。综合前后均通过 Direct Array 定向测试及第 20.3.1 节五类 TVM 到 RTL UVM 回归。下表比较固定结果端口构建与本次构建；两列均为后综合结果，不是 placement、物理优化和布线完成后的结果。
+本次构建保留产品寄存器、A/B 面板预取、固定第 0/1 列结果读取和逐对列移动。16×16 PE 阵列中，每个 PE 的 lane 0 和 lane 3 使用 DSP48E1，前 192 个 PE 的 lane 1 也使用 DSP48E1；剩余 byte 乘法和数据整理由逻辑单元完成。综合前后均通过 Direct Array 定向测试及第 20.3.1 节五类 TVM 到 RTL UVM 回归。下表是后综合结果，不是 placement、物理优化和布线完成后的结果。
 
-| 项目 | 固定结果端口构建 | 本次构建 |
-| --- | ---: | ---: |
-| Slice LUT | 129,974 / 134,600（96.56%） | 114,535 / 134,600（85.09%） |
-| Slice Register | 44,286 / 269,200（16.45%） | 40,328 / 269,200（14.98%） |
-| RAMB36 / RAMB18 | 263 / 4 | 263 / 4 |
-| DSP48E1 | 466 / 740（62.97%） | 722 / 740（97.57%） |
-| setup WNS / TNS | +0.697ns / 0.000ns | +0.697ns / 0.000ns |
-| setup 失败端点数 | 0 | 0 |
-| hold WHS / THS | -0.019ns / -1.466ns | -0.019ns / -1.481ns |
-| hold 失败端点数 | 162 | 162 |
-| L1BUF 大容量存储 | 256 个 RAMB36；0 个 RAMB18、LUTRAM 和 `memory_q` 触发器 | 256 个 RAMB36；0 个 RAMB18、LUTRAM 和 `memory_q` 触发器 |
+| 项目 | 后综合结果 |
+| --- | ---: |
+| Slice LUT | 120,190 / 134,600（89.29%） |
+| Slice Register | 40,407 / 269,200（15.01%） |
+| RAMB36 / RAMB18 | 263 / 4 |
+| DSP48E1 | 722 / 740（97.57%） |
+| setup WNS / TNS | +0.697ns / 0.000ns |
+| setup 失败端点数 | 0 |
+| hold WHS / THS | -0.019ns / -1.466ns |
+| hold 失败端点数 | 162 |
+| L1BUF 大容量存储 | 256 个 RAMB36；0 个 RAMB18、LUTRAM 和 `memory_q` 触发器 |
 
-本次顶层减少 15,439 个 LUT，但仍高于 40,000 LUT 目标。setup 已满足 100MHz，最差 setup 路径仍位于 TaskScheduler 的 `dispatch_decode_cmd_q_reg[18]` 到 `dispatch_decode_desc_flat_q_reg[1247]`，组合延迟为 8.996ns；因此直接阵列的乘法器调整没有改变该条路径。hold 仍有 162 个失败端点，最差路径为命令前端 `response_free_entries_q_reg[0]` 到 AXI Slave 响应 RAM 输入，slack 为 `-0.019ns`。必须以同一份 `post_synth.dcp` 完成 `place_design`、`phys_opt_design` 与 `route_design`，再按 post-route 报告处理 hold 问题。
+后综合 setup 已满足 100MHz；最差 setup 路径位于 TaskScheduler 的 `dispatch_decode_cmd_q_reg[18]` 到 `dispatch_decode_desc_flat_q_reg[1247]`，组合延迟为 8.996ns。hold 仍有 162 个失败端点。当前布局布线以同一份 `post_synth.dcp` 继续执行，最终以 post-route 报告为准。120,190 LUT 仍高于 40,000 LUT 目标，不能宣称已满足面积要求。
 
-| 模块 | 固定结果端口构建 LUT / FF / DSP | 本次构建 LUT / FF / DSP |
-| --- | ---: | ---: |
-| Matrix-Vector Engine | 108,175 / 29,597 / 456 | 92,744 / 25,513 / 712 |
-| Matrix Engine | 104,185 / 26,686 / 456 | 88,754 / 22,602 / 712 |
-| Direct Matrix Array | 98,969 / 23,098 / 448 | 83,538 / 19,014 / 704 |
-| Direct 控制器 | 44,616 / 254 / 0 | 29,561 / 254 / 0 |
-| Direct 数据通路 | 54,353 / 22,844 / 448 | 53,977 / 18,760 / 704 |
-| 16×16 PE 阵列 | 54,353 / 21,564 / 448 | 53,977 / 17,480 / 704 |
-| Complex Engine | 6,014 / 3,406 / 6 | 6,006 / 3,402 / 6 |
-| DMA Engine | 3,426 / 2,052 / 0 | 3,426 / 2,052 / 0 |
-| L1BUF（不含 bank RAMB36） | 2,827 / 395 / 0 | 2,827 / 395 / 0 |
+当前 Direct Matrix Array 的独立 OOC 数据见第 20.3.2 节。顶层层级报告会把跨模块优化后的面板数据、结果写回数据和相邻逻辑归入不同层级，因此不能把层级中的 Direct 控制器数字直接等同于控制状态机本身的成本。
 
-层级表把 Direct 控制器显示为 29,561 LUT，但独立 OOC 综合中的同一控制器仅有 1,314 LUT、236 个触发器和 0 个 DSP。该差异来自顶层跨模块优化后的面板数据、结果写回数据和相邻逻辑归属，不应把 29,561 LUT 全部理解为控制状态机的成本。面积分析要同时查看顶层报告和 OOC 报告。
-
-16×16 阵列含 256 个 PE，每个 PE 在 INT8 模式下计算四个 8×8 乘法。器件只有 740 个 DSP48E1，722 个已经被本次顶层使用，后续不能继续依靠增加 DSP 来降低大量 LUT。40,000 LUT 目标尚未达到；下一轮应保持 16×16 阵列的每拍计算能力，优先削减 PE 的 byte 数据整理、结果写回数据选择、任务描述符展开和其他执行模块的组合逻辑，同时修复命令入口与响应 RAM 的 hold 路径。
+16×16 阵列含 256 个 PE，每个 PE 在 INT8 模式下计算四个 8×8 乘法。器件只有 740 个 DSP48E1，722 个已经被本次顶层使用，不能依靠继续增加 DSP 降低大量 LUT。40,000 LUT 目标尚未达到；下一轮应保持 16×16 阵列的每拍计算能力，优先削减 PE 的 byte 数据整理、结果写回数据选择、任务描述符展开和其他执行模块的组合逻辑，同时处理命令入口与响应 RAM 的 hold 路径。
 
 Direct 阵列任务级测试已经超过 85%，但 TVM 后端尚未生成 `DIRECT_GEMM`。因此仍需在编译器加入直接阵列的分块和面板布局后，测量包含命令接收、TaskScheduler、DMA 装载、Direct 执行和完成提交的模型级 PE 时间利用率。
 
