@@ -6939,6 +6939,8 @@ make -C /home/etc/FPGA/Transformer_NPU/rtl/engines matrix-direct-array
 
 空间利用率说明完整 16×16 tile 的 256 个 PE 均收到工作。64×64×511 用例包含 16 个完整输出 tile，共执行 2,048 个 K 步，测得任务级时间利用率为 90.1%。当前控制器用 24-lane 面板端口一次读入每个 INT8 K=4 步的 16 个 A word 与 8 个 B word，并在当前面板计算时请求下一面板；每个输出列对使用 16-lane 面板写回。因此 K 较大时，面板预取能够隐藏绝大部分 A/B 等待。该测量不经过 TaskScheduler、DMA 或 TVM 后端，不能说明模型级利用率已经达到目标。
 
+同一份 RTL 还以 `npu_matrix_direct_array_engine` 为顶层完成 OOC 综合。该 OOC 构建使用 10.000ns 时钟周期，得到 81,856 个 LUT、19,335 个寄存器和 704 个 DSP48E1；setup WNS 为 `+4.662ns`，hold WHS 为 `+0.261ns`。其中 704 个 DSP 来自每个 PE 的 lane 0、lane 3，以及前 192 个 PE 的 lane 1。该数字只用于检查直接阵列自身的逻辑规模和时钟余量；OOC 顶层没有 `core_clk_i` 的物理时钟位置约束，也没有 placement、物理优化或布线，不能代替单核顶层的实现报告。
+
 #### 20.3.3 当前源码的后综合结果与后续实施要求
 
 当前 RTL 在 `2026-08-02` 使用 Vivado 2024.2、`xc7a200tfbg484-3`、10.000ns 时钟周期完成 `synth_design` 与 `opt_design`。执行命令如下：
