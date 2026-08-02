@@ -241,7 +241,7 @@ flowchart TB
 
 #### 2.3.4 Matrix 的整数计算
 
-Matrix 子系统支持 INT8 和 INT16 输入。A 与 B 必须使用相同的数据格式。专用 `DIRECT_GEMM` 使用直接阵列：`M`、`N` 均为 16～64 且是 16 的整数倍，`K` 为 1～511，A、B、C 的 L1 基址均小于 `0x100000`，C 格式为 INT32，且任务不包含 bias、外部部分和、缩放或截断。`npu_inline_desc_decode` 在命令接收和发射时生成这些固定字段，并拒绝数据格式、尺寸或保留位不符合要求的指令；Direct 控制器只接收已经通过该检查的 Task Context。实际面板访问由 L1BUF 返回状态；控制器收到失败状态后提交 `BUS_SLVERR` 完成消息。直接阵列以完整 16×16 输出 tile 计算该子集；公开 `GEMM`、BMM 和其他 Matrix 任务由 Scalar 路径通过共享 MAC PE 执行。两条路径都先对输入元素进行符号扩展，再执行有符号乘法。Scalar 的乘积加入 signed 64-bit 临时累加寄存器；直接阵列在 PE 内保留 INT8 的 signed24 或 INT16 的 signed48 临时累加值，随后扩展为写回使用的 INT32 结果。先定义不含 bias 的乘累加结果：
+Matrix 子系统支持 INT8 和 INT16 输入。A 与 B 必须使用相同的数据格式。专用 `DIRECT_GEMM` 使用直接阵列：`M`、`N` 均为 16～64 且是 16 的整数倍，`K` 为 1～511，A、B、C 的 L1 基址均小于 `0x100000`，C 格式为 INT32，且任务不包含 bias、外部部分和、缩放或截断。`npu_inline_desc_decode` 在命令接收和发射时生成这些固定字段，并拒绝数据格式、尺寸或保留位不符合要求的指令；Direct 控制器只接收已经通过该检查的 Task Context。实际面板访问由 L1BUF 返回状态；控制器收到失败状态后提交 `BUS_SLVERR` 完成消息。直接阵列以完整 16×16 输出 tile 计算该子集；公开 `GEMM`、BMM 和其他 Matrix 任务由 Scalar 路径通过共享 MAC PE 执行。两条路径都先对输入元素进行符号扩展，再执行有符号乘法。Scalar 的乘积加入 signed 64-bit 临时累加寄存器；Direct PE 使用一组 signed48 累加寄存器。INT8 的任务限制保证最终局部和可由其低 24 bit 表示，INT16 使用完整 signed48 局部和；两种结果均扩展或截取为写回使用的 INT32。先定义不含 bias 的乘累加结果：
 
 $$
 p_{m,n}
@@ -2722,7 +2722,7 @@ flowchart TB
 
 `npu_matrix_engine` 检查操作码和 Direct Matrix Array 的 shape、数据格式及限制条件后，只向已选的一个子模块给出 `task_valid`。它保存原始 `command_id`，并在对应子模块与上游完成握手时返回该编号。Direct 分支的实际模块为 `npu_matrix_direct_array_engine`；公开 Matrix 指令不经 Direct 分支。
 
-Direct Matrix Array 的 PE 不使用 `npu_mv_shared_mac`。每个 PE 对四组 8-bit 操作数形成四个 16-bit 乘积；产品寄存器在一个时钟周期保存这些乘积，下一周期更新 INT24 或 INT48 局部和。这个寄存级把乘法与宽累加分开，最后一个 K 步后额外等待一次排空周期，才开始读取结果并写回 C。
+Direct Matrix Array 的 PE 不使用 `npu_mv_shared_mac`。每个 PE 对四组 8-bit 操作数形成四个 16-bit 乘积；产品寄存器在一个时钟周期保存这些乘积，下一周期把乘积和加入 shared signed48 局部和。INT8 任务的 `K≤511` 限制使所得数值能够由低 24 bit 表示，INT16 使用完整 signed48 结果。这个寄存级把乘法与宽累加分开，最后一个 K 步后额外等待一次排空周期，才开始读取结果并写回 C。
 
 Scalar 与 Vector 通过 `npu_mv_shared_mac` 使用同一组小型 MAC PE。请求握手时，来源写入 owner FIFO；返回时按 FIFO 头部选择 Scalar Matrix 或 Vector。Direct Matrix Array 的完整 16×16 输出块通过独立 PE 阵列计算，不进入此仲裁器。
 
@@ -2862,7 +2862,7 @@ A 为 INT32、编码 0，或者 A 与 B 使用不同数据格式时，任务返�
 
 #### 11.2.2 Direct Array 与共享 MAC
 
-Direct Array 包含 16×16 个 `npu_matrix_outer_pe`。每个 PE 有 4 个 INT8×INT8 乘法器；INT8 模式每个计算步得到 4 项乘积并写入 24-bit 局部和。`DIRECT_GEMM` 的 INT8 K 不大于 511，避免 24-bit 局部和在完整 INT8 数值范围内溢出；INT16 使用 48-bit 局部和，每个计算步处理一个 K 元素。控制器从面板端口装入本次 A、B 操作数，再发出一个计算步；最终 INT32 结果按两个输出列为一组，通过面板写请求写回 L1。
+Direct Array 包含 16×16 个 `npu_matrix_outer_pe`。每个 PE 有 4 个 INT8×INT8 乘法器；INT8 模式每个计算步得到 4 项乘积。RTL 为 INT8 和 INT16 复用一组 signed48 累加寄存器，INT8 结果从低 24 bit 读取。`DIRECT_GEMM` 的 INT8 K 不大于 511，因此完整 INT8 数值范围内的局部和可以由 signed24 表示；INT16 使用完整 signed48 局部和，每个计算步处理一个 K 元素。控制器从面板端口装入本次 A、B 操作数，再发出一个计算步；最终 INT32 结果按两个输出列为一组，通过面板写请求写回 L1。
 
 面板读响应到达时，Direct 控制器在该周期无条件给出 `panel_rsp_ready=1`，并把响应写入下一组 A/B 操作数寄存器。PE 阵列在同一时钟沿使用前一组寄存器内容完成当前计算步，因此两个动作不会相互覆盖。L1BUF 看到响应已经被接收后，可以在同一时钟沿接受下一面板请求。`panel_rsp_ready` 不依赖 `panel_req_ready`，避免控制器与 L1BUF 的 ready 信号形成组合环路。若某个面板的 lane 对同一 bank 请求超过两个端口，L1BUF 拉低 `panel_req_ready`；请求方保持完整面板字段，直到该请求被接收。
 
@@ -6155,7 +6155,7 @@ $$
 
 `tb_npu_matrix_direct_array_engine` 向 `npu_matrix_direct_array_engine` 提交完整的内部 Task Context，并通过行为模型模拟 24-lane L1 面板接口。该测试不经过 Command Front End、TaskScheduler、DMA 和普通 Matrix-Vector L1 请求 FIFO；计数从 Direct Matrix Array 接收任务开始，到最后一个 C 面板写响应后完成。它覆盖 Direct 控制器、A/B 双面板寄存器、16×16 PE 阵列、产品流水、结果移位与 C 面板写回。
 
-Direct 路径只接受专用 `DIRECT_GEMM`：M、N 为 16～64 的 16 整数倍，K 为 1～511，A/B 同为 INT8 或同为 INT16，C 为 INT32，且不带 bias、外部部分和、整数右移或结果截断。INT8 使用 INT24 累加；完整带符号 INT8 范围内，`511×(-128)×(-128)=8,372,224`，仍小于 signed INT24 的最大值 `8,388,607`。K=512 时该上限溢出，因此该任务必须由 Scalar 路径计算。
+Direct 路径只接受专用 `DIRECT_GEMM`：M、N 为 16～64 的 16 整数倍，K 为 1～511，A/B 同为 INT8 或同为 INT16，C 为 INT32，且不带 bias、外部部分和、整数右移或结果截断。PE 内部使用一组 signed48 累加寄存器；INT8 结果使用其低 24 bit。完整带符号 INT8 范围内，`511×(-128)×(-128)=8,372,224`，仍小于 signed INT24 的最大值 `8,388,607`。K=512 时该数值超过 signed24 可表示范围，因此该任务必须由 Scalar 路径计算。
 
 | 用例 | 总周期 | PE 计算周期 | 阵列时间利用率 | 阵列空间利用率 | 结果 |
 | --- | ---: | ---: | ---: | ---: | --- |
@@ -6921,7 +6921,7 @@ make -C /home/etc/FPGA/Transformer_NPU/verif tvm-uvm-model-e2e
 
 #### 20.3.2 直接阵列的寄存流水与测量
 
-每个直接阵列 PE 先在产品寄存器中保存四个 16-bit 基础乘积和数据格式，再在下一拍更新累加器。INT8 将四个乘积相加为 INT24 增量；INT16 将四个交叉乘积按字节位移合成为 signed32 增量，再符号扩展并加入 INT48 累加器。signed32 增量足以表示一个 INT16×INT16 乘积，INT48 累加器则保留跨 K 步的余量。该寄存级把“操作数选择和乘法”与“宽累加器”分开。直接阵列控制器对非末尾 K 步在产品寄存器接收数据后的下一拍立即开始下一组操作数读取；只有最后一个 K 步保留一次排空周期，保证结果写回读取到最后一次累加值。
+每个直接阵列 PE 先在产品寄存器中保存四个 16-bit 基础乘积和数据格式，再在下一拍更新共享 signed48 累加寄存器。INT8 将四个乘积相加为 signed24 增量，最终结果取该寄存器低 24 bit；INT16 将四个交叉乘积按字节位移合成为 signed32 增量，再符号扩展并加入同一寄存器。signed32 增量足以表示一个 INT16×INT16 乘积，signed48 则保留跨 K 步的余量。该寄存级把“操作数选择和乘法”与“宽累加器”分开。直接阵列控制器对非末尾 K 步在产品寄存器接收数据后的下一拍立即开始下一组操作数读取；只有最后一个 K 步保留一次排空周期，保证结果写回读取到最后一次累加值。
 
 ```bash
 make -C /home/etc/FPGA/Transformer_NPU/rtl/engines matrix-direct-array
@@ -6938,7 +6938,7 @@ make -C /home/etc/FPGA/Transformer_NPU/rtl/engines matrix-direct-array
 
 空间利用率说明完整 16×16 tile 的 256 个 PE 均收到工作。64×64×511 用例包含 16 个完整输出 tile，共执行 2,048 个 K 步，测得任务级时间利用率为 90.7%。当前控制器用 24-lane 面板端口一次读入每个 INT8 K=4 步的 16 个 A word 与 8 个 B word，并在当前面板计算时请求下一面板；每个输出列对使用 16-lane 面板写回。因此 K 较大时，面板预取能够隐藏绝大部分 A/B 等待。该测量不经过 TaskScheduler、DMA 或 TVM 后端，不能说明模型级利用率已经达到目标。
 
-同一份 RTL 还以 `npu_matrix_direct_array_engine` 为顶层完成 OOC 综合。该 OOC 构建使用 10.000ns 时钟周期，得到 87,585 个 LUT、19,481 个寄存器和 704 个 DSP48E1；setup WNS 为 `+4.505ns`，hold WHS 为 `+0.261ns`。其中 704 个 DSP 来自每个 PE 的 lane 0、lane 3，以及前 192 个 PE 的 lane 1。该数字只用于检查直接阵列自身的逻辑规模和时钟余量；OOC 顶层没有 `core_clk_i` 的物理时钟位置约束，也没有 placement、物理优化或布线，不能代替单核顶层的实现报告。
+`2026-08-02 09:01` 的一份历史 OOC 构建以 `npu_matrix_direct_array_engine` 为顶层、使用 10.000ns 时钟周期，得到 81,856 个 LUT、19,335 个寄存器和 704 个 DSP48E1；setup WNS 为 `+4.662ns`，hold WHS 为 `+0.261ns`。其中 704 个 DSP 来自每个 PE 的 lane 0、lane 3，以及前 192 个 PE 的 lane 1。该报告早于后续的共享累加器和控制逻辑修改，只用于说明直接阵列是当前面积主要来源；当前 RTL 必须重新执行 OOC 综合后才能得到新的资源数字。OOC 顶层没有 `core_clk_i` 的物理时钟位置约束，也没有 placement、物理优化或布线，不能代替单核顶层的实现报告。
 
 #### 20.3.3 后综合结果与后续实施要求
 
@@ -6950,7 +6950,7 @@ make -C /home/etc/FPGA/Transformer_NPU/rtl/syn/vivado_100mhz synth-only \
   JOBS=1
 ```
 
-本次构建保留产品寄存器、A/B 面板预取、固定第 0/1 列结果读取和逐对列移动。16×16 PE 阵列中，每个 PE 的 lane 0 和 lane 3 使用 DSP48E1，前 192 个 PE 的 lane 1 也使用 DSP48E1；剩余 byte 乘法和数据整理由逻辑单元完成。综合前后均通过 Direct Array 定向测试及第 20.3.1 节五类 TVM 到 RTL UVM 回归。下表是后综合结果，不是 placement、物理优化和布线完成后的结果。
+该次构建保留产品寄存器、A/B 面板预取、固定第 0/1 列结果读取和逐对列移动。16×16 PE 阵列中，每个 PE 的 lane 0 和 lane 3 使用 DSP48E1，前 192 个 PE 的 lane 1 也使用 DSP48E1；剩余 byte 乘法和数据整理由逻辑单元完成。该结果对应当时的 RTL；后续修改已经完成定向回归，但尚未重新完成单核后综合与布局布线。下表是当时的后综合结果，不是 placement、物理优化和布线完成后的结果。
 
 | 项目 | 后综合结果 |
 | --- | ---: |
@@ -6963,6 +6963,8 @@ make -C /home/etc/FPGA/Transformer_NPU/rtl/syn/vivado_100mhz synth-only \
 | hold WHS / THS | -0.019ns / -1.466ns |
 | hold 失败端点数 | 162 |
 | L1BUF 大容量存储 | 256 个 RAMB36；0 个 RAMB18、LUTRAM 和 `memory_q` 触发器 |
+
+另一次历史后综合构建 `vivado_sign_wiring_20260802` 使用 lane 0、lane 3 固定为 18-bit 乘法结构、192 个 PE 的 lane 1 使用同一结构、其余 lane 1 和全部 lane 2 使用 9-bit 结构。该构建得到 114,535 个 LUT、40,328 个寄存器和 722 个 DSP48E1，setup WNS 仍为 `+0.697ns`，hold 结果仍为 `-0.019ns / -1.466ns / 162`。相对上表的 120,190 LUT，减少 5,655 LUT。当前 RTL 已恢复这组乘法器位宽分配，并加入共享 signed48 累加寄存器；需要重新完成后综合和布局布线后，才能更新为当前数据。
 
 后综合 setup 已满足 100MHz；最差 setup 路径位于 TaskScheduler 的 `dispatch_decode_cmd_q_reg[18]` 到 `dispatch_decode_desc_flat_q_reg[1247]`，组合延迟为 8.996ns。hold 仍有 162 个失败端点。当前布局布线以同一份 `post_synth.dcp` 继续执行，最终以 post-route 报告为准。120,190 LUT 仍高于 40,000 LUT 目标，不能宣称已满足面积要求。
 
