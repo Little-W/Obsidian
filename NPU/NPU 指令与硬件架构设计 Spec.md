@@ -158,7 +158,7 @@ NPU 子系统必须满足以下要求：
 >
 > 一个 16×16 C tile 需要 8 次、每次两列的写回。写回请求被 L1BUF 接受的同一上升沿，PE 把第 2、3 列的累加值移入第 0、1 列位置；下一周期固定结果端口直接给出下一对列。`output_pair=0…7` 仅用于形成 C 面板写地址，不再驱动 16 选 1 的结果读取器。累加阶段已经结束，因此该列移动不会打断乘加；它以每个 PE 一个固定来源的数据选择器替代输出侧的宽列选择器。
 >
-> 独立 RTL 回归的 `16×16×511` INT8 用例从 Direct Engine 接收任务到 done 有效共 143 个时钟周期，其中 128 个周期发射 PE 计算步，计算步时间占比为 `128 / 143 = 89.5%`；`64×64×511` 用例为 `2048 / 2273 = 90.1%`。该计数包含 Direct Engine 的面板首填、K 步、流水排空和 C tile 写回，但不包含 CFE 接收、TaskScheduler 扫描、DMA 将外部数据装入 L1BUF、AXI 传输，也不包含模型中由 CPU/DPI 执行的算子。因此，它不能替代“从整模型任务开始到结束”的 PE 时间利用率。要得到后一指标，TVM 后端还需生成 `DIRECT_GEMM`，并在 AOT 调度中统计任务提交、数据装载、Direct Engine 执行和完成提交的全部时钟周期。
+> 独立 RTL 回归的 `16×16×511` INT8 用例从 Direct Engine 接收任务到 done 有效共 142 个时钟周期，其中 128 个周期发射 PE 计算步，计算步时间占比为 `128 / 142 = 90.1%`；`64×64×511` 用例为 `2048 / 2257 = 90.7%`。该计数包含 Direct Engine 的面板首填、K 步、流水排空和 C tile 写回，但不包含 CFE 接收、TaskScheduler 扫描、DMA 将外部数据装入 L1BUF、AXI 传输，也不包含模型中由 CPU/DPI 执行的算子。因此，它不能替代“从整模型任务开始到结束”的 PE 时间利用率。要得到后一指标，TVM 后端还需生成 `DIRECT_GEMM`，并在 AOT 调度中统计任务提交、数据装载、Direct Engine 执行和完成提交的全部时钟周期。
 
 ### 2.3 整数推理与内部浮点计算
 
@@ -2845,7 +2845,7 @@ A 为 INT32、编码 0，或者 A 与 B 使用不同数据格式时，任务返�
 | `pe_idle_cycle_count_o` | Output | 32 | 共享 PE 本周期没有接收新请求的周期数 |
 | `protocol_error_o` | Output | 1 | 共享 MAC、L1 返回次序或内部旁路状态错误 |
 
-当 `matrix_task_valid_i && matrix_task_ready_o` 为 1 时，`npu_matrix_engine` 在同一时钟沿锁存操作码、任务编号和 2048-bit Task Context。该单元只保留一项正在执行的 Matrix 任务，因此 `matrix_task_ready_o` 仅在空闲状态为 1。锁存后的 `PATH_CLASSIFY` 检查描述符；受支持的 `DIRECT_GEMM` 进入 Direct Array，其他受支持任务进入 Scalar Matrix。检查失败时直接产生完成状态，不访问 L1。
+当 `matrix_task_valid_i && matrix_task_ready_o` 为 1 时，`npu_matrix_engine` 在同一时钟沿锁存操作码、任务编号和 2048-bit Task Context。该单元只保留一项正在执行的 Matrix 任务，因此 `matrix_task_ready_o` 仅在空闲状态为 1。Inline Decode 已在任务进入调度器前完成描述符、地址和数据格式检查；锁存后的 `PATH_CLASSIFY` 依据已检查的操作码选择路径：`DIRECT_GEMM` 进入 Direct Array，其余已支持的 Matrix 指令进入 Scalar Matrix。解码或发射检查失败时，任务不访问 L1，并直接返回错误完成信息。
 
 `reset_n=0` 时，当前任务状态、完成保持寄存器、共享 MAC owner FIFO、L1 请求 FIFO 计数和旁路缓存有效位均清零。L1 RAM 本身的内容不要求清零，但复位后不存在可引用的 Matrix 局部部分和状态。复位期间 L1 请求 valid 和 done valid 均为 0。
 
@@ -3468,7 +3468,7 @@ Direct Matrix Array 控制器的状态及功能如下：
 
 | 状态 | 功能 |
 | --- | --- |
-| `ST_IDLE` | 接收专用 `DIRECT_GEMM` Task Context，并检查操作码、内部版本、形状、数据格式、面板格式、地址和步长。检查不通过时产生错误完成信息。 |
+| `ST_IDLE` | 接收专用 `DIRECT_GEMM` Task Context。Inline Decode 已经检查操作码、形状、数据格式、地址和面板排布要求；此处只确认已解码的 Direct 操作码并锁存任务字段。 |
 | `ST_TILE_SETUP` | 清零 16×16 PE 局部累加器，复位当前输出 tile 的 K 组读写游标，并在同一周期发出第一个 A/B 面板读请求。INT8 使用 16 个 A lane 和 8 个 B lane，INT16 使用 16 个 A lane 和 4 个 B lane。 |
 | `ST_PANEL_WAIT` | 等待第一个面板响应；响应正确时把面板送入操作数寄存器并进入计算。 |
 | `ST_COMPUTE` | 每拍向 PE 阵列发出一个 K 组。收到当前面板响应时，同时请求下一面板，使后续 K 组连续进入产品流水级。 |
@@ -3550,7 +3550,7 @@ IDLE
 
 以 INT8 的一个 (16\times16\) 输出 tile 为例，处理次序如下：
 
-1. `npu_matrix_engine` 把 `DIRECT_GEMM` 交给 Direct Matrix Array。控制器检查形状、数据格式、面板格式、步长和 L1 地址。
+1. `npu_matrix_engine` 把已经通过 Inline Decode 检查的 `DIRECT_GEMM` 交给 Direct Matrix Array。Direct 控制器锁存任务字段，不重复比较整条 Task Context。
 2. `ST_TILE_SETUP` 清零 256 个 PE 的局部累加器，并把 A、B、C 基址设为当前 tile 的起点。
 3. `ST_TILE_SETUP` 在清零累加器的同一周期发出第一个面板读。A word 使用 16 个 bank 的 port0；B word 使用 bank 0～7 的 port1。
 4. 第一个响应到达后，`ST_PANEL_WAIT` 把面板写入寄存器阵列。`ST_COMPUTE` 用该面板发出第一个 K=4 计算步。
@@ -6133,7 +6133,7 @@ $$
 
 #### 19.3.1 已执行的 TVM 到 RTL 回归
 
-2026-08-01 已在 `verif/` 完成 Transformer、RNN、GRU、LSTM、CNN 的 TVM 到 RTL UVM 回归。本轮使用 `make -C verif tvm-uvm-model-e2e` 重新生成并执行全部五个用例。每个用例由 TVM 生成 fixture，RTL 执行 TVM 划分出的固定权重 MatMul；DPI 读取 RTL 写回的 MatMul 结果，继续计算未下放的 Add、激活、循环状态、注意力 Softmax 或卷积。每个用例均出现 `TVM_MODEL_RELAX_ADD_DPI_PASS`、`TVM_MODEL_CPU_DPI_PASS` 和 `MODEL_E2E_PASS`，UVM 的 ERROR、FATAL 均为 0。
+2026-08-02 已在 `verif/` 完成 Transformer、RNN、GRU、LSTM、CNN 的 TVM 到 RTL UVM 回归。本轮使用 `make -C verif tvm-uvm-model-e2e` 重新生成并执行全部五个用例。每个用例由 TVM 生成 fixture，RTL 执行 TVM 划分出的固定权重 MatMul；DPI 读取 RTL 写回的 MatMul 结果，继续计算未下放的 Add、激活、循环状态、注意力 Softmax 或卷积。每个用例均出现 `TVM_MODEL_RELAX_ADD_DPI_PASS`、`TVM_MODEL_CPU_DPI_PASS` 和 `MODEL_E2E_PASS`，UVM 的 ERROR、FATAL 均为 0。
 
 | 模型 | RTL 结束时间 | NPU 指令 / 批次 | AXI 读 / 写事务 | NPU MatMul 输出 → CPU/DPI 最终输出 | 结果 |
 | --- | ---: | ---: | ---: | ---: | --- |
