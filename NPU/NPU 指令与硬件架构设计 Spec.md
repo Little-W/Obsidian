@@ -156,7 +156,7 @@ NPU 子系统必须满足以下要求：
 >
 > 面板 lane 的 bank 位置固定：lane `0…15` 分别使用 bank `0…15` 的 port0；lane `16…23` 分别使用 bank `0…7` 的 port1。A 使用前 16 个 lane，B 使用后 8 个 lane，C 写回只使用前 16 个 lane。Direct 编译结果中的 A、B、C tile 基址均按 64B 对齐，K 面板步长是 64B 或 128B，因而每次面板请求都保持该 bank 排列。L1BUF 对不符合此排列、未按 8B 对齐或超过 L1 地址范围的 lane 返回错误状态；Direct 控制器据此提交失败完成消息。
 >
-> 一个 16×16 C tile 需要 8 次、每次两列的写回。写回请求被 L1BUF 接受的同一上升沿，PE 把第 2、3 列的累加值移入第 0、1 列位置；下一周期固定结果端口直接给出下一对列。`output_pair=0…7` 仅用于形成 C 面板写地址，不再驱动 16 选 1 的结果读取器。累加阶段已经结束，因此该列移动不会打断乘加；它以每个 PE 一个固定来源的数据选择器替代输出侧的宽列选择器。
+> 一个 16×16 C tile 需要 8 次、每次两列的写回。累加结束后，256 个 PE 的局部和保持不动；`output_pair=0…7` 同时形成 C 面板写地址，并在每个输出行选择第 `2×output_pair`、`2×output_pair+1` 两列。结果读取器只有 16 个行输出，每个读取器选择八组 48-bit 局部和；不再给全部 PE 增加列间传送与宽数据选择。写回期间已经没有乘加步骤，因此该读取不会影响计算流水。
 >
 > 独立 RTL 回归的 `16×16×511` INT8 用例从 Direct Engine 接收任务到 done 有效共 142 个时钟周期，其中 128 个周期发射 PE 计算步，计算步时间占比为 `128 / 142 = 90.1%`；`64×64×511` 用例为 `2048 / 2257 = 90.7%`。该计数包含 Direct Engine 的面板首填、K 步、流水排空和 C tile 写回，但不包含 CFE 接收、TaskScheduler 扫描、DMA 将外部数据装入 L1BUF、AXI 传输，也不包含模型中由 CPU/DPI 执行的算子。因此，它不能替代“从整模型任务开始到结束”的 PE 时间利用率。要得到后一指标，TVM 后端还需生成 `DIRECT_GEMM`，并在 AOT 调度中统计任务提交、数据装载、Direct Engine 执行和完成提交的全部时钟周期。
 
@@ -498,7 +498,7 @@ flowchart TB
 | Matrix 路径选择          | Matrix 任务和操作码 | Direct 或 Scalar 任务握手、带 `command_id` 的完成消息 | `npu_matrix_engine` 先保存任务；已经由 Inline Decode 展开并检查通过的 `DIRECT_GEMM` 选择 Direct，公开 Matrix 指令选择 Scalar；两条路径一次只运行一项 Matrix 任务 |
 | Direct Matrix Array 顶层 | Direct Task Context、L1 面板响应 | 面板读写请求、完成消息 | `npu_matrix_direct_array_engine` 只连接 Direct 控制器和数据通路；它不向 Shared MAC 发送计算请求，完整 16×16 tile 由内部 16×16 PE 阵列计算 |
 | Direct Matrix 控制器     | Direct Task Context、L1 ready/valid、数据通路进度 | 数据通路配置和操作信号、请求阶段、完成消息 | `npu_matrix_direct_array_controller` 负责任务接收、tile 与 K 步调度、连续 L1 请求发起和响应计数、PE 发射次序、结果写回次序、错误处理及 done/status。它依赖 Inline Decode 已完成的 Direct 指令字段检查，不重复比较整条 2048-bit Task Context |
-| Direct Matrix 数据通路   | 控制器配置与操作信号、L1 读返回 | PE 操作数、读写地址与数据字段、累加值及写回数据 | `npu_matrix_direct_array_datapath` 保存 A 行缓存和 B 行缓存，组织 16×16 PE 的操作数，维护 PE 累加器；结果沿每行移位后从首两列读取，形成 L1BUF 写数据与 byte strobe |
+| Direct Matrix 数据通路   | 控制器配置与操作信号、L1 读返回 | PE 操作数、读写地址与数据字段、累加值及写回数据 | `npu_matrix_direct_array_datapath` 保存 A 行缓存和 B 行缓存，组织 16×16 PE 的操作数，维护 PE 累加器；写回时按 `output_pair` 从每一行读取对应的两列，形成 L1BUF 写数据与 byte strobe |
 | Matrix Scalar 控制器     | Scalar Task Context、L1 与共享 PE ready/valid | 数据通路操作信号、请求阶段、完成消息 | `npu_matrix_scalar_engine` 的控制层入口保存任务状态、描述符检查、矩阵游标、地址游标和完成状态，推进源读、PE 请求、后处理与写回阶段 |
 | Matrix Scalar 数据通路   | 控制器操作信号、L1 读数据、共享 PE 返回 | PE 操作数、部分和、写数据与写 strobe | `npu_matrix_scalar_datapath` 保存 A/B 操作数、整数累加值、局部部分和 RAM、后处理寄存器和写回数据，完成整数乘加、局部部分和读写与结果格式化 |
 | Matrix-Vector L1 请求 FIFO | 内部存储通道输出的 L1 请求 | 排队后的 L1 请求 | 保存两项 93-bit 请求，按接收次序送到 L1BUF；响应不经过该 FIFO |
@@ -6153,7 +6153,7 @@ $$
 
 #### 19.3.2 Direct Matrix Array 的任务级测量
 
-`tb_npu_matrix_direct_array_engine` 向 `npu_matrix_direct_array_engine` 提交完整的内部 Task Context，并通过行为模型模拟 24-lane L1 面板接口。该测试不经过 Command Front End、TaskScheduler、DMA 和普通 Matrix-Vector L1 请求 FIFO；计数从 Direct Matrix Array 接收任务开始，到最后一个 C 面板写响应后完成。它覆盖 Direct 控制器、A/B 双面板寄存器、16×16 PE 阵列、产品流水、结果移位与 C 面板写回。
+`tb_npu_matrix_direct_array_engine` 向 `npu_matrix_direct_array_engine` 提交完整的内部 Task Context，并通过行为模型模拟 24-lane L1 面板接口。该测试不经过 Command Front End、TaskScheduler、DMA 和普通 Matrix-Vector L1 请求 FIFO；计数从 Direct Matrix Array 接收任务开始，到最后一个 C 面板写响应后完成。它覆盖 Direct 控制器、A/B 双面板寄存器、16×16 PE 阵列、产品流水、按输出对读取局部和与 C 面板写回。
 
 Direct 路径只接受专用 `DIRECT_GEMM`：M、N 为 16～64 的 16 整数倍，K 为 1～511，A/B 同为 INT8 或同为 INT16，C 为 INT32，且不带 bias、外部部分和、整数右移或结果截断。PE 内部使用一组 signed48 累加寄存器；INT8 结果使用其低 24 bit。完整带符号 INT8 范围内，`511×(-128)×(-128)=8,372,224`，仍小于 signed INT24 的最大值 `8,388,607`。K=512 时该数值超过 signed24 可表示范围，因此该任务必须由 Scalar 路径计算。
 
@@ -6950,7 +6950,7 @@ make -C /home/etc/FPGA/Transformer_NPU/rtl/syn/vivado_100mhz synth-only \
   JOBS=1
 ```
 
-该次构建保留产品寄存器、A/B 面板预取、固定第 0/1 列结果读取和逐对列移动。16×16 PE 阵列中，每个 PE 的 lane 0 和 lane 3 使用 DSP48E1，前 192 个 PE 的 lane 1 也使用 DSP48E1；剩余 byte 乘法和数据整理由逻辑单元完成。该结果对应当时的 RTL；后续修改已经完成定向回归，但尚未重新完成单核后综合与布局布线。下表是当时的后综合结果，不是 placement、物理优化和布线完成后的结果。
+该次构建保留产品寄存器和 A/B 面板预取。当前 RTL 在输出阶段保持 PE 局部和不动，由 16 个行结果读取器按输出对选择列；因此这项历史记录中的固定第 0/1 列读取和逐对列移动不再适用。16×16 PE 阵列中，每个 PE 的 lane 0 和 lane 3 使用 DSP48E1，前 192 个 PE 的 lane 1 也使用 DSP48E1；剩余 byte 乘法和数据整理由逻辑单元完成。该结果对应当时的 RTL；后续修改已经完成定向回归，但尚未重新完成单核后综合与布局布线。下表是当时的后综合结果，不是 placement、物理优化和布线完成后的结果。
 
 | 项目 | 后综合结果 |
 | --- | ---: |
