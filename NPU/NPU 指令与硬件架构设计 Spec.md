@@ -150,7 +150,9 @@ NPU 子系统必须满足以下要求：
 > `npu_l1buf_bank` 的每个 bank 是一个 64-bit、同步读取的双端口 RAM。普通客户端使用 port0；Direct Matrix Array 的面板访问可同时使用两个端口。两个端口各自使用一个时钟过程，因此可在同一拍访问不同地址。存储内容没有复位值。RTL 不使用 `ram_style` 属性，Vivado 综合会把该结构识别为 true dual port Block RAM。
 
 > [!warning] 大矩阵吞吐率的已验证范围
-> `tvm_large_matrix` 的 RTL 统计表明，当前 TVM 后端生成的矩阵任务全部进入 Scalar 路径，Direct Matrix Array 计数为 0。因此该用例证明 TVM 到 RTL 的数值结果与调用次序正确，但不能作为直接阵列 PE 利用率的测试结果。
+> `tvm_large_matrix` 的形状为 `[64,1024]×[1024,64]`。`DIRECT_GEMM` 的 K 上限为 511，因此该用例必须进入 Scalar 路径，Direct Matrix Array 计数为 0。它证明 TVM 到 RTL 的数值结果与调用次序正确，但不能作为直接阵列 PE 利用率的测试结果。TVM AOT 已可在 `direct_array_enable=1` 且静态形状满足 Direct 条件时生成 `DIRECT_GEMM`；该路径的 C model 端到端测试使用 `[64,511]×[511,64]`。
+>
+> 完整 RTL UVM 回归也包含同一形状的纯 INT8 `relax.matmul`。TVM 先完成 Relax 分区和 `RunCodegen`，再生成常量、运行时数据和四条 NPU 指令；UVM 将它们依次通过 AXI Slave 命令 FIFO 提交为已打包 B 加载、已打包 A 加载、`DIRECT_GEMM` 和 INT32 C 保存。该用例完成 16,392 个 AXI Master 读 beat、2,048 个写 beat，并逐字节比较 16,384 字节 INT32 C 输出；最近一次回归的 UVM error 与 UVM fatal 均为 0。该纯矩阵用例没有后续 CPU/DPI 运算，因而可以直接检查 Direct Matrix Array 的输入、计算和结果保存。
 >
 > 对一个 INT8 的 16×16 输出 tile，单个 K 计算步处理连续 4 个 K 位置，PE 阵列每拍完成 `16×16×4=1024` 个乘积。直接阵列从面板端口读取 16 个 A word 和 8 个 B word，共 24 个 64-bit lane；A 面板 word 的低 4 个字节是本 K 步的 4 个 A 元素，B 的 8 个 word 覆盖 4 行、16 列。L1BUF 有 16 个 bank、每个 bank 两个同步端口，A 的 16 个 word 各占一个 bank，连续 B word 使用相应 bank 的另一个端口，因此面板在一次请求中可被接受。控制器在当前面板被阵列使用时接收下一面板响应并发出下一请求，稳定阶段每拍发射一个 K 计算步。
 >
@@ -158,7 +160,9 @@ NPU 子系统必须满足以下要求：
 >
 > 一个 16×16 C tile 需要 8 次、每次两列的写回。累加结束后，256 个 PE 的局部和保持不动；`output_pair=0…7` 同时形成 C 面板写地址，并在每个输出行选择第 `2×output_pair`、`2×output_pair+1` 两列。结果读取器只有 16 个行输出，每个读取器选择八组 48-bit 局部和；不再给全部 PE 增加列间传送与宽数据选择。写回期间已经没有乘加步骤，因此该读取不会影响计算流水。
 >
-> 独立 RTL 回归的 `16×16×511` INT8 用例从 Direct Engine 接收任务到 done 有效共 142 个时钟周期，其中 128 个周期发射 PE 计算步，计算步时间占比为 `128 / 142 = 90.1%`；`64×64×511` 用例为 `2048 / 2257 = 90.7%`。该计数包含 Direct Engine 的面板首填、K 步、流水排空和 C tile 写回，但不包含 CFE 接收、TaskScheduler 扫描、DMA 将外部数据装入 L1BUF、AXI 传输，也不包含模型中由 CPU/DPI 执行的算子。因此，它不能替代“从整模型任务开始到结束”的 PE 时间利用率。要得到后一指标，TVM 后端还需生成 `DIRECT_GEMM`，并在 AOT 调度中统计任务提交、数据装载、Direct Engine 执行和完成提交的全部时钟周期。
+> 独立 RTL 回归的 `16×16×511` INT8 用例从 Direct Engine 接收任务到 done 有效共 143 个时钟周期，其中 128 个周期发射 PE 计算步，计算步时间占比为 `128 / 143 = 89.5%`；`64×64×511` 用例为 `2048 / 2273 = 90.1%`。该计数包含 Direct Engine 的面板首填、K 步、流水排空和 C tile 写回，但不包含 CFE 接收、TaskScheduler 扫描、DMA 将外部数据装入 L1BUF、AXI 传输，也不包含模型中由 CPU/DPI 执行的算子。因此，它不能替代“从整模型任务开始到结束”的 PE 时间利用率。
+>
+> `2026-08-02` 的完整 TVM→RTL UVM 用例已记录这段完整时钟区间。测试从第一个 Direct 批次提交前开始计数，到 FENCE 响应返回为止；`[64,511]×[511,64]` INT8 用例共计 111,231 个时钟周期。两个输入 DMA 和 Direct 指令发射前占用 84,303 个周期，Direct Array 活动 2,274 个周期，其中 2,048 个周期发射计算步，Direct 完成后的 INT32 结果 DMA 与完成提交占用 24,654 个周期。计算步数量与指令形状导出的期望值一致。按完整任务区间计算，PE 计算步时间占比为 `2048 / 111231 = 1.8%`。该数值包括命令传输、任务调度、两个已打包输入 DMA、Direct Engine 和 INT32 结果 DMA，说明当前主要等待时间在阵列之外；不能用 Direct Engine 内部的 90.1% 代替它。
 
 ### 2.3 整数推理与内部浮点计算
 
@@ -3173,7 +3177,11 @@ $$
 
 每个 word 的低、高 32 bit分别是 (C[r,2p]\)、(C[r,2p+1]\)。因此一次 C 面板写使用 16 个 lane，并让 16 个输出行同时写入不同 bank。编译器必须为不足 16 的 K 末组补零；M、N 不允许存在不足 16 的末 tile。
 
-CPU 侧部署代码不能把普通行主序 A、B 或 C 缓冲区直接交给 `DIRECT_GEMM`。驱动库的 `npu_direct_panel_pack_a()` 与 `npu_direct_panel_pack_b()` 按上述地址公式生成 A、B 面板；`npu_direct_panel_unpack_c_int32()` 在任务结束后把 C tile 还原为行主序 INT32。TVM AOT 后端接入 `DIRECT_GEMM` 时，应在提交该任务前调用前两个函数，并在消费者需要普通行主序结果前调用第三个函数。常量 B 可在编译时预先打包，运行时 A 由 CPU 打包；这样面板端口的高并行读取不会把通用 DMA 转置负担放进硬件。
+CPU 侧部署代码不能把普通行主序 A、B 或 C 缓冲区直接交给 `DIRECT_GEMM`。驱动库的 `npu_direct_panel_pack_a()` 与 `npu_direct_panel_pack_b()` 按上述地址公式生成 A、B 面板；`npu_direct_panel_unpack_c_int32()` 在任务结束后把 C tile 还原为行主序 INT32。
+
+TVM AOT 后端以 `direct_array_enable=1` 选择 Direct 路径。当前选择条件是：一个静态二维 `MatMul` 或 `Linear`，A 是模型输入，B 是编译期常量，C 是最终 INT32 输出；A、B 同为 INT8 或同为 INT16，M、N 为 16～64 的 16 整数倍，K 为 1～511，且 `output_shift=0`。编译时将常量 B 预先整理为面板格式，并在权重 C 数组中保存；运行时把行主序 A 写入普通输入区域后，调用 `npu_direct_panel_pack_a()` 写入 work 区域的 A 面板。NPU 指令只执行面板 A 的装载、`DIRECT_GEMM` 与 C 面板回写；任务完成后，运行时调用 `npu_direct_panel_unpack_c_int32()` 把 work 区域的 C 面板写入普通行主序输出区域。若形状、数据格式或输出位置不满足这些条件，后端使用公开 Matrix 指令。
+
+这种分工使行主序与面板格式的转换留在 CPU 侧，NPU 硬件只处理固定的高并行面板访问。对 Direct 专用输入，编译器不再生成未使用的行主序 A 到 L1BUF 传送任务；`[64,511]×[511,64]` INT8 用例生成 4 条 NPU 指令：常量装载、A 面板装载、`DIRECT_GEMM`、C 面板回写。该用例已在 TVM Relax AOT、C 驱动与 C model 的完整调用中逐项比较 4096 个 INT32 输出。
 
 ### 11.6 四条 Matrix 指令的计算公式
 
@@ -3475,7 +3483,8 @@ Direct Matrix Array 控制器的状态及功能如下：
 | `ST_PANEL_WAIT` | 等待第一个面板响应；响应正确时把面板送入操作数寄存器并进入计算。 |
 | `ST_COMPUTE` | 每拍向 PE 阵列发出一个 K 组。收到当前面板响应时，同时请求下一面板，使后续 K 组连续进入产品流水级。 |
 | `ST_COMPUTE_DRAIN` | 等待最后一个产品寄存器内容完成累加。 |
-| `ST_OUT_STORE` | 每次形成两个输出列，使用 16 个 lane 同时写出 16 个 INT32 行结果。 |
+| `ST_OUT_PREP` | 选择第 0 个输出列对，把 16 个 INT32 行结果组装到输出寄存器。 |
+| `ST_OUT_STORE` | 每拍从输出寄存器发出一个列对的 16 个 64-bit 写数据；发送当前列对时，PE 结果选择器切换到下一列对，下一拍装入输出寄存器。 |
 | `ST_OUT_WAIT` | 等待最后一个 C 面板写响应；随后推进到下一列 tile、下一行 tile，或者结束任务。 |
 | `ST_DONE` | 保持状态、错误地址和写回元素数，直到 TaskScheduler 接收完成信息。 |
 
@@ -3485,7 +3494,7 @@ Direct Matrix Array 的主要状态次序为：
 IDLE → TILE_SETUP → PANEL_WAIT
   → COMPUTE（连续请求下一面板）
   → COMPUTE_DRAIN
-  → OUT_STORE（8 个输出列对）→ OUT_WAIT
+  → OUT_PREP → OUT_STORE（8 个输出列对）→ OUT_WAIT
   → 下一 16×16 tile，或 DONE
 ```
 
@@ -3557,7 +3566,7 @@ IDLE
 3. `ST_TILE_SETUP` 在清零累加器的同一周期发出第一个面板读。A word 使用 16 个 bank 的 port0；B word 使用 bank 0～7 的 port1。
 4. 第一个响应到达后，`ST_PANEL_WAIT` 把面板写入寄存器阵列。`ST_COMPUTE` 用该面板发出第一个 K=4 计算步。
 5. 后续每个计算周期，PE 阵列使用已装入的面板进行一次 K=4 计算，同时控制器在接收下一面板响应时发起再下一面板请求。产品寄存器把乘法和局部累加分为相邻两拍；最后一组经过 `ST_COMPUTE_DRAIN` 排空。
-6. `ST_OUT_STORE` 连续执行 8 次面板写。每次将两个输出列的 16 个 INT32 结果组成 16 个 64-bit word，并同时写入 16 个 bank。
+6. `ST_OUT_PREP` 把第 0 个输出列对的 16 个 INT32 行结果组装到 1,024-bit 输出寄存器。随后 `ST_OUT_STORE` 连续执行 8 次面板写：每拍发送已保存的列对；第 0～6 个列对发送时，PE 结果选择器同时转到下一列对，并在拍末装入下一组写数据。因此输出寄存器只增加每个 16×16 tile 的初始填充拍，8 次写请求之间没有控制空拍。
 7. `ST_OUT_WAIT` 收到最后一次写响应后推进列 tile，再推进行 tile；全部 (M\times N) 个 INT32 结果写回后报告完成。
 
 INT16 每个面板对应一个 K 位置：16 个 A word 与 4 个 B word 同时读取，每个 PE 在一个计算步处理一个 INT16 乘积。INT8 的 K 末组不足 4 个元素时，编译器把无效位置写为 0；M、N 必须恰好由完整 16×16 tile 组成。
@@ -6135,7 +6144,7 @@ $$
 
 #### 19.3.1 已执行的 TVM 到 RTL 回归
 
-2026-08-02 已在 `verif/` 完成 Transformer、RNN、GRU、LSTM、CNN 的 TVM 到 RTL UVM 回归。本轮使用 `make -C verif tvm-uvm-model-e2e` 重新生成并执行全部五个用例。每个用例由 TVM 生成 fixture，RTL 执行 TVM 划分出的固定权重 MatMul；DPI 读取 RTL 写回的 MatMul 结果，继续计算未下放的 Add、激活、循环状态、注意力 Softmax 或卷积。每个用例均出现 `TVM_MODEL_RELAX_ADD_DPI_PASS`、`TVM_MODEL_CPU_DPI_PASS` 和 `MODEL_E2E_PASS`，UVM 的 ERROR、FATAL 均为 0。
+2026-08-02 已在 `verif/` 完成 Transformer、RNN、GRU、LSTM、CNN 和 Direct GEMM 的 TVM 到 RTL UVM 回归。本轮使用 `make -C verif tvm-uvm-model-e2e` 重新生成并执行全部六个用例。前五个用例由 TVM 生成 fixture，RTL 执行 TVM 划分出的固定权重 MatMul；DPI 读取 RTL 写回的 MatMul 结果，继续计算未下放的 Add、激活、循环状态、注意力 Softmax 或卷积。前五个用例均出现 `TVM_MODEL_RELAX_ADD_DPI_PASS`、`TVM_MODEL_CPU_DPI_PASS` 和 `MODEL_E2E_PASS`，UVM 的 ERROR、FATAL 均为 0。Direct GEMM 用例是纯 `[64,511]×[511,64]` INT8 `relax.matmul`，没有后续 CPU/DPI 运算，只以 `MODEL_E2E_PASS` 和逐字节 INT32 C 输出比较作为检查结果。
 
 | 模型 | RTL 结束时间 | NPU 指令 / 批次 | AXI 读 / 写事务 | NPU MatMul 输出 → CPU/DPI 最终输出 | 结果 |
 | --- | ---: | ---: | ---: | ---: | --- |
@@ -6144,6 +6153,7 @@ $$
 | GRU | 50,015,000 ns | 10 / 2 | 52 / 24 | 48 → 16 | 通过 |
 | LSTM | 60,365,000 ns | 10 / 2 | 52 / 32 | 64 → 32 | 通过 |
 | CNN | 25,215,000 ns | 10 / 2 | 40 / 4 | 8 → 8 | 通过 |
+| Direct GEMM，64×511×64 | 1,136,105,000 ns | 4 / 1 | 16,392 / 2,048 | 16,384 B INT32 C 逐字节比较 | 通过 |
 
 大型 `tvm_large_matrix` 用例进一步验证了 `[64,1024]×[1024,64]` 的 INT8 MatMul：共提交 2342 条指令、294 个批次，RTL 执行 68102772 个周期。16384 B 编码输出与 512 B logits 的 FNV 摘要均与参考文件一致；DPI 预检 8 个位置，并对 64 个位置比较独立计算结果与 DDR 输出。性能数据保存在 `Transformer_NPU/.work/rtl_verilator/tvm_large_matrix_e2e/performance.json`。
 
@@ -6151,7 +6161,7 @@ $$
 > 上述模型回归验证了 TVM 生成的数据、指令、DMA、标量 Matrix 路径和 RTL 结果的配合。注意力 Softmax、循环门控、状态更新与 Conv2D 仍由 CPU/DPI 完成；不得把该结果描述为所有模型算子均在 NPU 内执行。
 
 > [!warning] Direct Matrix Array 的验收要求
-> 大型 TVM 用例当前只发射公开 `GEMM` 和部分和指令，因此由 Scalar Matrix 执行，并不触发 `DIRECT_GEMM`。Direct Matrix Array 的功能和空间占用须另行使用 `DIRECT_GEMM`、INT8/INT16、K 末组、面板暂停和多 tile 用例测试。任务级测量不能替代包含 Command Front End、TaskScheduler、DMA 装载和提交等待的模型级测量。
+> `[64,1024]×[1024,64]` 的大型 TVM 用例因 K 超过 511 而发射公开 `GEMM` 和部分和指令，因此由 Scalar Matrix 执行，不触发 `DIRECT_GEMM`。TVM AOT 的 `[64,511]×[511,64]` 用例已经生成 `DIRECT_GEMM`，并通过 C 驱动和 C model 比较 4096 个 INT32 输出；同一形状的 UVM 用例还完成了面板数据初始化、四条指令提交、AXI Master 读写检查和 C 面板结果逐字节检查。任务级测量不能替代包含 Command Front End、TaskScheduler、DMA 装载和提交等待的模型级 PE 时间利用率；当前 UVM 用例尚未采集该完整时间区间的利用率计数。
 
 #### 19.3.2 Direct Matrix Array 的任务级测量
 
@@ -6161,12 +6171,12 @@ Direct 路径只接受专用 `DIRECT_GEMM`：M、N 为 16～64 的 16 整数倍�
 
 | 用例 | 总周期 | PE 计算周期 | 阵列时间利用率 | 阵列空间利用率 | 结果 |
 | --- | ---: | ---: | ---: | ---: | --- |
-| INT8，16×16×5 | 16 | 2 | 12.5% | 100% | 通过 |
-| INT8，16×16×511 | 142 | 128 | 90.1% | 100% | 通过 |
-| INT16，16×16×3 | 17 | 3 | 17.6% | 100% | 通过 |
-| INT16，32×32×5 | 73 | 20 | 27.3% | 100% | 通过 |
-| INT8，32×32×8 | 61 | 8 | 13.1% | 100% | 通过 |
-| INT8，64×64×511 | 2,257 | 2,048 | 90.7% | 100% | 通过 |
+| INT8，16×16×5 | 17 | 2 | 11.7% | 100% | 通过 |
+| INT8，16×16×511 | 143 | 128 | 89.5% | 100% | 通过 |
+| INT16，16×16×3 | 18 | 3 | 16.6% | 100% | 通过 |
+| INT16，32×32×5 | 77 | 20 | 26.0% | 100% | 通过 |
+| INT8，32×32×8 | 65 | 8 | 12.3% | 100% | 通过 |
+| INT8，64×64×511 | 2,273 | 2,048 | 90.1% | 100% | 通过 |
 
 阵列时间利用率按下式计算：
 
@@ -6180,7 +6190,9 @@ $$
 
 每个 Direct Matrix Array 计算周期中，16×16 个 PE 都被使能，所以空间利用率为 100%。INT8 的一个 K=4 面板含 16 个 A word 和 8 个 B word，共 192B；A word 分布在 16 个 bank 的 port0，B word 使用 bank 0～7 的 port1。控制器在当前面板进入 PE 阵列时请求下一面板，因此 K 较大时只在第一个面板、最后一个产品排空以及输出写回处出现空拍。
 
-64×64×511 用例含 16 个完整输出 tile，共执行 2,048 个 INT8 K 步。任务级时间利用率为 \(2048/2257=90.7\%\)，超过 85% 的阵列任务级目标。该数值不包含指令接收、TaskScheduler 等待、DMA 装载和模型中其他算子，不能作为模型级 PE 时间利用率；模型编译器尚未输出 `DIRECT_GEMM`，因此需要在 TVM 后端加入该操作的分块与面板布局后重新测量完整模型。
+`tb_npu_matrix_direct_array_engine +skip_max_k +saturate_int16` 还把 INT16 的 A、B 元素设为 `32767`。K=3 与 K=5 的每个局部和都超过 INT32 最大值，写回的全部 C 元素均为 `32'h7fff_ffff`。该用例覆盖 48-bit 局部和写回 INT32 时的符号扩展检查和上限截取；它与普通 INT16 数值用例共同确认输出选择器没有改变截取规则。
+
+64×64×511 用例含 16 个完整输出 tile，共执行 2,048 个 INT8 K 步。任务级时间利用率为 \(2048/2273=90.1\%\)，超过 85% 的阵列任务级目标。输出寄存器为每个 tile 增加一个初始填充拍，共增加 16 拍；它消除了 PE 输出选择、INT32 截取和 1,024-bit 面板写数据之间的组合路径。该数值不包含指令接收、TaskScheduler 等待、DMA 装载和模型中其他算子，不能作为模型级 PE 时间利用率。模型编译器已经输出 `DIRECT_GEMM` 和面板转换记录；下一步是在 TVM 生成的 RTL 用例中采集完整计数。
 
 ### 19.4 Integer Vector 测试
 
@@ -6923,7 +6935,7 @@ make -C /home/etc/FPGA/Transformer_NPU/verif tvm-uvm-model-e2e
 
 #### 20.3.2 直接阵列的寄存流水与测量
 
-每个直接阵列 PE 先在产品寄存器中保存四个 16-bit 基础乘积和数据格式，再在下一拍更新共享 signed48 累加寄存器。INT8 将四个乘积相加为 signed24 增量，最终结果取该寄存器低 24 bit；INT16 将四个交叉乘积按字节位移合成为 signed32 增量，再符号扩展并加入同一寄存器。signed32 增量足以表示一个 INT16×INT16 乘积，signed48 则保留跨 K 步的余量。该寄存级把“操作数选择和乘法”与“宽累加器”分开。直接阵列控制器对非末尾 K 步在产品寄存器接收数据后的下一拍立即开始下一组操作数读取；只有最后一个 K 步保留一次排空周期，保证结果写回读取到最后一次累加值。
+每个直接阵列 PE 先在产品寄存器中保存四个 16-bit 基础乘积和数据格式，再在下一拍更新共享 signed48 累加寄存器。INT8 将四个乘积相加为 signed24 增量，最终结果取该寄存器低 24 bit；INT16 将四个交叉乘积按字节位移合成为 signed32 增量，再符号扩展并加入同一寄存器。signed32 增量足以表示一个 INT16×INT16 乘积，signed48 则保留跨 K 步的余量。该寄存级把“操作数选择和乘法”与“宽累加器”分开。直接阵列控制器对非末尾 K 步在产品寄存器接收数据后的下一拍立即开始下一组操作数读取；只有最后一个 K 步保留一次排空周期，保证结果写回读取到最后一次累加值。输出端另设 1,024-bit 寄存器：`ST_OUT_PREP` 填充第 0 个列对，后续每拍写出已保存的数据，并同时取得下一列对。因此 PE 结果选择、INT32 截取和面板写数据在寄存器处断开。
 
 ```bash
 make -C /home/etc/FPGA/Transformer_NPU/rtl/engines matrix-direct-array
@@ -6931,16 +6943,18 @@ make -C /home/etc/FPGA/Transformer_NPU/rtl/engines matrix-direct-array
 
 | 用例 | 周期数 | 有效计算周期 | PE 时间利用率 | PE 空间利用率 |
 | --- | ---: | ---: | ---: | ---: |
-| INT8，16×16×5 | 16 | 2 | 12.5% | 100% |
-| INT8，16×16×511 | 142 | 128 | 90.1% | 100% |
-| INT8，64×64×511 | 2,257 | 2,048 | 90.7% | 100% |
-| INT16，16×16×3 | 17 | 3 | 17.6% | 100% |
-| INT16，32×32×5 | 73 | 20 | 27.3% | 100% |
-| INT8，32×32×8 | 61 | 8 | 13.1% | 100% |
+| INT8，16×16×5 | 17 | 2 | 11.7% | 100% |
+| INT8，16×16×511 | 143 | 128 | 89.5% | 100% |
+| INT8，64×64×511 | 2,273 | 2,048 | 90.1% | 100% |
+| INT16，16×16×3 | 18 | 3 | 16.6% | 100% |
+| INT16，32×32×5 | 77 | 20 | 26.0% | 100% |
+| INT8，32×32×8 | 65 | 8 | 12.3% | 100% |
 
-空间利用率说明完整 16×16 tile 的 256 个 PE 均收到工作。64×64×511 用例包含 16 个完整输出 tile，共执行 2,048 个 K 步，测得任务级时间利用率为 90.7%。当前控制器用 24-lane 面板端口一次读入每个 INT8 K=4 步的 16 个 A word 与 8 个 B word，并在当前面板计算时请求下一面板；每个输出列对使用 16-lane 面板写回。因此 K 较大时，面板预取能够隐藏绝大部分 A/B 等待。该测量不经过 TaskScheduler、DMA 或 TVM 后端，不能说明模型级利用率已经达到目标。
+空间利用率说明完整 16×16 tile 的 256 个 PE 均收到工作。64×64×511 用例包含 16 个完整输出 tile，共执行 2,048 个 K 步，测得任务级时间利用率为 90.1%。当前控制器用 24-lane 面板端口一次读入每个 INT8 K=4 步的 16 个 A word 与 8 个 B word，并在当前面板计算时请求下一面板；输出寄存器在每个 tile 先填充一拍，此后每个输出列对使用 16-lane 面板连续写回。因此 K 较大时，面板预取能够隐藏绝大部分 A/B 等待。该测量不经过 TaskScheduler、DMA 或 TVM 后端，不能说明模型级利用率已经达到目标。
 
-`2026-08-02 09:01` 的一份历史 OOC 构建以 `npu_matrix_direct_array_engine` 为顶层、使用 10.000ns 时钟周期，得到 81,856 个 LUT、19,335 个寄存器和 704 个 DSP48E1；setup WNS 为 `+4.662ns`，hold WHS 为 `+0.261ns`。其中 704 个 DSP 来自每个 PE 的 lane 0、lane 3，以及前 192 个 PE 的 lane 1。该报告早于后续的共享累加器和控制逻辑修改，只用于说明直接阵列是当前面积主要来源；当前 RTL 必须重新执行 OOC 综合后才能得到新的资源数字。OOC 顶层没有 `core_clk_i` 的物理时钟位置约束，也没有 placement、物理优化或布线，不能代替单核顶层的实现报告。
+`2026-08-02 09:01` 的一份历史 OOC 构建以 `npu_matrix_direct_array_engine` 为顶层、使用 10.000ns 时钟周期，得到 81,856 个 LUT、19,335 个寄存器和 704 个 DSP48E1；setup WNS 为 `+4.662ns`，hold WHS 为 `+0.261ns`。其中 704 个 DSP 来自每个 PE 的 lane 0、lane 3，以及前 192 个 PE 的 lane 1。
+
+在移除逐输出对的 PE 列移动、改为按 `output_pair` 选择 16 个行结果，并让 Direct 的 INT8/INT16 共用每个 PE 的 signed48 局部和之后，曾完成一次 OOC 综合。结果为 76,301 个 LUT、19,633 个寄存器和 704 个 DSP48E1；setup WNS 为 `+4.456ns`，hold WHS 为 `+0.264ns`，所有 OOC 时序检查通过。相对上述历史构建，LUT 减少 5,555，寄存器增加 298；乘法器配置未改变。该数据说明输出阶段的 PE 间数据传送已不再是必要硬件，但 Direct 阵列本身仍远高于全核 40,000 LUT 目标。该 OOC 构建早于输出寄存器和 INT32 截取逻辑改写，当前 RTL 必须重新执行 OOC 综合后才能更新资源和时序数据。OOC 顶层没有 `core_clk_i` 的物理时钟位置约束，也没有 placement、物理优化或布线，不能代替单核顶层的实现报告。
 
 #### 20.3.3 后综合结果与后续实施要求
 
@@ -6974,7 +6988,7 @@ make -C /home/etc/FPGA/Transformer_NPU/rtl/syn/vivado_100mhz synth-only \
 
 16×16 阵列含 256 个 PE，每个 PE 在 INT8 模式下计算四个 8×8 乘法。器件只有 740 个 DSP48E1，722 个已经被本次顶层使用，不能依靠继续增加 DSP 降低大量 LUT。40,000 LUT 目标尚未达到；下一轮应保持 16×16 阵列的每拍计算能力，优先削减 PE 的 byte 数据整理、结果写回数据选择、任务描述符展开和其他执行模块的组合逻辑，同时处理命令入口与响应 RAM 的 hold 路径。
 
-Direct 阵列任务级测试已经超过 85%，但 TVM 后端尚未生成 `DIRECT_GEMM`。因此仍需在编译器加入直接阵列的分块和面板布局后，测量包含命令接收、TaskScheduler、DMA 装载、Direct 执行和完成提交的模型级 PE 时间利用率。
+Direct Engine 内部的计算步时间占比已经超过 85%，TVM 后端也已为静态 `[64,511]×[511,64]` INT8 MatMul 生成 `DIRECT_GEMM`、常量 B 面板和运行时 A/C 转换记录，并通过 Relax AOT、C 驱动、C model 与完整 RTL UVM 的端到端数值检查。完整 RTL 的统计已覆盖命令接收、TaskScheduler、DMA 装载、Direct 执行和完成提交；该测试的 PE 计算步时间占比为 1.8%，尚未达到模型级 85% 目标。下一步应减少输入、输出搬运与调度空拍，并在更大的分块计算中复用 L1BUF 中已装载的数据。
 
 > [!summary] 首版硬件实现范围
 > 单核首版由 64-bit AXI/MIF、普通 64-bit L1BUF 客户端接口、24-lane Direct 面板接口、Command Front End、TaskScheduler、DMA、Matrix-Vector Engine、Complex Math、L1BUF、LSC、CRG 和 WDT 组成。每条 128-bit 指令在 64-bit 接口上使用低、高两个 beat；事件和任务选项直接位于指令。TaskScheduler 使用命令接纳寄存级、WAIT_EVENT 逐槽检查及结果寄存、接收检查解码器、Control 执行快照、发射窄快照、共享发射解码器和四组发射暂存；Matrix 一次保存一项活动任务并按完成 `command_id` 返回。Matrix-Vector Engine 是 Matrix 与 Vector 共用的物理执行模块，包含 Direct Matrix Array、Matrix Scalar、Vector 控制器、一套 16×16 PE 阵列、一套 Scalar/Vector 可配置多精度 MAC PE、内部 L1 仲裁、深度为 2 的 L1 请求 FIFO 和 2 项 Matrix 到 Vector 旁路缓存。Direct Matrix Array 为完整 16×16 输出 tile 保存 A/B 面板和 PE 局部累加器；它只处理专用 `DIRECT_GEMM`，不支持 bias、外部部分和、缩放和截断。Scalar 执行公开 `GEMM`、BMM、外部 INT32 部分和与后处理；Vector 的 MUL/FMA 使用共享 MAC PE，其他逐元素操作使用轻量整数 ALU。模型张量只采用 INT8、INT16、INT32；共享 MAC PE 的内部 4×4 基础乘法器用于组成 INT8 和 INT16 乘法，不构成软件可选的数据格式；CME 的 SUMSQ 分成平方与累加状态，Exp 的范围整数使用五个寄存状态完成最近偶数舍入，复杂函数在 CME 内部执行 `INT→FP32→INT`，F2I 在数学响应后经过五个寄存状态。软件通过指令和 C 配置给出物理地址、shape、stride、scale 和 zero point，硬件按模块接口与功能时序完成任务。
