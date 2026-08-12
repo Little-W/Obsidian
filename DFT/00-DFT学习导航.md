@@ -51,6 +51,7 @@ DFT（Design for Test，可测性设计）的核心不是“额外加一些测�
 | 13 | [[dc指令/Synopsis_DFT_User_Guider (1)]] | 用户指南主题索引与常用检查项 |
 | 14 | [[dc指令/syn2（compile的都在这里面）]] | Design Compiler 编译命令与 DFT 接口 |
 | 15 | [[开源实验资源/README]] | FAN_ATPG 与 Fault 的补充训练 |
+| 16 | [[PDF原件索引]] | 统一存放的教材与命令文档 PDF 原件 |
 
 ## 三、必须掌握的结构
 

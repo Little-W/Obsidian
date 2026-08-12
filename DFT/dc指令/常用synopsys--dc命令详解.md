@@ -14,35 +14,47 @@ updated: 2026-08-12
 > [!note] 使用建议
 > 命令参数会随工具版本、许可和工艺库而变化。本文保留完整的命令知识点与说明；在工程中执行前，请使用 `man`、`help` 或 `-help` 核对当前版本语法。
 
-## 基础概念与常见问题
+> [!warning] 版本说明
+> 本文后半部分保留了早期 Design Compiler 教材中的界面名称、文件格式与命令写法，用于理解历史资料。当前工程使用 `dc_shell V-2023.12-SP3`；请优先采用 [[../商业工具实验准备|商业工具实验准备]] 中已核对的命令。`Design Analyzer` 在旧教材中对应图形界面，当前使用 `Design Vision` 更合适。
+
+## 阅读导引
+
+本文分为四部分：
+
+1. **核心概念与命令速查**：以问答形式说明 DC 的对象、库、读入和链接。
+2. **约束、编译与报告**：集中说明时钟、I/O、设计规则、编译策略与常用报告。
+3. **Design Compiler 操作参考**：保留并整理完整的基础操作说明、库设置、设计管理和设计环境内容。
+4. **图示与流程示例**：收录原始插图，辅助理解输入输出、综合流程和端口建模。
+
+## 第一部分：核心概念与命令速查
 
 ### 1.1 什么是 DC?
 
-DC(Design Compiler) 是 Synopsys 的 logical synthesis 优化工具 ， 它根据 design
-description 和 constraints 自动综合出一个优化了的门级电路。它可以接受多种输入格式，如
-硬件描述语言、原理图和 netlist 等，并产生多种性能报告，在缩短设计时间的同时提高读者
-设计性能。
+DC（Design Compiler）是 Synopsys 的逻辑综合工具。它读取硬件描述语言（HDL，Hardware Description Language）、网表和约束，将设计实现为工艺库中的门级电路，并输出面积、时序、功耗和设计规则报告。
 
 ### 1.2 DC 能接受多少种输入格式?
 
-支持.db, .v, .vhd , edif, .vgh 等等，以及.lib 等相关格式。
+常见输入包括 Verilog（`.v`）、VHDL（`.vhd`）、Synopsys 数据库（`.db`）、EDIF 和 Liberty（`.lib`）。实际可用格式以当前版本的 `man read_file` 为准。
 
 ### 1.3 DC 提供多少种输出格式?
 
-提供.db, .v, .vhd, edif, .vgh 等，并可以输出 sdc, .sdf 等相关格式文件。
+常见输出包括数据库（`.ddc`、`.db`）、Verilog 网表（`.v`）、约束（`.sdc`）、延时信息（`.sdf`）以及综合报告。
 
 ### 1.4 DC 的主要功能或者主要作用是什么?
 
-DC 是把 HDL 描述的电路综合为跟工艺相关的门级电路。并且根据用户的设计要求，
-在 timing 和 area，timing 和 power 上取得最佳的效果。在 floorplanning 和 placement 和插入
-时钟树后返回 DC 进行时序验证
+DC 将 HDL 描述实现为与工艺库对应的门级电路，并根据时序、面积、功耗和设计规则约束进行优化。后续物理实现阶段产生的寄生参数和约束可用于进一步的时序分析。
 
 ### 1.5 如何寻找帮助?
 
-帮助可以用 3 种求助方式：
-1. 使用 SOLD，到文档中寻求答案
-2. 在命令行中用 man+ DC 命令
-3. 在命令行中用 info+ DC 命令
+优先使用以下方式：
+
+```tcl
+help <命令>
+man <命令>
+<命令> -help
+```
+
+早期版本还提供 SOLD（Synopsys OnLine Documentation）文档界面；当前以安装目录中的帮助、SolvNetPlus 文档和 `man` 输出为准。
 
 ### 1.6 如何找到 SOLD 文档?
 
@@ -52,28 +64,23 @@ SOLD 文档可以在 terminal 中输入 sold&执行。
 
 ### 1.7 如何配置 DC?
 
-综合设置提供必要的参数给 DC，使工具能够知道进行综合时所需要的必要的信息，即
-重要参数：工艺库、目标库、符号库等。要在 `.synopsys_dc.setup` 中设置这些参数。
-而.synopsys_dc.setup 要在三个目录下有说明，一个是 synopsys 的安装目录，一个是用户文
-件夹，最后一个是工程目录。由后一个设置覆盖前一个文件。
-参数包括：search_path, target_library, link_library, symbol_library
+综合设置告诉 DC 设计文件和库文件的位置。常用设置包括 `search_path`、`target_library`、`link_library` 和 `symbol_library`。`.synopsys_dc.setup` 可位于工具安装目录、用户目录和工程目录；工程目录中的同名设置优先级最高。
 
 ### 1.8 target_library 是指什么?
 
-target_library 是在 synthesis 的 map 时需要的实际的工艺库
+`target_library` 指定综合时可选用的目标工艺库。
 
 ### 1.9 link_library 如何指定?
 
-链接时需要的库，通常与 library 相同，设置时，需要加“*”，表示内存中的所有库。
+`link_library` 指定链接设计时搜索的库和设计；常见写法中的 `*` 表示同时搜索当前内存中的设计。
 
 ### 1.10 search_path 的设置?
 
-该参数指定库的存储位置
+`search_path` 指定 DC 查找 RTL、网表、库和脚本文件的目录。
 
 ### 1.11 DA 和 DC 有什么区别?
 
-DA 是 Design Analyzer 的简称, 它调用 dc 来进行综合. 但是它是图形化的. 可以看逻辑
-电路图,当然需要你的库有 symbol 库.
+DA（Design Analyzer）是旧版图形界面；当前常用的图形界面为 Design Vision。二者都可用于查看原理图、层次和对象属性，图形显示通常需要相应的符号库。
 
 ### 1.12 为什么要使用 DA 而不用 shell 接口?
 
@@ -81,54 +88,47 @@ DA 适合查看原理图、层次和对象属性；shell 接口适合批量执�
 
 ### 1.13 SOLD 是什么?
 
-SOLD 是 Synopsys OnLine Document 的简称, 基本包括了 synopsys 公司的所有工具的
-文档集合.
+SOLD 是 Synopsys OnLine Documentation 的旧称，指 Synopsys 工具文档集合。
 
 ### 1.14. translation 这一步是用什么 DC 命令来实现的?
 
 我们知道, DC 综合过程包括 3 个步骤: translation + logic optimization + mapping
-translation 对应命令为 `read_verilog`、`read_vhdl` 等读取命令。
-logic optimization 和 mapping 对应于 compile
+读取与展开通常使用 `read_verilog`、`read_vhdl`、`analyze` 和 `elaborate`。逻辑优化与目标库实现（Technology Mapping）通常由 `compile`、`compile_ultra` 等编译命令完成。
 
 ### 1.15. 逻辑优化和工艺实现（logic optimization + mapping）又是用什么 DC 命令来实现的?
 
-逻辑优化和工艺实现均在 compile 命令完成，但是可以指定使用特殊的优化方法：structural
-和 flatten
+逻辑优化与目标库实现通常由 `compile` 完成；可结合层次处理、结构优化和打平选项控制编译结果。选项名称应以当前版本 `man compile` 为准。
 
 ### 1.16. 什么是 DC script?
 
-DC script 是一组 dc 命令的集合. 使得综合可以流程化也易于管理.
+DC 脚本是一组 Tcl 命令，用于固化库设置、读入设计、约束、编译、检查和导出步骤。
 
 ### 1.17. 基于路径的综合的意思是什么?
 
-路径（path），是 DC 中的一个重要概念。它包括 4 种路径方式：
-a. input 到 FF 的 data 口；
-b. FF 的 clk 到另一个 FF 的 D 口；
-c. FF 的 clk 到输出端口 DICDER
-d. input 到 output
-基于路径的综合就是对这四种路径进行加约束，综合电路以满足这些约束条件。
+常见时序路径包括：
+
+- 输入端口到寄存器数据端；
+- 寄存器到寄存器；
+- 寄存器到输出端口；
+- 输入端口到输出端口。
+
+路径约束定义这些路径的到达时间与要求时间，DC 据此进行优化。
 
 ### 1.18 DC 中的各类参数的单位是如何确定的呢?
 
-参数的单位由所使用库文件决定，在读入库之后，可以用 report_lib 去看库的信息，里
-边有详细的单位说明
+时间、电容、电阻、电压等单位由库文件定义。读入库后可用 `report_lib` 查看。
 
 ### 1.19 DC 中的对象有哪些?
 
-设计变量：一共有八种：Design, cell, reference, port, pin, net, clock, library。其中 cell 是
-子设计的例化，reference 是多个子设计例化的通称，port 是 design 的输入输出，pin 是 cell
-的输入输出。
+常用对象包括 `design`、`cell`、`reference`、`port`、`pin`、`net`、`clock` 和 `library`。其中 `cell` 是实例，`reference` 是实例引用的设计或库单元，`port` 是设计端口，`pin` 是实例引脚。
 
 ### 1.20 什么叫 start point 和 end point?
 
-这两个概念是 DC 中 path 概念的起始点和终点。
-起始点可以是 input 和 FF 的 clk
-终点可以是 FF 的 data 和 output。
+起点通常是输入端口或寄存器时钟引脚；终点通常是寄存器数据引脚或输出端口。具体起止点由时钟定义、时序例外和设计结构共同决定。
 
 ### 1.21 如何寻找想约束的对象?
 
-一个是全部查找包括：all_inputs , all_outputs, all_clocks, all_registers。一个是根据关键
-词进行查找：find_ports()，find(port,’ ‘)。
+常用集合命令包括 `all_inputs`、`all_outputs`、`all_clocks` 和 `all_registers`；对象查询优先使用 `get_ports`、`get_cells`、`get_pins` 和 `get_nets`。
 
 ### 1.22 什么叫一个设计(design) ?
 
@@ -145,82 +145,84 @@ d. input 到 output
 
 ### 1.25 如何读入一个 design?
 
-使用 analyze + elaborate 或者 read_verilog, read_vhdl, read_file 命令。
+可使用 `read_verilog`、`read_vhdl`、`read_file`，或使用 `analyze` 加 `elaborate`。
 
 ### 1.26 analyze+ elaborate 和 read 命令有什么区别?
 
-read_file 是可以读取任何 SYNOPSYS 支持格式的；analyze 和 eloborate 只支持 verilog
-和 VHDL 两个格式，但是他们支持在中间过程中加入参数而且以便以后可以加快读取过程。
+`read_file` 可读入多种 Synopsys 支持的格式；`analyze` 和 `elaborate` 主要用于 Verilog/VHDL，可在展开阶段指定参数，并复用分析结果。
 
 ### 1.27 如何处理多个引用的问题?
 
-一个方法是使用 uniquify，就是把引用几次那么就在内存中换名引入多个子设计，适用
-于不同时序约束要求；也可以用 dont_touch 命令，先对多个引用的设计进行编译之后，设置
-为 dont_touch，适用于基本相同的环境要求；还有一种就是把两个引用进行 flatten，之后进
-行综合。
+可用 `uniquify` 为不同实例创建独立设计副本，以便施加不同约束；也可在满足条件时使用 `dont_touch`，或打平相关层次后统一处理。
 
 ### 1.28 link 的作用是什么?
 
-确定所有文件是否均存在并把它们链接到当前设计。
+`link` 解析当前设计引用的库单元和子设计，并报告未解析的引用。
 
 ### 1.29 环境设置是指什么?
 
-是指芯片物理上的参数，比如电压，温度等。
+设计环境包括工艺、电压、温度、输入驱动、输出电容、扇出和连线估算条件。
 
 ### 1.30 如何设置线载模型?
 
-使用 set_wire_model 命令
+旧版库可使用 `set_wire_load_model` 设置连线估算模型；现代物理相关流程通常使用寄生参数和物理信息。
 
 ### 1.31 如何得知线载模型的种类?
 
-读取库文件到 DC 中，使用 report_lib 看有多少可用的线载模型
+读入库后使用 `report_lib` 查看可用连线估算模型。
 
 ### 1.32 如何设置工作环境变量?
 
-使用 set_operating_conditions
+使用 `set_operating_conditions`。
 
 ### 1.33 工作环境变量的类别可以分为哪几类?
 
-一般可以分为最坏（worst case),典型(typical),最佳（best case)。
+常见操作条件包括最差、典型和最佳条件，具体名称由库文件定义。
 
 ### 1.34 为什么要设置工作环境变量?
 
-由于我们要做的是一颗要在实际环境中正常工作的芯片，而在不同的温度和环境下的电
-路的性能有很大影响，因此为了近可能地模拟芯片工作，设置合适的工作环境信息是非常必
-要的。
+不同工艺、电压和温度条件会影响延时与功耗；应以库中定义的条件进行分析。
 
 ### 1.35 read 和 analyze + ealborate 做了哪些工作?
 
-语法检查，建立 GETECH 库。值得注意的是，read 命令不自动执行 link 操作。
+它们会完成语法检查和设计展开，生成与工艺无关的内部表示。读入后仍应执行 `link`。
 
 ### 1.36 getech 库是做何用途的?
 
-GETCH 库是由软宏（soft macros）组成的，是加法器，乘法器之类的东西，这些组件都
-是在 DW 里引用的。
+GTECH 是 DC 在工艺实现前使用的通用逻辑表示；算术等 HDL 运算符可由 DesignWare（设计工具库，DesignWare）单元实现。
 
 ### 1.37 调用 getech 库中的加法器之后,如何去自己选择一个设计者需要的加法器?
 
-暂时没有答案
+通常由 HDL 写法、DesignWare 许可、`synthetic_library`、编译选项和约束共同决定。使用 `report_resources`、`report_reference` 与编译日志确认实际选用的结构。
 
 ### 1.38 调用了加法器之后在优化阶段还能够掉换不同的加法器么?
 
-暂时没有答案
+可以。重新编译时 DC 会依据当前约束和可用库重新选择等效实现；若需限制某些单元，可使用 `set_dont_use`。
 
 ### 1.39 如何检查 script 文件中有何错误呢?
 
-dc_shell -tcl -f
+```bash
+dc_shell -f scripts/run.tcl | tee logs/run.log
+```
+
+同时用 `check_design`、`report_constraint -all_violators` 和日志中的 `Error:`、`Warning:` 定位问题。
 
 ### 1.40 如果在 dc_shell 启动后, 想修改库,怎么办?
 
-暂时没有答案
+修改 `target_library`、`link_library` 或 `search_path` 后，应重新读入或重新链接设计；对已编译设计更换目标库时，通常需要重新执行编译。
 
 ### 1.41 如何在 dc_shell 环境下执行 UNIX 命令?
 
+使用 `sh <命令>`，也可在 Tcl 中使用 `exec`。例如：
+
+```tcl
+sh pwd
+exec ls -la reports
+```
+
 ### 1.42 优化分为几个层次？
 
-一个是基于 HDL 的结构优化转化为 GETCH 结构；基于 GTECH 的逻辑优化，包括架构
-（strcuture），打平（flatten），转化为优化过的 GETCH；基于 GETCH 的门级优化，主要作
-用是工艺实现到实际的工艺库中。
+可概括为：HDL 读取和展开、通用逻辑优化、结构与层次处理，以及目标库实现（Technology Mapping）后的门级优化。
 
 ### 1.43 什么是约束？
 
@@ -231,177 +233,178 @@ timing constraint 和 area constraint。timing constraint 又可分为组合电�
 
 ### 1.44 DC Script 支持 TCL 么？
 
-dcsh 和 dc-tcl。前者是 SYNOPSYS 的内部语言，后者是 TOOL COMMAND language（TCL）。
+当前脚本应使用 Tcl。旧版 `dcsh` 语法仅用于阅读历史材料。
 
 ### 1.45 综合时不想使用某些库单元进行 mapping，怎么办？
 
-使用 set_dont_use 命令
+使用 `set_dont_use`。
 
-## 约束与编译策略
+## 第二部分：约束、编译与报告
 
 ### 2.1 约束一个设计分为几个方面?
 
-总的分为，面积约束和时序约束。
+主要包括面积、时序、设计规则和功耗相关约束。
 
 ### 2.2 面积约束的命令是什么？
 
-set_max_area
+使用 `set_max_area`。
 
 ### 2.3 如何对时钟进行约束？
 
-对时钟进行约束是对时钟的周期，波形进行描述。
-使用 create_clock 建立时钟约束
+使用 `create_clock` 定义周期和波形。
 
 ### 2.4 如何对 pll 进行约束？
 
-如果存在 PLL，那么首先对输入的初始时钟用 create_clock 进行约束。
-再用 create_propagated_clock 对 PLL 输出时钟在基于输入时钟进行约束。
+先对 PLL 输入时钟使用 `create_clock`。PLL 输出时钟通常需要按实现阶段的时钟网络信息定义生成时钟或传播时钟；请以当前工具帮助和项目约束为准。
 
 ### 2.5 什么叫虚拟时钟约束？
 
-虚拟时钟是指在当前要综合的模块中不存在的物理时钟。比如，设计外的 DFF 的时钟。
-建立这样的时钟有益于描述异步电路间的约束关系。
+虚拟时钟是不连接到当前设计端口或引脚的时钟对象，常用于描述芯片外部接口的输入、输出时序。
 
 ### 2.6 DC 可以对时钟的哪些特性进行约束？
 
-DC 支持对时钟的周期，波形，jitter，skew，latency 描述
+可定义周期、波形、不确定度、延迟和时钟组关系。
 
 ### 2.7 如何约束时钟的 jitter？
 
-使用 set_clock_uncertainty -setup(-hold) 约束时钟的 jitter
+使用 `set_clock_uncertainty -setup` 与 `-hold`。
 
 ### 2.8 如何约束时钟的 skew？
 
-使用 set_clock_uncertainty 约束时钟网络的 skew
+时钟不确定度可包含抖动和时钟偏差预算，使用 `set_clock_uncertainty` 设置。
 
 ### 2.9 如何约束时钟的 latency？
 
-使用 set_clock_latency -option ，option is source or network，the default is network。
+使用 `set_clock_latency`；常用类别包括 `-source` 和网络延迟。
 
 ### 2.10 如何对当前设计的端口外部条件进行约束？
 
-端口的外部条件包括输入驱动大小，输出电容的大小，扇出大小。
+常用外部条件包括输入驱动、输入转换时间、输出电容和输出扇出。
 
 ### 2.11 输入端口被多大的驱动所驱动？
 
-可以使用 set_dirive 和 set_driving_cell
+使用 `set_drive` 或 `set_driving_cell`。
 
 ### 2.12 输出端口要驱动多大的电容？
 
-使用 set_load 对输出电容值进行约束，单位根据工艺库的 define 所定。
+使用 `set_load`；数值单位由工艺库定义。
 
 ### 2.13 DC 是基于 path 的综合，那么在约束时如何体现？
 
-我们知道，基于 path 会有四种路径形式，DC 中提供
-create_clock 定义寄存器和寄存器之间的路径；
-set_input_delay 定义输入与寄存器之间的路径；
-set_output_delay 定义寄存器与输出之间的路径；
-set_max_delay 和 set_min_delay 定义输入和输出的组合路径；
+常见设置如下：
+
+- `create_clock`：寄存器到寄存器路径；
+- `set_input_delay`：输入端口到寄存器路径；
+- `set_output_delay`：寄存器到输出端口路径；
+- `set_max_delay` 与 `set_min_delay`：指定起点和终点之间的最大、最小延时。
 
 ### 2.14 set_input_delay 的目的是什么？
 
-定义输入延时，来约束设计中输入逻辑的时序
+定义外部发送端到当前设计输入端口的到达时间。
 
 ### 2.15 set_output_delay 的目的是什么？
 
-定义输出延时，来约束设计中的输出逻辑的时序
+定义当前设计输出端口到外部接收端的要求时间。
 
 ### 2.16 如何对组合电路进行约束？
 
-组合电路有 set_max_delay 和 set_min_delay 进行约束
+使用 `set_max_delay` 和 `set_min_delay`。
 
 ### 2.17 如何对电路的速度进行约束？
 
-采用对电路时钟周期的约束的方式来约束电路的速度，使用 create_clock
+使用 `create_clock` 定义时钟周期；接口和组合路径还应设置相应延时约束。
 
 ### 2.18 当一个组合电路超过了时钟周期约束，那么该如何处理？
 
-如果必须要满足时钟周期约束，那必须修改设计，如果不必要严格要求，那么可以
-set_false_path 可以躲过 path check。
+先检查约束是否正确、路径是否为功能路径，再优化 RTL 或约束。仅在该路径确实不参与时序检查时，才可使用 `set_false_path`。
 
 ### 2.19 当出现环路电路时，如何约束电路？
 
-对某一路径使用 set_false_path
+先消除不需要的组合环路；若该环路在分析中必须被切断，可针对明确起止点设置时序例外。
 
 ### 2.20 如何加强设计规则的约束？
 
-DRC 是电路必须满足的设计规则，使用
-set_max_capcitance
-set_max_fanout
-set_max_tansition
+常用命令为：
+
+```tcl
+set_max_capacitance <数值> <对象>
+set_max_fanout <数值> <对象>
+set_max_transition <数值> <对象>
+```
 
 ### 2.21 在添加了 4 种路径约束后，如何为某些路径移除约束呢？
 
-使用 set_flase_path 使得某些路径不进行 timing check
+使用 `set_false_path` 排除经过确认的非时序路径。
 
 ### 2.22 对于某些路径需要在固定的几个周期内完成，如何对这些路径进行约束？
 
-使用 set_multicycle_path 对路径进行约束
+使用 `set_multicycle_path`。
 
 ### 2.23 在添加这些特殊的路径约束，如何恢复原来通用的时序约束？
 
-使用 reset_path
+使用 `reset_path`，或对相应对象重新设置明确的时序例外。
 
 ### 2.24 如何对三态门进行约束？
 
-由于综合时，默认三态门是 enable 的，所以对某些路径要设置 set_false_path
+应明确三态使能条件，并结合功能模式、时钟和时序例外设置约束；不能仅因存在三态门就排除路径。
 
 ### 2.25 如何对门控时钟进行约束，以保证功能正常？
 
-对门控时钟电路进行 setup 和 hold 检查，使用 set_gating_clock_check
+使用 `set_clock_gating_check` 设置门控时钟检查。
 
 ### 2.26 设置对某些网络比如时钟或者复位不进行添加 buffer 等操作，应该怎么约束？
 
-使用 set_dont_touch_network
+使用 `set_dont_touch_network`。
+
 ### 2.27 如何修正 hold 时间冲突？
 
-加入 set_fix_hold 约束
+使用 `set_fix_hold` 指定需要修复的时钟域或路径，并结合时序报告确认结果。
 
-/************ Part 3 Compile stategy ******************/
-### 3.1 综合时，有多少选择综合策略呢？
+### 编译策略
 
-可以使用 top-down 和 bottom-top。
+#### 3.1 综合时，有多少选择综合策略呢？
 
-### 3.2 top-down 方式有何优点？
+常见策略为自顶向下（top-down）和自底向上（bottom-up）。
 
-仅需提供单一 TOP 的 script
-将设计作为一个整体，可得到较好的结果
+#### 3.2 top-down 方式有何优点？
 
-### 3.3 bottom-up 方式有什么优点？
+- 仅需维护顶层脚本；
+- 可以同时考虑跨模块逻辑与约束。
 
-对多时钟的综合更为适合
-每个子模块都有自己的 script，便于管理
-当一个模块改变时，不用重新综合所有设计
+#### 3.3 bottom-up 方式有什么优点？
 
-### 3.4 如何进行 time-budge？
+- 子模块可独立编译与检查；
+- 局部改动不必重新编译全部设计；
+- 需要为模块接口维护一致的时序预算。
 
-使用 characteristic
+#### 3.4 如何进行时序预算（time budget）？
 
-### 3.5 top-down 方式有何缺点？
+根据接口时序预算设置输入、输出延时和路径约束；旧版资料中的 `characteristic` 写法应以当前命令帮助核对。
 
-编译时间长
-子模块改变则整个设计都要重新综合
-对多时钟设计综合效果不好
-### 3.6 bottom-up 方式有什么缺点？
+#### 3.5 top-down 方式有何缺点？
 
-需要维护多个 script
+- 大型设计占用更多内存和运行时间；
+- 子模块变化通常需要重新编译顶层；
+- 多时钟设计仍可使用该策略，但需充分定义时钟关系。
+#### 3.6 bottom-up 方式有什么缺点？
 
-### 3.7 编译时的 -incremental 是什么意思？
+需要维护多个脚本、接口约束与子模块交付文件。
 
-设计工艺实现为门之后，时序和面积约束可以再定义，incremental 确保维持以前的电路结构，
-只作改善时序和性能，不添加不必要的逻辑。
-### 3.8 ...
+#### 3.7 编译时的 `-incremental` 是什么意思？
 
-/******* Part 4 Analyze the report ******************/
-### 4.1 如何看面积报告?
+`-incremental` 在尽量保留既有结构的前提下，根据新的约束继续优化。实际变化范围取决于命令、约束和当前设计状态。
+#### 3.8 延伸阅读
 
-report_area
+### 报告与检查
+#### 4.1 如何看面积报告?
 
-### 4.2 如何看时序报告?
+使用 `report_area`。
 
-report_timing
+#### 4.2 如何看时序报告?
 
-### 4.3 想对单独的单元看面积报告, 用什么命令?
+使用 `report_timing`。
+
+#### 4.3 想对单独的单元看面积报告, 用什么命令?
 
 report_cell 但是缺省的 report_cell 只能看 current_design 下面的一级的 cell 的面积.因此
 就有两种方法解决这个问题:
@@ -409,33 +412,33 @@ report_cell 但是缺省的 report_cell 只能看 current_design 下面的一级
 2. 用 list_design 列出所有的 design, 然后改变 current_design 到你所想要看的那一级的
 cell, 然后直接用 report_cell.
 
-### 4.4 如何看设计环境和线载模型?
+#### 4.4 如何看设计环境和线载模型?
 
-report_design
+使用 `report_design` 和 `report_lib`。
 
-### 4.5 若设计规则和时序违反约束，如何查看？
+#### 4.5 若设计规则和时序违反约束，如何查看？
 
-使用 report_constraint -all_violators
+使用 `report_constraint -all_violators`。
 
-### 4.6 如何查看连线的扇入，扇出，电容，电容和跳变时间？
+#### 4.6 如何查看连线的扇入，扇出，电容，电容和跳变时间？
 
-使用 report_net
-### 4.6 如何看整个综合后的网表中使用多少种类型的电路门？
+使用 `report_net`；必要时结合 `report_timing` 查看转换时间和电容。
 
-使用 report_hierarchy
+#### 4.7 如何看整个综合后的网表中使用多少种类型的电路门？
 
-### 4.7 如何查看 timing exception 的时序约束？
+使用 `report_hierarchy`。
 
-使用 report_timing_requirements
+#### 4.8 如何查看时序例外约束？
 
-第二章 Design Compiler 概述
-Design Compiler 是 Synopsys 综合软件的核心产品。它提供约束驱动时序最优化，并支
-持众多的设计类型，把设计者的 HDL 描述综合成与工艺相关的门级设计；它能够从速度、
-面积和功耗等方面来优化组合电路和时序电路设计，并支持平直或层次化设计。
+使用 `report_timing_requirements`。
 
-第一节 Design Compiler 入门
+## 第三部分：Design Compiler 操作参考
 
-### 2-1-1 基本的综合流程
+Design Compiler 是 Synopsys 的逻辑综合软件。它读取 HDL 与约束，完成逻辑优化和目标库实现（Technology Mapping），并支持平直或层次化设计。
+
+### 第一节：Design Compiler 入门
+
+#### 2-1-1 基本的综合流程
 
 > 图 2.1 中显示了一个简化的综合流程：
 
@@ -445,45 +448,30 @@ Design Compiler 按照所有标准 EDA 格式读写文件，包括 Synopsys 内�
 和方程式（.eqn）格式。除此之外，Design Compiler 还提供与第三方 EDA 工具的链接，比
 如布局布线工具。这些链接使得 Design Compiler 和其他工具实现了信息共享。
 
-## Design Compiler 综合操作
+#### 2-1-2 Design Compiler 的功能
 
-### 2-1-2 Design Compiler 的功能
+利用 Design Compiler，可以：
 
-利用 Design Compiler，设计者可以：
- 利用用户指定的门阵列、FPGA 或标准单元库，生成高速、面积优化的 ASIC；
- 能够在不同工艺技术之间转换设计；
- 探索设计的权衡，包括延时、面积和在不同电容、温度、电压情况的功耗等设计约
-束条件；
- 优化有限状态机的综合，包括状态的自动分配和状态的优化；
- 当第三方环境仍支持延时信息和布局布线约束时，可将输入网表和输出网表或电路
-图整合在一起输入至第三方环境；
- 自动生成和分割层次化电路图
+- 使用门阵列、FPGA 或标准单元库完成综合；
+- 在不同工艺技术之间转换设计；
+- 权衡延时、面积、功耗和设计规则约束；
+- 优化有限状态机与层次结构；
+- 导出网表、约束和报告，供后续设计工具使用。
 
-### 2-1-3 支持的文件格式
+#### 2-1-3 支持的文件格式
 
 > 表 2.1 列出了 Design Compiler 所支持的所有的输入输出的设计文件格式：
 
 > 表 2.1 支持的文件格式
 
-数据格式
-Netlist EDIF
-LSI Logic Corporation netlist format (LSI)
-Mentor Intermediate Format (MIF)
-Programmable logic array (PLA)
-Synopsys equation
-Synopsys state table
-Synopsys database format (.db)
-Tegas Design Language (TDL)
-Verilog
-VHDL
-Timing Standard Delay Format (SDF)
-Command Script dcsh, Tcl
-Cell Clustering Physical Design Exchange Format (PDEF)
-Library Synopsys library source (.lib)
-Synopsys database format (.db)
-Parasitics dc_shell command scripts
+| 类别 | 常见格式 |
+| --- | --- |
+| 设计输入 | EDIF、LSI、MIF、PLA、方程式、状态表、Verilog、VHDL、`.db` |
+| 时序与约束 | SDF、SDC、Tcl 脚本 |
+| 库 | Liberty（`.lib`）、Synopsys 数据库（`.db`）、符号库（`.sdb`） |
+| 物理相关信息 | PDEF、寄生参数文件和工具脚本 |
 
-### 2-1-4 设计类型、输入格式和输出格式
+#### 2-1-4 设计类型、输入格式和输出格式
 
 设计类型：设计可以是分层的或平直的，时序的或组合的；
 输入格式：支持 VHDL 和 Verilog 作为设计描述的输入格式，也支持开编程逻辑阵列
@@ -491,13 +479,13 @@ Parasitics dc_shell command scripts
 输出格式：除了 Synopsys 二进制格式（.db），还支持 VHDL、Verilog、EDIF 200、方程
 式、大规模集成（large-scale integration）、Mentor 图形、PLA、状态表和 Tegas 格式。
 
-### 2-1-5 用户界面
+#### 2-1-5 用户界面
 
 Design Compiler 提供了两种用户界面：
 1.命令行界面，称为 dc_shell。该界面同时支持 dsch 和 Tcl。
 2.图形用户界面（GUI），称为 Design Analyzer。
 
-#### 2-1-5-1 选择用户界面
+##### 2-1-5-1 选择用户界面
 
 你可以选择其中任意一个界面来执行电路的优化工作。如果你愿意，你可以同时使用
 两种界面，根据任务的要求在不同的界面间移动。
@@ -512,19 +500,19 @@ Compiler 和 dc_shell 的策略。
 参数值来优化设计。为了显示电路图和生成报告，设计工程师可以定时的从 GUI 窗口而不
 是命令行来运行脚本。
 
-#### 2-1-5-2 Design Analyzer 图形界面
+##### 2-1-5-2 Design Analyzer 图形界面
 
 Design Analyzer 为绝大多数的命令提供了菜单式界面。然而，有一些 dc_shell 命令并没
 有在 Design Analyzer 菜单中提供；你可以在 Design Analyzer 的命令窗口输入这些命令。
 
-#### 2-1-5-3 dc_shell 命令行界面
+##### 2-1-5-3 dc_shell 命令行界面
 
 基于 dc_shell 的命令行界面允许你输入命令去执行电路优化的任务。命令由命令名称、
 变量和变量值组成。
 
-第二节 Design Compiler 要素
+### 第二节：Design Compiler 要素
 
-### 2-2-1 高层设计流程
+#### 2-2-1 高层设计流程
 
 在一个基本的高层设计流程中，Dseign Compiler 用于设计开发阶段和最后的设计实现
 阶段。在开发阶段，利用 Dseign Compiler 进行初步的或默认的综合；在实现阶段，利用 Dseign
@@ -556,9 +544,9 @@ e． 持续的进行设计开发和设计仿真，直到设计能够实现预期
 产厂家去完成。利用反标回去的数据对物理设计进行分析，如果结果没有实现目标，还得回
 到步骤 3；如果结果实现了目标，你就完成了整个设计循环。
 
-### 2-2-2 运行 Design Compiler
+#### 2-2-2 运行 Design Compiler
 
-#### 2-2-2-1 利用配置文件
+##### 2-2-2-1 利用配置文件
 
 当你启动 Design Compiler 时，它就自动地执行三个配置文件。这些文件都有相同的文
 件名：.synopsys_dc.setup，但它们在不同的目录下。文件中包含命令，实现参数和变量的初
@@ -584,7 +572,7 @@ target_library = "typical.db";
 symbol_library = "tsmc18.sdb";
 ……
 
-#### 2-2-2-2 运行 Design Compiler
+##### 2-2-2-2 运行 Design Compiler
 
 (1)以 dcsh 模式调用 dc_shell，在系统提示符后输入 dc_shell 命令：
     % dc_shell
@@ -604,7 +592,7 @@ symbol_library = "tsmc18.sdb";
 (2)运行 Design Analyzer，在系统提示符后输入 Design Analyzer:
     % Design Analyzer
 
-#### 2-2-2-3 退出 Design Compiler
+##### 2-2-2-3 退出 Design Compiler
 
 你可以在任何时候退出 Design Compiler 回到操作系统。
 为退出 Design Compiler，执行下列操作之一：
@@ -617,7 +605,7 @@ Memory usage for this session 1373 Kbytes.
 CPU usage for this session 4 seconds.
 Thank you ...
 
-#### 2-2-2-4 利用脚本文件
+##### 2-2-2-4 利用脚本文件
 
 通过在文本文件里设置一系列的 dc_shell 命令创建命令脚本文件。任何一个 dc_shell 命
 令都能够在脚本文件里执行。
@@ -626,7 +614,7 @@ Thank you ...
 为执行脚本文件，在 dcsh 模式里，执行 include 命令。当脚本完成处理，如果运行正确
 将返回值 1，如果运行失败将返回值 0。
 
-### 2-2-3 基本综合流程
+#### 2-2-3 基本综合流程
 
 > 图 2-4 显示了基本的综合流程。你可以将其应用于先期提到的高层设计流程中的设计开
 
@@ -708,12 +696,11 @@ check 命令来检查综合过的设计，也可用其他的 check_命令。
 你也可以在一个脚本文件里保存那些综合过程中用过的设计参数和约束。脚本文件是用
 来管理设计参数和约束的理想工具。
 
-### 2-2-4 设计实例的脚本文件
+#### 2-2-4 设计实例的脚本文件
 
-下面这个例子是一个简单的脚本，执行了自顶向下的编译过程。脚本中包含注释，标明
-流程中的每一个步骤。虽然，脚本中有一些命令选项和变量前面没有解释过，但从先期对基
-本综合流程的讨论，你已经可以理解这个例子。在下面的章节中将会对这些命令有一个详细
-的解释。
+下面是早期 `dcsh` 语法的完整示例，用于解释自顶向下编译的步骤。当前工程请使用 Tcl 版本的变量设置和命令语法。
+
+```text
 /* specify the libraries */ 指定库
 target_library = my_lib.db
 symbol_library = my_lib.sdb
@@ -742,27 +729,47 @@ report_constraint -all_violators
 report_area
 /* save the design database */ 保存设计数据
 write -format db -hierarchy -output Adder16.db
-你可以按下列方式之一执行这个脚本：
-（1）进入 dc_shell，然后一行行地输入命令；
-（2）进入 dc_shell，利用 include 命令执行脚本文件：
-    dc_shell> include run.scr
-（3）利用 dc_shell 的选项-f，在 UNIX 命令行执行脚本文件：
-    % dc_shell -f run.scr
+```
 
-第三节库
+对应的当前 Tcl 脚本应采用如下形式：
+
+```tcl
+set target_library [list my_lib.db]
+set link_library [list * my_lib.db]
+read_verilog Adder16.v
+current_design Adder16
+link
+create_clock -name clk -period 10 [get_ports clk]
+compile
+report_constraint -all_violators
+write -format verilog -hierarchy -output Adder16_syn.v
+write -format ddc -hierarchy -output Adder16.ddc
+```
+
+可按下列方式执行脚本：
+
+1. 进入 `dc_shell` 后逐行输入命令；
+2. 在 `dc_shell` 中执行 `source scripts/run.tcl`；
+3. 在终端执行：
+
+   ```bash
+   dc_shell -f scripts/run.tcl | tee logs/run.log
+   ```
+
+### 第三节：库
 
 这一部分主要介绍基本的库的信息。Design Compiler 利用工艺、符号和综合或设计工
 具库来完成综合，并且显示图形化的综合结果。因此你必须知道如何执行一些简单的库命令，
 以使 Design Compiler 能够正确地使用库里的数据。
 
-### 2-3-1 库的要求
+#### 2-3-1 库的要求
 
 Design Compiler 使用三种库：
  工艺库（Technology Library）
  符号库（Symbol Library）
  设计工具库（DesignWare Library）
 
-#### 2-3-1-1 工艺库
+##### 2-3-1-1 工艺库
 
 工艺库里包含半导体厂家提供的库里的每一个单元的特征和功能信息。工艺库由半导体
 厂家提供和维护。
@@ -784,7 +791,7 @@ Design Compiler 用来分解参考单元的工艺库称为链接库。除了工�
 链接库定义了延迟模型，用来计算定时数值和路径延迟。
 4）计算功耗
 
-#### 2-3-1-2 符号库
+##### 2-3-1-2 符号库
 
 符号库定义了图形符号，用来表示设计电路图中的库单元。符号库由半导体厂家提供和
 维护。
@@ -792,7 +799,7 @@ Design Compiler 用来分解参考单元的工艺库称为链接库。除了工�
 Design Compiler 用符号库来产生设计电路图，但必须用 Design Analyzer 查看设计电路
 图。当生成电路图时，Design Compiler 将网表中的单元与符号库中的单元一一工艺实现。
 
-#### 2-3-1-3 设计工具库
+##### 2-3-1-3 设计工具库
 
 设计工具库是可重复使用的电路设计的自建模块，与Synopsys综合环境紧密结合。
 Synopsys提供了许多实现内建HDL算子的设计工具元件。这些算子包括+、-、*、<、>、<=、
@@ -800,7 +807,7 @@ Synopsys提供了许多实现内建HDL算子的设计工具元件。这些算子
 用户自己可以利用设计工具开发器来开发额外的设计工具库，也可以从Synopsys或者第
 三方获取。
 
-### 2-3-2 指定库
+#### 2-3-2 指定库
 
 使用dc_shell变量来指定Design Compiler使用的库。表2.2列出了库的变量名：
 > 表2.2 库变量
@@ -835,7 +842,7 @@ link_library = {"*" lsi_10k.db}
 个库。如果你要使用额外的设计工具库，你必须使用synthetic_library和link_library变量来指
 定这些库。
 
-### 2-3-3 库的装载
+#### 2-3-3 库的装载
 
 Design Compiler使用二进制的库（工艺库为.db格式、符号库为.sdb格式），在需要的时
 
@@ -845,7 +852,7 @@ Design Compiler使用二进制的库（工艺库为.db格式、符号库为.sdb�
     dc_shell> read_file my_lib.db
     dc_shell> read_file my_lib.sdb
 
-### 2-3-4 库的列表
+#### 2-3-4 库的列表
 
 Design Compiler根据库的名称来查询装载在内存中的库。库的原始资料中对库的陈述定
 义了库的名称。
@@ -860,21 +867,21 @@ Library File Path
 my_lib my_lib.db /synopsys/libraries
 my_symbol_lib my_lib.sdb /synopsys/libraries
 
-### 2-3-5 报告库的内容
+#### 2-3-5 报告库的内容
 
 使用report_lib命令来报告库中的内容。report_lib命令能够报告下列资料：库单位；操作
 条件；连线估算模型和单元。
 
-### 2-3-6 保存库
+#### 2-3-6 保存库
 
 write_lib命令能够以Synopsys数据库、EDIF和VHDL格式来保存一个编译过的库。
 
-第四节 working with designs in memory
+### 第四节：内存中的设计
 
 Design Compiler从设计文件中把设计读入内存中。任何时候内存中都有许多设计。当一
 个设计被读入后，你能够多次改变它，像分组和取消组等等。
 
-### 2-4-1 术语
+#### 2-4-1 术语
 
 不同的公司使用不同的术语，这里主要介绍Synopsys综合工具使用的术语。
 1）设计（Designs）
@@ -906,7 +913,7 @@ Synopsys命令、参数和约束都是针对设计对象的。
 8）管脚（Pins）
 设计里的输入和输出单元。子设计的端口是父设计里的管脚。
 
-### 2-4-2 读入设计
+#### 2-4-2 读入设计
 
 Design Compiler提供了两种方式读入设计：
  read_file命令
@@ -938,12 +945,12 @@ Compiler的优化过程仅在内存中的设计文件进行工作。
 变量指的是原始文件所在的目录；design变量指的是设计的名称。如果你稍后读入相同名称
 的设计，Design Compiler将覆盖原来的设计。为防止出现这种现象，在read_file命令后加上
 -single_file选项。
-#### 2-4-2-1 读入.db文件
+##### 2-4-2-1 读入 `.db` 文件
 
 一个.db文件的版本就是生成它的Design Compiler的版本。要读入一个.db文件，文件必
 须与Design Compiler具有相同的版本，或版本早于正在运行的Design Compiler的版本。如果
 你试图读入一个由版本稍后的Design Compiler产生的.db文件，那就会出现错误信息。
-#### 2-4-2-2 读入HDL文件
+##### 2-4-2-2 读入 HDL 文件
 
 利用下列的程序读入HDL设计：
  从下到上分析顶层设计和所有子设计（满足所有从属）
@@ -958,7 +965,7 @@ elaborate命令根据分析后提供的中间文件创建一个与工艺无关�
 详细描述过程中，你可以违反默认的参数值。elaborate用设计工具元件来取代HDL算术算子，
 决定正确的总线宽度。
 
-### 2-4-3 内存中的设计清单
+#### 2-4-3 内存中的设计清单
 
 利用list_designs命令来列出装载在内存中的设计的名称：
     dc_shell> list_designs
@@ -984,7 +991,7 @@ seq2 A.db /home/designer/dc
 seq2 B.db /home/designer/dc
 1
 
-### 2-4-4 设置当前设计
+#### 2-4-4 设置当前设计
 
 current_design指向当前设计，按下列方式设置：
 （1）read_file命令
@@ -1005,7 +1012,7 @@ current_design = "/usr/home/designs/
 my_design.db:my_design"
 1
 
-### 2-4-5 设计的链接
+#### 2-4-5 设计的链接
 
 要完成一个设计，它就必须与涉及到的库元件和设计链接。对于每一个子设计，必然有
 一个基准，将子设计或元件与链接库相连。这个过程称为设计链接或基准分解。
@@ -1040,7 +1047,7 @@ Design Compiler使用第一找到的基准。如果它查找到了具有相同�
 当执行自动链接时，它并不移走现有的链接。自动链接过程只工作于未链接的元件和子
 设计。
 
-### 2-4-6 设计对象的清单
+#### 2-4-6 设计对象的清单
 
 Design Compiler提供命令访问不同的设计对象。这些命令涉及当前设计中的设计对象。
 每一个命令执行下列操作之一：
@@ -1065,7 +1072,7 @@ report_bus Displays information about bused nets.
 Clock report_clock all_clocks Displays information about clocks. Returns all clocks.
 Register all_registers Returns all registers.
 
-### 2-4-7 指定设计对象
+#### 2-4-7 指定设计对象
 
 你可以利用相对路径和绝对路径来指定设计对象。
 1）使用相对路径
@@ -1092,7 +1099,7 @@ Current instance is ’/Count_16/U1’.
     dc_shell> set_dont_touch \
 /usr/designs/Count_16.db:Count_16/U1/U5
 
-### 2-4-8 创造设计
+#### 2-4-8 创建设计
 
 create_design命令创造了一个新的设计。内存文件名称为my_design.db，路径为当前工
 作目录。
@@ -1111,7 +1118,7 @@ my_design
 利用适当的create命令（如create_clock，create_cell，create_port）给新的设计增加设计
 对象。
 
-### 2-4-9 复制设计
+#### 2-4-9 复制设计
 
 copy_design命令复制内存中的一个设计，并重新命名。新设计与原设计具有相同路径
 和内存文件。
@@ -1141,7 +1148,7 @@ Copying design ’COMP’ to ’COMP2’
 Performing change_link on cell ’U2’.
 1
 
-### 2-4-10 重命名设计
+#### 2-4-10 重命名设计
 
 rename_design命令对内存中的设计重新命名。
     dc_shell> list_designs -show_file
@@ -1167,7 +1174,9 @@ Compiler允许你改变设计层次而不要修改HDL描述。
 • 增加层次的级数
 • 移走层次
 • 从不同的子设计合并单元
-#### 2-4-11-1 增加层次级数
+#### 2-4-11 层次操作
+
+##### 2-4-11-1 增加层次级数
 
 增加一级层次称为分组。通过将单元或相关元件分组进子设计，可以创建
 一级层次。
@@ -1202,7 +1211,7 @@ PLA specifications -pla
 称，Design Compiler会为你创建一个。创建的实例名称格式为Un，此处n是指未用的单元数
 目。
 
-#### 2-4-11-2 移走层次
+##### 2-4-11-2 移除层次
 
 移走层次称为取消组。取消组移走指定子设计的层次，将子设计与周围的逻辑合并。
 有两种方法对设计取消分组：
@@ -1240,7 +1249,7 @@ ungroup命令只取消每一个单元的一个层次。指定-flatten选项，�
 为取消ungroup参数，使用remove_attribute命令或设置ungroup参数为假：
     dc_shell> set_ungroup object false
 
-#### 2-4-11-3 合并来自不同子设计的单元
+##### 2-4-11-3 合并来自不同子设计的单元
 
 为合并来自不同子设计的单元形成一个新的子设计，首先将单元分组形成一个新的设
 计，然后取消新设计的组。
@@ -1250,7 +1259,7 @@ ungroup命令只取消每一个单元的一个层次。指定-flatten选项，�
     dc_shell> ungroup -all
     dc_shell> current_design = top_design
 
-### 2-4-12 编辑设计
+#### 2-4-12 编辑设计
 
 Design Compiler提供了编辑内存中的设计的命令。这些命令允许你改变网表或编辑设
 计。
@@ -1290,7 +1299,7 @@ Connecting net ’n66’ to pin ’U8/A’.
 Connecting net ’OUTBUS[10]’ to pin ’U8/Z’.
 1
 
-### 2-4-13 不同工艺间的设计转换
+#### 2-4-13 不同工艺间的设计转换
 
 translate命令实现了在不同工艺间设计的转换。设计保留原有的门级结构，一个单元一
 个单元的从最初的工艺库转换为新的工艺库。翻译程序根据每一个现存单元的功能描述来决
@@ -1302,7 +1311,7 @@ translate命令对于设置了dont_touch参数的单元和设计并不起作用�
 Compiler报告那些没有成功转换的单元。在验证期间，Design Compiler应用compare_design
 脚本。
 
-#### 2-4-13-1 设计转换的程序
+##### 2-4-13-1 设计转换的程序
 
 下列程序适用于绝大多数设计，但有时对于一些复杂的设计，人为的干涉是必须的。
 为进行设计的转换，
@@ -1314,7 +1323,7 @@ Compiler报告那些没有成功转换的单元。在验证期间，Design Compi
     dc_shell> translate
 在设计完成转换后，你可以对它进行优化（使用compiler命令），改善新工艺的实现。
 
-#### 2-4-13-2 转换时工艺间的限制
+##### 2-4-13-2 转换时工艺间的限制
 
 当在两个工艺间进行设计转换时，要紧记这些限制：
  translate命令转换逻辑功能，但不能保留驱动能力。它总是采用最低的驱动能力，这样
@@ -1326,7 +1335,7 @@ compile_assume_fully_decoded_three_state_buses为真可以实现上述特色。
  如果一个设计里的三态总线与一个或更多的输出端口相连，转换该总线为多元信号，改
 变端口功能。因为translate命令不改变端口功能，这种情况被认为是转换错误。
 
-### 2-4-14 从内存中移走设计
+#### 2-4-14 从内存中移除设计
 
 命令remove_design从dc_shell内存中移走设计。比如，在编辑工作和保存设计工作完成
 后，在读入其他设计前，用remove_design命令来删除内存中的设计。
@@ -1344,7 +1353,7 @@ Removing design ’top’
     dc_shell> list PORTS
 PORTS = {}
 
-### 2-4-15 保存设计
+#### 2-4-15 保存设计
 
 你可以在任何时候采用不同的名称和格式保存设计和子设计。当设计被改动后，你应该
 人为地保存。在退出之前Design Compiler并不能自动保存设计。
@@ -1375,7 +1384,7 @@ Design Compiler把设计保存为.db格式的文件design_name.db：
  方程式、LSI、PLA、状态表、TDL、Verilog和VHDL格式都忽视电路图；
  Mentor格式要求电路图。
 
-### 2-4-16 属性（attributes）操作
+#### 2-4-16 属性操作
 
 属性描述设计数据库里的对象的逻辑、电气、物理和其他的特性。属性依附于设计对象，
 保存在设计数据库里。
@@ -1406,7 +1415,7 @@ Libraries man library_attributes
 Library cells man library_cell_attributes
 References man reference_attributes
 
-#### 2-4-16-1 设置属性值
+##### 2-4-16-1 设置属性值
 
 设置属性的值，可用：
  属性特殊的命令
@@ -1420,7 +1429,7 @@ References man reference_attributes
 被命名的对象。如果你对一个基准（子设计或库单元）设置属性，那这个属性设计中所有带
 那个基准的单元。当你对一个实例设置属性，它将覆盖从基准继承过来的任何属性。
 
-#### 2-4-16-2 查看属性值
+##### 2-4-16-2 查看属性值
 
 用report_attribute命令来查看一个对象上的所有属性：
     dc_shell> report_attribute -object obj_type
@@ -1430,19 +1439,19 @@ References man reference_attributes
 Performing get_attribute on port ’OUT7’.
 {3.000000}
 
-#### 2-4-16-3 保存属性的值
+##### 2-4-16-3 保存属性的值
 
 当你退出dc_shell时，Design Compiler不会自动保存属性的值。用write_script命令来生成
 一个dc_shell脚本，保存那些属性的值。write_script命令不支持用户定义的属性。默认情况，
 write_script输出到屏幕上。利用输出到文件算子（>）将输出输出到文件到文件：
     dc_shell> write_script > attr.scr
 
-#### 2-4-16-4 定义属性
+##### 2-4-16-4 定义属性
 
 set_attribute命令允许你创建一个新的属性。如果你想要改变属性的数值类型，移走这个
 属性，重新创建它存储想要的类型。
 
-#### 2-4-16-5 移走属性
+##### 2-4-16-5 移除属性
 
 用命令remove_attribute移走一个对象的特定的属性。你不能用remove_attribute移走继承
 的属性。比如，dont_touch属性被赋予一个基准，从这个基准移走属性，但不能移走继承单
@@ -1460,7 +1469,7 @@ Resetting current design ’EXAMPLE’.
 reset_design命令移走所有的设计信息，包括时钟、输入输出延迟、路径组合、操作环境、
 延时范围和连线估算模型。使用reset_design命令的结果等同于从起点开始设计过程。
 
-#### 2-4-16-6 对象搜索顺序
+##### 2-4-16-6 对象搜索顺序
 
 当Design Compiler搜索一个对象时，搜索顺序取决于命令。 （对象包括设计、单元、线、
 基准和库单元）
@@ -1484,7 +1493,7 @@ Performing set_dont_touch on cell ’critical’.
     dc_shell> set_dont_touch find(net, critical)
 Performing set_dont_touch on net ’critical’.
 1
-第五节定义设计环境
+### 第五节：设计环境
 
 在对设计进行最优化前，你必须模拟出设计预期工作的环境。通过指定操作条件、线形
 电容模型和系统接口特征来定义环境。
@@ -1501,7 +1510,7 @@ Performing set_dont_touch on net ’critical’.
  定义连线估算模型
  系统接口建模
 
-### 2-5-1 定义设计环境
+#### 2-5-1 定义设计环境
 
 对于绝大多数工艺，操作温度、电压和制造流程的变化将会对电路的性能（速度）有相
 当重要的影响。这些因素称为操作环境。
@@ -1517,7 +1526,7 @@ Performing set_dont_touch on net ’critical’.
 在进行时序分析时，Design Compiler必须根据制程、电压和温度因素预期的变化来考虑
 最差和最好的情况。
 
-#### 2-5-1-1 决定可用的操作环境选项
+##### 2-5-1-1 决定可用的操作环境选项
 
 绝大多数工艺库都预先定义了一系列的操作环境。用report_lib命令列出工艺库里定义的
 操作环境。在你运行report_lib命令前，库必须已经被装载进内存中。用list_libraries和list_libs
@@ -1542,7 +1551,7 @@ WCIND my_lib 1.50 85.00 4.75 worst_case_tree
 WCMIL my_lib 1.50 125.00 4.50 worst_case_tree
 ...
 
-#### 2-5-1-2 指定操作环境
+##### 2-5-1-2 指定操作环境
 
 如果工艺库里包含操作环境的说明，你可以允许Design Compiler将它们作为默认环境。
 当然，你也可以用set_operating_conditions命令来指定外在的操作环境，取代默认的库环境。
@@ -1550,7 +1559,7 @@ WCMIL my_lib 1.50 125.00 4.50 worst_case_tree
     dc_shell> set_operating_conditions WCCOM -lib my_lib
 利用report_design命令来查看当前设计所定义的操作环境。
 
-### 2-5-2 定义连线估算模型
+#### 2-5-2 定义连线估算模型
 
 连线估算模型估计了线长和扇出对于电阻、电容和线的面积的影响程度。Desgin
 Compiler利用这些物理值来计算线延迟和电路速度。半导体厂家根据特定生产线的统计信息
@@ -1572,7 +1581,7 @@ Compiler根据下列因素来决定设计应用哪种连线估算模型（按先
 3. Design Compiler中的默认模型
 下面将讨论如何选择线和设计所采用的连线估算模型。
 
-#### 2-5-2-1 理解层次化的连线估算模型
+##### 2-5-2-1 理解层次化的连线估算模型
 
 Design Compiler在决定穿越层次界限的线所采用的连线估算模型时支持三种模式：
  顶部
@@ -1607,7 +1616,7 @@ cross_net被设计MID完全围绕）。
 包含在设计B中的线段使用30×30的连线估算模型，为包含在设计MID中的线段使用40×40
 的连线估算模型。
 
-#### 2-5-2-2 决定可用的连线估算模型
+##### 2-5-2-2 决定可用的连线估算模型
 
 绝大多数的工艺库都预先定义了连线估算模型。使用report_lib命令列出工艺库里定义的
 连线估算模型。在运行report_lib命令前，库必须被装载进内存中。使用list_libs来查看内存
@@ -1676,7 +1685,7 @@ min area max area
 
 ...
 
-#### 2-5-2-3 指定连线估算模型和模式
+##### 2-5-2-3 指定连线估算模型和模式
 
 工艺库里可以定义一个默认的连线估算模型，用于利用该工艺实现的所有设计。库属性
 default_wire_load确定了工艺库里的默认的连线估算模型。
@@ -1698,14 +1707,14 @@ default_wire_load确定了工艺库里的默认的连线估算模型。
 你为设计选择连线估算模型依赖于设计如何在芯片中实现。请教你的半导体厂家为你的
 设计决定最佳的连线估算模型。
 
-### 2-5-3 系统接口建模
+#### 2-5-3 系统接口建模
 
 Design Compiler支持下列方法来模拟设计和外部系统的接口：
  对输入端口定义驱动特性
  对输入和输出端口定义电容
  对输出端口定义扇出条件
 
-#### 2-5-3-1 对输入端口定义驱动特性
+##### 2-5-3-1 对输入端口定义驱动特性
 
 在弱驱动的情况下，Design Compiler根据驱动能力信息来适当地增加线的缓冲。驱动能
 力是输出驱动阻力的倒数，一个输入端口的转换时间延迟是驱动阻力和输入端口的电容
@@ -1755,7 +1764,7 @@ I2由外部系统驱动，且驱动阻力为1.5。
     dc_shell> set_driving_cell -cell AN2 -pin Z \
 -from_pin B {I4}
 
-#### 2-5-3-2 定义输入和输出端口的电容
+##### 2-5-3-2 定义输入和输出端口的电容
 
 默认情况下，Design Compiler假设输入和输出端口上的零电容。利用set_load命令
 设置输入和输出端口的电容值。这个信息帮助Design Compiler选择输出焊盘合适的单元
@@ -1782,7 +1791,7 @@ Voltage Unit : 1V
 Current Unit : 1uA
 ...
 
-#### 2-5-3-3 设置输出端口的扇出条件
+##### 2-5-3-3 设置输出端口的扇出条件
 
 用set_fanout_load命令指定输出端口预期的扇出条件值，你可以模拟外部扇出的影响。
 比如，输入：
