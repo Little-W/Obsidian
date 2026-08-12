@@ -1,0 +1,616 @@
+STIL 1.0 {
+    Design P2001.01;
+}
+Header {
+    Title "Minimal STIL for design `ORCA'";
+    Date "Thu May 29 09:17:41 2008";
+    Source "DFT Compiler A-2007.12-SP3";
+}
+Signals {
+    "conf" In;
+    "conf_ena" In;
+    "pclk" In;
+    "pgnt_n" In;
+    "pidsel" In;
+    "pm66en" In;
+    "power_save" In;
+    "prst_n" In;
+    "scan_en" In;
+    "sdr_clk" In;
+    "sys_clk" In;
+    "preq_n" Out;
+    "sd_A[0]" Out;
+    "sd_A[1]" Out;
+    "sd_A[2]" Out;
+    "sd_A[3]" Out;
+    "sd_A[4]" Out;
+    "sd_A[5]" Out;
+    "sd_A[6]" Out;
+    "sd_A[7]" Out;
+    "sd_A[8]" Out;
+    "sd_A[9]" Out;
+    "sd_BWS[0]" Out;
+    "sd_BWS[1]" Out;
+    "sd_CK" Out;
+    "sd_CKn" Out;
+    "sd_LD" Out;
+    "sd_RW" Out;
+    "pad[0]" InOut;
+    "pad[10]" InOut;
+    "pad[11]" InOut;
+    "pad[12]" InOut;
+    "pad[13]" InOut;
+    "pad[14]" InOut;
+    "pad[15]" InOut;
+    "pad[1]" InOut;
+    "pad[2]" InOut;
+    "pad[3]" InOut;
+    "pad[4]" InOut;
+    "pad[5]" InOut;
+    "pad[6]" InOut;
+    "pad[7]" InOut;
+    "pad[8]" InOut;
+    "pad[9]" InOut;
+    "pc_be[0]" InOut;
+    "pc_be[1]" InOut;
+    "pc_be[2]" InOut;
+    "pc_be[3]" InOut;
+    "pdevsel_n" InOut;
+    "pframe_n" InOut;
+    "pirdy_n" InOut;
+    "ppar" InOut;
+    "pperr_n" InOut;
+    "pserr_n" InOut;
+    "pstop_n" InOut;
+    "ptrdy_n" InOut;
+    "sd_DQ[0]" InOut;
+    "sd_DQ[10]" InOut;
+    "sd_DQ[11]" InOut;
+    "sd_DQ[12]" InOut;
+    "sd_DQ[13]" InOut;
+    "sd_DQ[14]" InOut;
+    "sd_DQ[15]" InOut;
+    "sd_DQ[1]" InOut;
+    "sd_DQ[2]" InOut;
+    "sd_DQ[3]" InOut;
+    "sd_DQ[4]" InOut;
+    "sd_DQ[5]" InOut;
+    "sd_DQ[6]" InOut;
+    "sd_DQ[7]" InOut;
+    "sd_DQ[8]" InOut;
+    "sd_DQ[9]" InOut;
+}
+SignalGroups {
+    "_clk" = '"sys_clk" + "pclk" + "sdr_clk" + "prst_n"';
+    "all_inputs" = '"conf" + "conf_ena" + "pclk" + "pgnt_n" + "pidsel" + 
+    "pm66en" + "power_save" + "prst_n" + "scan_en" + "sdr_clk" + "sys_clk"';
+    "all_outputs" = '"preq_n" + "sd_A[0]" + "sd_A[1]" + "sd_A[2]" + "sd_A[3]" + 
+    "sd_A[4]" + "sd_A[5]" + "sd_A[6]" + "sd_A[7]" + "sd_A[8]" + "sd_A[9]" + 
+    "sd_BWS[0]" + "sd_BWS[1]" + "sd_CK" + "sd_CKn" + "sd_LD" + "sd_RW"';
+    "all_bidirectionals" = '"pad[0]" + "pad[10]" + "pad[11]" + "pad[12]" + 
+    "pad[13]" + "pad[14]" + "pad[15]" + "pad[1]" + "pad[2]" + "pad[3]" + 
+    "pad[4]" + "pad[5]" + "pad[6]" + "pad[7]" + "pad[8]" + "pad[9]" + "pc_be[0]" 
+    + "pc_be[1]" + "pc_be[2]" + "pc_be[3]" + "pdevsel_n" + "pframe_n" + 
+    "pirdy_n" + "ppar" + "pperr_n" + "pserr_n" + "pstop_n" + "ptrdy_n" + 
+    "sd_DQ[0]" + "sd_DQ[10]" + "sd_DQ[11]" + "sd_DQ[12]" + "sd_DQ[13]" + 
+    "sd_DQ[14]" + "sd_DQ[15]" + "sd_DQ[1]" + "sd_DQ[2]" + "sd_DQ[3]" + 
+    "sd_DQ[4]" + "sd_DQ[5]" + "sd_DQ[6]" + "sd_DQ[7]" + "sd_DQ[8]" + "sd_DQ[9]"'
+    ;
+    "all_ports" = '"all_inputs" + "all_outputs" + "all_bidirectionals"';
+    "_pi" = '"all_inputs" + "all_bidirectionals"';
+    "_po" = '"all_outputs" + "all_bidirectionals"';
+}
+ScanStructures {
+}
+Timing {
+    WaveformTable "_default_WFT_" {
+        Period '100ns';
+        Waveforms {
+            "all_inputs" {
+                0 {
+                    '0ns' D;
+                }
+            }
+            "all_inputs" {
+                1 {
+                    '0ns' U;
+                }
+            }
+            "all_inputs" {
+                Z {
+                    '0ns' Z;
+                }
+            }
+            "all_inputs" {
+                N {
+                    '0ns' N;
+                }
+            }
+            "all_bidirectionals" {
+                0 {
+                    '0ns' D;
+                }
+            }
+            "all_bidirectionals" {
+                1 {
+                    '0ns' U;
+                }
+            }
+            "all_bidirectionals" {
+                Z {
+                    '0ns' Z;
+                }
+            }
+            "all_bidirectionals" {
+                N {
+                    '0ns' N;
+                }
+            }
+            "all_bidirectionals" {
+                X {
+                    '0ns' X;
+                    '40ns' X;
+                }
+            }
+            "all_bidirectionals" {
+                H {
+                    '0ns' Z;
+                    '40ns' H;
+                }
+            }
+            "all_bidirectionals" {
+                T {
+                    '0ns' Z;
+                    '40ns' T;
+                }
+            }
+            "all_bidirectionals" {
+                L {
+                    '0ns' Z;
+                    '40ns' L;
+                }
+            }
+            "all_outputs" {
+                X {
+                    '0ns' X;
+                    '40ns' X;
+                }
+            }
+            "all_outputs" {
+                H {
+                    '0ns' X;
+                    '40ns' H;
+                }
+            }
+            "all_outputs" {
+                T {
+                    '0ns' X;
+                    '40ns' T;
+                }
+            }
+            "all_outputs" {
+                L {
+                    '0ns' X;
+                    '40ns' L;
+                }
+            }
+            "pclk" {
+                P {
+                    '0ns' D;
+                    '45ns' U;
+                    '55ns' D;
+                }
+            }
+            "sdr_clk" {
+                P {
+                    '0ns' D;
+                    '45ns' U;
+                    '55ns' D;
+                }
+            }
+            "sys_clk" {
+                P {
+                    '0ns' D;
+                    '45ns' U;
+                    '55ns' D;
+                }
+            }
+            "prst_n" {
+                P {
+                    '0ns' U;
+                    '45ns' D;
+                    '55ns' U;
+                }
+            }
+        }
+    }
+}
+Procedures {
+    "capture" {
+        W "_default_WFT_";
+        F {
+            "conf_ena" = 0;
+        }
+        V {
+            "_pi" = \r55 #;
+        }
+        V {
+            "_po" = \r61 #;
+        }
+    }
+    "capture_sys_clk" {
+        W "_default_WFT_";
+        F {
+            "conf_ena" = 0;
+        }
+        "forcePI" : V {
+            "_pi" = \r55 #;
+        }
+        "measurePO" : V {
+            "_po" = \r61 #;
+        }
+        C {
+            "preq_n" = X;
+            "sd_A[0]" = X;
+            "sd_A[1]" = X;
+            "sd_A[2]" = X;
+            "sd_A[3]" = X;
+            "sd_A[4]" = X;
+            "sd_A[5]" = X;
+            "sd_A[6]" = X;
+            "sd_A[7]" = X;
+            "sd_A[8]" = X;
+            "sd_A[9]" = X;
+            "sd_BWS[0]" = X;
+            "sd_BWS[1]" = X;
+            "sd_CK" = X;
+            "sd_CKn" = X;
+            "sd_LD" = X;
+            "sd_RW" = X;
+            "pad[0]" = X;
+            "pad[10]" = X;
+            "pad[11]" = X;
+            "pad[12]" = X;
+            "pad[13]" = X;
+            "pad[14]" = X;
+            "pad[15]" = X;
+            "pad[1]" = X;
+            "pad[2]" = X;
+            "pad[3]" = X;
+            "pad[4]" = X;
+            "pad[5]" = X;
+            "pad[6]" = X;
+            "pad[7]" = X;
+            "pad[8]" = X;
+            "pad[9]" = X;
+            "pc_be[0]" = X;
+            "pc_be[1]" = X;
+            "pc_be[2]" = X;
+            "pc_be[3]" = X;
+            "pdevsel_n" = X;
+            "pframe_n" = X;
+            "pirdy_n" = X;
+            "ppar" = X;
+            "pperr_n" = X;
+            "pserr_n" = X;
+            "pstop_n" = X;
+            "ptrdy_n" = X;
+            "sd_DQ[0]" = X;
+            "sd_DQ[10]" = X;
+            "sd_DQ[11]" = X;
+            "sd_DQ[12]" = X;
+            "sd_DQ[13]" = X;
+            "sd_DQ[14]" = X;
+            "sd_DQ[15]" = X;
+            "sd_DQ[1]" = X;
+            "sd_DQ[2]" = X;
+            "sd_DQ[3]" = X;
+            "sd_DQ[4]" = X;
+            "sd_DQ[5]" = X;
+            "sd_DQ[6]" = X;
+            "sd_DQ[7]" = X;
+            "sd_DQ[8]" = X;
+            "sd_DQ[9]" = X;
+        }
+        "pulse" : V {
+            "sys_clk" = P;
+        }
+    }
+    "capture_pclk" {
+        W "_default_WFT_";
+        F {
+            "conf_ena" = 0;
+        }
+        "forcePI" : V {
+            "_pi" = \r55 #;
+        }
+        "measurePO" : V {
+            "_po" = \r61 #;
+        }
+        C {
+            "preq_n" = X;
+            "sd_A[0]" = X;
+            "sd_A[1]" = X;
+            "sd_A[2]" = X;
+            "sd_A[3]" = X;
+            "sd_A[4]" = X;
+            "sd_A[5]" = X;
+            "sd_A[6]" = X;
+            "sd_A[7]" = X;
+            "sd_A[8]" = X;
+            "sd_A[9]" = X;
+            "sd_BWS[0]" = X;
+            "sd_BWS[1]" = X;
+            "sd_CK" = X;
+            "sd_CKn" = X;
+            "sd_LD" = X;
+            "sd_RW" = X;
+            "pad[0]" = X;
+            "pad[10]" = X;
+            "pad[11]" = X;
+            "pad[12]" = X;
+            "pad[13]" = X;
+            "pad[14]" = X;
+            "pad[15]" = X;
+            "pad[1]" = X;
+            "pad[2]" = X;
+            "pad[3]" = X;
+            "pad[4]" = X;
+            "pad[5]" = X;
+            "pad[6]" = X;
+            "pad[7]" = X;
+            "pad[8]" = X;
+            "pad[9]" = X;
+            "pc_be[0]" = X;
+            "pc_be[1]" = X;
+            "pc_be[2]" = X;
+            "pc_be[3]" = X;
+            "pdevsel_n" = X;
+            "pframe_n" = X;
+            "pirdy_n" = X;
+            "ppar" = X;
+            "pperr_n" = X;
+            "pserr_n" = X;
+            "pstop_n" = X;
+            "ptrdy_n" = X;
+            "sd_DQ[0]" = X;
+            "sd_DQ[10]" = X;
+            "sd_DQ[11]" = X;
+            "sd_DQ[12]" = X;
+            "sd_DQ[13]" = X;
+            "sd_DQ[14]" = X;
+            "sd_DQ[15]" = X;
+            "sd_DQ[1]" = X;
+            "sd_DQ[2]" = X;
+            "sd_DQ[3]" = X;
+            "sd_DQ[4]" = X;
+            "sd_DQ[5]" = X;
+            "sd_DQ[6]" = X;
+            "sd_DQ[7]" = X;
+            "sd_DQ[8]" = X;
+            "sd_DQ[9]" = X;
+        }
+        "pulse" : V {
+            "pclk" = P;
+        }
+    }
+    "capture_sdr_clk" {
+        W "_default_WFT_";
+        F {
+            "conf_ena" = 0;
+        }
+        "forcePI" : V {
+            "_pi" = \r55 #;
+        }
+        "measurePO" : V {
+            "_po" = \r61 #;
+        }
+        C {
+            "preq_n" = X;
+            "sd_A[0]" = X;
+            "sd_A[1]" = X;
+            "sd_A[2]" = X;
+            "sd_A[3]" = X;
+            "sd_A[4]" = X;
+            "sd_A[5]" = X;
+            "sd_A[6]" = X;
+            "sd_A[7]" = X;
+            "sd_A[8]" = X;
+            "sd_A[9]" = X;
+            "sd_BWS[0]" = X;
+            "sd_BWS[1]" = X;
+            "sd_CK" = X;
+            "sd_CKn" = X;
+            "sd_LD" = X;
+            "sd_RW" = X;
+            "pad[0]" = X;
+            "pad[10]" = X;
+            "pad[11]" = X;
+            "pad[12]" = X;
+            "pad[13]" = X;
+            "pad[14]" = X;
+            "pad[15]" = X;
+            "pad[1]" = X;
+            "pad[2]" = X;
+            "pad[3]" = X;
+            "pad[4]" = X;
+            "pad[5]" = X;
+            "pad[6]" = X;
+            "pad[7]" = X;
+            "pad[8]" = X;
+            "pad[9]" = X;
+            "pc_be[0]" = X;
+            "pc_be[1]" = X;
+            "pc_be[2]" = X;
+            "pc_be[3]" = X;
+            "pdevsel_n" = X;
+            "pframe_n" = X;
+            "pirdy_n" = X;
+            "ppar" = X;
+            "pperr_n" = X;
+            "pserr_n" = X;
+            "pstop_n" = X;
+            "ptrdy_n" = X;
+            "sd_DQ[0]" = X;
+            "sd_DQ[10]" = X;
+            "sd_DQ[11]" = X;
+            "sd_DQ[12]" = X;
+            "sd_DQ[13]" = X;
+            "sd_DQ[14]" = X;
+            "sd_DQ[15]" = X;
+            "sd_DQ[1]" = X;
+            "sd_DQ[2]" = X;
+            "sd_DQ[3]" = X;
+            "sd_DQ[4]" = X;
+            "sd_DQ[5]" = X;
+            "sd_DQ[6]" = X;
+            "sd_DQ[7]" = X;
+            "sd_DQ[8]" = X;
+            "sd_DQ[9]" = X;
+        }
+        "pulse" : V {
+            "sdr_clk" = P;
+        }
+    }
+    "capture_prst_n" {
+        W "_default_WFT_";
+        F {
+            "conf_ena" = 0;
+        }
+        "forcePI" : V {
+            "_pi" = \r55 #;
+        }
+        "measurePO" : V {
+            "_po" = \r61 #;
+        }
+        C {
+            "preq_n" = X;
+            "sd_A[0]" = X;
+            "sd_A[1]" = X;
+            "sd_A[2]" = X;
+            "sd_A[3]" = X;
+            "sd_A[4]" = X;
+            "sd_A[5]" = X;
+            "sd_A[6]" = X;
+            "sd_A[7]" = X;
+            "sd_A[8]" = X;
+            "sd_A[9]" = X;
+            "sd_BWS[0]" = X;
+            "sd_BWS[1]" = X;
+            "sd_CK" = X;
+            "sd_CKn" = X;
+            "sd_LD" = X;
+            "sd_RW" = X;
+            "pad[0]" = X;
+            "pad[10]" = X;
+            "pad[11]" = X;
+            "pad[12]" = X;
+            "pad[13]" = X;
+            "pad[14]" = X;
+            "pad[15]" = X;
+            "pad[1]" = X;
+            "pad[2]" = X;
+            "pad[3]" = X;
+            "pad[4]" = X;
+            "pad[5]" = X;
+            "pad[6]" = X;
+            "pad[7]" = X;
+            "pad[8]" = X;
+            "pad[9]" = X;
+            "pc_be[0]" = X;
+            "pc_be[1]" = X;
+            "pc_be[2]" = X;
+            "pc_be[3]" = X;
+            "pdevsel_n" = X;
+            "pframe_n" = X;
+            "pirdy_n" = X;
+            "ppar" = X;
+            "pperr_n" = X;
+            "pserr_n" = X;
+            "pstop_n" = X;
+            "ptrdy_n" = X;
+            "sd_DQ[0]" = X;
+            "sd_DQ[10]" = X;
+            "sd_DQ[11]" = X;
+            "sd_DQ[12]" = X;
+            "sd_DQ[13]" = X;
+            "sd_DQ[14]" = X;
+            "sd_DQ[15]" = X;
+            "sd_DQ[1]" = X;
+            "sd_DQ[2]" = X;
+            "sd_DQ[3]" = X;
+            "sd_DQ[4]" = X;
+            "sd_DQ[5]" = X;
+            "sd_DQ[6]" = X;
+            "sd_DQ[7]" = X;
+            "sd_DQ[8]" = X;
+            "sd_DQ[9]" = X;
+        }
+        "pulse" : V {
+            "prst_n" = P;
+        }
+    }
+}
+MacroDefs {
+    "test_setup" {
+        W "_default_WFT_";
+        V {
+            "conf_ena" = 0;
+            "pclk" = 0;
+            "sdr_clk" = 0;
+            "sys_clk" = 0;
+            "pad[0]" = Z;
+            "pad[10]" = Z;
+            "pad[11]" = Z;
+            "pad[12]" = Z;
+            "pad[13]" = Z;
+            "pad[14]" = Z;
+            "pad[15]" = Z;
+            "pad[1]" = Z;
+            "pad[2]" = Z;
+            "pad[3]" = Z;
+            "pad[4]" = Z;
+            "pad[5]" = Z;
+            "pad[6]" = Z;
+            "pad[7]" = Z;
+            "pad[8]" = Z;
+            "pad[9]" = Z;
+            "pc_be[0]" = Z;
+            "pc_be[1]" = Z;
+            "pc_be[2]" = Z;
+            "pc_be[3]" = Z;
+            "pdevsel_n" = Z;
+            "pframe_n" = Z;
+            "pirdy_n" = Z;
+            "ppar" = Z;
+            "pperr_n" = Z;
+            "pserr_n" = Z;
+            "pstop_n" = Z;
+            "ptrdy_n" = Z;
+            "sd_DQ[0]" = Z;
+            "sd_DQ[10]" = Z;
+            "sd_DQ[11]" = Z;
+            "sd_DQ[12]" = Z;
+            "sd_DQ[13]" = Z;
+            "sd_DQ[14]" = Z;
+            "sd_DQ[15]" = Z;
+            "sd_DQ[1]" = Z;
+            "sd_DQ[2]" = Z;
+            "sd_DQ[3]" = Z;
+            "sd_DQ[4]" = Z;
+            "sd_DQ[5]" = Z;
+            "sd_DQ[6]" = Z;
+            "sd_DQ[7]" = Z;
+            "sd_DQ[8]" = Z;
+            "sd_DQ[9]" = Z;
+        }
+        V { "conf_ena"=1; "pclk"=P; "conf"=1;}
+        V { "conf_ena"=1; "pclk"=P; "conf"=0;}
+        V { "conf_ena"=1; "pclk"=P; "conf"=1;}
+        V { "conf_ena"=0; "pclk"=0; }
+        V {
+            "prst_n" = 1;
+        }
+    }
+}
+

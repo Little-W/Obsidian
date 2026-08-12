@@ -1,0 +1,42 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Logical Library Setup
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+lappend search_path ../ref/db ./scripts
+
+set command_log_file ./logs/command.log
+set sh_command_log_file ./logs/command.log
+
+set cache_write ../dc_dw_cache
+set cache_read $cache_write
+set alib_library_analysis_path ../dc_dw_cache
+
+set synthetic_library {dw_foundation.sldb}
+
+set target_library "sc_max.db"
+set link_library "* sc_max.db $synthetic_library"
+
+define_design_lib DEFAULT -path ./analyzed
+
+
+suppress_message "VHDL-2285 PSYN-040 PSYN-088"
+suppress_message "CMD-041 UID-401 OPT-170"
+
+alias s "source -echo -verbose"
+
+echo "\n\nSettings:"
+echo "link_library:      $link_library"
+echo "target_library:    $target_library"
+echo "search_path:       $search_path\n\n"
+
+set verilogout_no_tri true
+set sh_enable_line_editing true
+
+#for coverage estimate and downstream tools
+set test_default_delay 0
+set test_default_bidir_delay $test_default_delay
+
+
+
+echo "\nI am ready...\n\n\n"
+
+
