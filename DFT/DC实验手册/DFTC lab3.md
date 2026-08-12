@@ -1,36 +1,17 @@
 ---
-title: 实验 3：创建测试协议（教材还原版）
-type: lab-textbook
+title: 实验 3：创建测试协议
+type: lab-guide
 tags:
   - DFT
   - DFT Compiler
   - 测试协议
   - 实验
-source_pdf: DFTC lab3.pdf
-source_pages: 11
-pdf_content_pages: 2-11
 updated: 2026-08-12
 ---
 
 # 实验 3：创建测试协议
 
-原始教材：[DFTC lab3.pdf](<DFTC lab3.pdf>)
-
-> **PDF 对照说明**：原始 PDF 第 1 页是与教材无关的广告页，已过滤；本笔记从 PDF 第 2 页开始，按原教材顺序恢复。每个小节标题中的“PDF 第 N 页”对应原始 PDF 页码。
-
-## PDF 对照表
-
-| PDF 页码 | 教材内容 | 本笔记位置 |
-| --- | --- | --- |
-| 2 | 实验目标 | 实验目标 |
-| 3 | Part A 目录、帮助命令 | Part A 准备 |
-| 4–5 | 创建测试协议、问题 1–3 | Part A：创建协议 |
-| 6–7 | Part B 目录、ORCA 初始化结构 | Part B：内部测试模式 |
-| 8 | 问题 4–7、STIL 初始化向量 | Task 1 |
-| 9–10 | 读入映射设计、问题 8–12 | Task 2–3 |
-| 11 | 问题 13–14、最终 DRC | 结果分析 |
-
-## PDF 第 2 页｜实验目标
+## 实验目标
 
 完成本实验后，应能够：
 
@@ -42,17 +23,17 @@ updated: 2026-08-12
 
 **实验时长**：约 60 分钟。
 
-## PDF 第 3 页｜Part A：创建基础测试协议
+## 第一部分：创建基础测试协议
 
 ### 1. 实验目录
 
-Part A 工程目录为 lab3a_protocol：
+基础协议工程目录为 lab3a_protocol：
 
 ```
 lab3a_protocol/       当前工作目录
 ├── analyzed/          analyze/read_hdl 产生的中间文件
 ├── logs/              工具会话日志
-├── unmapped/          未映射设计及协议
+├── unmapped/          扫描前设计及协议
 ├── mapped/            门级网表
 ├── reports/           DFTC 报告
 ├── scripts/           约束及运行脚本
@@ -71,9 +52,9 @@ man compile
 
 交互式工作时不必输入完整命令或选项，可以使用帮助和命令补全。
 
-## PDF 第 4 页｜Task 1：用脚本创建测试协议
+## 任务 1：用脚本创建测试协议
 
-### 1. 教材流程
+### 1. 基本流程
 
 切换到项目目录，并查看 scripts 目录下的脚本：
 
@@ -99,15 +80,15 @@ cd lab3a_protocol
 保存测试协议文件
 ```
 
-### 2. 教材给出的协议属性
+### 2. 协议属性
 
-| 测试属性 | 教材示例 |
+| 测试属性 | 推荐设置 |
 | --- | --- |
 | Test Clock Port | Clk |
 | Test Clock timing | 100 ns 周期，45 ns 有效时刻，55 ns strobe/结束时刻 |
 | Test Mode Port | TST_MODE |
 | Reset port | Reset |
-| Reset 类型 | 教材示例标注为 active-low；流程图标为 synchronous，报告示例也出现 asynchronous，必须以脚本实际定义为准 |
+| Reset 类型 | 可设置为低有效；同步或异步属性必须以脚本实际定义为准 |
 
 ### 3. 创建脚本
 
@@ -117,14 +98,12 @@ cd lab3a_protocol
 dc_shell -f scripts/unmapped.tcl | tee logs/run_unmapped.log
 ```
 
-教材第 5 页还提示使用 set_app_var 设置系统变量，并可用 suppress_message 忽略已经确认无害的 warning。不要在没有判断原因时直接 suppress 违规。
+可使用 `set_app_var` 设置应用变量；对于已确认原因且不影响检查结果的提示，可使用 `suppress_message` 屏蔽。不要在未查明原因时屏蔽 DFT DRC 提示。
 
-> [!note] PDF 蓝色批注
-> 原页批注分别写着：`set_app_var：设置系统变量`；`suppress_message：忽略不关心或没问题的 warning`。第二条只适用于已经确认原因的提示，不代表可以跳过 DFT DRC。
+> [!note] 提示
+> `set_app_var` 用于设置应用变量。只有在已确认原因后，才可使用 `suppress_message` 屏蔽提示；该命令不能替代 DFT DRC。
 
-![PDF 第 5 页：包含蓝色批注的原始页面](../assets/notes/raw/lab3-p05.png)
-
-## PDF 第 5 页｜Part A 问题与答案
+## 基础协议检查
 
 ### 问题 1
 
@@ -136,11 +115,9 @@ dc_shell -f scripts/unmapped.tcl | tee logs/run_unmapped.log
 report_dft_signal
 ```
 
-![PDF 第 5 页：放大后的 report_dft_signal 终端截图](../assets/ocr/lab3-p05-dft-signals.png)
+![图： report_dft_signal 终端图](../assets/figures/lab3-p05-dft-signals.png)
 
-![PDF 第 5 页：原始 report_dft_signal 终端截图](../assets/original/green/lab3-p05-dft-signals.png)
-
-教材页面的 OCR 将该命令混成了 setvar/report_dft_signal，以工具命令 report_dft_signal 为准。
+使用 `report_dft_signal` 可查看已应用的测试信号及其属性。
 
 ### 问题 2
 
@@ -154,34 +131,32 @@ report_dft_signal
 | d | 测试时钟什么时候变高？ | 45 ns |
 | e | 测试时钟什么时候变低/进入 strobe？ | 55 ns |
 | f | 复位端口叫什么？ | Reset |
-| g | 假设的复位类型是什么？ | 教材报告示例为 active-low；脚本若定义为异步，则应显示 asynchronous active-low |
+| g | 假设的复位类型是什么？ | 低有效；脚本若定义为异步，则显示 `asynchronous active-low` |
 
-> [!note] PDF 蓝色批注
-> 原页手写答案逐项为：`1`、`Clk`、`100ns`、`45ns`、`55ns`、`Reset`、`asynchronous active low`。
+> [!note] 提示
+> 本例的字段依次为：`1`、`Clk`、`100 ns`、`45 ns`、`55 ns`、`Reset`、`asynchronous active-low`。
 
 ### 问题 3
 
 **问题**：运行 dft_drc 后是否有错误或 warning？
 
-**答案**：Part A 的基础协议检查没有发现 DFT DRC 违规。报告最终为：
+**答案**：基础协议检查没有发现 DFT DRC 违规。报告最终为：
 
 ```
 Test design rule checking did not find violations
 ```
 
-![PDF 第 5 页：放大后的零违规 DRC 报告](../assets/ocr/lab3-p05-drc-zero.png)
+![图：零违规 DRC 报告](../assets/figures/lab3-p05-drc-zero.png)
 
-![PDF 第 5 页：原始零违规 DRC 报告](../assets/original/green/lab3-p05-drc-zero.png)
+## 第二部分：内部生成的测试模式
 
-## PDF 第 6 页｜Part B：内部生成的测试模式
-
-### 1. Part B 目录
+### 1. 工程目录
 
 ```
 lab3b_init/           当前工作目录
 ├── analyzed/          中间分析文件
 ├── logs/              会话日志
-├── unmapped/          未映射协议
+├── unmapped/          扫描前协议
 ├── mapped/            门级网表
 ├── mapped_scan/       扫描门级网表
 ├── reports/           DFTC 报告
@@ -191,7 +166,7 @@ lab3b_init/           当前工作目录
 └── libs/              工艺库
 ```
 
-## PDF 第 7 页｜ORCA 测试初始化结构
+## ORCA 测试初始化结构
 
 ORCA 的 test_mode 不是直接连接到顶层测试端口，而是由 CONFIG 配置寄存器和 conf_ena、pclk 等信号产生：
 
@@ -205,11 +180,11 @@ conf_ena = 0：锁住配置寄存器，保持测试模式
 
 这类由内部状态机/配置寄存器生成的测试模式，不能只靠 set_dft_signal -type TestMode 自动推导，必须在测试协议的 test_setup 中写初始化向量。
 
-![PDF 第 7 页：ORCA 内部测试模式初始化结构](../assets/lab3-p07.png)
+![图：ORCA 内部测试模式初始化结构](../assets/lab3-p07.png)
 
-![DFT 设计闭环](../assets/dft-流程.svg)
+![DFT 设计流程](../assets/dft-流程.svg)
 
-## PDF 第 8 页｜Task 1：内部生成的 test_mode
+## 任务 1：内部生成的 test_mode
 
 ### 问题 4
 
@@ -229,16 +204,14 @@ conf_ena = 0：锁住配置寄存器，保持测试模式
 
 **答案**：conf_ena = 0，pclk = 0。这样既停止配置寄存器更新，又避免产生额外时钟动作。
 
-> [!note] PDF 蓝色批注
-> 原页答案为 `both 0`，即 `conf_ena=0`、`pclk=0`。
-
-![PDF 第 8 页：包含蓝色答案批注的原始页面](../assets/notes/raw/lab3-p08.png)
+> [!note] 提示
+> 答案为 `both 0`，即 `conf_ena=0`、`pclk=0`。
 
 ### 问题 7
 
 **问题**：把初始化序列写成 STIL 的 Vector 语句。
 
-**整理后的示例**：
+**示例**：
 
 ```
 MacroDefs {
@@ -251,9 +224,10 @@ MacroDefs {
 }
 ```
 
-> 原始扫描 PDF 中 conf 的位名和个别标点存在 OCR 误识别；这里保留教材的四拍逻辑：三次 conf_ena=1 的 pclk 脉冲，最后关闭使能并停止时钟。实际工程应以 ORCA RTL 中配置寄存器的真实端口名为准。
+> [!note] 端口命名
+> 本例依次施加三次 `conf_ena=1` 的 `pclk` 脉冲，再关闭使能并停止时钟。实际工程应以 ORCA RTL 中配置寄存器的端口名称为准。
 
-## PDF 第 9 页｜Task 2：读入映射设计并创建协议
+## 任务 2：读入工艺实现设计并创建协议
 
 ### 1. 进入工程并读入设计
 
@@ -262,7 +236,7 @@ cd lab3b_init
 dc_shell
 ```
 
-教材建议创建一个快捷命令，方便反复 source 脚本：
+可创建快捷命令，便于反复执行脚本：
 
 ```
 alias s "source -echo -verbose"
@@ -277,9 +251,9 @@ source scripts/1read_design.tcl
 
 ### 问题 8
 
-**问题**：设计从哪里读入？是 RTL 还是映射后的门级设计？
+**问题**：设计从哪里读入？是 RTL 还是门级实现后的门级设计？
 
-**答案**：从 mapped/ORCA.ddc 读入，是映射后的门级设计，不是 RTL。
+**答案**：从 mapped/ORCA.ddc 读入，是门级实现后的门级设计，不是 RTL。
 
 ### 2. 保持内部 test_mode
 
@@ -296,16 +270,12 @@ set_dft_signal -view existing_dft -type Constant \
     -port conf_ena -active_state 0
 ```
 
-![PDF 第 9 页：放大后的 conf_ena 常量约束命令](../assets/ocr/lab3-p09-conf-ena.png)
+![图： conf_ena 常量约束命令](../assets/figures/lab3-p09-conf-ena.png)
 
-![PDF 第 9 页：原始 conf_ena 常量约束命令](../assets/original/green/lab3-p09-conf-ena.png)
-
-> [!note] PDF 蓝色批注
+> [!note] 提示
 > `hold conf_ena at 0`，即在初始化 test_mode 后将 `conf_ena` 保持为 0。
 
-![PDF 第 9 页：包含蓝色批注的原始页面](../assets/notes/raw/lab3-p09.png)
-
-## PDF 第 10 页｜Task 3：创建并修改初始化协议
+## 任务 3：创建并修改初始化协议
 
 ### 1. 第一次创建协议
 
@@ -317,7 +287,7 @@ source scripts/2create_test_protocol.tcl
 
 **问题**：第一次对 ORCA 运行 dft_drc，报告的问题多还是少？
 
-**答案**：问题很多。原因是内部 test_mode 的初始化序列还没有写入测试协议，时钟、复位、三态和配置路径会产生大量 DFT 违规。PDF 终端截图给出的第一次报告为 **4,780** 个违规：
+**答案**：问题很多。原因是内部 test_mode 的初始化序列还没有写入测试协议，时钟、复位、三态和配置路径会产生大量 DFT 违规。终端图给出的第一次报告为 **4,780** 个违规：
 
 | 类别 | 数量 | 典型报告 |
 | --- | ---: | --- |
@@ -325,9 +295,7 @@ source scripts/2create_test_protocol.tcl
 | TOPOLOGY | 432 | Improperly driven three-state net（TEST-115） |
 | PRE-DFT | 4,335 | D1=2,986、D2=26、D3=1,306、D12=6、D16=1、D17=10 |
 
-![PDF 第 10 页：放大后的首次 DRC 违规报告](../assets/ocr/lab3-p10-drc-before-protocol.png)
-
-![PDF 第 10 页：原始首次 DRC 违规报告](../assets/original/green/lab3-p10-drc-before-protocol.png)
+![图：首次 DRC 违规报告](../assets/figures/lab3-p10-drc-before-protocol.png)
 
 ### 2. 保存现有测试协议
 
@@ -347,9 +315,7 @@ write_test_protocol -output orca_mapped.spf
 read_test_protocol -section test_setup orca_mapped.spf
 ```
 
-![PDF 第 10 页：放大后的读入 test_setup 命令](../assets/ocr/lab3-p10-read-test-protocol.png)
-
-![PDF 第 10 页：原始读入 test_setup 命令](../assets/original/green/lab3-p10-read-test-protocol.png)
+![图：读入 test_setup 命令](../assets/figures/lab3-p10-read-test-protocol.png)
 
 ### 问题 12
 
@@ -362,11 +328,11 @@ remove_test_protocol
 read_test_protocol -section test_setup orca_mapped.spf
 ```
 
-终端截图明确显示：先执行 `remove_test_protocol` 删除 all_dft 中已有的协议，再执行 `read_test_protocol -section test_setup orca_mapped.spf`；否则会得到“protocol already exists”提示。
+终端图明确显示：先执行 `remove_test_protocol` 删除 all_dft 中已有的协议，再执行 `read_test_protocol -section test_setup orca_mapped.spf`；否则会得到“protocol already exists”提示。
 
 注意：test_setup/初始化段只是完整测试协议的一部分；重新创建剩余测试协议仍需要执行 create_test_protocol。
 
-## PDF 第 11 页｜结果分析与问题答案
+## 结果分析与问题答案
 
 ### 1. 重新创建完整协议并检查
 
@@ -385,7 +351,7 @@ dft_drc
 - PRE-DFT VIOLATIONS 减少。
 - 新出现 OTHER VIOLATIONS，典型为 TEST-504、TEST-505，对应被声明为常量的单元/信号。
 
-教材最后示例报告为 **494** 个违规，具体为：
+重新创建协议后的报告示例为 **494** 个违规，具体为：
 
 | 类别 | 数量 | 主要内容 |
 | --- | ---: | --- |
@@ -396,14 +362,10 @@ dft_drc
 
 顺序单元报告还显示：35/3002 个顺序单元有违规，32 个为 DFT 规则违规、1 个为常量 0、2 个为常量 1；其余 2967 个为有效扫描单元。重点不是追求所有数字为零，而是理解初始化协议消除了哪些前置可测性问题。
 
-![PDF 第 11 页：放大后的最终 DRC 报告](../assets/ocr/lab3-p11-drc-final.png)
+![图：最终 DRC 报告](../assets/figures/lab3-p11-drc-final.png)
 
-![PDF 第 11 页：原始最终 DRC 报告](../assets/original/green/lab3-p11-drc-final.png)
-
-> [!note] PDF 蓝色批注
-> 问题 13 的批注为：`MODELING VIOLATIONS & TOPOLOGY VIOLATIONS no changes; fewer PRE-DFT VIOLATIONS; new OTHER VIOLATIONS: TEST-504, TEST-505.` 问题 14 的批注为：`To prevent changing the working state of the chip due to register actions during testing`。
-
-![PDF 第 11 页：包含蓝色问题答案和绿色报告的原始页面](../assets/notes/raw/lab3-p11.png)
+> [!note] 提示
+> 初始化向量减少了 PRE-DFT 类违规，而模型与拓扑类结果基本不变；TEST-504 和 TEST-505 与常量约束有关。配置寄存器不进入扫描链，可避免测试期间的移位或捕获改变芯片工作状态。
 
 ### 问题 14
 
@@ -413,7 +375,7 @@ dft_drc
 
 ## 实验结果清单
 
-- [ ] Part A 能报告 Clk、Reset、TEST_MODE 等 DFT 属性。
+- [ ] 基础协议能报告 Clk、Reset、TEST_MODE 等 DFT 属性。
 - [ ] 基础测试协议通过 DFT DRC。
 - [ ] 能解释内部生成 test_mode 的三拍初始化序列。
 - [ ] 能用 remove_test_protocol + read_test_protocol -section test_setup 更新协议。

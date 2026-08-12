@@ -1,20 +1,18 @@
 ---
-title: Synopsys DFT Compiler Workshop 实验手册（整理版）
+title: Synopsys DFT Compiler 实验手册
 type: workshop-reference
 tags:
   - DFT
   - DFT Compiler
   - 实验手册
-source_pdf: Synopsys-DFTC-Lab.pdf
-source_pages: 116
 updated: 2026-08-12
 ---
 
 # Synopsys DFT Compiler Workshop 实验手册
 
-## 说明
+## 使用说明
 
-原始资料是 Synopsys DFT Compiler 1 Workshop Lab Guide。本页按“概念 → 命令 → 检查 → 交付”的顺序重新编写，便于配合 `lab3`–`lab9` 使用。实验中的具体路径、库名和版本属于原始环境，移植到新环境时必须替换。
+本文按“概念 → 命令 → 检查 → 交付”的顺序组织 DFT Compiler 实验内容，可配合实验 3–9 使用。工程路径、库名和工具版本必须替换为当前项目配置。
 
 ## 1. Workshop 总体结构
 
@@ -30,7 +28,7 @@ updated: 2026-08-12
 | Lab 8 | 扫描设计交接 | 输出扫描网表、协议、测试模型和报告 |
 | Lab 9 | 运行时间与容量优化 | 链平衡、测试模型、内存和覆盖率分析 |
 
-![DFT 设计闭环](../assets/dft-流程.svg)
+![DFT 设计流程](../assets/dft-流程.svg)
 
 ## 2. 工具接手顺序
 
@@ -77,7 +75,7 @@ set_test_signal -type ScanClock  -port scan_clk
 set_test_signal -type Reset      -port reset_n -active_state 0
 ```
 
-> 不同 DFTC 版本的 `set_test_signal` 参数可能不同；以当前版本 `-help` 和用户指南为准。实验要点是先把语义定义清楚，再执行协议 DRC。
+> 不同 DFTC 版本的 `set_test_signal` 参数可能不同；以当前版本 `-help` 和用户指南为准。实验要点是先把定义定义清楚，再执行协议 DRC。
 
 ## 4. 扫描插入的关键检查
 
@@ -151,4 +149,3 @@ deliverables/
 ```
 
 交付前要保存工具版本、库版本、脚本提交号和运行日期，否则后续很难复现报告。
-

@@ -1,20 +1,18 @@
 ---
-title: Design Compiler 编译与 DFT 相关命令（整理版）
+title: Design Compiler 编译与 DFT 命令参考
 type: command-reference
 tags:
   - Design Compiler
   - compile
   - DFT
-source_pdf: syn2（compile的都在这里面）.pdf
-source_pages: 3370
 updated: 2026-08-12
 ---
 
 # Design Compiler 编译与 DFT 相关命令
 
-## 说明
+## 使用说明
 
-原始资料是大型 Design Compiler 命令/参考手册，内容远超 DFT。本页按“能直接用于 DFT 综合脚本的部分”重新整理，避免把几千页命令文本混成一篇无法检索的逐页堆叠文档。
+本文聚焦可直接用于 DFT 综合脚本的 Design Compiler 命令，按工程流程组织为可检索的参考资料。
 
 ## 1. 编译流程骨架
 
@@ -71,13 +69,13 @@ write_test_protocol -format stil -output ./out/top.stil
 
 | 命令 | 适用阶段 | 作用 |
 | --- | --- | --- |
-| `compile` | 普通综合 | 优化功能网表并映射到目标库 |
+| `compile` | 普通综合 | 优化功能网表并工艺实现到目标库 |
 | `compile -scan` | 扫描感知综合 | 在优化时考虑扫描触发器和测试约束 |
 | `insert_scan` | 扫描插入 | 执行扫描替换、链连接和相关结构生成 |
 | `preview_dft` | 插入前 | 预览工具将采用的 DFT 结构 |
 | `check_scan` | 插入前/后 | 检查扫描设置、库和结构 |
 
-映射前/扫描感知综合通常能让工具更早考虑扫描开销；映射后插入流程更直观，便于对比功能网表，但需要重新核对时序和面积。
+工艺实现前/扫描感知综合通常能让工具更早考虑扫描开销；工艺实现后插入流程更直观，便于对比功能网表，但需要重新核对时序和面积。
 
 ## 3. 集合操作是脚本的核心
 

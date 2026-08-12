@@ -1,33 +1,17 @@
 ---
-title: 实验 5：使用 Design Vision 查看和调试设计（教材还原版）
-type: lab-textbook
+title: 实验 5：使用 Design Vision 查看和调试设计
+type: lab-guide
 tags:
   - DFT
   - Design Vision
   - DFT DRC
   - 实验
-source_pdf: DFTC lab5.pdf
-source_pages: 11
-pdf_content_pages: 2-11
 updated: 2026-08-12
 ---
 
 # 实验 5：使用 Design Vision 查看和调试设计
 
-原始教材：[DFTC lab5.pdf](<DFTC lab5.pdf>)
-
-> **PDF 对照说明**：第 1 页为广告页；正文按 PDF 第 2–11 页恢复。该实验教材将 GUI 操作与 dc_shell 命令行交叉使用。
-
-## PDF 对照表
-
-| PDF 页码 | 内容 |
-| --- | --- |
-| 2–3 | 目标、目录 |
-| 4 | 启动 Design Vision、问题 1 |
-| 5–8 | 读入设计、层次/原理图、问题 2–4 |
-| 9–11 | DFT DRC 违规浏览、问题 5–13 |
-
-## PDF 第 2 页｜实验目标
+## 实验目标
 
 完成本实验后，应能够：
 
@@ -38,13 +22,13 @@ updated: 2026-08-12
 
 **实验时长**：约 30 分钟。
 
-## PDF 第 3 页｜工程目录
+## 工程目录
 
 ```
 lab5_gui/             当前工作目录
 ├── analyzed/          中间分析文件
 ├── logs/              GUI 会话日志
-├── unmapped/          未映射协议
+├── unmapped/          扫描前协议
 ├── mapped/            门级网表
 ├── mapped_scan/       最终扫描网表
 ├── reports/           DFTC 报告
@@ -54,7 +38,7 @@ lab5_gui/             当前工作目录
 └── ref/lib/           库数据库文件
 ```
 
-## PDF 第 4 页｜Task 1：读入 Design Vision
+## 任务 1：读入 Design Vision
 
 ### 1. 启动
 
@@ -69,20 +53,18 @@ design_vision | tee logs/gui.log
 
 **答案**：Design Vision 是图形化用户界面，底层仍然使用 DC/DFT Compiler 的设计数据库和 Tcl 命令；dc_shell 是终端命令行模式。两者可以互相配合：GUI 便于图形调试，shell 便于快速、可复现地运行脚本。
 
-> [!note] PDF 蓝色批注
-> `design_vision = dc_shell -gui`：Design Vision 是图形化用户界面，`dc_shell` 是终端命令行模式。该批注是在提醒两者底层数据库/命令环境相关，但交互入口不同。
+> [!note] 提示
+> `design_vision = dc_shell -gui`：Design Vision 是图形化用户界面，`dc_shell` 是终端命令行模式。该说明是在提醒两者底层数据库/命令环境相关，但交互入口不同。
 
-![PDF 第 4 页：包含蓝色批注的原始页面](../assets/notes/raw/lab5-p04.png)
-
-### 2. 读入映射设计
+### 2. 读入工艺实现设计
 
 ```
 read_ddc mapped/RISC_CORE.ddc
 ```
 
-## PDF 第 5 页｜Task 2：图形化探索设计
+## 任务 2：图形化探索设计
 
-![PDF 第 5 页：Design Vision 层次窗口与原理图导航](../assets/lab5-p05.png)
+![图：Design Vision 层次窗口与原理图导航](../assets/lab5-p05.png)
 
 ### 1. 窗口和层次
 
@@ -98,7 +80,7 @@ current_design
 
 **问题**：当前设计是什么？
 
-**答案**：PDF 示例为 RISC_CORE（扫描 OCR 中出现的 RISC_CORC/RISC_CORE 为同一设计名的识别误差）。
+**答案**：示例为 RISC_CORE（扫描 中出现的 RISC_CORC/RISC_CORE 为同一设计名的识别误差）。
 
 列出全部设计：
 
@@ -106,13 +88,11 @@ current_design
 list_designs
 ```
 
-PDF 示例设计包括 CONTROL、DATA_PATH、DIV_CLK、INSTRN_LAT、PRGRM_CNT、PRGRM_DECODE、PRGRM_FSM、REG_FILE、RISC_CORE、RST、STACK_FSM、STACK_MEM_0/1/2、STACK_TOP 等。
+示例设计包括 CONTROL、DATA_PATH、DIV_CLK、INSTRN_LAT、PRGRM_CNT、PRGRM_DECODE、PRGRM_FSM、REG_FILE、RISC_CORE、RST、STACK_FSM、STACK_MEM_0/1/2、STACK_TOP 等。
 
-![PDF 第 6 页：原始绿色 current_design/list_designs 截图](../assets/original/green/lab5-p06-design-list.png)
+![图： current_design/list_designs 图](../assets/figures/lab5-p06-design-list.png)
 
-![PDF 第 6 页：放大后的 current_design/list_designs 截图](../assets/ocr/lab5-p06-design-list.png)
-
-## PDF 第 6–7 页｜层次、原理图和符号图
+## 层次、原理图和符号图
 
 ### 1. 查看顶层原理图
 
@@ -130,15 +110,15 @@ PDF 示例设计包括 CONTROL、DATA_PATH、DIV_CLK、INSTRN_LAT、PRGRM_CNT、
 
 点击橙色 AND gate 旁边的绿色 IC 图标，查看 RISC_CORE 的输入、输出和端口边界。
 
-## PDF 第 8 页｜映射检查
+## 工艺实现检查
 
-### 1. 检查是否全部映射到工艺门
+### 1. 检查是否全部工艺实现到工艺门
 
 ```
 report_hierarchy
 ```
 
-如果报告中仍然有 gtech 单元，而不是目标工艺库单元，说明设计存在未映射逻辑或库链接问题。
+如果报告中仍然有 gtech 单元，而不是目标工艺库单元，说明设计存在扫描前逻辑或库链接问题。
 
 ### 2. 退出
 
@@ -146,7 +126,7 @@ report_hierarchy
 exit
 ```
 
-## PDF 第 9 页｜Task 3：使用 GUI 调试 DFT DRC
+## 任务 3：使用 GUI 调试 DFT DRC
 
 ### 1. 读入并运行 DRC
 
@@ -160,7 +140,7 @@ dft_drc
 
 **问题**：第一次执行 dft_drc 得到什么错误？
 
-**答案**：PDF 示例为：
+**答案**：示例为：
 
 ```
 Error: No model found on design
@@ -172,27 +152,23 @@ Error: No model found on design
 create_test_protocol
 ```
 
-![PDF 第 9 页：原始 No model 错误截图](../assets/original/green/lab5-p09-no-model.png)
-
-![PDF 第 9 页：放大后的 No model 错误截图](../assets/ocr/lab5-p09-no-model.png)
+![图： No model 错误图](../assets/figures/lab5-p09-no-model.png)
 
 ### 问题 4
 
 **问题**：重新创建协议后，设计是没有 DFT 问题，还是有很多违规？
 
-**答案**：有很多违规。PDF 示例的第一次完整报告为 **356** 个违规：5 个 TOPOLOGY（未连接输入），351 个 PRE-DFT（D1=261、D2=2、D3=88），并且 261/261 个顺序单元都有违规。用 Test → Browse Violations 打开违规浏览器，从 PRE-DFT → D1 开始分析。
+**答案**：有很多违规。示例的第一次完整报告为 **356** 个违规：5 个 TOPOLOGY（未连接输入），351 个 PRE-DFT（D1=261、D2=2、D3=88），并且 261/261 个顺序单元都有违规。用 Test → Browse Violations 打开违规浏览器，从 PRE-DFT → D1 开始分析。
 
-![PDF 第 9 页：原始 356 个违规 DRC 截图](../assets/original/green/lab5-p09-drc-356.png)
+![图： 356 个违规 DRC 图](../assets/figures/lab5-p09-drc-356.png)
 
-![PDF 第 9 页：放大后的 356 个违规 DRC 截图](../assets/ocr/lab5-p09-drc-356.png)
-
-## PDF 第 10 页｜问题 5–10：逐步补充测试属性
+## 问题 5–10：逐步补充测试属性
 
 ### 问题 5
 
 **问题**：第一个 D1 违规的时钟上存在什么逻辑值？
 
-**答案**：PDF 示例为逻辑 0（低电平）。
+**答案**：示例为逻辑 0（低电平）。
 
 ### 问题 6
 
@@ -211,17 +187,15 @@ set_dft_signal -view existing_dft -type ScanClock \
 
 **答案**：会改变；时钟相关的 D1 违规应减少或消失，但其他未定义测试信号造成的违规仍然存在。应重新创建协议并在 Violation Browser 中点击 Run DFT DRC。
 
-PDF 第 10 页记录了补充时钟后的阶段性结果：总违规 **353** 个，其中 TOPOLOGY=5，PRE-DFT=348（D1=258、D2=2、D3=88）。
+补充时钟后的阶段性结果为：总违规 **353** 个，其中 TOPOLOGY=5，PRE-DFT=348（D1=258、D2=2、D3=88）。
 
-![PDF 第 10 页：原始 353 个违规 DRC 截图](../assets/original/green/lab5-p10-drc-353.png)
-
-![PDF 第 10 页：放大后的 353 个违规 DRC 截图](../assets/ocr/lab5-p10-drc-353.png)
+![图： 353 个违规 DRC 图](../assets/figures/lab5-p10-drc-353.png)
 
 ### 问题 8
 
 **问题**：TEST_MODE 显示什么值？
 
-**答案**：PDF 示例为 0。
+**答案**：示例为 0。
 
 ### 问题 9
 
@@ -240,19 +214,17 @@ set_dft_signal -view existing_dft -type Constant \
 
 **答案**：会改变；对应测试模式路径的违规会减少，但仍可能有未连接输入以及复位未控制违规。
 
-PDF 第 10 页的下一阶段报告为 **95** 个违规：TOPOLOGY=5，PRE-DFT=90（D2=2、D3=88）；261 个顺序单元中 90 个仍有违规、171 个为有效扫描单元、18 个为非扫描移位寄存器单元。
+下一阶段报告为 **95** 个违规：TOPOLOGY=5，PRE-DFT=90（D2=2、D3=88）；261 个顺序单元中 90 个仍有违规、171 个为有效扫描单元、18 个为非扫描移位寄存器单元。
 
-![PDF 第 10 页：原始 95 个违规 DRC 截图](../assets/original/green/lab5-p10-drc-95.png)
+![图： 95 个违规 DRC 图](../assets/figures/lab5-p10-drc-95.png)
 
-![PDF 第 10 页：放大后的 95 个违规 DRC 截图](../assets/ocr/lab5-p10-drc-95.png)
-
-## PDF 第 11 页｜问题 11–13：补充异步复位
+## 问题 11–13：补充异步复位
 
 ### 问题 11
 
 **问题**：Reset 显示什么值？
 
-**答案**：PDF 示例为低电平 0。
+**答案**：示例为低电平 0。
 
 ### 问题 12
 
@@ -269,11 +241,9 @@ set_dft_signal -view existing_dft -type Reset \
 
 **问题**：重新创建协议并运行 DRC 后，违规数量是否改变？
 
-**答案**：会改变。PDF 最终示例为 **5** 个 TOPOLOGY 违规（未连接输入），PRE-DFT=0；261 个顺序单元中 0 个有违规，243 个为有效扫描单元，18 个为非扫描移位寄存器单元。未连接输入仍存在，说明声明复位并不能修复真实的网表连接问题。
+**答案**：会改变。最终结果为 **5** 个 TOPOLOGY 违规（未连接输入），PRE-DFT=0；261 个顺序单元中 0 个有违规，243 个为有效扫描单元，18 个为非扫描移位寄存器单元。未连接输入仍存在，说明声明复位并不能修复真实的网表连接问题。
 
-![PDF 第 11 页：原始最终 DRC 截图](../assets/original/green/lab5-p11-drc-5.png)
-
-![PDF 第 11 页：放大后的最终 DRC 截图](../assets/ocr/lab5-p11-drc-5.png)
+![图：最终 DRC 图](../assets/figures/lab5-p11-drc-5.png)
 
 ## GUI 调试结果
 

@@ -1,35 +1,18 @@
 ---
-title: 实验 7：自顶向下扫描插入（教材还原版）
-type: lab-textbook
+title: 实验 7：自顶向下扫描插入
+type: lab-guide
 tags:
   - DFT
   - 扫描插入
   - scan configuration
   - lock-up latch
   - 实验
-source_pdf: DFTC lab7 update.pdf
-source_pages: 11
-pdf_content_pages: 2-11
 updated: 2026-08-12
 ---
 
 # 实验 7：自顶向下扫描插入
 
-原始教材：[DFTC lab7 update.pdf](<DFTC lab7 update.pdf>)
-
-> **PDF 对照说明**：第 1 页广告已过滤。本文按 PDF 第 2–11 页恢复实验目标、脚本、扫描规格、问题 1–22 和教材示例结果。
-
-## PDF 对照表
-
-| PDF 页码 | 内容 |
-| --- | --- |
-| 2–4 | 目标、Mapped Flow、目录 |
-| 5–6 | 读入门级设计、扫描状态、问题 1–5 |
-| 7–8 | 默认扫描架构、问题 6–12 |
-| 9 | lock-up latch、链平衡、问题 13–16 |
-| 10–11 | 插入、覆盖率、DFT DRC、问题 17–22 |
-
-## PDF 第 2 页｜实验目标
+## 实验目标
 
 完成本实验后，应能够：
 
@@ -38,28 +21,28 @@ updated: 2026-08-12
 
 **实验时长**：约 45 分钟。
 
-## PDF 第 3 页｜Unmapped Flow 与 Mapped Flow
+## 扫描前流程（Unmapped Flow）与门级流程（Mapped Flow）
 
-### Unmapped Flow
+### 扫描前流程（Unmapped Flow）
 
 1. 将 RTL 读入 DFTC。
 2. 创建并保存测试协议，验证设计与协议兼容。
 3. 编译并保存门级设计，退出工具。
 
-### Mapped Flow
+### 门级流程（Mapped Flow）
 
 4. 将门级设计和测试协议读入 DFTC。
 5. 指定扫描约束，并预览应用后的扫描架构。
 6. 插入扫描链。
 7. 将设计及相关文件交给下游工具。
 
-## PDF 第 4 页｜工程目录
+## 工程目录
 
 ```
 lab7_topdown/        当前工作目录
 ├── analyzed/         中间分析文件
 ├── logs/             会话日志
-├── unmapped/         未映射协议
+├── unmapped/         扫描前协议
 ├── mapped/           门级网表
 ├── mapped_scan/      扫描门级网表
 ├── reports/          DFTC 报告
@@ -69,9 +52,9 @@ lab7_topdown/        当前工作目录
 └── ref/lib/          工艺库
 ```
 
-## PDF 第 5 页｜Task 1：读入门级设计和测试协议
+## 任务 1：读入门级设计和测试协议
 
-教材列出 Mapped Flow 脚本：
+Mapped Flow 使用以下脚本：
 
 ```
 4read_gate_and_protocol.tcl
@@ -89,7 +72,7 @@ exec cat scripts/4read_gate_and_protocol.tcl
 source scripts/4read_gate_and_protocol.tcl
 ```
 
-## PDF 第 6 页｜扫描状态与 DRC
+## 扫描状态与 DRC
 
 ### 1. 查看扫描状态
 
@@ -99,32 +82,26 @@ report_scan_state
 
 ### 问题 1
 
-**问题**：如果 Unmapped Flow 以 compile -scan 结束，刚读入的设计应该是什么扫描状态？这是否是设计当前的扫描状态？
+**问题**：如果 Unmapped Flow 以 `compile -scan` 结束，刚读入的设计应该是什么扫描状态？这是否是设计当前的扫描状态？
 
-**答案**：PDF 示例为 `scan cells replaced with loops`；是，这就是当前设计记录的扫描状态。这里的 “replaced with loops” 是 DFTC 对已被扫描替换/扫描感知综合设计的状态描述。
+**答案**：示例为 `scan cells replaced with loops`；是，这就是当前设计记录的扫描状态。这里的 “replaced with loops” 是 DFTC 对已被扫描替换/扫描感知综合设计的状态描述。
 
-> [!note] PDF 蓝色批注
-> 原页旁的批注确认：`scan cells replaced with loops. yes, that is.`
+> [!note] 提示
+> 该状态表示扫描单元已替换为环回结构。
 
-![PDF 第 6 页：原始扫描状态截图](../assets/original/green/lab7-p06-scan-state.png)
-
-![PDF 第 6 页：放大后的扫描状态截图](../assets/ocr/lab7-p06-scan-state.png)
-
-![PDF 第 6 页：包含蓝色批注的原始页面](../assets/notes/raw/lab7-p06.png)
+![图：扫描状态图](../assets/figures/lab7-p06-scan-state.png)
 
 ### 问题 2
 
 **问题**：总触发器中有多少比例是有效扫描单元？
 
-**答案**：PDF 示例为 2,926 / 2,958：
+**答案**：示例为 2,926 / 2,958：
 
 ```
 2926 / 2958 = 98.918%
 ```
 
-![PDF 第 6 页：放大后的顺序单元统计截图](../assets/ocr/lab7-p06-sequential-summary.png)
-
-![PDF 第 6 页：原始增强版 DRC 顺序单元截图](../assets/original/green/lab7-p06-sequential-summary.png)
+![图：顺序单元统计图](../assets/figures/lab7-p06-sequential-summary.png)
 
 ### 问题 3
 
@@ -146,7 +123,7 @@ dft_drc
 report_dft_signal
 ```
 
-## PDF 第 7 页｜Task 2：预览扫描架构
+## 任务 2：预览扫描架构
 
 ### 问题 5
 
@@ -154,16 +131,12 @@ report_dft_signal
 
 **答案**：3 个扫描时钟：sys_clk、sdr_clk、pclk；1 个复位：prst_n。
 
-> [!note] PDF 蓝色批注
+> [!note] 提示
 > `3 个 scanclocks (sys_clk, sdr_clk, pclk); 1 个 resets (prst_n)`。
 
-![PDF 第 7 页：原始 report_dft_signal 截图](../assets/original/green/lab7-p07-dft-signals.png)
+![图： report_dft_signal 图](../assets/figures/lab7-p07-dft-signals.png)
 
-![PDF 第 7 页：放大后的 report_dft_signal 截图](../assets/ocr/lab7-p07-dft-signals.png)
-
-![PDF 第 7 页：包含蓝色批注的原始页面](../assets/notes/raw/lab7-p07.png)
-
-![PDF 第 7 页：扫描时钟与默认扫描链预览](../assets/lab7-p07.png)
+![图：扫描时钟与默认扫描链预览](../assets/lab7-p07.png)
 
 ### 1. 查看默认扫描架构
 
@@ -171,7 +144,7 @@ report_dft_signal
 preview_dft
 ```
 
-PDF 示例默认信息：
+示例默认信息：
 
 ```
 Scan methodology: full_scan
@@ -182,20 +155,18 @@ Scan style: multiplexed_flip_flop
 
 **问题**：默认会插入多少条扫描链？链名是什么？是否平衡？
 
-**答案**：PDF 示例预览 5 条链，链名类似 test_si1→test_so1、test_si2→test_so2、test_si3→test_so3、test_si4→test_so4、test_si5→test_so5。长度约为 1,074:1，极不平衡。
+**答案**：示例预览 5 条链，链名类似 test_si1→test_so1、test_si2→test_so2、test_si3→test_so3、test_si4→test_so4、test_si5→test_so5。长度约为 1,074:1，极不平衡。
 
-> [!note] PDF 蓝色批注
-> 原页答案为：`5. '1', '2', '3', '4', '5'. 1074:1, extreme unbalanced.`
+> [!note] 提示
+> 本例的预览结果为 5 条扫描链，最长链与最短链长度约为 `1074:1`，差异很大。
 
-![PDF 第 7 页：原始默认 preview_dft 截图](../assets/original/green/lab7-p07-preview-default.png)
-
-![PDF 第 7 页：放大后的默认 preview_dft 截图](../assets/ocr/lab7-p07-preview-default.png)
+![图：默认 preview_dft 图](../assets/figures/lab7-p07-preview-default.png)
 
 ### 问题 7
 
 **问题**：扫描插入使用已有功能引脚作为 scan in、scan out，还是创建专用的新引脚？
 
-**答案**：因为当前没有指定扫描信号，工具会创建新的扫描端口/连接（PDF 标注为 will create new）。若要复用功能引脚，必须用 set_dft_signal 或 set_scan_path 显式指定。
+**答案**：因为当前没有指定扫描信号，工具会创建新的扫描端口/连接。若要复用功能引脚，必须用 set_dft_signal 或 set_scan_path 显式指定。
 
 ### 2. 查看时钟域
 
@@ -209,10 +180,10 @@ preview_dft -show scan_clocks
 
 **答案**：这是当前工具/实验设置下的默认链数或默认扫描分配策略；工具会按时钟域、扫描段和默认 chain_count 生成多条候选链。不要把 5 当作所有设计的通用默认值，应以 preview_dft 报告和当前版本设置为准。
 
-> [!note] PDF 蓝色批注
-> 批注写的是“有 5 个时钟域，一条扫描链用一个”，但这与绿色报告中列出的 `pclk`、`sys_clk`、`sdr_clk` 三类测试时钟并不完全一致；这里保留为原始学习笔记，工程结论仍以报告为准。
+> [!note] 提示
+> 若报告中给出的时钟域数量与 `pclk`、`sys_clk`、`sdr_clk` 三类测试时钟不一致，应以当前 `preview_dft` 报告中的扫描分区结果为准。
 
-## PDF 第 8 页｜比较 clock mixing
+## 比较 clock mixing
 
 ### 问题 9
 
@@ -220,12 +191,8 @@ preview_dft -show scan_clocks
 
 **答案**：有。scan_clocks 会显示每条链涉及的时钟、边沿、代表性单元和时钟域；scan_summary 更紧凑，适合快速查看链数、端点、长度和整体平衡。需要分析多时钟/多边沿问题时使用 scan_clocks，需要快速汇总时使用 scan_summary。
 
-> [!note] PDF 蓝色批注
-> 原页批注强调：`scan_clocks` 虽然输出表格更详细，但链很多时，`scan_summary` 更适合快速查看报告的最终信息；批注中“最后一个不带 clock 的 reg 信息”字样不完整，不能据此推导额外规则。
-
-![PDF 第 8 页：原始 scan_clocks 截图](../assets/original/green/lab7-p08-mix-edges.png)
-
-![PDF 第 8 页：包含蓝色批注的原始页面](../assets/notes/raw/lab7-p08.png)
+> [!note] 提示
+> `scan_clocks` 输出时钟信息更完整；当扫描链较多时，`scan_summary` 更适合快速查看链数、端点、长度和均衡程度。
 
 ```
 preview_dft -show scan_summary
@@ -242,12 +209,12 @@ preview_dft -show scan_clocks
 
 **问题**：现在预览多少条链？是否平衡？
 
-**答案**：PDF 示例显示 3 条链，相比默认结果相对平衡，但仍不够理想。
+**答案**：示例显示 3 条链，相比默认结果相对平衡，但仍不够理想。
 
-> [!note] PDF 蓝色批注
+> [!note] 提示
 > `3. 相对较平衡了，但不够。`
 
-![PDF 第 8 页：放大后的 mix_edges 扫描链截图](../assets/ocr/lab7-p08-mix-edges.png)
+![图： mix_edges 扫描链图](../assets/figures/lab7-p08-mix-edges.png)
 
 ### 2. 允许不同测试时钟混合
 
@@ -260,11 +227,9 @@ preview_dft -show scan_clocks
 
 **问题**：现在预览多少条链？如何理解默认 chain_count？
 
-**答案**：PDF 示例显示 1 条链，包含 2,926 个扫描单元。允许不同测试时钟混合后，工具可以把多个时钟域放入同一链；这也说明仅改变 clock_mixing 会显著改变链数，默认 chain_count 不能脱离时钟混合策略解释。
+**答案**：示例显示 1 条链，包含 2,926 个扫描单元。允许不同测试时钟混合后，工具可以把多个时钟域放入同一链；这也说明仅改变 clock_mixing 会显著改变链数，默认 chain_count 不能脱离时钟混合策略解释。
 
-![PDF 第 8 页：原始 mix_clocks 扫描链截图](../assets/original/green/lab7-p08-mix-clocks.png)
-
-![PDF 第 8 页：放大后的 mix_clocks 扫描链截图](../assets/ocr/lab7-p08-mix-clocks.png)
+![图： mix_clocks 扫描链图](../assets/figures/lab7-p08-mix-clocks.png)
 
 ### 问题 12
 
@@ -277,9 +242,7 @@ set_scan_configuration -chain_count 6
 preview_dft -show scan_clocks
 ```
 
-![PDF 第 8 页：包含链数与时钟混合说明批注的原始页面](../assets/notes/raw/lab7-p08.png)
-
-PDF 给出了 clock_mixing 的含义：
+`clock_mixing` 的含义如下：
 
 | 值 | 含义 |
 | --- | --- |
@@ -288,7 +251,7 @@ PDF 给出了 clock_mixing 的含义：
 | mix_clocks_not_edges | 边沿相同，但允许不同测试时钟 |
 | mix_clocks | 允许不同的时钟和边沿 |
 
-## PDF 第 9 页｜lock-up latch 与链平衡
+## lock-up latch 与链平衡
 
 ### 1. 为什么需要 lock-up latch
 
@@ -298,20 +261,18 @@ PDF 给出了 clock_mixing 的含义：
 
 **问题**：当前 6 条链中最长和最短链相差多少？
 
-**答案**：PDF 示例为几乎没有差异；多数链为 488 个单元，最短链为 487 个单元，差异约 1 个扫描单元。
+**答案**：示例为几乎没有差异；多数链为 488 个单元，最短链为 487 个单元，差异约 1 个扫描单元。
 
-> [!note] PDF 蓝色批注
-> `Almost no difference`。
+> [!note] 提示
+> 最长链与最短链的长度仅相差 1 个扫描单元。
 
-![PDF 第 9 页：原始平衡扫描链截图](../assets/original/green/lab7-p09-balanced-chains.png)
-
-![PDF 第 9 页：放大后的平衡扫描链截图](../assets/ocr/lab7-p09-balanced-chains.png)
+![图：平衡扫描链图](../assets/figures/lab7-p09-balanced-chains.png)
 
 ### 问题 14
 
 **问题**：DFTC 是否会插入 lock-up latch？哪些链会包含？
 
-**答案**：会。PDF 蓝色答案写的是：`yes. 2, 4, 5.`，即链 2、4、5 可能包含 lock-up latch；正文曾只列链 4、5，这里按批注补全。最终以 scan_clocks 和插入后网表报告为准。
+**答案**：会。提示答案写的是：`yes. 2, 4, 5.`，即链 2、4、5 可能包含 lock-up latch；正文曾只列链 4、5，这里按说明补全。最终以 scan_clocks 和插入后网表报告为准。
 
 ### 2. 指定功能引脚和链名
 
@@ -324,7 +285,7 @@ preview_dft
 
 **问题**：新的扫描链叫什么？什么命令定义了这些名字？为什么要显式命名？
 
-**答案**：PDF 示例链名为 chain0、chain1、chain2、chain3、chain4、chain5。由 set_scan_path 定义：
+**答案**：示例链名为 chain0、chain1、chain2、chain3、chain4、chain5。由 set_scan_path 定义：
 
 ```
 for {set i 0} {$i < 6} {incr i} {
@@ -334,14 +295,12 @@ for {set i 0} {$i < 6} {incr i} {
 }
 ```
 
-显式命名可以将逻辑链名与实际 pad/scan-out 端口固定绑定，便于 handoff、SCANDEF、ATE 和后端流程引用。
+显式命名可以将逻辑链名与实际 `pad`/`scan-out` 端口固定关联，便于交付、SCANDEF、ATE 和后端流程使用。
 
-> [!note] PDF 蓝色批注
-> `单纯的数字前面多了“chain”；set_scan_path...`，意思是预览报告中的链名被显式改为 `chain0`–`chain5`，而不是只使用数字。
+> [!note] 提示
+> 预览报告中的链名被显式设为 `chain0` 至 `chain5`，而不是仅使用数字。
 
-![PDF 第 9 页：原始 scan path 端口映射截图](../assets/original/green/lab7-p09-pad-mapping.png)
-
-![PDF 第 9 页：放大后的 scan path 端口映射截图](../assets/ocr/lab7-p09-pad-mapping.png)
+![图： scan path 端口工艺实现图](../assets/figures/lab7-p09-pad-mapping.png)
 
 ### 问题 16
 
@@ -355,9 +314,7 @@ for {set i 0} {$i < 6} {incr i} {
 - 扫描主时钟：sys_clk、sdr_clk、pclk。
 - 复位：prst_n。
 
-![PDF 第 9 页：包含蓝色批注和内部扫描端口截图的原始页面](../assets/notes/raw/lab7-p09.png)
-
-## PDF 第 10 页｜Task 3：插入扫描链并估算覆盖率
+## 任务 3：插入扫描链并估算覆盖率
 
 ### 问题 17
 
@@ -369,9 +326,7 @@ for {set i 0} {$i < 6} {incr i} {
 set_dft_insertion_configuration -preserve_design_name true
 ```
 
-![PDF 第 10 页：原始 preserve_design_name 选项截图](../assets/original/green/lab7-p10-preserve-design-name.png)
-
-![PDF 第 10 页：放大后的 preserve_design_name 选项截图](../assets/ocr/lab7-p10-preserve-design-name.png)
+![图： preserve_design_name 选项图](../assets/figures/lab7-p10-preserve-design-name.png)
 
 ### 问题 18
 
@@ -383,9 +338,7 @@ set_dft_insertion_configuration -preserve_design_name true
 set_dft_insertion_configuration -synthesis_optimization none
 ```
 
-![PDF 第 10 页：原始 synthesis_optimization 选项截图](../assets/original/green/lab7-p10-synthesis-optimization.png)
-
-![PDF 第 10 页：放大后的 synthesis_optimization 选项截图](../assets/ocr/lab7-p10-synthesis-optimization.png)
+![图： synthesis_optimization 选项图](../assets/figures/lab7-p10-synthesis-optimization.png)
 
 这可以减少 insert_dft 阶段的运行时间和对既有门级设计的改动。
 
@@ -400,11 +353,9 @@ dft_drc -coverage_estimate
 
 **问题**：ORCA 扫描设计的估算覆盖率是多少？
 
-**答案**：PDF 示例为 95.28%。
+**答案**：示例为 95.28%。
 
-![PDF 第 10 页：原始 95.28% 覆盖率截图](../assets/original/green/lab7-p10-coverage.png)
-
-![PDF 第 10 页：放大后的 95.28% 覆盖率截图](../assets/ocr/lab7-p10-coverage.png)
+![图： 95.28% 覆盖率图](../assets/figures/lab7-p10-coverage.png)
 
 ### 问题 20
 
@@ -412,28 +363,20 @@ dft_drc -coverage_estimate
 
 **答案**：明显低于约 99% 的早期预测，只有 95.28%。原因是覆盖率还受到 DFT DRC、时钟混合、三态、总线驱动、扫描链结构和 ATPG 可解性的影响。
 
-> [!note] PDF 蓝色批注
-> 原页写着：`95.28% 着实比99%低太多了。。` 旁边的长段批注指出，scan chain 中多时钟、lock-up latch 和 DRC violation 都会使 coverage 下降；这部分是学习者对工具报告的解释，不是工具原始输出。
+> [!note] 提示
+> 多测试时钟、lock-up latch 和 DRC 违规都会降低覆盖率，因此有效扫描单元比例不能单独决定最终 ATPG 覆盖率。
 
-![PDF 第 10 页：包含蓝色覆盖率分析批注的原始页面](../assets/notes/raw/lab7-p10.png)
+## DFT DRC 与扫描规则
 
-## PDF 第 11 页｜DFT DRC 与扫描规则
-
-PDF 示例报告了会影响 ATPG 覆盖率的违规，例如：
+示例报告了会影响 ATPG 覆盖率的违规，例如：
 
 - C17：时钟连接到 primary output。
 - S22：一条扫描链由多个时钟移位。
 - 与扫描单元 gate 连接的总线驱动器违规。
 
-![PDF 第 11 页：原始 DRC coverage 违规汇总截图](../assets/original/green/lab7-p11-drc-summary.png)
+![图： DRC coverage 违规汇总图](../assets/figures/lab7-p11-drc-summary.png)
 
-![PDF 第 11 页：放大后的 DRC coverage 违规汇总截图](../assets/ocr/lab7-p11-drc-summary.png)
-
-![PDF 第 11 页：原始 DRC coverage 详细截图](../assets/original/green/lab7-p11-drc-details.png)
-
-![PDF 第 11 页：放大后的 DRC coverage 详细截图](../assets/ocr/lab7-p11-drc-details.png)
-
-![PDF 第 11 页：包含蓝色批注的原始页面](../assets/notes/raw/lab7-p11.png)
+![图： DRC coverage 详细图](../assets/figures/lab7-p11-drc-details.png)
 
 ### 问题 21
 
@@ -445,10 +388,10 @@ PDF 示例报告了会影响 ATPG 覆盖率的违规，例如：
 
 **问题**：S22 违规是什么意思？它是否解释了 Sequential Cells Without Violations 中的 synchronization elements？
 
-**答案**：S22 表示同一条扫描链使用多个移位时钟，或使用同一时钟的不同边沿。这个条件可能在移位时产生时钟偏斜/竞争，因此工具会建议或插入 lock-up latch 作为同步隔离。PDF 示例在 chain1 上出现一个 S22，并提示还有其他同类单元；需要逐条确认是否缺少 lock-up latch，而不能只看 warning 数量。
+**答案**：S22 表示同一条扫描链使用多个移位时钟，或使用同一时钟的不同边沿。这个条件可能在移位时产生时钟偏斜/竞争，因此工具会建议或插入 lock-up latch 作为同步隔离。示例在 chain1 上出现一个 S22，并提示还有其他同类单元；需要逐条确认是否缺少 lock-up latch，而不能只看 warning 数量。
 
-> [!note] PDF 蓝色批注
-> 原始批注解释为：S22 意味着同一条 chain 中有多个 clock，或者有相同 clock 的不同 edge；如果缺少 lock-up latch，就会出现问题。实验页还记录“通常看到 S22 是 warning，需要分析是否需要 lock-up latch”。
+> [!note] 提示
+> S22 表示同一条扫描链使用多个时钟，或使用同一时钟的不同边沿。应检查相应位置是否需要 lock-up latch。
 
 ## 实验检查清单
 

@@ -1,6 +1,6 @@
 ---
-title: 实验 9：扫描插入的运行时间、容量与链平衡（教材还原版）
-type: lab-textbook
+title: 实验 9：扫描插入的运行时间、容量与链平衡
+type: lab-guide
 tags:
   - DFT
   - 扫描链平衡
@@ -8,29 +8,12 @@ tags:
   - 测试模型
   - TetraMAX
   - 实验
-source_pdf: DFTC lab9.pdf
-source_pages: 12
-pdf_content_pages: 2-12
 updated: 2026-08-12
 ---
 
 # 实验 9：扫描插入的运行时间、容量与链平衡
 
-原始教材：[DFTC lab9.pdf](<DFTC lab9.pdf>)
-
-> **PDF 对照说明**：第 1 页广告已过滤；按 PDF 第 2–12 页恢复 RSS、自顶向下、自底向上、测试模型、问题 1–19 和结果解释。原 PDF 的这些页面主要提出问题和操作步骤，部分最终数值需要运行实验脚本取得，因此本笔记会明确标注“PDF 未固定给出”。
-
-## PDF 对照表
-
-| PDF 页码 | 内容 |
-| --- | --- |
-| 2–3 | 目标、任务、工程文件 |
-| 4–7 | Task 1：自顶向下、RSS、问题 1–6 |
-| 8–9 | Task 2：测试模型、问题 7–10 |
-| 10–11 | 平衡优化、问题 11–18 |
-| 12 | 问题 19、结束 |
-
-## PDF 第 2 页｜实验目标
+## 实验目标
 
 完成本实验后，应能够：
 
@@ -41,7 +24,7 @@ updated: 2026-08-12
 
 **实验时长**：约 75 分钟。
 
-## PDF 第 3 页｜任务和目录
+## 任务和目录
 
 ### 任务
 
@@ -72,7 +55,7 @@ lab9_hicap/          当前工作目录
 - scan_top.tcl：完成顶层扫描拼接。
 - top_down.tcl：执行自顶向下扫描插入。
 
-## PDF 第 4–5 页｜Task 1：自顶向下扫描插入
+## 任务 1：自顶向下扫描插入
 
 ### 1. 修改目标
 
@@ -89,7 +72,7 @@ dc_shell | tee logs/lab9.log
 source scripts/top_down.tcl
 ```
 
-## PDF 第 6 页｜Task 1 问题 1–3
+## 任务 1 问题 1–3
 
 ### 问题 1
 
@@ -109,19 +92,19 @@ source scripts/top_down.tcl
 
 **答案**：lock-up latch。跨不同测试时钟/边沿的扫描段需要锁存器隔离移位时序；测试时钟越多，出现 lock-up latch 的概率越高。
 
-## PDF 第 7 页｜Task 1 问题 4–6
+## 任务 1 问题 4–6
 
 ### 问题 4
 
 **问题**：插入了多少个 lock-up latch？
 
-**答案/操作**：PDF 要求使用工具统计：
+**答案/操作**：使用以下命令统计：
 
 ```
 sizeof_collection [get_cells LOCKUP* -hier]
 ```
 
-具体数量取决于本次运行的脚本和库，PDF 页面没有固定给出单一数字。应把命令输出写入实验报告。
+具体数量取决于本次运行的脚本和库，操作说明没有固定给出单一数字。应把命令输出写入实验报告。
 
 ### 问题 5
 
@@ -145,9 +128,9 @@ get_cells LOCKUP* -hier
 dft_drc -coverage_estimate
 ```
 
-PDF 没有在操作页给出固定数值；应读取 reports/ORCA_coverage.rpt，记录 total faults、detected、untestable 和 coverage。
+该步骤的数值取决于当前运行；应读取 reports/ORCA_coverage.rpt，记录 total faults、detected、untestable 和 coverage。
 
-## PDF 第 8 页｜Task 2：使用测试模型的自底向上扫描
+## 任务 2：使用测试模型的自底向上扫描
 
 自底向上流程先对子模块执行扫描插入并生成测试模型，再用测试模型完成顶层拼接：
 
@@ -170,16 +153,16 @@ ORCA 顶层包含 I/O pad、CLOCK_GEN（PLL 和时钟倍频）以及 ORCA_TOP �
 
 1. 在 scan_blocks.tcl 的 foreach 循环中，保存独立的测试模型文件。
 2. scan_top.tcl 只从 test_models 目录读取模型。
-3. 不要把 RESET_BLOCK 当成测试模型；按教材要求从 mapped_scan 目录读入 RESET_BLOCK 的设计。
+3. 不要把 RESET_BLOCK 当成测试模型；应从 `mapped_scan` 目录读入 RESET_BLOCK 的设计。
 4. 用 current_design、link 检查顶层当前设计。
 
-## PDF 第 9 页｜Task 2 问题 7–10
+## 任务 2 问题 7–10
 
 ### 问题 7
 
 **问题**：为什么块级扫描插入要指定 clock_mixing io_mix？
 
-**参考答案**：块级设计可能包含多个本地测试时钟，允许合适的时钟混合可以避免把每个时钟域机械地拆成大量短链，并让块级链在顶层拼接时更容易平衡。实际值需与当前版本的 set_scan_configuration -help 对照。
+**参考答案**：块级设计可能包含多个本地测试时钟，允许合适的时钟混合可以避免把每个时钟域机械地拆成大量短链，并让块级链在顶层拼接时更容易平衡。实际值需通过当前版本的 `set_scan_configuration -help` 核对。
 
 ### 问题 8
 
@@ -199,7 +182,7 @@ ORCA 顶层包含 I/O pad、CLOCK_GEN（PLL 和时钟倍频）以及 ORCA_TOP �
 
 **参考答案**：第一次通常不完全平衡。原因是块级模型的链数量和长度已经在块级固定，顶层只能拼接这些离散链段；块间链长差异会传递到顶层。
 
-## PDF 第 10 页｜Task 2 迭代问题 11–14
+## 任务 2 迭代问题 11–14
 
 ### 问题 11
 
@@ -209,7 +192,7 @@ ORCA 顶层包含 I/O pad、CLOCK_GEN（PLL 和时钟倍频）以及 ORCA_TOP �
 
 ### 问题 12
 
-**问题**：包含测试模型时，为什么不能使用 Task 1 中的 get_cells LOCKUP* 方法统计所有 lock-up latch？
+**问题**：包含测试模型时，为什么不能使用 任务 1 中的 get_cells LOCKUP* 方法统计所有 lock-up latch？
 
 **答案**：测试模型隐藏了子模块内部的门级单元，顶层数据库中只有模型边界，不包含内部 lock-up latch 实例。应在生成的 Verilog 网表中用文本搜索统计：
 
@@ -221,7 +204,7 @@ grep -i LOCKUP tmax/*.v | wc -l
 
 **问题**：整个 ORCA 中插入了多少 lock-up latch？
 
-**答案/操作**：PDF 要求使用上面的 grep 统计。具体数字依赖脚本运行，原 PDF 页面没有给出固定值；应报告数量和命中网表文件。
+**答案/操作**：使用上面的 `grep` 统计。具体数字依赖脚本运行；应报告数量和命中网表文件。
 
 ### 问题 14
 
@@ -235,11 +218,11 @@ grep -i LOCKUP tmax/*.v
 
 根据命中行判断它们位于块内、块边界还是顶层。bottom-up 流程通常让锁存器更多地保留在块级边界，便于物理实现。
 
-## PDF 第 11 页｜Task 2 问题 15–18
+## 任务 2 问题 15–18
 
 ### 问题 15
 
-**问题**：这与 Task 1 自顶向下脚本插入的 lock-up latch 数量相比如何？
+**问题**：这与 任务 1 自顶向下脚本插入的 lock-up latch 数量相比如何？
 
 **参考答案**：不要求两者相同。自顶向下直接优化全芯片链；自底向上受到块级模型边界和 terminal lock-up 的影响，数量及位置可能不同。应比较两个流程的网表统计、链长和 DRC，而不能只比较一个数字。
 
@@ -261,7 +244,7 @@ grep -i LOCKUP tmax/*.v
 
 **答案**：TetraMAX 读入完整门级网表、RAM/功能模型、测试协议和完整故障模型；DFTC 使用测试模型时会隐藏块内部故障，且故障折叠、黑盒和模型边界不同，所以 TetraMAX 的故障总数通常更大。
 
-## PDF 第 12 页｜问题 19
+## 问题 19
 
 ### 问题 19
 
@@ -274,7 +257,7 @@ cd tmax
 tmax -shell orca_tmax.tcl
 ```
 
-然后从 Pattern Summary Report 记录 coverage。原 PDF 第 12 页只提出问题，没有附带固定数值；应以当前实验运行的 TetraMAX 报告为准，不要把实验 7 的 95.28% 或实验 8 的 96.72% 误写成实验 9 的答案。
+然后从 Pattern Summary Report 记录 coverage。该步骤没有固定数值；应以当前实验运行的 TetraMAX 报告为准，不要把实验 7 的 95.28% 或实验 8 的 96.72% 写入实验 9 的结果。
 
 ## 实验 9 的可复现实验记录
 
