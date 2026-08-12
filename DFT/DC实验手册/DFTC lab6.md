@@ -1,5 +1,5 @@
 ---
-title: 实验 6：定位并修复 DFT DRC 违规
+title: 实验 6：定位并修复 DFT 设计规则检查违规
 type: lab-guide
 tags:
   - DFT
@@ -11,13 +11,15 @@ tags:
 updated: 2026-08-12
 ---
 
-# 实验 6：定位并修复 DFT DRC 违规
+# 实验 6：定位并修复 DFT 设计规则检查（DFT DRC）违规
+
+术语参照：[[术语与翻译规范]]。
 
 ## 实验目标
 
 完成本实验后，应能够：
 
-- 调试时钟和复位造成的 DFT DRC 问题。
+- 调试时钟和复位造成的 DFT 设计规则检查（DFT DRC）问题。
 - 提出可以由设计者实现的手工修复。
 - 使用 AutoFix 实施修复。
 
@@ -60,10 +62,10 @@ source scripts/4read_gate_and_protocol.tcl
 
 | 类别 | 数量 | 类型 |
 | --- | ---: | --- |
-| TOPOLOGY | 5 | Unconnected input pin（TEST-332） |
-| PRE-DFT | 258 | Uncontrollable clock input of flip-flop（D1） |
-| PRE-DFT | 5 | DFF set/reset line not controlled（D2） |
-| PRE-DFT | 83 | DFF set/reset line not controlled（D3） |
+| 结构连接类（Topology） | 5 | Unconnected input pin（TEST-332） |
+| 扫描插入前类（Pre-DFT） | 258 | Uncontrollable clock input of flip-flop（D1） |
+| 扫描插入前类（Pre-DFT） | 5 | DFF set/reset line not controlled（D2） |
+| 扫描插入前类（Pre-DFT） | 83 | DFF set/reset line not controlled（D3） |
 
 合计 351 个违规。
 

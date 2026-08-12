@@ -10,9 +10,11 @@ updated: 2026-08-12
 
 # Synopsys DFT Compiler 用户指南
 
+术语参照：[[术语与翻译规范]]。
+
 ## 使用说明
 
-本文将扫描插入、测试协议、DFT DRC、ATPG 和交付等主题组织为中文索引。遇到版本相关参数时，应以当前安装版本的 `-help` 和官方文档为准。
+本文将扫描插入、测试协议、DFT 设计规则检查（DFT DRC）、ATPG 和交付等主题组织为中文索引。遇到版本相关参数时，应以当前安装版本的 `-help` 和官方文档为准。
 
 ## 1. 功能地图
 
@@ -20,7 +22,7 @@ updated: 2026-08-12
 | --- | --- | --- |
 | 测试协议 | 工具如何驱动时钟、复位和测试模式 | 测试属性、SPF/STIL |
 | 扫描架构 | 触发器如何替换、分链和连接 | 扫描网表、扫描路径报告 |
-| DFT DRC | 测试模式下哪些路径不满足可测性 | DRC 报告 |
+| DFT 设计规则检查（DFT DRC） | 测试模式下哪些路径不满足可测性 | DRC 报告 |
 | 测试模型 | 黑盒、内核、层次块如何被抽象 | test model |
 | ATPG 接口 | 如何把 DFT 结构交给向量生成工具 | 协议、网表、约束 |
 | 层次化流程 | 子模块与顶层如何分别插入并交接 | block/top 级测试数据 |
@@ -65,7 +67,7 @@ updated: 2026-08-12
 | 覆盖率 | 可控性、可观测性和 ATPG 处理难度 |
 | 兼容性 | 工艺库、门级仿真模型、后端和 ATE 格式 |
 
-## 4. DFT DRC 思维框架
+## 4. DFT 设计规则检查（DFT DRC）思维框架
 
 ![DFT 设计流程](../assets/dft-流程.svg)
 
@@ -111,15 +113,13 @@ link
 check_design
 
 # 测试协议和扫描
-check_scan
 preview_dft
 compile -scan
-insert_scan
-report_test -scan_path
+insert_dft
+report_scan_path
 
 # DRC 与覆盖率
-report_test -type dft_drc
-estimate_test_coverage
+dft_drc
 
 # 输出
 write -format verilog -hier -output ./out/top_scan.v
@@ -130,5 +130,5 @@ write_test_protocol -format stil -output ./out/top.stil
 
 - 不同版本可能变更命令名、属性名和协议格式。
 - 先用 `command -help` 或 `man command` 确认参数，再写入正式脚本。
-- 对自动修复（AutoFix）产生的结构必须做网表、时序和 DFT DRC 复核。
+- 对自动修复（AutoFix）产生的结构必须做网表、时序和 DFT 设计规则检查（DFT DRC）复核。
 - 不要把实验目录中的绝对路径、旧工艺库名和旧版本选项直接复制到新项目。

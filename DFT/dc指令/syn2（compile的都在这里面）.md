@@ -10,6 +10,8 @@ updated: 2026-08-12
 
 # Design Compiler 编译与 DFT 相关命令
 
+术语参照：[[术语与翻译规范]]。
+
 ## 使用说明
 
 本文聚焦可直接用于 DFT 综合脚本的 Design Compiler 命令，按工程流程组织为可检索的参考资料。
@@ -46,36 +48,42 @@ set_max_transition 0.2 [current_design]
 ############################################################
 # 3. DFT 约束和扫描综合
 ############################################################
-set_test_default_scan_style multiplexed_flip_flop
-set_test_default_period 100
-set_test_default_strobe 90
-check_scan
+set_dft_configuration -scan_style multiplexed_flip_flop
+set_dft_signal -view existing_dft -type ScanClock \
+    -port scan_clk -timing {45 55}
+set_dft_signal -view existing_dft -type ScanEnable \
+    -port scan_enable -active_state 1
+set_dft_signal -view existing_dft -type TestMode \
+    -port test_mode -active_state 1
+create_test_protocol
+dft_drc
 compile -scan
-insert_scan
+preview_dft
+insert_dft
 
 ############################################################
 # 4. 检查和交付
 ############################################################
 check_design
 check_timing
-report_test -scan_path
-report_test -type dft_drc
+report_scan_path
+dft_drc
 report_qor
 write -format verilog -hier -output ./out/top_scan.v
 write_test_protocol -format stil -output ./out/top.stil
 ```
 
-## 2. `compile`、`compile -scan` 与 `insert_scan`
+## 2. `compile`、`compile -scan` 与 `insert_dft`
 
 | 命令 | 适用阶段 | 作用 |
 | --- | --- | --- |
-| `compile` | 普通综合 | 优化功能网表并工艺实现到目标库 |
+| `compile` | 普通综合 | 优化功能网表并完成目标库实现（Technology Mapping） |
 | `compile -scan` | 扫描感知综合 | 在优化时考虑扫描触发器和测试约束 |
-| `insert_scan` | 扫描插入 | 执行扫描替换、链连接和相关结构生成 |
+| `insert_dft` | 扫描插入 | 执行扫描替换、扫描链连接和相关结构生成 |
 | `preview_dft` | 插入前 | 预览工具将采用的 DFT 结构 |
 | `check_scan` | 插入前/后 | 检查扫描设置、库和结构 |
 
-工艺实现前/扫描感知综合通常能让工具更早考虑扫描开销；工艺实现后插入流程更直观，便于对比功能网表，但需要重新核对时序和面积。
+目标库实现前的扫描感知综合通常能让工具更早考虑扫描开销；目标库实现后的插入流程更直观，便于对比功能网表，但需要重新核对时序和面积。
 
 ## 3. 集合操作是脚本的核心
 
@@ -122,15 +130,15 @@ set_false_path -from [get_ports scan_enable]
 redirect -file ./reports/design.rpt { check_design }
 redirect -file ./reports/timing_max.rpt { report_timing -delay_type max -max_paths 50 }
 redirect -file ./reports/timing_min.rpt { report_timing -delay_type min -max_paths 50 }
-redirect -file ./reports/scan.rpt { report_test -scan_path }
-redirect -file ./reports/dft_drc.rpt { report_test -type dft_drc }
+redirect -file ./reports/scan.rpt { report_scan_path }
+redirect -file ./reports/dft_drc.rpt { dft_drc }
 ```
 
 每次修改后至少比较：
 
 1. 扫描触发器数量和扫描链数量。
 2. 最长/最短扫描链差异。
-3. DFT DRC 违规数及类型。
+3. DFT 设计规则检查（DFT DRC）的违规数及类型。
 4. 功能模式 setup/hold 违例。
 5. ATPG 覆盖率、向量数量和估算测试时间。
 

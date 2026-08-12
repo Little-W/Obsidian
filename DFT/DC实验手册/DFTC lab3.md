@@ -11,6 +11,8 @@ updated: 2026-08-12
 
 # 实验 3：创建测试协议
 
+术语参照：[[术语与翻译规范]]。
+
 ## 实验目标
 
 完成本实验后，应能够：
@@ -291,9 +293,9 @@ source scripts/2create_test_protocol.tcl
 
 | 类别 | 数量 | 典型报告 |
 | --- | ---: | --- |
-| MODELING | 13 | Cell has unknown model（TEST-451） |
-| TOPOLOGY | 432 | Improperly driven three-state net（TEST-115） |
-| PRE-DFT | 4,335 | D1=2,986、D2=26、D3=1,306、D12=6、D16=1、D17=10 |
+| 建模与用户约束类（Modeling） | 13 | Cell has unknown model（TEST-451） |
+| 结构连接类（Topology） | 432 | Improperly driven three-state net（TEST-115） |
+| 扫描插入前类（Pre-DFT） | 4,335 | D1=2,986、D2=26、D3=1,306、D12=6、D16=1、D17=10 |
 
 ![图：首次 DRC 违规报告](../assets/figures/lab3-p10-drc-before-protocol.png)
 
@@ -347,25 +349,25 @@ dft_drc
 
 **答案**：
 
-- MODELING VIOLATIONS 和 TOPOLOGY VIOLATIONS 基本没有变化。
-- PRE-DFT VIOLATIONS 减少。
-- 新出现 OTHER VIOLATIONS，典型为 TEST-504、TEST-505，对应被声明为常量的单元/信号。
+- 建模与用户约束类（Modeling）违规和结构连接类（Topology）违规基本没有变化。
+- 扫描插入前类（Pre-DFT）违规减少。
+- 新出现其他类（Other）违规，典型为 TEST-504、TEST-505，对应被声明为常量的单元或信号。
 
 重新创建协议后的报告示例为 **494** 个违规，具体为：
 
 | 类别 | 数量 | 主要内容 |
 | --- | ---: | --- |
-| MODELING | 13 | unknown model（TEST-451） |
-| TOPOLOGY | 432 | improperly driven three-state net（TEST-115） |
-| PRE-DFT | 46 | D12=6、D14=20、D17=20 |
-| OTHER | 3 | constant 0=1（TEST-504）、constant 1=2（TEST-505） |
+| 建模与用户约束类（Modeling） | 13 | unknown model（TEST-451） |
+| 结构连接类（Topology） | 432 | improperly driven three-state net（TEST-115） |
+| 扫描插入前类（Pre-DFT） | 46 | D12=6、D14=20、D17=20 |
+| 其他类（Other） | 3 | constant 0=1（TEST-504）、constant 1=2（TEST-505） |
 
 顺序单元报告还显示：35/3002 个顺序单元有违规，32 个为 DFT 规则违规、1 个为常量 0、2 个为常量 1；其余 2967 个为有效扫描单元。重点不是追求所有数字为零，而是理解初始化协议消除了哪些前置可测性问题。
 
 ![图：最终 DRC 报告](../assets/figures/lab3-p11-drc-final.png)
 
 > [!note] 提示
-> 初始化向量减少了 PRE-DFT 类违规，而模型与拓扑类结果基本不变；TEST-504 和 TEST-505 与常量约束有关。配置寄存器不进入扫描链，可避免测试期间的移位或捕获改变芯片工作状态。
+> 初始化向量减少了扫描插入前类（Pre-DFT）违规，而建模与用户约束类（Modeling）及结构连接类（Topology）结果基本不变；TEST-504 和 TEST-505 与常量约束有关。配置寄存器不进入扫描链，可避免测试期间的移位或捕获改变芯片工作状态。
 
 ### 问题 14
 

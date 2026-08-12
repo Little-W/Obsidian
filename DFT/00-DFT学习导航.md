@@ -12,6 +12,8 @@ updated: 2026-08-12
 
 > 本文档集覆盖数字电路可测性、扫描链、DFT Compiler/DC 命令和实验流程。
 
+术语参照：[[术语与翻译规范]]。
+
 ## 一、先建立整体认识
 
 DFT（Design for Test，可测性设计）的核心不是“额外加一些测试逻辑”，而是让芯片内部状态满足两件事：
@@ -36,16 +38,19 @@ DFT（Design for Test，可测性设计）的核心不是“额外加一些测�
 | --- | --- | --- |
 | 1 | [[dc指令/DFT-Compiler基本使用方法]] | 内部扫描、边界扫描、全扫描与基本流程 |
 | 2 | [[dc指令/常用synopsys--dc命令详解]] | DC/Tcl 基础命令和报告检查 |
-| 3 | [[dc指令/Synopsys-DFTC-Lab]] | DFT Compiler 工作坊的完整流程工艺实现 |
-| 4 | [[DC实验手册/DFTC lab3]] | 测试协议、时钟、复位和协议 DRC |
-| 5 | [[DC实验手册/DFTC lab4]] | DFT DRC 与 ATPG 覆盖率 |
-| 6 | [[DC实验手册/DFTC lab5]] | Design Vision 图形化查看和调试 |
-| 7 | [[DC实验手册/DFTC lab6]] | DFT 违规定位与修复 |
-| 8 | [[DC实验手册/DFTC lab7 update]] | 分层/自顶向下扫描插入 |
-| 9 | [[DC实验手册/DFTC lab8]] | 扫描设计交接与测试数据输出 |
-| 10 | [[DC实验手册/DFTC lab9]] | 扫描链平衡、容量和运行时间优化 |
-| 11 | [[dc指令/Synopsis_DFT_User_Guider (1)]] | 用户指南主题索引与常用检查项 |
-| 12 | [[dc指令/syn2（compile的都在这里面）]] | Design Compiler 编译命令与 DFT 接口 |
+| 3 | [[商业工具实验准备]] | Synopsys `dc_shell V-2023.12-SP3` 的实验入口与当前命令 |
+| 4 | [[实验配套资料/README]] | ISCAS89 小型时序电路与 Logic BIST 多扫描链工程；按 Lab 3 至 Lab 9 选用 |
+| 5 | [[dc指令/Synopsys-DFTC-Lab]] | DFT Compiler Workshop 的完整目标库实现（Technology Mapping）流程 |
+| 6 | [[DC实验手册/DFTC lab3]] | 测试协议、时钟、复位和协议 DRC |
+| 7 | [[DC实验手册/DFTC lab4]] | DFT 设计规则检查（DFT DRC）与 ATPG 覆盖率 |
+| 8 | [[DC实验手册/DFTC lab5]] | Design Vision 图形化查看和调试 |
+| 9 | [[DC实验手册/DFTC lab6]] | DFT 违规定位与修复 |
+| 10 | [[DC实验手册/DFTC lab7 update]] | 分层/自顶向下扫描插入 |
+| 11 | [[DC实验手册/DFTC lab8]] | 扫描设计交接与测试数据输出 |
+| 12 | [[DC实验手册/DFTC lab9]] | 扫描链平衡、容量和运行时间优化 |
+| 13 | [[dc指令/Synopsis_DFT_User_Guider (1)]] | 用户指南主题索引与常用检查项 |
+| 14 | [[dc指令/syn2（compile的都在这里面）]] | Design Compiler 编译命令与 DFT 接口 |
+| 15 | [[开源实验资源/README]] | FAN_ATPG 与 Fault 的补充训练 |
 
 ## 三、必须掌握的结构
 
@@ -63,7 +68,7 @@ JTAG 通过 TAP 控制器和边界扫描寄存器访问芯片 I/O，常用于板
 
 ### 3. ATPG
 
-ATPG 根据故障模型寻找测试激励，并通过扫描链装载、捕获和移出响应。覆盖率低时，优先检查 DFT DRC、时钟/复位可控性、黑盒和约束，而不是盲目增加测试向量。
+ATPG 根据故障模型寻找测试激励，并通过扫描链装载、捕获和移出响应。覆盖率低时，优先检查 DFT 设计规则检查（DFT DRC）、时钟/复位可控性、黑盒和约束，而不是盲目增加测试向量。
 
 ![ATPG 故障测试](assets/ATPG故障测试.svg)
 
@@ -72,7 +77,7 @@ ATPG 根据故障模型寻找测试激励，并通过扫描链装载、捕获和
 - [ ] 工艺库中存在目标扫描触发器单元，且没有被误设为 `dont_use`。
 - [ ] 测试时钟、扫描时钟、复位和测试模式信号均已定义。
 - [ ] 功能模式与测试模式之间的切换条件明确。
-- [ ] `check_scan`、DFT DRC 和扫描路径报告没有未解释的违规。
+- [ ] `check_scan`、DFT 设计规则检查（DFT DRC）和扫描路径报告没有未解释的违规。
 - [ ] 扫描链数量、长度和链间电容符合测试时间及功耗预算。
 - [ ] ATPG 覆盖率报告中，可检测、不可检测和未覆盖故障均有原因分类。
 - [ ] 交付物包含扫描网表、测试协议、约束、报告和版本信息。
@@ -90,4 +95,5 @@ ATPG 根据故障模型寻找测试激励，并通过扫描链装载、捕获和
 | SPF / STIL | 测试协议/测试接口描述文件格式 |
 | ATPG | 自动测试向量生成 |
 | DRC | 设计规则检查；在 DFT 中重点检查测试可控性和可观测性 |
-| Test Coverage | 故障覆盖率，不等同于功能仿真覆盖率 |
+| Test Coverage | 测试覆盖率（Test Coverage）；应与故障覆盖率（Fault Coverage）和功能仿真覆盖率区分 |
+| Fault Coverage | 故障覆盖率（Fault Coverage） |

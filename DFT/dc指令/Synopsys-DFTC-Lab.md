@@ -10,6 +10,10 @@ updated: 2026-08-12
 
 # Synopsys DFT Compiler Workshop 实验手册
 
+术语参照：[[术语与翻译规范]]。
+
+当前工具入口与版本差异见 [[商业工具实验准备]]。
+
 ## 使用说明
 
 本文按“概念 → 命令 → 检查 → 交付”的顺序组织 DFT Compiler 实验内容，可配合实验 3–9 使用。工程路径、库名和工具版本必须替换为当前项目配置。
@@ -23,7 +27,7 @@ updated: 2026-08-12
 | Lab 3 | 创建测试协议 | 测试时钟、复位、扫描端口、协议 DRC |
 | Lab 4 | DFT 设计规则检查 | DRC 报告和 ATPG 覆盖率估算 |
 | Lab 5 | Design Vision | 图形化查看层次、连线、时序和报告 |
-| Lab 6 | 修复 DFT DRC | 定位违规、提出手工方案、使用 AutoFix |
+| Lab 6 | 修复 DFT 设计规则检查（DFT DRC）违规 | 定位违规、提出手工方案、使用 AutoFix |
 | Lab 7 | 自顶向下扫描插入 | 分层设计的扫描配置和交接 |
 | Lab 8 | 扫描设计交接 | 输出扫描网表、协议、测试模型和报告 |
 | Lab 9 | 运行时间与容量优化 | 链平衡、测试模型、内存和覆盖率分析 |
@@ -64,18 +68,16 @@ preview_dft -help
 - 双向端口、三态控制和必要的稳定时间。
 
 ```tcl
-set_test_default_scan_style multiplexed_flip_flop
-set_test_default_period 100
-set_test_default_strobe 90
-set_test_default_delay 0
-set_test_default_bidir_delay 0
-
-set_test_signal -type ScanEnable -port scan_enable -active_state 1
-set_test_signal -type ScanClock  -port scan_clk
-set_test_signal -type Reset      -port reset_n -active_state 0
+set_dft_configuration -scan_style multiplexed_flip_flop
+set_dft_signal -view existing_dft -type ScanEnable \
+    -port scan_enable -active_state 1
+set_dft_signal -view existing_dft -type ScanClock \
+    -port scan_clk -timing {45 55}
+set_dft_signal -view existing_dft -type Reset \
+    -port reset_n -active_state 0
 ```
 
-> 不同 DFTC 版本的 `set_test_signal` 参数可能不同；以当前版本 `-help` 和用户指南为准。实验要点是先把定义定义清楚，再执行协议 DRC。
+> 本机 `dc_shell V-2023.12-SP3` 使用 `set_dft_signal`。不同 DFTC 版本的命令参数可能不同；以当前版本 `-help` 和用户指南为准。实验要点是先把信号类型、有效电平和时序定义清楚，再执行协议 DRC。
 
 ## 4. 扫描插入的关键检查
 
@@ -86,9 +88,8 @@ set_test_signal -type Reset      -port reset_n -active_state 0
 ```tcl
 link
 check_design
-check_scan
 preview_dft
-report_test -verbose
+report_dft_signal
 ```
 
 确认：
@@ -101,16 +102,14 @@ report_test -verbose
 ### 4.2 插入后
 
 ```tcl
-insert_scan
-check_scan
-report_test -scan_path
-report_test -type dft_drc
-estimate_test_coverage
+insert_dft
+dft_drc
+report_scan_path
 ```
 
 扫描路径报告至少应记录：链编号、起点、终点、单元数量、扫描时钟域和未连接端点。
 
-## 5. DFT DRC 的处理方法
+## 5. DFT 设计规则检查（DFT DRC）的处理方法
 
 不要只看违规编号，要把违规转换成“为什么测试设备无法施加或观察信号”：
 
