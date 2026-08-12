@@ -1,0 +1,648 @@
+
+                        DC Professional (TM)
+                           DC Expert (TM)
+                            DC Ultra (TM)
+                       FloorPlan Manager (TM)
+                          HDL Compiler (TM)
+                         VHDL Compiler (TM)
+                        Library Compiler (TM)
+                      DesignWare Developer (TM)
+                          DFT Compiler (TM)
+                            BSD Compiler
+                         Power Compiler (TM)
+
+           Version D-2010.03-SP1 for linux -- Apr 18, 2010
+              Copyright (c) 1988-2010 by Synopsys, Inc.
+                         ALL RIGHTS RESERVED
+
+This software and the associated documentation are confidential and 
+proprietary to Synopsys, Inc. Your use or disclosure of this software 
+is subject to the terms and conditions of a written license agreement 
+between you, or your company, and Synopsys, Inc.
+
+The above trademark notice does not imply that you are licensed to use 
+all of the listed products. You are licensed to use only those products 
+for which you have lawfully obtained a valid license key.
+
+Initializing...
+Sourcing ../ref/scripts/procs.tcl...
+Defining custom procedure "rename_test_designs"
+Defining custom procedure "async_domain"
+Defining custom procedure "echo_col"
+Defining custom procedure "flatten_block"
+Defining custom procedure "zero_io_nets"
+Defining custom procedure "report_clock_endpoint_skew"
+
+Executing common setup file 'ref/dc_settings.tcl' ...
+
+
+Settings:
+link_library:      * sc_max.db io_max.db rams_max.db special.db dw_foundation.sldb
+target_library:    sc_max.db
+search_path:       . /global/apps5/syn_2010.03-SP1/libraries/syn /global/apps5/syn_2010.03-SP1/dw/syn_ver /global/apps5/syn_2010.03-SP1/dw/sim_ver ../ref/db ./scripts
+
+
+
+I am ready...
+
+
+
+Loading db file '/global/gtsna_training/projects/DFTCompiler_1/dev_shawn/ref/db/sc_max.db'
+Loading db file '/global/gtsna_training/projects/DFTCompiler_1/dev_shawn/ref/db/io_max.db'
+Loading db file '/global/gtsna_training/projects/DFTCompiler_1/dev_shawn/ref/db/rams_max.db'
+Loading db file '/global/gtsna_training/projects/DFTCompiler_1/dev_shawn/ref/db/special.db'
+Loading db file '/global/apps5/syn_2010.03-SP1/libraries/syn/dw_foundation.sldb'
+Loading db file '/global/apps5/syn_2010.03-SP1/libraries/syn/gtech.db'
+Loading db file '/global/apps5/syn_2010.03-SP1/libraries/syn/standard.sldb'
+  Loading link library 'cb13fs120_tsmc_max'
+  Loading link library 'cb13io320_tsmc_max'
+  Loading link library 'cb13_tsmc_memory_max'
+  Loading link library 'cb13special'
+  Loading link library 'gtech'
+Reading ddc file '/global/gtsna_training/projects/DFTCompiler_1/dev_shawn/dev_lab8_topdown/unmapped/ORCA.ddc'.
+Loaded 28 designs.
+Current design is 'ORCA'.
+
+  Linking design 'ORCA'
+  Using the following designs and libraries:
+  --------------------------------------------------------------------------
+  * (28 designs)              /global/gtsna_training/projects/DFTCompiler_1/dev_shawn/dev_lab8_topdown/unmapped/ORCA.ddc, etc
+  cb13fs120_tsmc_max (library) /global/gtsna_training/projects/DFTCompiler_1/dev_shawn/ref/db/sc_max.db
+  cb13io320_tsmc_max (library) /global/gtsna_training/projects/DFTCompiler_1/dev_shawn/ref/db/io_max.db
+  cb13_tsmc_memory_max (library) /global/gtsna_training/projects/DFTCompiler_1/dev_shawn/ref/db/rams_max.db
+  cb13special (library)       /global/gtsna_training/projects/DFTCompiler_1/dev_shawn/ref/db/special.db
+  dw_foundation.sldb (library) /global/apps5/syn_2010.03-SP1/libraries/syn/dw_foundation.sldb
+
+#
+# Constraints for the ORCA chip
+# by AS on 2002.04.10
+#
+# Last modified: 2003.05.11
+# Time Unit: ns
+# Cap Unit : pf
+# Test clocks
+#  create_clock -period 20 [get_ports test_sys2x_clk]
+#  create_clock -period 20 [get_ports test_mem_clk]
+# IEEE 1149.1 TCK clock at 100 MHz
+#create_clock -period 10 [get_ports TCK]
+# PCI clock at 66 MHz
+create_clock -period 15.0 -name pclk [get_ports pclk]
+1
+# System clock at 125 MHz
+create_clock -period 8.0 -name sys_clk [get_ports sys_clk]
+1
+# sdram clock at 133 MHz
+create_clock -period 7.5 -name sdr_clk [get_ports sdr_clk]
+1
+# Create PLL clocks
+# Internal PCI clock
+create_generated_clock  -name PCI_CLK  -source [get_pins I_CLOCK_GEN/I_PLL_PCI/REF_CLK]  -multiply_by 1  [get_pins I_CLOCK_GEN/I_PLL_PCI/CLK] 
+1
+# SDRAM clock
+create_generated_clock  -name SDRAM_CLK  -source [get_pins I_CLOCK_GEN/I_PLL_SD/REF_CLK]  -multiply_by 1  [get_pins I_CLOCK_GEN/I_PLL_SD/CLK]
+1
+# Create outgoing clocks for DDR interface
+create_generated_clock  -name SD_DDR_CLK  -source [get_pins I_CLOCK_GEN/I_PLL_SD/CLK]  -divide_by 1  [get_ports sd_CK]
+1
+#  create_generated_clock #      -source [get_pins I_CLOCK_GEN/I_PLL_SD/CLK] #      -divide_by 1 -invert #      -name SD_DDR_CLKn #      [get_ports sd_CKn]
+# System clocks
+create_generated_clock  -name SYS_CLK  -source [get_pins I_CLOCK_GEN/I_CLKMUL/CLK_IN]  -multiply_by 1  [get_pins I_CLOCK_GEN/I_CLKMUL/CLK_1X]
+1
+create_generated_clock  -name SYS_2x_CLK  -source [get_pins I_CLOCK_GEN/I_CLKMUL/CLK_IN]  -multiply_by 2  [get_pins I_CLOCK_GEN/I_CLKMUL/CLK_2X]
+1
+# Set faster functional mode
+set_case_analysis 0 [get_ports power_save]
+1
+set_case_analysis 1 [get_ports pm66en]
+1
+set_case_analysis 0 [get_ports test_mode]
+1
+set_case_analysis 0 [get_ports scan_en]
+1
+#set_case_analysis 0 [get_pins I_CLOCK_GEN/I_CLKMUL/clk_2x]
+#set_case_analysis 0 [get_ports test_*_clk]
+# False paths between clock domains. async_domain is a user-defined function
+async_domain SYS_CLK PCI_CLK
+1
+async_domain SYS_2x_CLK PCI_CLK
+1
+async_domain PCI_CLK SDRAM_CLK
+1
+async_domain SYS_CLK SDRAM_CLK
+1
+async_domain SYS_2x_CLK SDRAM_CLK
+1
+#async_domain PCI_CLK TCK
+#async_domain SDRAM_CLK TCK
+# Don't mess with any clocks for now...
+set_dont_touch_network [all_clocks]
+1
+set_clock_uncertainty -setup 0.4 [get_clocks SYS_CLK]
+1
+set_clock_uncertainty -setup 0.4 [get_clocks SYS_2x_CLK]
+1
+set_clock_uncertainty -setup 0.3 [get_clocks PCI_CLK]
+1
+set_clock_uncertainty -setup 0.3 [get_clocks SDRAM_CLK]
+1
+#set_dont_touch_network [get_ports scan_en]
+#set mode_ports [get_ports "scan_en test_mode iddq_mode power_save"]
+#set TAP_ports [get_ports "TDI TDO TMS TCK TRST"]
+# Constrain interface
+set pci_io_ports [get_ports p* -filter "port_direction==inout"]
+{pad[15] pad[14] pad[13] pad[12] pad[11] pad[10] pad[9] pad[8] pad[7] pad[6] pad[5] pad[4] pad[3] pad[2] pad[1] pad[0] pc_be[3] pc_be[2] pc_be[1] pc_be[0] ppar pframe_n ptrdy_n pirdy_n pdevsel_n pstop_n pperr_n pserr_n}
+set pci_in_ports [add_to_collection [get_ports "pidsel pgnt_n pm66en"] $pci_io_ports]
+{pidsel pgnt_n pm66en pad[15] pad[14] pad[13] pad[12] pad[11] pad[10] pad[9] pad[8] pad[7] pad[6] pad[5] pad[4] pad[3] pad[2] pad[1] pad[0] pc_be[3] pc_be[2] pc_be[1] pc_be[0] ppar pframe_n ptrdy_n pirdy_n pdevsel_n pstop_n pperr_n pserr_n}
+set pci_out_ports [add_to_collection [get_ports "preq_n"] $pci_io_ports]
+{preq_n pad[15] pad[14] pad[13] pad[12] pad[11] pad[10] pad[9] pad[8] pad[7] pad[6] pad[5] pad[4] pad[3] pad[2] pad[1] pad[0] pc_be[3] pc_be[2] pc_be[1] pc_be[0] ppar pframe_n ptrdy_n pirdy_n pdevsel_n pstop_n pperr_n pserr_n}
+set pci_ports [add_to_collection $pci_io_ports [get_ports "pidsel pgnt_n pm66en preq_n"] ]
+{pad[15] pad[14] pad[13] pad[12] pad[11] pad[10] pad[9] pad[8] pad[7] pad[6] pad[5] pad[4] pad[3] pad[2] pad[1] pad[0] pc_be[3] pc_be[2] pc_be[1] pc_be[0] ppar pframe_n ptrdy_n pirdy_n pdevsel_n pstop_n pperr_n pserr_n pidsel pgnt_n pm66en preq_n}
+set sd_io_ddr_ports [get_ports "sd_DQ*"]
+{sd_DQ[15] sd_DQ[14] sd_DQ[13] sd_DQ[12] sd_DQ[11] sd_DQ[10] sd_DQ[9] sd_DQ[8] sd_DQ[7] sd_DQ[6] sd_DQ[5] sd_DQ[4] sd_DQ[3] sd_DQ[2] sd_DQ[1] sd_DQ[0]}
+set sd_out_ports [remove_from_collection [get_ports sd_*]  [add_to_collection $sd_io_ddr_ports [get_ports "sd_CK sd_CKn"]]]
+{sd_A[9] sd_A[8] sd_A[7] sd_A[6] sd_A[5] sd_A[4] sd_A[3] sd_A[2] sd_A[1] sd_A[0] sd_BWS[1] sd_BWS[0] sd_LD sd_RW}
+set sd_ports [add_to_collection $sd_io_ddr_ports $sd_out_ports]
+{sd_DQ[15] sd_DQ[14] sd_DQ[13] sd_DQ[12] sd_DQ[11] sd_DQ[10] sd_DQ[9] sd_DQ[8] sd_DQ[7] sd_DQ[6] sd_DQ[5] sd_DQ[4] sd_DQ[3] sd_DQ[2] sd_DQ[1] sd_DQ[0] sd_A[9] sd_A[8] sd_A[7] sd_A[6] sd_A[5] sd_A[4] sd_A[3] sd_A[2] sd_A[1] sd_A[0] sd_BWS[1] sd_BWS[0] sd_LD sd_RW}
+set mode_ports [get_ports "scan_en test_mode power_save"]
+{scan_en test_mode power_save}
+# Constrain PCI ports for functional clocks
+set_input_delay 8.0 -max -clock PCI_CLK -add_delay $pci_in_ports
+1
+set_input_delay 2.0 -min -clock PCI_CLK -add_delay  $pci_in_ports
+1
+set_output_delay 4.0 -max -clock PCI_CLK -add_delay $pci_out_ports
+1
+set_output_delay -1.0 -min -clock PCI_CLK -add_delay $pci_out_ports
+1
+set_load 15 $pci_ports 
+1
+# Constrain SDRAM ports for functional clocks
+set_input_delay 0.800 -max -add_delay -clock SDRAM_CLK $sd_io_ddr_ports
+1
+set_input_delay 0.800 -max -add_delay -clock SDRAM_CLK -clock_fall $sd_io_ddr_ports
+1
+set_input_delay 0.200 -min -add_delay -clock SDRAM_CLK $sd_io_ddr_ports
+1
+set_input_delay 0.200 -min -add_delay -clock SDRAM_CLK -clock_fall $sd_io_ddr_ports
+1
+set_output_delay 0.750 -max -add_delay -clock SD_DDR_CLK $sd_ports
+1
+set_output_delay 0.750 -max -add_delay -clock SD_DDR_CLK -clock_fall $sd_io_ddr_ports
+1
+set_output_delay -0.100 -min -add_delay -clock SD_DDR_CLK $sd_ports
+1
+set_output_delay -0.100 -min -add_delay -clock SD_DDR_CLK -clock_fall $sd_io_ddr_ports
+1
+set_load 20 $sd_ports
+1
+set_load 5 [get_ports "sd_CK sd_CKn"]
+1
+# Setup gating checks for DDR interface
+set all_I0_mux_pins [get_pins I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_*/I0]
+{I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_15/I0 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_14/I0 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_13/I0 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_12/I0 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_11/I0 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_10/I0 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_9/I0 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_8/I0 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_7/I0 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_6/I0 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_5/I0 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_4/I0 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_3/I0 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_2/I0 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_1/I0 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/I0}
+set all_I1_mux_pins [get_pins I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_*/I1]
+{I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_15/I1 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_14/I1 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_13/I1 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_12/I1 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_11/I1 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_10/I1 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_9/I1 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_8/I1 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_7/I1 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_6/I1 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_5/I1 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_4/I1 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_3/I1 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_2/I1 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_1/I1 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/I1}
+set_clock_gating_check -low -setup 0 -hold 0 $all_I0_mux_pins
+1
+set_clock_gating_check -high -setup 0 -hold 0 $all_I1_mux_pins
+1
+# Set all input transitions
+set_input_transition 0.500 [all_inputs]
+1
+set_input_transition 1.000 $pci_in_ports
+1
+# Set up constraints for clock gating in Blender design
+set_clock_gating_check -setup 0.200 -hold 0.200  [get_clocks SYS_CLK]
+1
+# Constrain mode inputs
+set_input_delay 4.0 -max -clock PCI_CLK $mode_ports
+1
+set_input_delay 2.0 -min -clock PCI_CLK $mode_ports
+1
+set_load 10 $mode_ports
+1
+# Set scan configuration
+set_scan_configuration -style multiplexed_flip_flop
+Accepted scan configuration for modes: all_dft
+1
+# Wire load models:
+#  set_wire_load_mode top
+#  set_wire_load_model -name 40KGATES
+# The IO2 ports are only used  as OUTPUTs, therefore the input paths are false paths! (BIDI ports!)
+set_false_path -to I_ORCA_TOP/I_RISC_CORE/I_REG_FILE/REG_FILE_A_RAM/IO2[*]
+1
+set_false_path -to I_ORCA_TOP/I_RISC_CORE/I_REG_FILE/REG_FILE_B_RAM/IO2[*]
+1
+set_false_path -to I_ORCA_TOP/I_CONTEXT_MEM/CONTEXT_RAM_0/IO2[*]
+1
+set_false_path -to I_ORCA_TOP/I_CONTEXT_MEM/CONTEXT_RAM_1/IO2[*]
+1
+set_false_path -to I_ORCA_TOP/I_CONTEXT_MEM/CONTEXT_RAM_2/IO2[*]
+1
+set_false_path -to I_ORCA_TOP/I_CONTEXT_MEM/CONTEXT_RAM_3/IO2[*]
+1
+set_false_path -to I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_RAM/IO2[*]
+1
+set_false_path -to I_ORCA_TOP/I_SDRAM_READ_FIFO/SD_RFIFO_RAM/IO2[*]
+1
+Warning: Transferring ideal_net attribute onto the driver pin I_ORCA_TOP/I_RESET_BLOCK/C51/Z of net I_ORCA_TOP/pci_rst_n. (UID-606)
+Warning: Transferring ideal_net attribute onto the driver pin I_ORCA_TOP/I_RESET_BLOCK/C55/Z of net I_ORCA_TOP/sdram_rst_n. (UID-606)
+Warning: Transferring ideal_net attribute onto the driver pin I_ORCA_TOP/I_RESET_BLOCK/C59/Z of net I_ORCA_TOP/sys_rst_n. (UID-606)
+Warning: Transferring ideal_net attribute onto the driver pin I_ORCA_TOP/I_RESET_BLOCK/C63/Z of net I_ORCA_TOP/sys_2x_rst_n. (UID-606)
+Information: Choosing a test methodology will restrict the optimization of sequential cells. (UIO-12)
+Information: Checking out the license 'DesignWare'. (SEC-104)
+Warning: Implementation 'cl2' of module 'DW_fifoctl_s2_sf' is replaced by 'str'. The design has 'set_implementation' to the obsolete implementation. (SYNDB-36)
+Warning: The 'implementation' attribute on cell 'I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_CTL' in design 'ORCA' is changed from 'cl2' to 'str'.  (SYNDB-40)
+Warning: The 'implementation' attribute on cell 'I_ORCA_TOP/I_PCI_WRITE_FIFO/PCI_WFIFO_CTL' in design 'ORCA' is changed from 'cl2' to 'str'.  (SYNDB-40)
+Warning: The 'implementation' attribute on cell 'I_ORCA_TOP/I_SDRAM_READ_FIFO/SD_RFIFO_CTL' in design 'ORCA' is changed from 'cl2' to 'str'.  (SYNDB-40)
+Warning: The 'implementation' attribute on cell 'I_ORCA_TOP/I_SDRAM_WRITE_FIFO/SD_WFIFO_CTL' in design 'ORCA' is changed from 'cl2' to 'str'.  (SYNDB-40)
+Information: Evaluating DesignWare library utilization. (UISN-27)
+
+============================================================================
+| DesignWare Building Block Library       |      Version       | Available |
+============================================================================
+| Basic DW Building Blocks                | D-2010.03-DWBB_1004 |    *     |
+| Licensed DW Building Blocks             | D-2010.03-DWBB_1004 |    *     |
+============================================================================
+
+
+Information: There are 401 potential problems in your design. Please run 'check_design' for more information. (LINT-99)
+
+
+
+  Beginning Pass 1 Mapping
+  ------------------------
+  Processing 'SD_W_MUX'
+  Processing 'PCI_W_MUX'
+  Processing 'SDRAM_WFIFO'
+  Processing 'SDRAM_RFIFO'
+  Processing 'PCI_WFIFO'
+  Processing 'PCI_RFIFO'
+  Processing 'SDRAM_IF'
+  Processing 'BLENDER'
+  Processing 'STACK_MEM_0'
+  Processing 'STACK_FSM'
+  Processing 'STACK_TOP'
+  Processing 'REG_FILE'
+  Processing 'PRGRM_CNT'
+  Processing 'PRGRM_DECODE'
+  Processing 'PRGRM_FSM'
+  Processing 'PRGRM_CNT_TOP'
+  Processing 'INSTRN_LAT'
+  Processing 'DATA_PATH'
+  Processing 'CONTROL'
+  Processing 'ALU'
+Information: The register 'Carry_Flag_reg' is a constant and will be removed. (OPT-1206)
+  Processing 'RISC_CORE'
+  Processing 'CONTEXT_MEM'
+  Processing 'PARSER'
+  Processing 'PCI_CORE'
+  Processing 'RESET_BLOCK'
+  Processing 'ORCA_TOP'
+  Processing 'CLOCK_GEN'
+  Processing 'ORCA'
+
+  Updating timing information
+Information: Updating design information... (UID-85)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U5'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_RISC_CORE/U3'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_CTL'on pin 'clk_push' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_WRITE_FIFO/PCI_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_WRITE_FIFO/PCI_WFIFO_CTL'on pin 'clk_pop' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_READ_FIFO/SD_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_READ_FIFO/SD_RFIFO_CTL'on pin 'clk_push' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_WRITE_FIFO/SD_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_WRITE_FIFO/SD_WFIFO_CTL'on pin 'clk_pop' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U3'on pin 'A2' in design 'ORCA'. (TIM-141)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK'
+ from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_15/Z' is detected. (TIM-052)
+
+  Beginning Implementation Selection
+  ----------------------------------
+  Processing 'SDRAM_WFIFO_DW_fifoctl_s2_sf_0'
+  Processing 'SDRAM_WFIFO_DW_FIFOCTL_IF_0'
+  Mapping 'SDRAM_WFIFO_DW_inc_0'
+  Processing 'SDRAM_WFIFO_DW01_sub_0'
+  Processing 'SDRAM_WFIFO_DW_FIFOCTL_IF_1'
+  Mapping 'SDRAM_WFIFO_DW_inc_1'
+  Processing 'SDRAM_WFIFO_DW01_sub_1'
+  Processing 'SDRAM_RFIFO_DW_fifoctl_s2_sf_0'
+  Processing 'SDRAM_RFIFO_DW_FIFOCTL_IF_0'
+  Mapping 'SDRAM_RFIFO_DW_inc_0'
+  Processing 'SDRAM_RFIFO_DW01_sub_0'
+  Processing 'SDRAM_RFIFO_DW_FIFOCTL_IF_1'
+  Mapping 'SDRAM_RFIFO_DW_inc_1'
+  Processing 'SDRAM_RFIFO_DW01_sub_1'
+  Processing 'PCI_WFIFO_DW_fifoctl_s2_sf_0'
+  Processing 'PCI_WFIFO_DW_FIFOCTL_IF_0'
+  Mapping 'PCI_WFIFO_DW_inc_0'
+  Processing 'PCI_WFIFO_DW01_sub_0'
+  Processing 'PCI_WFIFO_DW_FIFOCTL_IF_1'
+  Mapping 'PCI_WFIFO_DW_inc_1'
+  Processing 'PCI_WFIFO_DW01_sub_1'
+  Processing 'PCI_RFIFO_DW_fifoctl_s2_sf_0'
+  Processing 'PCI_RFIFO_DW_FIFOCTL_IF_0'
+  Mapping 'PCI_RFIFO_DW_inc_0'
+  Processing 'PCI_RFIFO_DW01_sub_0'
+  Processing 'PCI_RFIFO_DW_FIFOCTL_IF_1'
+  Mapping 'PCI_RFIFO_DW_inc_1'
+  Processing 'PCI_RFIFO_DW01_sub_1'
+  Processing 'SDRAM_IF_DW01_add_0'
+  Processing 'SDRAM_IF_DW01_add_1'
+  Processing 'SDRAM_IF_DW01_add_2'
+  Processing 'SDRAM_IF_DW01_add_3'
+  Processing 'SDRAM_IF_DW01_add_4'
+  Processing 'SDRAM_IF_DW01_add_5'
+  Processing 'SDRAM_IF_DW01_add_6'
+  Processing 'SDRAM_IF_DW01_add_7'
+  Processing 'BLENDER_DW01_add_0'
+  Processing 'BLENDER_DW01_add_1'
+  Processing 'BLENDER_DW01_add_2'
+  Processing 'BLENDER_DW01_add_3'
+  Processing 'BLENDER_DW01_sub_0'
+  Processing 'BLENDER_DW01_add_4'
+  Processing 'BLENDER_DW01_sub_1'
+  Processing 'BLENDER_DW01_add_5'
+  Processing 'BLENDER_DW01_add_6'
+  Processing 'PRGRM_CNT_DW01_inc_0'
+  Processing 'ALU_DW01_dec_0'
+  Processing 'ALU_DW01_sub_0'
+  Processing 'ALU_DW01_sub_1'
+  Processing 'ALU_DW01_inc_0'
+  Processing 'ALU_DW01_add_0'
+  Processing 'ALU_DW01_add_1'
+  Processing 'CONTEXT_MEM_DW01_inc_0'
+  Processing 'CONTEXT_MEM_DW01_inc_1'
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U5'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_RISC_CORE/U3'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_WRITE_FIFO/PCI_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_READ_FIFO/SD_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_WRITE_FIFO/SD_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U3'on pin 'A2' in design 'ORCA'. (TIM-141)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK'
+ from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_15/Z' is detected. (TIM-052)
+  Mapping 'BLENDER_DW_mult_uns_0'
+  Mapping 'BLENDER_DW_mult_uns_1'
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U5'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_RISC_CORE/U3'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_WRITE_FIFO/PCI_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_READ_FIFO/SD_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_WRITE_FIFO/SD_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U3'on pin 'A2' in design 'ORCA'. (TIM-141)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK'
+ from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_15/Z' is detected. (TIM-052)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U5'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_RISC_CORE/U3'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_WRITE_FIFO/PCI_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_READ_FIFO/SD_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_WRITE_FIFO/SD_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U3'on pin 'A2' in design 'ORCA'. (TIM-141)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK'
+ from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_15/Z' is detected. (TIM-052)
+
+  Beginning Mapping Optimizations  (Medium effort)
+  -------------------------------
+
+   ELAPSED            WORST NEG TOTAL NEG  DESIGN                            
+    TIME      AREA      SLACK     SLACK   RULE COST         ENDPOINT         
+  --------- --------- --------- --------- --------- -------------------------
+    0:00:42  399410.0      1.22      29.8    1529.5                          
+    0:00:43  399410.5      1.22      30.3    1529.5                          
+    0:00:43  399410.5      1.22      30.3    1529.5                          
+    0:00:44  399419.7      1.22      29.8    1529.5                          
+    0:00:44  399419.7      1.22      29.8    1529.5                          
+    0:00:51  397066.2      1.22      31.0    1529.5                          
+    0:00:52  397062.3      1.22      29.8    1529.5                          
+    0:00:52  397047.5      1.22      30.9    1529.5                          
+    0:00:53  397060.5      1.22      29.8    1529.5                          
+    0:00:53  397051.2      1.22      29.9    1529.5                          
+    0:00:53  397057.4      1.22      29.8    1529.5                          
+    0:00:54  397049.4      1.22      30.8    1529.5                          
+    0:00:54  397050.0      1.22      30.2    1529.5                          
+    0:00:54  397055.2      1.22      29.8    1529.5                          
+    0:00:55  397052.8      1.22      29.9    1529.5                          
+    0:00:55  397054.5      1.22      29.8    1529.5                          
+    0:00:55  397062.5      1.22      29.8    1529.5                          
+    0:00:56  397067.1      1.22      29.8    1529.5                          
+    0:00:56  397067.1      1.22      29.8    1529.5                          
+    0:00:56  397047.8      1.22      29.8    1529.5                          
+    0:00:56  397047.8      1.22      29.8    1529.5                          
+    0:00:56  397097.6      1.22      29.8       0.2                          
+    0:00:56  397101.7      1.22      29.8       0.0                          
+    0:00:56  397101.7      1.22      29.8       0.0                          
+    0:00:56  397101.7      1.22      29.8       0.0                          
+    0:00:56  397101.7      1.22      29.8       0.0                          
+
+
+
+  Beginning Delay Optimization Phase
+  ----------------------------------
+
+   ELAPSED            WORST NEG TOTAL NEG  DESIGN                            
+    TIME      AREA      SLACK     SLACK   RULE COST         ENDPOINT         
+  --------- --------- --------- --------- --------- -------------------------
+    0:00:57  397041.1      1.22      29.8       0.0                          
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U5'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_RISC_CORE/U3'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_WRITE_FIFO/PCI_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_READ_FIFO/SD_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_WRITE_FIFO/SD_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U3'on pin 'A2' in design 'ORCA'. (TIM-141)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK'
+ from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_15/Z' is detected. (TIM-052)
+    0:00:57  397041.1      1.22      29.8       0.0                          
+    0:01:00  397049.0      1.22      29.8       0.0                          
+    0:01:00  397048.2      1.22      29.8       0.0                          
+
+
+  Beginning Area-Recovery Phase  (cleanup)
+  -----------------------------
+
+   ELAPSED            WORST NEG TOTAL NEG  DESIGN                            
+    TIME      AREA      SLACK     SLACK   RULE COST         ENDPOINT         
+  --------- --------- --------- --------- --------- -------------------------
+    0:01:01  397048.6      1.22      29.8       0.0                          
+    0:01:01  397048.6      1.22      29.8       0.0                          
+    0:01:01  397033.9      1.22      29.8       0.0                          
+    0:01:02  397030.3      1.22      29.8       0.0                          
+    0:01:02  397029.1      1.22      29.8       0.0                          
+    0:01:02  397027.9      1.22      29.8       0.0                          
+    0:01:02  397026.8      1.22      29.8       0.0                          
+    0:01:02  397026.8      1.22      29.8       0.0                          
+    0:01:02  397026.8      1.22      29.8       0.0                          
+    0:01:02  396993.6      1.22      31.0       0.0                          
+    0:01:02  396993.3      1.22      31.0       0.0                          
+    0:01:02  396993.3      1.22      31.0       0.0                          
+    0:01:02  396993.3      1.22      31.0       0.0                          
+    0:01:02  396993.3      1.22      31.0       0.0                          
+    0:01:02  396993.3      1.22      31.0       0.0                          
+    0:01:02  396993.3      1.22      31.0       0.0                          
+    0:01:03  397003.4      1.22      29.8       0.0                          
+Loading db file '/global/gtsna_training/projects/DFTCompiler_1/dev_shawn/ref/db/sc_max.db'
+Loading db file '/global/gtsna_training/projects/DFTCompiler_1/dev_shawn/ref/db/io_max.db'
+Loading db file '/global/gtsna_training/projects/DFTCompiler_1/dev_shawn/ref/db/rams_max.db'
+Loading db file '/global/gtsna_training/projects/DFTCompiler_1/dev_shawn/ref/db/special.db'
+
+  Optimization Complete
+  ---------------------
+Warning: Design 'ORCA' contains 3 high-fanout nets. A fanout number of 1000 will be used for delay calculations involving these nets. (TIM-134)
+     Net 'I_ORCA_TOP/I_SDRAM_READ_FIFO/SD_RFIFO_CTL/U1/clk': 1195 load(s), 1 driver(s)
+     Net 'I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_CTL/U1/clk': 1087 load(s), 1 driver(s)
+     Net 'I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_CTL/U2/rst_n': 1072 load(s), 1 driver(s)
+Information: Updating design information... (UID-85)
+Warning: Design 'ORCA' contains 3 high-fanout nets. A fanout number of 1000 will be used for delay calculations involving these nets. (TIM-134)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U5'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_RISC_CORE/U3'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_WRITE_FIFO/PCI_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_READ_FIFO/SD_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_WRITE_FIFO/SD_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U3'on pin 'A2' in design 'ORCA'. (TIM-141)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK'
+ from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_15/Z' is detected. (TIM-052)
+Current design is 'ORCA'.
+Information: Choosing a test methodology will restrict the optimization of sequential cells. (UIO-12)
+
+Information: There are 346 potential problems in your design. Please run 'check_design' for more information. (LINT-99)
+
+
+
+  Beginning Pass 1 Mapping  (Incremental)
+  ------------------------
+
+  Updating timing information
+Information: The register 'I_ORCA_TOP/I_RISC_CORE/PopDataOut_reg[3]2' will be removed. (OPT-1207)
+Information: The register 'I_ORCA_TOP/I_RISC_CORE/Stack_Mem_reg[7][3]2' will be removed. (OPT-1207)
+Information: The register 'I_ORCA_TOP/I_RISC_CORE/Stack_Mem_reg[6][3]2' will be removed. (OPT-1207)
+Information: The register 'I_ORCA_TOP/I_RISC_CORE/Stack_Mem_reg[5][3]2' will be removed. (OPT-1207)
+Information: The register 'I_ORCA_TOP/I_RISC_CORE/Stack_Mem_reg[4][3]2' will be removed. (OPT-1207)
+Information: The register 'I_ORCA_TOP/I_RISC_CORE/Stack_Mem_reg[3][3]2' will be removed. (OPT-1207)
+Information: The register 'I_ORCA_TOP/I_RISC_CORE/Stack_Mem_reg[2][3]2' will be removed. (OPT-1207)
+Information: The register 'I_ORCA_TOP/I_RISC_CORE/Stack_Mem_reg[1][3]2' will be removed. (OPT-1207)
+Information: The register 'I_ORCA_TOP/I_RISC_CORE/Stack_Mem_reg[0][3]2' will be removed. (OPT-1207)
+Information: Updating design information... (UID-85)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U5'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_RISC_CORE/U3'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_WRITE_FIFO/PCI_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_READ_FIFO/SD_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_WRITE_FIFO/SD_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U3'on pin 'A2' in design 'ORCA'. (TIM-141)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK'
+ from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_15/Z' is detected. (TIM-052)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U5'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_RISC_CORE/U3'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_WRITE_FIFO/PCI_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_READ_FIFO/SD_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_WRITE_FIFO/SD_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U3'on pin 'A2' in design 'ORCA'. (TIM-141)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK'
+ from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_15/Z' is detected. (TIM-052)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U5'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_RISC_CORE/U3'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_WRITE_FIFO/PCI_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_READ_FIFO/SD_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_WRITE_FIFO/SD_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U3'on pin 'A2' in design 'ORCA'. (TIM-141)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK'
+ from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_15/Z' is detected. (TIM-052)
+
+  Beginning Mapping Optimizations  (Medium effort)  (Incremental)
+  -------------------------------
+
+  Beginning Incremental Implementation Selection
+  ----------------------------------------------
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U5'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_RISC_CORE/U3'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_WRITE_FIFO/PCI_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_READ_FIFO/SD_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_WRITE_FIFO/SD_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U3'on pin 'A2' in design 'ORCA'. (TIM-141)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK'
+ from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_15/Z' is detected. (TIM-052)
+
+  Beginning Delay Optimization Phase
+  ----------------------------------
+
+   ELAPSED            WORST NEG TOTAL NEG  DESIGN                            
+    TIME      AREA      SLACK     SLACK   RULE COST         ENDPOINT         
+  --------- --------- --------- --------- --------- -------------------------
+    0:00:05  396432.9      1.22      30.3       0.0                          
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U5'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_RISC_CORE/U3'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_WRITE_FIFO/PCI_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_READ_FIFO/SD_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_WRITE_FIFO/SD_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U3'on pin 'A2' in design 'ORCA'. (TIM-141)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK'
+ from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_15/Z' is detected. (TIM-052)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U5'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_RISC_CORE/U3'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_WRITE_FIFO/PCI_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_READ_FIFO/SD_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_WRITE_FIFO/SD_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U3'on pin 'A2' in design 'ORCA'. (TIM-141)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK'
+ from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_15/Z' is detected. (TIM-052)
+    0:00:11  396438.6      1.22      29.8       0.0                          
+    0:00:14  396444.2      1.22      29.8       0.2                          
+    0:00:14  396443.7      1.22      29.8       0.2                          
+
+
+  Beginning Design Rule Fixing  (max_transition)
+  ----------------------------
+
+   ELAPSED            WORST NEG TOTAL NEG  DESIGN                            
+    TIME      AREA      SLACK     SLACK   RULE COST         ENDPOINT         
+  --------- --------- --------- --------- --------- -------------------------
+    0:00:14  396443.7      1.22      29.8       0.2                          
+    0:00:15  396441.8      1.22      29.8       0.0                          
+
+
+  Beginning Critical Range Optimization
+  -------------------------------------
+
+   ELAPSED            WORST NEG TOTAL NEG  DESIGN                            
+    TIME      AREA      SLACK     SLACK   RULE COST         ENDPOINT         
+  --------- --------- --------- --------- --------- -------------------------
+    0:00:15  396441.8      1.22      29.8       0.0                          
+
+
+  Beginning Critical Range Optimization
+  -------------------------------------
+
+   ELAPSED            WORST NEG TOTAL NEG  DESIGN                            
+    TIME      AREA      SLACK     SLACK   RULE COST         ENDPOINT         
+  --------- --------- --------- --------- --------- -------------------------
+    0:00:15  396441.8      1.22      29.8       0.0                          
+Loading db file '/global/gtsna_training/projects/DFTCompiler_1/dev_shawn/ref/db/sc_max.db'
+Loading db file '/global/gtsna_training/projects/DFTCompiler_1/dev_shawn/ref/db/io_max.db'
+Loading db file '/global/gtsna_training/projects/DFTCompiler_1/dev_shawn/ref/db/rams_max.db'
+Loading db file '/global/gtsna_training/projects/DFTCompiler_1/dev_shawn/ref/db/special.db'
+
+  Optimization Complete
+  ---------------------
+Warning: Design 'ORCA' contains 3 high-fanout nets. A fanout number of 1000 will be used for delay calculations involving these nets. (TIM-134)
+     Net 'I_ORCA_TOP/I_PCI_READ_FIFO/fifo_rst_n': 1062 load(s), 1 driver(s)
+     Net 'I_ORCA_TOP/I_PCI_WRITE_FIFO/fifo_clk_pop': 1077 load(s), 1 driver(s)
+     Net 'I_ORCA_TOP/I_SDRAM_WRITE_FIFO/fifo_clk_pop': 1185 load(s), 1 driver(s)
+Warning: In the design ORCA_TOP, net 'pll_sdram_fb' is connecting multiple ports. (UCN-1)
+Warning: In the design ORCA_TOP, net 'pll_pci_fb' is connecting multiple ports. (UCN-1)
+Warning: The specified replacement character (_) is conflicting with the specified allowed or restricted character.   (UCN-4)
+Writing ddc file 'mapped/ORCA.ddc'.
+
+Memory usage for main task 115 Mbytes.
+Memory usage for this session 115 Mbytes.
+CPU usage for this session 88 seconds ( 0.02 hours ).
+
+Thank you...

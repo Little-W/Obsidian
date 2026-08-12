@@ -1,0 +1,34 @@
+ 
+****************************************
+Report : DFT signals
+Design : RISC_CORE
+Version: V-2023.12-SP3
+Date   : Wed Aug 12 22:27:57 2026
+****************************************
+
+========================================
+TEST MODE: all_dft
+VIEW     : Specification
+========================================
+No DFT signals defined in this mode.
+
+ 
+****************************************
+Report : DFT signals
+Design : RISC_CORE
+Version: V-2023.12-SP3
+Date   : Wed Aug 12 22:27:57 2026
+****************************************
+
+========================================
+TEST MODE: all_dft
+VIEW     : Existing DFT
+========================================
+Port               SignalType          Active    Hookup    Timing    Usage
+----------         ----------          ------    ------    ------    -----
+TEST_MODE          Constant            1         -
+Clk                ScanMasterClock     1         -         P 100.0 R 45.0 F 55.0
+Clk                MasterClock         1         -         P 100.0 R 45.0 F 55.0
+Reset              Reset               0         -         P 100.0 R 55.0 F 45.0
+
+1

@@ -1,0 +1,102 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# DC Setup File
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+lappend search_path ../ref/db ./scripts
+../ref/db ./scripts
+set synthetic_library {dw_foundation.sldb}
+dw_foundation.sldb
+set target_library "sc_max.db"
+sc_max.db
+set link_library "* sc_max.db io_max.db rams_max.db special.db $synthetic_library"
+* sc_max.db io_max.db rams_max.db special.db dw_foundation.sldb
+#misc
+set cache_write ../dc_dw_cache
+Information: Variable 'cache_write' is obsolete and is being ignored. (INFO-100)
+../dc_dw_cache
+set cache_read $cache_write
+Information: Variable 'cache_read' is obsolete and is being ignored. (INFO-100)
+../dc_dw_cache
+set alib_library_analysis_path ../dc_dw_cache
+../dc_dw_cache
+define_design_lib DEFAULT -path ./analyzed
+1
+suppress_message "VHDL-2285 PSYN-040 PSYN-088"
+suppress_message "CMD-041 UID-401 OPT-170"
+echo "Sourcing ../ref/scripts/procs.tcl..."
+Sourcing ../ref/scripts/procs.tcl...
+source ../ref/scripts/procs.tcl
+Defining custom procedure "rename_test_designs"
+Defining custom procedure "async_domain"
+Defining custom procedure "echo_col"
+Defining custom procedure "flatten_block"
+Defining custom procedure "zero_io_nets"
+Defining custom procedure "report_clock_endpoint_skew"
+source ../ref/dc_settings.tcl
+
+Executing common setup file 'ref/dc_settings.tcl' ...
+./logs/dc_shell.cmd.17973.2026-08-12_22-51
+# Enable enhanced dft_drc reporting
+set test_disable_enhanced_dft_drc_reporting false
+false
+alias s "source -echo -verbose"
+echo "\n\nSettings:"
+
+
+Settings:
+echo "link_library:      $link_library"
+link_library:      * sc_max.db io_max.db rams_max.db special.db dw_foundation.sldb
+echo "target_library:    $target_library"
+target_library:    sc_max.db
+echo "search_path:       $search_path\n\n"
+search_path:       ../ref/db ./scripts
+
+
+echo "\nI am ready...\n\n\n"
+
+I am ready...
+
+
+
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/sc_max.db'
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/io_max.db'
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/rams_max.db'
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/special.db'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/dw_foundation.sldb'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/gtech.db'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/standard.sldb'
+  Loading link library 'cb13fs120_tsmc_max'
+  Loading link library 'cb13io320_tsmc_max'
+  Loading link library 'cb13_tsmc_memory_max'
+  Loading link library 'cb13special'
+  Loading link library 'gtech'
+Reading ddc file '/tmp/dftc_lab9_stilcheck.ddc'.
+Information: Checking out the license 'DesignWare'. (SEC-104)
+Loaded 17 designs.
+Current design is 'ORCA'.
+Current design is 'ORCA'.
+
+  Linking design 'ORCA'
+  Using the following designs and libraries:
+  --------------------------------------------------------------------------
+  * (17 designs)              /tmp/dftc_lab9_stilcheck.ddc, etc
+  cb13fs120_tsmc_max (library) /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/sc_max.db
+  cb13io320_tsmc_max (library) /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/io_max.db
+  cb13_tsmc_memory_max (library) /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/rams_max.db
+  cb13special (library)       /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/special.db
+  dw_foundation.sldb (library) /home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/dw_foundation.sldb
+
+Information: Initialization protocol will be applied to all_dft mode
+
+... Reading /media/6/Projects/DFTC1_2010.03-lab-runtime/lab9_export/scripts/orca_mapped.spf ...
+... STIL version 1.0 ( Design P2001.01 CTL P2001.10) ...
+... Reading MacroDefs "test_setup" ...
+...
+Read protocol for mode all_dft
+
+Memory usage for this session 605 Mbytes.
+Memory usage for this session including child processes 605 Mbytes.
+CPU usage for this session 7 seconds ( 0.00 hours ).
+Elapsed time for this session 13 seconds ( 0.00 hours ).
+
+Thank you...
+

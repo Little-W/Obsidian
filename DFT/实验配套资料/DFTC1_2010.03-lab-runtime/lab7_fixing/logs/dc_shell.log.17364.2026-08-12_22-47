@@ -1,0 +1,439 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# DC Setup File
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+lappend search_path ../ref/db ./scripts
+../ref/db ./scripts
+#for reading and linking
+set synthetic_library {dw_foundation.sldb}
+dw_foundation.sldb
+set target_library "sc_max.db"
+sc_max.db
+set link_library "* sc_max.db $synthetic_library"
+* sc_max.db dw_foundation.sldb
+#shortcuts
+history keep 300
+300
+alias h "history"
+set sh_enable_line_editing true
+true
+#misc
+set cache_write ../dc_dw_cache
+Information: Variable 'cache_write' is obsolete and is being ignored. (INFO-100)
+../dc_dw_cache
+set cache_read $cache_write
+Information: Variable 'cache_read' is obsolete and is being ignored. (INFO-100)
+../dc_dw_cache
+set alib_library_analysis_path ../dc_dw_cache
+../dc_dw_cache
+define_design_lib DEFAULT -path ./analyzed
+1
+suppress_message "VHDL-2285 PSYN-040 PSYN-088"
+suppress_message "CMD-041 UID-401 OPT-170"
+# The following lines create a cmd and log file in the logs directory
+set timestamp [pid].[clock format [clock scan now] -format "%Y-%m-%d_%H-%M"]
+17364.2026-08-12_22-47
+set sh_output_log_file "./logs/${synopsys_program_name}.log.$timestamp"
+./logs/dc_shell.log.17364.2026-08-12_22-47
+set sh_command_log_file "./logs/${synopsys_program_name}.cmd.$timestamp"
+./logs/dc_shell.cmd.17364.2026-08-12_22-47
+alias s "source -echo -verbose"
+# Prevent compile_ultra from ungrouping for the purposes of this lab
+set compile_ultra_ungroup_small_hierarchies false
+false
+echo "\n\nSettings:"
+
+
+Settings:
+echo "link_library:      $link_library"
+link_library:      * sc_max.db dw_foundation.sldb
+echo "target_library:    $target_library"
+target_library:    sc_max.db
+echo "search_path:       $search_path\n\n"
+search_path:       ../ref/db ./scripts
+
+
+echo "\nI am ready...\n\n\n"
+
+I am ready...
+
+
+
+remove_design -designs
+1
+set local_ddc "/tmp/dftc_[pid]_lab7_risc_core.ddc"
+/tmp/dftc_17364_lab7_risc_core.ddc
+file copy -force mapped/RISC_CORE.ddc $local_ddc
+read_file -format ddc $local_ddc
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/sc_max.db'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/dw_foundation.sldb'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/gtech.db'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/standard.sldb'
+  Loading link library 'cb13fs120_tsmc_max'
+  Loading link library 'gtech'
+Reading ddc file '/tmp/dftc_17364_lab7_risc_core.ddc'.
+Information: Checking out the license 'DesignWare'. (SEC-104)
+Loaded 13 designs.
+Current design is 'RISC_CORE'.
+RISC_CORE CONTROL DIV_CLK DATA_PATH INSTRN_LAT PRGRM_CNT_TOP REG_FILE RST STACK_TOP PRGRM_FSM PRGRM_DECODE PRGRM_CNT STACK_FSM
+current_design RISC_CORE
+Current design is 'RISC_CORE'.
+{RISC_CORE}
+link
+
+  Linking design 'RISC_CORE'
+  Using the following designs and libraries:
+  --------------------------------------------------------------------------
+  * (13 designs)              /tmp/dftc_17364_lab7_risc_core.ddc, etc
+  cb13fs120_tsmc_max (library) /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/sc_max.db
+  dw_foundation.sldb (library) /home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/dw_foundation.sldb
+
+1
+file delete -force $local_ddc
+#Declare test components in preparation for create_test_protocol
+set_dft_signal -view existing_dft -port Clk -type ScanClock -timing {45 55}
+Accepted dft signal specification for modes: all_dft
+1
+set_dft_signal -view existing_dft -port Reset -type Reset -active_state 0
+Accepted dft signal specification for modes: all_dft
+1
+set_dft_signal -view spec -port TEST_SE -type ScanEnable -active_state 1
+Accepted dft signal specification for modes: all_dft
+1
+set_dft_signal -view existing_dft -type Constant -active_state 1 -port TEST_MODE
+Accepted dft signal specification for modes: all_dft
+1
+create_test_protocol
+In mode: all_dft...
+
+Information: Starting test protocol creation. (TEST-219)
+  ...reading user specified clock signals...
+Information: Identified system/test clock port Clk (45.0,55.0). (TEST-265)
+  ...reading user specified asynchronous signals...
+Information: Identified active low asynchronous control port Reset. (TEST-266)
+1
+dft_drc
+In mode: all_dft...
+  Pre-DFT DRC enabled
+
+Information: Starting test design rule checking. (TEST-222)
+  Loading test protocol
+  ...basic checks...
+  ...basic sequential cell checks...
+        ...checking for scan equivalents...
+  ...checking vector rules...
+  ...checking pre-dft rules...
+
+-----------------------------------------------------------------
+Begin Topology violations...
+
+Warning: Input pin PushDataIn\[11\] of cell I_STACK_TOP (STACK_TOP) is unconnected. It is assumed 'X' for the purpose of test. (TEST-332)
+Information: There are 75 other pins with the same violation. (TEST-170)
+
+Topology violations completed...
+-----------------------------------------------------------------
+
+-----------------------------------------------------------------
+Begin Pre-DFT violations...
+
+ Warning: Clock input CP of DFF I_ALU/Lachd_Result_reg\[0\] was not controlled. (D1-1)
+Information: There are 257 other cells with the same violation. (TEST-171)
+ Warning: Reset input CDN of DFF I_ALU/Neg_Flag_reg was not controlled. (D3-1)
+Information: There are 87 other cells with the same violation. (TEST-171)
+
+Pre-DFT violations completed...
+-----------------------------------------------------------------
+
+-----------------------------------------------------------------
+  DRC Report
+
+  Total violations: 422
+
+-----------------------------------------------------------------
+
+76 TOPOLOGY VIOLATIONS
+    76 Unconnected input pin violations (TEST-332)
+
+346 PRE-DFT VIOLATIONS
+   258 Uncontrollable clock input of flip-flop violations (D1)
+    88 DFF set/reset line not controlled violations (D3)
+
+
+Warning: Violations occurred during test design rule checking. (TEST-124)
+
+-----------------------------------------------------------------
+  Sequential Cell Report
+
+  259 out of 261 sequential cells have violations
+
+-----------------------------------------------------------------
+
+SEQUENTIAL CELLS WITH VIOLATIONS
+      * 259 cells have test design rule violations
+SEQUENTIAL CELLS WITHOUT VIOLATIONS
+      *   1 cell is a valid scan cell
+      *   1 cell is a non-scan shift-register cell
+
+Information: Test design rule checking completed. (TEST-123)
+1
+# Get the scan insertion settings
+source -e -v scripts/settings_insert_dft.tcl
+# Prepare for scan insertion
+set_dft_insertion_configuration -preserve_design_name true ;# no change to design names
+Accepted insert_dft configuration specification.
+1
+# VHDL bit-port names are escaped by the current reader.  Use port
+# collections to select bit 0 without relying on the printed escape form.
+set scan_in_port  [index_collection [get_ports {Instrn*}] 31]
+{Instrn\[0\]}
+set scan_out_port [index_collection [get_ports {Xecutng_Instrn*}] 31]
+{Xecutng_Instrn\[0\]}
+set_dft_signal -view spec -port $scan_in_port -type ScanDataIn
+Accepted dft signal specification for modes: all_dft
+1
+set_dft_signal -view spec -port $scan_out_port -type ScanDataOut
+Accepted dft signal specification for modes: all_dft
+1
+set_scan_configuration -chain_count 1
+Accepted scan configuration for modes: all_dft
+1
+# Allow clock domains to be mixed together on same chain
+set_scan_configuration -clock_mixing mix_clocks
+Accepted scan configuration for modes: all_dft
+1
+1
+# Specify the autofix configuration
+source -e -v scripts/autofix.tcl
+# Repair uncontrollable clocks, resets, and sets during scan insertion.
+set_dft_configuration -fix_set enable -fix_reset enable -fix_clock enable
+Accepted dft configuration specification.
+1
+set_dft_signal -view spec -type TestMode -active_state 1 -port TEST_MODE
+Accepted dft signal specification for modes: all_dft
+1
+# Use the functional clock as the data source for clock control logic.
+set_dft_signal -view spec -port Clk -type TestData
+Accepted dft signal specification for modes: all_dft
+1
+set_autofix_configuration -type clock -control TEST_MODE -test_data Clk
+Information: Overwriting the default autofix configuration for the type clock. (TESTXG-19)
+Accepted Autofix configuration specifications for design 'RISC_CORE'.
+1
+# Use the active-low reset as the data source for reset and set control logic.
+set_dft_signal -view spec -port Reset -type TestData
+Accepted dft signal specification for modes: all_dft
+1
+set_autofix_configuration -type reset -method mux -control TEST_MODE -test_data Reset
+Information: Overwriting the default autofix configuration for the type reset. (TESTXG-19)
+Accepted Autofix configuration specifications for design 'RISC_CORE'.
+1
+set_autofix_configuration -type set -method mux -control TEST_MODE -test_data Reset
+Information: Overwriting the default autofix configuration for the type set. (TESTXG-19)
+Accepted Autofix configuration specifications for design 'RISC_CORE'.
+1
+1
+# Rebuild the protocol after adding specification-view signals.
+remove_test_protocol
+... deleting protocol from the mode 'all_dft' ...
+1
+create_test_protocol
+In mode: all_dft...
+
+Information: Starting test protocol creation. (TEST-219)
+  ...reading user specified clock signals...
+Information: Identified system/test clock port Clk (45.0,55.0). (TEST-265)
+  ...reading user specified asynchronous signals...
+Information: Identified active low asynchronous control port Reset. (TEST-266)
+1
+# Preview the scan architecture / test points
+preview_dft; # Lets you know what you will get -- iterate from here - 
+
+Information: Starting test design rule checking. (TEST-222)
+Warning: Violations occurred during test design rule checking. (TEST-124)
+Information: Test design rule checking completed. (TEST-123)
+    Running Autofix
+  Architecting Test Points
+
+Information: Starting test design rule checking. (TEST-222)
+Warning: Violations occurred during test design rule checking. (TEST-124)
+Information: Test design rule checking completed. (TEST-123)
+  Architecting Scan Chains
+Warning: Port 'Reset' cannot be used as a scan port. It has been previously inferred as an asynchronous signal. (TEST-337)
+
+****************************************
+Preview_dft report
+For    : 'Insert_dft' command
+Design : RISC_CORE
+Version: V-2023.12-SP3
+Date   : Wed Aug 12 22:47:21 2026
+****************************************
+
+Number of chains: 1
+Scan methodology: full_scan
+Scan style: multiplexed_flip_flop
+Clock domain: mix_clocks
+Scan enable: TEST_SE (no hookup pin)
+
+
+Scan chain '1' (Instrn\[0\] --> Xecutng_Instrn\[0\]) contains 261 cells
+
+
+
+************ Test Point Plan Report ************
+Total number of test points  : 2
+Number of Autofix test points: 2
+Number of Wrapper test points: 0
+Number of test modes         : 1
+Number of test point enables : 0
+Number of data sources       : 2
+Number of data sinks         : 0
+**************************************************
+
+Dft signals:
+ TestMode: TEST_MODE (no hookup pin)
+ TestData: Clk (no hookup pin)
+ TestData: Reset (no hookup pin)
+1
+insert_dft
+
+Information: Starting test design rule checking. (TEST-222)
+Warning: Violations occurred during test design rule checking. (TEST-124)
+Information: Test design rule checking completed. (TEST-123)
+    Running Autofix
+  Architecting Test Points
+
+Information: Starting test design rule checking. (TEST-222)
+Warning: Violations occurred during test design rule checking. (TEST-124)
+Information: Test design rule checking completed. (TEST-123)
+* "/media/6/Projects/DFTC1_2010.03-lab-runtime/lab7_fixing/RISC_CORE_CONTROL_FORCE.v" file correctly generated *
+Loading verilog file '/media/6/Projects/DFTC1_2010.03-lab-runtime/lab7_fixing/RISC_CORE_CONTROL_FORCE.v'
+Detecting input file type automatically (-rtl or -netlist).
+Reading with Presto HDL Compiler (equivalent to -rtl option).
+Running PRESTO HDLC
+Compiling source file /media/6/Projects/DFTC1_2010.03-lab-runtime/lab7_fixing/RISC_CORE_CONTROL_FORCE.v
+Presto compilation completed successfully.
+Removing netlist file '/media/6/Projects/DFTC1_2010.03-lab-runtime/lab7_fixing/RISC_CORE_CONTROL_FORCE.v'...
+  Structuring 'RISC_CORE_CONTROL_FORCE'
+  Mapping 'RISC_CORE_CONTROL_FORCE'
+  Architecting Scan Chains
+Warning: Port 'Reset' cannot be used as a scan port. It has been previously inferred as an asynchronous signal. (TEST-337)
+  Routing Scan Chains
+  Routing Global Signals
+  Mapping New Logic
+Resetting current test mode
+  Beginning Mapping Optimizations
+  -------------------------------
+
+                                  TOTAL                                      
+   ELAPSED            WORST NEG   SETUP    DESIGN                            
+    TIME      AREA      SLACK     COST    RULE COST         ENDPOINT         
+  --------- --------- --------- --------- --------- -------------------------
+
+
+  Beginning Phase 1 Design Rule Fixing  (max_transition)  (max_fanout)  (max_capacitance)
+  ------------------------------------
+
+                                  TOTAL                                      
+   ELAPSED            WORST NEG   SETUP    DESIGN                            
+    TIME      AREA      SLACK     COST    RULE COST         ENDPOINT         
+  --------- --------- --------- --------- --------- -------------------------
+    0:00:09    4241.1      0.00       0.0       0.0 TEST_SE                  
+    0:00:09    4241.1      0.00       0.0       0.0 TEST_SE                  
+    0:00:09    4241.1      0.00       0.0       0.0 TEST_SE                  
+    0:00:09    4241.1      0.00       0.0       0.0 TEST_SE                  
+
+1
+dft_drc -coverage_estimate
+In mode: Internal_scan...
+  Design has scan chains in this mode
+  Design is scan routed
+  Post-DFT DRC enabled
+
+Information: Starting test design rule checking. (TEST-222)
+  Loading test protocol
+  ...basic checks...
+  ...basic sequential cell checks...
+  ...checking vector rules...
+  ...checking clock rules...
+  ...checking scan chain rules...
+  ...checking scan compression rules...
+  ...checking X-state rules...
+  ...checking tristate rules...
+  ...extracting scan details...
+
+-----------------------------------------------------------------
+  DRC Report
+
+  Total violations: 0
+
+-----------------------------------------------------------------
+
+
+Test Design rule checking did not find violations
+
+-----------------------------------------------------------------
+  Sequential Cell Report
+
+  0 out of 261 sequential cells have violations
+
+-----------------------------------------------------------------
+
+SEQUENTIAL CELLS WITHOUT VIOLATIONS
+      * 260 cells are valid scan cells
+      *   1 cell is a non-scan shift-register cell
+
+Information: Test design rule checking completed. (TEST-123)
+  Running test coverage estimation...
+ 9672 faults were added to fault list.
+ ATPG performed for stuck fault model using internal pattern source.
+ ----------------------------------------------------------
+ #patterns     #faults     #ATPG faults  test      process
+ stored     detect/active  red/au/abort  coverage  CPU time
+ ---------  -------------  ------------  --------  --------
+ Begin deterministic ATPG: #uncollapsed_faults=7642, abort_limit=10...
+ 0            5077   2565         0/0/0    73.40%      0.00
+ 0            1243   1321         1/0/0    86.26%      0.00
+ 0             515    805         2/0/0    91.60%      0.00
+ 0             197    608         2/0/0    93.64%      0.00
+ 0             216    390         4/0/0    95.89%      0.01
+ 0             154    234         6/0/0    97.51%      0.01
+ 0              74    159         7/0/0    98.28%      0.01
+ 0              42    111        13/0/0    98.78%      0.01
+ 0              36     67        18/0/0    99.23%      0.01
+ 0              65      0        20/0/0    99.93%      0.01
+ 
+            Pattern Summary Report
+ -----------------------------------------------
+ #internal patterns                           0
+ -----------------------------------------------
+ 
+
+     Uncollapsed Stuck Fault Summary Report
+ -----------------------------------------------
+ fault class                     code   #faults
+ ------------------------------  ----  ---------
+ Detected                         DT       9638
+ Possibly detected                PT          0
+ Undetectable                     UD         27
+ ATPG untestable                  AU          7
+ Not detected                     ND          0
+ -----------------------------------------------
+ total faults                              9672
+ test coverage                            99.93%
+ -----------------------------------------------
+  Information: The test coverage above may be inferior
+               than the real test coverage with customized
+               protocol and test simulation library.
+1
+Writing ddc file 'mapped_scan/RISC_CORE.ddc'.
+Writing verilog file '/media/6/Projects/DFTC1_2010.03-lab-runtime/lab7_fixing/mapped_scan/RISC_CORE_scan.v'.
+Warning: Bus naming style currently specified as %s\[%d\], verilog syntax requires bus naming style to be "[]".  (VO-13)
+Warning: Verilog 'assign' or 'tran' statements are written out. (VO-4)
+Warning: Verilog writer has added 7 nets to module RISC_CORE using SYNOPSYS_UNCONNECTED_ as prefix.  Please use the change_names command to make the correct changes before invoking the verilog writer.  (VO-11)
+
+Memory usage for this session 605 Mbytes.
+Memory usage for this session including child processes 605 Mbytes.
+CPU usage for this session 7 seconds ( 0.00 hours ).
+Elapsed time for this session 46 seconds ( 0.01 hours ).
+
+Thank you...
+

@@ -1,0 +1,220 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# DC Setup File
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+lappend search_path ../ref/db ./scripts
+../ref/db ./scripts
+set synthetic_library {dw_foundation.sldb}
+dw_foundation.sldb
+set target_library "sc_max.db"
+sc_max.db
+set link_library "* sc_max.db io_max.db rams_max.db special.db $synthetic_library"
+* sc_max.db io_max.db rams_max.db special.db dw_foundation.sldb
+#misc
+set cache_write ../dc_dw_cache
+Information: Variable 'cache_write' is obsolete and is being ignored. (INFO-100)
+../dc_dw_cache
+set cache_read $cache_write
+Information: Variable 'cache_read' is obsolete and is being ignored. (INFO-100)
+../dc_dw_cache
+set alib_library_analysis_path ../dc_dw_cache
+../dc_dw_cache
+define_design_lib DEFAULT -path ./analyzed
+1
+suppress_message "VHDL-2285 PSYN-040 PSYN-088"
+suppress_message "CMD-041 UID-401 OPT-170"
+echo "Sourcing ../ref/scripts/procs.tcl..."
+Sourcing ../ref/scripts/procs.tcl...
+source ../ref/scripts/procs.tcl
+Defining custom procedure "rename_test_designs"
+Defining custom procedure "async_domain"
+Defining custom procedure "echo_col"
+Defining custom procedure "flatten_block"
+Defining custom procedure "zero_io_nets"
+Defining custom procedure "report_clock_endpoint_skew"
+source ../ref/dc_settings.tcl
+
+Executing common setup file 'ref/dc_settings.tcl' ...
+./logs/dc_shell.cmd.17555.2026-08-12_22-48
+alias s "source -echo -verbose"
+# Prevent compile_ultra from ungrouping for the purposes of this lab
+set compile_ultra_ungroup_small_hierarchies false
+false
+# Prevent compile_ultra from ungrouping for the purposes of this lab
+set compile_ultra_ungroup_small_hierarchies false
+false
+echo "\n\nSettings:"
+
+
+Settings:
+echo "link_library:      $link_library"
+link_library:      * sc_max.db io_max.db rams_max.db special.db dw_foundation.sldb
+echo "target_library:    $target_library"
+target_library:    sc_max.db
+echo "search_path:       $search_path\n\n"
+search_path:       ../ref/db ./scripts
+
+
+echo "\nI am ready...\n\n\n"
+
+I am ready...
+
+
+
+# Read the design from the unmapped flow.  DDC must be copied to the
+# container-local filesystem before DC reads it.
+set local_ddc "/tmp/dftc_[pid]_lab8_orca.ddc"
+/tmp/dftc_17555_lab8_orca.ddc
+file copy -force mapped/ORCA.ddc $local_ddc
+read_file -format ddc $local_ddc
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/sc_max.db'
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/io_max.db'
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/rams_max.db'
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/special.db'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/dw_foundation.sldb'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/gtech.db'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/standard.sldb'
+  Loading link library 'cb13fs120_tsmc_max'
+  Loading link library 'cb13io320_tsmc_max'
+  Loading link library 'cb13_tsmc_memory_max'
+  Loading link library 'cb13special'
+  Loading link library 'gtech'
+Reading ddc file '/tmp/dftc_17555_lab8_orca.ddc'.
+Information: Checking out the license 'DesignWare'. (SEC-104)
+Loaded 16 designs.
+Current design is 'ORCA'.
+ORCA CLOCK_GEN ORCA_TOP RESET_BLOCK PCI_CORE PARSER CONTEXT_MEM RISC_CORE BLENDER SDRAM_IF PCI_RFIFO PCI_WFIFO SDRAM_RFIFO SDRAM_WFIFO PCI_W_MUX SD_W_MUX
+current_design ORCA
+Current design is 'ORCA'.
+{ORCA}
+link
+
+  Linking design 'ORCA'
+  Using the following designs and libraries:
+  --------------------------------------------------------------------------
+  * (16 designs)              /tmp/dftc_17555_lab8_orca.ddc, etc
+  cb13fs120_tsmc_max (library) /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/sc_max.db
+  cb13io320_tsmc_max (library) /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/io_max.db
+  cb13_tsmc_memory_max (library) /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/rams_max.db
+  cb13special (library)       /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/special.db
+  dw_foundation.sldb (library) /home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/dw_foundation.sldb
+
+1
+file delete -force $local_ddc
+# Setup timing
+set test_default_delay 0
+0
+set test_default_bidir_delay 0
+0
+set test_default_strobe 40
+40
+# Declare signals for the protocol
+set_dft_signal -view existing_dft -type ScanClock -timing {45 55} -port pclk
+Accepted dft signal specification for modes: all_dft
+1
+set_dft_signal -view existing_dft -type ScanClock -timing {45 55} -port sdr_clk
+Accepted dft signal specification for modes: all_dft
+1
+set_dft_signal -view existing_dft -type ScanClock -timing {45 55} -port sys_clk
+Accepted dft signal specification for modes: all_dft
+1
+set_dft_signal -view existing_dft -port prst_n -type Reset -active_state 0
+Accepted dft signal specification for modes: all_dft
+1
+set_dft_signal -view existing_dft -port scan_en -type ScanEnable -active_state 1
+Accepted dft signal specification for modes: all_dft
+1
+set_dft_signal -view existing_dft -type Constant -active_state 1 -port test_mode
+Accepted dft signal specification for modes: all_dft
+1
+# From the above specifications, create the test protocal
+create_test_protocol
+In mode: all_dft...
+
+Information: Starting test protocol creation. (TEST-219)
+  ...reading user specified clock signals...
+Information: Identified system/test clock port sys_clk (45.0,55.0). (TEST-265)
+Information: Identified system/test clock port pclk (45.0,55.0). (TEST-265)
+Information: Identified system/test clock port sdr_clk (45.0,55.0). (TEST-265)
+  ...reading user specified asynchronous signals...
+Information: Identified active low asynchronous control port prst_n. (TEST-266)
+1
+dft_drc 
+In mode: all_dft...
+  Pre-DFT DRC enabled
+Warning: Design 'ORCA' contains 3 high-fanout nets. A fanout number of 1000 will be used for delay calculations involving these nets. (TIM-134)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_RISC_CORE/U3'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_WRITE_FIFO/PCI_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_READ_FIFO/SD_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_WRITE_FIFO/SD_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U3'on pin 'A2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U5'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+
+Information: Starting test design rule checking. (TEST-222)
+  Loading test protocol
+  ...basic checks...
+  ...basic sequential cell checks...
+        ...checking for scan equivalents...
+  ...checking vector rules...
+  ...checking pre-dft rules...
+
+-----------------------------------------------------------------
+Begin Modeling violations...
+
+Warning: Cell I_CLOCK_GEN/I_PLL_PCI (PLL) is unknown (black box) because functionality for output pin CLK is bad or incomplete. (TEST-451)
+Information: There are 12 other cells with the same violation. (TEST-171)
+
+Modeling violations completed...
+-----------------------------------------------------------------
+
+-----------------------------------------------------------------
+Begin Topology violations...
+
+Warning: Three-state net I_ORCA_TOP/I_PCI_READ_FIFO/fifo_data_in[31] is not properly driven. (TEST-115)
+Information: There are 431 other nets with the same violation. (TEST-289)
+
+Topology violations completed...
+-----------------------------------------------------------------
+
+-----------------------------------------------------------------
+  DRC Report
+
+  Total violations: 445
+
+-----------------------------------------------------------------
+
+13 MODELING VIOLATIONS
+    13 Cell has unknown model violations (TEST-451)
+
+432 TOPOLOGY VIOLATIONS
+   432 Improperly driven three-state net violations (TEST-115)
+
+
+Warning: Violations occurred during test design rule checking. (TEST-124)
+
+-----------------------------------------------------------------
+  Sequential Cell Report
+
+  32 out of 2958 sequential cells have violations
+
+-----------------------------------------------------------------
+
+SEQUENTIAL CELLS WITH VIOLATIONS
+      *  32 cells have test design rule violations
+SEQUENTIAL CELLS WITHOUT VIOLATIONS
+      *2926 cells are valid scan cells
+
+Information: Test design rule checking completed. (TEST-123)
+1
+PORTS
+{test_mode}
+
+Memory usage for this session 605 Mbytes.
+Memory usage for this session including child processes 605 Mbytes.
+CPU usage for this session 7 seconds ( 0.00 hours ).
+Elapsed time for this session 24 seconds ( 0.01 hours ).
+
+Thank you...
+

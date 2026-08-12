@@ -1,0 +1,36 @@
+ 
+****************************************
+Report : Scan path
+Design : ORCA
+Version: V-2023.12-SP3
+Date   : Wed Aug 12 22:53:09 2026
+****************************************
+
+========================================
+TEST MODE: Internal_scan
+VIEW     : Existing DFT
+========================================
+
+========================================
+AS SPECIFIED BY USER
+========================================
+
+
+========================================
+AS BUILT BY insert_dft
+========================================
+
+Scan_path    Len   ScanDataIn  ScanDataOut ScanEnable  MasterClock SlaveClock
+-----------  ----- ----------- ----------- ----------- ----------- -----------
+I chain0     488   pad[0]      sd_A[0]     scan_en     sdr_clk     -
+I chain1     488   pad[1]      sd_A[1]     scan_en     pclk        -
+                                           -           sdr_clk     -
+                                           -           sys_clk     -
+I chain2     488   pad[2]      sd_A[2]     scan_en     pclk        -
+I chain3     488   pad[3]      sd_A[3]     scan_en     pclk        -
+                                           -           sdr_clk     -
+I chain4     487   pad[4]      sd_A[4]     scan_en     sdr_clk     -
+                                           -           sys_clk     -
+I chain5     487   pad[5]      sd_A[5]     scan_en     sys_clk     -
+
+1

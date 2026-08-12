@@ -1,0 +1,341 @@
+# Read the library and design
+read_netlist libs.v.gz
+ Begin reading netlist ( libs.v.gz )...
+ End parsing Verilog file libs.v.gz with 0 errors.
+ End reading netlist: #modules=1005, top=pv0a, #lines=10922, CPU_time=0.03 sec, Memory=2MB
+read_netlist rams.v
+ Begin reading netlist ( rams.v )...
+ End parsing Verilog file rams.v with 0 errors.
+ End reading netlist: #modules=3, top=ram32x32, #lines=153, CPU_time=0.00 sec, Memory=0MB
+read_netlist ORCA_scan.v 
+ Begin reading netlist ( ORCA_scan.v )...
+ End parsing Verilog file ORCA_scan.v with 0 errors.
+ End reading netlist: #modules=19, top=ORCA, #lines=14219, CPU_time=0.09 sec, Memory=5MB
+# Run build
+set_rule b5 warning
+run_build
+ ------------------------------------------------------------------------------
+ Begin build model for topcut = ORCA ...
+ ------------------------------------------------------------------------------
+ Begin flattening of 15938 instantiated modules, CPU_time=0.01 sec, Memory=2MB...
+ Unused primitives eliminated: 9521, pins lost: 710
+ Primitives eliminated due to tied controlling input: 52, pins lost: 4
+ Buffers eliminated: 14114, pins lost: 0
+ Inverters eliminated: 349, pins lost: 0
+ Equivalent DLAT/DFF primitives remodeled: 1, pins lost: 0
+ Warning: There were 4 faultable pins lost due to tied gate optimizations. (M126)
+ There were 24036 primitives and 714 faultable pins removed during model optimizations
+ Fanout-free region identification completed: #regions=7873, CPU time=0.00 sec.
+ Gate allocation completed: #primitives=26156, CPU_time=0.00 sec, freed=6MB
+ Number common input primitives=2290
+ Reorder_rank_list completed: CPU_time=0.00 sec
+ Gate re-allocation completed: #blocks=1, CPU_time=0.00 sec, freed=1MB
+ Ranking completed: #ranked_gates=22528, #feedback_paths=0, CPU time=0.01 sec.
+ Warning: Rule B5 (undefined module referenced) was violated 2 times.
+ Warning: Rule B7 (undriven module output pin) was violated 42 times.
+ Warning: Rule B8 (unconnected module input pin) was violated 21 times.
+ Warning: Rule B9 (undriven module internal net) was violated 26 times.
+ Warning: Rule B10 (unconnected module internal net) was violated 34 times.
+ Warning: Rule B18 (tristate and non-tristate drivers combined) was violated 144 times.
+ Warning: Rule B22 (dropped design view) was violated 8 times.
+ Build memory summary: peak=15MB, final=12MB, bytes/primitive=43
+ Build memory usage: primitives=9.1%, instances=17.5%, globals=63.7%, others=9.7%
+ End build model: #primitives=26156, CPU_time=0.08 sec, Memory=12MB
+ ------------------------------------------------------------------------------
+ Begin learning analyses...
+ Warning: 88 faults on bidi connections were nofaulted. (M28)
+ Begin common input learning...
+ Learned DLAT/DFF equivalences: #equivalences=0, CPU time=0.00 sec.
+ Learned gate types: #BUF=291
+ Learned relations: #equivalence=451 (classes=200)
+ Common input analysis completed: CPU time=0.00 sec.
+ Begin ATPG equivalence analysis: #sim_passes=32, #max_test_passes=5000 ...
+ Random simulation results: #pos_ties=238/67, #pos_equiv=528 (#groups=227), CPU time=0.01 sec
+ ATPG equivalence learning completed: #ties=114, #equiv=47, #abort=0/23, CPU time=0.01 sec.
+ Implication learning completed: #learned implications=6590, #learned_tied=0, CPU time=0.01 sec.
+ Tied analysis completed: #tied_gates=408, #blocked_gates=650/0, #blocked_inputs=390
+ End learning analyses, total learning CPU time=0.03 sec.
+ ------------------------------------------------------------------------------
+# Run DRC (ensure the name of the SPF matchs what was written from DFTC)
+run_drc ORCA_scan.spf
+ ------------------------------------------------------------------------------
+ Begin scan design rules checking...
+ ------------------------------------------------------------------------------
+ Begin reading test protocol file ORCA_scan.spf...
+ End parsing STIL file ORCA_scan.spf with 0 errors.
+ Test protocol file reading completed, CPU time=0.00 sec.
+ ------------------------------------------------------------------------------
+ Begin Bus/Wire contention ability checking...
+ Bus summary: #bus_gates=220, #bidi=44, #weak=0, #pull=0, #keepers=0
+    Contention status: #pass=176, #bidi=44, #fail=0, #abort=0, #ignored=0, #not_analyzed=0
+    Z-state status   : #pass=176, #bidi=44, #fail=0, #abort=0, #ignored=0, #not_analyzed=0
+ Bus rules ATPG effort: #atpg_calls=176 (pass=176, fail=0, abort=0), #equiv_usages=0
+ Bus/Wire contention ability checking completed, CPU time=0.00 sec.
+ ------------------------------------------------------------------------------
+ Begin simulating test protocol procedures...
+ Nonscan cell constant value results: #constant0 = 1, #constant1 = 2
+ Nonscan cell load value results    : #load0 = 1, #load1 = 2
+ Warning: Rule S30 (unstable RAM during test procedure operation) was violated 10 times.
+ Test protocol simulation completed, CPU time=0.00 sec.
+ ------------------------------------------------------------------------------
+ Begin scan chain operation checking...
+ Chain chain0 successfully traced with 488 scan_cells.
+ Chain chain1 successfully traced with 489 scan_cells.
+ Chain chain2 successfully traced with 488 scan_cells.
+ Chain chain3 successfully traced with 488 scan_cells.
+ Chain chain4 successfully traced with 487 scan_cells.
+ Chain chain5 successfully traced with 487 scan_cells.
+ Scan cells successfully passed master_observe procedure audit.
+ Warning: Rule S19 (nonscan cell disturb) was violated 608 times.
+ Warning: Rule S22 (multiply clocked scan chain) was violated 1 times.
+ Scan chain operation checking completed, CPU time=0.00 sec.
+ ------------------------------------------------------------------------------
+ Begin clock rules checking...
+ Clocks successfully passed off-state check of scan cells.
+ Scan DLAT stability results: #DLAT=3, #unstable=0, #scan_tlas=0.
+ Scan DFF stability results: #DFF=2926, #unstable=0, #LE=2414, #TE=512.
+ Nonscan DLAT stability results: #DLAT=1, #tied=0, #unstable=1, #stable=0.
+ Nonscan DFF  stability results: #DFF=611, #tied=3, #unstable=0, #LE=16, #TE=592.
+ RAM stability results: #RAMS=10, #unstable=0, #LS=0, #LE=0, #TE=10.
+ Unstable cell clock rules checking completed, CPU time=0.00 sec.
+ C26 rule completed, CPU time=0.00 sec.
+ All clocks successfully passed capture ability check.
+ Warning: Rule C6 (TE port captured data affected by new capture) was violated 598 times.
+ Warning: Rule C12 (LE port captured data affected by clock) was violated 16 times.
+ Warning: Rule C13 (TE port captured data affected by clock) was violated 16 times.
+ Warning: Rule C17 (clock connected to PO) was violated 18 times.
+ Warning: Rule C21 (RAM port unable to capture) was violated 10 times.
+ Clock rules ATPG effort: #atpg_calls=13 (6/7/0), #force_checks=0 (0), #equiv_usages=592
+ Clock rules checking completed, CPU time=0.00 sec.
+ Performing clock grouping analysis for 4 clocks.
+ Clock grouping results: #pairs=0, #groups=0, #serial_pairs=0, #disturbed_pairs=4, CPU time=0.01 sec.
+ ------------------------------------------------------------------------------
+ Begin tracing connection cones...
+ Tracing connection cones completed, CPU time=0.00 sec.
+ ------------------------------------------------------------------------------
+ Begin nonscan rules checking...
+ Multi-vector gate summary: #gates_conn_to_tla=79, #gates_conn_to_clock_po=147
+ RAM summary: #RAMS=10, #clock_unstable=0, #load_unstable=10, #read_only=0.
+ Nonscan cell summary: #DFF=35  #DLAT=1  #RAM_outs=576  tla_usage_type=hot_clock_tla
+ Nonscan behavior:  #C0=1  #C1=2  #TLA=1  #LE=16  #TE=16  #RAM_outs=576
+ Load disturbs   :  #TLA=1  #LE=16  #TE=16  #RAM_outs=576
+ TLA behavior: #no_clock=0, #hot_clock=1, #X_clock=0
+ Nonscan rules checking completed, CPU time=0.00 sec.
+ ------------------------------------------------------------------------------
+ Begin DRC dependent learning...
+ Constrain analysis completed: #constrain_gates=2849, #blocked_gates=2097, #blocked_inputs=3496
+ Capture_new analysis summary: #sources=235, #sinks=592, #RAM_sinks=6, #gates=1880, CPU_time=0.00
+ Fast-seq constrain analysis completed: #constrain_gates=734, #blocked_gates=815, #blocked_inputs=1618
+ Fast-sequential depth results: control=4(23958), observe=3(22587), detect=5(12085), CPU time=0.00 sec
+ DRC dependent learning completed, CPU time=0.02 sec.
+ ------------------------------------------------------------------------------
+ Begin contention prevention rules checking...
+ 44 scan cells are connected to bidirectional BUS gates.
+ Warning: Rule Z9 (bidi bus driver enable affected by scan cell) was violated 44 times.
+ Contention prevention checking completed, CPU time=0.00 sec.
+ ------------------------------------------------------------------------------
+ Begin set operation for load unload constant latches...
+ Set operation for load unload constant latches completed, CPU time=0.00 sec.
+ ------------------------------------------------------------------------------
+ DRC Summary Report
+ ------------------------------------------------------------------------------
+ Warning: Rule S19 (nonscan cell disturb) was violated 608 times.
+ Warning: Rule S22 (multiply clocked scan chain) was violated 1 times.
+ Warning: Rule S30 (unstable RAM during test procedure operation) was violated 10 times.
+ Warning: Rule C6 (TE port captured data affected by new capture) was violated 598 times.
+ Warning: Rule C12 (LE port captured data affected by clock) was violated 16 times.
+ Warning: Rule C13 (TE port captured data affected by clock) was violated 16 times.
+ Warning: Rule C17 (clock connected to PO) was violated 18 times.
+ Warning: Rule C21 (RAM port unable to capture) was violated 10 times.
+ Warning: Rule Z9 (bidi bus driver enable affected by scan cell) was violated 44 times.
+ There were 1321 violations that occurred during DRC process.
+ Design rules checking was successful, total CPU time=0.05 sec.
+ ------------------------------------------------------------------------------
+# Add fault adn run ATPG
+add_faults -all
+ 77208 faults were added to fault list.
+run_atpg -auto
+ 
+ ***********************************************************
+ *  NOTICE:  The following DRC violations were previously  *
+ *  encountered. The presence of these violations is an    *
+ *  indicator that it is possible that the ATPG patterns   *
+ *  created during this process may fail in simulation.    *
+ *                                                         *
+ *  Rules:  C13                                            *
+ ***********************************************************
+ ATPG performed for stuck fault model using internal pattern source.
+ ---------------------------------------------------------------------
+ #patterns  #patterns     #faults     #ATPG faults  test      process
+ simulated  eff/total  detect/active  red/au/abort  coverage  CPU time
+ ---------  ---------  -------------  ------------  --------  --------
+ Begin deterministic ATPG: #uncollapsed_faults=50168, abort_limit=10...
+ 32          31    31   44123   6032         2/3/1    86.17%      0.29
+ Local redundancy analysis results: #redundant_faults=319, CPU_time=0.01 sec
+ 64          32    63    2510   2920       4/101/2    90.02%      0.45
+ 96          32    95     662   1724     10/559/15    90.89%      0.55
+ 128         32   127     411   1280     22/571/21    91.45%      0.63
+ 160         31   158     136   1094     45/587/31    91.67%      0.68
+ 192         32   190      56    993     57/606/39    91.77%      0.71
+ 224         31   221     111    765     71/676/43    91.96%      0.74
+ 242         16   237      26    109    249/921/58    92.38%      0.76
+ Warning: 7 faults were unsuccessfully detected. (M136)
+ 
+     Uncollapsed Stuck Fault Summary Report
+ -----------------------------------------------
+ fault class                     code   #faults
+ ------------------------------  ----  ---------
+ Detected                         DT      70007
+ Possibly detected                PT         74
+ Undetectable                     UD       1390
+ ATPG untestable                  AU       5639
+ Not detected                     ND         98
+ -----------------------------------------------
+ total faults                             77208
+ test coverage                            92.38%
+ -----------------------------------------------
+            Pattern Summary Report
+ -----------------------------------------------
+ #internal patterns                         237
+     #basic_scan patterns                   237
+ -----------------------------------------------
+            CPU Usage Summary Report
+ -----------------------------------------------
+ Total CPU time                            0.76
+ -----------------------------------------------
+# Increase capture cycles to enable fast sequential ATPG
+set_atpg -capture_cycles 4
+run_atpg -auto
+ 
+ ***********************************************************
+ *  NOTICE:  The following DRC violations were previously  *
+ *  encountered. The presence of these violations is an    *
+ *  indicator that it is possible that the ATPG patterns   *
+ *  created during this process may fail in simulation.    *
+ *                                                         *
+ *  Rules:  C13                                            *
+ ***********************************************************
+ ATPG performed for stuck fault model using internal pattern source.
+ ---------------------------------------------------------------------
+ #patterns  #patterns     #faults     #ATPG faults  test      process
+ simulated  eff/total  detect/active  red/au/abort  coverage  CPU time
+ ---------  ---------  -------------  ------------  --------  --------
+ Begin deterministic ATPG: #uncollapsed_faults=5598, abort_limit=10...
+ 4            3   240       5     96      5/920/49    92.40%      0.04
+ Pattern merging terminated due to truncated_interval.
+ Warning: 7 faults were unsuccessfully detected. (M136)
+ Begin fast-seq ATPG: #uncollapsed_faults=5583, abort_limit=10, depth=4...
+ 9            1   241     341   4730       0/416/0    92.94%      0.09
+ 10           1   242       0   4730       0/416/0    92.94%      0.10
+ 11           1   243       0   4730       0/416/0    92.94%      0.13
+ 12           1   244       7   4723       0/416/0    92.96%      0.15
+ 13           1   245     154   4569       0/416/0    93.18%      0.18
+ 14           1   246     353   4216       0/416/0    93.66%      0.20
+ 15           1   247       7   4209       0/416/0    93.67%      0.23
+ 16           1   248     152   4057       0/416/0    93.90%      0.26
+ 17           1   249       0   4057       0/416/0    93.90%      0.29
+ 18           1   250       4   4053       0/416/0    93.92%      0.31
+ 19           1   251      80   3973       0/416/0    94.03%      0.33
+ 20           1   252      79   3894       0/416/0    94.14%      0.36
+ 21           1   253      21   3873       0/416/0    94.17%      0.38
+ 22           1   254      25   3848       0/416/0    94.20%      0.43
+ 23           1   255      10   3838       0/416/0    94.21%      0.48
+ 24           1   256      10   3828       0/416/0    94.22%      0.52
+ 25           1   257      95   3733       0/416/0    94.41%      0.55
+ 26           1   258     185   3548       0/416/0    94.73%      0.58
+ 27           1   259     206   3342       0/416/0    95.05%      0.61
+ 30           1   260      57   3285       0/416/0    95.13%      0.71
+ 31           1   261      56   3229       0/416/0    95.19%      0.74
+ 32           1   262      30   3199       0/416/0    95.23%      0.77
+ 33           1   263      38   3161       0/416/0    95.28%      0.80
+ 34           1   264      34   3127       0/416/0    95.33%      0.83
+ 36           1   265      40   3087       0/416/0    95.38%      0.91
+ 37           1   266      17   3070       0/416/0    95.40%      0.94
+ 39           1   267      45   3025       0/416/0    95.46%      1.02
+ 40           1   268       2   3023       0/416/0    95.46%      1.04
+ 43           1   269       4   3019       0/416/0    95.46%      1.10
+ 44           1   270       5   3014       0/416/0    95.47%      1.12
+ 45           1   271      17   2997       0/416/0    95.49%      1.14
+ 50           1   272      22   2975       0/416/5    95.52%      1.31
+ 51           1   273      11   2964       0/416/5    95.53%      1.34
+ 54           1   274       3   2961       0/416/5    95.54%      1.44
+ 55           1   275       4   2957       0/416/5    95.55%      1.45
+ 56           1   276       1   2956       0/416/5    95.56%      1.47
+ 57           1   277       1   2955       0/416/5    95.57%      1.49
+ 58           1   278      26   2929       0/416/5    95.60%      1.50
+ 59           1   279       3   2926       0/416/5    95.60%      1.52
+ 64           1   280      20   2906       0/416/5    95.63%      1.59
+ 65           1   281       9   2897       0/416/5    95.65%      1.61
+ 67           1   282       8   2889       0/416/5    95.65%      1.64
+ 70           1   283     100   2789       0/416/5    95.80%      1.73
+ 73           1   284       6   2783       0/416/5    95.80%      1.79
+ 75           1   285      64   2719       0/416/5    95.91%      1.82
+ 77           1   286       6   2713       0/416/6    95.92%      1.86
+ 78           1   287      25   2685       0/418/6    95.95%      1.88
+ 79           1   288      12   2667       0/422/6    95.96%      1.93
+ 80           1   289       1   2663       0/424/6    95.96%      1.97
+ 83           1   290       6   2582      0/477/15    95.97%      2.08
+ 84           1   291       1   2574      0/482/16    95.97%      2.13
+ 85           1   292       1   2525      0/516/22    95.97%      2.19
+ 86           1   293       2   2520      0/518/22    95.98%      2.24
+ 87           1   294       2   2518      0/518/22    95.98%      2.27
+ 88           1   295       1   2502      0/528/22    95.98%      2.30
+ 90           1   296       1   2501      0/528/25    95.98%      2.34
+ 93           1   297      12   2489      0/528/28    95.99%      2.42
+ 105          1   298       2   2487      0/528/38    95.99%      2.74
+ 108          1   299       1   2486      0/528/39    95.99%      2.80
+ 122          1   300       1   2485      0/528/49    96.00%      3.15
+ 123          1   301       0   2485      0/528/49    96.00%      3.17
+ 124          1   302       3   2482      0/528/49    96.00%      3.20
+ 125          1   303       3   2479      0/528/49    96.00%      3.23
+ 143          1   304       1   2478      0/528/51    96.00%      3.65
+ 165          1   305       2   2476      0/528/61    96.00%      4.19
+ 176          1   306       1   2475      0/528/64    96.00%      4.49
+ 179          1   307      63   2393      0/537/70    96.08%      4.57
+ 181          1   308      12   2381      0/537/72    96.09%      4.61
+ 182          1   309       0   2381      0/537/72    96.10%      4.63
+ 184          1   310       3   2378      0/537/76    96.10%      4.67
+ 185          1   311      37   2341      0/537/76    96.15%      4.70
+ 187          1   312       0   2341      0/537/79    96.16%      4.75
+ 190          1   313      62   2276      0/539/87    96.25%      4.83
+ 191          1   314      16   2260      0/539/87    96.27%      4.86
+ 192          1   315      20   2237      0/541/87    96.29%      4.89
+ 194          1   316       1   2233      0/543/88    96.30%      4.94
+ 196          1   317       2   2228      0/545/88    96.30%      4.98
+ 197          1   318       1   2224      0/547/89    96.30%      5.00
+ 204          1   319      15   2116     0/613/101    96.31%      5.17
+ 206          1   320       2   2083     0/635/105    96.31%      5.22
+ 223          1   321       2   2052     0/653/129    96.31%      5.60
+ 230          1   322      14   1670     0/886/210    96.33%      5.69
+ 234          1   323       7   1597     0/951/216    96.34%      5.73
+ 254          1   324      24   1520     0/994/320    96.38%      5.93
+ 256          1   325       0   1520     0/994/322    96.38%      5.95
+ 268          1   326       2   1518     0/994/379    96.38%      6.05
+ 272          1   327       1   1517     0/994/391    96.39%      6.08
+ 277          1   328       0   1517     0/994/438    96.39%      6.14
+ Warning: 679 faults were unsuccessfully detected. (M136)
+ 
+     Uncollapsed Stuck Fault Summary Report
+ -----------------------------------------------
+ fault class                     code   #faults
+ ------------------------------  ----  ---------
+ Detected                         DT      72732
+ Possibly detected                PT        675
+ Undetectable                     UD       1400
+ ATPG untestable                  AU       1354
+ Not detected                     ND       1047
+ -----------------------------------------------
+ total faults                             77208
+ test coverage                            96.39%
+ -----------------------------------------------
+            Pattern Summary Report
+ -----------------------------------------------
+ #internal patterns                         328
+     #basic_scan patterns                   240
+     #fast_sequential patterns               88
+ -----------------------------------------------
+            CPU Usage Summary Report
+ -----------------------------------------------
+ Total CPU time                            6.26
+ -----------------------------------------------
+TEST-T> 

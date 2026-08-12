@@ -1,0 +1,154 @@
+In mode: Internal_scan...
+  Design has scan chains in this mode
+  Design is scan routed
+  Post-DFT DRC enabled
+
+Information: Starting test design rule checking. (TEST-222)
+  Loading test protocol
+  ...basic checks...
+  ...basic sequential cell checks...
+  ...checking vector rules...
+  ...checking clock rules...
+  ...checking scan chain rules...
+  ...checking scan compression rules...
+  ...checking X-state rules...
+  ...checking tristate rules...
+  ...extracting scan details...
+
+-----------------------------------------------------------------
+Begin Modeling violations...
+
+Warning: Cell I_CLOCK_GEN/I_PLL_PCI (PLL) is unknown (black box) because functionality for output pin CLK is bad or incomplete. (TEST-451)
+Information: There are 12 other cells with the same violation. (TEST-171)
+
+Modeling violations completed...
+-----------------------------------------------------------------
+
+-----------------------------------------------------------------
+Begin Topology violations...
+
+Warning: Three-state net I_ORCA_TOP/I_PCI_READ_FIFO/fifo_data_in[31] is not properly driven. (TEST-115)
+Information: There are 431 other nets with the same violation. (TEST-289)
+
+Topology violations completed...
+-----------------------------------------------------------------
+
+-----------------------------------------------------------------
+Begin Clock violations...
+
+ Warning: Clock sdr_clk is connected to primary output sd_CK. (C17-1)
+
+Clock violations completed...
+-----------------------------------------------------------------
+
+-----------------------------------------------------------------
+Begin Scan chain violations...
+
+ Warning: Multiple clocks (pclk sys_clk) were used to shift scan chain chain1. (S22-1)
+
+Scan chain violations completed...
+-----------------------------------------------------------------
+
+-----------------------------------------------------------------
+Begin tristate violations...
+
+ Warning: Enable of bidi bus driver pc_be[1] connected to scan cell gate I_ORCA_TOP/I_PCI_CORE/pc_be_en_reg. (Z9-1)
+Information: There are 43 other cells with the same violation. (TEST-171)
+
+Tristate violations completed...
+-----------------------------------------------------------------
+
+-----------------------------------------------------------------
+  DRC Report
+
+  Total violations: 491
+
+-----------------------------------------------------------------
+
+13 MODELING VIOLATIONS
+    13 Cell has unknown model violations (TEST-451)
+
+432 TOPOLOGY VIOLATIONS
+   432 Improperly driven three-state net violations (TEST-115)
+
+1 CLOCK VIOLATION
+     1 Clock connected to primary output violation (C17)
+
+1 SCAN CHAIN VIOLATION
+     1 Multiply clocked scan chain violation (S22)
+
+44 TRISTATE VIOLATIONS
+    44 Bidi bus driver enable affected by scan cell violations (Z9)
+
+
+Warning: Violations occurred during test design rule checking. (TEST-124)
+
+-----------------------------------------------------------------
+  Sequential Cell Report
+
+  32 out of 2961 sequential cells have violations
+
+-----------------------------------------------------------------
+
+SEQUENTIAL CELLS WITH VIOLATIONS
+      *  32 cells have test design rule violations
+SEQUENTIAL CELLS WITHOUT VIOLATIONS
+      *2926 cells are valid scan cells
+      *   3 cells are synchronization elements
+
+Information: Test design rule checking completed. (TEST-123)
+  Running test coverage estimation...
+ 75818 faults were added to fault list.
+ ATPG performed for stuck fault model using internal pattern source.
+ ----------------------------------------------------------
+ #patterns     #faults     #ATPG faults  test      process
+ stored     detect/active  red/au/abort  coverage  CPU time
+ ---------  -------------  ------------  --------  --------
+ Begin deterministic ATPG: #uncollapsed_faults=51799, abort_limit=10...
+ 0           36852  14946         0/1/1    78.02%      0.02
+ 0            5245   9695         1/6/1    84.95%      0.03
+ 0            2167   7511        5/13/2    87.82%      0.04
+ 0            1306   6187        7/24/3    89.57%      0.04
+ 0             803   5302       12/86/5    90.63%      0.05
+ 0             611   4650      18/105/8    91.46%      0.05
+ 0             380   4242      24/121/8    91.96%      0.05
+ 0             287   3900      31/158/9    92.37%      0.06
+ 0             182   3599     39/233/10    92.62%      0.06
+ 0             288   2685     47/719/20    93.02%      0.07
+ 0             139   2511     58/732/23    93.23%      0.07
+ 0             149   2324     73/746/23    93.45%      0.08
+ 0             129   2146     92/761/26    93.66%      0.08
+ 0             117   1987    108/775/37    93.84%      0.09
+ 0              85   1843    122/790/37    94.00%      0.09
+ 0              66   1736    135/807/38    94.12%      0.09
+ 0              67   1620    148/824/39    94.24%      0.10
+ 0              72   1392    162/926/48    94.36%      0.10
+ 0              57   1283    182/942/49    94.48%      0.10
+ 0              43    930   205/1185/49    94.57%      0.11
+ 0              46    806   227/1211/50    94.67%      0.11
+ 0              40    449   428/1217/52    95.11%      0.12
+ 0              23    118   541/1301/70    95.40%      0.13
+ 
+            Pattern Summary Report
+ -----------------------------------------------
+ #internal patterns                           0
+ -----------------------------------------------
+ 
+
+     Uncollapsed Stuck Fault Summary Report
+ -----------------------------------------------
+ fault class                     code   #faults
+ ------------------------------  ----  ---------
+ Detected                         DT      71115
+ Possibly detected                PT         68
+ Undetectable                     UD       1239
+ ATPG untestable                  AU       3287
+ Not detected                     ND        109
+ -----------------------------------------------
+ total faults                             75818
+ test coverage                            95.40%
+ -----------------------------------------------
+  Information: The test coverage above may be inferior
+               than the real test coverage with customized
+               protocol and test simulation library.
+1

@@ -1,0 +1,896 @@
+STIL 1.0 {
+    Design P2001.01;
+}
+Header {
+    Title "Minimal STIL for design `ORCA'";
+    Date "Sun Jun  6 15:48:30 2010";
+    Source "DFT Compiler D-2010.03-SP1";
+}
+Signals {
+    "conf" In;
+    "conf_ena" In;
+    "pclk" In;
+    "pgnt_n" In;
+    "pidsel" In;
+    "pm66en" In;
+    "power_save" In;
+    "prst_n" In;
+    "scan_en" In;
+    "sdr_clk" In;
+    "sys_clk" In;
+    "preq_n" Out;
+    "sd_A[0]" Out;
+    "sd_A[1]" Out;
+    "sd_A[2]" Out;
+    "sd_A[3]" Out;
+    "sd_A[4]" Out;
+    "sd_A[5]" Out;
+    "sd_A[6]" Out;
+    "sd_A[7]" Out;
+    "sd_A[8]" Out;
+    "sd_A[9]" Out;
+    "sd_BWS[0]" Out;
+    "sd_BWS[1]" Out;
+    "sd_CK" Out;
+    "sd_CKn" Out;
+    "sd_LD" Out;
+    "sd_RW" Out;
+    "pad[0]" InOut;
+    "pad[10]" InOut;
+    "pad[11]" InOut;
+    "pad[12]" InOut;
+    "pad[13]" InOut;
+    "pad[14]" InOut;
+    "pad[15]" InOut;
+    "pad[1]" InOut;
+    "pad[2]" InOut;
+    "pad[3]" InOut;
+    "pad[4]" InOut;
+    "pad[5]" InOut;
+    "pad[6]" InOut;
+    "pad[7]" InOut;
+    "pad[8]" InOut;
+    "pad[9]" InOut;
+    "pc_be[0]" InOut;
+    "pc_be[1]" InOut;
+    "pc_be[2]" InOut;
+    "pc_be[3]" InOut;
+    "pdevsel_n" InOut;
+    "pframe_n" InOut;
+    "pirdy_n" InOut;
+    "ppar" InOut;
+    "pperr_n" InOut;
+    "pserr_n" InOut;
+    "pstop_n" InOut;
+    "ptrdy_n" InOut;
+    "sd_DQ[0]" InOut;
+    "sd_DQ[10]" InOut;
+    "sd_DQ[11]" InOut;
+    "sd_DQ[12]" InOut;
+    "sd_DQ[13]" InOut;
+    "sd_DQ[14]" InOut;
+    "sd_DQ[15]" InOut;
+    "sd_DQ[1]" InOut;
+    "sd_DQ[2]" InOut;
+    "sd_DQ[3]" InOut;
+    "sd_DQ[4]" InOut;
+    "sd_DQ[5]" InOut;
+    "sd_DQ[6]" InOut;
+    "sd_DQ[7]" InOut;
+    "sd_DQ[8]" InOut;
+    "sd_DQ[9]" InOut;
+}
+SignalGroups {
+    "_si" = '"pad[0]" + "pad[1]" + "pad[2]" + "pad[3]" + "pad[4]" + "pad[5]"' {
+        ScanIn;
+    }
+    "_so" = '"sd_A[0]" + "sd_A[1]" + "sd_A[2]" + "sd_A[3]" + "sd_A[4]" + 
+    "sd_A[5]"' {
+        ScanOut;
+    }
+    "_clk" = '"pclk" + "prst_n" + "sdr_clk" + "sys_clk"';
+    "all_inputs" = '"conf" + "conf_ena" + "pclk" + "pgnt_n" + "pidsel" + 
+    "pm66en" + "power_save" + "prst_n" + "scan_en" + "sdr_clk" + "sys_clk"';
+    "all_outputs" = '"preq_n" + "sd_A[0]" + "sd_A[1]" + "sd_A[2]" + "sd_A[3]" + 
+    "sd_A[4]" + "sd_A[5]" + "sd_A[6]" + "sd_A[7]" + "sd_A[8]" + "sd_A[9]" + 
+    "sd_BWS[0]" + "sd_BWS[1]" + "sd_CK" + "sd_CKn" + "sd_LD" + "sd_RW"';
+    "all_bidirectionals" = '"pad[0]" + "pad[10]" + "pad[11]" + "pad[12]" + 
+    "pad[13]" + "pad[14]" + "pad[15]" + "pad[1]" + "pad[2]" + "pad[3]" + 
+    "pad[4]" + "pad[5]" + "pad[6]" + "pad[7]" + "pad[8]" + "pad[9]" + "pc_be[0]" 
+    + "pc_be[1]" + "pc_be[2]" + "pc_be[3]" + "pdevsel_n" + "pframe_n" + 
+    "pirdy_n" + "ppar" + "pperr_n" + "pserr_n" + "pstop_n" + "ptrdy_n" + 
+    "sd_DQ[0]" + "sd_DQ[10]" + "sd_DQ[11]" + "sd_DQ[12]" + "sd_DQ[13]" + 
+    "sd_DQ[14]" + "sd_DQ[15]" + "sd_DQ[1]" + "sd_DQ[2]" + "sd_DQ[3]" + 
+    "sd_DQ[4]" + "sd_DQ[5]" + "sd_DQ[6]" + "sd_DQ[7]" + "sd_DQ[8]" + "sd_DQ[9]"'
+    ;
+    "all_ports" = '"all_inputs" + "all_outputs" + "all_bidirectionals"';
+    "_pi" = '"conf" + "conf_ena" + "pclk" + "pgnt_n" + "pidsel" + "pm66en" + 
+    "power_save" + "prst_n" + "scan_en" + "sdr_clk" + "sys_clk" + "pad[0]" + 
+    "pad[10]" + "pad[11]" + "pad[12]" + "pad[13]" + "pad[14]" + "pad[15]" + 
+    "pad[1]" + "pad[2]" + "pad[3]" + "pad[4]" + "pad[5]" + "pad[6]" + "pad[7]" + 
+    "pad[8]" + "pad[9]" + "pc_be[0]" + "pc_be[1]" + "pc_be[2]" + "pc_be[3]" + 
+    "pdevsel_n" + "pframe_n" + "pirdy_n" + "ppar" + "pperr_n" + "pserr_n" + 
+    "pstop_n" + "ptrdy_n" + "sd_DQ[0]" + "sd_DQ[10]" + "sd_DQ[11]" + "sd_DQ[12]" 
+    + "sd_DQ[13]" + "sd_DQ[14]" + "sd_DQ[15]" + "sd_DQ[1]" + "sd_DQ[2]" + 
+    "sd_DQ[3]" + "sd_DQ[4]" + "sd_DQ[5]" + "sd_DQ[6]" + "sd_DQ[7]" + "sd_DQ[8]" 
+    + "sd_DQ[9]"';
+    "_po" = '"preq_n" + "sd_A[0]" + "sd_A[1]" + "sd_A[2]" + "sd_A[3]" + 
+    "sd_A[4]" + "sd_A[5]" + "sd_A[6]" + "sd_A[7]" + "sd_A[8]" + "sd_A[9]" + 
+    "sd_BWS[0]" + "sd_BWS[1]" + "sd_CK" + "sd_CKn" + "sd_LD" + "sd_RW" + 
+    "pad[0]" + "pad[10]" + "pad[11]" + "pad[12]" + "pad[13]" + "pad[14]" + 
+    "pad[15]" + "pad[1]" + "pad[2]" + "pad[3]" + "pad[4]" + "pad[5]" + "pad[6]" 
+    + "pad[7]" + "pad[8]" + "pad[9]" + "pc_be[0]" + "pc_be[1]" + "pc_be[2]" + 
+    "pc_be[3]" + "pdevsel_n" + "pframe_n" + "pirdy_n" + "ppar" + "pperr_n" + 
+    "pserr_n" + "pstop_n" + "ptrdy_n" + "sd_DQ[0]" + "sd_DQ[10]" + "sd_DQ[11]" + 
+    "sd_DQ[12]" + "sd_DQ[13]" + "sd_DQ[14]" + "sd_DQ[15]" + "sd_DQ[1]" + 
+    "sd_DQ[2]" + "sd_DQ[3]" + "sd_DQ[4]" + "sd_DQ[5]" + "sd_DQ[6]" + "sd_DQ[7]" 
+    + "sd_DQ[8]" + "sd_DQ[9]"';
+}
+ScanStructures {
+    ScanChain "chain0" {
+        ScanLength 488;
+        ScanIn "pad[0]";
+        ScanOut "sd_A[0]";
+        ScanEnable "scan_en";
+        ScanMasterClock "sdr_clk";
+    }
+    ScanChain "chain1" {
+        ScanLength 488;
+        ScanIn "pad[1]";
+        ScanOut "sd_A[1]";
+        ScanEnable "scan_en";
+        ScanMasterClock "pclk" "sdr_clk" "sys_clk";
+    }
+    ScanChain "chain2" {
+        ScanLength 488;
+        ScanIn "pad[2]";
+        ScanOut "sd_A[2]";
+        ScanEnable "scan_en";
+        ScanMasterClock "pclk";
+    }
+    ScanChain "chain3" {
+        ScanLength 488;
+        ScanIn "pad[3]";
+        ScanOut "sd_A[3]";
+        ScanEnable "scan_en";
+        ScanMasterClock "pclk" "sdr_clk";
+    }
+    ScanChain "chain4" {
+        ScanLength 487;
+        ScanIn "pad[4]";
+        ScanOut "sd_A[4]";
+        ScanEnable "scan_en";
+        ScanMasterClock "sdr_clk" "sys_clk";
+        ScanInversion 1;
+    }
+    ScanChain "chain5" {
+        ScanLength 487;
+        ScanIn "pad[5]";
+        ScanOut "sd_A[5]";
+        ScanEnable "scan_en";
+        ScanMasterClock "sys_clk";
+        ScanInversion 1;
+    }
+}
+Timing {
+    WaveformTable "_default_WFT_" {
+        Period '100ns';
+        Waveforms {
+            "all_inputs" {
+                0 {
+                    '0ns' D;
+                }
+            }
+            "all_inputs" {
+                1 {
+                    '0ns' U;
+                }
+            }
+            "all_inputs" {
+                Z {
+                    '0ns' Z;
+                }
+            }
+            "all_inputs" {
+                N {
+                    '0ns' N;
+                }
+            }
+            "all_outputs" {
+                X {
+                    '0ns' X;
+                    '40ns' X;
+                }
+            }
+            "all_outputs" {
+                H {
+                    '0ns' X;
+                    '40ns' H;
+                }
+            }
+            "all_outputs" {
+                T {
+                    '0ns' X;
+                    '40ns' T;
+                }
+            }
+            "all_outputs" {
+                L {
+                    '0ns' X;
+                    '40ns' L;
+                }
+            }
+            "pclk" {
+                P {
+                    '0ns' D;
+                    '45ns' U;
+                    '55ns' D;
+                }
+            }
+            "sdr_clk" {
+                P {
+                    '0ns' D;
+                    '45ns' U;
+                    '55ns' D;
+                }
+            }
+            "sys_clk" {
+                P {
+                    '0ns' D;
+                    '45ns' U;
+                    '55ns' D;
+                }
+            }
+            "prst_n" {
+                P {
+                    '0ns' U;
+                    '45ns' D;
+                    '55ns' U;
+                }
+            }
+            "all_bidirectionals" {
+                0 {
+                    '0ns' D;
+                }
+            }
+            "all_bidirectionals" {
+                1 {
+                    '0ns' U;
+                }
+            }
+            "all_bidirectionals" {
+                Z {
+                    '0ns' Z;
+                }
+            }
+            "all_bidirectionals" {
+                N {
+                    '0ns' N;
+                }
+            }
+            "all_bidirectionals" {
+                X {
+                    '0ns' Z;
+                    '40ns' X;
+                }
+            }
+            "all_bidirectionals" {
+                H {
+                    '0ns' Z;
+                    '40ns' H;
+                }
+            }
+            "all_bidirectionals" {
+                T {
+                    '0ns' Z;
+                    '40ns' T;
+                }
+            }
+            "all_bidirectionals" {
+                L {
+                    '0ns' Z;
+                    '40ns' L;
+                }
+            }
+        }
+    }
+    WaveformTable "_multiclock_capture_WFT_" {
+        Period '100ns';
+        Waveforms {
+            "all_inputs" {
+                0 {
+                    '0ns' D;
+                }
+            }
+            "all_inputs" {
+                1 {
+                    '0ns' U;
+                }
+            }
+            "all_inputs" {
+                Z {
+                    '0ns' Z;
+                }
+            }
+            "all_inputs" {
+                N {
+                    '0ns' N;
+                }
+            }
+            "all_bidirectionals" {
+                0 {
+                    '0ns' D;
+                }
+            }
+            "all_bidirectionals" {
+                1 {
+                    '0ns' U;
+                }
+            }
+            "all_bidirectionals" {
+                Z {
+                    '0ns' Z;
+                }
+            }
+            "all_bidirectionals" {
+                N {
+                    '0ns' N;
+                }
+            }
+            "all_bidirectionals" {
+                X {
+                    '0ns' Z;
+                    '40ns' X;
+                }
+            }
+            "all_bidirectionals" {
+                H {
+                    '0ns' Z;
+                    '40ns' H;
+                }
+            }
+            "all_bidirectionals" {
+                T {
+                    '0ns' Z;
+                    '40ns' T;
+                }
+            }
+            "all_bidirectionals" {
+                L {
+                    '0ns' Z;
+                    '40ns' L;
+                }
+            }
+            "all_outputs" {
+                X {
+                    '0ns' X;
+                    '40ns' X;
+                }
+            }
+            "all_outputs" {
+                H {
+                    '0ns' X;
+                    '40ns' H;
+                }
+            }
+            "all_outputs" {
+                T {
+                    '0ns' X;
+                    '40ns' T;
+                }
+            }
+            "all_outputs" {
+                L {
+                    '0ns' X;
+                    '40ns' L;
+                }
+            }
+            "sys_clk" {
+                P {
+                    '0ns' D;
+                    '45ns' U;
+                    '55ns' D;
+                }
+            }
+            "pclk" {
+                P {
+                    '0ns' D;
+                    '45ns' U;
+                    '55ns' D;
+                }
+            }
+            "sdr_clk" {
+                P {
+                    '0ns' D;
+                    '45ns' U;
+                    '55ns' D;
+                }
+            }
+            "prst_n" {
+                P {
+                    '0ns' U;
+                    '45ns' D;
+                    '55ns' U;
+                }
+            }
+        }
+    }
+    WaveformTable "_allclock_capture_WFT_" {
+        Period '100ns';
+        Waveforms {
+            "all_inputs" {
+                0 {
+                    '0ns' D;
+                }
+            }
+            "all_inputs" {
+                1 {
+                    '0ns' U;
+                }
+            }
+            "all_inputs" {
+                Z {
+                    '0ns' Z;
+                }
+            }
+            "all_inputs" {
+                N {
+                    '0ns' N;
+                }
+            }
+            "all_bidirectionals" {
+                0 {
+                    '0ns' D;
+                }
+            }
+            "all_bidirectionals" {
+                1 {
+                    '0ns' U;
+                }
+            }
+            "all_bidirectionals" {
+                Z {
+                    '0ns' Z;
+                }
+            }
+            "all_bidirectionals" {
+                N {
+                    '0ns' N;
+                }
+            }
+            "all_bidirectionals" {
+                X {
+                    '0ns' Z;
+                    '40ns' X;
+                }
+            }
+            "all_bidirectionals" {
+                H {
+                    '0ns' Z;
+                    '40ns' H;
+                }
+            }
+            "all_bidirectionals" {
+                T {
+                    '0ns' Z;
+                    '40ns' T;
+                }
+            }
+            "all_bidirectionals" {
+                L {
+                    '0ns' Z;
+                    '40ns' L;
+                }
+            }
+            "all_outputs" {
+                X {
+                    '0ns' X;
+                    '40ns' X;
+                }
+            }
+            "all_outputs" {
+                H {
+                    '0ns' X;
+                    '40ns' H;
+                }
+            }
+            "all_outputs" {
+                T {
+                    '0ns' X;
+                    '40ns' T;
+                }
+            }
+            "all_outputs" {
+                L {
+                    '0ns' X;
+                    '40ns' L;
+                }
+            }
+            "sys_clk" {
+                P {
+                    '0ns' D;
+                    '45ns' U;
+                    '55ns' D;
+                }
+            }
+            "pclk" {
+                P {
+                    '0ns' D;
+                    '45ns' U;
+                    '55ns' D;
+                }
+            }
+            "sdr_clk" {
+                P {
+                    '0ns' D;
+                    '45ns' U;
+                    '55ns' D;
+                }
+            }
+            "prst_n" {
+                P {
+                    '0ns' U;
+                    '45ns' D;
+                    '55ns' U;
+                }
+            }
+        }
+    }
+    WaveformTable "_allclock_launch_WFT_" {
+        Period '100ns';
+        Waveforms {
+            "all_inputs" {
+                0 {
+                    '0ns' D;
+                }
+            }
+            "all_inputs" {
+                1 {
+                    '0ns' U;
+                }
+            }
+            "all_inputs" {
+                Z {
+                    '0ns' Z;
+                }
+            }
+            "all_inputs" {
+                N {
+                    '0ns' N;
+                }
+            }
+            "all_bidirectionals" {
+                0 {
+                    '0ns' D;
+                }
+            }
+            "all_bidirectionals" {
+                1 {
+                    '0ns' U;
+                }
+            }
+            "all_bidirectionals" {
+                Z {
+                    '0ns' Z;
+                }
+            }
+            "all_bidirectionals" {
+                N {
+                    '0ns' N;
+                }
+            }
+            "all_bidirectionals" {
+                X {
+                    '0ns' Z;
+                    '40ns' X;
+                }
+            }
+            "all_bidirectionals" {
+                H {
+                    '0ns' Z;
+                    '40ns' H;
+                }
+            }
+            "all_bidirectionals" {
+                T {
+                    '0ns' Z;
+                    '40ns' T;
+                }
+            }
+            "all_bidirectionals" {
+                L {
+                    '0ns' Z;
+                    '40ns' L;
+                }
+            }
+            "all_outputs" {
+                X {
+                    '0ns' X;
+                    '40ns' X;
+                }
+            }
+            "all_outputs" {
+                H {
+                    '0ns' X;
+                    '40ns' H;
+                }
+            }
+            "all_outputs" {
+                T {
+                    '0ns' X;
+                    '40ns' T;
+                }
+            }
+            "all_outputs" {
+                L {
+                    '0ns' X;
+                    '40ns' L;
+                }
+            }
+            "sys_clk" {
+                P {
+                    '0ns' D;
+                    '45ns' U;
+                    '55ns' D;
+                }
+            }
+            "pclk" {
+                P {
+                    '0ns' D;
+                    '45ns' U;
+                    '55ns' D;
+                }
+            }
+            "sdr_clk" {
+                P {
+                    '0ns' D;
+                    '45ns' U;
+                    '55ns' D;
+                }
+            }
+            "prst_n" {
+                P {
+                    '0ns' U;
+                    '45ns' D;
+                    '55ns' U;
+                }
+            }
+        }
+    }
+    WaveformTable "_allclock_launch_capture_WFT_" {
+        Period '100ns';
+        Waveforms {
+            "all_inputs" {
+                0 {
+                    '0ns' D;
+                }
+            }
+            "all_inputs" {
+                1 {
+                    '0ns' U;
+                }
+            }
+            "all_inputs" {
+                Z {
+                    '0ns' Z;
+                }
+            }
+            "all_inputs" {
+                N {
+                    '0ns' N;
+                }
+            }
+            "all_bidirectionals" {
+                0 {
+                    '0ns' D;
+                }
+            }
+            "all_bidirectionals" {
+                1 {
+                    '0ns' U;
+                }
+            }
+            "all_bidirectionals" {
+                Z {
+                    '0ns' Z;
+                }
+            }
+            "all_bidirectionals" {
+                N {
+                    '0ns' N;
+                }
+            }
+            "all_bidirectionals" {
+                X {
+                    '0ns' Z;
+                    '40ns' X;
+                }
+            }
+            "all_bidirectionals" {
+                H {
+                    '0ns' Z;
+                    '40ns' H;
+                }
+            }
+            "all_bidirectionals" {
+                T {
+                    '0ns' Z;
+                    '40ns' T;
+                }
+            }
+            "all_bidirectionals" {
+                L {
+                    '0ns' Z;
+                    '40ns' L;
+                }
+            }
+            "all_outputs" {
+                X {
+                    '0ns' X;
+                    '40ns' X;
+                }
+            }
+            "all_outputs" {
+                H {
+                    '0ns' X;
+                    '40ns' H;
+                }
+            }
+            "all_outputs" {
+                T {
+                    '0ns' X;
+                    '40ns' T;
+                }
+            }
+            "all_outputs" {
+                L {
+                    '0ns' X;
+                    '40ns' L;
+                }
+            }
+            "sys_clk" {
+                P {
+                    '0ns' D;
+                    '45ns' U;
+                    '55ns' D;
+                }
+            }
+            "pclk" {
+                P {
+                    '0ns' D;
+                    '45ns' U;
+                    '55ns' D;
+                }
+            }
+            "sdr_clk" {
+                P {
+                    '0ns' D;
+                    '45ns' U;
+                    '55ns' D;
+                }
+            }
+            "prst_n" {
+                P {
+                    '0ns' U;
+                    '45ns' D;
+                    '55ns' U;
+                }
+            }
+        }
+    }
+}
+Procedures {
+    "multiclock_capture" {
+        W "_multiclock_capture_WFT_";
+        C {
+            "all_inputs" = 100NNNN1N00;
+            "all_outputs" = \r17 X;
+            "all_bidirectionals" = \r44 Z;
+        }
+        F {
+            "conf_ena" = 0;
+        }
+        V {
+            "_pi" = \r55 #;
+            "_po" = \r61 #;
+        }
+    }
+    "allclock_capture" {
+        W "_allclock_capture_WFT_";
+        C {
+            "all_inputs" = 100NNNN1N00;
+            "all_outputs" = \r17 X;
+            "all_bidirectionals" = \r44 Z;
+        }
+        F {
+            "conf_ena" = 0;
+        }
+        V {
+            "_pi" = \r55 #;
+            "_po" = \r61 #;
+        }
+    }
+    "allclock_launch" {
+        W "_allclock_launch_WFT_";
+        C {
+            "all_inputs" = 100NNNN1N00;
+            "all_outputs" = \r17 X;
+            "all_bidirectionals" = \r44 Z;
+        }
+        F {
+            "conf_ena" = 0;
+        }
+        V {
+            "_pi" = \r55 #;
+            "_po" = \r61 #;
+        }
+    }
+    "allclock_launch_capture" {
+        W "_allclock_launch_capture_WFT_";
+        C {
+            "all_inputs" = 100NNNN1N00;
+            "all_outputs" = \r17 X;
+            "all_bidirectionals" = \r44 Z;
+        }
+        F {
+            "conf_ena" = 0;
+        }
+        V {
+            "_pi" = \r55 #;
+            "_po" = \r61 #;
+        }
+    }
+    "load_unload" {
+        W "_default_WFT_";
+        C {
+            "all_inputs" = 100NNNN1N00;
+            "all_outputs" = \r17 X;
+            "all_bidirectionals" = \r44 Z;
+        }
+        "Internal_scan_pre_shift" : V {
+            "scan_en" = 1;
+        }
+        Shift {
+            V {
+                "_clk" = P1PP;
+                "_si" = \r6 #;
+                "_so" = \r6 #;
+            }
+        }
+    }
+}
+MacroDefs {
+    "test_setup" {
+        W "_default_WFT_";
+        C {
+            "all_inputs" = \r11 N;
+            "all_outputs" = \r17 X;
+            "all_bidirectionals" = \r44 Z;
+        }
+        V {
+            "conf_ena" = 0;
+            "pclk" = 0;
+            "prst_n" = 1;
+            "sdr_clk" = 0;
+            "sys_clk" = 0;
+        }
+        V {
+            "conf" = 1;
+            "conf_ena" = 1;
+            "pclk" = P;
+        }
+        V {
+            "conf" = 0;
+        }
+        V {
+            "conf" = 1;
+        }
+        V {
+            "conf_ena" = 0;
+            "pclk" = 0;
+        }
+        V {
+        }
+    }
+}
+

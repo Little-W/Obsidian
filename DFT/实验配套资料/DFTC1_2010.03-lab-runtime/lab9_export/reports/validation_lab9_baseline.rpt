@@ -1,0 +1,99 @@
+In mode: all_dft...
+  Pre-DFT DRC enabled
+
+Information: Starting test design rule checking. (TEST-222)
+  Loading test protocol
+  ...basic checks...
+  ...basic sequential cell checks...
+  	...checking for scan equivalents...
+  ...Loading simulation libraries...
+  ...checking vector rules...
+  ...checking pre-dft rules...
+
+-----------------------------------------------------------------
+Simulation library files used for DRC 
+-----------------------------------------------------------------
+ /media/6/Projects/DFTC1_2010.03-lab-runtime/lab9_export/tmax/rams.v 
+
+
+-------------------------------------------------------------------------
+Modeling Violations and User Constraints preventing scan insertion
+-------------------------------------------------------------------------
+
+Warning: Cell I_CLOCK_GEN/I_PLL_PCI (PLL) is unknown (black box) because functionality for output pin CLK is bad or incomplete. (TEST-451)
+Information: There are 12 other cells with the same violation. (TEST-171)
+
+
+
+-------------------------------------------------------------------------
+DRC Violations which will prevent scan insertion
+-------------------------------------------------------------------------
+
+ Warning: Clock sys_clk connects to clock/clock inputs (CE1/CE2) of DFF I_ORCA_TOP/I_CONTEXT_MEM/CONTEXT_RAM_0. (D12-1)
+Information: There are 5 other cells with the same violation. (TEST-171)
+Warning: Cell U_CONFIG/config_state_reg_1_ has constant 0 value. (TEST-504)
+Warning: Cell U_CONFIG/config_state_reg_0_ has constant 1 value. (TEST-505)
+Information: There is 1 other cell with the same violation. (TEST-173)
+
+
+
+-------------------------------------------------------------------------
+DRC Violations which can affect ATPG Coverage
+-------------------------------------------------------------------------
+
+ Warning: Clock pclk can capture new data on TE input CE1 of DFF I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_RAM. (D14-1)
+         Source of violation: input CP of DFF I_ORCA_TOP/I_PCI_READ_FIFO/count_int_reg_4_.
+Information: There are 9 other cells with the same violation. (TEST-171)
+ Warning: Clock input CE1 of DFF I_ORCA_TOP/I_CONTEXT_MEM/CONTEXT_RAM_0 cannot capture data. (D17-1)
+Information: There are 9 other cells with the same violation. (TEST-171)
+
+
+
+-------------------------------------------------------------------------
+Other Violations
+-------------------------------------------------------------------------
+
+Warning: Three-state net I_ORCA_TOP/I_PCI_READ_FIFO/fifo_data_in[31] is not properly driven. (TEST-115)
+Information: There are 431 other nets with the same violation. (TEST-289)
+
+
+
+-------------------------------------------------------------------------
+Summary of all DFT DRC violations
+-------------------------------------------------------------------------
+
+13 MODELING VIOLATIONS AND USER CONSTRAINTS PREVENTING SCAN INSERTION 
+    13 Cell has unknown model violations (TEST-451)
+
+9 DRC VIOLATIONS WHICH WILL PREVENT SCAN INSERTION 
+     6 Clock feeding multiple clock/set/reset inputs violations (D12)
+     1 Cell is constant 0 violation (TEST-504)
+     2 Cell is constant 1 violations (TEST-505)
+
+40 DRC VIOLATIONS WHICH CAN AFFECT ATPG COVERAGE 
+    20 Data path affected by clock captured by clock in trailing edge clock_port violations (D14)
+    20 Clock_port not capable of capturing data violations (D17)
+
+432 OTHER VIOLATIONS 
+   432 Improperly driven three-state net violations (TEST-115)
+
+494 TOTAL VIOLATIONS 
+
+Warning: Violations occurred during test design rule checking. (TEST-124)
+
+-----------------------------------------------------------------------------------------   
+ Sequential Cell Report:       Sequential       Core             Core                 
+                               Cells            Segments         Segment Cells        
+-----------------------------------------------------------------------------------------
+ Sequential Elements Detected:  2961               0                   0                       
+ Clock Gating Cells          :  0                                                        
+ Synchronizing Cells         :  0                                                        
+ Non-Scan Elements           :  0                                                        
+ Excluded Scan Elements      :  0                  0                   0                       
+ Violated Scan Elements      :  35                 0                   0                       
+ (Traced) Scan Elements      :  2926    ( 98.8%)   0       (  0.0%)    0       (  0.0%)      
+-----------------------------------------------------------------------------------------
+
+
+Information: Test design rule checking completed. (TEST-123)
+1

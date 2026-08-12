@@ -1,0 +1,131 @@
+In mode: Internal_scan...
+  Design has scan chains in this mode
+  Design is scan routed
+  Post-DFT DRC enabled
+
+Information: Starting test design rule checking. (TEST-222)
+  Loading test protocol
+  ...basic checks...
+  ...basic sequential cell checks...
+  ...Loading simulation libraries...
+  ...checking vector rules...
+  ...checking clock rules...
+  ...checking scan chain rules...
+  ...checking scan compression rules...
+  ...checking X-state rules...
+  ...checking tristate rules...
+  ...extracting scan details...
+
+-----------------------------------------------------------------
+Simulation library files used for DRC 
+-----------------------------------------------------------------
+ /media/6/Projects/DFTC1_2010.03-lab-runtime/lab9_export/tmax/rams.v 
+
+
+-------------------------------------------------------------------------
+Modeling Violations and User Constraints preventing scan insertion
+-------------------------------------------------------------------------
+
+Warning: Cell I_CLOCK_GEN/I_PLL_PCI (PLL) is unknown (black box) because functionality for output pin CLK is bad or incomplete. (TEST-451)
+Information: There are 12 other cells with the same violation. (TEST-171)
+
+
+
+-------------------------------------------------------------------------
+DRC Violations which will prevent scan insertion
+-------------------------------------------------------------------------
+
+Warning: Cell U_CONFIG/config_state_reg_1_ has constant 0 value. (TEST-504)
+Warning: Cell U_CONFIG/config_state_reg_0_ has constant 1 value. (TEST-505)
+Information: There is 1 other cell with the same violation. (TEST-173)
+
+
+
+-------------------------------------------------------------------------
+DRC Violations which can affect ATPG Coverage
+-------------------------------------------------------------------------
+
+ Warning: Clock pclk can capture new data on TE input CE1 of DFF I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_RAM. (C6-1)
+         Source of violation: input CP of DFF I_ORCA_TOP/I_PCI_READ_FIFO/count_int_reg_4_.
+Information: There are 25 other cells with the same violation. (TEST-171)
+ Warning: Clock sdr_clk connects to LE clock/data inputs CP/D of DFF I_ORCA_TOP/I_SDRAM_IF/DQ_in_0_reg_15_. (C12-1)
+Information: There are 15 other cells with the same violation. (TEST-171)
+ Warning: Clock sdr_clk connects to TE clock/data inputs CPN/D of DFF I_ORCA_TOP/I_SDRAM_IF/DQ_in_1_reg_15_. (C13-1)
+Information: There are 15 other cells with the same violation. (TEST-171)
+ Warning: Clock sdr_clk is connected to primary output sd_CK. (C17-1)
+ Warning: Write input CE2 of RAM I_ORCA_TOP/I_CONTEXT_MEM/CONTEXT_RAM_0 cannot capture data. (C21-1)
+Information: There are 9 other cells with the same violation. (TEST-171)
+ Warning: Nonscan DFF I_ORCA_TOP/I_SDRAM_IF/DQ_in_0_reg_15_ disturbed during time 45 of shift procedure. (S19-1)
+Information: There are 41 other cells with the same violation. (TEST-171)
+ Warning: Multiple clocks (pclk sys_clk) were used to shift scan chain chain1. (S22-1)
+ Warning: RAM I_ORCA_TOP/I_CONTEXT_MEM/CONTEXT_RAM_0 unstable during time 45 of shift procedure. (S30-1)
+Information: There are 9 other cells with the same violation. (TEST-171)
+ Warning: Enable of bidi bus driver pc_be[3] connected to scan cell gate I_ORCA_TOP/I_PCI_CORE/pc_be_en_reg. (Z9-1)
+Information: There are 43 other cells with the same violation. (TEST-171)
+
+
+
+-------------------------------------------------------------------------
+Other Violations
+-------------------------------------------------------------------------
+
+Warning: Three-state net I_ORCA_TOP/I_PCI_READ_FIFO/fifo_data_in[31] is not properly driven. (TEST-115)
+Information: There are 431 other nets with the same violation. (TEST-289)
+
+
+-------------------------------------------------------------------------
+Traced Scan Chains
+-------------------------------------------------------------------------
+Chain "chain0" traced through 488 flip-flops 
+Chain "chain1" traced through 488 flip-flops 
+Chain "chain2" traced through 488 flip-flops 
+Chain "chain3" traced through 488 flip-flops 
+Chain "chain4" traced through 487 flip-flops 
+Chain "chain5" traced through 487 flip-flops 
+
+
+-------------------------------------------------------------------------
+Summary of all DFT DRC violations
+-------------------------------------------------------------------------
+
+13 MODELING VIOLATIONS AND USER CONSTRAINTS PREVENTING SCAN INSERTION 
+    13 Cell has unknown model violations (TEST-451)
+
+3 DRC VIOLATIONS WHICH WILL PREVENT SCAN INSERTION 
+     1 Cell is constant 0 violation (TEST-504)
+     2 Cell is constant 1 violations (TEST-505)
+
+176 DRC VIOLATIONS WHICH CAN AFFECT ATPG COVERAGE 
+    36 Trailing edge port captured data affected by new capture violations (C6)
+    16 Leading edge port captured data affected by clock violations (C12)
+    16 Trailing edge port captured data affected by clock violations (C13)
+     1 Clock connected to primary output violation (C17)
+    10 RAM port unable to capture violations (C21)
+    42 Nonscan cell disturb violations (S19)
+     1 Multiply clocked scan chain violation (S22)
+    10 Unstable RAM during test procedure operation violations (S30)
+    44 Bidi bus driver enable affected by scan cell violations (Z9)
+
+432 OTHER VIOLATIONS 
+   432 Improperly driven three-state net violations (TEST-115)
+
+624 TOTAL VIOLATIONS 
+
+Warning: Violations occurred during test design rule checking. (TEST-124)
+
+-----------------------------------------------------------------------------------------   
+ Sequential Cell Report:       Sequential       Core             Core                 
+                               Cells            Segments         Segment Cells        
+-----------------------------------------------------------------------------------------
+ Sequential Elements Detected:  2964               0                   0                       
+ Clock Gating Cells          :  0                                                        
+ Synchronizing Cells         :  3                                                        
+ Non-Scan Elements           :  0                                                        
+ Excluded Scan Elements      :  0                  0                   0                       
+ Violated Scan Elements      :  35                 0                   0                       
+ (Traced) Scan Elements      :  2926    ( 98.7%)   0       (  0.0%)    0       (  0.0%)      
+-----------------------------------------------------------------------------------------
+
+
+Information: Test design rule checking completed. (TEST-123)
+1

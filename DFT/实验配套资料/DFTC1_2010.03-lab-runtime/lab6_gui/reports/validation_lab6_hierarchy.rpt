@@ -1,0 +1,152 @@
+ 
+****************************************
+Report : hierarchy
+Design : RISC_CORE
+Version: V-2023.12-SP3
+Date   : Wed Aug 12 22:45:03 2026
+****************************************
+
+Attributes:
+    r - licensed design
+
+RISC_CORE          r
+    CONTROL
+        an02d0                cb13fs120_tsmc_max
+        an02d1                cb13fs120_tsmc_max
+        an03d1                cb13fs120_tsmc_max
+        an04d0                cb13fs120_tsmc_max
+        aor211d1              cb13fs120_tsmc_max
+        inv0d0                cb13fs120_tsmc_max
+        mx02d0                cb13fs120_tsmc_max
+        nd02d0                cb13fs120_tsmc_max
+        nd03d0                cb13fs120_tsmc_max
+        nd12d0                cb13fs120_tsmc_max
+        nr02d0                cb13fs120_tsmc_max
+        nr03d0                cb13fs120_tsmc_max
+        nr03d2                cb13fs120_tsmc_max
+        nr04d0                cb13fs120_tsmc_max
+        ora211d1              cb13fs120_tsmc_max
+        sdcrq1                cb13fs120_tsmc_max
+        sdnrq1                cb13fs120_tsmc_max
+    DATA_PATH
+        aor22d1               cb13fs120_tsmc_max
+        aor222d1              cb13fs120_tsmc_max
+        inv0d0                cb13fs120_tsmc_max
+        mx02d0                cb13fs120_tsmc_max
+        mx02d1                cb13fs120_tsmc_max
+        nd02d0                cb13fs120_tsmc_max
+        nd03d0                cb13fs120_tsmc_max
+        nr02d0                cb13fs120_tsmc_max
+        nr03d0                cb13fs120_tsmc_max
+        nr04d0                cb13fs120_tsmc_max
+        sdcrq1                cb13fs120_tsmc_max
+        sdnrq1                cb13fs120_tsmc_max
+    DIV_CLK
+        inv0d0                cb13fs120_tsmc_max
+        mx02d0                cb13fs120_tsmc_max
+        sdcrq1                cb13fs120_tsmc_max
+    INSTRN_LAT
+        mx02d0                cb13fs120_tsmc_max
+        sdnrq1                cb13fs120_tsmc_max
+    PRGRM_CNT_TOP
+        PRGRM_CNT                       r
+            an02d1            cb13fs120_tsmc_max
+            aoi2222d1         cb13fs120_tsmc_max
+            aoim22d1          cb13fs120_tsmc_max
+            aor21d1           cb13fs120_tsmc_max
+            aor22d1           cb13fs120_tsmc_max
+            aor211d1          cb13fs120_tsmc_max
+            aor221d1          cb13fs120_tsmc_max
+            inv0d0            cb13fs120_tsmc_max
+            inv0d1            cb13fs120_tsmc_max
+            mx02d0            cb13fs120_tsmc_max
+            nd02d0            cb13fs120_tsmc_max
+            nd03d0            cb13fs120_tsmc_max
+            nr02d0            cb13fs120_tsmc_max
+            nr03d0            cb13fs120_tsmc_max
+            sdcrq1            cb13fs120_tsmc_max
+        PRGRM_DECODE
+            an02d0            cb13fs120_tsmc_max
+            mx02d0            cb13fs120_tsmc_max
+            nd02d0            cb13fs120_tsmc_max
+            nd03d0            cb13fs120_tsmc_max
+            nd04d0            cb13fs120_tsmc_max
+            nr02d0            cb13fs120_tsmc_max
+            nr03d0            cb13fs120_tsmc_max
+            nr04d0            cb13fs120_tsmc_max
+            or02d0            cb13fs120_tsmc_max
+            ora211d1          cb13fs120_tsmc_max
+        PRGRM_FSM
+            aoi21d1           cb13fs120_tsmc_max
+            inv0d0            cb13fs120_tsmc_max
+            nd02d0            cb13fs120_tsmc_max
+            nr02d0            cb13fs120_tsmc_max
+            nr03d0            cb13fs120_tsmc_max
+            sdcrq1            cb13fs120_tsmc_max
+    REG_FILE
+        buffd1                cb13fs120_tsmc_max
+        inv0d0                cb13fs120_tsmc_max
+        inv0d1                cb13fs120_tsmc_max
+        mx02d0                cb13fs120_tsmc_max
+        mx04d0                cb13fs120_tsmc_max
+        nd03d1                cb13fs120_tsmc_max
+        nr03d1                cb13fs120_tsmc_max
+        sdcrq1                cb13fs120_tsmc_max
+    RST
+        dfcrq1                cb13fs120_tsmc_max
+        mx02d1                cb13fs120_tsmc_max
+        sdcrq1                cb13fs120_tsmc_max
+    STACK_TOP                           r
+        STACK_FSM                       r
+            aor21d1           cb13fs120_tsmc_max
+            aor22d1           cb13fs120_tsmc_max
+            aor211d1          cb13fs120_tsmc_max
+            aor221d1          cb13fs120_tsmc_max
+            aor311d1          cb13fs120_tsmc_max
+            inv0d0            cb13fs120_tsmc_max
+            mx02d0            cb13fs120_tsmc_max
+            nd02d0            cb13fs120_tsmc_max
+            nd03d0            cb13fs120_tsmc_max
+            nr02d0            cb13fs120_tsmc_max
+            nr03d0            cb13fs120_tsmc_max
+            nr04d0            cb13fs120_tsmc_max
+            oai322d1          cb13fs120_tsmc_max
+            ora31d1           cb13fs120_tsmc_max
+            sdcrq1            cb13fs120_tsmc_max
+        an02d0                cb13fs120_tsmc_max
+        aoi2222d1             cb13fs120_tsmc_max
+        aor31d1               cb13fs120_tsmc_max
+        aor221d1              cb13fs120_tsmc_max
+        inv0d0                cb13fs120_tsmc_max
+        mi02d0                cb13fs120_tsmc_max
+        mx02d0                cb13fs120_tsmc_max
+        nd02d0                cb13fs120_tsmc_max
+        nd02d1                cb13fs120_tsmc_max
+        nr02d0                cb13fs120_tsmc_max
+        nr03d0                cb13fs120_tsmc_max
+        sdnrq1                cb13fs120_tsmc_max
+    ad01d0                    cb13fs120_tsmc_max
+    ah01d0                    cb13fs120_tsmc_max
+    an02d0                    cb13fs120_tsmc_max
+    aoi22d1                   cb13fs120_tsmc_max
+    aoi222d1                  cb13fs120_tsmc_max
+    aor21d1                   cb13fs120_tsmc_max
+    aor22d1                   cb13fs120_tsmc_max
+    aor211d1                  cb13fs120_tsmc_max
+    aor221d1                  cb13fs120_tsmc_max
+    inv0d0                    cb13fs120_tsmc_max
+    inv0d1                    cb13fs120_tsmc_max
+    mx02d0                    cb13fs120_tsmc_max
+    nd02d0                    cb13fs120_tsmc_max
+    nd03d0                    cb13fs120_tsmc_max
+    nd04d0                    cb13fs120_tsmc_max
+    nr02d0                    cb13fs120_tsmc_max
+    nr03d0                    cb13fs120_tsmc_max
+    nr04d0                    cb13fs120_tsmc_max
+    or02d0                    cb13fs120_tsmc_max
+    ora21d1                   cb13fs120_tsmc_max
+    sdcrq1                    cb13fs120_tsmc_max
+    sdnrq1                    cb13fs120_tsmc_max
+    xn02d1                    cb13fs120_tsmc_max
+    xr02d1                    cb13fs120_tsmc_max
+1

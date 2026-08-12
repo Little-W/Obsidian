@@ -1,0 +1,67 @@
+Warning: Design 'ORCA' contains 3 high-fanout nets. A fanout number of 1000 will be used for delay calculations involving these nets. (TIM-134)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_15/Z' is detected. (TIM-052)
+Warning: A non-unate path in clock network for clock 'sdr_clk' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_15/Z' is detected. (TIM-052)
+Warning: No controlling value could be found for the clock gating cell 'I_ORCA_TOP/I_RISC_CORE/U3' for the clock pin 'A1'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_RISC_CORE/U3'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: No controlling value could be found for the clock gating cell 'I_ORCA_TOP/I_RISC_CORE/U3' for the clock pin 'A1'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_WRITE_FIFO/PCI_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_READ_FIFO/SD_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_WRITE_FIFO/SD_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U4'on pin 'I1' in design 'ORCA'. (TIM-141)
+Warning: No controlling value could be found for the clock gating cell 'I_CLOCK_GEN/U4' for the clock pin 'I0'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U5'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: A non-unate path in clock network for clock 'sdr_clk' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_15/Z' is detected. (TIM-052)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_15/Z' is detected. (TIM-052)
+
+Information: Starting test design rule checking. (TEST-222)
+  ...Loading simulation libraries...
+Warning: Violations occurred during test design rule checking. (TEST-124)
+Information: Test design rule checking completed. (TEST-123)
+  Architecting Scan Chains
+
+****************************************
+Preview_dft report
+For    : 'Insert_dft' command
+Design : ORCA
+Version: V-2023.12-SP3
+Date   : Wed Aug 12 22:52:46 2026
+****************************************
+
+Number of chains: 6
+Scan methodology: full_scan
+Scan style: multiplexed_flip_flop
+Clock domain: mix_clocks
+Scan enable: scan_en (no hookup pin)
+
+
+Scan chain 'chain0' (pad[0] --> sd_A[0]) contains 488 cells
+
+
+Scan chain 'chain1' (pad[1] --> sd_A[1]) contains 488 cells
+
+
+Scan chain 'chain2' (pad[2] --> sd_A[2]) contains 488 cells
+
+
+Scan chain 'chain3' (pad[3] --> sd_A[3]) contains 488 cells
+
+
+Scan chain 'chain4' (pad[4] --> sd_A[4]) contains 487 cells
+
+
+Scan chain 'chain5' (pad[5] --> sd_A[5]) contains 487 cells
+
+
+
+************ Test Point Plan Report ************
+Total number of test points  : 0
+Number of Autofix test points: 0
+Number of Wrapper test points: 0
+Number of test modes         : 0
+Number of test point enables : 0
+Number of data sources       : 0
+Number of data sinks         : 0
+**************************************************
+
+1

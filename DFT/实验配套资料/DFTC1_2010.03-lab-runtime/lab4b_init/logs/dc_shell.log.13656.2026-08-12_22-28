@@ -1,0 +1,91 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# DC Setup File
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+lappend search_path ../ref/db ./scripts
+../ref/db ./scripts
+set synthetic_library {dw_foundation.sldb}
+dw_foundation.sldb
+set target_library "sc_max.db"
+sc_max.db
+set link_library "* sc_max.db io_max.db rams_max.db special.db $synthetic_library"
+* sc_max.db io_max.db rams_max.db special.db dw_foundation.sldb
+#misc
+set cache_write ../dc_dw_cache
+Information: Variable 'cache_write' is obsolete and is being ignored. (INFO-100)
+../dc_dw_cache
+set cache_read $cache_write
+Information: Variable 'cache_read' is obsolete and is being ignored. (INFO-100)
+../dc_dw_cache
+set alib_library_analysis_path ../dc_dw_cache
+../dc_dw_cache
+define_design_lib DEFAULT -path ./analyzed
+1
+suppress_message "VHDL-2285 PSYN-040 PSYN-088"
+suppress_message "CMD-041 UID-401 OPT-170"
+echo "Sourcing ../ref/scripts/procs.tcl..."
+Sourcing ../ref/scripts/procs.tcl...
+source ../ref/scripts/procs.tcl
+Defining custom procedure "rename_test_designs"
+Defining custom procedure "async_domain"
+Defining custom procedure "echo_col"
+Defining custom procedure "flatten_block"
+Defining custom procedure "zero_io_nets"
+Defining custom procedure "report_clock_endpoint_skew"
+source ../ref/dc_settings.tcl
+
+Executing common setup file 'ref/dc_settings.tcl' ...
+./logs/dc_shell.cmd.13656.2026-08-12_22-28
+alias s "source -echo -verbose"
+echo "\n\nSettings:"
+
+
+Settings:
+echo "link_library:      $link_library"
+link_library:      * sc_max.db io_max.db rams_max.db special.db dw_foundation.sldb
+echo "target_library:    $target_library"
+target_library:    sc_max.db
+echo "search_path:       $search_path\n\n"
+search_path:       ../ref/db ./scripts
+
+
+echo "\nI am ready...\n\n\n"
+
+I am ready...
+
+
+
+set hdlin_enable_rtldrc_info true;# enable rtl code checking in DV
+true
+set test_simulation_library "./tmax/rams.v"
+./tmax/rams.v
+# Read the mapped ORCA design
+read_ddc mapped/ORCA.ddc
+Error: unknown command 'read_ddc' (CMD-005)
+Information: script 'scripts/1read_design.tcl'
+        stopped at line 6 due to error. (CMD-081)
+Extended error info:
+
+    while executing
+"read_ddc mapped/ORCA.ddc"
+    (file "scripts/1read_design.tcl" line 6)
+ -- End Extended Error Info
+Current time:       Wed Aug 12 22:28:47 2026
+Hostname:           almalinux8
+CPU Model:          11th Gen Intel(R) Core(TM) i7-11800H @ 2.30GHz
+CPU Details:        Cores = 1 : Sockets = 1 : Cache Size = 24576 KB : Freq = 3.99 GHz
+OS:                 Linux 7.1.5-1-default
+RAM:                 15 GB (Free   0 GB)
+Swap:                39 GB (Free  26 GB)
+Work Filesystem:    /media/6 mounted to /dev/nvme1n1p2
+Tmp Filesystem:     / mounted to /dev/nvme1n1p2
+Work Disk:          375 GB (Free  85 GB)
+Tmp Disk:           375 GB (Free  85 GB)
+
+CPU Load: 411%, Ram Free: 0 GB, Swap Free: 26 GB, Work Disk Free: 85 GB, Tmp Disk Free: 85 GB
+dc_shell> 
+Memory usage for this session 605 Mbytes.
+Memory usage for this session including child processes 605 Mbytes.
+CPU usage for this session 4 seconds ( 0.00 hours ).
+Elapsed time for this session 8 seconds ( 0.00 hours ).
+
+Thank you...

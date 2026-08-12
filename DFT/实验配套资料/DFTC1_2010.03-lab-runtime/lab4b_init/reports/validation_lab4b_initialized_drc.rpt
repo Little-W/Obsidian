@@ -1,0 +1,95 @@
+In mode: all_dft...
+  Pre-DFT DRC enabled
+
+Information: Starting test design rule checking. (TEST-222)
+  Loading test protocol
+  ...basic checks...
+  ...basic sequential cell checks...
+  	...checking for scan equivalents...
+  ...Loading simulation libraries...
+  ...checking vector rules...
+  ...checking pre-dft rules...
+
+-----------------------------------------------------------------
+Begin Modeling violations...
+
+Warning: Cell I_CLOCK_GEN/I_PLL_PCI (PLL) is unknown (black box) because functionality for output pin CLK is bad or incomplete. (TEST-451)
+Information: There are 12 other cells with the same violation. (TEST-171)
+
+Modeling violations completed...
+-----------------------------------------------------------------
+
+-----------------------------------------------------------------
+Begin Topology violations...
+
+Warning: Three-state net I_ORCA_TOP/I_PCI_READ_FIFO/fifo_data_in\[31\] is not properly driven. (TEST-115)
+Information: There are 431 other nets with the same violation. (TEST-289)
+
+Topology violations completed...
+-----------------------------------------------------------------
+
+-----------------------------------------------------------------
+Begin Pre-DFT violations...
+
+ Warning: Clock sys_clk connects to clock/clock inputs (CE1/CE2) of DFF I_ORCA_TOP/I_CONTEXT_MEM/CONTEXT_RAM_0. (D12-1)
+Information: There are 5 other cells with the same violation. (TEST-171)
+ Warning: Clock pclk can capture new data on TE input CE1 of DFF I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_RAM. (D14-1)
+         Source of violation: input CP of DFF I_ORCA_TOP/I_PCI_READ_FIFO/count_int_reg\[4\].
+Information: There are 9 other cells with the same violation. (TEST-171)
+ Warning: Clock input CE1 of DFF I_ORCA_TOP/I_CONTEXT_MEM/CONTEXT_RAM_0 cannot capture data. (D17-1)
+Information: There are 9 other cells with the same violation. (TEST-171)
+
+Pre-DFT violations completed...
+-----------------------------------------------------------------
+
+-----------------------------------------------------------------
+Begin Other violations...
+
+Warning: Cell U_CONFIG/config_state_reg\[1\] has constant 0 value. (TEST-504)
+Warning: Cell U_CONFIG/config_state_reg\[0\] has constant 1 value. (TEST-505)
+Information: There is 1 other cell with the same violation. (TEST-173)
+
+Other violations completed...
+-----------------------------------------------------------------
+
+-----------------------------------------------------------------
+  DRC Report
+
+  Total violations: 494
+
+-----------------------------------------------------------------
+
+13 MODELING VIOLATIONS
+    13 Cell has unknown model violations (TEST-451)
+
+432 TOPOLOGY VIOLATIONS
+   432 Improperly driven three-state net violations (TEST-115)
+
+46 PRE-DFT VIOLATIONS
+     6 Clock feeding multiple clock/set/reset inputs violations (D12)
+    20 Data path affected by clock captured by clock in trailing edge clock_port violations (D14)
+    20 Clock_port not capable of capturing data violations (D17)
+
+3 OTHER VIOLATIONS
+     1 Cell is constant 0 violation (TEST-504)
+     2 Cell is constant 1 violations (TEST-505)
+
+
+Warning: Violations occurred during test design rule checking. (TEST-124)
+
+-----------------------------------------------------------------
+  Sequential Cell Report
+
+  35 out of 3002 sequential cells have violations
+
+-----------------------------------------------------------------
+
+SEQUENTIAL CELLS WITH VIOLATIONS
+      *  32 cells have test design rule violations
+      *   1 cell has constant 0 value
+      *   2 cells have constant 1 value
+SEQUENTIAL CELLS WITHOUT VIOLATIONS
+      *2967 cells are valid scan cells
+
+Information: Test design rule checking completed. (TEST-123)
+1

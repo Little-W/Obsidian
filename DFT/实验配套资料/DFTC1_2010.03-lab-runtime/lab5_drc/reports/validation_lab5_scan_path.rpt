@@ -1,0 +1,319 @@
+ 
+****************************************
+Report : Scan path
+Design : RISC_CORE
+Version: V-2023.12-SP3
+Date   : Wed Aug 12 22:43:58 2026
+****************************************
+
+========================================
+TEST MODE: Internal_scan
+VIEW     : Specification
+========================================
+No scan path defined in this mode.
+
+ 
+****************************************
+Report : Scan path
+Design : RISC_CORE
+Version: V-2023.12-SP3
+Date   : Wed Aug 12 22:43:58 2026
+****************************************
+
+========================================
+TEST MODE: Internal_scan
+VIEW     : Existing DFT
+========================================
+
+========================================
+AS SPECIFIED BY USER
+========================================
+
+
+========================================
+AS BUILT BY insert_dft
+========================================
+
+Scan_path    Len   ScanDataIn  ScanDataOut ScanEnable  MasterClock SlaveClock
+-----------  ----- ----------- ----------- ----------- ----------- -----------
+I 1          261   Instrn\[0\] Xecutng_Instrn\[0\] TEST_SE Clk     -
+
+========================================
+TEST MODE: Internal_scan
+VIEW     : Existing DFT
+========================================
+
+========================================
+AS SPECIFIED BY USER
+========================================
+
+
+========================================
+AS BUILT BY insert_dft
+========================================
+
+Scan_path     Cell_#    Instance_name            Clocks
+---------     ------    -------------            ------
+I 1           0         I_ALU/Lachd_Result_reg\[0\] Clk 
+              1         I_ALU/Lachd_Result_reg\[1\]
+              2         I_ALU/Lachd_Result_reg\[2\]
+              3         I_ALU/Lachd_Result_reg\[3\]
+              4         I_ALU/Lachd_Result_reg\[4\]
+              5         I_ALU/Lachd_Result_reg\[5\]
+              6         I_ALU/Lachd_Result_reg\[6\]
+              7         I_ALU/Lachd_Result_reg\[7\]
+              8         I_ALU/Lachd_Result_reg\[8\]
+              9         I_ALU/Lachd_Result_reg\[9\]
+              10        I_ALU/Lachd_Result_reg\[10\]
+              11        I_ALU/Lachd_Result_reg\[11\]
+              12        I_ALU/Lachd_Result_reg\[12\]
+              13        I_ALU/Lachd_Result_reg\[13\]
+              14        I_ALU/Lachd_Result_reg\[14\]
+              15        I_ALU/Lachd_Result_reg\[15\]
+              16        I_ALU/Neg_Flag_reg
+              17        I_ALU/Zro_Flag_reg
+              18        I_CONTROL/EndOfInstrn_reg
+              19        I_CONTROL/UseData_Imm_Or_ALU_reg
+              20        I_CONTROL/UseData_Imm_Or_RegB_reg
+              21        I_DATA_PATH/Oprnd_A_reg\[0\]
+              22        I_DATA_PATH/Oprnd_A_reg\[1\]
+              23        I_DATA_PATH/Oprnd_A_reg\[2\]
+              24        I_DATA_PATH/Oprnd_A_reg\[3\]
+              25        I_DATA_PATH/Oprnd_A_reg\[4\]
+              26        I_DATA_PATH/Oprnd_A_reg\[5\]
+              27        I_DATA_PATH/Oprnd_A_reg\[6\]
+              28        I_DATA_PATH/Oprnd_A_reg\[7\]
+              29        I_DATA_PATH/Oprnd_A_reg\[8\]
+              30        I_DATA_PATH/Oprnd_A_reg\[9\]
+              31        I_DATA_PATH/Oprnd_A_reg\[10\]
+              32        I_DATA_PATH/Oprnd_A_reg\[11\]
+              33        I_DATA_PATH/Oprnd_A_reg\[12\]
+              34        I_DATA_PATH/Oprnd_A_reg\[13\]
+              35        I_DATA_PATH/Oprnd_A_reg\[14\]
+              36        I_DATA_PATH/Oprnd_A_reg\[15\]
+              37        I_DATA_PATH/Oprnd_B_reg\[0\]
+              38        I_DATA_PATH/Oprnd_B_reg\[1\]
+              39        I_DATA_PATH/Oprnd_B_reg\[2\]
+              40        I_DATA_PATH/Oprnd_B_reg\[3\]
+              41        I_DATA_PATH/Oprnd_B_reg\[4\]
+              42        I_DATA_PATH/Oprnd_B_reg\[5\]
+              43        I_DATA_PATH/Oprnd_B_reg\[6\]
+              44        I_DATA_PATH/Oprnd_B_reg\[7\]
+              45        I_DATA_PATH/Oprnd_B_reg\[8\]
+              46        I_DATA_PATH/Oprnd_B_reg\[9\]
+              47        I_DATA_PATH/Oprnd_B_reg\[10\]
+              48        I_DATA_PATH/Oprnd_B_reg\[11\]
+              49        I_DATA_PATH/Oprnd_B_reg\[12\]
+              50        I_DATA_PATH/Oprnd_B_reg\[13\]
+              51        I_DATA_PATH/Oprnd_B_reg\[14\]
+              52        I_DATA_PATH/Oprnd_B_reg\[15\]
+              53        I_DATA_PATH/PSWL_Neg_reg
+              54        I_DATA_PATH/PSWL_Zro_reg
+              55        I_DIV_CLK/q_reg
+              56        I_INSTRN_LAT/Crnt_Instrn_1_reg\[0\]
+              57        I_INSTRN_LAT/Crnt_Instrn_1_reg\[1\]
+              58        I_INSTRN_LAT/Crnt_Instrn_1_reg\[2\]
+              59        I_INSTRN_LAT/Crnt_Instrn_1_reg\[3\]
+              60        I_INSTRN_LAT/Crnt_Instrn_1_reg\[4\]
+              61        I_INSTRN_LAT/Crnt_Instrn_1_reg\[5\]
+              62        I_INSTRN_LAT/Crnt_Instrn_1_reg\[6\]
+              63        I_INSTRN_LAT/Crnt_Instrn_1_reg\[7\]
+              64        I_INSTRN_LAT/Crnt_Instrn_1_reg\[8\]
+              65        I_INSTRN_LAT/Crnt_Instrn_1_reg\[9\]
+              66        I_INSTRN_LAT/Crnt_Instrn_1_reg\[10\]
+              67        I_INSTRN_LAT/Crnt_Instrn_1_reg\[11\]
+              68        I_INSTRN_LAT/Crnt_Instrn_1_reg\[12\]
+              69        I_INSTRN_LAT/Crnt_Instrn_1_reg\[13\]
+              70        I_INSTRN_LAT/Crnt_Instrn_1_reg\[14\]
+              71        I_INSTRN_LAT/Crnt_Instrn_1_reg\[15\]
+              72        I_INSTRN_LAT/Crnt_Instrn_1_reg\[16\]
+              73        I_INSTRN_LAT/Crnt_Instrn_1_reg\[17\]
+              74        I_INSTRN_LAT/Crnt_Instrn_1_reg\[18\]
+              75        I_INSTRN_LAT/Crnt_Instrn_1_reg\[19\]
+              76        I_INSTRN_LAT/Crnt_Instrn_1_reg\[20\]
+              77        I_INSTRN_LAT/Crnt_Instrn_1_reg\[21\]
+              78        I_INSTRN_LAT/Crnt_Instrn_1_reg\[22\]
+              79        I_INSTRN_LAT/Crnt_Instrn_1_reg\[23\]
+              80        I_INSTRN_LAT/Crnt_Instrn_1_reg\[24\]
+              81        I_INSTRN_LAT/Crnt_Instrn_1_reg\[25\]
+              82        I_INSTRN_LAT/Crnt_Instrn_1_reg\[26\]
+              83        I_INSTRN_LAT/Crnt_Instrn_1_reg\[27\]
+              84        I_INSTRN_LAT/Crnt_Instrn_1_reg\[28\]
+              85        I_INSTRN_LAT/Crnt_Instrn_1_reg\[29\]
+              86        I_INSTRN_LAT/Crnt_Instrn_1_reg\[30\]
+              87        I_INSTRN_LAT/Crnt_Instrn_1_reg\[31\]
+              88        I_PRGRM_CNT_TOP/I_PRGRM_CNT/PCint_reg\[0\]
+              89        I_PRGRM_CNT_TOP/I_PRGRM_CNT/PCint_reg\[1\]
+              90        I_PRGRM_CNT_TOP/I_PRGRM_CNT/PCint_reg\[2\]
+              91        I_PRGRM_CNT_TOP/I_PRGRM_CNT/PCint_reg\[3\]
+              92        I_PRGRM_CNT_TOP/I_PRGRM_CNT/PCint_reg\[4\]
+              93        I_PRGRM_CNT_TOP/I_PRGRM_CNT/PCint_reg\[5\]
+              94        I_PRGRM_CNT_TOP/I_PRGRM_CNT/PCint_reg\[6\]
+              95        I_PRGRM_CNT_TOP/I_PRGRM_CNT/PCint_reg\[7\]
+              96        I_PRGRM_CNT_TOP/I_PRGRM_FSM/Current_State_reg\[0\]
+              97        I_PRGRM_CNT_TOP/I_PRGRM_FSM/Current_State_reg\[1\]
+              98        I_PRGRM_CNT_TOP/I_PRGRM_FSM/Current_State_reg\[2\]
+              99        I_REG_FILE/Reg_Array_reg\[0\]\[0\]
+              100       I_REG_FILE/Reg_Array_reg\[0\]\[1\]
+              101       I_REG_FILE/Reg_Array_reg\[0\]\[2\]
+              102       I_REG_FILE/Reg_Array_reg\[0\]\[3\]
+              103       I_REG_FILE/Reg_Array_reg\[0\]\[4\]
+              104       I_REG_FILE/Reg_Array_reg\[0\]\[5\]
+              105       I_REG_FILE/Reg_Array_reg\[0\]\[6\]
+              106       I_REG_FILE/Reg_Array_reg\[0\]\[7\]
+              107       I_REG_FILE/Reg_Array_reg\[0\]\[8\]
+              108       I_REG_FILE/Reg_Array_reg\[0\]\[9\]
+              109       I_REG_FILE/Reg_Array_reg\[0\]\[10\]
+              110       I_REG_FILE/Reg_Array_reg\[0\]\[11\]
+              111       I_REG_FILE/Reg_Array_reg\[0\]\[12\]
+              112       I_REG_FILE/Reg_Array_reg\[0\]\[13\]
+              113       I_REG_FILE/Reg_Array_reg\[0\]\[14\]
+              114       I_REG_FILE/Reg_Array_reg\[0\]\[15\]
+              115       I_REG_FILE/Reg_Array_reg\[1\]\[0\]
+              116       I_REG_FILE/Reg_Array_reg\[1\]\[1\]
+              117       I_REG_FILE/Reg_Array_reg\[1\]\[2\]
+              118       I_REG_FILE/Reg_Array_reg\[1\]\[3\]
+              119       I_REG_FILE/Reg_Array_reg\[1\]\[4\]
+              120       I_REG_FILE/Reg_Array_reg\[1\]\[5\]
+              121       I_REG_FILE/Reg_Array_reg\[1\]\[6\]
+              122       I_REG_FILE/Reg_Array_reg\[1\]\[7\]
+              123       I_REG_FILE/Reg_Array_reg\[1\]\[8\]
+              124       I_REG_FILE/Reg_Array_reg\[1\]\[9\]
+              125       I_REG_FILE/Reg_Array_reg\[1\]\[10\]
+              126       I_REG_FILE/Reg_Array_reg\[1\]\[11\]
+              127       I_REG_FILE/Reg_Array_reg\[1\]\[12\]
+              128       I_REG_FILE/Reg_Array_reg\[1\]\[13\]
+              129       I_REG_FILE/Reg_Array_reg\[1\]\[14\]
+              130       I_REG_FILE/Reg_Array_reg\[1\]\[15\]
+              131       I_REG_FILE/Reg_Array_reg\[2\]\[0\]
+              132       I_REG_FILE/Reg_Array_reg\[2\]\[1\]
+              133       I_REG_FILE/Reg_Array_reg\[2\]\[2\]
+              134       I_REG_FILE/Reg_Array_reg\[2\]\[3\]
+              135       I_REG_FILE/Reg_Array_reg\[2\]\[4\]
+              136       I_REG_FILE/Reg_Array_reg\[2\]\[5\]
+              137       I_REG_FILE/Reg_Array_reg\[2\]\[6\]
+              138       I_REG_FILE/Reg_Array_reg\[2\]\[7\]
+              139       I_REG_FILE/Reg_Array_reg\[2\]\[8\]
+              140       I_REG_FILE/Reg_Array_reg\[2\]\[9\]
+              141       I_REG_FILE/Reg_Array_reg\[2\]\[10\]
+              142       I_REG_FILE/Reg_Array_reg\[2\]\[11\]
+              143       I_REG_FILE/Reg_Array_reg\[2\]\[12\]
+              144       I_REG_FILE/Reg_Array_reg\[2\]\[13\]
+              145       I_REG_FILE/Reg_Array_reg\[2\]\[14\]
+              146       I_REG_FILE/Reg_Array_reg\[2\]\[15\]
+              147       I_REG_FILE/Reg_Array_reg\[3\]\[0\]
+              148       I_REG_FILE/Reg_Array_reg\[3\]\[1\]
+              149       I_REG_FILE/Reg_Array_reg\[3\]\[2\]
+              150       I_REG_FILE/Reg_Array_reg\[3\]\[3\]
+              151       I_REG_FILE/Reg_Array_reg\[3\]\[4\]
+              152       I_REG_FILE/Reg_Array_reg\[3\]\[5\]
+              153       I_REG_FILE/Reg_Array_reg\[3\]\[6\]
+              154       I_REG_FILE/Reg_Array_reg\[3\]\[7\]
+              155       I_REG_FILE/Reg_Array_reg\[3\]\[8\]
+              156       I_REG_FILE/Reg_Array_reg\[3\]\[9\]
+              157       I_REG_FILE/Reg_Array_reg\[3\]\[10\]
+              158       I_REG_FILE/Reg_Array_reg\[3\]\[11\]
+              159       I_REG_FILE/Reg_Array_reg\[3\]\[12\]
+              160       I_REG_FILE/Reg_Array_reg\[3\]\[13\]
+              161       I_REG_FILE/Reg_Array_reg\[3\]\[14\]
+              162       I_REG_FILE/Reg_Array_reg\[3\]\[15\]
+              163       I_STACK_TOP/I1_STACK_MEM/PopDataOut_reg\[0\]
+              164       I_STACK_TOP/I1_STACK_MEM/PopDataOut_reg\[1\]
+              165       I_STACK_TOP/I1_STACK_MEM/PopDataOut_reg\[2\]
+              166       I_STACK_TOP/I1_STACK_MEM/PopDataOut_reg\[3\]
+              167       I_STACK_TOP/I1_STACK_MEM/Stack_Mem_reg\[0\]\[0\]
+              168       I_STACK_TOP/I1_STACK_MEM/Stack_Mem_reg\[0\]\[1\]
+              169       I_STACK_TOP/I1_STACK_MEM/Stack_Mem_reg\[0\]\[2\]
+              170       I_STACK_TOP/I1_STACK_MEM/Stack_Mem_reg\[0\]\[3\]
+              171       I_STACK_TOP/I1_STACK_MEM/Stack_Mem_reg\[1\]\[0\]
+              172       I_STACK_TOP/I1_STACK_MEM/Stack_Mem_reg\[1\]\[1\]
+              173       I_STACK_TOP/I1_STACK_MEM/Stack_Mem_reg\[1\]\[2\]
+              174       I_STACK_TOP/I1_STACK_MEM/Stack_Mem_reg\[1\]\[3\]
+              175       I_STACK_TOP/I1_STACK_MEM/Stack_Mem_reg\[2\]\[0\]
+              176       I_STACK_TOP/I1_STACK_MEM/Stack_Mem_reg\[2\]\[1\]
+              177       I_STACK_TOP/I1_STACK_MEM/Stack_Mem_reg\[2\]\[2\]
+              178       I_STACK_TOP/I1_STACK_MEM/Stack_Mem_reg\[2\]\[3\]
+              179       I_STACK_TOP/I1_STACK_MEM/Stack_Mem_reg\[3\]\[0\]
+              180       I_STACK_TOP/I1_STACK_MEM/Stack_Mem_reg\[3\]\[1\]
+              181       I_STACK_TOP/I1_STACK_MEM/Stack_Mem_reg\[3\]\[2\]
+              182       I_STACK_TOP/I1_STACK_MEM/Stack_Mem_reg\[3\]\[3\]
+              183       I_STACK_TOP/I1_STACK_MEM/Stack_Mem_reg\[4\]\[0\]
+              184       I_STACK_TOP/I1_STACK_MEM/Stack_Mem_reg\[4\]\[1\]
+              185       I_STACK_TOP/I1_STACK_MEM/Stack_Mem_reg\[4\]\[2\]
+              186       I_STACK_TOP/I1_STACK_MEM/Stack_Mem_reg\[4\]\[3\]
+              187       I_STACK_TOP/I1_STACK_MEM/Stack_Mem_reg\[5\]\[0\]
+              188       I_STACK_TOP/I1_STACK_MEM/Stack_Mem_reg\[5\]\[1\]
+              189       I_STACK_TOP/I1_STACK_MEM/Stack_Mem_reg\[5\]\[2\]
+              190       I_STACK_TOP/I1_STACK_MEM/Stack_Mem_reg\[5\]\[3\]
+              191       I_STACK_TOP/I1_STACK_MEM/Stack_Mem_reg\[6\]\[0\]
+              192       I_STACK_TOP/I1_STACK_MEM/Stack_Mem_reg\[6\]\[1\]
+              193       I_STACK_TOP/I1_STACK_MEM/Stack_Mem_reg\[6\]\[2\]
+              194       I_STACK_TOP/I1_STACK_MEM/Stack_Mem_reg\[6\]\[3\]
+              195       I_STACK_TOP/I1_STACK_MEM/Stack_Mem_reg\[7\]\[0\]
+              196       I_STACK_TOP/I1_STACK_MEM/Stack_Mem_reg\[7\]\[1\]
+              197       I_STACK_TOP/I1_STACK_MEM/Stack_Mem_reg\[7\]\[2\]
+              198       I_STACK_TOP/I1_STACK_MEM/Stack_Mem_reg\[7\]\[3\]
+              199       I_STACK_TOP/I2_STACK_MEM/PopDataOut_reg\[0\]
+              200       I_STACK_TOP/I2_STACK_MEM/PopDataOut_reg\[1\]
+              201       I_STACK_TOP/I2_STACK_MEM/PopDataOut_reg\[2\]
+              202       I_STACK_TOP/I2_STACK_MEM/PopDataOut_reg\[3\]
+              203       I_STACK_TOP/I2_STACK_MEM/Stack_Mem_reg\[0\]\[0\]
+              204       I_STACK_TOP/I2_STACK_MEM/Stack_Mem_reg\[0\]\[1\]
+              205       I_STACK_TOP/I2_STACK_MEM/Stack_Mem_reg\[0\]\[2\]
+              206       I_STACK_TOP/I2_STACK_MEM/Stack_Mem_reg\[0\]\[3\]
+              207       I_STACK_TOP/I2_STACK_MEM/Stack_Mem_reg\[1\]\[0\]
+              208       I_STACK_TOP/I2_STACK_MEM/Stack_Mem_reg\[1\]\[1\]
+              209       I_STACK_TOP/I2_STACK_MEM/Stack_Mem_reg\[1\]\[2\]
+              210       I_STACK_TOP/I2_STACK_MEM/Stack_Mem_reg\[1\]\[3\]
+              211       I_STACK_TOP/I2_STACK_MEM/Stack_Mem_reg\[2\]\[0\]
+              212       I_STACK_TOP/I2_STACK_MEM/Stack_Mem_reg\[2\]\[1\]
+              213       I_STACK_TOP/I2_STACK_MEM/Stack_Mem_reg\[2\]\[2\]
+              214       I_STACK_TOP/I2_STACK_MEM/Stack_Mem_reg\[2\]\[3\]
+              215       I_STACK_TOP/I2_STACK_MEM/Stack_Mem_reg\[3\]\[0\]
+              216       I_STACK_TOP/I2_STACK_MEM/Stack_Mem_reg\[3\]\[1\]
+              217       I_STACK_TOP/I2_STACK_MEM/Stack_Mem_reg\[3\]\[2\]
+              218       I_STACK_TOP/I2_STACK_MEM/Stack_Mem_reg\[3\]\[3\]
+              219       I_STACK_TOP/I2_STACK_MEM/Stack_Mem_reg\[4\]\[0\]
+              220       I_STACK_TOP/I2_STACK_MEM/Stack_Mem_reg\[4\]\[1\]
+              221       I_STACK_TOP/I2_STACK_MEM/Stack_Mem_reg\[4\]\[2\]
+              222       I_STACK_TOP/I2_STACK_MEM/Stack_Mem_reg\[4\]\[3\]
+              223       I_STACK_TOP/I2_STACK_MEM/Stack_Mem_reg\[5\]\[0\]
+              224       I_STACK_TOP/I2_STACK_MEM/Stack_Mem_reg\[5\]\[1\]
+              225       I_STACK_TOP/I2_STACK_MEM/Stack_Mem_reg\[5\]\[2\]
+              226       I_STACK_TOP/I2_STACK_MEM/Stack_Mem_reg\[5\]\[3\]
+              227       I_STACK_TOP/I2_STACK_MEM/Stack_Mem_reg\[6\]\[0\]
+              228       I_STACK_TOP/I2_STACK_MEM/Stack_Mem_reg\[6\]\[1\]
+              229       I_STACK_TOP/I2_STACK_MEM/Stack_Mem_reg\[6\]\[2\]
+              230       I_STACK_TOP/I2_STACK_MEM/Stack_Mem_reg\[6\]\[3\]
+              231       I_STACK_TOP/I2_STACK_MEM/Stack_Mem_reg\[7\]\[0\]
+              232       I_STACK_TOP/I2_STACK_MEM/Stack_Mem_reg\[7\]\[1\]
+              233       I_STACK_TOP/I2_STACK_MEM/Stack_Mem_reg\[7\]\[2\]
+              234       I_STACK_TOP/I2_STACK_MEM/Stack_Mem_reg\[7\]\[3\]
+              235       I_STACK_TOP/I3_STACK_MEM/PopDataOut_reg\[1\]
+              236       I_STACK_TOP/I3_STACK_MEM/PopDataOut_reg\[2\]
+              237       I_STACK_TOP/I3_STACK_MEM/Stack_Mem_reg\[0\]\[1\]
+              238       I_STACK_TOP/I3_STACK_MEM/Stack_Mem_reg\[0\]\[2\]
+              239       I_STACK_TOP/I3_STACK_MEM/Stack_Mem_reg\[1\]\[1\]
+              240       I_STACK_TOP/I3_STACK_MEM/Stack_Mem_reg\[1\]\[2\]
+              241       I_STACK_TOP/I3_STACK_MEM/Stack_Mem_reg\[2\]\[1\]
+              242       I_STACK_TOP/I3_STACK_MEM/Stack_Mem_reg\[2\]\[2\]
+              243       I_STACK_TOP/I3_STACK_MEM/Stack_Mem_reg\[3\]\[1\]
+              244       I_STACK_TOP/I3_STACK_MEM/Stack_Mem_reg\[3\]\[2\]
+              245       I_STACK_TOP/I3_STACK_MEM/Stack_Mem_reg\[4\]\[1\]
+              246       I_STACK_TOP/I3_STACK_MEM/Stack_Mem_reg\[4\]\[2\]
+              247       I_STACK_TOP/I3_STACK_MEM/Stack_Mem_reg\[5\]\[1\]
+              248       I_STACK_TOP/I3_STACK_MEM/Stack_Mem_reg\[5\]\[2\]
+              249       I_STACK_TOP/I3_STACK_MEM/Stack_Mem_reg\[6\]\[1\]
+              250       I_STACK_TOP/I3_STACK_MEM/Stack_Mem_reg\[6\]\[2\]
+              251       I_STACK_TOP/I3_STACK_MEM/Stack_Mem_reg\[7\]\[1\]
+              252       I_STACK_TOP/I3_STACK_MEM/Stack_Mem_reg\[7\]\[2\]
+              253       I_STACK_TOP/I_STACK_FSM/Crnt_Stack_reg\[0\]
+              254       I_STACK_TOP/I_STACK_FSM/Crnt_Stack_reg\[1\]
+              255       I_STACK_TOP/I_STACK_FSM/TOS_int_reg\[0\]
+              256       I_STACK_TOP/I_STACK_FSM/TOS_int_reg\[1\]
+              257       I_STACK_TOP/I_STACK_FSM/TOS_int_reg\[2\]
+              258       I_RST/q1_reg
+              259       I_RST/q2_reg
+              260       I_STACK_TOP/I_STACK_FSM/STACK_FULL_reg
+
+1

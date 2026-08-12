@@ -1,0 +1,6 @@
+set compile_instance_name_prefix DFTC_
+insert_dft
+current_test_mode Internal_scan
+dft_drc
+current_test_mode ScanCompression_mode
+dft_drc 

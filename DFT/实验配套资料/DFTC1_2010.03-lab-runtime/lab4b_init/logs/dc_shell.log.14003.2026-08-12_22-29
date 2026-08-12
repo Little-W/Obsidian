@@ -1,0 +1,1692 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# DC Setup File
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+lappend search_path ../ref/db ./scripts
+../ref/db ./scripts
+set synthetic_library {dw_foundation.sldb}
+dw_foundation.sldb
+set target_library "sc_max.db"
+sc_max.db
+set link_library "* sc_max.db io_max.db rams_max.db special.db $synthetic_library"
+* sc_max.db io_max.db rams_max.db special.db dw_foundation.sldb
+#misc
+set cache_write ../dc_dw_cache
+Information: Variable 'cache_write' is obsolete and is being ignored. (INFO-100)
+../dc_dw_cache
+set cache_read $cache_write
+Information: Variable 'cache_read' is obsolete and is being ignored. (INFO-100)
+../dc_dw_cache
+set alib_library_analysis_path ../dc_dw_cache
+../dc_dw_cache
+define_design_lib DEFAULT -path ./analyzed
+1
+suppress_message "VHDL-2285 PSYN-040 PSYN-088"
+suppress_message "CMD-041 UID-401 OPT-170"
+echo "Sourcing ../ref/scripts/procs.tcl..."
+Sourcing ../ref/scripts/procs.tcl...
+source ../ref/scripts/procs.tcl
+Defining custom procedure "rename_test_designs"
+Defining custom procedure "async_domain"
+Defining custom procedure "echo_col"
+Defining custom procedure "flatten_block"
+Defining custom procedure "zero_io_nets"
+Defining custom procedure "report_clock_endpoint_skew"
+source ../ref/dc_settings.tcl
+
+Executing common setup file 'ref/dc_settings.tcl' ...
+./logs/dc_shell.cmd.14003.2026-08-12_22-29
+alias s "source -echo -verbose"
+echo "\n\nSettings:"
+
+
+Settings:
+echo "link_library:      $link_library"
+link_library:      * sc_max.db io_max.db rams_max.db special.db dw_foundation.sldb
+echo "target_library:    $target_library"
+target_library:    sc_max.db
+echo "search_path:       $search_path\n\n"
+search_path:       ../ref/db ./scripts
+
+
+echo "\nI am ready...\n\n\n"
+
+I am ready...
+
+
+
+#
+# Read RTL
+#
+# Read the design
+set hdlin_enable_presto_for_vhdl true
+Information: Variable 'hdlin_enable_presto_for_vhdl' is obsolete and is being ignored. (INFO-100)
+Information: Variable 'hdlin_enable_presto_for_vhdl' is obsolete and is being ignored. (INFO-100)
+TRUE
+set acs_hdl_source {../ref/rtl/ORCA_init/vhdl}
+../ref/rtl/ORCA_init/vhdl
+acs_read_hdl -f vhdl ORCA
+Information: Command 'acs_get_path' is obsolete and is being ignored. (INFO-102)
+Information: ACS is starting VHDL dependency extraction. (ACS-129)
+Information: ACS is starting VHDL analysis. (ACS-131)
+Running PRESTO HDLC
+Compiling Package Declaration RISCTYPES
+Compiling Package Body RISCTYPES
+Compiling Entity Declaration ALU
+Compiling Architecture RTL of ALU
+Compiling Entity Declaration BLENDER
+Compiling Architecture RTL of BLENDER
+Compiling Entity Declaration CLOCK_GEN
+Compiling Architecture RTL of CLOCK_GEN
+Compiling Entity Declaration CONFIG
+Compiling Architecture RTL of CONFIG
+Compiling Entity Declaration CONTEXT_MEM
+Compiling Architecture RTL of CONTEXT_MEM
+Compiling Entity Declaration CONTROL
+Compiling Architecture RTL of CONTROL
+Compiling Entity Declaration DATA_PATH
+Compiling Architecture RTL of DATA_PATH
+Compiling Entity Declaration INSTRN_LAT
+Compiling Architecture RTL of INSTRN_LAT
+Compiling Entity Declaration ORCA
+Compiling Architecture STRUCT of ORCA
+Compiling Entity Declaration ORCA_TOP
+Compiling Architecture STRUCT of ORCA_TOP
+Compiling Entity Declaration PARSER
+Compiling Architecture RTL of PARSER
+Compiling Entity Declaration PCI_CORE
+Compiling Architecture RTL of PCI_CORE
+Compiling Entity Declaration PCI_RFIFO
+Compiling Architecture INST of PCI_RFIFO
+Compiling Entity Declaration PCI_WFIFO
+Compiling Architecture INST of PCI_WFIFO
+Compiling Entity Declaration PCI_W_MUX
+Compiling Architecture RTL of PCI_W_MUX
+Compiling Entity Declaration PRGRM_CNT
+Compiling Architecture RTL of PRGRM_CNT
+Compiling Entity Declaration PRGRM_CNT_TOP
+Compiling Architecture STRUCT of PRGRM_CNT_TOP
+Compiling Entity Declaration PRGRM_DECODE
+Compiling Architecture RTL of PRGRM_DECODE
+Compiling Entity Declaration PRGRM_FSM
+Compiling Architecture RTL of PRGRM_FSM
+Compiling Entity Declaration REG_FILE
+Compiling Architecture RTL of REG_FILE
+Compiling Entity Declaration RESET_BLOCK
+Compiling Architecture RTL of RESET_BLOCK
+Compiling Entity Declaration RISC_CHIP
+Compiling Architecture STRUCT of RISC_CHIP
+Compiling Entity Declaration RISC_CORE
+Compiling Architecture STRUCT of RISC_CORE
+Compiling Entity Declaration SDRAM_IF
+Compiling Architecture RTL of SDRAM_IF
+Compiling Entity Declaration SDRAM_RFIFO
+Compiling Architecture INST of SDRAM_RFIFO
+Compiling Entity Declaration SDRAM_WFIFO
+Compiling Architecture INST of SDRAM_WFIFO
+Compiling Entity Declaration SD_W_MUX
+Compiling Architecture RTL of SD_W_MUX
+Compiling Entity Declaration STACK_FSM
+Compiling Architecture RTL of STACK_FSM
+Compiling Entity Declaration STACK_MEM
+Compiling Architecture RTL of STACK_MEM
+Compiling Entity Declaration STACK_TOP
+Compiling Architecture STRUCT of STACK_TOP
+Presto compilation completed successfully.
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/sc_max.db'
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/io_max.db'
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/rams_max.db'
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/special.db'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/dw_foundation.sldb'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/gtech.db'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/standard.sldb'
+  Loading link library 'cb13fs120_tsmc_max'
+  Loading link library 'cb13io320_tsmc_max'
+  Loading link library 'cb13_tsmc_memory_max'
+  Loading link library 'cb13special'
+  Loading link library 'gtech'
+Running PRESTO HDLC
+Presto compilation completed successfully. (ORCA)
+Elaborated 1 design.
+Current design is now 'ORCA'.
+Information: Building the design 'CLOCK_GEN'. (HDL-193)
+Presto compilation completed successfully. (CLOCK_GEN)
+Information: Building the design 'ORCA_TOP' instantiated from design 'ORCA' with
+        the parameters "sd_a_width=10,sd_dq_width=16,sd_rfifo_depth=64,sd_wfifo_depth=64,pci_data_width=16,pci_rfifo_depth=32,pci_wfifo_depth=32". (HDL-193)
+Presto compilation completed successfully. (ORCA_TOP_sd_a_width10_sd_dq_width16_sd_rfifo_depth64_sd_wfifo_depth64_pci_data_width16_pci_rfifo_depth32_pci_wfifo_depth32)
+Information: Building the design 'CONFIG'. (HDL-193)
+
+Inferred memory devices in process
+        in routine CONFIG line 19 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/CONFIG.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|  config_state_reg   | Flip-flop |   3   |  Y  | N  | N  | N  | N  | N  | N  |
+===============================================================================
+Presto compilation completed successfully. (CONFIG)
+Information: Building the design 'RESET_BLOCK'. (HDL-193)
+
+Inferred memory devices in process
+        in routine RESET_BLOCK line 38 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/RESET_BLOCK.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|  pci_rst_n_buf_reg  | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+|     prst_ff_reg     | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+===============================================================================
+
+Inferred memory devices in process
+        in routine RESET_BLOCK line 50 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/RESET_BLOCK.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+| sdram_rst_n_buf_reg | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+|  sdram_rst_ff_reg   | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+===============================================================================
+
+Inferred memory devices in process
+        in routine RESET_BLOCK line 64 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/RESET_BLOCK.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|  sys_rst_n_buf_reg  | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+|   sys_rst_ff_reg    | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+===============================================================================
+
+Inferred memory devices in process
+        in routine RESET_BLOCK line 76 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/RESET_BLOCK.vhd'.
+================================================================================
+|    Register Name     |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+================================================================================
+| sys_2x_rst_n_buf_reg | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+|  sys_2x_rst_ff_reg   | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+================================================================================
+Presto compilation completed successfully. (RESET_BLOCK)
+Information: Building the design 'PCI_CORE' instantiated from design 'ORCA_TOP_sd_a_width10_sd_dq_width16_sd_rfifo_depth64_sd_wfifo_depth64_pci_data_width16_pci_rfifo_depth32_pci_wfifo_depth32' with
+        the parameters "pci_data_width=16". (HDL-193)
+
+Statistics for case statements in always block at line 169 in file
+        '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/PCI_CORE.vhd'
+===============================================
+|           Line           |  full/ parallel  |
+===============================================
+|           179            |    auto/auto     |
+===============================================
+
+Statistics for case statements in always block at line 194 in file
+        '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/PCI_CORE.vhd'
+===============================================
+|           Line           |  full/ parallel  |
+===============================================
+|           199            |    auto/auto     |
+===============================================
+
+Statistics for case statements in always block at line 215 in file
+        '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/PCI_CORE.vhd'
+===============================================
+|           Line           |  full/ parallel  |
+===============================================
+|           220            |    auto/auto     |
+===============================================
+Information:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/PCI_CORE.vhd:95:  Variable 'word' is being read, but is not initialized. The subprogram default value will be used. (VHD-8)
+
+Inferred memory devices in process
+        in routine PCI_CORE_pci_data_width16 line 151 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/PCI_CORE.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|     pad_en_reg      | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+===============================================================================
+
+Inferred memory devices in process
+        in routine PCI_CORE_pci_data_width16 line 160 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/PCI_CORE.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|    pc_be_en_reg     | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+===============================================================================
+
+Inferred memory devices in process
+        in routine PCI_CORE_pci_data_width16 line 194 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/PCI_CORE.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|   d_out_p_bus_reg   | Flip-flop |  23   |  Y  | N  | Y  | N  | N  | N  | N  |
+===============================================================================
+
+Inferred memory devices in process
+        in routine PCI_CORE_pci_data_width16 line 215 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/PCI_CORE.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|   d_out_i_bus_reg   | Flip-flop |   7   |  Y  | N  | Y  | N  | N  | N  | N  |
+===============================================================================
+
+Inferred memory devices in process
+        in routine PCI_CORE_pci_data_width16 line 235 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/PCI_CORE.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|   pad_out_buf_reg   | Flip-flop |  16   |  Y  | N  | Y  | N  | N  | N  | N  |
+|   mega_shift_reg    | Flip-flop |  976  |  Y  | N  | Y  | N  | N  | N  | N  |
+===============================================================================
+Presto compilation completed successfully. (PCI_CORE_pci_data_width16)
+Information: Building the design 'PARSER'. (HDL-193)
+
+Statistics for case statements in always block at line 138 in file
+        '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/PARSER.vhd'
+===============================================
+|           Line           |  full/ parallel  |
+===============================================
+|           144            |    auto/auto     |
+===============================================
+
+Statistics for case statements in always block at line 159 in file
+        '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/PARSER.vhd'
+===============================================
+|           Line           |  full/ parallel  |
+===============================================
+|           166            |    auto/auto     |
+===============================================
+
+Inferred memory devices in process
+        in routine PARSER line 78 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/PARSER.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|     r_pcmd_reg      | Flip-flop |   4   |  Y  | N  | N  | N  | N  | N  | N  |
+|    sync_pcmd_reg    | Flip-flop |   4   |  Y  | N  | N  | N  | N  | N  | N  |
+|  r_pcmd_valid_reg   | Flip-flop |   1   |  N  | N  | N  | N  | N  | N  | N  |
+| sync_pcmd_valid_reg | Flip-flop |   1   |  N  | N  | N  | N  | N  | N  | N  |
+===============================================================================
+
+Inferred memory devices in process
+        in routine PARSER line 90 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/PARSER.vhd'.
+===================================================================================
+|      Register Name      |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===================================================================================
+|     r_pcmd_out_reg      | Flip-flop |   4   |  Y  | N  | N  | N  | N  | N  | N  |
+|    sync_pcmd_out_reg    | Flip-flop |   4   |  Y  | N  | N  | N  | N  | N  | N  |
+|  r_pcmd_out_valid_reg   | Flip-flop |   1   |  N  | N  | N  | N  | N  | N  | N  |
+| sync_pcmd_out_valid_reg | Flip-flop |   1   |  N  | N  | N  | N  | N  | N  | N  |
+===================================================================================
+
+Inferred memory devices in process
+        in routine PARSER line 107 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/PARSER.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+| blender_clk_en_reg  | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+===============================================================================
+
+Inferred memory devices in process
+        in routine PARSER line 116 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/PARSER.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|      i_reg_reg      | Flip-flop |  20   |  Y  | N  | N  | N  | N  | N  | N  |
+===============================================================================
+
+Inferred memory devices in process
+        in routine PARSER line 127 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/PARSER.vhd'.
+================================================================================
+|    Register Name     |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+================================================================================
+| i_pcmd_out_valid_reg | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+|    i_pcmd_out_reg    | Flip-flop |   4   |  Y  | N  | Y  | N  | N  | N  | N  |
+================================================================================
+
+Inferred memory devices in process
+        in routine PARSER line 138 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/PARSER.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|     out_bus_reg     | Flip-flop |  20   |  Y  | N  | Y  | N  | N  | N  | N  |
+===============================================================================
+
+Inferred memory devices in process
+        in routine PARSER line 159 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/PARSER.vhd'.
+================================================================================
+|    Register Name     |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+================================================================================
+| sd_w_mux_select_reg  | Flip-flop |   2   |  Y  | N  | Y  | N  | N  | N  | N  |
+| pci_w_mux_select_reg | Flip-flop |   2   |  Y  | N  | Y  | N  | N  | N  | N  |
+================================================================================
+Presto compilation completed successfully. (PARSER)
+Information: Building the design 'CONTEXT_MEM'. (HDL-193)
+
+Statistics for case statements in always block at line 76 in file
+        '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/CONTEXT_MEM.vhd'
+===============================================
+|           Line           |  full/ parallel  |
+===============================================
+|            78            |    auto/auto     |
+===============================================
+
+Statistics for case statements in always block at line 104 in file
+        '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/CONTEXT_MEM.vhd'
+===============================================
+|           Line           |  full/ parallel  |
+===============================================
+|           116            |    auto/auto     |
+===============================================
+
+Inferred memory devices in process
+        in routine CONTEXT_MEM line 61 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/CONTEXT_MEM.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|  ram_read_addr_reg  | Flip-flop |   6   |  Y  | N  | Y  | N  | N  | N  | N  |
+===============================================================================
+
+Inferred memory devices in process
+        in routine CONTEXT_MEM line 86 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/CONTEXT_MEM.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+| ram_write_addr_reg  | Flip-flop |   6   |  Y  | N  | Y  | N  | N  | N  | N  |
+===============================================================================
+Presto compilation completed successfully. (CONTEXT_MEM)
+Information: Building the design 'RISC_CORE'. (HDL-193)
+Presto compilation completed successfully. (RISC_CORE)
+Information: Building the design 'BLENDER'. (HDL-193)
+
+Statistics for case statements in always block at line 78 in file
+        '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/BLENDER.vhd'
+===============================================
+|           Line           |  full/ parallel  |
+===============================================
+|            87            |    auto/auto     |
+===============================================
+
+Inferred memory devices in process
+        in routine BLENDER line 50 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/BLENDER.vhd'.
+===========================================================================
+|    Register Name    | Type  | Width | Bus | MB | AR | AS | SR | SS | ST |
+===========================================================================
+| latched_clk_en_reg  | Latch |   1   |  N  | N  | N  | N  | -  | -  | -  |
+===========================================================================
+
+Inferred memory devices in process
+        in routine BLENDER line 59 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/BLENDER.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|    rem_green_reg    | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+|     trans1_reg      | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+|     trans2_reg      | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+|     trans3_reg      | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+|     rem_red_reg     | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+|    rem_blue_reg     | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+===============================================================================
+
+Inferred memory devices in process
+        in routine BLENDER line 109 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/BLENDER.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|     s1_op2_reg      | Flip-flop |  32   |  Y  | N  | N  | N  | N  | N  | N  |
+|     s1_op1_reg      | Flip-flop |  32   |  Y  | N  | N  | N  | N  | N  | N  |
+===============================================================================
+
+Inferred memory devices in process
+        in routine BLENDER line 125 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/BLENDER.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|     s2_op2_reg      | Flip-flop |  32   |  Y  | N  | N  | N  | N  | N  | N  |
+|     s2_op1_reg      | Flip-flop |  32   |  Y  | N  | N  | N  | N  | N  | N  |
+===============================================================================
+
+Inferred memory devices in process
+        in routine BLENDER line 144 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/BLENDER.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|     s3_op2_reg      | Flip-flop |  32   |  Y  | N  | N  | N  | N  | N  | N  |
+|     s3_op1_reg      | Flip-flop |  32   |  Y  | N  | N  | N  | N  | N  | N  |
+===============================================================================
+
+Inferred memory devices in process
+        in routine BLENDER line 160 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/BLENDER.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|     s4_op2_reg      | Flip-flop |  32   |  Y  | N  | N  | N  | N  | N  | N  |
+|     s4_op1_reg      | Flip-flop |  32   |  Y  | N  | N  | N  | N  | N  | N  |
+===============================================================================
+
+Inferred memory devices in process
+        in routine BLENDER line 178 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/BLENDER.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|    s5_result_reg    | Flip-flop |  32   |  Y  | N  | N  | N  | N  | N  | N  |
+===============================================================================
+
+Inferred memory devices in process
+        in routine BLENDER line 186 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/BLENDER.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|     result_reg      | Flip-flop |  32   |  Y  | N  | N  | N  | N  | N  | N  |
+===============================================================================
+Presto compilation completed successfully. (BLENDER)
+Information: Building the design 'SDRAM_IF' instantiated from design 'ORCA_TOP_sd_a_width10_sd_dq_width16_sd_rfifo_depth64_sd_wfifo_depth64_pci_data_width16_pci_rfifo_depth32_pci_wfifo_depth32' with
+        the parameters "sd_a_width=10,sd_dq_width=16". (HDL-193)
+
+Statistics for case statements in always block at line 161 in file
+        '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/SDRAM_IF.vhd'
+===============================================
+|           Line           |  full/ parallel  |
+===============================================
+|           167            |    auto/auto     |
+===============================================
+Information:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/SDRAM_IF.vhd:101:  Variable 'word' is being read, but is not initialized. The subprogram default value will be used. (VHD-8)
+
+Inferred memory devices in process
+        in routine SDRAM_IF_sd_a_width10_sd_dq_width16 line 129 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/SDRAM_IF.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|    sd_DQ_en_reg     | Flip-flop |  16   |  Y  | N  | Y  | N  | N  | N  | N  |
+===============================================================================
+
+Inferred memory devices in process
+        in routine SDRAM_IF_sd_a_width10_sd_dq_width16 line 143 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/SDRAM_IF.vhd'.
+================================================================================
+|    Register Name     |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+================================================================================
+|   control_bus_reg    | Flip-flop |  15   |  Y  | N  | N  | N  | N  | N  | N  |
+| sync_control_bus_reg | Flip-flop |  15   |  Y  | N  | N  | N  | N  | N  | N  |
+================================================================================
+
+Inferred memory devices in process
+        in routine SDRAM_IF_sd_a_width10_sd_dq_width16 line 151 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/SDRAM_IF.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|   out_control_reg   | Flip-flop |  16   |  Y  | N  | Y  | N  | N  | N  | N  |
+===============================================================================
+
+Inferred memory devices in process
+        in routine SDRAM_IF_sd_a_width10_sd_dq_width16 line 188 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/SDRAM_IF.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|     DQ_in_0_reg     | Flip-flop |  16   |  Y  | N  | N  | N  | N  | N  | N  |
+===============================================================================
+
+Inferred memory devices in process
+        in routine SDRAM_IF_sd_a_width10_sd_dq_width16 line 195 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/SDRAM_IF.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|     DQ_in_1_reg     | Flip-flop |  16   |  Y  | N  | N  | N  | N  | N  | N  |
+===============================================================================
+
+Inferred memory devices in process
+        in routine SDRAM_IF_sd_a_width10_sd_dq_width16 line 209 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/SDRAM_IF.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|    DQ_out_0_reg     | Flip-flop |  16   |  Y  | N  | N  | N  | N  | N  | N  |
+|  mega_shift_0_reg   | Flip-flop |  496  |  Y  | N  | N  | N  | N  | N  | N  |
+===============================================================================
+
+Inferred memory devices in process
+        in routine SDRAM_IF_sd_a_width10_sd_dq_width16 line 222 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/SDRAM_IF.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|    DQ_out_1_reg     | Flip-flop |  16   |  Y  | N  | N  | N  | N  | N  | N  |
+|  mega_shift_1_reg   | Flip-flop |  496  |  Y  | N  | N  | N  | N  | N  | N  |
+===============================================================================
+Presto compilation completed successfully. (SDRAM_IF_sd_a_width10_sd_dq_width16)
+Information: Building the design 'PCI_RFIFO' instantiated from design 'ORCA_TOP_sd_a_width10_sd_dq_width16_sd_rfifo_depth64_sd_wfifo_depth64_pci_data_width16_pci_rfifo_depth32_pci_wfifo_depth32' with
+        the parameters "fifo_data_width=32,fifo_depth=32". (HDL-193)
+Presto compilation completed successfully. (PCI_RFIFO_fifo_data_width32_fifo_depth32)
+Information: Building the design 'PCI_WFIFO' instantiated from design 'ORCA_TOP_sd_a_width10_sd_dq_width16_sd_rfifo_depth64_sd_wfifo_depth64_pci_data_width16_pci_rfifo_depth32_pci_wfifo_depth32' with
+        the parameters "fifo_data_width=32,fifo_depth=32". (HDL-193)
+Presto compilation completed successfully. (PCI_WFIFO_fifo_data_width32_fifo_depth32)
+Information: Building the design 'SDRAM_RFIFO' instantiated from design 'ORCA_TOP_sd_a_width10_sd_dq_width16_sd_rfifo_depth64_sd_wfifo_depth64_pci_data_width16_pci_rfifo_depth32_pci_wfifo_depth32' with
+        the parameters "fifo_data_width=32,fifo_depth=64". (HDL-193)
+Presto compilation completed successfully. (SDRAM_RFIFO_fifo_data_width32_fifo_depth64)
+Information: Building the design 'SDRAM_WFIFO' instantiated from design 'ORCA_TOP_sd_a_width10_sd_dq_width16_sd_rfifo_depth64_sd_wfifo_depth64_pci_data_width16_pci_rfifo_depth32_pci_wfifo_depth32' with
+        the parameters "fifo_data_width=32,fifo_depth=64". (HDL-193)
+Presto compilation completed successfully. (SDRAM_WFIFO_fifo_data_width32_fifo_depth64)
+Information: Building the design 'PCI_W_MUX'. (HDL-193)
+
+Statistics for case statements in always block at line 18 in file
+        '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/PCI_W_MUX.vhd'
+===============================================
+|           Line           |  full/ parallel  |
+===============================================
+|            18            |    auto/auto     |
+===============================================
+Presto compilation completed successfully. (PCI_W_MUX)
+Information: Building the design 'SD_W_MUX'. (HDL-193)
+
+Statistics for case statements in always block at line 18 in file
+        '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/SD_W_MUX.vhd'
+===============================================
+|           Line           |  full/ parallel  |
+===============================================
+|            18            |    auto/auto     |
+===============================================
+Presto compilation completed successfully. (SD_W_MUX)
+Information: Building the design 'ALU'. (HDL-193)
+
+Statistics for case statements in always block at line 66 in file
+        '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/ALU.vhd'
+===============================================
+|           Line           |  full/ parallel  |
+===============================================
+|            74            |    auto/auto     |
+===============================================
+
+Inferred memory devices in process
+        in routine ALU line 40 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/ALU.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|  Lachd_Result_reg   | Flip-flop |  16   |  Y  | N  | N  | N  | N  | N  | N  |
+===============================================================================
+
+Inferred memory devices in process
+        in routine ALU line 49 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/ALU.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|   Carry_Flag_reg    | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+|    Zro_Flag_reg     | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+|    Neg_Flag_reg     | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+===============================================================================
+Presto compilation completed successfully. (ALU)
+Information: Building the design 'CONTROL'. (HDL-193)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/CONTROL.vhd:23: The port default value in entity declaration for port 'Latch_Instr' is not supported. Presto ignores it. (ELAB-802)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/CONTROL.vhd:24: The port default value in entity declaration for port 'Rd_Oprnd_A' is not supported. Presto ignores it. (ELAB-802)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/CONTROL.vhd:25: The port default value in entity declaration for port 'Rd_Oprnd_B' is not supported. Presto ignores it. (ELAB-802)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/CONTROL.vhd:26: The port default value in entity declaration for port 'Latch_Flags' is not supported. Presto ignores it. (ELAB-802)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/CONTROL.vhd:28: The port default value in entity declaration for port 'Latch_Result' is not supported. Presto ignores it. (ELAB-802)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/CONTROL.vhd:29: The port default value in entity declaration for port 'Write_RegC' is not supported. Presto ignores it. (ELAB-802)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/CONTROL.vhd:31: The port default value in entity declaration for port 'UseData_Imm_Or_RegB' is not supported. Presto ignores it. (ELAB-802)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/CONTROL.vhd:35: The port default value in entity declaration for port 'UseData_Imm_Or_ALU' is not supported. Presto ignores it. (ELAB-802)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/CONTROL.vhd:37: The port default value in entity declaration for port 'Reset_AluRegs' is not supported. Presto ignores it. (ELAB-802)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/CONTROL.vhd:40: The port default value in entity declaration for port 'EndOfInstrn' is not supported. Presto ignores it. (ELAB-802)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/CONTROL.vhd:42: The port default value in entity declaration for port 'PushEnbl' is not supported. Presto ignores it. (ELAB-802)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/CONTROL.vhd:43: The port default value in entity declaration for port 'PopEnbl' is not supported. Presto ignores it. (ELAB-802)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/CONTROL.vhd:44: The port default value in entity declaration for port 'OUT_VALID' is not supported. Presto ignores it. (ELAB-802)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/CONTROL.vhd:156: DEFAULT branch of CASE statement cannot be reached. (ELAB-311)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/CONTROL.vhd:194: DEFAULT branch of CASE statement cannot be reached. (ELAB-311)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/CONTROL.vhd:278: DEFAULT branch of CASE statement cannot be reached. (ELAB-311)
+
+Statistics for case statements in always block at line 86 in file
+        '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/CONTROL.vhd'
+===============================================
+|           Line           |  full/ parallel  |
+===============================================
+|            89            |    auto/auto     |
+|           129            |    auto/auto     |
+|           175            |    auto/auto     |
+|           259            |    auto/auto     |
+===============================================
+
+Inferred memory devices in process
+        in routine CONTROL line 284 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/CONTROL.vhd'.
+===================================================================================
+|      Register Name      |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===================================================================================
+| UseData_Imm_Or_ALU_reg  | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+| UseData_Imm_Or_RegB_reg | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+===================================================================================
+
+Inferred memory devices in process
+        in routine CONTROL line 296 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/CONTROL.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|   EndOfInstrn_reg   | Flip-flop |   1   |  N  | N  | N  | N  | N  | N  | N  |
+===============================================================================
+Presto compilation completed successfully. (CONTROL)
+Information: Building the design 'DATA_PATH'. (HDL-193)
+
+Inferred memory devices in process
+        in routine DATA_PATH line 52 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/DATA_PATH.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|     Oprnd_A_reg     | Flip-flop |  16   |  Y  | N  | N  | N  | N  | N  | N  |
+|     Oprnd_B_reg     | Flip-flop |  16   |  Y  | N  | N  | N  | N  | N  | N  |
+===============================================================================
+
+Inferred memory devices in process
+        in routine DATA_PATH line 76 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/DATA_PATH.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|   PSWL_Carry_reg    | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+|    PSWL_Zro_reg     | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+|    PSWL_Neg_reg     | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+===============================================================================
+Presto compilation completed successfully. (DATA_PATH)
+Information: Building the design 'INSTRN_LAT'. (HDL-193)
+
+Inferred memory devices in process
+        in routine INSTRN_LAT line 22 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/INSTRN_LAT.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|  Crnt_Instrn_2_reg  | Flip-flop |  32   |  Y  | N  | N  | N  | N  | N  | N  |
+|  Crnt_Instrn_1_reg  | Flip-flop |  32   |  Y  | N  | N  | N  | N  | N  | N  |
+===============================================================================
+Presto compilation completed successfully. (INSTRN_LAT)
+Information: Building the design 'PRGRM_CNT_TOP'. (HDL-193)
+Presto compilation completed successfully. (PRGRM_CNT_TOP)
+Information: Building the design 'REG_FILE'. (HDL-193)
+Presto compilation completed successfully. (REG_FILE)
+Information: Building the design 'STACK_TOP'. (HDL-193)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/STACK_TOP.vhd:17: The port default value in entity declaration for port 'PopDataOut' is not supported. Presto ignores it. (ELAB-802)
+Presto compilation completed successfully. (STACK_TOP)
+Information: Building the design 'PRGRM_FSM'. (HDL-193)
+
+Statistics for case statements in always block at line 22 in file
+        '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/PRGRM_FSM.vhd'
+===============================================
+|           Line           |  full/ parallel  |
+===============================================
+|            24            |    auto/auto     |
+===============================================
+
+Inferred memory devices in process
+        in routine PRGRM_FSM line 38 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/PRGRM_FSM.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|  Current_State_reg  | Flip-flop |   3   |  Y  | N  | Y  | N  | N  | N  | N  |
+===============================================================================
+Presto compilation completed successfully. (PRGRM_FSM)
+Information: Building the design 'PRGRM_DECODE'. (HDL-193)
+
+Statistics for case statements in always block at line 33 in file
+        '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/PRGRM_DECODE.vhd'
+===============================================
+|           Line           |  full/ parallel  |
+===============================================
+|            65            |    auto/auto     |
+===============================================
+Presto compilation completed successfully. (PRGRM_DECODE)
+Information: Building the design 'PRGRM_CNT'. (HDL-193)
+
+Inferred memory devices in process
+        in routine PRGRM_CNT line 31 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/PRGRM_CNT.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|      PCint_reg      | Flip-flop |   8   |  Y  | N  | Y  | N  | N  | N  | N  |
+===============================================================================
+Presto compilation completed successfully. (PRGRM_CNT)
+Information: Building the design 'STACK_FSM'. (HDL-193)
+
+Statistics for case statements in always block at line 26 in file
+        '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/STACK_FSM.vhd'
+===============================================
+|           Line           |  full/ parallel  |
+===============================================
+|            32            |    auto/auto     |
+===============================================
+
+Inferred memory devices in process
+        in routine STACK_FSM line 85 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/STACK_FSM.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|   STACK_FULL_reg    | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+|   Crnt_Stack_reg    | Flip-flop |   2   |  Y  | N  | Y  | N  | N  | N  | N  |
+|     TOS_int_reg     | Flip-flop |   3   |  Y  | N  | Y  | N  | N  | N  | N  |
+===============================================================================
+Presto compilation completed successfully. (STACK_FSM)
+Information: Building the design 'STACK_MEM'. (HDL-193)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/STACK_MEM.vhd:19: The port default value in entity declaration for port 'PopDataOut' is not supported. Presto ignores it. (ELAB-802)
+
+Inferred memory devices in process
+        in routine STACK_MEM line 42 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/STACK_MEM.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|    Stack_Mem_reg    | Flip-flop |  32   |  Y  | N  | N  | N  | N  | N  | N  |
+===============================================================================
+
+Inferred memory devices in process
+        in routine STACK_MEM line 51 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/ORCA_init/vhdl/STACK_MEM.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|   PopDataOut_reg    | Flip-flop |   4   |  Y  | N  | N  | N  | N  | N  | N  |
+===============================================================================
+Statistics for MUX_OPs
+======================================================
+| block name/line  | Inputs | Outputs | # sel inputs |
+======================================================
+|   STACK_MEM/55   |   8    |    4    |      3       |
+======================================================
+Presto compilation completed successfully. (STACK_MEM)
+1
+# DC will add generic info to the name of the design!! UGLY... fix:
+rename_design [get_designs SDRAM_RFIFO*] SDRAM_RFIFO
+Information: Renaming design /media/6/Projects/DFTC1_2010.03-lab-runtime/lab4b_init/SDRAM_RFIFO_fifo_data_width32_fifo_depth64.db:SDRAM_RFIFO_fifo_data_width32_fifo_depth64 to /media/6/Projects/DFTC1_2010.03-lab-runtime/lab4b_init/SDRAM_RFIFO_fifo_data_width32_fifo_depth64.db:SDRAM_RFIFO. (UIMG-45)
+1
+rename_design [get_designs SDRAM_WFIFO*] SDRAM_WFIFO
+Information: Renaming design /media/6/Projects/DFTC1_2010.03-lab-runtime/lab4b_init/SDRAM_WFIFO_fifo_data_width32_fifo_depth64.db:SDRAM_WFIFO_fifo_data_width32_fifo_depth64 to /media/6/Projects/DFTC1_2010.03-lab-runtime/lab4b_init/SDRAM_WFIFO_fifo_data_width32_fifo_depth64.db:SDRAM_WFIFO. (UIMG-45)
+1
+rename_design [get_designs PCI_RFIFO*] PCI_RFIFO
+Information: Renaming design /media/6/Projects/DFTC1_2010.03-lab-runtime/lab4b_init/PCI_RFIFO_fifo_data_width32_fifo_depth32.db:PCI_RFIFO_fifo_data_width32_fifo_depth32 to /media/6/Projects/DFTC1_2010.03-lab-runtime/lab4b_init/PCI_RFIFO_fifo_data_width32_fifo_depth32.db:PCI_RFIFO. (UIMG-45)
+1
+rename_design [get_designs PCI_WFIFO*] PCI_WFIFO
+Information: Renaming design /media/6/Projects/DFTC1_2010.03-lab-runtime/lab4b_init/PCI_WFIFO_fifo_data_width32_fifo_depth32.db:PCI_WFIFO_fifo_data_width32_fifo_depth32 to /media/6/Projects/DFTC1_2010.03-lab-runtime/lab4b_init/PCI_WFIFO_fifo_data_width32_fifo_depth32.db:PCI_WFIFO. (UIMG-45)
+1
+rename_design [get_designs SDRAM_IF*] SDRAM_IF
+Information: Renaming design /media/6/Projects/DFTC1_2010.03-lab-runtime/lab4b_init/SDRAM_IF_sd_a_width10_sd_dq_width16.db:SDRAM_IF_sd_a_width10_sd_dq_width16 to /media/6/Projects/DFTC1_2010.03-lab-runtime/lab4b_init/SDRAM_IF_sd_a_width10_sd_dq_width16.db:SDRAM_IF. (UIMG-45)
+1
+rename_design [get_designs PCI_CORE*] PCI_CORE
+Information: Renaming design /media/6/Projects/DFTC1_2010.03-lab-runtime/lab4b_init/PCI_CORE_pci_data_width16.db:PCI_CORE_pci_data_width16 to /media/6/Projects/DFTC1_2010.03-lab-runtime/lab4b_init/PCI_CORE_pci_data_width16.db:PCI_CORE. (UIMG-45)
+1
+rename_design [get_designs ORCA_TOP*] ORCA_TOP
+Information: Renaming design /media/6/Projects/DFTC1_2010.03-lab-runtime/lab4b_init/ORCA_TOP_sd_a_width10_sd_dq_width16_sd_rfifo_depth64_sd_wfifo_depth64_pci_data_width16_pci_rfifo_depth32_pci_wfifo_depth32.db:ORCA_TOP_sd_a_width10_sd_dq_width16_sd_rfifo_depth64_sd_wfifo_depth64_pci_data_width16_pci_rfifo_depth32_pci_wfifo_depth32 to /media/6/Projects/DFTC1_2010.03-lab-runtime/lab4b_init/ORCA_TOP_sd_a_width10_sd_dq_width16_sd_rfifo_depth64_sd_wfifo_depth64_pci_data_width16_pci_rfifo_depth32_pci_wfifo_depth32.db:ORCA_TOP. (UIMG-45)
+1
+current_design ORCA
+Current design is 'ORCA'.
+{ORCA}
+link
+
+  Linking design 'ORCA'
+  Using the following designs and libraries:
+  --------------------------------------------------------------------------
+  * (29 designs)              /media/6/Projects/DFTC1_2010.03-lab-runtime/lab4b_init/ORCA.db, etc
+  cb13fs120_tsmc_max (library) /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/sc_max.db
+  cb13io320_tsmc_max (library) /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/io_max.db
+  cb13_tsmc_memory_max (library) /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/rams_max.db
+  cb13special (library)       /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/special.db
+  dw_foundation.sldb (library) /home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/dw_foundation.sldb
+
+1
+#write -f ddc -hier -o unmapped/ORCA.ddc
+#
+# Setup for compile
+#
+suppress_message {UID-401 TIM-111 TIM-103 OPT-1006 DDB-74 DDB-72}
+source -echo -verbose scripts/constraints.tcl;# apply non test constraints to the design
+#
+# Constraints for the ORCA chip
+# by AS on 2002.04.10
+#
+# Last modified: 2003.05.11
+# Time Unit: ns
+# Cap Unit : pf
+# Test clocks
+#  create_clock -period 20 [get_ports test_sys2x_clk]
+#  create_clock -period 20 [get_ports test_mem_clk]
+# IEEE 1149.1 TCK clock at 100 MHz
+#create_clock -period 10 [get_ports TCK]
+# PCI clock at 66 MHz
+create_clock -period 15.0 -name pclk [get_ports pclk]
+1
+# System clock at 125 MHz
+create_clock -period 8.0 -name sys_clk [get_ports sys_clk]
+1
+# sdram clock at 133 MHz
+create_clock -period 7.5 -name sdr_clk [get_ports sdr_clk]
+1
+# Create PLL clocks
+# Internal PCI clock
+create_generated_clock  -name PCI_CLK  -source [get_pins I_CLOCK_GEN/I_PLL_PCI/REF_CLK]  -multiply_by 1  [get_pins I_CLOCK_GEN/I_PLL_PCI/CLK] 
+1
+# SDRAM clock
+create_generated_clock  -name SDRAM_CLK  -source [get_pins I_CLOCK_GEN/I_PLL_SD/REF_CLK]  -multiply_by 1  [get_pins I_CLOCK_GEN/I_PLL_SD/CLK]
+1
+# Create outgoing clocks for DDR interface
+create_generated_clock  -name SD_DDR_CLK  -source [get_pins I_CLOCK_GEN/I_PLL_SD/CLK]  -divide_by 1  [get_ports sd_CK]
+1
+#  create_generated_clock \
+#      -source [get_pins I_CLOCK_GEN/I_PLL_SD/CLK] \
+#      -divide_by 1 -invert \
+#      -name SD_DDR_CLKn \
+#      [get_ports sd_CKn]
+# System clocks
+create_generated_clock  -name SYS_CLK  -source [get_pins I_CLOCK_GEN/I_CLKMUL/CLK_IN]  -multiply_by 1  [get_pins I_CLOCK_GEN/I_CLKMUL/CLK_1X]
+1
+create_generated_clock  -name SYS_2x_CLK  -source [get_pins I_CLOCK_GEN/I_CLKMUL/CLK_IN]  -multiply_by 2  [get_pins I_CLOCK_GEN/I_CLKMUL/CLK_2X]
+1
+# Set faster functional mode
+set_case_analysis 0 [get_ports power_save]
+1
+set_case_analysis 1 [get_ports pm66en]
+1
+#set_case_analysis 0 [get_ports test_mode]
+set_case_analysis 0 [get_ports scan_en]
+1
+#set_case_analysis 0 [get_pins I_CLOCK_GEN/I_CLKMUL/clk_2x]
+#set_case_analysis 0 [get_ports test_*_clk]
+# False paths between clock domains. async_domain is a user-defined function
+async_domain SYS_CLK PCI_CLK
+1
+async_domain SYS_2x_CLK PCI_CLK
+1
+async_domain PCI_CLK SDRAM_CLK
+1
+async_domain SYS_CLK SDRAM_CLK
+1
+async_domain SYS_2x_CLK SDRAM_CLK
+1
+#async_domain PCI_CLK TCK
+#async_domain SDRAM_CLK TCK
+# Don't mess with any clocks for now...
+set_dont_touch_network [all_clocks]
+1
+set_clock_uncertainty -setup 0.4 [get_clocks SYS_CLK]
+1
+set_clock_uncertainty -setup 0.4 [get_clocks SYS_2x_CLK]
+1
+set_clock_uncertainty -setup 0.3 [get_clocks PCI_CLK]
+1
+set_clock_uncertainty -setup 0.3 [get_clocks SDRAM_CLK]
+1
+#set_dont_touch_network [get_ports scan_en]
+#set mode_ports [get_ports "scan_en test_mode iddq_mode power_save"]
+#set TAP_ports [get_ports "TDI TDO TMS TCK TRST"]
+# Constrain interface
+set pci_io_ports [get_ports p* -filter "port_direction==inout"]
+{pad\[15\] pad\[14\] pad\[13\] pad\[12\] pad\[11\] pad\[10\] pad\[9\] pad\[8\] pad\[7\] pad\[6\] pad\[5\] pad\[4\] pad\[3\] pad\[2\] pad\[1\] pad\[0\] pc_be\[3\] pc_be\[2\] pc_be\[1\] pc_be\[0\] ppar pframe_n ptrdy_n pirdy_n pdevsel_n pstop_n pperr_n pserr_n}
+set pci_in_ports [add_to_collection [get_ports "pidsel pgnt_n pm66en"] $pci_io_ports]
+{pidsel pgnt_n pm66en pad\[15\] pad\[14\] pad\[13\] pad\[12\] pad\[11\] pad\[10\] pad\[9\] pad\[8\] pad\[7\] pad\[6\] pad\[5\] pad\[4\] pad\[3\] pad\[2\] pad\[1\] pad\[0\] pc_be\[3\] pc_be\[2\] pc_be\[1\] pc_be\[0\] ppar pframe_n ptrdy_n pirdy_n pdevsel_n pstop_n pperr_n pserr_n}
+set pci_out_ports [add_to_collection [get_ports "preq_n"] $pci_io_ports]
+{preq_n pad\[15\] pad\[14\] pad\[13\] pad\[12\] pad\[11\] pad\[10\] pad\[9\] pad\[8\] pad\[7\] pad\[6\] pad\[5\] pad\[4\] pad\[3\] pad\[2\] pad\[1\] pad\[0\] pc_be\[3\] pc_be\[2\] pc_be\[1\] pc_be\[0\] ppar pframe_n ptrdy_n pirdy_n pdevsel_n pstop_n pperr_n pserr_n}
+set pci_ports [add_to_collection $pci_io_ports [get_ports "pidsel pgnt_n pm66en preq_n"] ]
+{pad\[15\] pad\[14\] pad\[13\] pad\[12\] pad\[11\] pad\[10\] pad\[9\] pad\[8\] pad\[7\] pad\[6\] pad\[5\] pad\[4\] pad\[3\] pad\[2\] pad\[1\] pad\[0\] pc_be\[3\] pc_be\[2\] pc_be\[1\] pc_be\[0\] ppar pframe_n ptrdy_n pirdy_n pdevsel_n pstop_n pperr_n pserr_n pidsel pgnt_n pm66en preq_n}
+set sd_io_ddr_ports [get_ports "sd_DQ*"]
+{sd_DQ\[15\] sd_DQ\[14\] sd_DQ\[13\] sd_DQ\[12\] sd_DQ\[11\] sd_DQ\[10\] sd_DQ\[9\] sd_DQ\[8\] sd_DQ\[7\] sd_DQ\[6\] sd_DQ\[5\] sd_DQ\[4\] sd_DQ\[3\] sd_DQ\[2\] sd_DQ\[1\] sd_DQ\[0\]}
+set sd_out_ports [remove_from_collection [get_ports sd_*]  [add_to_collection $sd_io_ddr_ports [get_ports "sd_CK sd_CKn"]]]
+{sd_A\[9\] sd_A\[8\] sd_A\[7\] sd_A\[6\] sd_A\[5\] sd_A\[4\] sd_A\[3\] sd_A\[2\] sd_A\[1\] sd_A\[0\] sd_BWS\[1\] sd_BWS\[0\] sd_LD sd_RW}
+set sd_ports [add_to_collection $sd_io_ddr_ports $sd_out_ports]
+{sd_DQ\[15\] sd_DQ\[14\] sd_DQ\[13\] sd_DQ\[12\] sd_DQ\[11\] sd_DQ\[10\] sd_DQ\[9\] sd_DQ\[8\] sd_DQ\[7\] sd_DQ\[6\] sd_DQ\[5\] sd_DQ\[4\] sd_DQ\[3\] sd_DQ\[2\] sd_DQ\[1\] sd_DQ\[0\] sd_A\[9\] sd_A\[8\] sd_A\[7\] sd_A\[6\] sd_A\[5\] sd_A\[4\] sd_A\[3\] sd_A\[2\] sd_A\[1\] sd_A\[0\] sd_BWS\[1\] sd_BWS\[0\] sd_LD sd_RW}
+set mode_ports [get_ports "scan_en test_mode power_save"]
+Warning: Can't find port 'test_mode' in design 'ORCA'. (UID-95)
+{scan_en power_save}
+# Constrain PCI ports for functional clocks
+set_input_delay 8.0 -max -clock PCI_CLK -add_delay $pci_in_ports
+1
+set_input_delay 2.0 -min -clock PCI_CLK -add_delay  $pci_in_ports
+1
+set_output_delay 4.0 -max -clock PCI_CLK -add_delay $pci_out_ports
+1
+set_output_delay -1.0 -min -clock PCI_CLK -add_delay $pci_out_ports
+1
+set_load 15 $pci_ports 
+1
+# Constrain SDRAM ports for functional clocks
+set_input_delay 0.800 -max -add_delay -clock SDRAM_CLK $sd_io_ddr_ports
+1
+set_input_delay 0.800 -max -add_delay -clock SDRAM_CLK -clock_fall $sd_io_ddr_ports
+1
+set_input_delay 0.200 -min -add_delay -clock SDRAM_CLK $sd_io_ddr_ports
+1
+set_input_delay 0.200 -min -add_delay -clock SDRAM_CLK -clock_fall $sd_io_ddr_ports
+1
+set_output_delay 0.750 -max -add_delay -clock SD_DDR_CLK $sd_ports
+1
+set_output_delay 0.750 -max -add_delay -clock SD_DDR_CLK -clock_fall $sd_io_ddr_ports
+1
+set_output_delay -0.100 -min -add_delay -clock SD_DDR_CLK $sd_ports
+1
+set_output_delay -0.100 -min -add_delay -clock SD_DDR_CLK -clock_fall $sd_io_ddr_ports
+1
+set_load 20 $sd_ports
+1
+set_load 5 [get_ports "sd_CK sd_CKn"]
+1
+# Setup gating checks for DDR interface
+set all_I0_mux_pins [get_pins I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_*/I0]
+{I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_15/I0 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_14/I0 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_13/I0 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_12/I0 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_11/I0 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_10/I0 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_9/I0 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_8/I0 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_7/I0 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_6/I0 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_5/I0 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_4/I0 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_3/I0 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_2/I0 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_1/I0 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/I0}
+set all_I1_mux_pins [get_pins I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_*/I1]
+{I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_15/I1 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_14/I1 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_13/I1 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_12/I1 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_11/I1 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_10/I1 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_9/I1 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_8/I1 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_7/I1 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_6/I1 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_5/I1 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_4/I1 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_3/I1 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_2/I1 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_1/I1 I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/I1}
+set_clock_gating_check -low -setup 0 -hold 0 $all_I0_mux_pins
+1
+set_clock_gating_check -high -setup 0 -hold 0 $all_I1_mux_pins
+1
+# Set all input transitions
+set_input_transition 0.500 [all_inputs]
+1
+set_input_transition 1.000 $pci_in_ports
+1
+# Set up constraints for clock gating in Blender design
+set_clock_gating_check -setup 0.200 -hold 0.200  [get_clocks SYS_CLK]
+1
+# Constrain mode inputs
+set_input_delay 4.0 -max -clock PCI_CLK $mode_ports
+1
+set_input_delay 2.0 -min -clock PCI_CLK $mode_ports
+1
+set_load 10 $mode_ports
+1
+# Set scan configuration
+set_scan_configuration -style multiplexed_flip_flop
+Accepted scan configuration for modes: all_dft
+1
+# Wire load models:
+#  set_wire_load_mode top
+#  set_wire_load_model -name 40KGATES
+# The IO2 ports are only used  as OUTPUTs, therefore the input paths are false paths! (BIDI ports!)
+set_false_path -to I_ORCA_TOP/I_RISC_CORE/I_REG_FILE/REG_FILE_A_RAM/IO2[*]
+1
+set_false_path -to I_ORCA_TOP/I_RISC_CORE/I_REG_FILE/REG_FILE_B_RAM/IO2[*]
+1
+set_false_path -to I_ORCA_TOP/I_CONTEXT_MEM/CONTEXT_RAM_0/IO2[*]
+1
+set_false_path -to I_ORCA_TOP/I_CONTEXT_MEM/CONTEXT_RAM_1/IO2[*]
+1
+set_false_path -to I_ORCA_TOP/I_CONTEXT_MEM/CONTEXT_RAM_2/IO2[*]
+1
+set_false_path -to I_ORCA_TOP/I_CONTEXT_MEM/CONTEXT_RAM_3/IO2[*]
+1
+set_false_path -to I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_RAM/IO2[*]
+1
+set_false_path -to I_ORCA_TOP/I_SDRAM_READ_FIFO/SD_RFIFO_RAM/IO2[*]
+1
+1
+# Make all reset signals ideal
+set_ideal_network -no_propagate [get_nets I_ORCA_TOP/pci_rst_n]
+Warning: Transferring ideal_net attribute onto the driver pin I_ORCA_TOP/I_RESET_BLOCK/C51/Z of net I_ORCA_TOP/pci_rst_n. (UID-606)
+1
+set_ideal_network -no_propagate [get_nets I_ORCA_TOP/sdram_rst_n]
+Warning: Transferring ideal_net attribute onto the driver pin I_ORCA_TOP/I_RESET_BLOCK/C55/Z of net I_ORCA_TOP/sdram_rst_n. (UID-606)
+1
+set_ideal_network -no_propagate [get_nets I_ORCA_TOP/sys_rst_n]
+Warning: Transferring ideal_net attribute onto the driver pin I_ORCA_TOP/I_RESET_BLOCK/C59/Z of net I_ORCA_TOP/sys_rst_n. (UID-606)
+1
+set_ideal_network -no_propagate [get_nets I_ORCA_TOP/sys_2x_rst_n]
+Warning: Transferring ideal_net attribute onto the driver pin I_ORCA_TOP/I_RESET_BLOCK/C63/Z of net I_ORCA_TOP/sys_2x_rst_n. (UID-606)
+1
+set_dont_touch [get_cells *_iopad*]
+1
+set_dont_touch [get_cells I_CLK_SOURCE*]
+1
+set_ideal_network [get_pins I_CLK_SOURCE*/Z]
+1
+#set_dont_touch [get_cells I_RST_SOURCE*]
+group_path -name INS -from [all_inputs]
+1
+group_path -name OUTS -to [all_outputs]
+1
+# Freeze all SDRAM DDR output muxes
+set_dont_touch [get_cells I_ORCA_TOP/I_SDRAM_IF/sd_mux*]
+1
+# I WANT only the mux on the SDRAM outputs!!
+# Note: STA will not see the port cap!!
+set_ideal_network [get_pins I_ORCA_TOP/I_SDRAM_IF/sd_mux*/Z]
+1
+# Prevent DC from writing out assign or tran statements in final verilog netlist.
+set_fix_multiple_port_nets -all -buffer_constants [get_designs *]
+1
+set_auto_disable_drc_nets -all
+1
+# Using compile instead of compile_ultra to avoid unexpected optimizations on the init_regs
+compile -scan
+CPU Load: 27%, Ram Free: 0 GB, Swap Free: 26 GB, Work Disk Free: 85 GB, Tmp Disk Free: 85 GB
+Information: Choosing a test methodology will restrict the optimization of sequential cells. (UIO-12)
+Information: Checking out the license 'DesignWare'. (SEC-104)
+Warning: Implementation 'cl2' of module 'DW_fifoctl_s2_sf' is replaced by 'str'. The design has 'set_implementation' to the obsolete implementation. (SYNDB-36)
+Warning: The 'implementation' attribute on cell 'I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_CTL' in design 'ORCA' is changed from 'cl2' to 'str'.  (SYNDB-40)
+Warning: The 'implementation' attribute on cell 'I_ORCA_TOP/I_PCI_WRITE_FIFO/PCI_WFIFO_CTL' in design 'ORCA' is changed from 'cl2' to 'str'.  (SYNDB-40)
+Warning: The 'implementation' attribute on cell 'I_ORCA_TOP/I_SDRAM_READ_FIFO/SD_RFIFO_CTL' in design 'ORCA' is changed from 'cl2' to 'str'.  (SYNDB-40)
+Warning: The 'implementation' attribute on cell 'I_ORCA_TOP/I_SDRAM_WRITE_FIFO/SD_WFIFO_CTL' in design 'ORCA' is changed from 'cl2' to 'str'.  (SYNDB-40)
+Information: Evaluating DesignWare library utilization. (UISN-27)
+
+============================================================================
+| DesignWare Building Block Library  |         Version         | Available |
+============================================================================
+| Basic DW Building Blocks           | V-2023.12-DWBB_202312.2 |     *     |
+| Licensed DW Building Blocks        | V-2023.12-DWBB_202312.2 |     *     |
+============================================================================
+
+====================================================================================================
+| Flow Information                                                                                 |
+----------------------------------------------------------------------------------------------------
+| Flow         | Design Compiler                                                                   |
+| Command Line | -scan                                                                             |
+====================================================================================================
+| Design Information                                      | Value                                  |
+====================================================================================================
+| Number of Scenarios                                     | 0                                      |
+| Leaf Cell Count                                         | 33172                                  |
+| Number of User Hierarchies                              | 30                                     |
+| Sequential Cell Count                                   | 2818                                   |
+| Macro Count                                             | 0                                      |
+| Number of Power Domains                                 | 0                                      |
+| Number of Path Groups                                   | 11                                     |
+| Number of VT Class                                      | 0                                      |
+| Number of Clocks                                        | 8                                      |
+| Number of Dont Touch Cells                              | 521                                    |
+| Number of Dont Touch Nets                               | 169                                    |
+| Number of Size Only Cells                               | 23                                     |
+| Design with UPF Data                                    | false                                  |
+----------------------------------------------------------------------------------------------------
+| Variables                                               | Value                                  |
+----------------------------------------------------------------------------------------------------
+| set_fix_multiple_port_nets                              | -all -buffer_constants                 |
+====================================================================================================
+
+Information: There are 401 potential problems in your design. Please run 'check_design' for more information. (LINT-99)
+
+
+
+  Beginning Pass 1 Mapping
+  ------------------------
+  Processing 'CONFIG'
+  Processing 'SD_W_MUX'
+  Processing 'PCI_W_MUX'
+  Processing 'SDRAM_WFIFO'
+  Processing 'SDRAM_RFIFO'
+  Processing 'PCI_WFIFO'
+  Processing 'PCI_RFIFO'
+  Processing 'SDRAM_IF'
+  Processing 'BLENDER'
+  Processing 'STACK_MEM_0'
+  Processing 'STACK_FSM'
+  Processing 'STACK_TOP'
+  Processing 'REG_FILE'
+  Processing 'PRGRM_CNT'
+  Processing 'PRGRM_DECODE'
+  Processing 'PRGRM_FSM'
+  Processing 'PRGRM_CNT_TOP'
+  Processing 'INSTRN_LAT'
+  Processing 'DATA_PATH'
+  Processing 'CONTROL'
+  Processing 'ALU'
+Information: The register 'Carry_Flag_reg' is a constant and will be removed. (OPT-1206)
+  Processing 'RISC_CORE'
+  Processing 'CONTEXT_MEM'
+  Processing 'PARSER'
+  Processing 'PCI_CORE'
+  Processing 'RESET_BLOCK'
+  Processing 'ORCA_TOP'
+  Processing 'CLOCK_GEN'
+  Processing 'ORCA'
+Warning: The design named ORCA has 74 out of 77 cells marked size-only, which may limit optimization. (OPT-301)
+Error: unknown command '_snps_array_peek' (CMD-005)
+Error: unknown command '_snps_array_peek' (CMD-005)
+Error: unknown command '_snps_array_peek' (CMD-005)
+
+  Updating timing information
+Information: Updating design information... (UID-85)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: A non-unate path in clock network for clock 'sdr_clk' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U6/*cell*22389'on pin 'I0' in design 'ORCA'. (TIM-141)
+Warning: No controlling value could be found for the clock gating cell 'I_ORCA_TOP/I_RISC_CORE/U3' for the clock pin 'A1'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_RISC_CORE/U3'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: No controlling value could be found for the clock gating cell 'I_ORCA_TOP/I_RISC_CORE/U3' for the clock pin 'A1'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_CTL'on pin 'clk_push' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_WRITE_FIFO/PCI_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_WRITE_FIFO/PCI_WFIFO_CTL'on pin 'clk_pop' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_READ_FIFO/SD_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_READ_FIFO/SD_RFIFO_CTL'on pin 'clk_push' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_WRITE_FIFO/SD_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_WRITE_FIFO/SD_WFIFO_CTL'on pin 'clk_pop' in design 'ORCA'. (TIM-141)
+Warning: No controlling value could be found for the clock gating cell 'I_CLOCK_GEN/U2' for the clock pin 'B1'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U2'on pin 'A2' in design 'ORCA'. (TIM-141)
+Warning: No controlling value could be found for the clock gating cell 'I_CLOCK_GEN/U2' for the clock pin 'B1'. (TIM-128)
+Warning: A non-unate path in clock network for clock 'sdr_clk' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Information: There are 2837 clock pins driven by multiple clocks, and some of them are driven by up-to 3 clocks. (TIM-099)
+
+  Beginning Implementation Selection
+  ----------------------------------
+  Allocating blocks in 'DW_fifoctl_s2_sf_depth64_push_ae_lvl2_push_af_lvl2_pop_ae_lvl2_pop_af_lvl2_err_mode0_push_sync1_pop_sync1_rst_mode0_tst_mode0'
+  Allocating blocks in 'DW_FIFOCTL_IF_depth64_ae_level2_af_level2_err_mode0_sync_mode1_io_mode1_tst_mode0'
+  Allocating blocks in 'DW_eq_width7'
+  Allocating blocks in 'DW_FIFOCTL_IF_depth64_ae_level2_af_level2_err_mode0_sync_mode1_io_mode0_tst_mode0'
+  Processing 'SDRAM_WFIFO_DW_fifoctl_s2_sf_0'
+  Processing 'SDRAM_WFIFO_DW_FIFOCTL_IF_0'
+  Mapping 'SDRAM_WFIFO_DW_inc_0'
+  Processing 'SDRAM_WFIFO_DW01_sub_0'
+  Processing 'SDRAM_WFIFO_DW_FIFOCTL_IF_1'
+  Mapping 'SDRAM_WFIFO_DW_inc_1'
+  Processing 'SDRAM_WFIFO_DW01_sub_1'
+  Processing 'SDRAM_RFIFO_DW_fifoctl_s2_sf_0'
+  Processing 'SDRAM_RFIFO_DW_FIFOCTL_IF_0'
+  Mapping 'SDRAM_RFIFO_DW_inc_0'
+  Processing 'SDRAM_RFIFO_DW01_sub_0'
+  Processing 'SDRAM_RFIFO_DW_FIFOCTL_IF_1'
+  Mapping 'SDRAM_RFIFO_DW_inc_1'
+  Processing 'SDRAM_RFIFO_DW01_sub_1'
+  Allocating blocks in 'DW_fifoctl_s2_sf_depth32_push_ae_lvl2_push_af_lvl2_pop_ae_lvl2_pop_af_lvl2_err_mode0_push_sync1_pop_sync1_rst_mode0_tst_mode0'
+  Allocating blocks in 'DW_FIFOCTL_IF_depth32_ae_level2_af_level2_err_mode0_sync_mode1_io_mode1_tst_mode0'
+  Allocating blocks in 'DW_eq_width6'
+  Allocating blocks in 'DW_FIFOCTL_IF_depth32_ae_level2_af_level2_err_mode0_sync_mode1_io_mode0_tst_mode0'
+  Processing 'PCI_WFIFO_DW_fifoctl_s2_sf_0'
+  Processing 'PCI_WFIFO_DW_FIFOCTL_IF_0'
+  Mapping 'PCI_WFIFO_DW_inc_0'
+  Processing 'PCI_WFIFO_DW01_sub_0'
+  Processing 'PCI_WFIFO_DW_FIFOCTL_IF_1'
+  Mapping 'PCI_WFIFO_DW_inc_1'
+  Processing 'PCI_WFIFO_DW01_sub_1'
+  Processing 'PCI_RFIFO_DW_fifoctl_s2_sf_0'
+  Processing 'PCI_RFIFO_DW_FIFOCTL_IF_0'
+  Mapping 'PCI_RFIFO_DW_inc_0'
+  Processing 'PCI_RFIFO_DW01_sub_0'
+  Processing 'PCI_RFIFO_DW_FIFOCTL_IF_1'
+  Mapping 'PCI_RFIFO_DW_inc_1'
+  Processing 'PCI_RFIFO_DW01_sub_1'
+  Processing 'SDRAM_IF_DW01_add_0'
+  Processing 'SDRAM_IF_DW01_add_1'
+  Processing 'SDRAM_IF_DW01_add_2'
+  Processing 'SDRAM_IF_DW01_add_3'
+  Processing 'SDRAM_IF_DW01_add_4'
+  Processing 'SDRAM_IF_DW01_add_5'
+  Processing 'SDRAM_IF_DW01_add_6'
+  Processing 'SDRAM_IF_DW01_add_7'
+  Processing 'BLENDER_DW01_add_0'
+  Processing 'BLENDER_DW01_add_1'
+  Processing 'BLENDER_DW01_add_2'
+  Processing 'BLENDER_DW01_add_3'
+  Processing 'BLENDER_DW01_sub_0'
+  Processing 'BLENDER_DW01_add_4'
+  Processing 'BLENDER_DW01_sub_1'
+  Processing 'BLENDER_DW01_add_5'
+  Processing 'BLENDER_DW01_add_6'
+  Processing 'PRGRM_CNT_DW01_inc_0'
+  Processing 'ALU_DW01_dec_0'
+  Processing 'ALU_DW01_sub_0'
+  Processing 'ALU_DW01_sub_1'
+  Processing 'ALU_DW01_inc_0'
+  Processing 'ALU_DW01_add_0'
+  Processing 'ALU_DW01_add_1'
+  Processing 'CONTEXT_MEM_DW01_inc_0'
+  Processing 'CONTEXT_MEM_DW01_inc_1'
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: A non-unate path in clock network for clock 'sdr_clk' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U6/*cell*25696'on pin 'I0' in design 'ORCA'. (TIM-141)
+Warning: No controlling value could be found for the clock gating cell 'I_ORCA_TOP/I_RISC_CORE/U3' for the clock pin 'A1'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_RISC_CORE/U3'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: No controlling value could be found for the clock gating cell 'I_ORCA_TOP/I_RISC_CORE/U3' for the clock pin 'A1'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_WRITE_FIFO/PCI_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_READ_FIFO/SD_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_WRITE_FIFO/SD_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: No controlling value could be found for the clock gating cell 'I_CLOCK_GEN/U2' for the clock pin 'B1'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U2'on pin 'A2' in design 'ORCA'. (TIM-141)
+Warning: No controlling value could be found for the clock gating cell 'I_CLOCK_GEN/U2' for the clock pin 'B1'. (TIM-128)
+Warning: A non-unate path in clock network for clock 'sdr_clk' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+  Mapping 'BLENDER_DW_mult_uns_0'
+  Mapping 'BLENDER_DW_mult_uns_1'
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: A non-unate path in clock network for clock 'sdr_clk' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U6/*cell*25696'on pin 'I0' in design 'ORCA'. (TIM-141)
+Warning: No controlling value could be found for the clock gating cell 'I_ORCA_TOP/I_RISC_CORE/U3' for the clock pin 'A1'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_RISC_CORE/U3'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: No controlling value could be found for the clock gating cell 'I_ORCA_TOP/I_RISC_CORE/U3' for the clock pin 'A1'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_WRITE_FIFO/PCI_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_READ_FIFO/SD_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_WRITE_FIFO/SD_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: No controlling value could be found for the clock gating cell 'I_CLOCK_GEN/U2' for the clock pin 'B1'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U2'on pin 'A2' in design 'ORCA'. (TIM-141)
+Warning: No controlling value could be found for the clock gating cell 'I_CLOCK_GEN/U2' for the clock pin 'B1'. (TIM-128)
+Warning: A non-unate path in clock network for clock 'sdr_clk' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Information: There are 3041 clock pins driven by multiple clocks, and some of them are driven by up-to 3 clocks. (TIM-099)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: A non-unate path in clock network for clock 'sdr_clk' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U6/*cell*25696'on pin 'I0' in design 'ORCA'. (TIM-141)
+Warning: No controlling value could be found for the clock gating cell 'I_ORCA_TOP/I_RISC_CORE/U3' for the clock pin 'A1'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_RISC_CORE/U3'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: No controlling value could be found for the clock gating cell 'I_ORCA_TOP/I_RISC_CORE/U3' for the clock pin 'A1'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_WRITE_FIFO/PCI_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_READ_FIFO/SD_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_WRITE_FIFO/SD_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: No controlling value could be found for the clock gating cell 'I_CLOCK_GEN/U2' for the clock pin 'B1'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U2'on pin 'A2' in design 'ORCA'. (TIM-141)
+Warning: No controlling value could be found for the clock gating cell 'I_CLOCK_GEN/U2' for the clock pin 'B1'. (TIM-128)
+Warning: A non-unate path in clock network for clock 'sdr_clk' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: A non-unate path in clock network for clock 'sdr_clk' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U6/*cell*25696'on pin 'I0' in design 'ORCA'. (TIM-141)
+Warning: No controlling value could be found for the clock gating cell 'I_ORCA_TOP/I_RISC_CORE/U3' for the clock pin 'A1'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_RISC_CORE/U3'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: No controlling value could be found for the clock gating cell 'I_ORCA_TOP/I_RISC_CORE/U3' for the clock pin 'A1'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_WRITE_FIFO/PCI_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_READ_FIFO/SD_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_WRITE_FIFO/SD_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: No controlling value could be found for the clock gating cell 'I_CLOCK_GEN/U2' for the clock pin 'B1'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U2'on pin 'A2' in design 'ORCA'. (TIM-141)
+Warning: No controlling value could be found for the clock gating cell 'I_CLOCK_GEN/U2' for the clock pin 'B1'. (TIM-128)
+Warning: A non-unate path in clock network for clock 'sdr_clk' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Information: There are 3041 clock pins driven by multiple clocks, and some of them are driven by up-to 3 clocks. (TIM-099)
+
+  Beginning Mapping Optimizations  (Medium effort)
+  -------------------------------
+  Mapping Optimization (Phase 1)
+  Mapping Optimization (Phase 2)
+
+                                  TOTAL                                      
+   ELAPSED            WORST NEG   SETUP    DESIGN                            
+    TIME      AREA      SLACK     COST    RULE COST         ENDPOINT         
+  --------- --------- --------- --------- --------- -------------------------
+    0:00:21  387600.8      1.23     133.7   10085.2                          
+    0:00:21  387600.8      1.23     133.7   10085.2                          
+    0:00:21  387600.8      1.23     133.7   10085.2                          
+    0:00:21  387600.8      1.23     133.7   10085.2                          
+    0:00:21  387600.8      1.23     133.7   10085.2                          
+    0:00:24  385223.3      1.23     139.9   10085.2                          
+    0:00:24  385233.5      1.23     137.8   10085.2                          
+    0:00:25  385220.3      1.23     137.6   10085.2                          
+    0:00:25  385230.5      1.23     137.7   10085.2                          
+    0:00:25  385222.3      1.23     134.2   10085.2                          
+    0:00:25  385232.5      1.23     155.5   10085.2                          
+    0:00:26  385266.8      1.23     134.1   10085.2                          
+    0:00:26  385235.8      1.23     152.3   10085.2                          
+    0:00:26  385237.5      1.23     137.9   10085.2                          
+    0:00:26  385254.0      1.23     136.0   10085.2                          
+    0:00:26  385272.3      1.23     133.6   10085.2                          
+    0:00:26  385272.3      1.23     133.6   10085.2                          
+    0:00:27  385254.0      1.23     133.6   10085.2                          
+    0:00:27  385254.0      1.23     133.6   10085.2                          
+    0:00:27  385301.5      1.23     133.6       2.7                          
+    0:00:27  385305.3      1.23     133.6       0.0                          
+    0:00:27  385305.3      1.23     133.6       0.0                          
+    0:00:27  385305.3      1.23     133.6       0.0                          
+    0:00:27  385305.3      1.23     133.6       0.0                          
+    0:00:27  385348.0      1.23     133.4       0.0                          
+
+
+
+  Beginning Delay Optimization Phase
+  ----------------------------------
+
+                                  TOTAL                                      
+   ELAPSED            WORST NEG   SETUP    DESIGN                            
+    TIME      AREA      SLACK     COST    RULE COST         ENDPOINT         
+  --------- --------- --------- --------- --------- -------------------------
+    0:00:27  385348.0      1.23     133.4       0.0                          
+    0:00:27  385348.0      1.23     133.4       0.0                          
+    0:00:27  385348.0      1.23     133.4       0.0                          
+    0:00:27  385352.5      1.23     133.4       0.0 I_ORCA_TOP/I_SDRAM_IF/sync_control_bus_reg\[6\]/D
+    0:00:27  385375.8      1.23     133.2       0.0 I_ORCA_TOP/I_SDRAM_IF/sync_control_bus_reg\[6\]/D
+    0:00:27  385379.5      1.23     133.0       0.0                          
+    0:00:28  385379.5      1.23     133.0       0.0                          
+    0:00:28  385382.0      1.23     133.0       0.0 I_ORCA_TOP/I_SDRAM_IF/sync_control_bus_reg\[6\]/D
+    0:00:28  385381.0      1.23     133.0       0.0 I_ORCA_TOP/I_SDRAM_IF/sync_control_bus_reg\[5\]/D
+    0:00:28  385382.3      1.23     132.9       0.0                          
+    0:00:28  385387.8      1.23     132.7       0.0                          
+    0:00:28  385383.5      1.23     132.2       0.0                          
+    0:00:28  385389.3      1.23     131.8       0.0                          
+
+
+  Beginning Area-Recovery Phase  (cleanup)
+  -----------------------------
+
+                                  TOTAL                                      
+   ELAPSED            WORST NEG   SETUP    DESIGN                            
+    TIME      AREA      SLACK     COST    RULE COST         ENDPOINT         
+  --------- --------- --------- --------- --------- -------------------------
+    0:00:28  385389.3      1.23     131.8       0.0                          
+    0:00:28  385389.3      1.23     131.8       0.0                          
+    0:00:29  385337.5      1.23     131.8       0.0                          
+    0:00:29  385322.3      1.23     131.8       0.0                          
+    0:00:29  385310.5      1.23     131.8       0.0                          
+    0:00:29  385304.0      1.23     131.8       0.0                          
+    0:00:29  385302.5      1.23     131.8       0.0                          
+    0:00:29  385302.5      1.23     131.8       0.0                          
+    0:00:29  385302.5      1.23     131.8       0.0                          
+    0:00:29  385291.0      1.23     131.8       0.0                          
+    0:00:29  385290.5      1.23     131.8       0.0                          
+    0:00:29  385290.5      1.23     131.8       0.0                          
+    0:00:29  385290.5      1.23     131.8       0.0                          
+    0:00:29  385290.5      1.23     131.8       0.0                          
+    0:00:29  385290.5      1.23     131.8       0.0                          
+    0:00:29  385290.5      1.23     131.8       0.0                          
+    0:00:29  385294.3      1.23     131.8       0.0                          
+    0:00:30  385295.0      1.23     131.8       0.0                          
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/sc_max.db'
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/io_max.db'
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/rams_max.db'
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/special.db'
+
+
+Note: Symbol # after min delay cost means estimated hold TNS across all active scenarios 
+
+
+  Optimization Complete
+  ---------------------
+Warning: Design 'ORCA' contains 3 high-fanout nets. A fanout number of 1000 will be used for delay calculations involving these nets. (TIM-134)
+     Net 'I_ORCA_TOP/I_SDRAM_READ_FIFO/SD_RFIFO_CTL/U1/clk': 1195 load(s), 1 driver(s)
+     Net 'I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_CTL/U1/clk': 1087 load(s), 1 driver(s)
+     Net 'I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_CTL/U2/rst_n': 1072 load(s), 1 driver(s)
+CPU Load: 29%, Ram Free: 0 GB, Swap Free: 26 GB, Work Disk Free: 85 GB, Tmp Disk Free: 85 GB
+Information: Total number of MV cells in the design.
+----------------------------------------------------------------------------------------------------
+ MV Cells                                           Total Number                                   
+----------------------------------------------------------------------------------------------------
+ Level Shifter:                                     0                                             
+ Enable Level Shifter:                              0                                             
+ Isolation Cell:                                    0                                             
+ Retention Cell:                                    0                                             
+ Retention Clamp Cell:                              0                                             
+ Switch Cell:                                       0                                             
+ Always-On Cell:                                    0                                             
+ Repeater Cell:                                     0                                             
+
+----------------------------------------------------------------------------------------------------
+Unmapped MV Cells 
+----------------------------------------------------------------------------------------------------
+0 Isolation Cells are unmapped 
+0 Retention Clamp Cells are unmapped 
+----------------------------------------------------------------------------------------------------
+1
+#compile_ultra -scan
+# Simplify design hierarchy:
+ungroup -all -simple -start_level 3
+Information: Updating graph... (UID-83)
+Warning: Design 'ORCA' contains 3 high-fanout nets. A fanout number of 1000 will be used for delay calculations involving these nets. (TIM-134)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: A non-unate path in clock network for clock 'sdr_clk' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: No controlling value could be found for the clock gating cell 'I_ORCA_TOP/I_RISC_CORE/U3' for the clock pin 'A1'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_RISC_CORE/U3'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: No controlling value could be found for the clock gating cell 'I_ORCA_TOP/I_RISC_CORE/U3' for the clock pin 'A1'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_WRITE_FIFO/PCI_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_READ_FIFO/SD_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_WRITE_FIFO/SD_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U4'on pin 'I1' in design 'ORCA'. (TIM-141)
+Warning: No controlling value could be found for the clock gating cell 'I_CLOCK_GEN/U4' for the clock pin 'I0'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U2'on pin 'I0' in design 'ORCA'. (TIM-141)
+Warning: A non-unate path in clock network for clock 'sdr_clk' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+1
+# In bottom-up HSS flow, something below causes problems at top-level insertion
+set_critical_range 2.0 [current_design]
+Current design is 'ORCA'.
+1
+set_fix_multiple_port_nets -all -buffer_constants [get_designs *]
+1
+compile -scan -incremental
+CPU Load: 29%, Ram Free: 0 GB, Swap Free: 26 GB, Work Disk Free: 85 GB, Tmp Disk Free: 85 GB
+Information: Choosing a test methodology will restrict the optimization of sequential cells. (UIO-12)
+====================================================================================================
+| Flow Information                                                                                 |
+----------------------------------------------------------------------------------------------------
+| Flow         | Design Compiler                                                                   |
+| Command Line | -scan                                                                             |
+====================================================================================================
+| Design Information                                      | Value                                  |
+====================================================================================================
+| Number of Scenarios                                     | 0                                      |
+| Leaf Cell Count                                         | 9198                                   |
+| Number of User Hierarchies                              | 16                                     |
+| Sequential Cell Count                                   | 3021                                   |
+| Macro Count                                             | 0                                      |
+| Number of Power Domains                                 | 0                                      |
+| Number of Path Groups                                   | 11                                     |
+| Number of VT Class                                      | 0                                      |
+| Number of Clocks                                        | 8                                      |
+| Number of Dont Touch Cells                              | 113                                    |
+| Number of Dont Touch Nets                               | 149                                    |
+| Number of Size Only Cells                               | 42                                     |
+| Design with UPF Data                                    | false                                  |
+----------------------------------------------------------------------------------------------------
+| Variables                                               | Value                                  |
+----------------------------------------------------------------------------------------------------
+| set_fix_multiple_port_nets                              | -all -buffer_constants                 |
+====================================================================================================
+
+Information: There are 345 potential problems in your design. Please run 'check_design' for more information. (LINT-99)
+
+
+
+  Beginning Pass 1 Mapping  (Incremental)
+  ------------------------
+Error: unknown command '_snps_array_peek' (CMD-005)
+Error: unknown command '_snps_array_peek' (CMD-005)
+Error: unknown command '_snps_array_peek' (CMD-005)
+
+  Updating timing information
+Information: The register 'I_ORCA_TOP/I_RISC_CORE/PopDataOut_reg\[3\]2' will be removed. (OPT-1207)
+Information: The register 'I_ORCA_TOP/I_RISC_CORE/Stack_Mem_reg\[7\]\[3\]2' will be removed. (OPT-1207)
+Information: The register 'I_ORCA_TOP/I_RISC_CORE/Stack_Mem_reg\[6\]\[3\]2' will be removed. (OPT-1207)
+Information: The register 'I_ORCA_TOP/I_RISC_CORE/Stack_Mem_reg\[5\]\[3\]2' will be removed. (OPT-1207)
+Information: The register 'I_ORCA_TOP/I_RISC_CORE/Stack_Mem_reg\[4\]\[3\]2' will be removed. (OPT-1207)
+Information: The register 'I_ORCA_TOP/I_RISC_CORE/Stack_Mem_reg\[3\]\[3\]2' will be removed. (OPT-1207)
+Information: The register 'I_ORCA_TOP/I_RISC_CORE/Stack_Mem_reg\[2\]\[3\]2' will be removed. (OPT-1207)
+Information: The register 'I_ORCA_TOP/I_RISC_CORE/Stack_Mem_reg\[1\]\[3\]2' will be removed. (OPT-1207)
+Information: The register 'I_ORCA_TOP/I_RISC_CORE/Stack_Mem_reg\[0\]\[3\]2' will be removed. (OPT-1207)
+Information: Updating design information... (UID-85)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: A non-unate path in clock network for clock 'sdr_clk' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: No controlling value could be found for the clock gating cell 'I_ORCA_TOP/I_RISC_CORE/U3' for the clock pin 'A1'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_RISC_CORE/U3'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: No controlling value could be found for the clock gating cell 'I_ORCA_TOP/I_RISC_CORE/U3' for the clock pin 'A1'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_WRITE_FIFO/PCI_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_READ_FIFO/SD_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_WRITE_FIFO/SD_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U4'on pin 'I1' in design 'ORCA'. (TIM-141)
+Warning: No controlling value could be found for the clock gating cell 'I_CLOCK_GEN/U4' for the clock pin 'I0'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U2'on pin 'I0' in design 'ORCA'. (TIM-141)
+Warning: A non-unate path in clock network for clock 'sdr_clk' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Information: There are 3032 clock pins driven by multiple clocks, and some of them are driven by up-to 3 clocks. (TIM-099)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: A non-unate path in clock network for clock 'sdr_clk' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: No controlling value could be found for the clock gating cell 'I_ORCA_TOP/I_RISC_CORE/U3' for the clock pin 'A1'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_RISC_CORE/U3'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: No controlling value could be found for the clock gating cell 'I_ORCA_TOP/I_RISC_CORE/U3' for the clock pin 'A1'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_WRITE_FIFO/PCI_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_READ_FIFO/SD_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_WRITE_FIFO/SD_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U4'on pin 'I1' in design 'ORCA'. (TIM-141)
+Warning: No controlling value could be found for the clock gating cell 'I_CLOCK_GEN/U4' for the clock pin 'I0'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U2'on pin 'I0' in design 'ORCA'. (TIM-141)
+Warning: A non-unate path in clock network for clock 'sdr_clk' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: A non-unate path in clock network for clock 'sdr_clk' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: No controlling value could be found for the clock gating cell 'I_ORCA_TOP/I_RISC_CORE/U3' for the clock pin 'A1'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_RISC_CORE/U3'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: No controlling value could be found for the clock gating cell 'I_ORCA_TOP/I_RISC_CORE/U3' for the clock pin 'A1'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_WRITE_FIFO/PCI_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_READ_FIFO/SD_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_WRITE_FIFO/SD_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U4'on pin 'I1' in design 'ORCA'. (TIM-141)
+Warning: No controlling value could be found for the clock gating cell 'I_CLOCK_GEN/U4' for the clock pin 'I0'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U2'on pin 'I0' in design 'ORCA'. (TIM-141)
+Warning: A non-unate path in clock network for clock 'sdr_clk' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Information: There are 3032 clock pins driven by multiple clocks, and some of them are driven by up-to 3 clocks. (TIM-099)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: A non-unate path in clock network for clock 'sdr_clk' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: No controlling value could be found for the clock gating cell 'I_ORCA_TOP/I_RISC_CORE/U3' for the clock pin 'A1'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_RISC_CORE/U3'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: No controlling value could be found for the clock gating cell 'I_ORCA_TOP/I_RISC_CORE/U3' for the clock pin 'A1'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_WRITE_FIFO/PCI_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_READ_FIFO/SD_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_WRITE_FIFO/SD_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U4'on pin 'I1' in design 'ORCA'. (TIM-141)
+Warning: No controlling value could be found for the clock gating cell 'I_CLOCK_GEN/U4' for the clock pin 'I0'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U2'on pin 'I0' in design 'ORCA'. (TIM-141)
+Warning: A non-unate path in clock network for clock 'sdr_clk' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+
+  Beginning Mapping Optimizations  (Medium effort)  (Incremental)
+  -------------------------------
+
+  Beginning Incremental Implementation Selection
+  ----------------------------------------------
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: A non-unate path in clock network for clock 'sdr_clk' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: No controlling value could be found for the clock gating cell 'I_ORCA_TOP/I_RISC_CORE/U3' for the clock pin 'A1'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_RISC_CORE/U3'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: No controlling value could be found for the clock gating cell 'I_ORCA_TOP/I_RISC_CORE/U3' for the clock pin 'A1'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_WRITE_FIFO/PCI_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_READ_FIFO/SD_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_WRITE_FIFO/SD_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U4'on pin 'I1' in design 'ORCA'. (TIM-141)
+Warning: No controlling value could be found for the clock gating cell 'I_CLOCK_GEN/U4' for the clock pin 'I0'. (TIM-128)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U2'on pin 'I0' in design 'ORCA'. (TIM-141)
+Warning: A non-unate path in clock network for clock 'sdr_clk' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+
+  Beginning Delay Optimization Phase
+  ----------------------------------
+
+                                  TOTAL                                      
+   ELAPSED            WORST NEG   SETUP    DESIGN                            
+    TIME      AREA      SLACK     COST    RULE COST         ENDPOINT         
+  --------- --------- --------- --------- --------- -------------------------
+    0:00:02  385195.3      1.23     131.8       0.0                          
+    0:00:03  385194.5      1.23     131.9       0.0 I_ORCA_TOP/I_SDRAM_IF/sync_control_bus_reg\[6\]/D
+    0:00:03  385212.0      1.23     132.0       0.0 I_ORCA_TOP/I_RISC_CORE/Zro_Flag_reg/D
+    0:00:03  385224.0      1.23     131.8       0.0                          
+    0:00:03  385224.0      1.23     131.8       0.0                          
+
+
+  Beginning Critical Range Optimization
+  -------------------------------------
+
+                                  TOTAL                                      
+   ELAPSED            WORST NEG   SETUP    DESIGN                            
+    TIME      AREA      SLACK     COST    RULE COST         ENDPOINT         
+  --------- --------- --------- --------- --------- -------------------------
+    0:00:03  385224.0      1.23     131.8       0.0                          
+    0:00:04  385219.5      1.23     131.8       0.0                          
+    0:00:04  385243.0      1.23     131.5       0.0                          
+    0:00:04  385245.0      1.23     131.4       0.0                          
+    0:00:04  385257.3      1.23     130.6       0.0                          
+    0:00:04  385267.8      1.23     129.9       0.0                          
+    0:00:04  385276.5      1.23     129.6       0.0                          
+    0:00:04  385335.8      1.23     129.1       0.0                          
+    0:00:04  385362.0      1.23     129.0       0.0                          
+    0:00:04  385363.5      1.23     128.7       0.0                          
+
+
+  Beginning Critical Range Optimization
+  -------------------------------------
+
+                                  TOTAL                                      
+   ELAPSED            WORST NEG   SETUP    DESIGN                            
+    TIME      AREA      SLACK     COST    RULE COST         ENDPOINT         
+  --------- --------- --------- --------- --------- -------------------------
+    0:00:04  385363.5      1.23     128.7       0.0                          
+    0:00:04  385373.0      1.23     128.7       0.0                          
+    0:00:04  385375.0      1.23     128.6       0.0                          
+    0:00:04  385371.5      1.23     128.3       0.0                          
+    0:00:04  385371.3      1.23     128.2       0.0                          
+    0:00:05  385371.0      1.23     128.1       0.0                          
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/sc_max.db'
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/io_max.db'
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/rams_max.db'
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/special.db'
+
+
+Note: Symbol # after min delay cost means estimated hold TNS across all active scenarios 
+
+
+  Optimization Complete
+  ---------------------
+Warning: Design 'ORCA' contains 3 high-fanout nets. A fanout number of 1000 will be used for delay calculations involving these nets. (TIM-134)
+     Net 'I_ORCA_TOP/I_PCI_READ_FIFO/fifo_rst_n': 1072 load(s), 1 driver(s)
+     Net 'I_ORCA_TOP/I_PCI_WRITE_FIFO/fifo_clk_pop': 1087 load(s), 1 driver(s)
+     Net 'I_ORCA_TOP/I_SDRAM_WRITE_FIFO/fifo_clk_pop': 1195 load(s), 1 driver(s)
+CPU Load: 31%, Ram Free: 0 GB, Swap Free: 26 GB, Work Disk Free: 85 GB, Tmp Disk Free: 85 GB
+Information: Total number of MV cells in the design.
+----------------------------------------------------------------------------------------------------
+ MV Cells                                           Total Number                                   
+----------------------------------------------------------------------------------------------------
+ Level Shifter:                                     0                                             
+ Enable Level Shifter:                              0                                             
+ Isolation Cell:                                    0                                             
+ Retention Cell:                                    0                                             
+ Retention Clamp Cell:                              0                                             
+ Switch Cell:                                       0                                             
+ Always-On Cell:                                    0                                             
+ Repeater Cell:                                     0                                             
+
+----------------------------------------------------------------------------------------------------
+Unmapped MV Cells 
+----------------------------------------------------------------------------------------------------
+0 Isolation Cells are unmapped 
+0 Retention Clamp Cells are unmapped 
+----------------------------------------------------------------------------------------------------
+1
+#compile_ultra -scan -incremental
+#remove_unconnected_ports -blast [get_cells -h *]
+change_names -rules verilog -hierarchy
+Error: Rules 'verilog' are not defined. (UIMG-14)
+0
+write -format ddc -hier -o mapped/ORCA.ddc
+Writing ddc file 'mapped/ORCA.ddc'.
+1
+#report_constraint -all > reports/constraint.rpt
+#report_timing > reports/timing.rpt
+exit
+
+Memory usage for this session 605 Mbytes.
+Memory usage for this session including child processes 605 Mbytes.
+CPU usage for this session 46 seconds ( 0.01 hours ).
+Elapsed time for this session 51 seconds ( 0.01 hours ).
+
+Thank you...
+

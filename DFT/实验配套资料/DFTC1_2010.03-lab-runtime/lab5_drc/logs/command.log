@@ -1,0 +1,129 @@
+#@ # 
+#@ # Running dc_shell Version V-2023.12-SP3 for linux64 -- Apr 17, 2024
+#@ # Date:   Wed Aug 12 22:43:27 2026
+#@ # Run by: yusen@almalinux8
+#@ 
+
+set_app_var hdlin_always_fsm_complete false; source -echo -verbose .synopsys_dc.setup; source -echo -verbose scripts/task2_setup.tcl; set test_disable_enhanced_dft_drc_reporting false; dft_drc > reports/validation_lab5_pre_dft_drc.rpt; source -echo -verbose scripts/task3_setup.tcl; insert_dft; dft_drc > reports/validation_lab5_post_dft_drc.rpt; dft_drc -coverage_estimate > reports/validation_lab5_coverage.rpt; report_scan_path > reports/validation_lab5_scan_path.rpt; write -format ddc -hierarchy -output mapped_scan/RISC_CORE.ddc; write -format verilog -hierarchy -output mapped_scan/RISC_CORE_scan.v; quit
+#@ # -- Starting source .synopsys_dc.setup
+
+#@ # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#@ # Logical Library Setup
+#@ # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#@ lappend search_path ../ref/db ./scripts
+#@ 
+#@ set command_log_file ./logs/command.log
+#@ set sh_command_log_file ./logs/command.log
+#@ 
+#@ set cache_write ../dc_dw_cache
+#@ set cache_read $cache_write
+#@ set alib_library_analysis_path ../dc_dw_cache
+#@ 
+#@ set synthetic_library {dw_foundation.sldb}
+#@ 
+#@ set target_library "sc_max.db"
+#@ set link_library "* sc_max.db $synthetic_library"
+#@ 
+#@ define_design_lib DEFAULT -path ./analyzed
+#@ 
+#@ 
+#@ suppress_message "VHDL-2285 PSYN-040 PSYN-088"
+#@ suppress_message "CMD-041 UID-401 OPT-170"
+#@ 
+#@ alias s "source -echo -verbose"
+#@ 
+#@ echo "\n\nSettings:"
+#@ echo "link_library:      $link_library"
+#@ echo "target_library:    $target_library"
+#@ echo "search_path:       $search_path\n\n"
+#@ 
+#@ set verilogout_no_tri true
+#@ set sh_enable_line_editing true
+#@ 
+#@ #for coverage estimate and downstream tools
+#@ set test_default_delay 0
+#@ set test_default_bidir_delay $test_default_delay
+#@ 
+#@ 
+#@ 
+#@ echo "\nI am ready...\n\n\n"
+#@ 
+#@ 
+#@ # -- End source .synopsys_dc.setup
+
+#@ # -- Starting source scripts/task2_setup.tcl
+
+#@ # Enable file and line number tracking for RTL DFT DRC
+#@ set hdlin_enable_rtldrc_info true
+#@ 
+#@ # Read the RTL design
+#@ acs_read_hdl -f vhdl -hdl_source {../ref/rtl/RISC_CORE/vhdl} RISC_CORE
+#@ 
+#@ # Apply constraints
+#@ source -echo -verbose scripts/constraints.tcl
+#@ # -- Starting source scripts/constraints.tcl
+
+#@ # Create user defined variables
+#@ set CLK_PORT [get_ports Clk]
+#@ set CLK_PERIOD 10.0
+#@ set WC_SKEW 0.25
+#@ set DRV_CELL bufbd1
+#@ set DRV_PIN "Z"
+#@ set OUTPUT_LOAD [load_of cb13fs120_tsmc_max/bufbd1/I]
+#@ set INPUT_DELAY 1.0
+#@ set OUTPUT_DELAY 1.0
+#@ set ALL_INS_EX_CLK  [remove_from_collection [all_inputs] [get_ports Clk]]
+#@ 
+#@ 
+#@ 
+#@ create_clock -period $CLK_PERIOD -name my_clk $CLK_PORT
+#@ 
+#@ set_clock_uncertainty $WC_SKEW [get_clocks my_clk]
+#@ 
+#@ set_driving_cell -lib_cell $DRV_CELL -pin $DRV_PIN $ALL_INS_EX_CLK
+#@ 
+#@ set_load $OUTPUT_LOAD [all_outputs]
+#@ 
+#@ set_input_delay $INPUT_DELAY -max -clock my_clk $ALL_INS_EX_CLK
+#@ 
+#@ set_output_delay $OUTPUT_DELAY -max -clock my_clk [all_outputs]
+#@ # -- End source scripts/constraints.tcl
+
+#@ 
+#@ # Perform a test-ready compile
+#@ compile_ultra -scan
+#@ 
+#@ # Specify test components in preparation for create_test_protocol
+#@ set_dft_signal -view existing_dft -type ScanClock -timing {45 55} -port Clk
+#@ set_dft_signal -view existing_dft -port Reset -type Reset -active_state 0
+#@ set_dft_signal -view spec -port TEST_SE -type ScanEnable -active_state 1
+#@ set_dft_signal -view existing_dft -type Constant -active_state 1 -port TEST_MODE
+#@ 
+#@ # From the above specifications, create the test protocal
+#@ create_test_protocol
+#@ 
+#@ # -- End source scripts/task2_setup.tcl
+
+#@ # -- Starting source scripts/task3_setup.tcl
+
+#@ 
+#@ # Preserve design names
+#@ set_dft_insertion_configuration -preserve_design_name true
+#@ 
+#@ # Declare scan in and scan out ports.
+#@ # The current VHDL reader stores bus-bit names with escaped brackets.  Select
+#@ # bit 0 from the ordered bit-port collections so the command receives a port
+#@ # collection instead of an unescaped text name.
+#@ set scan_in_port  [index_collection [get_ports {Instrn*}] 31]
+#@ set scan_out_port [index_collection [get_ports {Xecutng_Instrn*}] 31]
+#@ set_dft_signal -view spec -port $scan_in_port -type ScanDataIn
+#@ set_dft_signal -view spec -port $scan_out_port -type ScanDataOut
+#@ set_scan_configuration -chain_count 1
+#@ 
+#@ # Allow clock domains to be mixed together on same chain
+#@ set_scan_configuration -clock_mixing mix_clocks
+#@ 
+#@ # Preview the scan architecture
+#@ preview_dft
+#@ # -- End source scripts/task3_setup.tcl
+

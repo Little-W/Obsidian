@@ -1,0 +1,136 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# DC Setup File
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+lappend search_path ../ref/db ./scripts
+../ref/db ./scripts
+set synthetic_library {dw_foundation.sldb}
+dw_foundation.sldb
+set target_library "sc_max.db"
+sc_max.db
+set link_library "* sc_max.db io_max.db rams_max.db special.db $synthetic_library"
+* sc_max.db io_max.db rams_max.db special.db dw_foundation.sldb
+#misc
+set cache_write ../dc_dw_cache
+Information: Variable 'cache_write' is obsolete and is being ignored. (INFO-100)
+../dc_dw_cache
+set cache_read $cache_write
+Information: Variable 'cache_read' is obsolete and is being ignored. (INFO-100)
+../dc_dw_cache
+set alib_library_analysis_path ../dc_dw_cache
+../dc_dw_cache
+define_design_lib DEFAULT -path ./analyzed
+1
+suppress_message "VHDL-2285 PSYN-040 PSYN-088"
+suppress_message "CMD-041 UID-401 OPT-170"
+echo "Sourcing ../ref/scripts/procs.tcl..."
+Sourcing ../ref/scripts/procs.tcl...
+source ../ref/scripts/procs.tcl
+Defining custom procedure "rename_test_designs"
+Defining custom procedure "async_domain"
+Defining custom procedure "echo_col"
+Defining custom procedure "flatten_block"
+Defining custom procedure "zero_io_nets"
+Defining custom procedure "report_clock_endpoint_skew"
+source ../ref/dc_settings.tcl
+
+Executing common setup file 'ref/dc_settings.tcl' ...
+./logs/dc_shell.cmd.13914.2026-08-12_22-29
+alias s "source -echo -verbose"
+echo "\n\nSettings:"
+
+
+Settings:
+echo "link_library:      $link_library"
+link_library:      * sc_max.db io_max.db rams_max.db special.db dw_foundation.sldb
+echo "target_library:    $target_library"
+target_library:    sc_max.db
+echo "search_path:       $search_path\n\n"
+search_path:       ../ref/db ./scripts
+
+
+echo "\nI am ready...\n\n\n"
+
+I am ready...
+
+
+
+set hdlin_enable_rtldrc_info true;# enable rtl code checking in DV
+true
+set test_simulation_library "./tmax/rams.v"
+./tmax/rams.v
+# Read the mapped ORCA design
+read_file -format ddc mapped/ORCA.ddc
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/sc_max.db'
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/io_max.db'
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/rams_max.db'
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/special.db'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/dw_foundation.sldb'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/gtech.db'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/standard.sldb'
+  Loading link library 'cb13fs120_tsmc_max'
+  Loading link library 'cb13io320_tsmc_max'
+  Loading link library 'cb13_tsmc_memory_max'
+  Loading link library 'cb13special'
+  Loading link library 'gtech'
+Error: Cannot read file 'mapped/ORCA.ddc'. (UID-58)
+current_design ORCA
+Error: Can't find design 'ORCA'. (UID-109)
+Error: Current design is not defined. (UID-4)
+link
+Error: Current design is not defined. (UID-4)
+0
+# Specify test components in preparation for create_test_protocol
+set_dft_signal -view existing_dft -type ScanClock -timing {45 55} -port {pclk sdr_clk sys_clk}
+Error: Current design is not defined. (UID-4)
+Error: Can't find port 'pclk'. (UID-109)
+Error: Current design is not defined. (UID-4)
+Error: Can't find port 'sdr_clk'. (UID-109)
+Error: Current design is not defined. (UID-4)
+Error: Can't find port 'sys_clk'. (UID-109)
+Error: Value for list '-port' must have 1 elements. (CMD-036)
+0
+set_dft_signal -view existing_dft -port prst_n -type Reset -active_state 0
+Error: Current design is not defined. (UID-4)
+Error: Can't find port 'prst_n'. (UID-109)
+Error: Value for list '-port' must have 1 elements. (CMD-036)
+0
+set_dft_signal -view existing_dft -port scan_en -type ScanEnable -active_state 1
+Error: Current design is not defined. (UID-4)
+Error: Can't find port 'scan_en'. (UID-109)
+Error: Value for list '-port' must have 1 elements. (CMD-036)
+0
+# The conf_ena port need to be defined as a Constant to hold the design in test mode
+set_dft_signal -view existing_dft -type Constant -active_state 0 -port conf_ena
+Error: Current design is not defined. (UID-4)
+Error: Can't find port 'conf_ena'. (UID-109)
+Error: Value for list '-port' must have 1 elements. (CMD-036)
+0
+#From the above specifications, create the test protocal
+create_test_protocol
+Error: Current design is not defined. (UID-4)
+0
+#check the test_protocol
+dft_drc
+Error: Current design is not defined. (UID-4)
+0
+#write out the test protocol
+write_test_protocol -out orca_mapped.spf
+Error: Current design is not defined. (UID-4)
+Error: cannot find the design 'NO DESIGN.'
+0
+Error: Current design is not defined. (UID-4)
+Error: cannot find the design ''
+Error: Current design is not defined. (UID-4)
+Error: cannot find the design 
+Error: when reading protocol
+Error: Current design is not defined. (UID-4)
+Error: Current design is not defined. (UID-4)
+Error: cannot find the design 'NO DESIGN.'
+
+Memory usage for this session 605 Mbytes.
+Memory usage for this session including child processes 605 Mbytes.
+CPU usage for this session 4 seconds ( 0.00 hours ).
+Elapsed time for this session 10 seconds ( 0.00 hours ).
+
+Thank you...
+

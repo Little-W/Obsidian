@@ -1,0 +1,185 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# DC Setup File
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+lappend search_path ../ref/db ./scripts
+../ref/db ./scripts
+#for reading and linking
+set synthetic_library {dw_foundation.sldb}
+dw_foundation.sldb
+set target_library "sc_max.db"
+sc_max.db
+set link_library "* sc_max.db $synthetic_library"
+* sc_max.db dw_foundation.sldb
+#shortcuts
+history keep 300
+300
+alias h "history"
+set sh_enable_line_editing true
+true
+#misc
+set cache_write ../dc_dw_cache
+Information: Variable 'cache_write' is obsolete and is being ignored. (INFO-100)
+../dc_dw_cache
+set cache_read $cache_write
+Information: Variable 'cache_read' is obsolete and is being ignored. (INFO-100)
+../dc_dw_cache
+set alib_library_analysis_path ../dc_dw_cache
+../dc_dw_cache
+define_design_lib DEFAULT -path ./analyzed
+1
+suppress_message "VHDL-2285 PSYN-040 PSYN-088"
+suppress_message "CMD-041 UID-401 OPT-170"
+# The following lines create a cmd and log file in the logs directory
+set timestamp [pid].[clock format [clock scan now] -format "%Y-%m-%d_%H-%M"]
+17241.2026-08-12_22-46
+set sh_output_log_file "./logs/${synopsys_program_name}.log.$timestamp"
+./logs/dc_shell.log.17241.2026-08-12_22-46
+set sh_command_log_file "./logs/${synopsys_program_name}.cmd.$timestamp"
+./logs/dc_shell.cmd.17241.2026-08-12_22-46
+alias s "source -echo -verbose"
+# Prevent compile_ultra from ungrouping for the purposes of this lab
+set compile_ultra_ungroup_small_hierarchies false
+false
+echo "\n\nSettings:"
+
+
+Settings:
+echo "link_library:      $link_library"
+link_library:      * sc_max.db dw_foundation.sldb
+echo "target_library:    $target_library"
+target_library:    sc_max.db
+echo "search_path:       $search_path\n\n"
+search_path:       ../ref/db ./scripts
+
+
+echo "\nI am ready...\n\n\n"
+
+I am ready...
+
+
+
+remove_design -designs
+1
+set local_ddc "/tmp/dftc_[pid]_lab7_risc_core.ddc"
+/tmp/dftc_17241_lab7_risc_core.ddc
+file copy -force mapped/RISC_CORE.ddc $local_ddc
+read_file -format ddc $local_ddc
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/sc_max.db'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/dw_foundation.sldb'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/gtech.db'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/standard.sldb'
+  Loading link library 'cb13fs120_tsmc_max'
+  Loading link library 'gtech'
+Reading ddc file '/tmp/dftc_17241_lab7_risc_core.ddc'.
+Information: Checking out the license 'DesignWare'. (SEC-104)
+Loaded 13 designs.
+Current design is 'RISC_CORE'.
+RISC_CORE CONTROL DIV_CLK DATA_PATH INSTRN_LAT PRGRM_CNT_TOP REG_FILE RST STACK_TOP PRGRM_FSM PRGRM_DECODE PRGRM_CNT STACK_FSM
+current_design RISC_CORE
+Current design is 'RISC_CORE'.
+{RISC_CORE}
+link
+
+  Linking design 'RISC_CORE'
+  Using the following designs and libraries:
+  --------------------------------------------------------------------------
+  * (13 designs)              /tmp/dftc_17241_lab7_risc_core.ddc, etc
+  cb13fs120_tsmc_max (library) /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/sc_max.db
+  dw_foundation.sldb (library) /home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/dw_foundation.sldb
+
+1
+file delete -force $local_ddc
+#Declare test components in preparation for create_test_protocol
+set_dft_signal -view existing_dft -port Clk -type ScanClock -timing {45 55}
+Accepted dft signal specification for modes: all_dft
+1
+set_dft_signal -view existing_dft -port Reset -type Reset -active_state 0
+Accepted dft signal specification for modes: all_dft
+1
+set_dft_signal -view spec -port TEST_SE -type ScanEnable -active_state 1
+Accepted dft signal specification for modes: all_dft
+1
+set_dft_signal -view existing_dft -type Constant -active_state 1 -port TEST_MODE
+Accepted dft signal specification for modes: all_dft
+1
+create_test_protocol
+In mode: all_dft...
+
+Information: Starting test protocol creation. (TEST-219)
+  ...reading user specified clock signals...
+Information: Identified system/test clock port Clk (45.0,55.0). (TEST-265)
+  ...reading user specified asynchronous signals...
+Information: Identified active low asynchronous control port Reset. (TEST-266)
+1
+dft_drc
+In mode: all_dft...
+  Pre-DFT DRC enabled
+
+Information: Starting test design rule checking. (TEST-222)
+  Loading test protocol
+  ...basic checks...
+  ...basic sequential cell checks...
+        ...checking for scan equivalents...
+  ...checking vector rules...
+  ...checking pre-dft rules...
+
+-----------------------------------------------------------------
+Begin Topology violations...
+
+Warning: Input pin PushDataIn\[11\] of cell I_STACK_TOP (STACK_TOP) is unconnected. It is assumed 'X' for the purpose of test. (TEST-332)
+Information: There are 75 other pins with the same violation. (TEST-170)
+
+Topology violations completed...
+-----------------------------------------------------------------
+
+-----------------------------------------------------------------
+Begin Pre-DFT violations...
+
+ Warning: Clock input CP of DFF I_ALU/Lachd_Result_reg\[0\] was not controlled. (D1-1)
+Information: There are 257 other cells with the same violation. (TEST-171)
+ Warning: Reset input CDN of DFF I_ALU/Neg_Flag_reg was not controlled. (D3-1)
+Information: There are 87 other cells with the same violation. (TEST-171)
+
+Pre-DFT violations completed...
+-----------------------------------------------------------------
+
+-----------------------------------------------------------------
+  DRC Report
+
+  Total violations: 422
+
+-----------------------------------------------------------------
+
+76 TOPOLOGY VIOLATIONS
+    76 Unconnected input pin violations (TEST-332)
+
+346 PRE-DFT VIOLATIONS
+   258 Uncontrollable clock input of flip-flop violations (D1)
+    88 DFF set/reset line not controlled violations (D3)
+
+
+Warning: Violations occurred during test design rule checking. (TEST-124)
+
+-----------------------------------------------------------------
+  Sequential Cell Report
+
+  259 out of 261 sequential cells have violations
+
+-----------------------------------------------------------------
+
+SEQUENTIAL CELLS WITH VIOLATIONS
+      * 259 cells have test design rule violations
+SEQUENTIAL CELLS WITHOUT VIOLATIONS
+      *   1 cell is a valid scan cell
+      *   1 cell is a non-scan shift-register cell
+
+Information: Test design rule checking completed. (TEST-123)
+1
+
+Memory usage for this session 605 Mbytes.
+Memory usage for this session including child processes 605 Mbytes.
+CPU usage for this session 5 seconds ( 0.00 hours ).
+Elapsed time for this session 18 seconds ( 0.00 hours ).
+
+Thank you...
+

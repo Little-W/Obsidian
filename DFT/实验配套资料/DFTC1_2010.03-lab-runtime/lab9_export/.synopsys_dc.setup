@@ -1,0 +1,33 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# DC Setup File
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+lappend search_path ../ref/db ./scripts
+
+set synthetic_library {dw_foundation.sldb}
+set target_library "sc_max.db"
+set link_library "* sc_max.db io_max.db rams_max.db special.db $synthetic_library"
+
+#misc
+set cache_write ../dc_dw_cache
+set cache_read $cache_write
+set alib_library_analysis_path ../dc_dw_cache
+
+define_design_lib DEFAULT -path ./analyzed
+
+suppress_message "VHDL-2285 PSYN-040 PSYN-088"
+suppress_message "CMD-041 UID-401 OPT-170"
+echo "Sourcing ../ref/scripts/procs.tcl..."
+source ../ref/scripts/procs.tcl
+source ../ref/dc_settings.tcl
+
+# Enable enhanced dft_drc reporting
+set test_disable_enhanced_dft_drc_reporting false
+
+alias s "source -echo -verbose"
+
+echo "\n\nSettings:"
+echo "link_library:      $link_library"
+echo "target_library:    $target_library"
+echo "search_path:       $search_path\n\n"
+
+echo "\nI am ready...\n\n\n"

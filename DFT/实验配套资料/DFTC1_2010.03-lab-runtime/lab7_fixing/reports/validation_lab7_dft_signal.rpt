@@ -1,0 +1,41 @@
+ 
+****************************************
+Report : DFT signals
+Design : RISC_CORE
+Version: V-2023.12-SP3
+Date   : Wed Aug 12 22:47:21 2026
+****************************************
+
+========================================
+TEST MODE: all_dft
+VIEW     : Specification
+========================================
+Port               SignalType          Active    Hookup    Timing    Usage
+----------         ----------          ------    ------    ------    -----
+TEST_SE            ScanEnable          1         -         -         -
+Instrn\[0\]        ScanDataIn          -         -         Delay 0.0 -
+Xecutng_Instrn\[0\] ScanDataOut        -         -         -         -
+TEST_MODE          TestMode            1         -         -         -
+Clk                TestData            -         -         -         -
+Reset              TestData            -         -         -         -
+
+ 
+****************************************
+Report : DFT signals
+Design : RISC_CORE
+Version: V-2023.12-SP3
+Date   : Wed Aug 12 22:47:21 2026
+****************************************
+
+========================================
+TEST MODE: all_dft
+VIEW     : Existing DFT
+========================================
+Port               SignalType          Active    Hookup    Timing    Usage
+----------         ----------          ------    ------    ------    -----
+TEST_MODE          Constant            1         -
+Clk                ScanMasterClock     1         -         P 100.0 R 45.0 F 55.0
+Clk                MasterClock         1         -         P 100.0 R 45.0 F 55.0
+Reset              Reset               0         -         P 100.0 R 55.0 F 45.0
+
+1

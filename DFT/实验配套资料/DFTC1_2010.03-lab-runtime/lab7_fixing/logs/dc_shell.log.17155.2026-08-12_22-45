@@ -1,0 +1,723 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# DC Setup File
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+lappend search_path ../ref/db ./scripts
+../ref/db ./scripts
+#for reading and linking
+set synthetic_library {dw_foundation.sldb}
+dw_foundation.sldb
+set target_library "sc_max.db"
+sc_max.db
+set link_library "* sc_max.db $synthetic_library"
+* sc_max.db dw_foundation.sldb
+#shortcuts
+history keep 300
+300
+alias h "history"
+set sh_enable_line_editing true
+true
+#misc
+set cache_write ../dc_dw_cache
+Information: Variable 'cache_write' is obsolete and is being ignored. (INFO-100)
+../dc_dw_cache
+set cache_read $cache_write
+Information: Variable 'cache_read' is obsolete and is being ignored. (INFO-100)
+../dc_dw_cache
+set alib_library_analysis_path ../dc_dw_cache
+../dc_dw_cache
+define_design_lib DEFAULT -path ./analyzed
+1
+suppress_message "VHDL-2285 PSYN-040 PSYN-088"
+suppress_message "CMD-041 UID-401 OPT-170"
+# The following lines create a cmd and log file in the logs directory
+set timestamp [pid].[clock format [clock scan now] -format "%Y-%m-%d_%H-%M"]
+17155.2026-08-12_22-45
+set sh_output_log_file "./logs/${synopsys_program_name}.log.$timestamp"
+./logs/dc_shell.log.17155.2026-08-12_22-45
+set sh_command_log_file "./logs/${synopsys_program_name}.cmd.$timestamp"
+./logs/dc_shell.cmd.17155.2026-08-12_22-45
+alias s "source -echo -verbose"
+# Prevent compile_ultra from ungrouping for the purposes of this lab
+set compile_ultra_ungroup_small_hierarchies false
+false
+echo "\n\nSettings:"
+
+
+Settings:
+echo "link_library:      $link_library"
+link_library:      * sc_max.db dw_foundation.sldb
+echo "target_library:    $target_library"
+target_library:    sc_max.db
+echo "search_path:       $search_path\n\n"
+search_path:       ../ref/db ./scripts
+
+
+echo "\nI am ready...\n\n\n"
+
+I am ready...
+
+
+
+# Read in the RTL
+acs_read_hdl -f vhdl -hdl_source {../ref/rtl/RISC_CORE_nodft/vhdl} RISC_CORE
+Information: Command 'acs_get_path' is obsolete and is being ignored. (INFO-102)
+Information: ACS is starting VHDL dependency extraction. (ACS-129)
+Information: ACS is starting VHDL analysis. (ACS-131)
+Running PRESTO HDLC
+Compiling Package Declaration RISCTYPES
+Compiling Package Body RISCTYPES
+Compiling Entity Declaration ALU
+Compiling Architecture RTL of ALU
+Compiling Entity Declaration CONTROL
+Compiling Architecture RTL of CONTROL
+Compiling Entity Declaration DATA_PATH
+Compiling Architecture RTL of DATA_PATH
+Compiling Entity Declaration DIV_CLK
+Compiling Architecture RTL of DIV_CLK
+Compiling Entity Declaration INSTRN_LAT
+Compiling Architecture RTL of INSTRN_LAT
+Compiling Entity Declaration PRGRM_CNT
+Compiling Architecture RTL of PRGRM_CNT
+Compiling Entity Declaration PRGRM_CNT_TOP
+Compiling Architecture STRUCT of PRGRM_CNT_TOP
+Compiling Entity Declaration PRGRM_DECODE
+Compiling Architecture RTL of PRGRM_DECODE
+Compiling Entity Declaration PRGRM_FSM
+Compiling Architecture RTL of PRGRM_FSM
+Compiling Entity Declaration REG_FILE
+Compiling Architecture RTL of REG_FILE
+Compiling Entity Declaration RISC_CORE
+Compiling Architecture STRUCT of RISC_CORE
+Compiling Entity Declaration RST
+Compiling Architecture RTL of RST
+Compiling Entity Declaration STACK_FSM
+Compiling Architecture RTL of STACK_FSM
+Compiling Entity Declaration STACK_MEM
+Compiling Architecture RTL of STACK_MEM
+Compiling Entity Declaration STACK_TOP
+Compiling Architecture STRUCT of STACK_TOP
+Presto compilation completed successfully.
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/sc_max.db'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/dw_foundation.sldb'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/gtech.db'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/standard.sldb'
+  Loading link library 'cb13fs120_tsmc_max'
+  Loading link library 'gtech'
+Running PRESTO HDLC
+Presto compilation completed successfully. (RISC_CORE)
+Elaborated 1 design.
+Current design is now 'RISC_CORE'.
+Information: Building the design 'ALU'. (HDL-193)
+
+Statistics for case statements in always block at line 65 in file
+        '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/ALU.vhd'
+===============================================
+|           Line           |  full/ parallel  |
+===============================================
+|            73            |    auto/auto     |
+===============================================
+
+Inferred memory devices in process
+        in routine ALU line 40 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/ALU.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|   Carry_Flag_reg    | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+|    Zro_Flag_reg     | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+|    Neg_Flag_reg     | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+===============================================================================
+
+Inferred memory devices in process
+        in routine ALU line 55 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/ALU.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|  Lachd_Result_reg   | Flip-flop |  16   |  Y  | N  | N  | N  | N  | N  | N  |
+===============================================================================
+Presto compilation completed successfully. (ALU)
+Information: Building the design 'CONTROL'. (HDL-193)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/CONTROL.vhd:23: The port default value in entity declaration for port 'Latch_Instr' is not supported. Presto ignores it. (ELAB-802)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/CONTROL.vhd:24: The port default value in entity declaration for port 'Rd_Oprnd_A' is not supported. Presto ignores it. (ELAB-802)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/CONTROL.vhd:25: The port default value in entity declaration for port 'Rd_Oprnd_B' is not supported. Presto ignores it. (ELAB-802)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/CONTROL.vhd:26: The port default value in entity declaration for port 'Latch_Flags' is not supported. Presto ignores it. (ELAB-802)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/CONTROL.vhd:28: The port default value in entity declaration for port 'Latch_Result' is not supported. Presto ignores it. (ELAB-802)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/CONTROL.vhd:29: The port default value in entity declaration for port 'Write_RegC' is not supported. Presto ignores it. (ELAB-802)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/CONTROL.vhd:31: The port default value in entity declaration for port 'UseData_Imm_Or_RegB' is not supported. Presto ignores it. (ELAB-802)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/CONTROL.vhd:35: The port default value in entity declaration for port 'UseData_Imm_Or_ALU' is not supported. Presto ignores it. (ELAB-802)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/CONTROL.vhd:37: The port default value in entity declaration for port 'Reset_AluRegs' is not supported. Presto ignores it. (ELAB-802)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/CONTROL.vhd:40: The port default value in entity declaration for port 'EndOfInstrn' is not supported. Presto ignores it. (ELAB-802)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/CONTROL.vhd:42: The port default value in entity declaration for port 'PushEnbl' is not supported. Presto ignores it. (ELAB-802)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/CONTROL.vhd:43: The port default value in entity declaration for port 'PopEnbl' is not supported. Presto ignores it. (ELAB-802)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/CONTROL.vhd:44: The port default value in entity declaration for port 'OUT_VALID' is not supported. Presto ignores it. (ELAB-802)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/CONTROL.vhd:156: DEFAULT branch of CASE statement cannot be reached. (ELAB-311)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/CONTROL.vhd:194: DEFAULT branch of CASE statement cannot be reached. (ELAB-311)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/CONTROL.vhd:278: DEFAULT branch of CASE statement cannot be reached. (ELAB-311)
+
+Statistics for case statements in always block at line 86 in file
+        '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/CONTROL.vhd'
+===============================================
+|           Line           |  full/ parallel  |
+===============================================
+|            89            |    auto/auto     |
+|           129            |    auto/auto     |
+|           175            |    auto/auto     |
+|           259            |    auto/auto     |
+===============================================
+
+Inferred memory devices in process
+        in routine CONTROL line 284 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/CONTROL.vhd'.
+===================================================================================
+|      Register Name      |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===================================================================================
+| UseData_Imm_Or_ALU_reg  | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+| UseData_Imm_Or_RegB_reg | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+===================================================================================
+
+Inferred memory devices in process
+        in routine CONTROL line 296 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/CONTROL.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|   EndOfInstrn_reg   | Flip-flop |   1   |  N  | N  | N  | N  | N  | N  | N  |
+===============================================================================
+Presto compilation completed successfully. (CONTROL)
+Information: Building the design 'DIV_CLK'. (HDL-193)
+
+Inferred memory devices in process
+        in routine DIV_CLK line 20 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/DIV_CLK_FIX.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|        q_reg        | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+===============================================================================
+Presto compilation completed successfully. (DIV_CLK)
+Information: Building the design 'DATA_PATH'. (HDL-193)
+
+Inferred memory devices in process
+        in routine DATA_PATH line 52 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/DATA_PATH.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|     Oprnd_A_reg     | Flip-flop |  16   |  Y  | N  | N  | N  | N  | N  | N  |
+|     Oprnd_B_reg     | Flip-flop |  16   |  Y  | N  | N  | N  | N  | N  | N  |
+===============================================================================
+
+Inferred memory devices in process
+        in routine DATA_PATH line 75 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/DATA_PATH.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|   PSWL_Carry_reg    | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+|    PSWL_Zro_reg     | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+|    PSWL_Neg_reg     | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+===============================================================================
+Presto compilation completed successfully. (DATA_PATH)
+Information: Building the design 'INSTRN_LAT'. (HDL-193)
+
+Inferred memory devices in process
+        in routine INSTRN_LAT line 22 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/INSTRN_LAT.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|  Crnt_Instrn_2_reg  | Flip-flop |  32   |  Y  | N  | N  | N  | N  | N  | N  |
+|  Crnt_Instrn_1_reg  | Flip-flop |  32   |  Y  | N  | N  | N  | N  | N  | N  |
+===============================================================================
+Presto compilation completed successfully. (INSTRN_LAT)
+Information: Building the design 'PRGRM_CNT_TOP'. (HDL-193)
+Presto compilation completed successfully. (PRGRM_CNT_TOP)
+Information: Building the design 'REG_FILE'. (HDL-193)
+
+Inferred memory devices in process
+        in routine REG_FILE line 34 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/REG_FILE.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|    Reg_Array_reg    | Flip-flop |  64   |  Y  | N  | Y  | N  | N  | N  | N  |
+===============================================================================
+Statistics for MUX_OPs
+======================================================
+| block name/line  | Inputs | Outputs | # sel inputs |
+======================================================
+|   REG_FILE/51    |   4    |   16    |      2       |
+|   REG_FILE/56    |   4    |   16    |      2       |
+======================================================
+Presto compilation completed successfully. (REG_FILE)
+Information: Building the design 'RST'. (HDL-193)
+
+Inferred memory devices in process
+        in routine RST line 21 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/RST.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|       q2_reg        | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+|       q1_reg        | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+===============================================================================
+Presto compilation completed successfully. (RST)
+Information: Building the design 'STACK_TOP'. (HDL-193)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/STACK_TOP.vhd:17: The port default value in entity declaration for port 'PopDataOut' is not supported. Presto ignores it. (ELAB-802)
+Presto compilation completed successfully. (STACK_TOP)
+Information: Building the design 'PRGRM_FSM'. (HDL-193)
+
+Statistics for case statements in always block at line 22 in file
+        '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/PRGRM_FSM.vhd'
+===============================================
+|           Line           |  full/ parallel  |
+===============================================
+|            24            |    auto/auto     |
+===============================================
+
+Inferred memory devices in process
+        in routine PRGRM_FSM line 38 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/PRGRM_FSM.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|  Current_State_reg  | Flip-flop |   3   |  Y  | N  | Y  | N  | N  | N  | N  |
+===============================================================================
+Presto compilation completed successfully. (PRGRM_FSM)
+Information: Building the design 'PRGRM_DECODE'. (HDL-193)
+
+Statistics for case statements in always block at line 33 in file
+        '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/PRGRM_DECODE.vhd'
+===============================================
+|           Line           |  full/ parallel  |
+===============================================
+|            65            |    auto/auto     |
+===============================================
+Presto compilation completed successfully. (PRGRM_DECODE)
+Information: Building the design 'PRGRM_CNT'. (HDL-193)
+
+Inferred memory devices in process
+        in routine PRGRM_CNT line 31 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/PRGRM_CNT.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|      PCint_reg      | Flip-flop |   8   |  Y  | N  | Y  | N  | N  | N  | N  |
+===============================================================================
+Presto compilation completed successfully. (PRGRM_CNT)
+Information: Building the design 'STACK_FSM'. (HDL-193)
+
+Statistics for case statements in always block at line 26 in file
+        '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/STACK_FSM.vhd'
+===============================================
+|           Line           |  full/ parallel  |
+===============================================
+|            32            |    auto/auto     |
+===============================================
+
+Inferred memory devices in process
+        in routine STACK_FSM line 85 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/STACK_FSM.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|   STACK_FULL_reg    | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+|   Crnt_Stack_reg    | Flip-flop |   2   |  Y  | N  | Y  | N  | N  | N  | N  |
+|     TOS_int_reg     | Flip-flop |   3   |  Y  | N  | Y  | N  | N  | N  | N  |
+===============================================================================
+Presto compilation completed successfully. (STACK_FSM)
+Information: Building the design 'STACK_MEM'. (HDL-193)
+Warning:  /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/STACK_MEM.vhd:19: The port default value in entity declaration for port 'PopDataOut' is not supported. Presto ignores it. (ELAB-802)
+
+Inferred memory devices in process
+        in routine STACK_MEM line 42 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/STACK_MEM.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|    Stack_Mem_reg    | Flip-flop |  32   |  Y  | N  | N  | N  | N  | N  | N  |
+===============================================================================
+
+Inferred memory devices in process
+        in routine STACK_MEM line 51 in file
+                '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/rtl/RISC_CORE_nodft/vhdl/STACK_MEM.vhd'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|   PopDataOut_reg    | Flip-flop |   4   |  Y  | N  | N  | N  | N  | N  | N  |
+===============================================================================
+Statistics for MUX_OPs
+======================================================
+| block name/line  | Inputs | Outputs | # sel inputs |
+======================================================
+|   STACK_MEM/55   |   8    |    4    |      3       |
+======================================================
+Presto compilation completed successfully. (STACK_MEM)
+1
+# Apply non test constraints to the design
+source -echo -verbose scripts/constraints.tcl
+# Create user defined variables
+set CLK_PORT [get_ports Clk]
+{Clk}
+set CLK_PERIOD 10.0
+10.0
+set WC_SKEW 0.25
+0.25
+set DRV_CELL bufbd1
+bufbd1
+set DRV_PIN "Z"
+Z
+set OUTPUT_LOAD [load_of cb13fs120_tsmc_max/bufbd1/I]
+0.00375
+set INPUT_DELAY 1.0
+1.0
+set OUTPUT_DELAY 1.0
+1.0
+set ALL_INS_EX_CLK  [remove_from_collection [all_inputs] [get_ports Clk]]
+{Reset Instrn\[31\] Instrn\[30\] Instrn\[29\] Instrn\[28\] Instrn\[27\] Instrn\[26\] Instrn\[25\] Instrn\[24\] Instrn\[23\] Instrn\[22\] Instrn\[21\] Instrn\[20\] Instrn\[19\] Instrn\[18\] Instrn\[17\] Instrn\[16\] Instrn\[15\] Instrn\[14\] Instrn\[13\] Instrn\[12\] Instrn\[11\] Instrn\[10\] Instrn\[9\] Instrn\[8\] Instrn\[7\] Instrn\[6\] Instrn\[5\] Instrn\[4\] Instrn\[3\] Instrn\[2\] Instrn\[1\] Instrn\[0\] TEST_SE TEST_MODE}
+create_clock -period $CLK_PERIOD -name my_clk $CLK_PORT
+1
+set_clock_uncertainty $WC_SKEW [get_clocks my_clk]
+1
+set_driving_cell -lib_cell $DRV_CELL -pin $DRV_PIN $ALL_INS_EX_CLK
+1
+set_load $OUTPUT_LOAD [all_outputs]
+1
+set_input_delay $INPUT_DELAY -max -clock my_clk $ALL_INS_EX_CLK
+1
+set_output_delay $OUTPUT_DELAY -max -clock my_clk [all_outputs]
+1
+1
+# Compile
+compile_ultra -scan
+Information: Performing leakage power optimization. (PWR-850)
+CPU Load: 48%, Ram Free: 0 GB, Swap Free: 25 GB, Work Disk Free: 85 GB, Tmp Disk Free: 85 GB
+Alib files are up-to-date.
+Information: Choosing a test methodology will restrict the optimization of sequential cells. (UIO-12)
+Information: Evaluating DesignWare library utilization. (UISN-27)
+
+============================================================================
+| DesignWare Building Block Library  |         Version         | Available |
+============================================================================
+| Basic DW Building Blocks           | V-2023.12-DWBB_202312.2 |     *     |
+| Licensed DW Building Blocks        | V-2023.12-DWBB_202312.2 |     *     |
+============================================================================
+
+====================================================================================================
+| Flow Information                                                                                 |
+----------------------------------------------------------------------------------------------------
+| Flow         | Design Compiler WLM                                                               |
+| Command Line | compile_ultra -scan                                                               |
+====================================================================================================
+| Design Information                                      | Value                                  |
+====================================================================================================
+| Number of Scenarios                                     | 0                                      |
+| Leaf Cell Count                                         | 1081                                   |
+| Number of User Hierarchies                              | 16                                     |
+| Sequential Cell Count                                   | 313                                    |
+| Macro Count                                             | 0                                      |
+| Number of Power Domains                                 | 0                                      |
+| Number of Path Groups                                   | 2                                      |
+| Number of VT Class                                      | 0                                      |
+| Number of Clocks                                        | 1                                      |
+| Number of Dont Touch Cells                              | 188                                    |
+| Number of Dont Touch Nets                               | 0                                      |
+| Number of Size Only Cells                               | 0                                      |
+| Design with UPF Data                                    | false                                  |
+====================================================================================================
+Information: Sequential output inversion is enabled.  SVF file must be used for formal verification. (OPT-1208)
+
+Information: There are 74 potential problems in your design. Please run 'check_design' for more information. (LINT-99)
+
+Information: Uniquified 3 instances of design 'STACK_MEM'. (OPT-1056)
+  Simplifying Design 'RISC_CORE'
+Information: The register 'I_STACK_TOP/I3_STACK_MEM/PopDataOut_reg\[3\]' will be removed. (OPT-1207)
+
+Loaded alib file '../dc_dw_cache/alib-52/sc_max.db.alib'
+CPU Load: 48%, Ram Free: 0 GB, Swap Free: 25 GB, Work Disk Free: 85 GB, Tmp Disk Free: 85 GB
+Information: State dependent leakage is now switched from on to off.
+
+  Beginning Pass 1 Mapping
+  ------------------------
+  Processing 'ALU'
+Information: The register 'Carry_Flag_reg' is a constant and will be removed. (OPT-1206)
+ Implement Synthetic for 'ALU'.
+Information: Added key list 'DesignWare' to design 'ALU'. (DDB-72)
+  Processing 'REG_FILE'
+  Processing 'RISC_CORE'
+  Processing 'INSTRN_LAT'
+Information: In design 'INSTRN_LAT', the register 'Crnt_Instrn_2_reg\[0\]' is removed because it is merged to 'Crnt_Instrn_1_reg\[0\]'. (OPT-1215)
+Information: In design 'INSTRN_LAT', the register 'Crnt_Instrn_2_reg\[1\]' is removed because it is merged to 'Crnt_Instrn_1_reg\[1\]'. (OPT-1215)
+Information: In design 'INSTRN_LAT', the register 'Crnt_Instrn_2_reg\[2\]' is removed because it is merged to 'Crnt_Instrn_1_reg\[2\]'. (OPT-1215)
+Information: In design 'INSTRN_LAT', the register 'Crnt_Instrn_2_reg\[3\]' is removed because it is merged to 'Crnt_Instrn_1_reg\[3\]'. (OPT-1215)
+Information: In design 'INSTRN_LAT', the register 'Crnt_Instrn_2_reg\[4\]' is removed because it is merged to 'Crnt_Instrn_1_reg\[4\]'. (OPT-1215)
+Information: In design 'INSTRN_LAT', the register 'Crnt_Instrn_2_reg\[5\]' is removed because it is merged to 'Crnt_Instrn_1_reg\[5\]'. (OPT-1215)
+Information: In design 'INSTRN_LAT', the register 'Crnt_Instrn_2_reg\[6\]' is removed because it is merged to 'Crnt_Instrn_1_reg\[6\]'. (OPT-1215)
+Information: In design 'INSTRN_LAT', the register 'Crnt_Instrn_2_reg\[7\]' is removed because it is merged to 'Crnt_Instrn_1_reg\[7\]'. (OPT-1215)
+Information: In design 'INSTRN_LAT', the register 'Crnt_Instrn_2_reg\[8\]' is removed because it is merged to 'Crnt_Instrn_1_reg\[8\]'. (OPT-1215)
+Information: In design 'INSTRN_LAT', the register 'Crnt_Instrn_2_reg\[9\]' is removed because it is merged to 'Crnt_Instrn_1_reg\[9\]'. (OPT-1215)
+Information: In design 'INSTRN_LAT', the register 'Crnt_Instrn_2_reg\[10\]' is removed because it is merged to 'Crnt_Instrn_1_reg\[10\]'. (OPT-1215)
+Information: In design 'INSTRN_LAT', the register 'Crnt_Instrn_2_reg\[11\]' is removed because it is merged to 'Crnt_Instrn_1_reg\[11\]'. (OPT-1215)
+Information: In design 'INSTRN_LAT', the register 'Crnt_Instrn_2_reg\[12\]' is removed because it is merged to 'Crnt_Instrn_1_reg\[12\]'. (OPT-1215)
+Information: In design 'INSTRN_LAT', the register 'Crnt_Instrn_2_reg\[13\]' is removed because it is merged to 'Crnt_Instrn_1_reg\[13\]'. (OPT-1215)
+Information: In design 'INSTRN_LAT', the register 'Crnt_Instrn_2_reg\[14\]' is removed because it is merged to 'Crnt_Instrn_1_reg\[14\]'. (OPT-1215)
+Information: In design 'INSTRN_LAT', the register 'Crnt_Instrn_2_reg\[15\]' is removed because it is merged to 'Crnt_Instrn_1_reg\[15\]'. (OPT-1215)
+Information: In design 'INSTRN_LAT', the register 'Crnt_Instrn_2_reg\[16\]' is removed because it is merged to 'Crnt_Instrn_1_reg\[16\]'. (OPT-1215)
+Information: In design 'INSTRN_LAT', the register 'Crnt_Instrn_2_reg\[17\]' is removed because it is merged to 'Crnt_Instrn_1_reg\[17\]'. (OPT-1215)
+Information: In design 'INSTRN_LAT', the register 'Crnt_Instrn_2_reg\[18\]' is removed because it is merged to 'Crnt_Instrn_1_reg\[18\]'. (OPT-1215)
+Information: In design 'INSTRN_LAT', the register 'Crnt_Instrn_2_reg\[19\]' is removed because it is merged to 'Crnt_Instrn_1_reg\[19\]'. (OPT-1215)
+Information: In design 'INSTRN_LAT', the register 'Crnt_Instrn_2_reg\[20\]' is removed because it is merged to 'Crnt_Instrn_1_reg\[20\]'. (OPT-1215)
+Information: In design 'INSTRN_LAT', the register 'Crnt_Instrn_2_reg\[21\]' is removed because it is merged to 'Crnt_Instrn_1_reg\[21\]'. (OPT-1215)
+Information: In design 'INSTRN_LAT', the register 'Crnt_Instrn_2_reg\[22\]' is removed because it is merged to 'Crnt_Instrn_1_reg\[22\]'. (OPT-1215)
+Information: In design 'INSTRN_LAT', the register 'Crnt_Instrn_2_reg\[23\]' is removed because it is merged to 'Crnt_Instrn_1_reg\[23\]'. (OPT-1215)
+Information: In design 'INSTRN_LAT', the register 'Crnt_Instrn_2_reg\[24\]' is removed because it is merged to 'Crnt_Instrn_1_reg\[24\]'. (OPT-1215)
+Information: In design 'INSTRN_LAT', the register 'Crnt_Instrn_2_reg\[25\]' is removed because it is merged to 'Crnt_Instrn_1_reg\[25\]'. (OPT-1215)
+Information: In design 'INSTRN_LAT', the register 'Crnt_Instrn_2_reg\[26\]' is removed because it is merged to 'Crnt_Instrn_1_reg\[26\]'. (OPT-1215)
+Information: In design 'INSTRN_LAT', the register 'Crnt_Instrn_2_reg\[27\]' is removed because it is merged to 'Crnt_Instrn_1_reg\[27\]'. (OPT-1215)
+Information: In design 'INSTRN_LAT', the register 'Crnt_Instrn_2_reg\[28\]' is removed because it is merged to 'Crnt_Instrn_1_reg\[28\]'. (OPT-1215)
+Information: In design 'INSTRN_LAT', the register 'Crnt_Instrn_2_reg\[29\]' is removed because it is merged to 'Crnt_Instrn_1_reg\[29\]'. (OPT-1215)
+Information: In design 'INSTRN_LAT', the register 'Crnt_Instrn_2_reg\[30\]' is removed because it is merged to 'Crnt_Instrn_1_reg\[30\]'. (OPT-1215)
+Information: In design 'INSTRN_LAT', the register 'Crnt_Instrn_2_reg\[31\]' is removed because it is merged to 'Crnt_Instrn_1_reg\[31\]'. (OPT-1215)
+  Processing 'DATA_PATH'
+  Processing 'STACK_MEM_1'
+Information: Added key list 'DesignWare' to design 'STACK_MEM_1'. (DDB-72)
+  Processing 'STACK_MEM_0'
+Information: Added key list 'DesignWare' to design 'STACK_MEM_0'. (DDB-72)
+  Processing 'CONTROL'
+  Processing 'STACK_FSM'
+Information: Added key list 'DesignWare' to design 'STACK_FSM'. (DDB-72)
+  Processing 'PRGRM_CNT'
+ Implement Synthetic for 'PRGRM_CNT'.
+  Processing 'PRGRM_DECODE'
+  Processing 'PRGRM_FSM'
+  Processing 'PRGRM_CNT_TOP'
+  Processing 'STACK_TOP'
+  Processing 'RST'
+  Processing 'DIV_CLK'
+Memory usage for J1 task 605 Mbytes -- main task 605 Mbytes.
+Error: unknown command '_snps_array_peek' (CMD-005)
+Error: unknown command '_snps_array_peek' (CMD-005)
+Error: unknown command '_snps_array_peek' (CMD-005)
+CPU Load: 46%, Ram Free: 0 GB, Swap Free: 25 GB, Work Disk Free: 85 GB, Tmp Disk Free: 85 GB
+
+  Updating timing information
+Information: Updating design information... (UID-85)
+Information: Automatic shift-register identification is enabled for scan. Not all registers will be scan-replaced. (OPT-467)
+Information: The register 'I_STACK_TOP/I3_STACK_MEM/PopDataOut_reg\[0\]' is a constant and will be removed. (OPT-1206)
+Information: The register 'I_DATA_PATH/PSWL_Carry_reg' is a constant and will be removed. (OPT-1206)
+Information: The register 'I_STACK_TOP/I3_STACK_MEM/Stack_Mem_reg\[7\]\[0\]' is a constant and will be removed. (OPT-1206)
+Information: The register 'I_STACK_TOP/I3_STACK_MEM/Stack_Mem_reg\[6\]\[0\]' is a constant and will be removed. (OPT-1206)
+Information: The register 'I_STACK_TOP/I3_STACK_MEM/Stack_Mem_reg\[5\]\[0\]' is a constant and will be removed. (OPT-1206)
+Information: The register 'I_STACK_TOP/I3_STACK_MEM/Stack_Mem_reg\[4\]\[0\]' is a constant and will be removed. (OPT-1206)
+Information: The register 'I_STACK_TOP/I3_STACK_MEM/Stack_Mem_reg\[3\]\[0\]' is a constant and will be removed. (OPT-1206)
+Information: The register 'I_STACK_TOP/I3_STACK_MEM/Stack_Mem_reg\[2\]\[0\]' is a constant and will be removed. (OPT-1206)
+Information: The register 'I_STACK_TOP/I3_STACK_MEM/Stack_Mem_reg\[1\]\[0\]' is a constant and will be removed. (OPT-1206)
+Information: The register 'I_STACK_TOP/I3_STACK_MEM/Stack_Mem_reg\[0\]\[0\]' is a constant and will be removed. (OPT-1206)
+
+  Beginning Mapping Optimizations  (Ultra High effort)
+  -------------------------------
+Information: Added key list 'DesignWare' to design 'PRGRM_CNT'. (DDB-72)
+Information: There is no timing violation in design RISC_CORE. Delay-based auto_ungroup will not be performed. (OPT-780)
+Information: Ungrouping hierarchy I_STACK_TOP/I1_STACK_MEM 'STACK_MEM_2' #insts = 108. (OPT-777)
+Information: Added key list 'DesignWare' to design 'STACK_TOP'. (DDB-72)
+Information: Ungrouping hierarchy I_STACK_TOP/I3_STACK_MEM 'STACK_MEM_0' #insts = 72. (OPT-777)
+Information: Ungrouping hierarchy I_STACK_TOP/I2_STACK_MEM 'STACK_MEM_1' #insts = 108. (OPT-777)
+Information: Ungrouping hierarchy I_ALU 'ALU' #insts = 163. (OPT-777)
+Information: Added key list 'DesignWare' to design 'RISC_CORE'. (DDB-72)
+  Mapping Optimization (Phase 1)
+
+                                  TOTAL                                                
+   ELAPSED            WORST NEG   SETUP    DESIGN                              LEAKAGE 
+    TIME      AREA      SLACK     COST    RULE COST         ENDPOINT            POWER  
+  --------- --------- --------- --------- --------- ------------------------- ---------
+    0:00:04    4019.5      0.00       0.0       0.0                           25300390.0000
+    0:00:04    3970.0      0.00       0.0       0.0                           25123978.0000
+
+  Beginning Constant Register Removal
+  -----------------------------------
+    0:00:04    3970.0      0.00       0.0       0.0                           25123978.0000
+    0:00:04    3970.0      0.00       0.0       0.0                           25123978.0000
+
+  Beginning Global Optimizations
+  ------------------------------
+  Numerical Synthesis (Phase 1)
+  Numerical Synthesis (Phase 2)
+  Global Optimization (Phase 1)
+  Global Optimization (Phase 2)
+  Global Optimization (Phase 3)
+  Global Optimization (Phase 4)
+  Global Optimization (Phase 5)
+  Global Optimization (Phase 6)
+  Global Optimization (Phase 7)
+  Global Optimization (Phase 8)
+  Global Optimization (Phase 9)
+  Global Optimization (Phase 10)
+  Global Optimization (Phase 11)
+  Global Optimization (Phase 12)
+  Global Optimization (Phase 13)
+  Global Optimization (Phase 14)
+  Global Optimization (Phase 15)
+  Global Optimization (Phase 16)
+  Global Optimization (Phase 17)
+  Global Optimization (Phase 18)
+  Global Optimization (Phase 19)
+  Global Optimization (Phase 20)
+  Global Optimization (Phase 21)
+  Global Optimization (Phase 22)
+  Global Optimization (Phase 23)
+  Global Optimization (Phase 24)
+  Global Optimization (Phase 25)
+  Global Optimization (Phase 26)
+  Global Optimization (Phase 27)
+  Global Optimization (Phase 28)
+  Global Optimization (Phase 29)
+  Global Optimization (Phase 30)
+  Global Optimization (Phase 31)
+
+  Beginning Isolate Ports
+  -----------------------
+
+  Beginning Delay Optimization
+  ----------------------------
+    0:00:04    3688.8      0.00       0.0      47.3                           19949914.0000
+    0:00:04    3688.8      0.00       0.0      47.3                           19949914.0000
+    0:00:04    3688.8      0.00       0.0      47.3                           19949914.0000
+    0:00:04    3688.8      0.00       0.0      47.3                           19949914.0000
+    0:00:04    3688.5      0.00       0.0      47.3                           19949982.0000
+    0:00:05    3688.5      0.00       0.0      47.3                           19949982.0000
+
+  Beginning WLM Backend Optimization
+  --------------------------------------
+    0:00:05    3667.5      0.00       0.0      43.0                           19753166.0000
+    0:00:05    3667.5      0.00       0.0      43.0                           19753166.0000
+    0:00:05    3667.5      0.00       0.0      43.0                           19753166.0000
+    0:00:05    3667.5      0.00       0.0      43.0                           19753166.0000
+    0:00:05    3667.5      0.00       0.0      43.0                           19753166.0000
+    0:00:05    3623.5      0.00       0.0      42.5                           19242448.0000
+    0:00:05    3623.5      0.00       0.0      42.5                           19242448.0000
+    0:00:05    3623.5      0.00       0.0      42.5                           19242448.0000
+    0:00:05    3623.5      0.00       0.0      42.5                           19242448.0000
+    0:00:05    3623.5      0.00       0.0      42.5                           19242448.0000
+    0:00:05    3623.5      0.00       0.0      42.5                           19242448.0000
+    0:00:05    3623.5      0.00       0.0      42.5                           19242448.0000
+    0:00:05    3623.5      0.00       0.0      42.5                           19242448.0000
+    0:00:05    3623.5      0.00       0.0      42.5                           19242448.0000
+    0:00:05    3623.5      0.00       0.0      42.5                           19242448.0000
+    0:00:05    3623.5      0.00       0.0      42.5                           19242448.0000
+    0:00:05    3623.5      0.00       0.0      42.5                           19242448.0000
+    0:00:05    3623.5      0.00       0.0      42.5                           19242448.0000
+    0:00:05    3623.5      0.00       0.0      42.5                           19242448.0000
+    0:00:05    3623.5      0.00       0.0      42.5                           19242448.0000
+    0:00:05    3623.5      0.00       0.0      42.5                           19242448.0000
+    0:00:05    3623.5      0.00       0.0      42.5                           19242448.0000
+    0:00:05    3623.5      0.00       0.0      42.5                           19242448.0000
+    0:00:05    3623.5      0.00       0.0      42.5                           19242448.0000
+
+
+  Beginning Design Rule Fixing  (max_transition)  (max_fanout)
+  ----------------------------
+
+                                  TOTAL                                                
+   ELAPSED            WORST NEG   SETUP    DESIGN                              LEAKAGE 
+    TIME      AREA      SLACK     COST    RULE COST         ENDPOINT            POWER  
+  --------- --------- --------- --------- --------- ------------------------- ---------
+    0:00:05    3623.5      0.00       0.0      42.5                           19242448.0000
+  Global Optimization (Phase 32)
+  Global Optimization (Phase 33)
+  Global Optimization (Phase 34)
+    0:00:05    3627.8      0.00       0.0       0.0                           19276844.0000
+    0:00:05    3627.8      0.00       0.0       0.0                           19276844.0000
+
+
+  Beginning Leakage Power Optimization  (max_leakage_power 0)
+  ------------------------------------
+
+                                  TOTAL                                                
+   ELAPSED            WORST NEG   SETUP    DESIGN                              LEAKAGE 
+    TIME      AREA      SLACK     COST    RULE COST         ENDPOINT            POWER  
+  --------- --------- --------- --------- --------- ------------------------- ---------
+    0:00:05    3627.8      0.00       0.0       0.0                           19276844.0000
+    0:00:05    3627.8      0.00       0.0       0.0                           19276844.0000
+    0:00:05    3627.8      0.00       0.0       0.0                           19276844.0000
+    0:00:05    3627.8      0.00       0.0       0.0                           19276844.0000
+    0:00:05    3627.8      0.00       0.0       0.0                           19027126.0000
+    0:00:05    3627.8      0.00       0.0       0.0                           19027126.0000
+    0:00:05    3627.8      0.00       0.0       0.0                           19027126.0000
+    0:00:05    3627.8      0.00       0.0       0.0                           19027126.0000
+    0:00:05    3627.8      0.00       0.0       0.0                           19027126.0000
+    0:00:05    3627.8      0.00       0.0       0.0                           19027126.0000
+    0:00:05    3627.8      0.00       0.0       0.0                           19027126.0000
+    0:00:05    3627.8      0.00       0.0       0.0                           19027126.0000
+    0:00:05    3627.8      0.00       0.0       0.0                           19027126.0000
+    0:00:05    3627.8      0.00       0.0       0.0                           19027126.0000
+    0:00:05    3627.8      0.00       0.0       0.0                           19027126.0000
+    0:00:05    3627.8      0.00       0.0       0.0                           19027126.0000
+    0:00:05    3627.8      0.00       0.0       0.0                           19027126.0000
+    0:00:05    3627.8      0.00       0.0       0.0                           19027126.0000
+    0:00:05    3627.8      0.00       0.0       0.0                           19027126.0000
+    0:00:05    3627.8      0.00       0.0       0.0                           19027126.0000
+    0:00:05    3627.8      0.00       0.0       0.0                           19027126.0000
+    0:00:05    3627.8      0.00       0.0       0.0                           19027126.0000
+    0:00:05    3627.8      0.00       0.0       0.0                           19027126.0000
+
+                                  TOTAL                                                
+   ELAPSED            WORST NEG   SETUP    DESIGN                              LEAKAGE 
+    TIME      AREA      SLACK     COST    RULE COST         ENDPOINT            POWER  
+  --------- --------- --------- --------- --------- ------------------------- ---------
+    0:00:05    3627.8      0.00       0.0       0.0                           19027126.0000
+    0:00:05    3627.8      0.00       0.0       0.0                           19027126.0000
+    0:00:05    3627.8      0.00       0.0       0.0                           19027126.0000
+    0:00:05    3627.8      0.00       0.0       0.0                           19027126.0000
+    0:00:05    3627.8      0.00       0.0       0.0                           19027126.0000
+    0:00:05    3626.2      0.00       0.0       0.0                           19020862.0000
+    0:00:05    3626.2      0.00       0.0       0.0                           19020862.0000
+    0:00:05    3626.2      0.00       0.0       0.0                           19020862.0000
+    0:00:05    3626.2      0.00       0.0       0.0                           19020862.0000
+    0:00:05    3626.2      0.00       0.0       0.0                           19020862.0000
+    0:00:05    3626.2      0.00       0.0       0.0                           19020862.0000
+CPU Load: 46%, Ram Free: 0 GB, Swap Free: 25 GB, Work Disk Free: 85 GB, Tmp Disk Free: 85 GB
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/sc_max.db'
+
+
+Note: Symbol # after min delay cost means estimated hold TNS across all active scenarios 
+
+
+  Optimization Complete
+  ---------------------
+Information: State dependent leakage is now switched from off to on.
+Information: Propagating switching activity (low effort zero delay simulation). (PWR-6)
+CPU Load: 46%, Ram Free: 0 GB, Swap Free: 25 GB, Work Disk Free: 85 GB, Tmp Disk Free: 85 GB
+Information: Total number of MV cells in the design.
+----------------------------------------------------------------------------------------------------
+ MV Cells                                           Total Number                                   
+----------------------------------------------------------------------------------------------------
+ Level Shifter:                                     0                                             
+ Enable Level Shifter:                              0                                             
+ Isolation Cell:                                    0                                             
+ Retention Cell:                                    0                                             
+ Retention Clamp Cell:                              0                                             
+ Switch Cell:                                       0                                             
+ Always-On Cell:                                    0                                             
+ Repeater Cell:                                     0                                             
+
+----------------------------------------------------------------------------------------------------
+Unmapped MV Cells 
+----------------------------------------------------------------------------------------------------
+0 Isolation Cells are unmapped 
+0 Retention Clamp Cells are unmapped 
+----------------------------------------------------------------------------------------------------
+1
+# Save mapped design
+write -format ddc -hierarchy -output mapped/RISC_CORE.ddc
+Writing ddc file 'mapped/RISC_CORE.ddc'.
+1
+exit
+
+Memory usage for this session 605 Mbytes.
+Memory usage for this session including child processes 605 Mbytes.
+CPU usage for this session 11 seconds ( 0.00 hours ).
+Elapsed time for this session 16 seconds ( 0.00 hours ).
+
+Thank you...
+

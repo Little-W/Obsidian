@@ -1,0 +1,14 @@
+#
+# Module setup
+#
+# To be used only on the education cluster and similar clusters
+# For all other cases, please refer to the file setup.csh
+#
+
+# Load modules
+
+module load syn/2010.03-SP3
+module load tx/2010.03-SP3
+
+# Additional Setup
+alias xterm "xterm -sb -sl 2000"

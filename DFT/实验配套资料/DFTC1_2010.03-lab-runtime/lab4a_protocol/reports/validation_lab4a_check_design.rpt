@@ -1,0 +1,17 @@
+ 
+****************************************
+check_design summary:
+Version:     V-2023.12-SP3
+Date:        Wed Aug 12 22:27:54 2026
+****************************************
+
+                   Name                                            Total
+--------------------------------------------------------------------------------
+Inputs/Outputs                                                      2
+    Unconnected ports (LINT-28)                                     1
+    Constant outputs (LINT-52)                                      1
+--------------------------------------------------------------------------------
+
+Warning: In design 'RISC_CORE', port 'TEST_SE' is not connected to any nets. (LINT-28)
+Warning: In design 'RISC_CORE', output port 'PSW\[0\]' is connected directly to 'logic 0'. (LINT-52)
+1

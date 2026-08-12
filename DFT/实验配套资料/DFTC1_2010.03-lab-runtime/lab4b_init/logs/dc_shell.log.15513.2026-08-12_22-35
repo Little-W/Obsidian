@@ -1,0 +1,133 @@
+Information: Variable 'cache_write' is obsolete and is being ignored. (INFO-100)
+Information: Variable 'cache_read' is obsolete and is being ignored. (INFO-100)
+Sourcing ../ref/scripts/procs.tcl...
+Defining custom procedure "rename_test_designs"
+Defining custom procedure "async_domain"
+Defining custom procedure "echo_col"
+Defining custom procedure "flatten_block"
+Defining custom procedure "zero_io_nets"
+Defining custom procedure "report_clock_endpoint_skew"
+
+Executing common setup file 'ref/dc_settings.tcl' ...
+
+
+Settings:
+link_library:      * sc_max.db io_max.db rams_max.db special.db dw_foundation.sldb
+target_library:    sc_max.db
+search_path:       ../ref/db ./scripts
+
+
+
+I am ready...
+
+
+
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/sc_max.db'
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/io_max.db'
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/rams_max.db'
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/special.db'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/dw_foundation.sldb'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/gtech.db'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/standard.sldb'
+  Loading link library 'cb13fs120_tsmc_max'
+  Loading link library 'cb13io320_tsmc_max'
+  Loading link library 'cb13_tsmc_memory_max'
+  Loading link library 'cb13special'
+  Loading link library 'gtech'
+Reading ddc file '/tmp/dftc_15513_lab4b_orca.ddc'.
+Information: Checking out the license 'DesignWare'. (SEC-104)
+Loaded 17 designs.
+Current design is 'ORCA'.
+Current design is 'ORCA'.
+
+  Linking design 'ORCA'
+  Using the following designs and libraries:
+  --------------------------------------------------------------------------
+  * (17 designs)              /tmp/dftc_15513_lab4b_orca.ddc, etc
+  cb13fs120_tsmc_max (library) /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/sc_max.db
+  cb13io320_tsmc_max (library) /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/io_max.db
+  cb13_tsmc_memory_max (library) /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/rams_max.db
+  cb13special (library)       /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/special.db
+  dw_foundation.sldb (library) /home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/dw_foundation.sldb
+
+PORTS:
+pad\[15\]
+pad\[14\]
+pad\[13\]
+pad\[12\]
+pad\[11\]
+pad\[10\]
+pad\[9\]
+pad\[8\]
+pad\[7\]
+pad\[6\]
+pad\[5\]
+pad\[4\]
+pad\[3\]
+pad\[2\]
+pad\[1\]
+pad\[0\]
+pc_be\[3\]
+pc_be\[2\]
+pc_be\[1\]
+pc_be\[0\]
+sd_DQ\[15\]
+sd_DQ\[14\]
+sd_DQ\[13\]
+sd_DQ\[12\]
+sd_DQ\[11\]
+sd_DQ\[10\]
+sd_DQ\[9\]
+sd_DQ\[8\]
+sd_DQ\[7\]
+sd_DQ\[6\]
+sd_DQ\[5\]
+sd_DQ\[4\]
+sd_DQ\[3\]
+sd_DQ\[2\]
+sd_DQ\[1\]
+sd_DQ\[0\]
+sd_A\[9\]
+sd_A\[8\]
+sd_A\[7\]
+sd_A\[6\]
+sd_A\[5\]
+sd_A\[4\]
+sd_A\[3\]
+sd_A\[2\]
+sd_A\[1\]
+sd_A\[0\]
+sd_BWS\[1\]
+sd_BWS\[0\]
+scan_en
+conf_ena
+conf
+power_save
+sys_clk
+pclk
+prst_n
+pidsel
+pgnt_n
+ppar
+pframe_n
+ptrdy_n
+pirdy_n
+pdevsel_n
+pstop_n
+pperr_n
+pserr_n
+preq_n
+pm66en
+sdr_clk
+sd_CK
+sd_CKn
+sd_LD
+sd_RW
+
+Memory usage for this session 605 Mbytes.
+Memory usage for this session including child processes 605 Mbytes.
+CPU usage for this session 5 seconds ( 0.00 hours ).
+Elapsed time for this session 9 seconds ( 0.00 hours ).
+
+Thank you...
+

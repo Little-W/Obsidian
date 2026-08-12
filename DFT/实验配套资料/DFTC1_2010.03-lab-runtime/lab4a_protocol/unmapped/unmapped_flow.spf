@@ -1,0 +1,785 @@
+STIL 1.0 {
+    Design 2005;
+}
+Header {
+    Title "Minimal STIL for design `RISC_CORE'";
+    Date "Wed Aug 12 22:27:50 2026";
+    Source "DFT Compiler V-2023.12-SP3";
+}
+Signals {
+    "Clk" In;
+    "Instrn\[0\]" In;
+    "Instrn\[10\]" In;
+    "Instrn\[11\]" In;
+    "Instrn\[12\]" In;
+    "Instrn\[13\]" In;
+    "Instrn\[14\]" In;
+    "Instrn\[15\]" In;
+    "Instrn\[16\]" In;
+    "Instrn\[17\]" In;
+    "Instrn\[18\]" In;
+    "Instrn\[19\]" In;
+    "Instrn\[1\]" In;
+    "Instrn\[20\]" In;
+    "Instrn\[21\]" In;
+    "Instrn\[22\]" In;
+    "Instrn\[23\]" In;
+    "Instrn\[24\]" In;
+    "Instrn\[25\]" In;
+    "Instrn\[26\]" In;
+    "Instrn\[27\]" In;
+    "Instrn\[28\]" In;
+    "Instrn\[29\]" In;
+    "Instrn\[2\]" In;
+    "Instrn\[30\]" In;
+    "Instrn\[31\]" In;
+    "Instrn\[3\]" In;
+    "Instrn\[4\]" In;
+    "Instrn\[5\]" In;
+    "Instrn\[6\]" In;
+    "Instrn\[7\]" In;
+    "Instrn\[8\]" In;
+    "Instrn\[9\]" In;
+    "Reset" In;
+    "TEST_MODE" In;
+    "TEST_SE" In;
+    "EndOfInstrn" Out;
+    "OUT_VALID" Out;
+    "PSW\[0\]" Out;
+    "PSW\[10\]" Out;
+    "PSW\[1\]" Out;
+    "PSW\[2\]" Out;
+    "PSW\[3\]" Out;
+    "PSW\[4\]" Out;
+    "PSW\[5\]" Out;
+    "PSW\[6\]" Out;
+    "PSW\[7\]" Out;
+    "PSW\[8\]" Out;
+    "PSW\[9\]" Out;
+    "RESULT_DATA\[0\]" Out;
+    "RESULT_DATA\[10\]" Out;
+    "RESULT_DATA\[11\]" Out;
+    "RESULT_DATA\[12\]" Out;
+    "RESULT_DATA\[13\]" Out;
+    "RESULT_DATA\[14\]" Out;
+    "RESULT_DATA\[15\]" Out;
+    "RESULT_DATA\[1\]" Out;
+    "RESULT_DATA\[2\]" Out;
+    "RESULT_DATA\[3\]" Out;
+    "RESULT_DATA\[4\]" Out;
+    "RESULT_DATA\[5\]" Out;
+    "RESULT_DATA\[6\]" Out;
+    "RESULT_DATA\[7\]" Out;
+    "RESULT_DATA\[8\]" Out;
+    "RESULT_DATA\[9\]" Out;
+    "Rd_Instr" Out;
+    "STACK_FULL" Out;
+    "Xecutng_Instrn\[0\]" Out;
+    "Xecutng_Instrn\[10\]" Out;
+    "Xecutng_Instrn\[11\]" Out;
+    "Xecutng_Instrn\[12\]" Out;
+    "Xecutng_Instrn\[13\]" Out;
+    "Xecutng_Instrn\[14\]" Out;
+    "Xecutng_Instrn\[15\]" Out;
+    "Xecutng_Instrn\[16\]" Out;
+    "Xecutng_Instrn\[17\]" Out;
+    "Xecutng_Instrn\[18\]" Out;
+    "Xecutng_Instrn\[19\]" Out;
+    "Xecutng_Instrn\[1\]" Out;
+    "Xecutng_Instrn\[20\]" Out;
+    "Xecutng_Instrn\[21\]" Out;
+    "Xecutng_Instrn\[22\]" Out;
+    "Xecutng_Instrn\[23\]" Out;
+    "Xecutng_Instrn\[24\]" Out;
+    "Xecutng_Instrn\[25\]" Out;
+    "Xecutng_Instrn\[26\]" Out;
+    "Xecutng_Instrn\[27\]" Out;
+    "Xecutng_Instrn\[28\]" Out;
+    "Xecutng_Instrn\[29\]" Out;
+    "Xecutng_Instrn\[2\]" Out;
+    "Xecutng_Instrn\[30\]" Out;
+    "Xecutng_Instrn\[31\]" Out;
+    "Xecutng_Instrn\[3\]" Out;
+    "Xecutng_Instrn\[4\]" Out;
+    "Xecutng_Instrn\[5\]" Out;
+    "Xecutng_Instrn\[6\]" Out;
+    "Xecutng_Instrn\[7\]" Out;
+    "Xecutng_Instrn\[8\]" Out;
+    "Xecutng_Instrn\[9\]" Out;
+}
+SignalGroups {
+    "_clk" = '"Clk" + "Reset"';
+    "all_inputs" = '"Clk" + "Instrn\[0\]" + "Instrn\[10\]" + "Instrn\[11\]" + 
+    "Instrn\[12\]" + "Instrn\[13\]" + "Instrn\[14\]" + "Instrn\[15\]" + 
+    "Instrn\[16\]" + "Instrn\[17\]" + "Instrn\[18\]" + "Instrn\[19\]" + 
+    "Instrn\[1\]" + "Instrn\[20\]" + "Instrn\[21\]" + "Instrn\[22\]" + 
+    "Instrn\[23\]" + "Instrn\[24\]" + "Instrn\[25\]" + "Instrn\[26\]" + 
+    "Instrn\[27\]" + "Instrn\[28\]" + "Instrn\[29\]" + "Instrn\[2\]" + 
+    "Instrn\[30\]" + "Instrn\[31\]" + "Instrn\[3\]" + "Instrn\[4\]" + 
+    "Instrn\[5\]" + "Instrn\[6\]" + "Instrn\[7\]" + "Instrn\[8\]" + 
+    "Instrn\[9\]" + "Reset" + "TEST_MODE" + "TEST_SE"';
+    "all_outputs" = '"EndOfInstrn" + "OUT_VALID" + "PSW\[0\]" + "PSW\[10\]" + 
+    "PSW\[1\]" + "PSW\[2\]" + "PSW\[3\]" + "PSW\[4\]" + "PSW\[5\]" + "PSW\[6\]" 
+    + "PSW\[7\]" + "PSW\[8\]" + "PSW\[9\]" + "RESULT_DATA\[0\]" + 
+    "RESULT_DATA\[10\]" + "RESULT_DATA\[11\]" + "RESULT_DATA\[12\]" + 
+    "RESULT_DATA\[13\]" + "RESULT_DATA\[14\]" + "RESULT_DATA\[15\]" + 
+    "RESULT_DATA\[1\]" + "RESULT_DATA\[2\]" + "RESULT_DATA\[3\]" + 
+    "RESULT_DATA\[4\]" + "RESULT_DATA\[5\]" + "RESULT_DATA\[6\]" + 
+    "RESULT_DATA\[7\]" + "RESULT_DATA\[8\]" + "RESULT_DATA\[9\]" + "Rd_Instr" + 
+    "STACK_FULL" + "Xecutng_Instrn\[0\]" + "Xecutng_Instrn\[10\]" + 
+    "Xecutng_Instrn\[11\]" + "Xecutng_Instrn\[12\]" + "Xecutng_Instrn\[13\]" + 
+    "Xecutng_Instrn\[14\]" + "Xecutng_Instrn\[15\]" + "Xecutng_Instrn\[16\]" + 
+    "Xecutng_Instrn\[17\]" + "Xecutng_Instrn\[18\]" + "Xecutng_Instrn\[19\]" + 
+    "Xecutng_Instrn\[1\]" + "Xecutng_Instrn\[20\]" + "Xecutng_Instrn\[21\]" + 
+    "Xecutng_Instrn\[22\]" + "Xecutng_Instrn\[23\]" + "Xecutng_Instrn\[24\]" + 
+    "Xecutng_Instrn\[25\]" + "Xecutng_Instrn\[26\]" + "Xecutng_Instrn\[27\]" + 
+    "Xecutng_Instrn\[28\]" + "Xecutng_Instrn\[29\]" + "Xecutng_Instrn\[2\]" + 
+    "Xecutng_Instrn\[30\]" + "Xecutng_Instrn\[31\]" + "Xecutng_Instrn\[3\]" + 
+    "Xecutng_Instrn\[4\]" + "Xecutng_Instrn\[5\]" + "Xecutng_Instrn\[6\]" + 
+    "Xecutng_Instrn\[7\]" + "Xecutng_Instrn\[8\]" + "Xecutng_Instrn\[9\]"';
+    "all_ports" = '"all_inputs" + "all_outputs"';
+    "_pi" = '"all_inputs"';
+    "_po" = '"all_outputs"';
+}
+ScanStructures {
+}
+Timing {
+    WaveformTable "_default_WFT_" {
+        Period '100ns';
+        Waveforms {
+            "all_inputs" {
+                0 {
+                    '0ns' D;
+                }
+            }
+            "all_inputs" {
+                1 {
+                    '0ns' U;
+                }
+            }
+            "all_inputs" {
+                Z {
+                    '0ns' Z;
+                }
+            }
+            "all_inputs" {
+                N {
+                    '0ns' N;
+                }
+            }
+            "all_outputs" {
+                X {
+                    '0ns' X;
+                    '40ns' X;
+                }
+            }
+            "all_outputs" {
+                H {
+                    '0ns' X;
+                    '40ns' H;
+                }
+            }
+            "all_outputs" {
+                T {
+                    '0ns' X;
+                    '40ns' T;
+                }
+            }
+            "all_outputs" {
+                L {
+                    '0ns' X;
+                    '40ns' L;
+                }
+            }
+            "Clk" {
+                P {
+                    '0ns' D;
+                    '45ns' U;
+                    '55ns' D;
+                }
+            }
+            "Reset" {
+                P {
+                    '0ns' U;
+                    '45ns' D;
+                    '55ns' U;
+                }
+            }
+        }
+    }
+    WaveformTable "_multiclock_capture_WFT_" {
+        Period '100ns';
+        Waveforms {
+            "all_inputs" {
+                0 {
+                    '0ns' D;
+                }
+            }
+            "all_inputs" {
+                1 {
+                    '0ns' U;
+                }
+            }
+            "all_inputs" {
+                Z {
+                    '0ns' Z;
+                }
+            }
+            "all_inputs" {
+                N {
+                    '0ns' N;
+                }
+            }
+            "all_outputs" {
+                X {
+                    '0ns' X;
+                    '40ns' X;
+                }
+            }
+            "all_outputs" {
+                H {
+                    '0ns' X;
+                    '40ns' H;
+                }
+            }
+            "all_outputs" {
+                T {
+                    '0ns' X;
+                    '40ns' T;
+                }
+            }
+            "all_outputs" {
+                L {
+                    '0ns' X;
+                    '40ns' L;
+                }
+            }
+            "Clk" {
+                P {
+                    '0ns' D;
+                    '45ns' U;
+                    '55ns' D;
+                }
+            }
+            "Reset" {
+                P {
+                    '0ns' U;
+                    '45ns' D;
+                    '55ns' U;
+                }
+            }
+        }
+    }
+    WaveformTable "_allclock_capture_WFT_" {
+        Period '100ns';
+        Waveforms {
+            "all_inputs" {
+                0 {
+                    '0ns' D;
+                }
+            }
+            "all_inputs" {
+                1 {
+                    '0ns' U;
+                }
+            }
+            "all_inputs" {
+                Z {
+                    '0ns' Z;
+                }
+            }
+            "all_inputs" {
+                N {
+                    '0ns' N;
+                }
+            }
+            "all_outputs" {
+                X {
+                    '0ns' X;
+                    '40ns' X;
+                }
+            }
+            "all_outputs" {
+                H {
+                    '0ns' X;
+                    '40ns' H;
+                }
+            }
+            "all_outputs" {
+                T {
+                    '0ns' X;
+                    '40ns' T;
+                }
+            }
+            "all_outputs" {
+                L {
+                    '0ns' X;
+                    '40ns' L;
+                }
+            }
+            "Clk" {
+                P {
+                    '0ns' D;
+                    '45ns' U;
+                    '55ns' D;
+                }
+            }
+            "Reset" {
+                P {
+                    '0ns' U;
+                    '45ns' D;
+                    '55ns' U;
+                }
+            }
+        }
+    }
+    WaveformTable "_allclock_launch_WFT_" {
+        Period '100ns';
+        Waveforms {
+            "all_inputs" {
+                0 {
+                    '0ns' D;
+                }
+            }
+            "all_inputs" {
+                1 {
+                    '0ns' U;
+                }
+            }
+            "all_inputs" {
+                Z {
+                    '0ns' Z;
+                }
+            }
+            "all_inputs" {
+                N {
+                    '0ns' N;
+                }
+            }
+            "all_outputs" {
+                X {
+                    '0ns' X;
+                    '40ns' X;
+                }
+            }
+            "all_outputs" {
+                H {
+                    '0ns' X;
+                    '40ns' H;
+                }
+            }
+            "all_outputs" {
+                T {
+                    '0ns' X;
+                    '40ns' T;
+                }
+            }
+            "all_outputs" {
+                L {
+                    '0ns' X;
+                    '40ns' L;
+                }
+            }
+            "Clk" {
+                P {
+                    '0ns' D;
+                    '45ns' U;
+                    '55ns' D;
+                }
+            }
+            "Reset" {
+                P {
+                    '0ns' U;
+                    '45ns' D;
+                    '55ns' U;
+                }
+            }
+        }
+    }
+    WaveformTable "_allclock_launch_capture_WFT_" {
+        Period '100ns';
+        Waveforms {
+            "all_inputs" {
+                0 {
+                    '0ns' D;
+                }
+            }
+            "all_inputs" {
+                1 {
+                    '0ns' U;
+                }
+            }
+            "all_inputs" {
+                Z {
+                    '0ns' Z;
+                }
+            }
+            "all_inputs" {
+                N {
+                    '0ns' N;
+                }
+            }
+            "all_outputs" {
+                X {
+                    '0ns' X;
+                    '40ns' X;
+                }
+            }
+            "all_outputs" {
+                H {
+                    '0ns' X;
+                    '40ns' H;
+                }
+            }
+            "all_outputs" {
+                T {
+                    '0ns' X;
+                    '40ns' T;
+                }
+            }
+            "all_outputs" {
+                L {
+                    '0ns' X;
+                    '40ns' L;
+                }
+            }
+            "Clk" {
+                P {
+                    '0ns' D;
+                    '45ns' U;
+                    '55ns' D;
+                }
+            }
+            "Reset" {
+                P {
+                    '0ns' U;
+                    '45ns' D;
+                    '55ns' U;
+                }
+            }
+        }
+    }
+}
+Procedures {
+    "multiclock_capture" {
+        W "_multiclock_capture_WFT_";
+        C {
+            "Clk" = 0;
+            "Reset" = 1;
+            "EndOfInstrn" = X;
+            "OUT_VALID" = X;
+            "PSW\[0\]" = X;
+            "PSW\[10\]" = X;
+            "PSW\[1\]" = X;
+            "PSW\[2\]" = X;
+            "PSW\[3\]" = X;
+            "PSW\[4\]" = X;
+            "PSW\[5\]" = X;
+            "PSW\[6\]" = X;
+            "PSW\[7\]" = X;
+            "PSW\[8\]" = X;
+            "PSW\[9\]" = X;
+            "RESULT_DATA\[0\]" = X;
+            "RESULT_DATA\[10\]" = X;
+            "RESULT_DATA\[11\]" = X;
+            "RESULT_DATA\[12\]" = X;
+            "RESULT_DATA\[13\]" = X;
+            "RESULT_DATA\[14\]" = X;
+            "RESULT_DATA\[15\]" = X;
+            "RESULT_DATA\[1\]" = X;
+            "RESULT_DATA\[2\]" = X;
+            "RESULT_DATA\[3\]" = X;
+            "RESULT_DATA\[4\]" = X;
+            "RESULT_DATA\[5\]" = X;
+            "RESULT_DATA\[6\]" = X;
+            "RESULT_DATA\[7\]" = X;
+            "RESULT_DATA\[8\]" = X;
+            "RESULT_DATA\[9\]" = X;
+            "Rd_Instr" = X;
+            "STACK_FULL" = X;
+            "Xecutng_Instrn\[0\]" = X;
+            "Xecutng_Instrn\[10\]" = X;
+            "Xecutng_Instrn\[11\]" = X;
+            "Xecutng_Instrn\[12\]" = X;
+            "Xecutng_Instrn\[13\]" = X;
+            "Xecutng_Instrn\[14\]" = X;
+            "Xecutng_Instrn\[15\]" = X;
+            "Xecutng_Instrn\[16\]" = X;
+            "Xecutng_Instrn\[17\]" = X;
+            "Xecutng_Instrn\[18\]" = X;
+            "Xecutng_Instrn\[19\]" = X;
+            "Xecutng_Instrn\[1\]" = X;
+            "Xecutng_Instrn\[20\]" = X;
+            "Xecutng_Instrn\[21\]" = X;
+            "Xecutng_Instrn\[22\]" = X;
+            "Xecutng_Instrn\[23\]" = X;
+            "Xecutng_Instrn\[24\]" = X;
+            "Xecutng_Instrn\[25\]" = X;
+            "Xecutng_Instrn\[26\]" = X;
+            "Xecutng_Instrn\[27\]" = X;
+            "Xecutng_Instrn\[28\]" = X;
+            "Xecutng_Instrn\[29\]" = X;
+            "Xecutng_Instrn\[2\]" = X;
+            "Xecutng_Instrn\[30\]" = X;
+            "Xecutng_Instrn\[31\]" = X;
+            "Xecutng_Instrn\[3\]" = X;
+            "Xecutng_Instrn\[4\]" = X;
+            "Xecutng_Instrn\[5\]" = X;
+            "Xecutng_Instrn\[6\]" = X;
+            "Xecutng_Instrn\[7\]" = X;
+            "Xecutng_Instrn\[8\]" = X;
+            "Xecutng_Instrn\[9\]" = X;
+        }
+        F {
+            "TEST_MODE" = 1;
+        }
+        V {
+            "_po" = \r63 #;
+            "_pi" = \r36 #;
+        }
+    }
+    "allclock_capture" {
+        W "_allclock_capture_WFT_";
+        C {
+            "Clk" = 0;
+            "Reset" = 1;
+            "EndOfInstrn" = X;
+            "OUT_VALID" = X;
+            "PSW\[0\]" = X;
+            "PSW\[10\]" = X;
+            "PSW\[1\]" = X;
+            "PSW\[2\]" = X;
+            "PSW\[3\]" = X;
+            "PSW\[4\]" = X;
+            "PSW\[5\]" = X;
+            "PSW\[6\]" = X;
+            "PSW\[7\]" = X;
+            "PSW\[8\]" = X;
+            "PSW\[9\]" = X;
+            "RESULT_DATA\[0\]" = X;
+            "RESULT_DATA\[10\]" = X;
+            "RESULT_DATA\[11\]" = X;
+            "RESULT_DATA\[12\]" = X;
+            "RESULT_DATA\[13\]" = X;
+            "RESULT_DATA\[14\]" = X;
+            "RESULT_DATA\[15\]" = X;
+            "RESULT_DATA\[1\]" = X;
+            "RESULT_DATA\[2\]" = X;
+            "RESULT_DATA\[3\]" = X;
+            "RESULT_DATA\[4\]" = X;
+            "RESULT_DATA\[5\]" = X;
+            "RESULT_DATA\[6\]" = X;
+            "RESULT_DATA\[7\]" = X;
+            "RESULT_DATA\[8\]" = X;
+            "RESULT_DATA\[9\]" = X;
+            "Rd_Instr" = X;
+            "STACK_FULL" = X;
+            "Xecutng_Instrn\[0\]" = X;
+            "Xecutng_Instrn\[10\]" = X;
+            "Xecutng_Instrn\[11\]" = X;
+            "Xecutng_Instrn\[12\]" = X;
+            "Xecutng_Instrn\[13\]" = X;
+            "Xecutng_Instrn\[14\]" = X;
+            "Xecutng_Instrn\[15\]" = X;
+            "Xecutng_Instrn\[16\]" = X;
+            "Xecutng_Instrn\[17\]" = X;
+            "Xecutng_Instrn\[18\]" = X;
+            "Xecutng_Instrn\[19\]" = X;
+            "Xecutng_Instrn\[1\]" = X;
+            "Xecutng_Instrn\[20\]" = X;
+            "Xecutng_Instrn\[21\]" = X;
+            "Xecutng_Instrn\[22\]" = X;
+            "Xecutng_Instrn\[23\]" = X;
+            "Xecutng_Instrn\[24\]" = X;
+            "Xecutng_Instrn\[25\]" = X;
+            "Xecutng_Instrn\[26\]" = X;
+            "Xecutng_Instrn\[27\]" = X;
+            "Xecutng_Instrn\[28\]" = X;
+            "Xecutng_Instrn\[29\]" = X;
+            "Xecutng_Instrn\[2\]" = X;
+            "Xecutng_Instrn\[30\]" = X;
+            "Xecutng_Instrn\[31\]" = X;
+            "Xecutng_Instrn\[3\]" = X;
+            "Xecutng_Instrn\[4\]" = X;
+            "Xecutng_Instrn\[5\]" = X;
+            "Xecutng_Instrn\[6\]" = X;
+            "Xecutng_Instrn\[7\]" = X;
+            "Xecutng_Instrn\[8\]" = X;
+            "Xecutng_Instrn\[9\]" = X;
+        }
+        F {
+            "TEST_MODE" = 1;
+        }
+        V {
+            "_po" = \r63 #;
+            "_pi" = \r36 #;
+        }
+    }
+    "allclock_launch" {
+        W "_allclock_launch_WFT_";
+        C {
+            "Clk" = 0;
+            "Reset" = 1;
+            "EndOfInstrn" = X;
+            "OUT_VALID" = X;
+            "PSW\[0\]" = X;
+            "PSW\[10\]" = X;
+            "PSW\[1\]" = X;
+            "PSW\[2\]" = X;
+            "PSW\[3\]" = X;
+            "PSW\[4\]" = X;
+            "PSW\[5\]" = X;
+            "PSW\[6\]" = X;
+            "PSW\[7\]" = X;
+            "PSW\[8\]" = X;
+            "PSW\[9\]" = X;
+            "RESULT_DATA\[0\]" = X;
+            "RESULT_DATA\[10\]" = X;
+            "RESULT_DATA\[11\]" = X;
+            "RESULT_DATA\[12\]" = X;
+            "RESULT_DATA\[13\]" = X;
+            "RESULT_DATA\[14\]" = X;
+            "RESULT_DATA\[15\]" = X;
+            "RESULT_DATA\[1\]" = X;
+            "RESULT_DATA\[2\]" = X;
+            "RESULT_DATA\[3\]" = X;
+            "RESULT_DATA\[4\]" = X;
+            "RESULT_DATA\[5\]" = X;
+            "RESULT_DATA\[6\]" = X;
+            "RESULT_DATA\[7\]" = X;
+            "RESULT_DATA\[8\]" = X;
+            "RESULT_DATA\[9\]" = X;
+            "Rd_Instr" = X;
+            "STACK_FULL" = X;
+            "Xecutng_Instrn\[0\]" = X;
+            "Xecutng_Instrn\[10\]" = X;
+            "Xecutng_Instrn\[11\]" = X;
+            "Xecutng_Instrn\[12\]" = X;
+            "Xecutng_Instrn\[13\]" = X;
+            "Xecutng_Instrn\[14\]" = X;
+            "Xecutng_Instrn\[15\]" = X;
+            "Xecutng_Instrn\[16\]" = X;
+            "Xecutng_Instrn\[17\]" = X;
+            "Xecutng_Instrn\[18\]" = X;
+            "Xecutng_Instrn\[19\]" = X;
+            "Xecutng_Instrn\[1\]" = X;
+            "Xecutng_Instrn\[20\]" = X;
+            "Xecutng_Instrn\[21\]" = X;
+            "Xecutng_Instrn\[22\]" = X;
+            "Xecutng_Instrn\[23\]" = X;
+            "Xecutng_Instrn\[24\]" = X;
+            "Xecutng_Instrn\[25\]" = X;
+            "Xecutng_Instrn\[26\]" = X;
+            "Xecutng_Instrn\[27\]" = X;
+            "Xecutng_Instrn\[28\]" = X;
+            "Xecutng_Instrn\[29\]" = X;
+            "Xecutng_Instrn\[2\]" = X;
+            "Xecutng_Instrn\[30\]" = X;
+            "Xecutng_Instrn\[31\]" = X;
+            "Xecutng_Instrn\[3\]" = X;
+            "Xecutng_Instrn\[4\]" = X;
+            "Xecutng_Instrn\[5\]" = X;
+            "Xecutng_Instrn\[6\]" = X;
+            "Xecutng_Instrn\[7\]" = X;
+            "Xecutng_Instrn\[8\]" = X;
+            "Xecutng_Instrn\[9\]" = X;
+        }
+        F {
+            "TEST_MODE" = 1;
+        }
+        V {
+            "_po" = \r63 #;
+            "_pi" = \r36 #;
+        }
+    }
+    "allclock_launch_capture" {
+        W "_allclock_launch_capture_WFT_";
+        C {
+            "Clk" = 0;
+            "Reset" = 1;
+            "EndOfInstrn" = X;
+            "OUT_VALID" = X;
+            "PSW\[0\]" = X;
+            "PSW\[10\]" = X;
+            "PSW\[1\]" = X;
+            "PSW\[2\]" = X;
+            "PSW\[3\]" = X;
+            "PSW\[4\]" = X;
+            "PSW\[5\]" = X;
+            "PSW\[6\]" = X;
+            "PSW\[7\]" = X;
+            "PSW\[8\]" = X;
+            "PSW\[9\]" = X;
+            "RESULT_DATA\[0\]" = X;
+            "RESULT_DATA\[10\]" = X;
+            "RESULT_DATA\[11\]" = X;
+            "RESULT_DATA\[12\]" = X;
+            "RESULT_DATA\[13\]" = X;
+            "RESULT_DATA\[14\]" = X;
+            "RESULT_DATA\[15\]" = X;
+            "RESULT_DATA\[1\]" = X;
+            "RESULT_DATA\[2\]" = X;
+            "RESULT_DATA\[3\]" = X;
+            "RESULT_DATA\[4\]" = X;
+            "RESULT_DATA\[5\]" = X;
+            "RESULT_DATA\[6\]" = X;
+            "RESULT_DATA\[7\]" = X;
+            "RESULT_DATA\[8\]" = X;
+            "RESULT_DATA\[9\]" = X;
+            "Rd_Instr" = X;
+            "STACK_FULL" = X;
+            "Xecutng_Instrn\[0\]" = X;
+            "Xecutng_Instrn\[10\]" = X;
+            "Xecutng_Instrn\[11\]" = X;
+            "Xecutng_Instrn\[12\]" = X;
+            "Xecutng_Instrn\[13\]" = X;
+            "Xecutng_Instrn\[14\]" = X;
+            "Xecutng_Instrn\[15\]" = X;
+            "Xecutng_Instrn\[16\]" = X;
+            "Xecutng_Instrn\[17\]" = X;
+            "Xecutng_Instrn\[18\]" = X;
+            "Xecutng_Instrn\[19\]" = X;
+            "Xecutng_Instrn\[1\]" = X;
+            "Xecutng_Instrn\[20\]" = X;
+            "Xecutng_Instrn\[21\]" = X;
+            "Xecutng_Instrn\[22\]" = X;
+            "Xecutng_Instrn\[23\]" = X;
+            "Xecutng_Instrn\[24\]" = X;
+            "Xecutng_Instrn\[25\]" = X;
+            "Xecutng_Instrn\[26\]" = X;
+            "Xecutng_Instrn\[27\]" = X;
+            "Xecutng_Instrn\[28\]" = X;
+            "Xecutng_Instrn\[29\]" = X;
+            "Xecutng_Instrn\[2\]" = X;
+            "Xecutng_Instrn\[30\]" = X;
+            "Xecutng_Instrn\[31\]" = X;
+            "Xecutng_Instrn\[3\]" = X;
+            "Xecutng_Instrn\[4\]" = X;
+            "Xecutng_Instrn\[5\]" = X;
+            "Xecutng_Instrn\[6\]" = X;
+            "Xecutng_Instrn\[7\]" = X;
+            "Xecutng_Instrn\[8\]" = X;
+            "Xecutng_Instrn\[9\]" = X;
+        }
+        F {
+            "TEST_MODE" = 1;
+        }
+        V {
+            "_po" = \r63 #;
+            "_pi" = \r36 #;
+        }
+    }
+}
+MacroDefs {
+    "test_setup" {
+        W "_default_WFT_";
+        V {
+            "Clk" = 0;
+            "TEST_MODE" = 1;
+        }
+        V {
+            "Reset" = 1;
+        }
+    }
+}
+

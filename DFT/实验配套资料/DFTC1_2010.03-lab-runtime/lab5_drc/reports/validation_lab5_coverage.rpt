@@ -1,0 +1,88 @@
+In mode: Internal_scan...
+  Design has scan chains in this mode
+  Design is scan routed
+  Post-DFT DRC enabled
+
+Information: Starting test design rule checking. (TEST-222)
+  Loading test protocol
+  ...basic checks...
+  ...basic sequential cell checks...
+  ...checking vector rules...
+  ...checking clock rules...
+  ...checking scan chain rules...
+  ...checking scan compression rules...
+  ...checking X-state rules...
+  ...checking tristate rules...
+  ...extracting scan details...
+
+-------------------------------------------------------------------------
+Traced Scan Chains
+-------------------------------------------------------------------------
+Chain "1" traced through 261 flip-flops 
+
+
+-------------------------------------------------------------------------
+Summary of all DFT DRC violations
+-------------------------------------------------------------------------
+
+0 TOTAL VIOLATIONS 
+
+Test Design rule checking did not find violations
+
+-----------------------------------------------------------------------------------------   
+ Sequential Cell Report:       Sequential       Core             Core                 
+                               Cells            Segments         Segment Cells        
+-----------------------------------------------------------------------------------------
+ Sequential Elements Detected:  261                0                   0                       
+ Clock Gating Cells          :  0                                                        
+ Synchronizing Cells         :  0                                                        
+ Non-Scan Elements           :  0                                                        
+ Excluded Scan Elements      :  0                  0                   0                       
+ Violated Scan Elements      :  0                  0                   0                       
+ (Traced) Scan Elements      :  261     (100.0%)   0       (  0.0%)    0       (  0.0%)      
+-----------------------------------------------------------------------------------------
+
+
+Information: Test design rule checking completed. (TEST-123)
+  Running test coverage estimation...
+ 10128 faults were added to fault list.
+ ATPG performed for stuck fault model using internal pattern source.
+ ----------------------------------------------------------
+ #patterns     #faults     #ATPG faults  test      process
+ stored     detect/active  red/au/abort  coverage  CPU time
+ ---------  -------------  ------------  --------  --------
+ Begin deterministic ATPG: #uncollapsed_faults=8168, abort_limit=10...
+ 0            5311   2857         0/0/0    71.71%      0.00
+ 0            1305   1551         1/0/0    84.61%      0.00
+ 0             632    919         1/0/0    90.85%      0.01
+ 0             319    599         2/0/0    94.01%      0.01
+ 0             182    416         3/0/0    95.82%      0.01
+ 0             166    246         7/0/0    97.50%      0.01
+ 0              65    177        11/0/0    98.18%      0.01
+ 0             100     76        12/0/0    99.18%      0.01
+ 0              43     30        15/0/0    99.63%      0.01
+ 0              25      2        17/0/2    99.91%      0.01
+ 
+            Pattern Summary Report
+ -----------------------------------------------
+ #internal patterns                           0
+ -----------------------------------------------
+ 
+
+     Uncollapsed Stuck Fault Summary Report
+ -----------------------------------------------
+ fault class                     code   #faults
+ ------------------------------  ----  ---------
+ Detected                         DT      10097
+ Possibly detected                PT          0
+ Undetectable                     UD         22
+ ATPG untestable                  AU          7
+ Not detected                     ND          2
+ -----------------------------------------------
+ total faults                             10128
+ test coverage                            99.91%
+ -----------------------------------------------
+  Information: The test coverage above may be inferior
+               than the real test coverage with customized
+               protocol and test simulation library.
+1
