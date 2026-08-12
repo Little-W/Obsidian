@@ -1,7 +1,7 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # DC Setup File
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-lappend search_path ../ref/db ./scripts
+lappend search_path . ../ref/db ./scripts
 
 #for reading and linking
 set synthetic_library {dw_foundation.sldb}

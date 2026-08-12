@@ -1,7 +1,7 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # DC Setup File
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-lappend search_path ../ref/db ./scripts ./mapped
+lappend search_path . ../ref/db ./scripts ./mapped
 
 set synthetic_library {dw_foundation.sldb}
 set target_library "sc_max.db"

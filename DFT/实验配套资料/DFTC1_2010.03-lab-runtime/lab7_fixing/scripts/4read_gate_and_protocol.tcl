@@ -1,12 +1,9 @@
 
 remove_design -designs
 
-set local_ddc "/tmp/dftc_[pid]_lab7_risc_core.ddc"
-file copy -force mapped/RISC_CORE.ddc $local_ddc
-read_file -format ddc $local_ddc
+read_file -format ddc mapped/RISC_CORE.ddc
 current_design RISC_CORE
 link
-file delete -force $local_ddc
 
 #Declare test components in preparation for create_test_protocol
 set_dft_signal -view existing_dft -port Clk -type ScanClock -timing {45 55}

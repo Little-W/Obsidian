@@ -1,0 +1,44 @@
+Information: Variable 'cache_write' is obsolete and is being ignored. (INFO-100)
+Information: Variable 'cache_read' is obsolete and is being ignored. (INFO-100)
+
+
+Settings:
+link_library:      * sc_max.db dw_foundation.sldb
+target_library:    sc_max.db
+search_path:       . ../ref/db ./scripts
+
+
+
+I am ready...
+
+
+
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/sc_max.db'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/dw_foundation.sldb'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/gtech.db'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/standard.sldb'
+  Loading link library 'cb13fs120_tsmc_max'
+  Loading link library 'gtech'
+Reading ddc file '/media/6/Projects/DFTC1_2010.03-lab-runtime/lab7_fixing/mapped/RISC_CORE.ddc'.
+Information: Checking out the license 'DesignWare'. (SEC-104)
+Loaded 13 designs.
+Current design is 'RISC_CORE'.
+Current design is 'RISC_CORE'.
+
+  Linking design 'RISC_CORE'
+  Using the following designs and libraries:
+  --------------------------------------------------------------------------
+  * (13 designs)              /media/6/Projects/DFTC1_2010.03-lab-runtime/lab7_fixing/mapped/RISC_CORE.ddc, etc
+  cb13fs120_tsmc_max (library) /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/sc_max.db
+  dw_foundation.sldb (library) /home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/dw_foundation.sldb
+
+Current design is 'RISC_CORE'.
+DDC_DIRECT_READ_OK:lab7:RISC_CORE
+
+Memory usage for this session 605 Mbytes.
+Memory usage for this session including child processes 605 Mbytes.
+CPU usage for this session 4 seconds ( 0.00 hours ).
+Elapsed time for this session 7 seconds ( 0.00 hours ).
+
+Thank you...
+

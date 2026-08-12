@@ -1,0 +1,145 @@
+Information: Variable 'cache_write' is obsolete and is being ignored. (INFO-100)
+Information: Variable 'cache_read' is obsolete and is being ignored. (INFO-100)
+Sourcing ../ref/scripts/procs.tcl...
+Defining custom procedure "rename_test_designs"
+Defining custom procedure "async_domain"
+Defining custom procedure "echo_col"
+Defining custom procedure "flatten_block"
+Defining custom procedure "zero_io_nets"
+Defining custom procedure "report_clock_endpoint_skew"
+
+Executing common setup file 'ref/dc_settings.tcl' ...
+
+
+Settings:
+link_library:      * sc_max.db io_max.db rams_max.db special.db dw_foundation.sldb
+target_library:    sc_max.db
+search_path:       . ../ref/db ./scripts
+
+
+
+I am ready...
+
+
+
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/sc_max.db'
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/io_max.db'
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/rams_max.db'
+Loading db file '/media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/special.db'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/dw_foundation.sldb'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/gtech.db'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/standard.sldb'
+  Loading link library 'cb13fs120_tsmc_max'
+  Loading link library 'cb13io320_tsmc_max'
+  Loading link library 'cb13_tsmc_memory_max'
+  Loading link library 'cb13special'
+  Loading link library 'gtech'
+Reading ddc file '/media/6/Projects/DFTC1_2010.03-lab-runtime/lab8_topdown/mapped/ORCA.ddc'.
+Information: Checking out the license 'DesignWare'. (SEC-104)
+Loaded 16 designs.
+Current design is 'ORCA'.
+Current design is 'ORCA'.
+
+  Linking design 'ORCA'
+  Using the following designs and libraries:
+  --------------------------------------------------------------------------
+  * (16 designs)              /media/6/Projects/DFTC1_2010.03-lab-runtime/lab8_topdown/mapped/ORCA.ddc, etc
+  cb13fs120_tsmc_max (library) /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/sc_max.db
+  cb13io320_tsmc_max (library) /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/io_max.db
+  cb13_tsmc_memory_max (library) /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/rams_max.db
+  cb13special (library)       /media/6/Projects/DFTC1_2010.03-lab-runtime/ref/db/special.db
+  dw_foundation.sldb (library) /home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/dw_foundation.sldb
+
+Accepted dft signal specification for modes: all_dft
+Accepted dft signal specification for modes: all_dft
+Accepted dft signal specification for modes: all_dft
+Accepted dft signal specification for modes: all_dft
+Accepted dft signal specification for modes: all_dft
+Accepted dft signal specification for modes: all_dft
+In mode: all_dft...
+
+Information: Starting test protocol creation. (TEST-219)
+  ...reading user specified clock signals...
+Information: Identified system/test clock port sys_clk (45.0,55.0). (TEST-265)
+Information: Identified system/test clock port pclk (45.0,55.0). (TEST-265)
+Information: Identified system/test clock port sdr_clk (45.0,55.0). (TEST-265)
+  ...reading user specified asynchronous signals...
+Information: Identified active low asynchronous control port prst_n. (TEST-266)
+In mode: all_dft...
+  Pre-DFT DRC enabled
+Warning: Design 'ORCA' contains 3 high-fanout nets. A fanout number of 1000 will be used for delay calculations involving these nets. (TIM-134)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_RISC_CORE/U3'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_READ_FIFO/PCI_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_PCI_WRITE_FIFO/PCI_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_READ_FIFO/SD_RFIFO_RAM'on pin 'CE1' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_ORCA_TOP/I_SDRAM_WRITE_FIFO/SD_WFIFO_RAM'on pin 'CE2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U3'on pin 'A2' in design 'ORCA'. (TIM-141)
+Warning: Gated clock latch is not created for cell 'I_CLOCK_GEN/U5'on pin 'B1' in design 'ORCA'. (TIM-141)
+Warning: A non-unate path in clock network for clock 'SDRAM_CLK' from pin 'I_ORCA_TOP/I_SDRAM_IF/sd_mux_dq_out_0/Z' is detected. (TIM-052)
+
+Information: Starting test design rule checking. (TEST-222)
+  Loading test protocol
+  ...basic checks...
+  ...basic sequential cell checks...
+        ...checking for scan equivalents...
+  ...checking vector rules...
+  ...checking pre-dft rules...
+
+-----------------------------------------------------------------
+Begin Modeling violations...
+
+Warning: Cell I_CLOCK_GEN/I_PLL_PCI (PLL) is unknown (black box) because functionality for output pin CLK is bad or incomplete. (TEST-451)
+Information: There are 12 other cells with the same violation. (TEST-171)
+
+Modeling violations completed...
+-----------------------------------------------------------------
+
+-----------------------------------------------------------------
+Begin Topology violations...
+
+Warning: Three-state net I_ORCA_TOP/I_PCI_READ_FIFO/fifo_data_in[31] is not properly driven. (TEST-115)
+Information: There are 431 other nets with the same violation. (TEST-289)
+
+Topology violations completed...
+-----------------------------------------------------------------
+
+-----------------------------------------------------------------
+  DRC Report
+
+  Total violations: 445
+
+-----------------------------------------------------------------
+
+13 MODELING VIOLATIONS
+    13 Cell has unknown model violations (TEST-451)
+
+432 TOPOLOGY VIOLATIONS
+   432 Improperly driven three-state net violations (TEST-115)
+
+
+Warning: Violations occurred during test design rule checking. (TEST-124)
+
+-----------------------------------------------------------------
+  Sequential Cell Report
+
+  32 out of 2958 sequential cells have violations
+
+-----------------------------------------------------------------
+
+SEQUENTIAL CELLS WITH VIOLATIONS
+      *  32 cells have test design rule violations
+SEQUENTIAL CELLS WITHOUT VIOLATIONS
+      *2926 cells are valid scan cells
+
+Information: Test design rule checking completed. (TEST-123)
+Current design is 'ORCA'.
+DDC_SCRIPT_READ_OK:ORCA
+
+Memory usage for this session 605 Mbytes.
+Memory usage for this session including child processes 605 Mbytes.
+CPU usage for this session 5 seconds ( 0.00 hours ).
+Elapsed time for this session 13 seconds ( 0.00 hours ).
+
+Thank you...
+

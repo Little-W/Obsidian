@@ -1,0 +1,104 @@
+Information: Variable 'cache_write' is obsolete and is being ignored. (INFO-100)
+Information: Variable 'cache_read' is obsolete and is being ignored. (INFO-100)
+Sourcing ../ref/scripts/procs.tcl...
+Defining custom procedure "rename_test_designs"
+Defining custom procedure "async_domain"
+Defining custom procedure "echo_col"
+Defining custom procedure "flatten_block"
+Defining custom procedure "zero_io_nets"
+Defining custom procedure "report_clock_endpoint_skew"
+
+Executing common setup file 'ref/dc_settings.tcl' ...
+
+
+Settings:
+link_library:      * sc_max.db io_max.db rams_max.db special.db dw_foundation.sldb
+target_library:    sc_max.db
+search_path:       ../ref/db ./scripts
+
+
+
+I am ready...
+
+
+
+SEARCH_PATH:../ref/db ./scripts
+Loading db file '/home/yusen/dftc-lab-runtime/ref/db/sc_max.db'
+Loading db file '/home/yusen/dftc-lab-runtime/ref/db/io_max.db'
+Loading db file '/home/yusen/dftc-lab-runtime/ref/db/rams_max.db'
+Loading db file '/home/yusen/dftc-lab-runtime/ref/db/special.db'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/dw_foundation.sldb'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/gtech.db'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/standard.sldb'
+  Loading link library 'cb13fs120_tsmc_max'
+  Loading link library 'cb13io320_tsmc_max'
+  Loading link library 'cb13_tsmc_memory_max'
+  Loading link library 'cb13special'
+  Loading link library 'gtech'
+Reading ddc file '/media/6/Projects/DFTC1_2010.03-lab-runtime/lab8_topdown/mapped/ORCA.ddc'.
+Information: Checking out the license 'DesignWare'. (SEC-104)
+Loaded 16 designs.
+Current design is 'ORCA'.
+Current design is 'ORCA'.
+Current design is 'ORCA'.
+DDC_ABSOLUTE_READ_OK:ORCA
+Removing design 'ORCA'
+Removing design 'CLOCK_GEN'
+Removing design 'ORCA_TOP'
+Removing design 'RESET_BLOCK'
+Removing design 'PCI_CORE'
+Removing design 'PARSER'
+Removing design 'CONTEXT_MEM'
+Removing design 'RISC_CORE'
+Removing design 'BLENDER'
+Removing design 'SDRAM_IF'
+Removing design 'PCI_RFIFO'
+Removing design 'PCI_WFIFO'
+Removing design 'SDRAM_RFIFO'
+Removing design 'SDRAM_WFIFO'
+Removing design 'PCI_W_MUX'
+Removing design 'SD_W_MUX'
+Removing library 'cb13fs120_tsmc_max'
+Removing library 'cb13io320_tsmc_max'
+Removing library 'cb13_tsmc_memory_max'
+Removing library 'cb13special'
+Removing library 'gtech'
+Removing library 'dw_foundation.sldb'
+Removing library 'standard.sldb'
+Loading db file '/home/yusen/dftc-lab-runtime/ref/db/sc_max.db'
+Loading db file '/home/yusen/dftc-lab-runtime/ref/db/io_max.db'
+Loading db file '/home/yusen/dftc-lab-runtime/ref/db/rams_max.db'
+Loading db file '/home/yusen/dftc-lab-runtime/ref/db/special.db'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/dw_foundation.sldb'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/gtech.db'
+Loading db file '/home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/standard.sldb'
+  Loading link library 'cb13fs120_tsmc_max'
+  Loading link library 'cb13io320_tsmc_max'
+  Loading link library 'cb13_tsmc_memory_max'
+  Loading link library 'cb13special'
+  Loading link library 'gtech'
+Reading ddc file '/home/yusen/dftc-lab-runtime/lab8_topdown/mapped/ORCA.ddc'.
+Loaded 16 designs.
+Current design is 'ORCA'.
+Current design is 'ORCA'.
+
+  Linking design 'ORCA'
+  Using the following designs and libraries:
+  --------------------------------------------------------------------------
+  * (16 designs)              /home/yusen/dftc-lab-runtime/lab8_topdown/mapped/ORCA.ddc, etc
+  cb13fs120_tsmc_max (library) /home/yusen/dftc-lab-runtime/ref/db/sc_max.db
+  cb13io320_tsmc_max (library) /home/yusen/dftc-lab-runtime/ref/db/io_max.db
+  cb13_tsmc_memory_max (library) /home/yusen/dftc-lab-runtime/ref/db/rams_max.db
+  cb13special (library)       /home/yusen/dftc-lab-runtime/ref/db/special.db
+  dw_foundation.sldb (library) /home/yusen/synopsys_2024/syn/V-2023.12-SP3/libraries/syn/dw_foundation.sldb
+
+Current design is 'ORCA'.
+DDC_RELATIVE_READ_OK:ORCA
+
+Memory usage for this session 605 Mbytes.
+Memory usage for this session including child processes 605 Mbytes.
+CPU usage for this session 5 seconds ( 0.00 hours ).
+Elapsed time for this session 8 seconds ( 0.00 hours ).
+
+Thank you...
+

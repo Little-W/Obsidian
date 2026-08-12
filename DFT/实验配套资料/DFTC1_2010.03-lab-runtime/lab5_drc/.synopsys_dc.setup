@@ -1,7 +1,7 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Logical Library Setup
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-lappend search_path ../ref/db ./scripts
+lappend search_path . ../ref/db ./scripts
 
 set command_log_file ./logs/command.log
 set sh_command_log_file ./logs/command.log
@@ -38,5 +38,4 @@ set test_default_bidir_delay $test_default_delay
 
 
 echo "\nI am ready...\n\n\n"
-
 
