@@ -45,7 +45,7 @@ DFT（Design for Test，可测性设计）的核心不是“额外加一些测�
 | 7 | [[DC实验手册/DFTC lab4]] | DFT 设计规则检查（DFT DRC）与 ATPG 覆盖率 |
 | 8 | [[DC实验手册/DFTC lab5]] | Design Vision 图形化查看和调试 |
 | 9 | [[DC实验手册/DFTC lab6]] | DFT 违规定位与修复 |
-| 10 | [[DC实验手册/DFTC lab7 update]] | 分层/自顶向下扫描插入 |
+| 10 | [[DFTC lab7]] | 分层/自顶向下扫描插入 |
 | 11 | [[DC实验手册/DFTC lab8]] | 扫描设计交接与测试数据输出 |
 | 12 | [[DC实验手册/DFTC lab9]] | 扫描链平衡、容量和运行时间优化 |
 | 13 | [[dc指令/Synopsis_DFT_User_Guider (1)]] | 用户指南主题索引与常用检查项 |
