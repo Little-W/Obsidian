@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="560" viewBox="0 0 1200 560">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f8fafc"/><stop offset="1" stop-color="#ecfeff"/></linearGradient>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0,0 L12,6 L0,12 z" fill="#0f766e"/></marker>
+    <style>.title{font:700 28px 'Noto Sans CJK SC','Microsoft YaHei',sans-serif;fill:#0f172a}.h{font:700 20px 'Noto Sans CJK SC','Microsoft YaHei',sans-serif;fill:#115e59}.t{font:18px 'Noto Sans CJK SC','Microsoft YaHei',sans-serif;fill:#334155}.small{font:16px 'Noto Sans CJK SC','Microsoft YaHei',sans-serif;fill:#475569}</style>
+  </defs>
+  <rect width="1200" height="560" rx="28" fill="url(#bg)"/>
+  <text x="600" y="55" text-anchor="middle" class="title">JTAG / 边界扫描基本结构</text>
+  <g fill="#fff" stroke="#0f766e" stroke-width="3">
+    <rect x="110" y="170" width="210" height="170" rx="18"/><rect x="385" y="170" width="210" height="170" rx="18"/><rect x="660" y="170" width="210" height="170" rx="18"/><rect x="935" y="170" width="150" height="170" rx="18"/>
+  </g>
+  <text x="215" y="218" text-anchor="middle" class="h">TAP 控制器</text><text x="215" y="252" text-anchor="middle" class="small">TCK / TMS</text><text x="215" y="280" text-anchor="middle" class="small">状态机</text>
+  <text x="490" y="218" text-anchor="middle" class="h">指令寄存器</text><text x="490" y="252" text-anchor="middle" class="small">选择测试数据</text><text x="490" y="280" text-anchor="middle" class="small">或旁路寄存器</text>
+  <text x="765" y="218" text-anchor="middle" class="h">边界扫描寄存器</text><text x="765" y="252" text-anchor="middle" class="small">每个 I/O 附近一个单元</text><text x="765" y="280" text-anchor="middle" class="small">捕获 / 移位 / 更新</text>
+  <text x="1010" y="218" text-anchor="middle" class="h">芯片 I/O</text><text x="1010" y="252" text-anchor="middle" class="small">板级互连</text><text x="1010" y="280" text-anchor="middle" class="small">开短路检测</text>
+  <path d="M320 255 H377" stroke="#0f766e" stroke-width="5" marker-end="url(#arrow)"/><path d="M595 255 H652" stroke="#0f766e" stroke-width="5" marker-end="url(#arrow)"/><path d="M870 255 H927" stroke="#0f766e" stroke-width="5" marker-end="url(#arrow)"/>
+  <path d="M215 390 V440 H1010 V390" fill="none" stroke="#f59e0b" stroke-width="4" stroke-dasharray="9 7" marker-end="url(#arrow)"/>
+  <text x="600" y="477" text-anchor="middle" class="t">TDI → TDO：测试数据串行移位；TAP 状态机决定捕获、移位和更新时刻</text>
+  <text x="600" y="515" text-anchor="middle" class="small">典型用途：板级互连测试、芯片 I/O 访问、调试与片上测试控制</text>
+</svg>

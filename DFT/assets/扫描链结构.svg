@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="530" viewBox="0 0 1200 530">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f8fafc"/><stop offset="1" stop-color="#eff6ff"/></linearGradient>
+    <linearGradient id="cell" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#dbeafe"/><stop offset="1" stop-color="#bfdbfe"/></linearGradient>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0,0 L12,6 L0,12 z" fill="#2563eb"/></marker>
+    <style>.title{font:700 28px 'Noto Sans CJK SC','Microsoft YaHei',sans-serif;fill:#0f172a}.h{font:700 20px 'Noto Sans CJK SC','Microsoft YaHei',sans-serif;fill:#1e3a8a}.t{font:18px 'Noto Sans CJK SC','Microsoft YaHei',sans-serif;fill:#334155}.small{font:16px 'Noto Sans CJK SC','Microsoft YaHei',sans-serif;fill:#475569}</style>
+  </defs>
+  <rect width="1200" height="530" rx="26" fill="url(#bg)"/>
+  <text x="600" y="52" text-anchor="middle" class="title">扫描链：串行移位与并行捕获</text>
+  <text x="90" y="128" class="h">功能模式</text>
+  <line x1="180" y1="120" x2="1060" y2="120" stroke="#94a3b8" stroke-width="4"/>
+  <g fill="#fff" stroke="#2563eb" stroke-width="3">
+    <rect x="190" y="85" width="130" height="70" rx="12"/><rect x="390" y="85" width="130" height="70" rx="12"/><rect x="590" y="85" width="130" height="70" rx="12"/><rect x="790" y="85" width="130" height="70" rx="12"/>
+  </g>
+  <text x="255" y="128" text-anchor="middle" class="t">组合逻辑</text><text x="455" y="128" text-anchor="middle" class="t">功能触发器</text><text x="655" y="128" text-anchor="middle" class="t">组合逻辑</text><text x="855" y="128" text-anchor="middle" class="t">功能输出</text>
+  <path d="M100 300 H1080" stroke="#64748b" stroke-width="4"/>
+  <text x="90" y="245" class="h">扫描模式</text>
+  <text x="75" y="305" class="small">Scan In</text><path d="M120 300 H175" stroke="#2563eb" stroke-width="5" marker-end="url(#arrow)"/>
+  <g fill="url(#cell)" stroke="#1d4ed8" stroke-width="3">
+    <rect x="180" y="255" width="150" height="90" rx="14"/><rect x="390" y="255" width="150" height="90" rx="14"/><rect x="600" y="255" width="150" height="90" rx="14"/><rect x="810" y="255" width="150" height="90" rx="14"/>
+  </g>
+  <text x="255" y="293" text-anchor="middle" class="h">扫描触发器 0</text><text x="255" y="324" text-anchor="middle" class="small">SI → D</text>
+  <text x="465" y="293" text-anchor="middle" class="h">扫描触发器 1</text><text x="465" y="324" text-anchor="middle" class="small">Q0 → D</text>
+  <text x="675" y="293" text-anchor="middle" class="h">扫描触发器 2</text><text x="675" y="324" text-anchor="middle" class="small">Q1 → D</text>
+  <text x="885" y="293" text-anchor="middle" class="h">扫描触发器 N</text><text x="885" y="324" text-anchor="middle" class="small">Q2 → D</text>
+  <path d="M330 300 H382" stroke="#2563eb" stroke-width="5" marker-end="url(#arrow)"/><path d="M540 300 H592" stroke="#2563eb" stroke-width="5" marker-end="url(#arrow)"/><path d="M750 300 H802" stroke="#2563eb" stroke-width="5" marker-end="url(#arrow)"/><path d="M960 300 H1040" stroke="#2563eb" stroke-width="5" marker-end="url(#arrow)"/>
+  <text x="1060" y="292" class="small">Scan Out</text>
+  <path d="M255 390 V430 H885 V390" fill="none" stroke="#f59e0b" stroke-width="5" marker-end="url(#arrow)"/>
+  <text x="570" y="470" text-anchor="middle" class="t">Scan Enable = 1：沿链移位；Scan Enable = 0：执行功能捕获</text>
+</svg>

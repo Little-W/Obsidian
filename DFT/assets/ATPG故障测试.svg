@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="560" viewBox="0 0 1200 560">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff7ed"/><stop offset="1" stop-color="#fef2f2"/></linearGradient>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0,0 L12,6 L0,12 z" fill="#c2410c"/></marker>
+    <style>.title{font:700 28px 'Noto Sans CJK SC','Microsoft YaHei',sans-serif;fill:#0f172a}.h{font:700 20px 'Noto Sans CJK SC','Microsoft YaHei',sans-serif;fill:#9a3412}.t{font:18px 'Noto Sans CJK SC','Microsoft YaHei',sans-serif;fill:#334155}.small{font:16px 'Noto Sans CJK SC','Microsoft YaHei',sans-serif;fill:#475569}</style>
+  </defs>
+  <rect width="1200" height="560" rx="28" fill="url(#bg)"/>
+  <text x="600" y="55" text-anchor="middle" class="title">ATPG：激励故障并观察响应</text>
+  <g fill="#fff" stroke="#c2410c" stroke-width="3">
+    <rect x="80" y="170" width="220" height="150" rx="18"/><rect x="370" y="170" width="220" height="150" rx="18"/><rect x="660" y="170" width="220" height="150" rx="18"/><rect x="950" y="170" width="170" height="150" rx="18"/>
+  </g>
+  <text x="190" y="220" text-anchor="middle" class="h">故障模型</text><text x="190" y="255" text-anchor="middle" class="small"> stuck-at-0 / stuck-at-1</text><text x="190" y="283" text-anchor="middle" class="small">transition / bridging</text>
+  <text x="480" y="220" text-anchor="middle" class="h">ATPG 求解</text><text x="480" y="255" text-anchor="middle" class="small">生成可检测激励</text><text x="480" y="283" text-anchor="middle" class="small">压缩与约束优化</text>
+  <text x="770" y="220" text-anchor="middle" class="h">扫描加载</text><text x="770" y="255" text-anchor="middle" class="small">Scan In + 时钟</text><text x="770" y="283" text-anchor="middle" class="small">捕获并移出响应</text>
+  <text x="1035" y="220" text-anchor="middle" class="h">比较</text><text x="1035" y="255" text-anchor="middle" class="small">Pass / Fail</text><text x="1035" y="283" text-anchor="middle" class="small">覆盖率报告</text>
+  <path d="M300 245 H362" stroke="#c2410c" stroke-width="5" marker-end="url(#arrow)"/><path d="M590 245 H652" stroke="#c2410c" stroke-width="5" marker-end="url(#arrow)"/><path d="M880 245 H942" stroke="#c2410c" stroke-width="5" marker-end="url(#arrow)"/>
+  <path d="M1035 350 V425 H190 V350" fill="none" stroke="#64748b" stroke-width="4" stroke-dasharray="9 7" marker-end="url(#arrow)"/>
+  <text x="612" y="462" text-anchor="middle" class="t">不可检测故障通常来自：不可控内部节点、不可观测路径、时序限制或 DFT 规则违规</text>
+  <text x="612" y="505" text-anchor="middle" class="small">覆盖率不是唯一目标：还要关注测试时间、功耗、压缩比和误报/漏报</text>
+</svg>
