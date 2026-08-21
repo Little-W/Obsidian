@@ -150,7 +150,7 @@ AMP适合以下系统：需要把实时控制与通用操作系统分开运行�
 
 实际SoC可以组合两种模式。例如，多个通用CPU组成SMP组并运行通用操作系统，实时CPU或FPGA软核运行独立程序并以AMP方式与SMP组通信。此时，SMP组内部由统一调度器分配线程，组与远端软件之间使用共享内存和IPI或RPMsg交换任务。
 
-![SMP与AMP运行方式对比](media/multicore_coherence/smp_amp_comparison.png)
+![SMP与AMP运行方式对比](.media/.multicore_coherence/smp_amp_comparison.png)
 
 *图1 SMP由同一操作系统统一调度各hart，AMP由各hart执行独立软件映像并通过共享邮箱与IPI通信。*
 
@@ -207,7 +207,7 @@ AMO和LR/SC的原子性不自动建立其他地址的访问次序。没有`aq`�
 
 `fence.i`用于使当前hart后续取指看到此前对IMEM的修改，它不是通用数据访问栅栏。一个hart修改共享IMEM后，应先使数据写入对外可见，再向其他hart发送IPI；每个接收hart都要在继续执行被修改代码前自行执行`fence.i`。
 
-![RVWMO下的消息发布与获取](media/multicore_coherence/rvwmo_message_passing.png)
+![RVWMO下的消息发布与获取](.media/.multicore_coherence/rvwmo_message_passing.png)
 
 *图2 普通访问不能保证不同地址按程序书写次序被其他hart观察；发布侧与获取侧分别使用`fence`后，读取到`flag=1`的hart才能依照规定取得此前发布的数据。*
 
@@ -392,7 +392,7 @@ LSU在接受原子操作时保存地址、`rs2`数据、写掩码、目的寄存
 
 实现时要避免将寄存器地址、核编号或栈顶写成仅适用于hart0的常数。参数合法性应在硬件展开时检查，使不支持的hart数量在仿真和综合前明确失败。
 
-![双hart L1 Cache与共享控制](media/multicore_coherence/system_architecture.png)
+![双hart L1 Cache与共享控制](.media/.multicore_coherence/system_architecture.png)
 
 *图3 每个hart独立保存ICache、DCache和LSU L0 Cache状态，共享控制负责仲裁、失效、原子操作和外部访问。*
 
@@ -498,7 +498,7 @@ end
 4. AW握手成功时发出失效地址，其他hart清除对应的ICache、DCache或LSU L0 Cache状态。
 5. B响应返回后，原始hart才把该写事务视为完成。
 
-![写穿透与L1 Cache失效时序](media/multicore_coherence/write_through_invalidate.png)
+![写穿透与L1 Cache失效时序](.media/.multicore_coherence/write_through_invalidate.png)
 
 *图4 写穿透失效时序；同一Cache行的后续读还需等待写响应，不能只等待失效完成。*
 
@@ -565,7 +565,7 @@ M --其他核共享读--------> S，并提供最新数据
 
 实现MESI时，系统必须可靠判断“是否存在其他副本”。小规模监听总线可收集各Cache的共享响应；目录系统则查询共享者集合。如果这个判断不可靠，就不能安全授予E状态。
 
-![MESI稳定状态与关键迁移](media/multicore_coherence/mesi_state_machine.png)
+![MESI稳定状态与关键迁移](.media/.multicore_coherence/mesi_state_machine.png)
 
 *图5 MESI本地请求的稳定状态变化，以及远端监听和替换所需的动作。总线请求进行期间还需要独立瞬态。*
 
@@ -638,7 +638,7 @@ S、E、F等干净行通常可以直接丢弃；M或O行必须先写回或把最
 
 对双核FPGA系统，监听失效通常更省资源。增加共享L2 Cache（Level 2 Cache，二级Cache）时，可以让L2 Cache同时保存目录状态：L1 Cache未命中先访问L2 Cache，跨核写请求由L2 Cache查询共享者并发送失效。这样L1 Cache结构保持不变，一致性控制由共享总线或L2 Cache目录完成。
 
-![监听式与目录式一致性结构对比](media/multicore_coherence/snoop_vs_directory.png)
+![监听式与目录式一致性结构对比](.media/.multicore_coherence/snoop_vs_directory.png)
 
 *图6 监听式向全部L1 Cache广播请求；目录式根据共享者集合发送定向监听。*
 
@@ -740,7 +740,7 @@ AC、CR和CD通道都采用与AXI相同的VALID/READY握手。AC通道没有事�
 
 写事务同样由`AWSNOOP`和`AWDOMAIN`说明意图。WriteUnique需要清理并失效其他副本后再完成部分或整行写入，WriteLineUnique针对完整Cache行写入，可直接使其他副本失效。写响应完成后，主设备还要发送`WACK`，其作用与读侧`RACK`相对应。
 
-![ACE共享读的通道与信号关系](media/multicore_coherence/ace_channel_overview.png)
+![ACE共享读的通道与信号关系](.media/.multicore_coherence/ace_channel_overview.png)
 
 *图7 ACE共享读同时使用AXI4读通道和AC、CR、CD监听通道；数据可能来自共享存储，也可能由保存最新Cache行的L1 Cache提供。*
 
@@ -782,7 +782,7 @@ Alkaid双核采用独立L1 Cache、共享存储、写穿透和监听失效，不
 
 共享L2 Cache目录和写回MESI是面向其他系统规模的结构选择，不属于Alkaid双核的组成部分。核心数增加且广播访问明显增多时，共享L2 Cache可以吸收重复访问并保存共享者集合；写穿透长期占用主要存储带宽时，写回MESI可以减少外部写入，但会增加M状态、脏行介入、写回缓冲和瞬态控制。选择这些结构时，应分别验证L2 Cache目录、定向失效、脏行替换和死锁处理。
 
-![不同规模下的一致性结构选择](media/multicore_coherence/alkaid_evolution.png)
+![不同规模下的一致性结构选择](.media/.multicore_coherence/alkaid_evolution.png)
 
 *图8 双hart FPGA、多核共享L2 Cache和高写带宽系统采用不同的一致性结构，Alkaid使用写穿透监听失效方案。*
 

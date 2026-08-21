@@ -1,0 +1,106 @@
+digraph snoop_vs_directory {
+  graph [
+    rankdir=TB,
+    newrank=true,
+    bgcolor="white",
+    pad="0.34",
+    nodesep="0.78",
+    ranksep="0.82",
+    compound=true,
+    splines=spline,
+    outputorder=edgesfirst,
+    fontname="Noto Sans CJK SC",
+    fontsize=25,
+    label="监听式与目录式一致性结构对比",
+    labelloc=t
+  ];
+
+  node [
+    shape=box,
+    style="rounded,filled",
+    color="#334155",
+    fillcolor="#FFFFFF",
+    fontname="Noto Sans CJK SC",
+    fontsize=18,
+    fontcolor="#0F172A",
+    penwidth=1.8,
+    margin="0.22,0.15"
+  ];
+
+  edge [
+    fontname="Noto Sans CJK SC",
+    fontsize=16,
+    color="#475569",
+    fontcolor="#334155",
+    penwidth=2,
+    arrowsize=0.85
+  ];
+
+  subgraph cluster_snoop {
+    label="监听式：向全部L1 Cache广播请求";
+    color="#2563EB";
+    fillcolor="#EFF6FF";
+    style="rounded,filled";
+    penwidth=2.4;
+    fontname="Noto Sans CJK SC";
+    fontsize=21;
+    margin=24;
+
+    sr [label="请求方\nL1 Cache", fillcolor="#DBEAFE"];
+    bus [label="共享监听控制\n广播地址并汇总响应", fillcolor="#BFDBFE", color="#1D4ED8"];
+    scaches [
+      shape=plain,
+      label=<
+        <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" CELLPADDING="11" COLOR="#334155">
+          <TR><TD BGCOLOR="#FFFFFF">L1 Cache 0<BR/><FONT POINT-SIZE="15">查询标签</FONT></TD></TR>
+          <TR><TD BGCOLOR="#FFFFFF">L1 Cache 1<BR/><FONT POINT-SIZE="15">查询标签</FONT></TD></TR>
+          <TR><TD BGCOLOR="#FFFFFF">L1 Cache N<BR/><FONT POINT-SIZE="15">查询标签</FONT></TD></TR>
+        </TABLE>
+      >
+    ];
+    sm [label="共享存储"];
+    st [shape=note, label="特点\n控制直接，适合少量核心\n每次请求占用全部监听端口", fillcolor="#F8FAFC", fontsize=16];
+
+    sr -> bus [label="一致性请求"];
+    bus -> scaches [label="广播监听 / 汇总响应", dir=both, color="#DC2626", fontcolor="#B91C1C"];
+    bus -> sm [label="未命中时访问", dir=both];
+    sm -> st [style=invis];
+  }
+
+  subgraph cluster_dir {
+    label="目录式：只访问可能持有副本的L1 Cache";
+    color="#059669";
+    fillcolor="#ECFDF5";
+    style="rounded,filled";
+    penwidth=2.4;
+    fontname="Noto Sans CJK SC";
+    fontsize=21;
+    margin=24;
+
+    dr [label="请求方\nL1 Cache", fillcolor="#D1FAE5"];
+    home [label="Home与目录\n状态及共享者集合", fillcolor="#A7F3D0", color="#047857"];
+    dcaches [
+      shape=plain,
+      label=<
+        <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" CELLPADDING="11" COLOR="#334155">
+          <TR><TD BGCOLOR="#F8FAFC">L1 Cache 0<BR/><FONT POINT-SIZE="15">无副本，不发送请求</FONT></TD></TR>
+          <TR><TD BGCOLOR="#FFFFFF">L1 Cache 1<BR/><FONT POINT-SIZE="15">持有副本，接收监听</FONT></TD></TR>
+          <TR><TD BGCOLOR="#F8FAFC">L1 Cache N<BR/><FONT POINT-SIZE="15">无副本，不发送请求</FONT></TD></TR>
+        </TABLE>
+      >
+    ];
+    dm [label="共享存储"];
+    dt [shape=note, label="特点\n减少广播，适合较多核心\n增加目录存储、查询与溢出处理", fillcolor="#F8FAFC", fontsize=16];
+
+    dr -> home [label="一致性请求"];
+    home -> dcaches [label="定向监听 / 响应数据", dir=both, color="#DC2626", fontcolor="#B91C1C"];
+    home -> dm [label="需要时访问", dir=both];
+    dm -> dt [style=invis];
+  }
+
+  { rank=same; sr; dr; }
+  { rank=same; bus; home; }
+  { rank=same; scaches; dcaches; }
+  { rank=same; sm; dm; }
+  { rank=same; st; dt; }
+}

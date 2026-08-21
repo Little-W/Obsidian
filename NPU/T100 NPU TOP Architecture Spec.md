@@ -167,7 +167,7 @@ converter: "mammoth + markdownify"
 
 ## 2.1. 顶层框图
 
-![](T100_NPU_TOP_Architecture_Spec.assets/image001.png)
+![](.T100_NPU_TOP_Architecture_Spec.assets/image001.png)
 
 Figure 1 NPU子系统顶层框图
 
@@ -266,7 +266,7 @@ t100\_pdt\_doc/开发库/04开发/02NPU组/01\_NPU架构/05\_spec/ T100 NPU memo
 
 ## 2.6. 电压电源域划分
 
-![](T100_NPU_TOP_Architecture_Spec.assets/image002.png) ![](T100_NPU_TOP_Architecture_Spec.assets/image003.png)
+![](.T100_NPU_TOP_Architecture_Spec.assets/image002.png) ![](.T100_NPU_TOP_Architecture_Spec.assets/image003.png)
 
 Figure 2 NPU\_SS电压电源域划分
 
@@ -276,13 +276,13 @@ Figure 2 NPU\_SS电压电源域划分
 
 ## 2.7. 时钟复位域划分
 
-![](T100_NPU_TOP_Architecture_Spec.assets/image004.png)
+![](.T100_NPU_TOP_Architecture_Spec.assets/image004.png)
 
 Figure 3 NPU子系统时钟域划分
 
 NPU子系统内每个NPU Core独立的时钟域，支持DVFS，最高频点1.2GHz
 
-![](T100_NPU_TOP_Architecture_Spec.assets/image005.png)
+![](.T100_NPU_TOP_Architecture_Spec.assets/image005.png)
 
 Figure 4 NPU子系统复位域划分
 
@@ -318,7 +318,7 @@ SOC MCU（runtime/firmware）对netbin和input数据的处理流程：
 
 (系统软件需要保证各个BASEADDR的工作区不会出现overlap问题)
 
-![](T100_NPU_TOP_Architecture_Spec.assets/image006.png)
+![](.T100_NPU_TOP_Architecture_Spec.assets/image006.png)
 
 Figure 3 DDR中NPU相关数据地址（4核为例）
 
@@ -406,7 +406,7 @@ t100\_pdt\_doc/开发库/04开发/02NPU组/01\_NPU架构/架构分析/ T100 NPU 
 2. 通过指令解析进行预分发，RISCV标准指令交由Generic Core自身计算，自研DSA指令由特定下发接口分发给DSA Core TaskScheduler模块；
 3. TaskScheduler通过进一步解析将指令分发给Tensor、VAE和DMA计算单元；
 
-![](T100_NPU_TOP_Architecture_Spec.assets/image007.png)
+![](.T100_NPU_TOP_Architecture_Spec.assets/image007.png)
 
 Figure 4 NPU指令数据流
 
@@ -419,7 +419,7 @@ NPU推理数据先由DMA从DDR负责搬运到L1BUF：
 3. DDR数据送到DMA内部buffer
 4. DMA通过内部接口把数据写进L1BUF
 
-![](T100_NPU_TOP_Architecture_Spec.assets/image008.png)
+![](.T100_NPU_TOP_Architecture_Spec.assets/image008.png)
 
 Figure 5 NPU DMA数据流
 
@@ -431,7 +431,7 @@ Figure 5 NPU DMA数据流
 4. 数据进入VAE模块流水线，经过计算得到结果
 5. 根据指令解析生成写L1BUF的请求，存入L1BUF的空间
 
-![](T100_NPU_TOP_Architecture_Spec.assets/image009.png)
+![](.T100_NPU_TOP_Architecture_Spec.assets/image009.png)
 
 Figure 6 RMSNORM计算数据流
 
@@ -441,7 +441,7 @@ Figure 6 RMSNORM计算数据流
 4. 数据进入Tensor模块的L0BUF，并进入模块流水线，中间结果和最终结果缓存在L0BUF内
 5. 计算完成后根据指令解析生成写L1BUF的请求，存入L1BUF的空间
 
-![](T100_NPU_TOP_Architecture_Spec.assets/image010.png)
+![](.T100_NPU_TOP_Architecture_Spec.assets/image010.png)
 
 Figure 7 NPU gemm计算数据流
 
@@ -451,7 +451,7 @@ Figure 7 NPU gemm计算数据流
 4. 数据由L1BUF读入vector运算单元寄存器，执行execute指令进入vector执行单元流水
 5. 计算完成后执行store指令生成写L1BUF的请求，存入L1BUF的空间
 
-![](T100_NPU_TOP_Architecture_Spec.assets/image011.png)
+![](.T100_NPU_TOP_Architecture_Spec.assets/image011.png)
 
 Figure 8 RVV指令计算数据流
 
@@ -465,11 +465,11 @@ Gemm+Softmax、Gemm+Rope
 
 相关模型结构如下：
 
-![](T100_NPU_TOP_Architecture_Spec.assets/image012.png) ![](T100_NPU_TOP_Architecture_Spec.assets/image013.png) ![](T100_NPU_TOP_Architecture_Spec.assets/image014.png)
+![](.T100_NPU_TOP_Architecture_Spec.assets/image012.png) ![](.T100_NPU_TOP_Architecture_Spec.assets/image013.png) ![](.T100_NPU_TOP_Architecture_Spec.assets/image014.png)
 
 例如：Tensor执行gemm，VAE执行Softmax。按照FlashAttetion切分Softmax输入向量的维度，如切分成硬化的Softmax支持的并行度，tensor每拍输出向量的维度【16，16】，数据不直接由L0CBUF分四拍传递给VAE模块（同时写回L1BUF），实现FIFO联动计算，省掉第一轮的L1BUF访问，降低功耗开销。
 
-![](T100_NPU_TOP_Architecture_Spec.assets/image015.png)
+![](.T100_NPU_TOP_Architecture_Spec.assets/image015.png)
 
 Figure 9 联动算子数据流
 
@@ -479,7 +479,7 @@ Figure 9 联动算子数据流
 - Activation动态量化在VAE模块处理，反量化在Tensor模块处理；
 - sageAttention整体量化的处理过程（如下图），将q，k，v量化为8bit，matmul计算按照定点计算，softmax按照浮点计算；
 
-![](T100_NPU_TOP_Architecture_Spec.assets/image016.png)
+![](.T100_NPU_TOP_Architecture_Spec.assets/image016.png)
 
 Figure 10 sage attention量化数据流
 
@@ -504,7 +504,7 @@ t100\_pdt\_doc/开发库/04开发/02NPU组/01\_NPU架构/架构分析/ T100 NPU 
 7. 数据存入NPU Core0的L1BUF完成数据Contact
 8. RMSNORM指令和描述符下发到VAE模块，VAE根据指令解析生成读取L1BUF的请求，进行计算后写入L1BUF
 
-![](T100_NPU_TOP_Architecture_Spec.assets/image017.png)
+![](.T100_NPU_TOP_Architecture_Spec.assets/image017.png)
 
 Figure 11 NPU多核交互数据流
 
@@ -518,7 +518,7 @@ t100\_pdt\_doc/开发库/04开发/02NPU组/01\_NPU架构/架构分析/ T100 NPU 
 
 # 5. Generic Core-RVV处理器（外购）
 
-![](T100_NPU_TOP_Architecture_Spec.assets/image018.png)
+![](.T100_NPU_TOP_Architecture_Spec.assets/image018.png)
 
 ## 5.1. 加速器集成
 
@@ -538,7 +538,7 @@ t100\_pdt\_doc/开发库/04开发/02NPU组/01\_NPU架构/03\_HLD/ 00\_generic/ T
 
 # 6. DSA Core-推理加速引擎（自研）
 
-![](T100_NPU_TOP_Architecture_Spec.assets/image019.png)
+![](.T100_NPU_TOP_Architecture_Spec.assets/image019.png)
 
 ## 6.1. 指令集-ISA
 
@@ -588,7 +588,7 @@ t100\_pdt\_doc/开发库/04开发/02NPU组/01\_NPU架构//02\_HLD文档/01\_dsa/
 
 # 7. MIF-内部互联桥
 
-![](T100_NPU_TOP_Architecture_Spec.assets/image020.png)
+![](.T100_NPU_TOP_Architecture_Spec.assets/image020.png)
 
 MIF的规格详细参见：
 
@@ -596,7 +596,7 @@ t100\_pdt\_doc/开发库/04开发/02NPU组/01\_NPU架构//02\_ HLD文档/02\_top
 
 # 8. MMU/TBU-内存管理单元
 
-![](T100_NPU_TOP_Architecture_Spec.assets/image021.png)
+![](.T100_NPU_TOP_Architecture_Spec.assets/image021.png)
 
 访问DDR时考虑DRAM颗粒错误地址重映射和Windows场景的需求，NPU需要支持MMU内存管理单元。
 
@@ -627,7 +627,7 @@ t100\_pdt\_doc/开发库/04开发/03SOC组/01\_architecture /09\_SMMU/ 智辰T10
 
 # 9. LSC-系统控制器
 
-![](T100_NPU_TOP_Architecture_Spec.assets/image022.png)
+![](.T100_NPU_TOP_Architecture_Spec.assets/image022.png)
 
 系统控制器，负责NPU子系统内寄存器配置、状态上报、低功耗管理等：
 
@@ -650,7 +650,7 @@ t100\_pdt\_doc/开发库/04开发/02NPU组/01\_NPU架构/01\_SPEC/T100 NPU中断
 
 # 11. Debug特性
 
-![](T100_NPU_TOP_Architecture_Spec.assets/image023.png)
+![](.T100_NPU_TOP_Architecture_Spec.assets/image023.png)
 
 T100 NPU Debug特性主要由Generic Core的DM模块，DSA Core寄存器和IO Pin承载：
 
@@ -664,7 +664,7 @@ t100\_pdt\_doc/开发库/04开发/02NPU组/01\_NPU架构/01\_SPEC/T100 NPU寄存
 
 # 12. Trace特性
 
-![](T100_NPU_TOP_Architecture_Spec.assets/image024.png)
+![](.T100_NPU_TOP_Architecture_Spec.assets/image024.png)
 
 T100 NPU Trace特性主要由Generic Core承载：
 
@@ -684,7 +684,7 @@ NPU子系统内Generic Core支持RISCV定义的performance monitor：
 - Other user selected event Counter：
 - 支持user可选择计数的event counter，共4个，可统计如下事件
 
-![](T100_NPU_TOP_Architecture_Spec.assets/image025.png)
+![](.T100_NPU_TOP_Architecture_Spec.assets/image025.png)
 
 详细参见Nuclei ISA Specification <Nuclei\_RISC-V\_ISA\_Spec>
 

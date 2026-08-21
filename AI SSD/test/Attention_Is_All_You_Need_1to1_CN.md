@@ -94,7 +94,7 @@ $$
 
 **解码器：** 解码器同样由 $N = 6$ 个相同层堆叠而成。除了每个编码器层中的两个子层之外，解码器还插入第三个子层，该子层在编码器堆栈的输出上执行多头注意力。与编码器类似，我们在每个子层周围采用残差连接，随后进行层归一化。我们还修改了解码器堆栈中的自注意力子层，以防止位置关注后续位置。这种掩蔽机制与输出嵌入偏移一个位置这一事实结合起来，确保位置 $i$ 的预测只能依赖于位置小于 $i$ 的已知输出。
 
-![图 1：Transformer——模型架构](./images/figure_1_transformer_architecture.png)
+![图 1：Transformer——模型架构](./.assets/figure_1_transformer_architecture.png)
 
 **图 1：Transformer——模型架构。**
 
@@ -106,7 +106,7 @@ $$
 
 我们将我们特定的注意力称为“缩放点积注意力”（图 2）。输入由维度为 $d_k$ 的查询和键，以及维度为 $d_v$ 的值组成。我们计算查询与所有键的点积，将每个点积除以 $\sqrt{d_k}$，并应用 softmax 函数以获得值上的权重。
 
-![图 2：缩放点积注意力与多头注意力](./images/figure_2_attention.png)
+![图 2：缩放点积注意力与多头注意力](./.assets/figure_2_attention.png)
 
 **图 2：（左）缩放点积注意力。（右）多头注意力由多个并行运行的注意力层组成。**
 
@@ -204,7 +204,7 @@ $$
 
 **表 1：不同层类型的最大路径长度、每层复杂度和最小顺序操作数量。$n$ 是序列长度，$d$ 是表示维度，$k$ 是卷积核大小，$r$ 是受限自注意力中邻域的大小。**
 
-![表 1：不同层类型比较](./images/table_1_layer_complexity.png)
+![表 1：不同层类型比较](./.assets/table_1_layer_complexity.png)
 
 | 层类型 | 每层复杂度 | 顺序操作 | 最大路径长度 |
 |---|---:|---:|---:|
@@ -283,7 +283,7 @@ $$
 
 **表 2：Transformer 在 English-to-German 和 English-to-French 的 newstest2014 测试上，以一小部分训练成本取得了比先前最先进模型更好的 BLEU 分数。**
 
-![表 2：翻译质量与训练成本](./images/table_2_translation_results.png)
+![表 2：翻译质量与训练成本](./.assets/table_2_translation_results.png)
 
 | 模型 | BLEU EN-DE | BLEU EN-FR | 训练成本 EN-DE（FLOPs） | 训练成本 EN-FR（FLOPs） |
 |---|---:|---:|---:|---:|
@@ -314,7 +314,7 @@ $$
 
 **表 3：Transformer 架构变体。未列出的值与基础模型相同。所有指标均在英语到德语翻译开发集 newstest2013 上。列出的困惑度是根据我们的字节对编码计算的每 wordpiece 困惑度，不应与每词困惑度比较。**
 
-![表 3：Transformer 架构变体](./images/table_3_model_variations.png)
+![表 3：Transformer 架构变体](./.assets/table_3_model_variations.png)
 
 | 配置 | $N$ | $d_{model}$ | $d_{ff}$ | $h$ | $d_k$ | $d_v$ | $P_{drop}$ | $\epsilon_{ls}$ | 训练步数 | PPL（dev） | BLEU（dev） | 参数量 $\times 10^6$ |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|

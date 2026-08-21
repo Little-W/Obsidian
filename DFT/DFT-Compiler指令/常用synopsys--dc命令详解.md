@@ -462,20 +462,20 @@ report_scan_path
 
 下列插图对应本文的设计输入输出、综合流程、库设置、对象关系和接口建模主题。
 
-![Design Compiler 的输入、输出与报告](../assets/dc-command-figures/figure-000.png)
+![Design Compiler 的输入、输出与报告](../.assets/dc-command-figures/figure-000.png)
 
-![Design Compiler 的高层设计流程](../assets/dc-command-figures/figure-001.png)
+![Design Compiler 的高层设计流程](../.assets/dc-command-figures/figure-001.png)
 
-![Design Compiler 会话界面示例](../assets/dc-command-figures/figure-002.png)
+![Design Compiler 会话界面示例](../.assets/dc-command-figures/figure-002.png)
 
-![基本综合流程示意](../assets/dc-command-figures/figure-003.png)
+![基本综合流程示意](../.assets/dc-command-figures/figure-003.png)
 
-![库、单元与设计引用关系](../assets/dc-command-figures/figure-004.png)
+![库、单元与设计引用关系](../.assets/dc-command-figures/figure-004.png)
 
-![设计对象与层次关系](../assets/dc-command-figures/figure-005.png)
+![设计对象与层次关系](../.assets/dc-command-figures/figure-005.png)
 
-![设计环境约束命令](../assets/dc-command-figures/figure-006.png)
+![设计环境约束命令](../.assets/dc-command-figures/figure-006.png)
 
-![连线估算模型选择](../assets/dc-command-figures/figure-007.png)
+![连线估算模型选择](../.assets/dc-command-figures/figure-007.png)
 
-![输入端口驱动建模](../assets/dc-command-figures/figure-008.png)
+![输入端口驱动建模](../.assets/dc-command-figures/figure-008.png)

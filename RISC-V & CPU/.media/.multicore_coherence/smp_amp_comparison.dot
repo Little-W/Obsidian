@@ -1,0 +1,90 @@
+digraph smp_amp_comparison {
+  graph [
+    rankdir=TB,
+    newrank=true,
+    bgcolor="white",
+    pad="0.34",
+    nodesep="0.66",
+    ranksep="0.82",
+    splines=spline,
+    outputorder=edgesfirst,
+    fontname="Noto Sans CJK SC",
+    fontsize=25,
+    label="SMP与AMP运行方式对比",
+    labelloc=t
+  ];
+
+  node [
+    shape=box,
+    style="rounded,filled",
+    color="#334155",
+    fillcolor="#FFFFFF",
+    fontname="Noto Sans CJK SC",
+    fontsize=18,
+    fontcolor="#0F172A",
+    penwidth=1.8,
+    margin="0.24,0.16"
+  ];
+
+  edge [
+    color="#475569",
+    fontname="Noto Sans CJK SC",
+    fontsize=16,
+    fontcolor="#334155",
+    penwidth=1.9,
+    arrowsize=0.78
+  ];
+
+  subgraph cluster_smp {
+    label="SMP：统一操作系统与调度";
+    color="#2563EB";
+    fillcolor="#EFF6FF";
+    style="rounded,filled";
+    penwidth=2.4;
+    fontname="Noto Sans CJK SC";
+    fontsize=21;
+    margin=24;
+
+    sos [label="同一操作系统内核\n统一调度器", fillcolor="#BFDBFE", color="#1D4ED8"];
+    sh0 [label="hart 0\nCPU · L1 Cache"];
+    sh1 [label="hart 1\nCPU · L1 Cache"];
+    sres [label="共享物理地址空间\n共享设备与内核对象", fillcolor="#DBEAFE", color="#2563EB"];
+    snote [shape=note, label="线程可在任意hart运行\n依靠Cache一致性、原子操作\n与IPI（核间中断）协同", fillcolor="#F8FAFC", fontsize=16];
+
+    sos -> sh0 [label=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="3"><TR><TD BGCOLOR="#EFF6FF">调度</TD></TR></TABLE>>];
+    sos -> sh1 [label=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="3"><TR><TD BGCOLOR="#EFF6FF">调度</TD></TR></TABLE>>];
+    sh0 -> sres [label=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="3"><TR><TD BGCOLOR="#EFF6FF">读写</TD></TR></TABLE>>, dir=both];
+    sh1 -> sres [label=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="3"><TR><TD BGCOLOR="#EFF6FF">读写</TD></TR></TABLE>>, dir=both];
+    sh0 -> sh1 [label=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="3"><TR><TD BGCOLOR="#EFF6FF"><FONT COLOR="#B91C1C">IPI</FONT></TD></TR></TABLE>>, dir=both, style=dashed, color="#DC2626", constraint=false];
+    sres -> snote [style=invis];
+  }
+
+  subgraph cluster_amp {
+    label="AMP：软件映像与职责独立";
+    color="#059669";
+    fillcolor="#ECFDF5";
+    style="rounded,filled";
+    penwidth=2.4;
+    fontname="Noto Sans CJK SC";
+    fontsize=21;
+    margin=24;
+
+    ah0 [label="主hart\n软件映像A · 全局初始化", fillcolor="#D1FAE5", color="#047857"];
+    ah1 [label="从hart\n软件映像B · 独立任务", fillcolor="#D1FAE5", color="#047857"];
+    mailbox [label="共享邮箱与IPI（核间中断）\n传递命令、参数和结果", fillcolor="#A7F3D0", color="#047857"];
+    ares0 [label="hart 0存储区\n由主hart写入"];
+    ares1 [label="hart 1存储区\n由从hart写入"];
+    anote [shape=note, label="职责与实时性相互独立\n通过明确的共享区完成通信", fillcolor="#F8FAFC", fontsize=16];
+
+    ah0 -> ares0 [label=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="3"><TR><TD BGCOLOR="#ECFDF5">独立执行</TD></TR></TABLE>>];
+    ah1 -> ares1 [label=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="3"><TR><TD BGCOLOR="#ECFDF5">独立执行</TD></TR></TABLE>>];
+    ah0 -> mailbox [label=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="3"><TR><TD BGCOLOR="#ECFDF5">发布命令</TD></TR></TABLE>>, dir=both];
+    ah1 -> mailbox [label=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="3"><TR><TD BGCOLOR="#ECFDF5">读取命令 / 返回结果</TD></TR></TABLE>>, dir=both];
+    mailbox -> anote [style=invis];
+  }
+
+  { rank=same; sos; ah0; ah1; }
+  { rank=same; sh0; sh1; mailbox; }
+  { rank=same; sres; ares0; ares1; }
+  { rank=same; snote; anote; }
+}

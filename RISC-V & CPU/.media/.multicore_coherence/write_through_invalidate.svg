@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1120" viewBox="0 0 1920 1120">
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="18" markerHeight="18" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2563EB"/>
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="18" markerHeight="18" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#DC2626"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="18" markerHeight="18" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#059669"/>
+    </marker>
+    <style>
+      .title { font: 700 44px 'Noto Sans CJK SC', sans-serif; fill: #0F172A; }
+      .actor { font: 700 30px 'Noto Sans CJK SC', sans-serif; fill: #0F172A; }
+      .label { font: 500 28px 'Noto Sans CJK SC', sans-serif; fill: #1E293B; }
+      .small { font: 500 25px 'Noto Sans CJK SC', sans-serif; fill: #475569; }
+      .note { font: 600 27px 'Noto Sans CJK SC', sans-serif; fill: #7F1D1D; }
+      .lifeline { stroke: #94A3B8; stroke-width: 3; stroke-dasharray: 12 11; }
+      .blue { stroke: #2563EB; stroke-width: 5; marker-end: url(#arrow-blue); }
+      .red { stroke: #DC2626; stroke-width: 5; stroke-dasharray: 12 8; marker-end: url(#arrow-red); }
+      .green { stroke: #059669; stroke-width: 5; marker-end: url(#arrow-green); }
+    </style>
+  </defs>
+
+  <rect width="1920" height="1120" fill="#FFFFFF"/>
+  <text x="960" y="62" text-anchor="middle" class="title">写穿透与L1 Cache失效时序</text>
+
+  <rect x="90" y="105" width="360" height="92" rx="18" fill="#DBEAFE" stroke="#2563EB" stroke-width="4"/>
+  <rect x="550" y="105" width="390" height="92" rx="18" fill="#CCFBF1" stroke="#0F766E" stroke-width="4"/>
+  <rect x="1040" y="105" width="360" height="92" rx="18" fill="#FEE2E2" stroke="#DC2626" stroke-width="4"/>
+  <rect x="1500" y="105" width="330" height="92" rx="18" fill="#DCFCE7" stroke="#059669" stroke-width="4"/>
+
+  <text x="270" y="162" text-anchor="middle" class="actor">hart0 LSU / DCache</text>
+  <text x="745" y="162" text-anchor="middle" class="actor">共享一致性控制</text>
+  <text x="1220" y="162" text-anchor="middle" class="actor">hart1 L1 Cache</text>
+  <text x="1665" y="162" text-anchor="middle" class="actor">共享存储</text>
+
+  <line x1="270" y1="197" x2="270" y2="970" class="lifeline"/>
+  <line x1="745" y1="197" x2="745" y2="970" class="lifeline"/>
+  <line x1="1220" y1="197" x2="1220" y2="970" class="lifeline"/>
+  <line x1="1665" y1="197" x2="1665" y2="970" class="lifeline"/>
+
+  <line x1="280" y1="285" x2="735" y2="285" class="blue"/>
+  <text x="502" y="262" text-anchor="middle" class="label">① 写地址、数据与字节使能</text>
+  <text x="502" y="319" text-anchor="middle" class="small">突发、lock或原子访问从普通Cache查找旁路</text>
+
+  <line x1="755" y1="415" x2="1655" y2="415" class="green"/>
+  <text x="1205" y="389" text-anchor="middle" class="label">② AXI4-Full AW / W 独立握手</text>
+
+  <line x1="755" y1="535" x2="1210" y2="535" class="red"/>
+  <text x="982" y="510" text-anchor="middle" class="label">③ AW被接受：发送行地址失效</text>
+
+  <rect x="1015" y="550" width="410" height="125" rx="14" fill="#FFF7ED" stroke="#EA580C" stroke-width="3"/>
+  <text x="1220" y="582" text-anchor="middle" class="small">清除ICache、DCache与</text>
+  <text x="1220" y="615" text-anchor="middle" class="small">LSU L0 Cache有效位</text>
+  <text x="1220" y="650" text-anchor="middle" class="small">取消冲突填充，禁止旧值重新有效</text>
+
+  <line x1="1210" y1="735" x2="755" y2="735" class="red"/>
+  <text x="982" y="712" text-anchor="middle" class="label">④ 失效完成</text>
+
+  <line x1="1655" y1="845" x2="755" y2="845" class="green"/>
+  <text x="1205" y="821" text-anchor="middle" class="label">⑤ B响应：共享存储写入结果</text>
+
+  <line x1="735" y1="940" x2="280" y2="940" class="blue"/>
+  <text x="507" y="916" text-anchor="middle" class="label">⑥ 写事务完成，允许架构提交</text>
+
+  <rect x="145" y="1000" width="1630" height="82" rx="16" fill="#FEF2F2" stroke="#DC2626" stroke-width="3"/>
+  <text x="960" y="1052" text-anchor="middle" class="note">正确性条件：先阻止其他hart的旧副本与冲突填充命中；同一行的后续读在写响应前暂停。</text>
+</svg>

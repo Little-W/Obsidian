@@ -69,7 +69,7 @@ updated: 2026-08-12
 
 ## 4. DFT 设计规则检查（DFT DRC）思维框架
 
-![DFT 设计流程](../assets/dft-流程.svg)
+![DFT 设计流程](../.assets/dft-流程.svg)
 
 遇到 DRC 违规时，按以下问题逐层定位：
 

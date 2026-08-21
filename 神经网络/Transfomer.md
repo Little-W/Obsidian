@@ -61,7 +61,7 @@ Encoder 的职责是理解输入：每个 token 既保留自身内容，也吸�
 ### 3.1 架构图：先看数据如何流动
 
 <p align="center">
-  <img src="../assets/Transformer/transformer-full-architecture-cc-by-4.png" alt="Transformer 的 Encoder—Decoder 架构图" width="520" style="max-width: 100%; height: auto;" />
+  <img src="../.assets/Transformer/transformer-full-architecture-cc-by-4.png" alt="Transformer 的 Encoder—Decoder 架构图" width="520" style="max-width: 100%; height: auto;" />
 </p>
 
 图 1：Transformer 的 Encoder—Decoder 结构。左侧是 Encoder，右侧是 Decoder；实际模型通常把同类 Block 堆叠 $N$ 次。图像作者为 dvgodoy，来源：[Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Transformer,_full_architecture.png)，许可为 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)。
@@ -990,10 +990,10 @@ output_masked, weights_masked = scaled_dot_product_attention(x, x, x, mask=causa
 ### 12.1 先看层连接关系
 
 <p align="center">
-  <img src="../assets/Transformer/tiny-transformer-encoder-layers.svg" alt="TinyTransformerEncoder 的层连接关系" width="540" style="max-width: 100%; height: auto;" />
+  <img src="../.assets/Transformer/tiny-transformer-encoder-layers.svg" alt="TinyTransformerEncoder 的层连接关系" width="540" style="max-width: 100%; height: auto;" />
 </p>
 
-图 2：第 12 节代码的层连接关系。为适应竖版页面，图在正文中限制为 540 px 宽；SVG 是矢量图，放大后文字仍清晰。图由 [DOT 源文件](../assets/Transformer/tiny-transformer-encoder-layers.dot) 渲染，使用的是 Post-Norm 顺序。
+图 2：第 12 节代码的层连接关系。为适应竖版页面，图在正文中限制为 540 px 宽；SVG 是矢量图，放大后文字仍清晰。图由 [DOT 源文件](../.assets/Transformer/tiny-transformer-encoder-layers.dot) 渲染，使用的是 Post-Norm 顺序。
 
 | 图中部分 | 代码中的对象 | 输出形状 | 作用 |
 | --- | --- | --- | --- |

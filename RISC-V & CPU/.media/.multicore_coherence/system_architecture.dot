@@ -1,0 +1,118 @@
+digraph multicore_architecture {
+  graph [
+    rankdir=TB,
+    newrank=true,
+    bgcolor="white",
+    pad="0.35",
+    nodesep="0.72",
+    ranksep="0.92",
+    splines=spline,
+    outputorder=edgesfirst,
+    fontname="Noto Sans CJK SC",
+    fontsize=25,
+    label="双hart L1 Cache与共享控制",
+    labelloc=t,
+    labeljust=c
+  ];
+
+  node [
+    shape=box,
+    style="rounded,filled",
+    color="#334155",
+    fillcolor="#FFFFFF",
+    fontname="Noto Sans CJK SC",
+    fontsize=19,
+    fontcolor="#0F172A",
+    penwidth=1.8,
+    margin="0.24,0.16"
+  ];
+
+  edge [
+    color="#475569",
+    fontname="Noto Sans CJK SC",
+    fontsize=16,
+    fontcolor="#334155",
+    penwidth=1.9,
+    arrowsize=0.85
+  ];
+
+  subgraph cluster_hart0 {
+    label="hart 0";
+    color="#3B82F6";
+    fillcolor="#EFF6FF";
+    style="rounded,filled";
+    penwidth=2.3;
+    fontname="Noto Sans CJK SC";
+    fontsize=21;
+    margin=24;
+
+    cpu0 [label="CPU流水线\nGPR · CSR · LSU", fillcolor="#DBEAFE"];
+    ic0 [label="ICache"];
+    l00 [label="LSU L0 Cache"];
+    dc0 [label="DCache"];
+
+    cpu0 -> ic0 [label="取指"];
+    cpu0 -> l00 [label="数据访问"];
+    l00 -> dc0 [label="未命中时访问"];
+  }
+
+  subgraph cluster_hart1 {
+    label="hart 1";
+    color="#8B5CF6";
+    fillcolor="#F5F3FF";
+    style="rounded,filled";
+    penwidth=2.3;
+    fontname="Noto Sans CJK SC";
+    fontsize=21;
+    margin=24;
+
+    cpu1 [label="CPU流水线\nGPR · CSR · LSU", fillcolor="#EDE9FE"];
+    ic1 [label="ICache"];
+    l01 [label="LSU L0 Cache"];
+    dc1 [label="DCache"];
+
+    cpu1 -> ic1 [label="取指"];
+    cpu1 -> l01 [label="数据访问"];
+    l01 -> dc1 [label="未命中时访问"];
+  }
+
+  { rank=same; cpu0; cpu1; }
+  { rank=same; ic0; l00; ic1; l01; }
+  { rank=same; dc0; dc1; }
+
+  sys [
+    shape=plain,
+    label=<
+      <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="13" COLOR="#0F766E">
+        <TR><TD BGCOLOR="#CCFBF1"><B>共享一致性与AXI4-Full控制</B></TD></TR>
+        <TR><TD ALIGN="LEFT">取指读仲裁 · 数据仲裁 · AXI ID记录</TD></TR>
+        <TR><TD ALIGN="LEFT">写穿透 · 跨hart写失效 · 原子操作串行处理</TD></TR>
+      </TABLE>
+    >
+  ];
+
+  ic0 -> sys [label="取指读 / 失效", dir=both, color="#2563EB", fontcolor="#1D4ED8"];
+  dc0 -> sys [label="读写、原子 / 失效", dir=both, color="#2563EB", fontcolor="#1D4ED8"];
+  ic1 -> sys [label="取指读 / 失效", dir=both, color="#7C3AED", fontcolor="#6D28D9"];
+  dc1 -> sys [label="读写、原子 / 失效", dir=both, color="#7C3AED", fontcolor="#6D28D9"];
+
+  memory [label="共享存储与IMEM\n可增加共享L2 Cache", fillcolor="#DCFCE7", color="#15803D"];
+  irq [label="CLINT与PLIC\n每个hart独立中断状态", fillcolor="#FEF3C7", color="#B45309"];
+  mmio [label="共享MMIO外设", fillcolor="#FEF3C7", color="#B45309"];
+
+  sys -> memory [label="AXI4-Full\n突发、ID、未完成事务", dir=both, color="#0F766E", fontcolor="#115E59"];
+  sys -> irq [label=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="4"><TR><TD BGCOLOR="#FFFFFF"><FONT COLOR="#92400E">定时器访问 / IPI（核间中断）</FONT></TD></TR></TABLE>>, dir=both, color="#B45309"];
+  sys -> mmio [label="设备访问", dir=both, color="#B45309", fontcolor="#92400E"];
+
+  { rank=same; memory; irq; mmio; }
+
+  note [
+    shape=note,
+    label="每个hart独立保存L1 Cache状态；跨hart写可见性与原子互斥由共享控制处理。",
+    fillcolor="#F1F5F9",
+    color="#64748B",
+    fontsize=17,
+    margin="0.24,0.18"
+  ];
+  memory -> note [style=invis];
+}

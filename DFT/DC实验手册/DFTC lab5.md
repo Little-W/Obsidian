@@ -66,7 +66,7 @@ read_ddc mapped/RISC_CORE.ddc
 
 ## 任务 2：图形化探索设计
 
-![图：Design Vision 层次窗口与原理图导航](../assets/lab5-p05.png)
+![图：Design Vision 层次窗口与原理图导航](../.assets/lab5-p05.png)
 
 ### 1. 窗口和层次
 
@@ -92,7 +92,7 @@ list_designs
 
 示例设计包括 CONTROL、DATA_PATH、DIV_CLK、INSTRN_LAT、PRGRM_CNT、PRGRM_DECODE、PRGRM_FSM、REG_FILE、RISC_CORE、RST、STACK_FSM、STACK_MEM_0/1/2、STACK_TOP 等。
 
-![图： current_design/list_designs 图](../assets/figures/lab5-p06-design-list.png)
+![图： current_design/list_designs 图](../.assets/figures/lab5-p06-design-list.png)
 
 ## 层次、原理图和符号图
 
@@ -154,7 +154,7 @@ Error: No model found on design
 create_test_protocol
 ```
 
-![图： No model 错误图](../assets/figures/lab5-p09-no-model.png)
+![图： No model 错误图](../.assets/figures/lab5-p09-no-model.png)
 
 ### 问题 4
 
@@ -162,7 +162,7 @@ create_test_protocol
 
 **答案**：有很多违规。示例的第一次完整报告为 **356** 个违规：5 个结构连接类（Topology）违规（未连接输入），351 个扫描插入前类（Pre-DFT）违规（D1=261、D2=2、D3=88），并且 261/261 个顺序单元都有违规。用 Test → Browse Violations 打开违规浏览器（Violation Browser），从 Pre-DFT → D1 开始分析。
 
-![图： 356 个违规 DRC 图](../assets/figures/lab5-p09-drc-356.png)
+![图： 356 个违规 DRC 图](../.assets/figures/lab5-p09-drc-356.png)
 
 ## 问题 5–10：逐步补充测试属性
 
@@ -191,7 +191,7 @@ set_dft_signal -view existing_dft -type ScanClock \
 
 补充时钟后的阶段性结果为：总违规 **353** 个，其中结构连接类（Topology）=5，扫描插入前类（Pre-DFT）=348（D1=258、D2=2、D3=88）。
 
-![图： 353 个违规 DRC 图](../assets/figures/lab5-p10-drc-353.png)
+![图： 353 个违规 DRC 图](../.assets/figures/lab5-p10-drc-353.png)
 
 ### 问题 8
 
@@ -218,7 +218,7 @@ set_dft_signal -view existing_dft -type Constant \
 
 下一阶段报告为 **95** 个违规：结构连接类（Topology）=5，扫描插入前类（Pre-DFT）=90（D2=2、D3=88）；261 个顺序单元中 90 个仍有违规、171 个为有效扫描单元、18 个为非扫描移位寄存器单元。
 
-![图： 95 个违规 DRC 图](../assets/figures/lab5-p10-drc-95.png)
+![图： 95 个违规 DRC 图](../.assets/figures/lab5-p10-drc-95.png)
 
 ## 问题 11–13：补充异步复位
 
@@ -245,7 +245,7 @@ set_dft_signal -view existing_dft -type Reset \
 
 **答案**：会改变。最终结果为 **5** 个结构连接类（Topology）违规（未连接输入），扫描插入前类（Pre-DFT）=0；261 个顺序单元中 0 个有违规，243 个为有效扫描单元，18 个为非扫描移位寄存器单元。未连接输入仍存在，说明声明复位并不能修复真实的网表连接问题。
 
-![图：最终 DRC 图](../assets/figures/lab5-p11-drc-5.png)
+![图：最终 DRC 图](../.assets/figures/lab5-p11-drc-5.png)
 
 ## GUI 调试结果
 

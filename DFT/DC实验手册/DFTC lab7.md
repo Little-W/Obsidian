@@ -91,7 +91,7 @@ report_scan_state
 > [!note] 提示
 > 该状态表示扫描单元已替换为环回结构。
 
-![图：扫描状态图](../assets/figures/lab7-p06-scan-state.png)
+![图：扫描状态图](../.assets/figures/lab7-p06-scan-state.png)
 
 ### 问题 2
 
@@ -103,7 +103,7 @@ report_scan_state
 2926 / 2958 = 98.918%
 ```
 
-![图：顺序单元统计图](../assets/figures/lab7-p06-sequential-summary.png)
+![图：顺序单元统计图](../.assets/figures/lab7-p06-sequential-summary.png)
 
 ### 问题 3
 
@@ -136,9 +136,9 @@ report_dft_signal
 > [!note] 提示
 > `3 个 scanclocks (sys_clk, sdr_clk, pclk); 1 个 resets (prst_n)`。
 
-![图： report_dft_signal 图](../assets/figures/lab7-p07-dft-signals.png)
+![图： report_dft_signal 图](../.assets/figures/lab7-p07-dft-signals.png)
 
-![图：扫描时钟与默认扫描链预览](../assets/lab7-p07.png)
+![图：扫描时钟与默认扫描链预览](../.assets/lab7-p07.png)
 
 ### 1. 查看默认扫描架构
 
@@ -162,7 +162,7 @@ Scan style: multiplexed_flip_flop
 > [!note] 提示
 > 本例的预览结果为 5 条扫描链，最长链与最短链长度约为 `1074:1`，差异很大。
 
-![图：默认 preview_dft 图](../assets/figures/lab7-p07-preview-default.png)
+![图：默认 preview_dft 图](../.assets/figures/lab7-p07-preview-default.png)
 
 ### 问题 7
 
@@ -216,7 +216,7 @@ preview_dft -show scan_clocks
 > [!note] 提示
 > `3. 相对较平衡了，但不够。`
 
-![图： mix_edges 扫描链图](../assets/figures/lab7-p08-mix-edges.png)
+![图： mix_edges 扫描链图](../.assets/figures/lab7-p08-mix-edges.png)
 
 ### 2. 允许不同测试时钟混合
 
@@ -231,7 +231,7 @@ preview_dft -show scan_clocks
 
 **答案**：示例显示 1 条链，包含 2,926 个扫描单元。允许不同测试时钟混合后，工具可以把多个时钟域放入同一链；这也说明仅改变 clock_mixing 会显著改变链数，默认 chain_count 不能脱离时钟混合策略解释。
 
-![图： mix_clocks 扫描链图](../assets/figures/lab7-p08-mix-clocks.png)
+![图： mix_clocks 扫描链图](../.assets/figures/lab7-p08-mix-clocks.png)
 
 ### 问题 12
 
@@ -268,7 +268,7 @@ preview_dft -show scan_clocks
 > [!note] 提示
 > 最长链与最短链的长度仅相差 1 个扫描单元。
 
-![图：平衡扫描链图](../assets/figures/lab7-p09-balanced-chains.png)
+![图：平衡扫描链图](../.assets/figures/lab7-p09-balanced-chains.png)
 
 ### 问题 14
 
@@ -302,7 +302,7 @@ for {set i 0} {$i < 6} {incr i} {
 > [!note] 提示
 > 预览报告中的链名被显式设为 `chain0` 至 `chain5`，而不是仅使用数字。
 
-![图： scan path 端口工艺实现图](../assets/figures/lab7-p09-pad-mapping.png)
+![图： scan path 端口工艺实现图](../.assets/figures/lab7-p09-pad-mapping.png)
 
 ### 问题 16
 
@@ -328,7 +328,7 @@ for {set i 0} {$i < 6} {incr i} {
 set_dft_insertion_configuration -preserve_design_name true
 ```
 
-![图： preserve_design_name 选项图](../assets/figures/lab7-p10-preserve-design-name.png)
+![图： preserve_design_name 选项图](../.assets/figures/lab7-p10-preserve-design-name.png)
 
 ### 问题 18
 
@@ -340,7 +340,7 @@ set_dft_insertion_configuration -preserve_design_name true
 set_dft_insertion_configuration -synthesis_optimization none
 ```
 
-![图： synthesis_optimization 选项图](../assets/figures/lab7-p10-synthesis-optimization.png)
+![图： synthesis_optimization 选项图](../.assets/figures/lab7-p10-synthesis-optimization.png)
 
 这可以减少 insert_dft 阶段的运行时间和对既有门级设计的改动。
 
@@ -357,7 +357,7 @@ dft_drc -coverage_estimate
 
 **答案**：示例为 95.28%。
 
-![图： 95.28% 覆盖率图](../assets/figures/lab7-p10-coverage.png)
+![图： 95.28% 覆盖率图](../.assets/figures/lab7-p10-coverage.png)
 
 ### 问题 20
 
@@ -376,9 +376,9 @@ dft_drc -coverage_estimate
 - S22：一条扫描链由多个时钟移位。
 - 与扫描单元 gate 连接的总线驱动器违规。
 
-![图： DRC coverage 违规汇总图](../assets/figures/lab7-p11-drc-summary.png)
+![图： DRC coverage 违规汇总图](../.assets/figures/lab7-p11-drc-summary.png)
 
-![图： DRC coverage 详细图](../assets/figures/lab7-p11-drc-details.png)
+![图： DRC coverage 详细图](../.assets/figures/lab7-p11-drc-details.png)
 
 ### 问题 21
 

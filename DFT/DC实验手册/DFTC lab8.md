@@ -66,7 +66,7 @@ source scripts/6insert_dft.tcl
 
 **答案**：示例为 92.10%。
 
-![图： DFTC 覆盖率图](../assets/figures/lab8-p05-coverage.png)
+![图： DFTC 覆盖率图](../.assets/figures/lab8-p05-coverage.png)
 
 | 故障类别 | 数量 |
 | --- | ---: |
@@ -103,7 +103,7 @@ write -format ddc -hier -output ./mapped_scan/ORCA.ddc
 
 ## handoff 结果
 
-![图：测试协议 ScanStructures 与 SCANDEF 校验结果](../assets/lab8-p06.png)
+![图：测试协议 ScanStructures 与 SCANDEF 校验结果](../.assets/lab8-p06.png)
 
 ### 问题 2
 
@@ -154,7 +154,7 @@ FAILED 0
 
 因此至少可确认有 9 条扫描链，检查通过且失败为 0。分区数量应以 check_scan_def 的 partition 字段为准；报告表格显示链被分配到多个层次分区，实验记录可按报告逐项填写。
 
-![图： SCANDEF 检查图](../assets/figures/lab8-p06-scandef.png)
+![图： SCANDEF 检查图](../.assets/figures/lab8-p06-scandef.png)
 
 ### 3. SCANDEF 校验
 
@@ -219,7 +219,7 @@ run_atpg -auto
 > [!note] 提示
 > DFTC 的估算不读取 `STIL.spf` 和测试仿真库；TetraMAX 的示例总 CPU 时间为 `11.05 s`。因此两个工具给出的覆盖率不可直接按同一统计方法比较。
 
-![图：handoff 与 TetraMAX 脚本](../assets/figures/lab8-p07-handoff-script.png)
+![图：handoff 与 TetraMAX 脚本](../.assets/figures/lab8-p07-handoff-script.png)
 
 ## 交接验收清单
 

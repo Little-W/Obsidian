@@ -1,0 +1,78 @@
+digraph alkaid_evolution {
+  graph [
+    rankdir=LR,
+    bgcolor="white",
+    pad="0.32",
+    nodesep="0.55",
+    ranksep="0.58",
+    splines=line,
+    fontname="Noto Sans CJK SC",
+    fontsize=25,
+    label="不同规模下的一致性结构选择",
+    labelloc=t
+  ];
+
+  node [
+    shape=plain,
+    fontname="Noto Sans CJK SC",
+    fontsize=19,
+    fontcolor="#0F172A"
+  ];
+
+  edge [
+    color="#0F766E",
+    penwidth=3.2,
+    arrowsize=0.85,
+    fontname="Noto Sans CJK SC",
+    fontsize=17,
+    fontcolor="#115E59"
+  ];
+
+  p1 [label=<
+    <TABLE BORDER="2" CELLBORDER="1" CELLSPACING="0" CELLPADDING="12" COLOR="#2563EB">
+      <TR><TD BGCOLOR="#DBEAFE"><B>双hart FPGA：Alkaid方案</B></TD></TR>
+      <TR><TD ALIGN="LEFT">ICache / DCache / LSU L0 Cache</TD></TR>
+      <TR><TD ALIGN="LEFT">L1 Cache写穿透</TD></TR>
+      <TR><TD ALIGN="LEFT">共享控制广播失效</TD></TR>
+      <TR><TD ALIGN="LEFT">共享存储保存最新值</TD></TR>
+      <TR><TD BGCOLOR="#EFF6FF"><B>适用：核心少、共享写比例较低</B></TD></TR>
+    </TABLE>
+  >];
+
+  p2 [label=<
+    <TABLE BORDER="2" CELLBORDER="1" CELLSPACING="0" CELLPADDING="12" COLOR="#0F766E">
+      <TR><TD BGCOLOR="#CCFBF1"><B>多核系统：共享L2 Cache方案</B></TD></TR>
+      <TR><TD ALIGN="LEFT">L1 Cache保持写穿透</TD></TR>
+      <TR><TD ALIGN="LEFT">L2 Cache吸收重复访问</TD></TR>
+      <TR><TD ALIGN="LEFT">L2 Cache记录共享者集合</TD></TR>
+      <TR><TD ALIGN="LEFT">定向发送L1失效</TD></TR>
+      <TR><TD BGCOLOR="#F0FDFA"><B>适用：重复访问与广播较多</B></TD></TR>
+    </TABLE>
+  >];
+
+  p3 [label=<
+    <TABLE BORDER="2" CELLBORDER="1" CELLSPACING="0" CELLPADDING="12" COLOR="#DC2626">
+      <TR><TD BGCOLOR="#FEE2E2"><B>高写带宽系统：写回MESI</B></TD></TR>
+      <TR><TD ALIGN="LEFT">L1 Cache加入M/E/S/I状态</TD></TR>
+      <TR><TD ALIGN="LEFT">L2 Cache作为Home与目录</TD></TR>
+      <TR><TD ALIGN="LEFT">支持脏行介入与写回缓冲</TD></TR>
+      <TR><TD ALIGN="LEFT">增加瞬态与冲突管理</TD></TR>
+      <TR><TD BGCOLOR="#FEF2F2"><B>适用：写穿透占用主要带宽</B></TD></TR>
+    </TABLE>
+  >];
+
+  p1 -> p2 [label="核心数增加\n重复访问与广播增多"];
+  p2 -> p3 [label="共享L2 Cache仍无法缓解\n写穿透带宽占用"];
+
+  v1 [shape=box, style="rounded,filled", fillcolor="#F8FAFC", color="#64748B", penwidth=1.8, margin="0.22,0.14", label="验证重点\n双hart启动 · 随机失效 · 原子冲突"];
+  v2 [shape=box, style="rounded,filled", fillcolor="#F8FAFC", color="#64748B", penwidth=1.8, margin="0.22,0.14", label="验证重点\nL2 Cache目录 · 替换 · 定向失效"];
+  v3 [shape=box, style="rounded,filled", fillcolor="#F8FAFC", color="#64748B", penwidth=1.8, margin="0.22,0.14", label="验证重点\nMESI瞬态 · 脏行介入 · 死锁检查"];
+
+  p1 -> v1 [style=dashed, color="#94A3B8", arrowhead=none];
+  p2 -> v2 [style=dashed, color="#94A3B8", arrowhead=none];
+  p3 -> v3 [style=dashed, color="#94A3B8", arrowhead=none];
+
+  { rank=same; p1; v1; }
+  { rank=same; p2; v2; }
+  { rank=same; p3; v3; }
+}
