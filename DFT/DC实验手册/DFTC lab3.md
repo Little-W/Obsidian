@@ -117,7 +117,7 @@ dc_shell -f scripts/unmapped.tcl | tee logs/run_unmapped.log
 report_dft_signal
 ```
 
-![图： report_dft_signal 终端图](../.assets/figures/lab3-p05-dft-signals.png)
+![图： report_dft_signal 终端图](../_assets/figures/lab3-p05-dft-signals.png)
 
 使用 `report_dft_signal` 可查看已应用的测试信号及其属性。
 
@@ -148,7 +148,7 @@ report_dft_signal
 Test design rule checking did not find violations
 ```
 
-![图：零违规 DRC 报告](../.assets/figures/lab3-p05-drc-zero.png)
+![图：零违规 DRC 报告](../_assets/figures/lab3-p05-drc-zero.png)
 
 ## 第二部分：内部生成的测试模式
 
@@ -182,9 +182,9 @@ conf_ena = 0：锁住配置寄存器，保持测试模式
 
 这类由内部状态机/配置寄存器生成的测试模式，不能只靠 set_dft_signal -type TestMode 自动推导，必须在测试协议的 test_setup 中写初始化向量。
 
-![图：ORCA 内部测试模式初始化结构](../.assets/lab3-p07.png)
+![图：ORCA 内部测试模式初始化结构](../_assets/lab3-p07.png)
 
-![DFT 设计流程](../.assets/dft-流程.svg)
+![DFT 设计流程](../_assets/dft-流程.svg)
 
 ## 任务 1：内部生成的 test_mode
 
@@ -272,7 +272,7 @@ set_dft_signal -view existing_dft -type Constant \
     -port conf_ena -active_state 0
 ```
 
-![图： conf_ena 常量约束命令](../.assets/figures/lab3-p09-conf-ena.png)
+![图： conf_ena 常量约束命令](../_assets/figures/lab3-p09-conf-ena.png)
 
 > [!note] 提示
 > `hold conf_ena at 0`，即在初始化 test_mode 后将 `conf_ena` 保持为 0。
@@ -297,7 +297,7 @@ source scripts/2create_test_protocol.tcl
 | 结构连接类（Topology） | 432 | Improperly driven three-state net（TEST-115） |
 | 扫描插入前类（Pre-DFT） | 4,335 | D1=2,986、D2=26、D3=1,306、D12=6、D16=1、D17=10 |
 
-![图：首次 DRC 违规报告](../.assets/figures/lab3-p10-drc-before-protocol.png)
+![图：首次 DRC 违规报告](../_assets/figures/lab3-p10-drc-before-protocol.png)
 
 ### 2. 保存现有测试协议
 
@@ -317,7 +317,7 @@ write_test_protocol -output orca_mapped.spf
 read_test_protocol -section test_setup orca_mapped.spf
 ```
 
-![图：读入 test_setup 命令](../.assets/figures/lab3-p10-read-test-protocol.png)
+![图：读入 test_setup 命令](../_assets/figures/lab3-p10-read-test-protocol.png)
 
 ### 问题 12
 
@@ -364,7 +364,7 @@ dft_drc
 
 顺序单元报告还显示：35/3002 个顺序单元有违规，32 个为 DFT 规则违规、1 个为常量 0、2 个为常量 1；其余 2967 个为有效扫描单元。重点不是追求所有数字为零，而是理解初始化协议消除了哪些前置可测性问题。
 
-![图：最终 DRC 报告](../.assets/figures/lab3-p11-drc-final.png)
+![图：最终 DRC 报告](../_assets/figures/lab3-p11-drc-final.png)
 
 > [!note] 提示
 > 初始化向量减少了扫描插入前类（Pre-DFT）违规，而建模与用户约束类（Modeling）及结构连接类（Topology）结果基本不变；TEST-504 和 TEST-505 与常量约束有关。配置寄存器不进入扫描链，可避免测试期间的移位或捕获改变芯片工作状态。

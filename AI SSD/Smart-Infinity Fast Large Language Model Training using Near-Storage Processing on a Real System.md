@@ -68,7 +68,7 @@ LLM 训练在显存不足时会把优化器状态和梯度放到主机内存或 
 混合精度训练下，若 FP16 参数规模记为 $M$，Adam 类优化器通常需要 FP32 参数、动量和方差等状态，优化器状态规模可以达到 $6M$，再加上梯度流量，更新阶段会产生大量存储读写。
 论文测得，基线中超过 88% 的总训练时间消耗在存储数据传输上，GPT-2 8.4B 且 6 个 SSD 的基线里，更新加优化器状态上传和卸载占 75.57% 的训练时间。
 
-![Figure 1](.assets/page_002_fig_fig_1.png)
+![Figure 1](./_assets/page_002_fig_fig_1.png)
 *Fig. 1: A conceptual diagram of the storage-offloaded LLM training. Overview of (a) the forward pass, (b) the backward pass, and (c) the update (step) procedure.*
 
 ### 为什么 RAID0 不是充分解法
@@ -133,10 +133,10 @@ SU+O+C 是再叠加 SmartComp 的完整系统。
 操作：SmartComp 在 GPU 上选取高幅值 Top-K 梯度，向 SSD 写入索引和值，在 FPGA 上解压缩为完整梯度向量后再更新。
 输出位置：共享互连上的梯度流量变为 $c\% \times 2M$，其中 $c$ 是压缩比例。
 
-![[.assets/page_004_fig_fig_4.1.png|Fig 4]]
+![[AI SSD/_assets/page_004_fig_fig_4.1.png|Fig 4]]
 *Fig. 4: Update procedure of the storage-offloaded training with (a) baseline [97] and (b) SmartUpdate.*
 
-![Fig 6](.assets/page_006_fig_fig_6.png)
+![Fig 6](./_assets/page_006_fig_fig_6.png)
 *Fig. 6: An overview of SmartComp. (a) The remaining gradient offloading overhead in SmartUpdate is further reduced by gradient compression. (b) FPGA in CSD conducts the decompression of the compressed gradients.*
 
 ### SmartUpdate 的流量账
@@ -191,7 +191,7 @@ GPT-2 16.6B 到 33.0B 的扩展实验显示，Smart-Infinity 在更大模型上�
 GPT-2 33.0B 时，6 个 SSD 下为 1.37 倍，10 个 SSD 下为 1.88 倍。
 原因是 Transformer 训练中的通信量随参数量增长，基线仍受上传和卸载优化器状态限制，而 Smart-Infinity 的收益也随该瓶颈保持。
 
-![Fig 10](.assets/page_009_fig_fig_10.png)
+![Fig 10](./_assets/page_009_fig_fig_10.png)
 *Fig. 10: Scalability on larger model sizes (16.6B to 33.0B) of Smart-Infinity compared to the baseline.*
 
 ### 优化器、模型与吞吐
@@ -200,10 +200,10 @@ SGD 和 AdaGrad 的实验表明，SmartUpdate 不依赖 Adam 独有结构。
 由于 SGD 和 AdaGrad 的优化器状态少于 Adam，加速略低，但趋势一致。
 BLOOM 和 ViT 上的结果为 1.32 到 1.85 倍，说明该系统更依赖“参数和状态的逐元素更新及存储流量”这一共性，而不是某个具体模型架构。
 
-![Fig 12](.assets/page_010_fig_fig_12.png)
+![Fig 12](./_assets/page_010_fig_fig_12.png)
 *Fig. 12: Applying SmartUpdate to other optimizers.*
 
-![Fig 14](.assets/page_011_fig_fig_14.png)
+![Fig 14](./_assets/page_011_fig_fig_14.png)
 *Fig. 14: Computational throughput of Smart-Infinity's modules compared to NVMe SSD read and write performance.*
 
 ### 成本、准确率和压缩比例
@@ -241,7 +241,7 @@ SmartUpdate 去掉优化器状态流量后，剩余的梯度写入会成为新�
 SmartComp 之后，更新后参数从 CSD 回传主机又成为仍然存在的上行流量。
 讨论部分进一步指出，在多 GPU 拥塞拓扑里，模型和 activation 传输也会和 CSD 共用互连，导致收益低于默认拓扑。
 
-![Fig 17](.assets/page_012_fig_fig_17.png)
+![Fig 17](./_assets/page_012_fig_fig_17.png)
 *Fig. 17: (a) An example of multi-GPU congested topology. (b) Training time breakdown of Smart-Infinity and the baseline on such environment with 1-3 GPUs (GPT-2 1.16B).*
 
 ### 与相关路线的关系

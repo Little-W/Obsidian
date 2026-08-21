@@ -22,21 +22,21 @@ DFT Compiler 是 Synopsys Design Compiler 工具集中的可测性设计工具�
 
 内部扫描在测试模式下将设计中的触发器连接成移位寄存器。测试数据可以串行装载到各个触发器，原有状态和测试响应则可串行移出。该结构能够简化测试向量生成并提高故障覆盖率。
 
-![图 1：内部扫描结构](../.assets/dft-compiler-basic/figure-000.png)
+![图 1：内部扫描结构](../_assets/dft-compiler-basic/figure-000.png)
 
 ### 边界扫描
 
 边界扫描面向芯片 I/O 与板级互连测试，通常通过 JTAG 接口控制。Synopsys 流程中可由 BSD Compiler 生成相应结构；它与 DFT Compiler 一样依赖 Design Compiler 环境及相应授权。
 
-![图 2：边界扫描结构](../.assets/dft-compiler-basic/figure-001.png)
+![图 2：边界扫描结构](../_assets/dft-compiler-basic/figure-001.png)
 
 ### 扫描触发器
 
 内部扫描通过使用同类型扫描触发器替换普通触发器实现。目标工艺库必须包含可用的扫描单元，并正确提供功能单元与扫描单元的对应关系。
 
-![图 3：普通触发器与扫描触发器](../.assets/dft-compiler-basic/figure-002.png)
+![图 3：普通触发器与扫描触发器](../_assets/dft-compiler-basic/figure-002.png)
 
-![表 1：标准单元库中的触发器对应关系](../.assets/dft-compiler-basic/figure-003.png)
+![表 1：标准单元库中的触发器对应关系](../_assets/dft-compiler-basic/figure-003.png)
 
 > [!note] 工艺库要求
 > 扫描单元被设为 `dont_use`、扫描风格与库不匹配，或复位/置位极性未正确识别时，扫描替换可能失败。插入前应先检查目标库实现（Technology Mapping）条件和测试单元属性。
@@ -45,9 +45,9 @@ DFT Compiler 是 Synopsys Design Compiler 工具集中的可测性设计工具�
 
 全扫描将大多数或全部时序单元纳入扫描链，通常有利于提高覆盖率；部分扫描只选择部分关键时序单元，以降低面积、时序、功耗和测试时间开销。
 
-![图 4：全扫描结构](../.assets/dft-compiler-basic/figure-004.png)
+![图 4：全扫描结构](../_assets/dft-compiler-basic/figure-004.png)
 
-![图 5：部分扫描结构](../.assets/dft-compiler-basic/figure-005.png)
+![图 5：部分扫描结构](../_assets/dft-compiler-basic/figure-005.png)
 
 ## DFT Compiler 流程
 
@@ -55,19 +55,19 @@ DFT Compiler 是 Synopsys Design Compiler 工具集中的可测性设计工具�
 
 DFT 实施的一般顺序为：读入设计与工艺库、建立约束、定义测试属性、检查扫描可行性、执行扫描综合或插入、复查扫描路径、估算覆盖率并输出交付物。
 
-![图 6：DFT 基本流程](../.assets/dft-compiler-basic/figure-006.png)
+![图 6：DFT 基本流程](../_assets/dft-compiler-basic/figure-006.png)
 
 ### 综合阶段扫描插入（Pre-Technology-Mapping Scan Insertion）
 
 该流程在目标库实现前的综合阶段同时考虑扫描结构。它使优化过程能够使用扫描触发器，但需要提前准备扫描库、测试端口定义和测试时序约束。
 
-![图 7：综合阶段扫描插入流程](../.assets/dft-compiler-basic/figure-007.png)
+![图 7：综合阶段扫描插入流程](../_assets/dft-compiler-basic/figure-007.png)
 
 ### 门级网表扫描插入（Post-Technology-Mapping Scan Insertion）
 
 该流程先生成已完成目标库实现的功能网表，再执行扫描触发器替换和扫描链连接。该方法便于隔离功能综合和 DFT 插入阶段，但应重新评估时序、面积和测试规则。
 
-![图 8：门级网表扫描插入流程](../.assets/dft-compiler-basic/figure-008.png)
+![图 8：门级网表扫描插入流程](../_assets/dft-compiler-basic/figure-008.png)
 
 ## 完整脚本示例
 

@@ -87,7 +87,7 @@ set_app_var hdlin_enable_rtldrc_info true
 
  报告给出了精确数字：总违规 **401** 个，其中 D1=310、D3=90、D15=1；这三个数字应以图为准，不能只写成“有一些 DRC 违规”。
 
-![图： RTL DRC 报告（401 个违规）](../.assets/figures/lab4-p04-drc-401.png)
+![图： RTL DRC 报告（401 个违规）](../_assets/figures/lab4-p04-drc-401.png)
 
 > [!note] 提示
 > 可使用 `start_gui` 打开 Design Vision，以 schematic 方式调试。`constant` 与 `testmode` 在此处效果相同；实际约束仍应以脚本中的 `set_dft_signal` 为准。
@@ -112,7 +112,7 @@ dft_drc
 
 **答案**：没有。补充 TEST_MODE、删除旧协议并重新创建协议后，报告显示 `Total violations: 0`。这一步说明 TEST_MODE 的测试定义已经被 DFTC 正确识别；后续门级 Pre-DFT 阶段仍会根据门级结构重新产生顺序单元统计。
 
-![图： TEST_MODE 修正结果](../.assets/figures/lab4-p05-drc-zero.png)
+![图： TEST_MODE 修正结果](../_assets/figures/lab4-p05-drc-zero.png)
 
 退出当前 shell：
 
@@ -170,7 +170,7 @@ dft_drc
 
 本实验的门级示例报告为 0 个总违规，顺序单元统计为 261 个顺序单元，其中 238 个是有效扫描单元、23 个是非扫描移位寄存器单元。
 
-![图：门级 DRC 报告](../.assets/figures/lab4-p06-drc-zero.png)
+![图：门级 DRC 报告](../_assets/figures/lab4-p06-drc-zero.png)
 
 ### 问题 9
 
@@ -183,7 +183,7 @@ set_test_disable_enhanced_dft_drc_reporting false
 dft_drc
 ```
 
-![图：增强版 Sequential Cell Report](../.assets/figures/lab4-p06-drc-summary.png)
+![图：增强版 Sequential Cell Report](../_assets/figures/lab4-p06-drc-summary.png)
 
 > [!note] 提示
 > 提示指出：如果使用 `compile -scan`，日志中的自动移位寄存器识别信息不会以当前形式出现；问题 9 的答案是“列出更清晰、信息更多的报告”。
@@ -209,7 +209,7 @@ Scan enable: TEST_SE
 Scan chain (Instrn[0] -> Executing_Instrn[0]) contains 261 cells
 ```
 
-![图： preview_dft 扫描链报告](../.assets/figures/lab4-p07-preview.png)
+![图： preview_dft 扫描链报告](../_assets/figures/lab4-p07-preview.png)
 
 ### 问题 10
 
@@ -240,7 +240,7 @@ dft_drc
 
 **答案**：示例为 261 个触发器；报告还指出链中包含扫描等效单元。
 
-![图： Traced Scan Chains 报告](../.assets/figures/lab4-p07-traced-chains.png)
+![图： Traced Scan Chains 报告](../_assets/figures/lab4-p07-traced-chains.png)
 
 ### 问题 13
 
@@ -264,7 +264,7 @@ dft_drc -coverage_estimate
 dft_drc -help
 ```
 
-![图： dft_drc -help 选项](../.assets/figures/lab4-p07-drc-help.png)
+![图： dft_drc -help 选项](../_assets/figures/lab4-p07-drc-help.png)
 
 > [!note] 提示
 > 关键结果：问题 10 为 `1`；问题 12 为 `0 total violations`；问题 15 为 `99.87%`。这些结果与终端报告一致。
@@ -277,7 +277,7 @@ dft_drc -help
 
 ## ATPG 覆盖率报告
 
-![图：ATPG 报告](../.assets/figures/lab4-p08-atpg.png)
+![图：ATPG 报告](../_assets/figures/lab4-p08-atpg.png)
 
 示例的故障总数为 10,276：
 

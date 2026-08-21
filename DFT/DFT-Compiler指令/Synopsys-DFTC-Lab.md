@@ -32,7 +32,7 @@ updated: 2026-08-12
 | Lab 8 | 扫描设计交接 | 输出扫描网表、协议、测试模型和报告 |
 | Lab 9 | 运行时间与容量优化 | 链平衡、测试模型、内存和覆盖率分析 |
 
-![DFT 设计流程](../.assets/dft-流程.svg)
+![DFT 设计流程](../_assets/dft-流程.svg)
 
 ## 2. 工具接手顺序
 
@@ -81,7 +81,7 @@ set_dft_signal -view existing_dft -type Reset \
 
 ## 4. 扫描插入的关键检查
 
-![扫描链结构](../.assets/扫描链结构.svg)
+![扫描链结构](../_assets/扫描链结构.svg)
 
 ### 4.1 插入前
 
@@ -123,7 +123,7 @@ report_scan_path
 
 ## 6. ATPG 与覆盖率
 
-![ATPG 故障测试](../.assets/ATPG故障测试.svg)
+![ATPG 故障测试](../_assets/ATPG故障测试.svg)
 
 覆盖率报告不要只记录一个百分比，应同时记录：
 

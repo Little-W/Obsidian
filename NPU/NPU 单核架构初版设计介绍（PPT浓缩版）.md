@@ -14,7 +14,7 @@
 
 ## 2. 单核总体结构
 
-![[.assets/npu_single_core_architecture_ppt.png]]
+![[NPU/_assets/npu_single_core_architecture_ppt.png]]
 
 图中的 Generic Core 是 NPU 外部的主控 CPU。CPU 运行模型函数和 C 驱动，以 AXI Master 身份访问 NPU 的 AXI Slave。NPU 内的 MIF 以 AXI Master 身份接入同一个 SoC AXI Fabric。图中上下两个总线框只是同一系统互连的两处视图。
 

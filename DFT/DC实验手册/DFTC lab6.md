@@ -69,9 +69,9 @@ source scripts/4read_gate_and_protocol.tcl
 
 合计 351 个违规。
 
-![图：DRC 统计图](../.assets/figures/lab6-p04-drc-counts.png)
+![图：DRC 统计图](../_assets/figures/lab6-p04-drc-counts.png)
 
-![图：违规统计与 D1 原理图](../.assets/lab6-p04.png)
+![图：违规统计与 D1 原理图](../_assets/lab6-p04.png)
 
 ## D1/D3 违规分析
 
@@ -155,7 +155,7 @@ Number of AutoFix test points: 2
 Number of Wrapper test points: 0
 ```
 
-![图： AutoFix Test Point Plan 图](../.assets/figures/lab6-p07-test-point-plan.png)
+![图： AutoFix Test Point Plan 图](../_assets/figures/lab6-p07-test-point-plan.png)
 
 > [!note] 提示
 > `2` 个 test point 中，一个来自不可控时钟，另一个来自不可控复位（对应题 3 的分析）。
@@ -194,9 +194,9 @@ dft_drc -coverage_estimate
 | Total faults | 10,456 |
 | Test coverage | 99.89% |
 
-![图：零违规 DRC 图](../.assets/figures/lab6-p07-drc-zero.png)
+![图：零违规 DRC 图](../_assets/figures/lab6-p07-drc-zero.png)
 
-![图： AutoFix 覆盖率图](../.assets/figures/lab6-p07-coverage-autofix.png)
+![图： AutoFix 覆盖率图](../_assets/figures/lab6-p07-coverage-autofix.png)
 
 ### 问题 11
 
@@ -214,7 +214,7 @@ dft_drc -coverage_estimate
 | Total faults | 10,472 |
 | Test coverage | 0.40% |
 
-![图：未使用 AutoFix 的覆盖率图](../.assets/figures/lab6-p07-coverage-no-autofix.png)
+![图：未使用 AutoFix 的覆盖率图](../_assets/figures/lab6-p07-coverage-no-autofix.png)
 
 原因是大量内部时钟、复位/置位不可控，ATPG 无法把状态机带到目标状态，也无法可靠捕获响应。
 

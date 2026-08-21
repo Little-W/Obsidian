@@ -42,7 +42,7 @@ FlashGNN 的核心价值是把大规模 GNN 训练中的“从 SSD 取数据再�
 
 基于固态硬盘的训练看似缓解容量问题，但 Ginex 这类系统仍要把批次数据从硬盘经主机总线送到计算端。论文的动机实验显示，Ginex 超过 60% 的训练时间花在数据准备和传输上，这说明瓶颈已经从模型计算转移到存储和数据通路。FlashGNN 因而提出更激进的设定：让硬盘控制器、固件、片内内存、向量聚合单元和脉动阵列组合单元共同承担训练流程。
 
-![Fig 1](.assets/page_003_fig_fig_1.png)
+![Fig 1](./_assets/page_003_fig_fig_1.png)
 *论文原图编号：Fig. 1。图意：邻居采样示例。*
 
 > [!figure] Fig. 3 Ginex runtime breakdown
@@ -57,7 +57,7 @@ FlashGNN 的核心价值是把大规模 GNN 训练中的“从 SSD 取数据再�
 
 对照系统主要有两组。第一组是 Ginex，作者分别评估第三代主机总线单硬盘、双硬盘阵列，以及 8GB、16GB、32GB 主机内存限制。第二组是增强后的 SmartSAGE+，它把组合、前向和反向处理也放入硬盘，并采用 GLIST 的图布局优化；NOSH 表示不共享批次内数据，SH 表示共享数据。
 
-![Fig 11](.assets/page_010_fig_fig_11.png)
+![Fig 11](./_assets/page_010_fig_fig_11.png)
 *论文原图编号：Fig. 11。原文标题：Evaluation setup。*
 
 ## 方法主线
@@ -67,7 +67,7 @@ FlashGNN 的核心价值是把大规模 GNN 训练中的“从 SSD 取数据再�
 3. 节点级训练通过 StoT、Tag-to-Offset 和 Target-Progress 表跟踪依赖，当一个目标特征的所有源特征可用时立即执行聚合和组合，并把结果送往下一层或反向传播。
 4. 数据驱动子图生成在边表块已经进入片内内存时，同时为当前批次和未来批次生成按需子图与主动子图；准备好的主动子图进入就绪列表或缓存，最终供后续批次消费。
 
-![Fig 4](.assets/page_004_fig_fig_4.png)
+![Fig 4](./_assets/page_004_fig_fig_4.png)
 *论文原图编号：Fig. 4。原文标题：FlashGNN architecture。*
 
 > [!figure] Fig. 2 Supervised GNN training process
@@ -80,7 +80,7 @@ FlashGNN 的核心价值是把大规模 GNN 训练中的“从 SSD 取数据再�
 
 调度排序中的 `#src` 表示一个块中被需要的源特征数量，`#tgt` 表示依赖这些源特征的目标节点数量。优先更大的 `#src` 可以一次解决更多依赖；同样 `#src` 下优先更小的 `#tgt` 可以更快完成部分目标节点的聚合。论文示例中，传统系统需要 6 轮，FlashGNN 调度后只需 3 轮。
 
-![Fig 7](.assets/page_005_fig_fig_7.png)
+![Fig 7](./_assets/page_005_fig_fig_7.png)
 *论文原图编号：Fig. 7。图意：传统调度与 FlashGNN 调度对比。*
 
 > [!figure] Fig. 5 The organization of flash chunks
@@ -98,7 +98,7 @@ FlashGNN 反对在硬盘内继续照搬按层训练，因为前向与反向传�
 
 这个机制需要三类表。StoT 记录源特征到目标特征的依赖关系。Tag-to-Offset 把特征标签映射到 Target-Progress 表项。Target-Progress 记录目标特征还缺多少源特征；计数降到零后，目标特征即可进入聚合和组合。反向传播也复用 StoT 追踪梯度依赖。作者特别指出，这种方式在常规图形处理器或专用芯片系统上未必提升吞吐，因为那些系统常受内存访问限制；在 FlashGNN 中，瓶颈是更慢的闪存访问，因此节点级执行更容易提高阵列和内存带宽利用率。
 
-![Fig 8](.assets/page_006_fig_fig_8.png)
+![Fig 8](./_assets/page_006_fig_fig_8.png)
 *论文原图编号：Fig. 8。图意：节点级训练流程。*
 
 ### 数据驱动子图生成
@@ -107,7 +107,7 @@ FlashGNN 反对在硬盘内继续照搬按层训练，因为前向与反向传�
 DSG 依赖 GST、TtoC、CtoTs、CtoFs 和 FtoRs 等映射表。
 为控制表开销，论文指出训练过程中少于 0.2% 的 CtoTs 和 CtoFs 块会触发超过 4 个节点的采样，因此每个条目采用固定长度为 4 的数组。主动子图并不要求一次完全生成；它们通常作为未来批次的部分子图保存，后续由主动采样补全。缓存替换也按进度区分深子图和浅子图，避免高进度子图被轻易淘汰。
 
-![Fig 10](.assets/page_008_fig_fig_10.png)
+![Fig 10](./_assets/page_008_fig_fig_10.png)
 *论文原图编号：Fig. 10。图意：采样进度跟踪示例。*
 
 > [!figure] Fig. 9 An example of data-driven subgraph generation
@@ -133,7 +133,7 @@ FlashGNN 相对 Ginex 的收益在不同硬盘带宽和主机内存限制下都�
 | PCIe4.0 x2 RAID0, 16GB memory | 10.20x | 2.21x | 1.56x | 6.84x | 5.20x |
 | PCIe4.0 x2 RAID0, 32GB memory | 10.47x | 1.93x | 1.30x | 6.27x | 5.00x |
 
-![Fig 12](.assets/page_012_fig_fig_12.png)
+![Fig 12](./_assets/page_012_fig_fig_12.png)
 *论文原图编号：Fig. 12。原文标题：FlashGNN speedup over Ginex。*
 
 ### 能耗与面积
@@ -141,10 +141,10 @@ FlashGNN 的总功率在四个数据集上分别为 17.32W、23.03W、28.37W 和
 
 硬件面积方面，FlashGNN 相比无计算能力 SSD 增加 40.84 平方毫米。主要面积来自 systolic arrays 和 eDRAM，分别约占 49.6% 和 49.7%。这意味着论文的收益不是“免费固件优化”，而是以显著片上资源为代价换取训练吞吐和能效。
 
-![Fig 13](.assets/page_012_fig_fig_13.png)
+![Fig 13](./_assets/page_012_fig_fig_13.png)
 *论文原图编号：Fig. 13。原文标题：FlashGNN power consumption breakdown。*
 
-![Fig 14](.assets/page_012_fig_fig_14.png)
+![Fig 14](./_assets/page_012_fig_fig_14.png)
 *论文原图编号：Fig. 14。原文标题：Hardware power consumption breakdown。*
 
 ### 三项优化的消融
@@ -159,7 +159,7 @@ C 表示只启用块请求调度；C+N 表示增加节点级训练；C+N+D 表�
 | C+N+D | 8.87x | 7.42x | 13.79x | 5.93x | 2GB DRAM, 4KB page |
 | C+N+D | 10.80x | 15.49x | 23.17x | 9.11x | 2GB DRAM, 16KB page |
 
-![Fig 15](.assets/page_013_fig_fig_15.png)
+![Fig 15](./_assets/page_013_fig_fig_15.png)
 *论文原图编号：Fig. 15。图意：不同 FlashGNN 变体相对基线的加速。*
 
 > [!figure] Fig. 16 Flash traffic reduction with CRS enabled

@@ -23,7 +23,7 @@ DFT（Design for Test，可测性设计）的核心不是“额外加一些测�
 
 典型数字芯片的 DFT 流程如下：
 
-![DFT 设计流程](.assets/dft-流程.svg)
+![DFT 设计流程](./_assets/dft-流程.svg)
 
 1. 准备 RTL/网表、工艺库和时序约束。
 2. 描述测试时钟、复位、扫描端口和测试模式。
@@ -59,19 +59,19 @@ DFT（Design for Test，可测性设计）的核心不是“额外加一些测�
 
 扫描模式下，扫描触发器通过 `SI` 和 `SO` 串联；`Scan Enable=1` 时完成移位，`Scan Enable=0` 时恢复功能模式并捕获组合逻辑结果。
 
-![扫描链结构](.assets/扫描链结构.svg)
+![扫描链结构](./_assets/扫描链结构.svg)
 
 ### 2. 边界扫描 / JTAG
 
 JTAG 通过 TAP 控制器和边界扫描寄存器访问芯片 I/O，常用于板级互连测试、调试和 I/O 旁路访问。
 
-![JTAG 边界扫描](.assets/JTAG边界扫描.svg)
+![JTAG 边界扫描](./_assets/JTAG边界扫描.svg)
 
 ### 3. ATPG
 
 ATPG 根据故障模型寻找测试激励，并通过扫描链装载、捕获和移出响应。覆盖率低时，优先检查 DFT 设计规则检查（DFT DRC）、时钟/复位可控性、黑盒和约束，而不是盲目增加测试向量。
 
-![ATPG 故障测试](.assets/ATPG故障测试.svg)
+![ATPG 故障测试](./_assets/ATPG故障测试.svg)
 
 ## 四、常用检查清单
 

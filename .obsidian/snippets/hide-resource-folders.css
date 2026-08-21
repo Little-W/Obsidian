@@ -1,0 +1,15 @@
+/* Keep resource folders indexed by Obsidian while hiding them in the file explorer. */
+div[data-path="_assets"],
+div[data-path$="/_assets"],
+div[data-path="_assets"] + div.nav-folder-children,
+div[data-path$="/_assets"] + div.nav-folder-children,
+div[data-path="_media"],
+div[data-path$="/_media"],
+div[data-path="_media"] + div.nav-folder-children,
+div[data-path$="/_media"] + div.nav-folder-children,
+div[data-path="_T100_NPU_TOP_Architecture_Spec_assets"],
+div[data-path$="/_T100_NPU_TOP_Architecture_Spec_assets"],
+div[data-path="_T100_NPU_TOP_Architecture_Spec_assets"] + div.nav-folder-children,
+div[data-path$="/_T100_NPU_TOP_Architecture_Spec_assets"] + div.nav-folder-children {
+  display: none;
+}

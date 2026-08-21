@@ -18,14 +18,14 @@
 大模型训练已经从单纯计算密集型任务演进为计算、显存、内存、存储和互连共同受限的复杂系统任务。训练过程中，GPU 显存不仅需要容纳模型参数，还需要容纳前向传播产生的激活值、反向传播产生的梯度、优化器状态、混合精度训练中的 FP32 master weight、通信缓冲区以及框架运行时产生的临时张量，使训练状态规模显著大于模型参数本身。
 
 
- ![[.assets/Pasted image 20260605121056.png]]
+ ![[AI SSD/_assets/Pasted image 20260605121056.png]]
 表1-1大模型参数存储需求
 
-![[.assets/Pasted image 20260605122014.png]]
+![[AI SSD/_assets/Pasted image 20260605122014.png]]
 图1-1 GPU内存容量增长落后于模型需求。
 
 
-![[.assets/Pasted image 20260605130537.png]]
+![[AI SSD/_assets/Pasted image 20260605130537.png]]
 图1-2 单个NVIDIA DGX-2系统可用内存/存储的分布。相较GPU内存拥有3倍CPU内存和超过50倍的NVMe存储。
 
 可以看出，随着参数规模、训练层数和隐藏层维度增长，单卡 GPU 显存容量逐渐成为训练系统瓶颈。为缓解该问题，业界和学术界提出了模型并行、流水线并行、张量并行、ZeRO 分片、Activation Checkpointing、CPU Offload 和 NVMe Offload 等技术。DeepSpeed ZeRO 系列通过分片优化器状态、梯度和参数降低单卡冗余显存占用；ZeRO-Infinity 进一步将 NVMe SSD 纳入 GPU、CPU、NVMe 组成的异构内存层级，说明 SSD 可作为大模型训练容量扩展的重要组成部分。
@@ -36,10 +36,10 @@ SSD 在大模型训练中的角色正在从“数据集存储介质”和“Chec
 
 Smart-infinity研究把 Adam 等优化器的更新执行位置从 CPU 移到 SSD 内部 FPGA，实现近存运算，并加入Top-K 梯度压缩以节约流量。SSDTrain 研究分析得到activation 参数量增长速度快于其他参数，选择将其卸载到SSD，并将数据传输与计算完全重叠，在不影响性能的情况下降低 GPU 内存使用。这些工作共同说明，训练系统与 SSD 的关系已经从简单文件读写转向计算存储协同以及根据参数特性卸载。
 
-![[.assets/Pasted image 20260605124000.png]]
+![[AI SSD/_assets/Pasted image 20260605124000.png]]
 图1-4 Smart-infinity架构图，将更新和解压缩计算卸载到SSD
 
-![[.assets/Pasted image 20260605124307.png|552]]
+![[AI SSD/_assets/Pasted image 20260605124307.png|552]]
 图1-5 SSDTrain卸载和预取激活的流水线示意图
 ## 1.2 大模型训练框架与存储适配技术现状
 
@@ -55,7 +55,7 @@ PyTorch 原生 Tensor 管理主要关注设备间拷贝和自动求导正确性�
 
 DeepSpeed 是面向大模型训练的系统级优化框架，ZeRO 系列技术是当前具有代表性的训练状态分片机制。ZeRO-1 分片优化器状态，ZeRO-2 在此基础上分片梯度，ZeRO-3 进一步分片模型参数。通过逐步消除数据并行副本中的冗余状态，ZeRO 显著降低单卡显存压力。ZeRO-Offload 和 ZeRO-Infinity 将训练状态迁移至 CPU 或 NVMe，从而进一步扩大可训练模型规模。
 
-![[.assets/Pasted image 20260605143428.png]]
+![[AI SSD/_assets/Pasted image 20260605143428.png]]
 图1-6 ZeRO系列原理图
 
 ZeRO-Infinity 的重要意义在于证明 NVMe SSD 可以参与大模型训练运行时，而不仅是保存训练数据和 Checkpoint。它通过异构内存调度、数据预取和带宽重叠机制，在 GPU、CPU 和 NVMe 之间管理模型状态。现有 DeepSpeed Offload 配置通常以 offload device、nvme_path、buffer_count、buffer_size、max_in_cpu 等参数为核心，强调数据是否放入 NVMe 以及如何配置缓冲区，但没有直接表达“该写入属于 optimizer state”“该数据短生命周期”“该 activation 可重算”等训练语义。
@@ -74,7 +74,7 @@ ZeRO-Infinity 的重要意义在于证明 NVMe SSD 可以参与大模型训练�
 
 ## 2.1 研究目的
 
-![[.assets/Pasted image 20260605114758.png]]
+![[AI SSD/_assets/Pasted image 20260605114758.png]]
 
 本方案的目标是建立一套从训练数据识别、生命周期建模、SSD 友好调度到 AI SSD 语义接口的完整方法。具体包括：构建面向 AI SSD 的训练数据语义分类模型；设计 SSD 友好的 Offload、预取、写回和 Checkpoint 调度方法；优化训练过程中的 I/O 访问模式；降低无效写入、小随机写和关键路径 I/O 等待；建立训练框架与 AI SSD 之间的语义协同接口机制。
 
@@ -99,7 +99,7 @@ ZeRO-Infinity 的重要意义在于证明 NVMe SSD 可以参与大模型训练�
 ### 3.1.1 技术路线概述
 
 总体技术路线采用“采集分析、语义建模、策略生成、框架适配、实验验证”的流程。首先，在 PyTorch 和 DeepSpeed 训练流程中插桩，采集参数、梯度、优化器状态、activation、checkpoint、dataset cache 和日志/Profile 数据的生命周期与 I/O 行为。其次，基于采集结果建立训练数据语义分类模型，形成数据类型、生命周期、访问模式、优先级、可重算性和持久化要求等标签。再次，根据分类结果设计 SSD 友好的 Offload、Prefetch、Write-back、Checkpoint 和日志管理策略。最后，将策略集成到训练框架中，并通过普通 NVMe SSD、软件 trace 和可用的 AI SSD 接口开展验证。在 AI SSD 接口明确后，可将训练语义标签映射到用户态库、驱动或设备接口；在联合测试中，可根据设备反馈调整调度阈值和 I/O 组织方式。
-![[.assets/Pasted image 20260604192236.png]]
+![[AI SSD/_assets/Pasted image 20260604192236.png]]
 图3-1 总体技术路线图
 ### 3.1.2 总体架构
 
@@ -120,13 +120,13 @@ ZeRO-Infinity 的重要意义在于证明 NVMe SSD 可以参与大模型训练�
 训练数据流从对象产生开始进入闭环。模型 forward 产生 activation，参数参与计算，optimizer state 在 optimizer step 中更新，checkpoint 在保存周期触发，dataset cache 在数据加载时被读取，日志/Profile 在训练过程中追加。Profiler 记录对象元数据和事件顺序，分类模块为对象生成标签，调度模块基于标签和资源状态选择策略，I/O 模块执行实际读写并输出 trace，评估模块再将结果反馈给分类阈值和调度策略。
 
 闭环中包含两类反馈。第一类是训练侧反馈，例如显存峰值、step time、offload wait time、checkpoint stall 和 GPU utilization；第二类是存储侧反馈，例如 Host writes、请求大小分布、小写比例、队列深度和设备延迟。两类反馈共同决定后续策略是否需要调整。若 SSD 队列积压，则降低可延迟写入优先级；若显存峰值接近 OOM，则提高可安全 offload 数据的比例；若 checkpoint stall 明显，则调整 checkpoint 异步写和带宽限制。
-![[.assets/Pasted image 20260604195050.png|697]]
+![[AI SSD/_assets/Pasted image 20260604195050.png|697]]
 图3-2 系统架构及数据流示意图
 ## 3.2 大模型训练数据生命周期分析技术
 
 本节按照“数据类型识别、生命周期采集与特征建模、语义分类模型”的逻辑展开。数据类型识别用于明确训练过程中有哪些对象；生命周期采集与特征建模用于记录对象的产生、访问、迁移、写回和释放行为；语义分类模型则基于对象类型和生命周期特征生成标签、策略和聚合统计，为后续 SSD 友好调度提供输入。
 
-![[.assets/Pasted image 20260605114227.png]]
+![[AI SSD/_assets/Pasted image 20260605114227.png]]
 图：生命周期分析技术路径图
 
 ### 3.2.1 训练数据类型识别
@@ -237,7 +237,7 @@ Tensor 对象主要通过 PyTorch 和 DeepSpeed 训练流程中的插桩进行�
 
 ## 3.3 SSD 友好的训练数据 Offload 策略
 
-![[.assets/3.3.png]]
+![[AI SSD/_assets/3.3.png]]
 
 ### 3.3.1 参数数据 Offload 策略
 
@@ -285,7 +285,7 @@ Checkpoint 与 Offload 流需要解耦。若 checkpoint 写入与 optimizer stat
 
 因此，面向 SSD 的训练 I/O 优化需要结合训练数据的语义进行设计。不同数据对象具有不同生命周期、访问模式和可靠性要求。例如，参数分片和优化器状态会直接影响训练主流程，需要按计算顺序及时预取和写回；activation 生命周期较短，可通过重算减少保存；checkpoint 数据量大但写入频率较低，适合后台顺序写入；日志和性能分析数据主要用于诊断，应采用低优先级缓冲追加。基于这些差异，系统需要对 SSD I/O 进行对象感知的组织、调度和削减。
 
-![[.assets/3.4-2.png]]
+![[AI SSD/_assets/3.4-2.png]]
 
 本节从四个方面展开优化：第一，通过大块化与对齐 I/O，将零散 Tensor 合并为分片、批次、分块或槽位等较大的 I/O 单元；第二，通过顺序化写入与生命周期感知放置，使不同训练数据按照访问模式分区管理；第三，通过分层缓存、异步预取和计算 I/O 重叠，减少 GPU 等待 SSD I/O 的时间；第四，通过写入削减，从训练语义出发减少不必要写入，降低 SSD 压力并延长设备使用寿命。
 
@@ -395,7 +395,7 @@ SSD 更适合处理连续、大块、生命周期相近的数据流。虽然 SSD
 
 ## 3.5 面向 AI SSD 的训练语义提示接口
 
-![[.assets/3.5.png]]
+![[AI SSD/_assets/3.5.png]]
 ### 3.5.1 接口设计原则与语义模型
 
 训练语义提示接口的目标是将训练框架内部已经掌握的数据含义传递给 AI SSD 或相关存储管理组件，使存储系统能够感知训练数据的生命周期、访问模式和重要程度，从而为数据放置、缓存管理、调度优化和资源分配提供依据。
@@ -448,7 +448,7 @@ SSD 更适合处理连续、大块、生命周期相近的数据流。虽然 SSD
 通过该接口机制，训练框架内部可见的数据语义能够被存储系统有效利用，为 AI SSD 提供更符合实际训练场景的优化依据，实现训练算法与存储系统的协同优化。
 
 ## 3.6 训练框架适配与原型系统实现
-![[.assets/3.6.png]]
+![[AI SSD/_assets/3.6.png]]
 
 ### 3.6.1 训练框架适配实现
 
