@@ -642,113 +642,150 @@ S、E、F等干净行通常可以直接丢弃；M或O行必须先写回或把最
 
 *图6 监听式向全部L1 Cache广播请求；目录式根据共享者集合发送定向监听。*
 
-### 5.10 ACE
+### 5.10 ACE协议族
 
-#### 5.10.1 定义与组成
+#### 5.10.1 版本与适用范围
 
-ACE属于AMBA（Advanced Microcontroller Bus Architecture，高级微控制器总线架构）协议族，它在AXI4读写通道的基础上增加一致性事务属性、监听通道和完成确认，使带L1 Cache的主设备能够共享同一可缓存内存区。ACE不是独立于AXI4的另一套数据总线：普通地址、数据和响应仍通过AR、R、AW、W和B通道传送，一致性信息由附加信号和AC（Snoop Address Channel，监听地址通道）、CR（Snoop Response Channel，监听响应通道）、CD（Snoop Data Channel，监听数据通道）配合完成。
+ACE属于AMBA（Advanced Microcontroller Bus Architecture，高级微控制器总线架构）协议族。AMBA 4定义ACE和ACE-Lite，AMBA 5从Issue F开始定义ACE5、ACE5-Lite、支持DVM（Distributed Virtual Memory，分布式虚拟内存）的ACE5-LiteDVM，以及基于ACP（Accelerator Coherency Port，加速器一致性端口）的ACE5-LiteACP。ACE5在ACE基础上增加由接口属性声明的能力，但仍沿用ACE的五状态Cache模型、AXI4基本通道以及监听机制。
 
-一个基本ACE系统包含三类组成部分：带L1 Cache的ACE主设备发起读写并接收监听；ACE一致性互连选择需要监听的主设备、汇总响应并确定数据来源；共享存储保存干净数据或接收脏数据写回。ACE把Cache行属性组合为五种合法状态：Invalid、UniqueClean、UniqueDirty、SharedClean和SharedDirty。Unique表示没有其他L1 Cache保存副本，Shared表示可能存在其他副本，Clean表示共享存储已有最新值，Dirty表示最新值仍由某个L1 Cache负责。
+ACE在AXI4的AR、R、AW、W和B通道上增加一致性事务属性，并增加AC（Snoop Address Channel，监听地址通道）、CR（Snoop Response Channel，监听响应通道）和CD（Snoop Data Channel，监听数据通道）。普通地址、读写数据和AXI响应仍在原AXI4通道传送，新增信号说明事务的共享范围、一致性操作和Cache状态结果。因此，ACE是AXI4的一致性扩展，不是一套与AXI4无关的数据总线。
 
-#### 5.10.2 通道关系
+一个具备完整ACE功能的系统包含带硬件一致性Cache的主设备、一致性互连和主存储。主设备发起读写并接收监听；互连按共享范围选择需要检查的Cache，汇总监听响应并确定读数据来源；主存储接收必要的数据更新。主存储不必始终保存最新值，但当最后一份Cache副本被丢弃时，已修改数据必须先得到保存。
 
-ACE对AXI4通道的扩展分为三组：
+#### 5.10.2 五状态Cache模型
 
-- AR与AW通道增加`AxSNOOP`、`AxDOMAIN`和`AxBAR`，其中`Ax`代表读地址或写地址通道的同类信号；读数据通道把`RRESP`扩展为4位，用高两位返回共享与脏数据属性。
-- AC通道由一致性互连发送到带L1 Cache的主设备；CR和CD通道由被监听主设备返回一致性互连。
-- `RACK`（Read Acknowledge，读完成确认）与`WACK`（Write Acknowledge，写完成确认）由ACE主设备在读或写事务真正完成后发送，使互连能够避免过早向该主设备发出同一地址的监听。
+ACE使用Valid或Invalid、Unique或Shared、Clean或Dirty三组属性描述Cache行。Unique表示该Cache行只存在于一个Cache中；Shared表示它可能存在于多个Cache中，但不保证实际上一定有其他副本。Clean表示当前Cache不承担更新主存储的责任，并不等于主存储一定保存最新数据；Dirty表示Cache行已相对主存储发生修改，当前Cache必须保证这些修改最终送到主存储。
 
-AC、CR和CD通道都采用与AXI相同的VALID/READY握手。AC通道没有事务ID、突发长度和字节数信号，监听事务按照AC接受顺序返回CR；每个AC请求必须有且只有一个CR响应。仅当`CRRESP[0]`指示需要传送数据时，才在CD通道返回完整Cache行。
+| 状态 | 简称 | 准确含义 | 本地写入前的处理 |
+| --- | --- | --- | --- |
+| Invalid | I | 当前Cache不保存该Cache行 | 必须先获取数据或完整Cache行的写入权限 |
+| UniqueClean | UC | 只存在这一份Cache副本，且数据未相对主存储修改 | 可直接写入，无需通知其他Cache，写入后转为UD |
+| UniqueDirty | UD | 只存在这一份Cache副本，数据已修改，且当前Cache承担更新主存储的责任 | 可继续写入，无需通知其他Cache |
+| SharedClean | SC | 可能有其他Cache副本；当前Cache不承担更新主存储的责任，主存储却仍可能不是最新值 | 必须先通知其他Cache并取得Unique权限 |
+| SharedDirty | SD | 可能有其他Cache副本，当前Cache承担更新主存储的责任 | 必须先通知其他Cache并取得Unique权限 |
 
-#### 5.10.3 信号说明
+五状态模型还有三条重要规则。第一，Unique行只能存在于一个Cache中，同一Cache行存在多份副本时，每份副本都必须是Shared。第二，Cache丢弃副本时不必通知仍保留副本的Cache，所以Shared行最后可能只剩一份。第三，若Cache行已相对主存储修改，只能有一个Cache以Dirty状态保存该行并承担后续更新责任。
 
-下表方向均以带L1 Cache的ACE主设备为基准。`ACADDR`和`CDDATA`的具体宽度由接口配置确定，其余信号位宽由协议固定。
+#### 5.10.3 通道组织
+
+ACE信号分为三类：
+
+- 现有AXI4通道的附加信号。AR通道增加`ARDOMAIN[1:0]`、`ARSNOOP[3:0]`和AMBA 4屏障使用的`ARBAR[1:0]`；AW通道增加`AWDOMAIN[1:0]`、`AWSNOOP[2:0]`、`AWBAR[1:0]`和WriteEvict使用的可选`AWUNIQUE`；R通道把`RRESP`扩展为4位。ACE不在W和B通道增加一致性信号。
+- ACE专用监听通道。互连通过AC通道向带一致性Cache的主设备发送监听地址和操作类型，被监听主设备通过CR通道返回状态，必要时再通过CD通道返回整条Cache行。
+- 主设备完成确认信号。`RACK`（Read Acknowledge，读完成确认）和`WACK`（Write Acknowledge，写完成确认）告知互连，先前的读或写事务已经在主设备端完成。互连依此避免在先前的同地址事务完成前向该主设备发出监听。
+
+AC、CR和CD使用VALID/READY握手。AC不携带事务ID、突发类型、突发长度和事务尺寸，所有监听事务按顺序完成：每个已接受的AC请求都必须在CR通道上得到一个响应，CR响应顺序必须与AC请求接受顺序相同。当`CRRESP[0]=1`时，该监听还必须在CD通道上返回完整Cache行。
+
+复位期间，主设备必须把`RACK`、`WACK`、`CRVALID`和`CDVALID`置0，互连必须把`ACVALID`置0。`ARESETn`释放后，互连最早可在下一个上升沿开始置高`ACVALID`。
+
+#### 5.10.4 信号说明
+
+下表以带硬件一致性Cache的ACE或ACE5主设备为基准。`ARBAR`和`AWBAR`只属于支持屏障事务的AMBA 4 ACE接口；`AWSNOOP`在ACE和ACE5中为3位，AMBA 5 Lite系列的位宽差异在5.10.8说明。`ACADDR`和`CDDATA`宽度由接口配置确定。
 
 | 信号 | 方向 | 位宽 | 功能 | 有效条件 | 暂停、错误与复位行为 |
 | --- | --- | ---: | --- | --- | --- |
-| `ARSNOOP` | 输出 | 4位 | 指定共享读、独占读或Cache维护等读侧事务类型 | `ARVALID=1` | `ARREADY=0`时保持；复位后在`ARVALID=0`期间取值无效 |
-| `ARDOMAIN` | 输出 | 2位 | 指定读事务的一致性范围：Non-shareable、Inner Shareable、Outer Shareable或System | `ARVALID=1` | `ARREADY=0`时保持；必须与目标内存属性一致 |
-| `ARBAR` | 输出 | 2位 | 标记经典ACE读屏障事务 | `ARVALID=1` | `ARREADY=0`时保持；ACE5不支持屏障事务时接口不提供该信号 |
-| `AWSNOOP` | 输出 | 3位 | 指定WriteUnique、WriteLineUnique、WriteBack、WriteClean或WriteEvict等写侧事务类型 | `AWVALID=1` | `AWREADY=0`时保持；复位后在`AWVALID=0`期间取值无效 |
-| `AWDOMAIN` | 输出 | 2位 | 指定写事务的一致性范围 | `AWVALID=1` | `AWREADY=0`时保持；必须与`AWCACHE`和目标内存属性一致 |
-| `AWBAR` | 输出 | 2位 | 标记经典ACE写屏障事务 | `AWVALID=1` | `AWREADY=0`时保持；ACE5不支持屏障事务时接口不提供该信号 |
-| `AWUNIQUE` | 输出 | 1位 | 表示发起主设备在写事务期间不保留该Cache行的其他副本，下级Cache可按Unique属性处理 | `AWVALID=1`且事务类型允许使用；WriteEvict必须为1 | `AWREADY=0`时保持；未实现时固定为0，且不得发出WriteEvict |
-| `RRESP[3:2]` | 输入 | 2位 | `RRESP[3]`为IsShared，`RRESP[2]`为PassDirty；分别说明是否仍有其他副本以及写回责任是否转交给请求方 | `RVALID=1` | `RREADY=0`时保持；错误仍由`RRESP[1:0]`报告，最后一拍后等待`RACK` |
-| `ACVALID` | 输入 | 1位 | 指示AC通道监听地址与控制信息有效 | 高电平有效 | `ACREADY=0`时互连保持其余AC信号；复位期间必须为0 |
-| `ACREADY` | 输出 | 1位 | 指示主设备能够接收监听请求 | 与`ACVALID`同时为1时完成握手 | 可提前置1；暂停时置0，但已经接受的请求仍必须返回CR |
-| `ACADDR` | 输入 | 实现规定的监听地址宽度 | 给出监听事务首地址，并按CD通道每拍字节数对齐 | `ACVALID=1` | `ACREADY=0`时保持；没有独立错误指示 |
-| `ACSNOOP` | 输入 | 4位 | 指定ReadShared、ReadUnique、CleanInvalid、MakeInvalid等监听类型 | `ACVALID=1` | `ACREADY=0`时保持；保留编码不得执行 |
-| `ACPROT` | 输入 | 3位 | 给出监听访问的保护属性，其中`ACPROT[1]`区分Secure与Non-secure地址空间 | `ACVALID=1` | `ACREADY=0`时保持；两个安全属性空间的一致性分别处理 |
+| `ARSNOOP` | 输出 | 4位 | 指定ReadShared、ReadUnique或Cache维护等读侧事务类型 | `ARVALID=1` | `ARREADY=0`时保持；复位后只有在`ARVALID=1`时才解释其取值 |
+| `ARDOMAIN` | 输出 | 2位 | 指定读事务的共享范围 | `ARVALID=1` | `ARREADY=0`时保持；必须与`ARCACHE`和目标存储属性相符 |
+| `ARBAR` | 输出 | 2位 | 标记AMBA 4 ACE读屏障事务 | `ARVALID=1` | `ARREADY=0`时保持；ACE5接口不提供该信号 |
+| `AWSNOOP` | 输出 | 3位 | 指定WriteUnique、WriteBack、WriteClean、Evict或WriteEvict等写侧事务类型 | `AWVALID=1` | `AWREADY=0`时保持；复位后只有在`AWVALID=1`时才解释其取值 |
+| `AWDOMAIN` | 输出 | 2位 | 指定写事务的共享范围 | `AWVALID=1` | `AWREADY=0`时保持；必须与`AWCACHE`和目标存储属性相符 |
+| `AWBAR` | 输出 | 2位 | 标记AMBA 4 ACE写屏障事务 | `AWVALID=1` | `AWREADY=0`时保持；ACE5接口不提供该信号 |
+| `AWUNIQUE` | 输出 | 1位 | 表示本次写入数据可在下级Cache中以Unique状态保存 | `AWVALID=1`且事务类型允许使用；WriteEvict必须为1 | `AWREADY=0`时保持；未实现时固定为0，且主设备不得发出WriteEvict |
+| `RRESP[3:2]` | 输入 | 2位 | `RRESP[3]`为IsShared，`RRESP[2]`为PassDirty，用于确定请求方取得的Cache状态 | `RVALID=1` | `RREADY=0`时保持，整个突发期间保持一致；读错误仍由`RRESP[1:0]`报告 |
+| `ACVALID` | 输入 | 1位 | 指示AC地址和控制信息有效 | 高电平有效 | `ACREADY=0`时互连保持其余AC信号；复位期间必须为0 |
+| `ACREADY` | 输出 | 1位 | 指示主设备可以接收监听请求 | `ACVALID && ACREADY` | 可提前置1；置0只暂停新请求，已接受请求仍必须返回CR |
+| `ACADDR` | 输入 | 实现规定的地址宽度 | 给出监听事务的首地址，并按CD通道每拍字节数对齐 | `ACVALID=1` | `ACREADY=0`时保持；AC通道不单独报告地址错误 |
+| `ACSNOOP` | 输入 | 4位 | 指定ReadShared、ReadUnique、CleanInvalid或MakeInvalid等监听类型 | `ACVALID=1` | `ACREADY=0`时保持；不得执行保留编码 |
+| `ACPROT` | 输入 | 3位 | 给出监听访问的保护属性，`ACPROT[1]`区分Secure与Non-secure地址空间 | `ACVALID=1` | `ACREADY=0`时保持；硬件一致性不跨越两个安全属性空间 |
 | `CRVALID` | 输出 | 1位 | 指示监听响应有效 | 高电平有效 | `CRREADY=0`时保持`CRRESP`；复位期间必须为0 |
-| `CRREADY` | 输入 | 1位 | 指示互连能够接收监听响应 | 与`CRVALID`同时为1时完成握手 | 可提前置1；暂停时不会取消已经接收的AC请求 |
-| `CRRESP` | 输出 | 5位 | 返回是否传送数据、Cache行错误、脏数据责任、是否保留副本及监听前是否为Unique | `CRVALID=1` | `CRREADY=0`时保持；非法位组合必须在验证中报错 |
-| `CDVALID` | 输出 | 1位 | 指示监听数据有效 | `CRRESP[0]=1`的请求需要发送数据 | `CDREADY=0`时保持`CDDATA`与`CDLAST`；复位期间必须为0 |
-| `CDREADY` | 输入 | 1位 | 指示互连能够接收监听数据 | 与`CDVALID`同时为1时完成一拍 | 可提前置1；暂停时发送方保持数据 |
-| `CDDATA` | 输出 | 实现规定的监听数据宽度 | 返回被监听L1 Cache中的Cache行数据 | `CDVALID=1` | 无字节使能，每个字节均有效；错误状态由`CRRESP[1]`报告 |
-| `CDLAST` | 输出 | 1位 | 标记监听数据最后一拍 | `CDVALID=1` | 仅在`CDVALID && CDREADY && CDLAST`时结束本次CD传送 |
-| `RACK` | 输出 | 1位 | 表示主设备已完成读事务 | 最后一拍`RVALID && RREADY && RLAST`握手后的下一拍或更晚 | 单周期脉冲，无READY；复位期间必须为0，不得等待其他事务再发送 |
-| `WACK` | 输出 | 1位 | 表示主设备已完成写事务 | `BVALID && BREADY`握手后的下一拍或更晚 | 单周期脉冲，无READY；复位期间必须为0，不得等待其他事务再发送 |
+| `CRREADY` | 输入 | 1位 | 指示互连可以接收监听响应 | `CRVALID && CRREADY` | 可提前置1；置0不会取消已接受的AC请求 |
+| `CRRESP` | 输出 | 5位 | 返回数据传送、Cache行错误、Dirty责任、副本保留和监听前Unique属性 | `CRVALID=1` | `CRREADY=0`时保持；响应位组合必须符合监听类型和Cache状态 |
+| `CDVALID` | 输出 | 1位 | 指示监听数据有效 | 对应的`CRRESP[0]=1` | `CDREADY=0`时保持`CDDATA`和`CDLAST`；复位期间必须为0 |
+| `CDREADY` | 输入 | 1位 | 指示互连可以接收一拍监听数据 | `CDVALID && CDREADY` | 可提前置1；置0时发送方保持数据 |
+| `CDDATA` | 输出 | 实现规定的数据宽度 | 返回被监听Cache中的Cache行数据 | `CDVALID=1` | 没有字节使能，每个字节均有效；数据错误由`CRRESP[1]`报告 |
+| `CDLAST` | 输出 | 1位 | 标记监听数据的最后一拍 | `CDVALID=1` | 仅当`CDVALID && CDREADY && CDLAST`时结束本次CD传送 |
+| `RACK` | 输出 | 1位 | 表示主设备已完成读事务 | 最后一拍`RVALID && RREADY && RLAST`握手后的下一拍或更晚 | 单周期脉冲，没有READY；复位期间必须为0，不得为等待其他事务而延后 |
+| `WACK` | 输出 | 1位 | 表示主设备已完成写事务 | `BVALID && BREADY`握手后的下一拍或更晚 | 单周期脉冲，没有READY；复位期间必须为0，不得为等待其他事务而延后 |
 
-`CRRESP`各位必须结合监听类型解释，不能只把它当作成功或失败编码：
+`RACK`和`WACK`对全部ACE读写事务都要发送，不只用于Shareable事务。它们不携带ID，也没有反压信号；互连必须在主设备置高确认的当个周期接收。
 
-| 位 | 名称 | 为1时的含义 | 设计注意事项 |
+#### 5.10.5 监听响应
+
+`CRRESP`不是单纯的成功或失败编码，每一位都描述监听完成后的数据传送和Cache状态：
+
+| 位 | 名称 | 为1时的含义 | 设计说明 |
 | --- | --- | --- | --- |
-| `CRRESP[0]` | DataTransfer | 本次监听将在CD通道返回完整Cache行 | 如果PassDirty为1，DataTransfer也必须为1 |
-| `CRRESP[1]` | Error | 被监听Cache行存在错误，常见来源是ECC（Error-Correcting Code，错误校正码）检查失败 | Error不改变其他响应位的含义，互连必须按系统错误处理方案继续完成或终止事务 |
-| `CRRESP[2]` | PassDirty | 监听前Cache行为Dirty，写回共享存储的责任随数据转交 | 请求方或互连必须继续保存该责任，不能把脏数据当成干净数据丢弃 |
-| `CRRESP[3]` | IsShared | 被监听主设备在监听完成后仍保存该Cache行副本 | ReadUnique、CleanInvalid和MakeInvalid不得返回1 |
-| `CRRESP[4]` | WasUnique | 监听前该Cache行为Unique，系统可确认不存在其他副本 | 只有能够可靠确认Unique时才置1；固定返回0是合法的，但可能增加后续监听 |
+| `CRRESP[0]` | DataTransfer | 本次监听在CD通道返回完整Cache行 | PassDirty为1时，DataTransfer必须为1 |
+| `CRRESP[1]` | Error | 被监听Cache行存在错误，常见原因是ECC（Error-Correcting Code，错误校正码）检查发现数据损坏 | Error不改变其他响应位的含义，系统还要按既定错误处理方案记录和处理该错误 |
+| `CRRESP[2]` | PassDirty | 监听前Cache行为Dirty，且更新主存储的责任正转交给请求主设备或互连 | 接收数据的一方必须继续承担该责任，不得把这份数据当作Clean数据丢弃 |
+| `CRRESP[3]` | IsShared | 被监听主设备在监听完成后仍保留该Cache行副本 | ReadUnique、CleanInvalid和MakeInvalid的响应不得置1 |
+| `CRRESP[4]` | WasUnique | 监听前该Cache行为Unique，可确认其他Cache不存在副本 | 只有确定监听前为Unique时才能置1；主设备始终返回0也符合协议，但可能增加以后的监听数量 |
 
-`ARDOMAIN`与`AWDOMAIN`的编码决定互连需要考虑哪些L1 Cache：
+`RRESP[3:2]`是互连返回给请求主设备的状态信息。`RRESP[3]`为IsShared，表示请求主设备取得的Cache行应按Shared处理；`RRESP[2]`为PassDirty，表示请求主设备接管更新主存储的责任。它们与`CRRESP`中的同名属性作用位置不同：`CRRESP`由被监听主设备送往互连，`RRESP`由互连送往请求主设备。
 
-| `AxDOMAIN[1:0]` | 范围 | 主要作用 | 使用限制 |
+#### 5.10.6 共享范围与事务类型
+
+`ARDOMAIN`和`AWDOMAIN`指定互连在处理事务时需要考虑的主设备集合：
+
+| `AxDOMAIN[1:0]` | 范围 | 含义 | 使用说明 |
 | --- | --- | --- | --- |
-| `0b00` | Non-shareable | 只考虑发起主设备，不查询其他L1 Cache | 适用于本地数据；不能用来访问需要硬件一致性的共享数据 |
-| `0b01` | Inner Shareable | 查询内部共享范围内的L1 Cache | ACE5与ACE5-Lite已不建议使用该编码 |
-| `0b10` | Outer Shareable | 查询外部共享范围及其包含的内部共享范围 | 可缓存共享数据通常使用该范围 |
-| `0b11` | System | 覆盖系统内全部主设备，但不访问Cache | Device类型事务必须使用该范围；可缓存事务不得使用 |
+| `0b00` | Non-shareable | 范围内只有发起主设备 | 适用于不需要其他Cache参与的访问 |
+| `0b01` | Inner Shareable | 范围可以包含其他主设备 | ACE5、ACE5-Lite、ACE5-LiteDVM和ACE5-LiteACP从Issue F起不再推荐该取值，新设计使用`0b10` |
+| `0b10` | Outer Shareable | 包含所属Inner Shareable范围内的全部主设备，并可以包含更多主设备 | AMBA 5新设计的共享可缓存数据通常使用该取值 |
+| `0b11` | System | 范围包含系统内全部主设备 | Device类型事务必须使用该取值；正常可缓存事务不使用该取值访问一致性Cache |
 
-`AxSNOOP`不能脱离`AxDOMAIN`单独解释。例如`ARSNOOP=0b0000`在Non-shareable或System范围表示ReadNoSnoop，在Inner Shareable或Outer Shareable范围则表示ReadOnce；`AWSNOOP=0b000`也会随范围分别表示WriteNoSnoop或WriteUnique。常用一致性事务编码如下：
+`AxSNOOP`必须与`AxDOMAIN`一起解释。例如，`ARSNOOP=0b0000`与Non-shareable或System组合时表示ReadNoSnoop，与Inner Shareable或Outer Shareable组合时表示ReadOnce；`AWSNOOP=0b000`也会分别表示WriteNoSnoop或WriteUnique。AMBA 5规范附录允许用WriteUniquePtl和WriteUniqueFull分别强调部分Cache行与完整Cache行写入；下表同时保留传统名称，便于与ACE事务说明对照。
 
 | 字段 | 编码 | 事务类型 | 主要动作 |
 | --- | --- | --- | --- |
-| `ARSNOOP` | `0b0001` | ReadShared | 读取可共享数据，允许返回Shared副本或转交Dirty数据 |
-| `ARSNOOP` | `0b0010` | ReadClean | 读取干净数据，不转交Dirty写回责任 |
-| `ARSNOOP` | `0b0011` | ReadNotSharedDirty | 允许请求方取得Dirty数据，但不以SharedDirty作为结果 |
-| `ARSNOOP` | `0b0111` | ReadUnique | 取得数据并清除其他副本，请求方取得Unique权限 |
-| `ARSNOOP` | `0b1000` | CleanShared | 使Dirty数据写入共享存储，允许保留干净共享副本 |
-| `ARSNOOP` | `0b1001` | CleanInvalid | 先保存Dirty数据，再清除所有Cache副本 |
-| `ARSNOOP` | `0b1101` | MakeInvalid | 直接清除所有Cache副本，不保留被覆盖前的Dirty数据 |
-| `AWSNOOP` | `0b000` | WriteUnique | 在部分或整行写入前清除其他副本，并先保存其他L1 Cache中的Dirty数据 |
-| `AWSNOOP` | `0b001` | WriteLineUnique | 完整写入一条Cache行并清除其他副本 |
-| `AWSNOOP` | `0b010` | WriteClean | 将Dirty行写入共享存储，允许发起主设备保留干净副本 |
-| `AWSNOOP` | `0b011` | WriteBack | 将Dirty行写入共享存储，发起主设备不再保留副本 |
-| `AWSNOOP` | `0b100` | Evict | 通知系统发起主设备已丢弃干净副本，不携带数据 |
-| `AWSNOOP` | `0b101` | WriteEvict | 将干净行写到下级Cache，并使用`AWUNIQUE`说明Unique属性 |
+| `ARSNOOP` | `0b0001` | ReadShared | 读取可共享数据，允许请求方取得UC、UD、SC或SD状态 |
+| `ARSNOOP` | `0b0010` | ReadClean | 读取Cache行，但不把更新主存储的责任交给请求方 |
+| `ARSNOOP` | `0b0011` | ReadNotSharedDirty | 允许请求方取得Dirty责任，但不以SD作为期望结果 |
+| `ARSNOOP` | `0b0111` | ReadUnique | 取得Cache行并使其他副本失效，请求方取得Unique权限 |
+| `ARSNOOP` | `0b1000` | CleanShared | 使其他Cache中的Dirty副本变为Clean，允许保留Shared副本 |
+| `ARSNOOP` | `0b1001` | CleanInvalid | 保存其他Cache中的Dirty数据，然后使这些副本失效 |
+| `ARSNOOP` | `0b1101` | MakeInvalid | 使其他Cache副本失效，允许丢弃被覆写前的Dirty数据 |
+| `AWSNOOP` | `0b000` | WriteUnique（WriteUniquePtl） | 在部分或整条Cache行写入前清除其他副本，并在写入前把其他Cache中的Dirty数据送到主存储 |
+| `AWSNOOP` | `0b001` | WriteLineUnique（WriteUniqueFull） | 写入完整Cache行并使其他副本失效，所有写数据字节使能都必须有效 |
+| `AWSNOOP` | `0b010` | WriteClean | 把Dirty数据送到主存储，发起主设备可以保留Clean副本 |
+| `AWSNOOP` | `0b011` | WriteBack | 把Dirty数据送到主存储，发起主设备不再保留副本 |
+| `AWSNOOP` | `0b100` | Evict | 通知互连发起主设备已丢弃Clean副本，不传送数据 |
+| `AWSNOOP` | `0b101` | WriteEvict（WriteEvictFull） | 把UC行写入下级Cache并在发起主设备中使该行失效；不保证主存储同时更新，且`AWUNIQUE`必须为1 |
 
-`ACSNOOP`使用与对应读取或Cache维护操作相同的4位编码，例如ReadShared为`0b0001`、ReadUnique为`0b0111`、CleanInvalid为`0b1001`、MakeInvalid为`0b1101`。未定义编码为保留值，主设备不得对其执行Cache状态变化。
+`ACSNOOP`使用与相应读取或Cache维护操作相同的4位编码。ReadShared为`0b0001`，ReadUnique为`0b0111`，CleanInvalid为`0b1001`，MakeInvalid为`0b1101`。未定义编码为保留值，主设备不得因保留编码改变Cache状态。
 
-#### 5.10.4 共享读过程
+#### 5.10.7 ReadShared处理过程
 
-以ReadShared为例，一次完整访问按以下次序进行：
+以ReadShared为例，一次共享读按以下次序完成：
 
-1. 请求主设备在AR通道给出地址，同时设置`ARSNOOP=ReadShared`和适当的`ARDOMAIN`。只有`ARVALID && ARREADY`时，互连才接受该请求。
-2. 一致性互连根据共享范围、目录或监听过滤结果选择需要查询的L1 Cache，并通过AC通道发送Cache行对齐地址与`ACSNOOP`类型。共享存储读取可以并行开始，但在监听结果确定前不能把可能过期的数据交给请求方。
-3. 每个收到AC请求的主设备查询标签与Cache行状态，并按AC顺序在CR通道返回一个响应。若该L1 Cache保存需要提供的数据，则`CRRESP[0]=1`并在CD通道发送整条Cache行；若数据为Dirty，还要按事务类型设置PassDirty。
-4. 互连汇总所有CR响应，选择被监听L1 Cache或共享存储提供的最新数据，并在R通道返回请求主设备。`RRESP[3]`指示是否可能还有其他副本，`RRESP[2]`指示请求主设备是否接管脏数据写回责任。
-5. 请求主设备根据R数据与属性安装新的Cache行状态。最后一拍完成握手后发送`RACK`，互连随后才可向该主设备发出与先前读事务冲突的同地址监听。
-
-写事务同样由`AWSNOOP`和`AWDOMAIN`说明意图。WriteUnique需要清理并失效其他副本后再完成部分或整行写入，WriteLineUnique针对完整Cache行写入，可直接使其他副本失效。写响应完成后，主设备还要发送`WACK`，其作用与读侧`RACK`相对应。
+1. 请求主设备在AR通道给出地址，设置`ARSNOOP=ReadShared`和适当的`ARDOMAIN`。只有`ARVALID && ARREADY`时，互连才接受该请求。
+2. 一致性互连根据共享范围、目录信息或监听过滤结果选择需要检查的Cache，并通过AC通道发送Cache行对齐地址和`ACSNOOP=ReadShared`。主存储读取可以同时开始，但在监听结果确定前，互连不得把可能已经过时的主存储数据交给请求主设备。
+3. 每个接收AC请求的主设备查询本地Cache标签和状态，再按AC接受顺序在CR通道返回一个响应。需要提供数据时，主设备置高`CRRESP[0]`并在CD通道发送完整Cache行；需要转交Dirty责任时，同时置高`CRRESP[2]`。
+4. 互连等待必要的CR响应，在被监听Cache与主存储之间选择有效数据，然后通过R通道返回请求主设备。`RRESP[3]`说明请求方是否按Shared状态保存该行，`RRESP[2]`说明请求方是否接管Dirty责任。若被监听Cache交出Dirty数据，但请求方没有接管Dirty责任，互连必须把该数据送到主存储。
+5. 请求主设备根据读数据和`RRESP[3:2]`安装新Cache行。最后一拍读数据完成握手后，主设备在下一拍或更晚发送单周期`RACK`，互连由此确认该主设备已完成这笔读事务。
 
 ![ACE共享读的通道与信号关系](./_media/multicore_coherence/ace_channel_overview.png)
 
-*图7 ACE共享读同时使用AXI4读通道和AC、CR、CD监听通道；数据可能来自共享存储，也可能由保存最新Cache行的L1 Cache提供。*
+*图7 ACE共享读同时使用AXI4读通道和AC、CR、CD监听通道；数据可能来自主存储，也可能由保存有效Cache行的被监听Cache提供。*
 
-#### 5.10.5 ACE-Lite
+#### 5.10.8 ACE5与Lite系列差异
 
-ACE-Lite面向没有一致性L1 Cache的I/O主设备。它保留`ARSNOOP`、`ARDOMAIN`、`AWSNOOP`和`AWDOMAIN`等地址属性，可以发起一致性读写，使互连检查或失效CPU的L1 Cache，但没有AC、CR、CD、`RACK`、`WACK`以及ACE专用的`RRESP[3:2]`。因此，ACE-Lite主设备发出的事务可以使互连查询其他ACE主设备，却不能作为被监听对象保存共享Cache行。DMA控制器和硬件加速器通常采用这种单向一致性接口。
+不同ACE接口的端口和能力如下。设计时必须同时确认接口类型、规范Issue和已声明的接口属性，不能只依据“ACE”或“ACE5”名称确定端口集合。
 
-经典ACE支持由`ARBAR`和`AWBAR`标记的屏障事务；Arm规范Issue F及后续版本的ACE5与ACE5-Lite不支持这类屏障。集成时必须依据具体接口属性决定信号是否存在，不能只根据“ACE”名称推断端口集合。
+| 接口 | Cache能力 | 接收监听 | 屏障事务 | 主要用途与差异 |
+| --- | --- | --- | --- | --- |
+| ACE | 可以保存硬件一致性Cache行 | 使用AC、CR和可选CD | 支持`ARBAR`和`AWBAR` | AMBA 4的完整一致性接口 |
+| ACE5 | 可以保存硬件一致性Cache行 | 使用AC、CR和可选CD | 不支持，不提供`AxBAR` | 扩展ACE能力，新增能力由接口属性声明 |
+| ACE-Lite | 不保存需要被数据监听的Cache行 | 没有AC、CR和CD | 支持`ARBAR`和`AWBAR` | 可发起一致性读写，使互连检查或失效其他ACE主设备的Cache |
+| ACE5-Lite | 不保存需要被数据监听的Cache行 | 没有AC、CR和CD | 不支持，不提供`AxBAR` | 扩展ACE-Lite能力，适合DMA控制器和硬件加速器 |
+| ACE5-LiteDVM | 不保存需要被数据监听的Cache行 | 使用AC和CR接收DVM消息，不使用CD返回Cache数据 | 不支持，不提供`AxBAR` | DVM消息通过AC到达，DVM同步操作的DVM Complete通过AR返回 |
+| ACE5-LiteACP | 不保存需要被数据监听的Cache行 | 没有数据Cache监听通道 | 不支持，不提供`AxBAR` | ACE5-Lite的ACP子集，面向与处理器集群紧密连接的加速器，并取代AMBA 4 ACP |
+
+ACE-Lite、ACE5-Lite、ACE5-LiteDVM和ACE5-LiteACP都不使用完整ACE接口的`RACK`、`WACK`和`RRESP[3:2]`。ACE5-LiteDVM的AC和CR只用于DVM通信，不表示该主设备接受数据Cache监听。
+
+从Issue F起，ACE5与全部ACE5-Lite变体不支持屏障事务。需要特定访问次序或可观察次序的主设备，必须等待较早事务完成后再发出依赖请求。为了与AMBA 4 ACE组件兼容，规范使用`Barrier_Transactions`属性说明是否存在`AxBAR`及屏障事务支持。
+
+从Issue G起，ACE5-Lite、ACE5-LiteDVM和ACE5-LiteACP的`AWSNOOP`扩展为4位，以容纳这些接口允许的附加操作。3位输出连接4位输入时，`AWSNOOP[3]`接0；4位输出连接3位输入时，主设备不得发出使用`AWSNOOP[3]`的事务。ACE5的完整一致性接口仍使用3位`AWSNOOP`。
 
 ### 5.11 CHI
 
@@ -771,6 +808,8 @@ CHI面向更多核心和分布式互连，采用请求、监听、响应和数�
 ### 5.13 Alkaid一致性方案
 
 Alkaid双核采用独立L1 Cache、共享存储、写穿透和监听失效，不为每个DCache行保存MESI状态。该结构可视为简化的I/S结构：有效行可读，任何本地写都到达共享存储并使另一hart对应Cache行失效。DCache不保留脏行，因此不需要M、O状态，也不需要Cache到Cache的数据响应。
+
+该方案使用AXI4-Full传送读写事务，并使用设计专用信号通知其他hart使Cache行失效，不属于ACE或ACE5接口。它不提供`AxSNOOP`、`AxDOMAIN`、AC、CR、CD、`RACK`和`WACK`，也不实现ACE五状态Cache模型。设计文档应把这些专用信号与标准AXI4-Full端口分开说明，避免把写穿透监听失效误解为标准ACE功能。
 
 该定型方案的正确性条件是：
 
@@ -855,7 +894,7 @@ TVIP-AXI VIP可以在UVM环境中生成AXI4-Full突发和多笔未完成事务�
 - [RISC-V A扩展规范](https://docs.riscv.org/reference/isa/unpriv/a-st-ext.html)：A扩展、Zalrsc、Zaamo、自然对齐、LR/SC最终进展保证、AMO指令行为以及`aq`、`rl`规则。
 - [RISC-V指令集手册中文版](https://github.com/ISRC-CAS/riscv-isa-manual-cn)：由中国科学院软件研究所维护的已批准规范中文翻译，可参考加载保留、条件存储、保留集、获取和发布等中文术语；具体指令规则以RISC-V官方英文规范为准。
 - [RISC-V RVWMO说明材料](https://docs.riscv.org/reference/isa/unpriv/mm-eplan.html)：使用实例说明PPO、读取值规则、原子性规则、进展规则、I/O访问次序以及Cache一致性与内存一致性模型的关系。
-- [Arm AMBA AXI与ACE协议规范](https://developer.arm.com/-/media/Arm%20Developer%20Community/PDF/IHI0022H_amba_axi_protocol_spec.pdf)：ACE五状态模型、`AxSNOOP`与`AxDOMAIN`属性、AC/CR/CD通道、`CRRESP`响应位以及`RACK`和`WACK`完成确认。
+- [Arm AMBA AXI与ACE协议规范（IHI 0022H.c）](https://developer.arm.com/-/media/Arm%20Developer%20Community/PDF/IHI0022H_amba_axi_protocol_spec.pdf)：ACE五状态Cache模型、`AxSNOOP`与`AxDOMAIN`、AC/CR/CD通道、`CRRESP`响应位、`RACK`与`WACK`，以及ACE5与ACE5-Lite系列的版本差异。
 - [Arm AMBA 5 CHI简介](https://developer.arm.com/support/training/-/media/B51E4B89029847979F879CFFEB07EEC9.ashx)：CHI节点、分组通道、信用控制、目录和监听过滤器。
 - [Intel核间通信与MESI说明](https://www.intel.com/content/www/us/en/developer/articles/technical/fast-core-to-core-communications.html)：MESI状态与共享数据传递示例。
 - [Intel DDIO与MESIF说明](https://www.intel.com/content/www/us/en/developer/articles/technical/ddio-analysis-performance-monitoring.html)：MESIF系统中的监听与独占写权限处理。
