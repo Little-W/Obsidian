@@ -52,7 +52,7 @@ digraph AlkaidCoherenceTopology {
         c0_snoop [
             label="本地失效输入\nvalid + addr\n来源不是hart0",
             shape=ellipse,
-            group="hart0_outer",
+            group="hart0_middle",
             width=3.70,
             height=1.42,
             fillcolor="#FFEDD5",
@@ -63,7 +63,7 @@ digraph AlkaidCoherenceTopology {
             label="LSU与\nLSU L0 Cache\n按组号和标签\n精确清除",
             width=2.90,
             height=2.00,
-            group="hart0_outer",
+            group="c0_left_cache",
             fillcolor="#DBEAFE",
             color="#3B82F6"
         ];
@@ -71,7 +71,7 @@ digraph AlkaidCoherenceTopology {
             label="DCache（可选）\n写穿透\n清除目标组的\n全部路\n输出AXI4-Full\nAWATOP / ARATOP",
             width=3.35,
             height=2.55,
-            group="hart0_center",
+            group="hart0_middle",
             fillcolor="#DBEAFE",
             color="#3B82F6"
         ];
@@ -79,19 +79,56 @@ digraph AlkaidCoherenceTopology {
             label="ICache（只读）\nIMEM写触发\n全Cache失效",
             width=2.90,
             height=2.00,
+            group="c0_right_cache",
             fillcolor="#DBEAFE",
             color="#3B82F6"
         ];
 
-        { rank=same; c0_l0; c0_ic; }
-        c0_l0 -> c0_ic [style=invis, weight=1000];
-        c0_l0 -> c0_dc [style=invis, weight=200];
-        c0_ic -> c0_dc [style=invis, weight=200];
-        c0_dc -> c0_snoop [style=invis, weight=500];
+        c0_middle [
+            shape=point,
+            label="",
+            group="hart0_middle",
+            width=0.01,
+            height=0.01,
+            fixedsize=true,
+            style=invis
+        ];
 
-        c0_snoop -> c0_l0 [color="#F97316", constraint=false];
-        c0_snoop -> c0_dc [color="#F97316", constraint=false];
-        c0_snoop -> c0_ic [color="#F97316", constraint=false];
+        c0_left_top [
+            shape=point, label="", group="c0_left_route",
+            width=0.01, height=0.01, fixedsize=true, style=invis
+        ];
+        c0_left_bottom [
+            shape=point, label="", group="c0_left_route",
+            width=0.01, height=0.01, fixedsize=true, style=invis
+        ];
+        c0_right_top [
+            shape=point, label="", group="c0_right_route",
+            width=0.01, height=0.01, fixedsize=true, style=invis
+        ];
+        c0_right_bottom [
+            shape=point, label="", group="c0_right_route",
+            width=0.01, height=0.01, fixedsize=true, style=invis
+        ];
+
+        { rank=same; c0_left_top; c0_l0; c0_middle; c0_ic; c0_right_top; }
+        c0_left_top -> c0_l0 [style=invis, weight=1000];
+        c0_l0 -> c0_middle [style=invis, weight=1000];
+        c0_middle -> c0_ic [style=invis, weight=1000];
+        c0_ic -> c0_right_top [style=invis, weight=1000];
+        c0_middle -> c0_dc [style=invis, weight=3000];
+        c0_dc -> c0_snoop [style=invis, weight=500];
+        { rank=same; c0_left_bottom; c0_snoop; c0_right_bottom; }
+        c0_left_bottom -> c0_snoop [style=invis, weight=1000];
+        c0_snoop -> c0_right_bottom [style=invis, weight=1000];
+
+        c0_left_bottom -> c0_snoop:w [color="#F97316", dir=none, constraint=false];
+        c0_left_top -> c0_left_bottom [color="#F97316", dir=none, constraint=false];
+        c0_left_top -> c0_l0:w [color="#F97316", constraint=false];
+        c0_snoop:n -> c0_dc:s [color="#F97316", constraint=false];
+        c0_snoop:e -> c0_right_bottom [color="#F97316", dir=none, constraint=false];
+        c0_right_top -> c0_right_bottom [color="#F97316", dir=none, constraint=false];
+        c0_ic:e -> c0_right_top [color="#F97316", dir=back, arrowhead=none, arrowtail=normal, constraint=false];
     }
 
     subgraph cluster_hart1 {
@@ -107,7 +144,7 @@ digraph AlkaidCoherenceTopology {
         c1_snoop [
             label="本地失效输入\nvalid + addr\n来源不是hart1",
             shape=ellipse,
-            group="hart1_outer",
+            group="hart1_middle",
             width=3.70,
             height=1.42,
             fillcolor="#FFEDD5",
@@ -118,6 +155,7 @@ digraph AlkaidCoherenceTopology {
             label="ICache（只读）\nIMEM写触发\n全Cache失效",
             width=2.90,
             height=2.00,
+            group="c1_left_cache",
             fillcolor="#DCFCE7",
             color="#22C55E"
         ];
@@ -125,7 +163,7 @@ digraph AlkaidCoherenceTopology {
             label="DCache（可选）\n写穿透\n清除目标组的\n全部路\n输出AXI4-Full\nAWATOP / ARATOP",
             width=3.35,
             height=2.55,
-            group="hart1_center",
+            group="hart1_middle",
             fillcolor="#DCFCE7",
             color="#22C55E"
         ];
@@ -133,20 +171,56 @@ digraph AlkaidCoherenceTopology {
             label="LSU与\nLSU L0 Cache\n按组号和标签\n精确清除",
             width=2.90,
             height=2.00,
-            group="hart1_outer",
+            group="c1_right_cache",
             fillcolor="#DCFCE7",
             color="#22C55E"
         ];
 
-        { rank=same; c1_left_cache; c1_right_cache; }
-        c1_left_cache -> c1_right_cache [style=invis, weight=1000];
-        c1_left_cache -> c1_dc [style=invis, weight=200];
-        c1_right_cache -> c1_dc [style=invis, weight=200];
-        c1_dc -> c1_snoop [style=invis, weight=500];
+        c1_middle [
+            shape=point,
+            label="",
+            group="hart1_middle",
+            width=0.01,
+            height=0.01,
+            fixedsize=true,
+            style=invis
+        ];
 
-        c1_snoop -> c1_left_cache [color="#F97316", constraint=false];
-        c1_snoop -> c1_dc [color="#F97316", constraint=false];
-        c1_snoop -> c1_right_cache [color="#F97316", constraint=false];
+        c1_left_top [
+            shape=point, label="", group="c1_left_route",
+            width=0.01, height=0.01, fixedsize=true, style=invis
+        ];
+        c1_left_bottom [
+            shape=point, label="", group="c1_left_route",
+            width=0.01, height=0.01, fixedsize=true, style=invis
+        ];
+        c1_right_top [
+            shape=point, label="", group="c1_right_route",
+            width=0.01, height=0.01, fixedsize=true, style=invis
+        ];
+        c1_right_bottom [
+            shape=point, label="", group="c1_right_route",
+            width=0.01, height=0.01, fixedsize=true, style=invis
+        ];
+
+        { rank=same; c1_left_top; c1_left_cache; c1_middle; c1_right_cache; c1_right_top; }
+        c1_left_top -> c1_left_cache [style=invis, weight=1000];
+        c1_left_cache -> c1_middle [style=invis, weight=1000];
+        c1_middle -> c1_right_cache [style=invis, weight=1000];
+        c1_right_cache -> c1_right_top [style=invis, weight=1000];
+        c1_middle -> c1_dc [style=invis, weight=3000];
+        c1_dc -> c1_snoop [style=invis, weight=500];
+        { rank=same; c1_left_bottom; c1_snoop; c1_right_bottom; }
+        c1_left_bottom -> c1_snoop [style=invis, weight=1000];
+        c1_snoop -> c1_right_bottom [style=invis, weight=1000];
+
+        c1_left_bottom -> c1_snoop:w [color="#F97316", dir=none, constraint=false];
+        c1_left_top -> c1_left_bottom [color="#F97316", dir=none, constraint=false];
+        c1_left_top -> c1_left_cache:w [color="#F97316", constraint=false];
+        c1_snoop:n -> c1_dc:s [color="#F97316", constraint=false];
+        c1_snoop:e -> c1_right_bottom [color="#F97316", dir=none, constraint=false];
+        c1_right_top -> c1_right_bottom [color="#F97316", dir=none, constraint=false];
+        c1_right_cache:e -> c1_right_top [color="#F97316", dir=back, arrowhead=none, arrowtail=normal, constraint=false];
     }
 
     subgraph cluster_control {
@@ -275,13 +349,13 @@ digraph AlkaidCoherenceTopology {
         { rank=same; imem; dmem; mmio; }
     }
 
-    c0_dc -> cm [color="#DC2626", penwidth=3.2, weight=0];
-    c1_dc -> cm [color="#DC2626", penwidth=3.2, weight=0];
-    c0_ic -> iarb [color="#64748B", weight=0];
-    c1_left_cache -> iarb [color="#64748B", weight=0];
+    c0_dc:e -> cm:w [color="#DC2626", penwidth=3.2, weight=0];
+    c1_dc:w -> cm:e [color="#DC2626", penwidth=3.2, weight=0];
+    c0_ic:e -> iarb:w [color="#64748B", weight=0];
+    c1_left_cache:w -> iarb:e [color="#64748B", weight=0];
 
-    snoop_router -> c0_snoop [color="#F97316", penwidth=3.0, constraint=false];
-    snoop_router -> c1_snoop [color="#F97316", penwidth=3.0, constraint=false];
+    snoop_router:w -> c0_snoop:e [color="#F97316", penwidth=3.0, constraint=false];
+    snoop_router:e -> c1_snoop:w [color="#F97316", penwidth=3.0, constraint=false];
 
     cm -> shared_cache [
         dir=both,
@@ -329,13 +403,23 @@ digraph AlkaidCoherenceTopology {
         minlen=2
     ];
 
-    { rank=same; c0_l0; c0_ic; c1_left_cache; c1_right_cache; }
-    c0_l0 -> c0_ic [style=invis, weight=10000];
-    c0_ic -> c1_left_cache [style=invis, weight=10000];
-    c1_left_cache -> c1_right_cache [style=invis, weight=10000];
+    { rank=same; c0_left_top; c0_l0; c0_middle; c0_ic; c0_right_top; c1_left_top; c1_left_cache; c1_middle; c1_right_cache; c1_right_top; }
+    c0_left_top -> c0_l0 [style=invis, weight=10000];
+    c0_l0 -> c0_middle [style=invis, weight=10000];
+    c0_middle -> c0_ic [style=invis, weight=10000];
+    c0_ic -> c0_right_top [style=invis, weight=10000];
+    c0_right_top -> c1_left_top [style=invis, weight=10000];
+    c1_left_top -> c1_left_cache [style=invis, weight=10000];
+    c1_left_cache -> c1_middle [style=invis, weight=10000];
+    c1_middle -> c1_right_cache [style=invis, weight=10000];
+    c1_right_cache -> c1_right_top [style=invis, weight=10000];
 
-    { rank=same; c0_snoop; c1_snoop; }
-    c0_snoop -> c1_snoop [style=invis, weight=10000];
+    { rank=same; c0_left_bottom; c0_snoop; c0_right_bottom; c1_left_bottom; c1_snoop; c1_right_bottom; }
+    c0_left_bottom -> c0_snoop [style=invis, weight=10000];
+    c0_snoop -> c0_right_bottom [style=invis, weight=10000];
+    c0_right_bottom -> c1_left_bottom [style=invis, weight=10000];
+    c1_left_bottom -> c1_snoop [style=invis, weight=10000];
+    c1_snoop -> c1_right_bottom [style=invis, weight=10000];
 
     dmem -> legend [style=invis, weight=500];
     { rank=same; legend; legend_spacer; }
