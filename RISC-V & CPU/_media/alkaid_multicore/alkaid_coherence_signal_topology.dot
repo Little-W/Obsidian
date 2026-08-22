@@ -6,7 +6,7 @@ digraph AlkaidCoherenceTopology {
         ordering=out,
         bgcolor="#FFFFFF",
         pad="0.34",
-        nodesep="0.44",
+        nodesep="0.70",
         ranksep="0.76",
         esep="+10",
         splines=ortho,
@@ -47,7 +47,7 @@ digraph AlkaidCoherenceTopology {
         penwidth=2.6;
         fontname="Noto Sans CJK SC Bold";
         fontsize=32;
-        margin=24;
+        margin=28;
 
         c0_snoop [
             label="本地失效输入\nvalid + addr\n来源不是hart0",
@@ -102,7 +102,7 @@ digraph AlkaidCoherenceTopology {
         penwidth=2.6;
         fontname="Noto Sans CJK SC Bold";
         fontsize=32;
-        margin=24;
+        margin=28;
 
         c1_snoop [
             label="本地失效输入\nvalid + addr\n来源不是hart1",
@@ -233,6 +233,31 @@ digraph AlkaidCoherenceTopology {
         penwidth=2.9
     ];
 
+    legend [
+        shape=plain,
+        group="hart0_outer",
+        fontname="Noto Sans CJK SC Bold",
+        label=<
+            <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="8" CELLPADDING="2">
+                <TR><TD ALIGN="LEFT" COLSPAN="2"><FONT POINT-SIZE="30"><B>图例</B></FONT></TD></TR>
+                <TR><TD><FONT POINT-SIZE="28" COLOR="#DC2626">●</FONT></TD><TD ALIGN="LEFT"><FONT POINT-SIZE="27"><B>CPU至数据一致性控制的</B><BR/><B>原子操作扩展</B></FONT></TD></TR>
+                <TR><TD><FONT POINT-SIZE="28" COLOR="#F97316">●</FONT></TD><TD ALIGN="LEFT"><FONT POINT-SIZE="27"><B>数据一致性控制发往另一个CPU的</B><BR/><B>监听失效接口</B></FONT></TD></TR>
+                <TR><TD><FONT POINT-SIZE="28" COLOR="#0284C7">●</FONT></TD><TD ALIGN="LEFT"><FONT POINT-SIZE="27"><B>数据一致性控制之后的</B><BR/><B>标准AXI4-Full</B></FONT></TD></TR>
+                <TR><TD><FONT POINT-SIZE="28" COLOR="#9333EA">●</FONT></TD><TD ALIGN="LEFT"><FONT POINT-SIZE="27"><B>Crossbar内部AWROUTE与</B><BR/><B>乒乓缓存</B></FONT></TD></TR>
+            </TABLE>
+        >
+    ];
+
+    legend_spacer [
+        shape=box,
+        label="",
+        group="hart1_outer",
+        width=8.00,
+        height=1.00,
+        fixedsize=true,
+        style=invis
+    ];
+
     subgraph cluster_shared {
         label="共享地址空间";
         labelloc=b;
@@ -304,26 +329,15 @@ digraph AlkaidCoherenceTopology {
         minlen=2
     ];
 
-    legend [
-        shape=plain,
-        fontname="Noto Sans CJK SC Bold",
-        label=<
-            <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="8" CELLPADDING="2">
-                <TR><TD ALIGN="LEFT" COLSPAN="2"><FONT POINT-SIZE="30"><B>图例</B></FONT></TD></TR>
-                <TR><TD><FONT POINT-SIZE="28" COLOR="#DC2626">●</FONT></TD><TD ALIGN="LEFT"><FONT POINT-SIZE="27"><B>CPU至数据一致性控制的</B><BR/><B>原子操作扩展</B></FONT></TD></TR>
-                <TR><TD><FONT POINT-SIZE="28" COLOR="#F97316">●</FONT></TD><TD ALIGN="LEFT"><FONT POINT-SIZE="27"><B>数据一致性控制发往另一个CPU的</B><BR/><B>监听失效接口</B></FONT></TD></TR>
-                <TR><TD><FONT POINT-SIZE="28" COLOR="#0284C7">●</FONT></TD><TD ALIGN="LEFT"><FONT POINT-SIZE="27"><B>数据一致性控制之后的</B><BR/><B>标准AXI4-Full</B></FONT></TD></TR>
-                <TR><TD><FONT POINT-SIZE="28" COLOR="#9333EA">●</FONT></TD><TD ALIGN="LEFT"><FONT POINT-SIZE="27"><B>Crossbar内部AWROUTE与</B><BR/><B>乒乓缓存</B></FONT></TD></TR>
-            </TABLE>
-        >
-    ];
-
-    { rank=same; c0_l0; c0_ic; c1_left_cache; c1_right_cache; legend; }
+    { rank=same; c0_l0; c0_ic; c1_left_cache; c1_right_cache; }
     c0_l0 -> c0_ic [style=invis, weight=10000];
     c0_ic -> c1_left_cache [style=invis, weight=10000];
     c1_left_cache -> c1_right_cache [style=invis, weight=10000];
-    c1_right_cache -> legend [style=invis, weight=10000];
 
     { rank=same; c0_snoop; c1_snoop; }
     c0_snoop -> c1_snoop [style=invis, weight=10000];
+
+    dmem -> legend [style=invis, weight=500];
+    { rank=same; legend; legend_spacer; }
+    legend_spacer -> legend [style=invis, weight=10000];
 }
