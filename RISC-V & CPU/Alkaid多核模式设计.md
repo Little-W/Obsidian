@@ -111,6 +111,8 @@ CPU数据接口在AXI4-Full五通道之外增加`AWATOP`和`ARATOP`。`AWATOP`�
 
 ![Alkaid双hart一致性扩展信号拓扑](./_media/alkaid_multicore/alkaid_coherence_signal_topology.png)
 
+可编辑图源：[draw.io工程](./_media/alkaid_multicore/alkaid_coherence_signal_topology.drawio)。
+
 图中的红色信号只存在于CPU数据接口与数据一致性控制之间，橙色信号从数据一致性控制返回私有Cache，蓝色接口从数据一致性控制开始已经恢复为标准AXI4-Full。Crossbar不接收`AWATOP`、`ARATOP`或监听失效信号。
 
 #### 4.2.2 原子操作字段

@@ -33,8 +33,8 @@ digraph AlkaidCoherenceTopology {
         fontcolor="#334155",
         fontname="Noto Sans CJK SC Bold",
         fontsize=22,
-        penwidth=2.8,
-        arrowsize=0.78,
+        penwidth=3.6,
+        arrowsize=0.95,
         headclip=true,
         tailclip=true
     ];
@@ -265,7 +265,7 @@ digraph AlkaidCoherenceTopology {
         snoop_router -> cm [style=invis, weight=1000];
         cm -> snoop_router [
             color="#F97316",
-            penwidth=3.2,
+            penwidth=4.2,
             constraint=false
         ];
     }
@@ -349,29 +349,29 @@ digraph AlkaidCoherenceTopology {
         { rank=same; imem; dmem; mmio; }
     }
 
-    c0_dc:e -> cm:w [color="#DC2626", penwidth=3.2, weight=0];
-    c1_dc:w -> cm:e [color="#DC2626", penwidth=3.2, weight=0];
+    c0_dc:e -> cm:w [color="#DC2626", penwidth=4.2, weight=0];
+    c1_dc:w -> cm:e [color="#DC2626", penwidth=4.2, weight=0];
     c0_ic:e -> iarb:w [color="#64748B", weight=0];
     c1_left_cache:w -> iarb:e [color="#64748B", weight=0];
 
-    snoop_router:w -> c0_snoop:e [color="#F97316", penwidth=3.0, constraint=false];
-    snoop_router:e -> c1_snoop:w [color="#F97316", penwidth=3.0, constraint=false];
+    snoop_router:w -> c0_snoop:e [color="#F97316", penwidth=4.0, constraint=false];
+    snoop_router:e -> c1_snoop:w [color="#F97316", penwidth=4.0, constraint=false];
 
     cm -> shared_cache [
         dir=both,
         arrowhead=normal,
         arrowtail=normal,
         color="#0284C7",
-        penwidth=3.2
+        penwidth=4.2
     ];
-    shared_cache -> route [color="#0284C7", penwidth=3.0];
-    route -> pingpong [color="#9333EA", penwidth=3.1];
+    shared_cache -> route [color="#0284C7", penwidth=4.0];
+    route -> pingpong [color="#9333EA", penwidth=4.0];
     pingpong -> xbar [
         dir=both,
         arrowhead=normal,
         arrowtail=normal,
         color="#4F46E5",
-        penwidth=3.0
+        penwidth=4.0
     ];
     iarb -> xbar [
         dir=both,

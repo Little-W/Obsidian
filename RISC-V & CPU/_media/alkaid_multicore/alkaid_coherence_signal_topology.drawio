@@ -1,0 +1,200 @@
+<mxfile host="app.diagrams.net" modified="2026-08-22T10:20:00.000Z" agent="Codex" version="26.0.16" type="device" compressed="false">
+  <diagram id="alkaid-coherence-topology" name="一致性扩展信号拓扑">
+    <mxGraphModel dx="2107" dy="2510" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2107" pageHeight="2510" math="0" shadow="0" background="#FFFFFF">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="title" value="Alkaid双hart一致性扩展信号拓扑" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=Noto Sans CJK SC;fontSize=44;fontStyle=1;fontColor=#0F172A;" vertex="1" parent="1">
+          <mxGeometry x="400" y="15" width="1300" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="hart0_bg" value="hart0私有部分" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#60A5FA;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=30;fontStyle=1;verticalAlign=top;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="8" y="111" width="754" height="950" as="geometry"/>
+        </mxCell>
+        <mxCell id="hart1_bg" value="hart1私有部分" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDF4;strokeColor=#4ADE80;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=30;fontStyle=1;verticalAlign=top;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="1296" y="111" width="754" height="950" as="geometry"/>
+        </mxCell>
+        <mxCell id="control_bg" value="双hart共享控制" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#CBD5E1;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=30;fontStyle=1;align=left;verticalAlign=top;spacingTop=10;spacingLeft=12;" vertex="1" parent="1">
+          <mxGeometry x="770" y="442" width="420" height="920" as="geometry"/>
+        </mxCell>
+        <mxCell id="shared_bg" value="共享地址空间" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#CBD5E1;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=30;fontStyle=1;verticalAlign=bottom;spacingBottom=10;" vertex="1" parent="1">
+          <mxGeometry x="722" y="2250" width="646" height="217" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e_c0_l0" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#F97316;strokeWidth=4;endArrow=block;endFill=1;endSize=14;exitX=0;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="c0_snoop" target="c0_l0">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="60" y="919"/>
+              <mxPoint x="60" y="297"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_c0_ic" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#F97316;strokeWidth=4;endArrow=block;endFill=1;endSize=14;exitX=1;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="c0_snoop" target="c0_ic">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="710" y="919"/>
+              <mxPoint x="710" y="297"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_c0_dc_local" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#F97316;strokeWidth=4;endArrow=block;endFill=1;endSize=14;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="c0_snoop" target="c0_dc">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_c1_ic" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#F97316;strokeWidth=4;endArrow=block;endFill=1;endSize=14;exitX=0;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="c1_snoop" target="c1_ic">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1348" y="919"/>
+              <mxPoint x="1348" y="297"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_c1_l0" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#F97316;strokeWidth=4;endArrow=block;endFill=1;endSize=14;exitX=1;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="c1_snoop" target="c1_l0">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1998" y="919"/>
+              <mxPoint x="1998" y="297"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_c1_dc_local" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#F97316;strokeWidth=4;endArrow=block;endFill=1;endSize=14;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="c1_snoop" target="c1_dc">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e_c0_atomic" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#DC2626;strokeWidth=4.5;endArrow=block;endFill=1;endSize=15;exitX=1;exitY=0.65;entryX=0;entryY=0.5;" edge="1" parent="1" source="c0_dc" target="cm">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="570" y="646"/>
+              <mxPoint x="570" y="1213"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_c1_atomic" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#DC2626;strokeWidth=4.5;endArrow=block;endFill=1;endSize=15;exitX=0;exitY=0.65;entryX=1;entryY=0.5;" edge="1" parent="1" source="c1_dc" target="cm">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1489" y="646"/>
+              <mxPoint x="1489" y="1213"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_c0_fetch" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748B;strokeWidth=4;endArrow=block;endFill=1;endSize=14;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="c0_ic" target="iarb">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="720" y="297"/>
+              <mxPoint x="720" y="602"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_c1_fetch" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748B;strokeWidth=4;endArrow=block;endFill=1;endSize=14;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="c1_ic" target="iarb">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1260" y="297"/>
+              <mxPoint x="1260" y="602"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="e_snoop_c0" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#F97316;strokeWidth=4.5;endArrow=block;endFill=1;endSize=15;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="snoop_router" target="c0_snoop">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_snoop_c1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#F97316;strokeWidth=4.5;endArrow=block;endFill=1;endSize=15;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="snoop_router" target="c1_snoop">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_cm_snoop" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#F97316;strokeWidth=4.5;endArrow=block;endFill=1;endSize=15;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="cm" target="snoop_router">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e_cm_shared_cache" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0284C7;strokeWidth=4.5;startArrow=block;startFill=1;startSize=14;endArrow=block;endFill=1;endSize=14;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="cm" target="shared_cache">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_shared_route" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0284C7;strokeWidth=4.2;endArrow=block;endFill=1;endSize=14;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="shared_cache" target="route">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_route_pingpong" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#9333EA;strokeWidth=4.2;endArrow=block;endFill=1;endSize=14;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="route" target="pingpong">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_pingpong_xbar" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#4F46E5;strokeWidth=4.2;startArrow=block;startFill=1;startSize=14;endArrow=block;endFill=1;endSize=14;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="pingpong" target="xbar">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_iarb_xbar" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748B;strokeWidth=4;startArrow=block;startFill=1;startSize=14;endArrow=block;endFill=1;endSize=14;exitX=0;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="iarb" target="xbar">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="748" y="602"/>
+              <mxPoint x="748" y="2081"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_xbar_imem" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#4F46E5;strokeWidth=4;startArrow=block;startFill=1;startSize=14;endArrow=block;endFill=1;endSize=14;exitX=0.2;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="xbar" target="imem">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_xbar_dmem" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#4F46E5;strokeWidth=4;startArrow=block;startFill=1;startSize=14;endArrow=block;endFill=1;endSize=14;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="xbar" target="dmem">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_xbar_mmio" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#4F46E5;strokeWidth=4;startArrow=block;startFill=1;startSize=14;endArrow=block;endFill=1;endSize=14;exitX=0.8;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="xbar" target="mmio">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="c0_l0" value="LSU与&#xa;LSU L0 Cache&#xa;按组号和标签&#xa;精确清除" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#3B82F6;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=27;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="87" y="194" width="236" height="206" as="geometry"/>
+        </mxCell>
+        <mxCell id="c0_ic" value="ICache（只读）&#xa;IMEM写触发&#xa;全Cache失效" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#3B82F6;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=27;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="424" y="216" width="260" height="162" as="geometry"/>
+        </mxCell>
+        <mxCell id="c0_dc" value="DCache（可选）&#xa;写穿透&#xa;清除目标组的&#xa;全部路&#xa;输出AXI4-Full&#xa;AWATOP / ARATOP" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#3B82F6;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=27;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="219" y="455" width="310" height="294" as="geometry"/>
+        </mxCell>
+        <mxCell id="c0_snoop" value="本地失效输入&#xa;valid + addr&#xa;来源不是hart0" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFEDD5;strokeColor=#F97316;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=27;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="203" y="804" width="342" height="229" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="c1_ic" value="ICache（只读）&#xa;IMEM写触发&#xa;全Cache失效" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#22C55E;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=27;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1374" y="216" width="260" height="162" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1_l0" value="LSU与&#xa;LSU L0 Cache&#xa;按组号和标签&#xa;精确清除" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#22C55E;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=27;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1735" y="194" width="236" height="206" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1_dc" value="DCache（可选）&#xa;写穿透&#xa;清除目标组的&#xa;全部路&#xa;输出AXI4-Full&#xa;AWATOP / ARATOP" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#22C55E;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=27;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1529" y="455" width="310" height="294" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1_snoop" value="本地失效输入&#xa;valid + addr&#xa;来源不是hart1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFEDD5;strokeColor=#F97316;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=27;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1513" y="804" width="342" height="229" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="iarb" value="取指读仲裁&#xa;共享ID分配&#xa;响应准确回送" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F1F5F9;strokeColor=#64748B;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=27;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="843" y="521" width="274" height="162" as="geometry"/>
+        </mxCell>
+        <mxCell id="snoop_router" value="监听失效分发&#xa;共享侧AW握手产生&#xa;VALID / OWNER / ADDR&#xa;只通知另一个CPU" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEDD5;strokeColor=#F97316;strokeWidth=3.5;fontFamily=Noto Sans CJK SC;fontSize=27;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="794" y="816" width="372" height="206" as="geometry"/>
+        </mxCell>
+        <mxCell id="cm" value="数据一致性控制&#xa;轮换仲裁与共享ID分配&#xa;读写冲突控制&#xa;LR/SC与AMO&#xa;消费AWATOP / ARATOP" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#DC2626;strokeWidth=4;fontFamily=Noto Sans CJK SC;fontSize=27;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="795" y="1088" width="370" height="250" as="geometry"/>
+        </mxCell>
+        <mxCell id="shared_cache" value="互连侧AXI4-Lite Cache&#xa;SoC当前关闭&#xa;标准AXI4-Full直通" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F2FE;strokeColor=#0284C7;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=27;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="800" y="1393" width="360" height="162" as="geometry"/>
+        </mxCell>
+        <mxCell id="route" value="写地址选择&#xa;由AWADDR生成6位AWROUTE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E8FF;strokeColor=#9333EA;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=27;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="750" y="1609" width="460" height="119" as="geometry"/>
+        </mxCell>
+        <mxCell id="pingpong" value="乒乓缓存&#xa;AW与AWROUTE同时保存&#xa;其余AXI4-Full通道独立缓存" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E8FF;strokeColor=#9333EA;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=27;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="774" y="1783" width="412" height="162" as="geometry"/>
+        </mxCell>
+        <mxCell id="xbar" value="Crossbar&#xa;按地址选择从端&#xa;以未完成事务计数保持W、B、R目标" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0E7FF;strokeColor=#4F46E5;strokeWidth=3.5;fontFamily=Noto Sans CJK SC;fontSize=27;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="716" y="2000" width="528" height="162" as="geometry"/>
+        </mxCell>
+        <mxCell id="imem" value="IMEM" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#64748B;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=27;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="744" y="2294" width="120" height="73" as="geometry"/>
+        </mxCell>
+        <mxCell id="dmem" value="DMEM" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#64748B;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=27;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="914" y="2294" width="132" height="73" as="geometry"/>
+        </mxCell>
+        <mxCell id="mmio" value="调试模块、APB&#xa;CLINT、PLIC" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#64748B;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=27;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1096" y="2272" width="250" height="117" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="legend" value="&lt;b&gt;图例&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#DC2626&quot;&gt;●&lt;/font&gt; CPU至数据一致性控制的原子操作扩展&lt;br&gt;&lt;font color=&quot;#F97316&quot;&gt;●&lt;/font&gt; 数据一致性控制发往另一个CPU的监听失效接口&lt;br&gt;&lt;font color=&quot;#0284C7&quot;&gt;●&lt;/font&gt; 数据一致性控制之后的标准AXI4-Full&lt;br&gt;&lt;font color=&quot;#9333EA&quot;&gt;●&lt;/font&gt; Crossbar内部AWROUTE与乒乓缓存" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=none;fontFamily=Noto Sans CJK SC;fontSize=24;fontStyle=1;align=left;verticalAlign=middle;spacingLeft=12;spacingRight=12;spacingTop=10;spacingBottom=10;" vertex="1" parent="1">
+          <mxGeometry x="46" y="2025" width="500" height="328" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
