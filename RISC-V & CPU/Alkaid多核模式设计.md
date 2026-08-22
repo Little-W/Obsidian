@@ -2,9 +2,9 @@
 
 ## 1. 设计概述
 
-Alkaid SoC（片上系统）支持单hart与双hart两种配置。双hart模式采用私有一级存储结构、共享存储器和集中式一致性控制：每个CPU保留独立的流水线、ICache、可选DCache与LSU L0 Cache，系统层负责AXI4-Full（完整AXI4协议）仲裁、跨核失效、原子操作和共享外设访问。当前设计不包含共享L1或共享L2；未来增加共享L2时，可以保持CPU接口不变。
+Alkaid SoC（System on Chip，片上系统）支持单hart与双hart两种配置。双hart模式采用私有一级存储结构、共享存储器和集中式一致性控制：每个CPU保留独立的流水线、ICache、可选DCache与LSU L0 Cache，系统层负责AXI4-Full仲裁、跨核失效、原子操作和共享外设访问。当前设计不包含共享L1或共享L2；未来增加共享L2时，可以保持CPU接口不变。
 
-完整方案覆盖RTL（寄存器传输级）、BSP（板级支持包）、RT-Thread SMP（对称多处理）端口、AMP（非对称多处理）启动服务和验证环境。核心保持`轻度乱序单发射、有限乱序完成`，Zba（地址生成）、Zbb（基础位操作）、Zbs（单比特操作）与Zbc（无进位乘法）仅作为ISA（指令集架构）扩展使用，其中Zbc不作为核内微结构创新点。硬件也支持C（压缩指令）扩展，但公平性能程序保持32位定长指令。
+完整方案覆盖RTL、BSP（Board Support Package，板级支持包）、RT-Thread SMP（Symmetric Multiprocessing，对称多处理）端口、AMP（Asymmetric Multiprocessing，非对称多处理）启动服务和验证环境。核心保持`轻度乱序单发射、有限乱序完成`，Zba（地址生成）、Zbb（基础位操作）、Zbs（单比特操作）与Zbc（无进位乘法）仅作为ISA（Instruction Set Architecture，指令集架构）扩展使用，其中Zbc不作为核内微结构创新点。硬件也支持C（压缩指令）扩展，但公平性能程序保持32位定长指令。
 
 > [!NOTE]
 > 单核与双核性能测试使用完全相同的编译参数、ISA、测试源码和迭代配置。硬件可以支持C压缩指令扩展，但公平性能程序没有生成压缩指令，以排除ISA差异对比较结果的影响。
@@ -13,9 +13,9 @@ Alkaid SoC（片上系统）支持单hart与双hart两种配置。双hart模式�
 
 ### 2.1 层次职责
 
-`core_top`是单个hart的完整边界，内部包含CPU流水线、私有ICache、可选私有DCache、LSU L0 Cache接口和CLINT（Core-Local Interruptor，核心本地中断控制器）。`alkaid_soc_top`保留双hart共享功能，包括取指读仲裁、数据一致性控制、AXI4-Lite Cache与乒乓缓存、共享IMEM、共享数据存储和公共外设。
+`core_top`是单个hart的正式顶层模块，内部包含CPU流水线、私有ICache、可选私有DCache、LSU L0 Cache接口和CLINT（Core-Local Interruptor，核心本地中断控制器）。`alkaid_soc_top`是SoC正式顶层模块，保留双hart共享功能，包括取指读仲裁、数据一致性控制、AXI4-Lite Cache与乒乓缓存、共享IMEM、共享数据存储和公共外设。
 
-这一边界让单核配置与双核配置复用同一个`core_top`。hart编号、hart数量、Cache容量、流水线级数、RV32（32位RISC-V）或RV64（64位RISC-V）以及各ISA扩展均由参数确定。非法hart数量或不支持的组合应在硬件展开时报告错误。
+这种职责划分让单核配置与双核配置复用同一个`core_top`。hart编号、hart数量、Cache容量、流水线级数、RV32（32位RISC-V）或RV64（64位RISC-V）以及各ISA扩展均由参数确定。非法hart数量或不支持的组合在硬件展开时报告错误。
 
 ```text
 hart0 core_top ── 私有ICache ──┐
@@ -29,33 +29,33 @@ hart1 core_top ── 私有DCache/LSU L0 Cache ──┘
 
 ### 2.2 私有与共享资源
 
-每个hart具有独立PC（程序计数器）、GPR（通用寄存器）、CSR（控制与状态寄存器）、流水线暂停状态、异常状态、ICache、LSU L0 Cache和栈。两个hart共享物理地址空间、IMEM、数据存储器、外设寄存器、全局时间计数与一致性控制。
+每个hart具有独立PC（Program Counter，程序计数器）、GPR（General-Purpose Register，通用寄存器）、CSR（Control and Status Register，控制与状态寄存器）、流水线暂停状态、异常状态、ICache、LSU L0 Cache和栈。两个hart共享物理地址空间、IMEM、数据存储器、外设寄存器、全局时间计数与一致性控制。
 
 双hart默认配置为每核私有2048项、2路ICache，取指侧允许4笔未完成读事务。私有DCache提供1024项、2路配置能力，但当前性能配置默认关闭；数据低延迟访问由每核独立的LSU L0 Cache承担，其配置为1024项、1路。两个CPU绝不共用同一个L1 Cache。
 
 ### 2.3 CLINT归属
 
-每个`core_top`都包含CLINT控制功能。hart0内部的CLINT负责共享MMIO寄存器组，并输出各hart的软件中断和定时器中断；hart1接收属于自己的中断位，其CLINT MMIO请求保持无效。这样既把异常控制放在核边界内，又避免出现两套可写的共享时间寄存器。
+每个`core_top`都包含CLINT控制功能。hart0内部的CLINT负责共享MMIO寄存器组，并输出各hart的软件中断和定时器中断；hart1接收属于自己的中断位，其CLINT MMIO请求保持无效。这样既把异常控制放在核内，又避免出现两套可写的共享时间寄存器。
 
 ## 3. 流水线组织
 
 ### 3.1 核心特征
 
-CPU保持`轻度乱序单发射、有限乱序完成`。IFU（取指单元）一次提供一条指令，IDU（译码单元）产生操作信息，IRS（发射保留站）保存等待执行的操作，EXU（执行单元）完成计算，WBU（写回单元）提交结果。HDU（数据冒险检查单元）负责检查数据冒险，并依据流水线级数选择紧凑比较或近期commit id跟踪。
+CPU保持`轻度乱序单发射、有限乱序完成`。IFU（Instruction Fetch Unit，取指单元）一次提供一条指令，IDU（Instruction Decode Unit，译码单元）产生操作信息，IRS（Issue Reservation Station，发射保留站）保存等待执行的操作，EXU（Execution Unit，执行单元）完成计算，WBU（Write-Back Unit，写回单元）提交结果。HDU（Hazard Detection Unit，数据冒险检查单元）负责检查数据冒险，并依据流水线级数选择紧凑比较或近期commit id跟踪。
 
-BPU（分支预测单元）提供预测方向与目标，BJP（分支跳转处理单元）给出已解析的控制流请求。CLINT只检查BJP的请求状态以确定可靠的下一条PC，不再增加一套臃肿的指令类型解码。
+BPU（Branch Prediction Unit，分支预测单元）提供预测方向与目标，BJP（Branch and Jump Processing，分支跳转处理单元）给出已解析的控制流请求。CLINT只检查BJP的请求状态以确定可靠的下一条PC，不再增加一套臃肿的指令类型解码。
 
 ### 3.2 P3、P4与P5
 
 下表使用IF（取指）、ID（译码）、Dispatch（发射准备）、EX（执行）和WB（写回）表示各阶段职责。
 
-| 配置 | 阶段划分 | 主要寄存器边界 | IRS容量 | 数据冒险处理 | 适用重点 |
+| 配置 | 阶段划分 | 主要流水线寄存器 | IRS容量 | 数据冒险处理 | 适用重点 |
 | --- | --- | --- | ---: | --- | --- |
 | P3 | IF；ID、Dispatch与EX；WB | `ifu_pipe`；WBU结果寄存器 | 1项 | HDU执行4组紧凑比较，不使用EXU局部旁路 | 低延迟与较小面积 |
 | P4 | IF；ID与Dispatch；EX；WB | `ifu_pipe`；`dispatch_pipe`；WBU结果寄存器 | 3项 | 近期commit id表与局部旁路 | 面积和频率平衡 |
-| P5 | IF；ID；Dispatch；EX；WB | `ifu_pipe`；`idu_id_pipe`；`dispatch_pipe`；WBU结果寄存器 | 3项 | 近期commit id表与局部旁路 | 更清晰的时序边界 |
+| P5 | IF；ID；Dispatch；EX；WB | `ifu_pipe`；`idu_id_pipe`；`dispatch_pipe`；WBU结果寄存器 | 3项 | 近期commit id表与局部旁路 | 更清晰的时序分隔 |
 
-`ifu_pipe`和WBU结果寄存器在三种配置中始终存在。`idu_id_pipe`只用于P5数据通路；`dispatch_pipe`在P4与P5中为寄存器边界，在P3中直接通过。P3用更短的数据通路减少等待，P4与P5用更多寄存器边界改善时序收敛。
+`ifu_pipe`和WBU结果寄存器在三种配置中始终存在。`idu_id_pipe`只用于P5数据通路；`dispatch_pipe`在P4与P5中形成流水线寄存级，在P3中直接通过。P3用更短的数据通路减少等待，P4与P5用更多寄存级改善时序收敛。
 
 ```systemverilog
 if (PIPELINE_STAGES == 5) begin
@@ -73,11 +73,11 @@ end
 
 ### 3.3 固定宽度取指
 
-IFU在硬件支持C扩展时仍保留固定宽度快速取指。对已经确认的32位指令流，取指继续使用早期预测和普通发出条件；只有遇到16位指令或跨32位边界的指令时，才进入半字拼接处理。这样使支持C扩展的硬件不会让未使用压缩指令的软件承担明显额外等待。
+IFU在硬件支持C扩展时仍保留固定宽度快速取指。对已经确认的32位指令流，取指继续使用早期预测和普通发出条件；只有遇到16位指令或跨32位取指字的指令时，才进入半字拼接处理。这样使支持C扩展的硬件不会让未使用压缩指令的软件承担明显额外等待。
 
 ### 3.4 控制流与异常进入
 
-中断请求到达时，CLINT不能仅使用当前取指PC，因为BJP可能正在更正下一条PC。控制逻辑等待BJP请求可确认后再保存`mepc`，并在原子操作或存储操作繁忙时推迟异常进入。这能避免把中断插入LR/SC或AMO序列中间。
+中断请求到达时，CLINT不能仅使用当前取指PC，因为BJP可能正在更正下一条PC。控制逻辑等待BJP请求可确认后再保存`mepc`，并在原子操作或存储操作繁忙时推迟异常进入。这能避免把中断插入原子指令序列中间。
 
 ## 4. 存储接口
 
@@ -85,37 +85,41 @@ IFU在硬件支持C扩展时仍保留固定宽度快速取指。对已经确认�
 
 取指接口和一致性控制之后的共享数据接口采用AXI4-Full，地址宽度为32位，数据宽度跟随XLEN（整数寄存器宽度），当前性能配置为32位，ID（标识号）宽度为2位。标准接口保留`ID`、`LEN`、`SIZE`、`BURST`、`LOCK`、`CACHE`、`PROT`、`QOS`与`LAST`。CPU与一致性控制之间的数据接口还带有第4.2节说明的内部扩展字段，因此该段接口应称为“AXI4-Full加Alkaid内部扩展”，不能作为纯AXI4-Full接口直接连接通用AXI模块。
 
-AXI4-Lite Cache与乒乓缓存仍可优化普通单拍访问，并完整保留AXI4-Full控制字段。突发访问和排他访问从Cache查找旁路通过，错误响应保持原值返回CPU。内部原子扩展的旁路行为在第4.2节单独说明。
+AXI4-Lite Cache用于优化普通单拍访问，乒乓缓存用于保存暂停期间的完整通道内容。两者均保留AXI4-Full控制字段；突发访问和排他访问从Cache查找旁路通过，错误响应保持原值返回CPU。内部原子扩展的旁路行为在第4.2节单独说明。
 
 AXI4-Full的五个独立通道分别为AW（写地址）、W（写数据）、B（写响应）、AR（读地址）和R（读响应）。各通道只在自身`VALID`与`READY`同时为1时完成一次握手。
 
 `AWLOCK`、`ARLOCK`、`EXOKAY`和`OKAY`均属于标准AXI4排他访问机制。AXI4中的`AWLOCK`或`ARLOCK`置1表示排他访问，不表示锁住总线，也不禁止其他hart访问所有地址。排他读成功时返回`EXOKAY`；排他写只有在排他监视检查成功并实际完成写入时返回`EXOKAY`，检查失败时返回`OKAY`且不得更新目标地址。
 
-### 4.2 Alkaid内部扩展
+### 4.2 Alkaid内部一致性扩展
 
-#### 4.2.1 接口分类
+Alkaid内部一致性扩展是面向当前双hart、写穿透私有Cache结构设计的紧凑协议。这里使用“设计前提”，不使用容易产生理论含义误解的“公理”。协议依赖三项设计前提：私有DCache和LSU L0 Cache不保存需要回写的脏数据；两个CPU的数据访问统一经过数据一致性控制；共享数据由存储器返回，不进行Cache间数据传送。在这些前提下，写操作只需进入共享存储，同时通知另一个CPU清除旧副本。
 
-CPU数据接口增加`AWATOP`和`ARATOP`两个4位原子操作字段。`AWATOP`沿用AW Atomic Operation（AW通道原子操作）的名称，`ARATOP`按项目内部AR Atomic Operation（AR通道原子操作）命名。这两个字段与相应地址通道同时传递，但不属于AXI4-Full信号。
+该协议不等同于ACE（AXI Coherency Extensions，AXI一致性扩展）。它没有ACE的AC（Snoop Address，监听地址）、CR（Snoop Response，监听响应）和CD（Snoop Data，监听数据）通道，不查询私有Cache状态，不接收Cache数据，也没有监听响应。当前扩展完成的功能是原子操作标记、LR（Load-Reserved，保留读）/SC（Store-Conditional，条件写）保留监视、AMO（Atomic Memory Operation，原子存储器操作）互斥、重叠读写控制和写地址驱动的跨hart失效。
 
-需要特别区分Alkaid的4位`AWATOP`与AMBA 5（Advanced Microcontroller Bus Architecture 5，第五代高级微控制器总线架构）定义的`AWATOP[5:0]`。AMBA 5原子事务只增加6位`AWATOP`，原子请求从AW通道发出；Alkaid使用自定义4位编码，并额外增加`ARATOP`以标记本地读改写过程的读阶段。两者的位宽、编码和事务组织均不兼容，不能把当前接口声明为AXI5（Advanced eXtensible Interface 5，第五代高级可扩展接口）原子事务接口。标准分类参考[AMBA AXI and ACE Protocol Specification](https://developer.arm.com/-/media/Arm%20Developer%20Community/PDF/IHI0022H_amba_axi_protocol_spec.pdf)。
+#### 4.2.1 接口组成
 
-| 类别 | 信号 | 是否属于AXI4-Full | 使用范围 |
-| --- | --- | --- | --- |
-| 标准排他访问 | `AWLOCK`、`ARLOCK`、`BRESP`、`RRESP` | 是 | CPU接口、仲裁器和共享侧接口 |
-| Alkaid原子操作扩展 | `AWATOP`、`ARATOP` | 否 | CPU、AXI4-Lite Cache与一致性控制 |
-| 写地址选择扩展 | `S_AXI_AWROUTE`、`M_AXI_AWROUTE` | 否 | AXI4-Lite Cache之后的乒乓缓存内部 |
-| Cache旁路控制 | `S_AXI_AW_BYPASS`、`S_AXI_AR_BYPASS` | 否 | AXI4-Lite Cache内部 |
-| Alkaid监听失效接口 | `SNOOP_INVALIDATE_VALID`、`SNOOP_INVALIDATE_OWNER`、`SNOOP_INVALIDATE_ADDR` | 否 | 一致性控制与私有Cache之间 |
+CPU数据接口在AXI4-Full五通道之外增加`AWATOP`和`ARATOP`。`AWATOP`沿用AW Atomic Operation（AW通道原子操作）的名称，`ARATOP`按内部AR Atomic Operation（AR通道原子操作）命名。数据一致性控制消费这两个字段，并在共享侧AW握手时产生`SNOOP_INVALIDATE_VALID`、`SNOOP_INVALIDATE_OWNER`和`SNOOP_INVALIDATE_ADDR`。`AWROUTE`与Cache旁路字段虽然也是内部扩展，但不属于一致性协议：前者保存从端选择结果，后者只决定是否使用普通Cache处理。
 
-双hart模式下，一致性控制读取`AWATOP`和`ARATOP`，完成LR/SC保留检查、AMO互斥和失败SC响应生成。处理完成后，共享侧不再输出这两个字段，共享存储器只接收标准AXI4-Full请求。因此，通用AXI从设备不需要识别Alkaid原子操作编码。
+| 类别 | 信号 | 是否属于AXI4-Full | 产生位置 | 消费位置 | 作用 |
+| --- | --- | --- | --- | --- | --- |
+| 标准排他访问 | `AWLOCK`、`ARLOCK`、`BRESP`、`RRESP` | 是 | CPU或从设备 | Cache、数据一致性控制和共享从设备 | 实现AXI4排他访问 |
+| 原子操作扩展 | `AWATOP`、`ARATOP` | 否 | LSU | 私有DCache和数据一致性控制 | 标记LR、SC和AMO阶段 |
+| 监听失效扩展 | `SNOOP_INVALIDATE_VALID`、`SNOOP_INVALIDATE_OWNER`、`SNOOP_INVALIDATE_ADDR` | 否 | 数据一致性控制 | SoC级来源选择和另一个CPU的私有Cache | 通知另一个CPU清除写地址对应的旧副本 |
+| 写地址选择字段 | `S_AXI_AWROUTE`、`M_AXI_AWROUTE` | 否 | Crossbar地址选择逻辑 | 乒乓缓存和Crossbar响应选择逻辑 | 保持AW与从端选择结果同步 |
+| Cache旁路控制 | `S_AXI_AW_BYPASS`、`S_AXI_AR_BYPASS` | 否 | AXI4-Lite Cache封装 | Cache控制逻辑 | 跳过普通单拍Cache处理 |
 
-单hart模式不经过双hart一致性控制，LR/SC保留检查和AMO读改写由LSU本地完成。`AWATOP`和`ARATOP`仍可在CPU内部数据接口与私有Cache之间传递，但不会出现在共享存储器接口。由此，两种hart配置面向共享存储器的一侧都保持标准AXI4-Full端口集合。
+![Alkaid双hart一致性扩展信号拓扑](./_media/alkaid_multicore/alkaid_coherence_signal_topology.svg)
 
-#### 4.2.2 原子操作编码
+图中的红色信号只存在于CPU数据接口与数据一致性控制之间，橙色信号从数据一致性控制返回私有Cache，蓝色接口从数据一致性控制开始已经恢复为标准AXI4-Full。Crossbar不接收`AWATOP`、`ARATOP`或监听失效信号。
 
-`AWATOP`仅在`AWVALID=1`时有效，`ARATOP`仅在`ARVALID=1`时有效。普通访问将对应字段置0；字段非零时，AXI4-Lite Cache不使用普通访问的Cache命中结果，请求携带原始AXI4控制字段进入一致性控制。
+#### 4.2.2 原子操作字段
 
-| 编码 | 操作 | 有效通道 | 一致性控制处理 |
+`AWATOP`表示写阶段的内部原子操作类型，仅在`AWVALID=1`时有效；`ARATOP`表示读阶段的内部原子操作类型，仅在`ARVALID=1`时有效。`READY=0`期间，相应字段必须与同通道地址和控制字段保持不变。普通访问将字段置0；字段非零时，私有DCache跳过普通命中、填充和本地更新过程，请求继续进入数据一致性控制。
+
+需要特别区分Alkaid的4位`AWATOP`与AMBA 5（Advanced Microcontroller Bus Architecture 5，第五代高级微控制器总线架构）定义的`AWATOP[5:0]`。AMBA 5原子事务只增加6位`AWATOP`，原子请求从AW通道发出；Alkaid使用自定义4位编码，并增加`ARATOP`以标记本地读改写过程的读阶段。两者的位宽、编码和事务组织均不兼容，当前接口不能声明为AXI5（Advanced eXtensible Interface 5，第五代高级可扩展接口）原子事务接口。标准定义参考[AMBA AXI and ACE Protocol Specification](https://developer.arm.com/-/media/Arm%20Developer%20Community/PDF/IHI0022H_amba_axi_protocol_spec.pdf)。
+
+| 编码 | 操作 | 有效通道 | 数据一致性控制处理 |
 | ---: | --- | --- | --- |
 | 0 | 普通访问 | AW或AR | 不启动原子控制 |
 | 1 | LR | AR | 保存来源hart和8字节粒度保留地址 |
@@ -129,27 +133,43 @@ CPU数据接口增加`AWATOP`和`ARATOP`两个4位原子操作字段。`AWATOP`�
 | 9 | AMOMAX | 先AR、后AW | 同上 |
 | 10 | AMOMINU | 先AR、后AW | 同上 |
 | 11 | AMOMAXU | 先AR、后AW | 同上 |
-| 12至15 | 未分配 | 无 | CPU正常执行过程不会产生；接口连接时不得使用 |
+| 12至15 | 未分配 | 无 | CPU正常执行过程不会产生；接口集成时保持不用 |
 
-AMO由LSU先发出带`ARATOP`的读请求，取得旧值并计算新值，再发出带同一操作编码的`AWATOP`写请求。一致性控制不要求共享存储器直接执行AMO，而是在读阶段开始后阻止另一hart进入冲突的原子过程，并在对应写响应完成后结束AMO互斥。LR只使用`ARATOP=1`，SC只使用`AWATOP=2`。`AWLOCK`和`ARLOCK`仍传递标准排他属性，但仅凭这两个标准字段不能区分LR、SC和各类AMO，具体类型必须由内部扩展字段给出。
+AMO由LSU先发出带`ARATOP`的读请求，取得旧值并计算新值，再发出带同一操作编码的`AWATOP`写请求。数据一致性控制在读阶段开始后阻止另一个hart进入原子过程，并在对应写响应完成后结束AMO互斥。LR只使用`ARATOP=1`，SC只使用`AWATOP=2`。`AWLOCK`和`ARLOCK`继续传递标准排他属性，但仅凭这两个标准字段不能区分LR、SC和各类AMO。
 
-#### 4.2.3 写地址选择字段
+双hart模式下，数据一致性控制在完成原子处理后不再向共享侧输出`AWATOP`和`ARATOP`，Crossbar与共享从设备只接收标准AXI4-Full。单hart模式由LSU本地完成LR/SC保留检查和AMO读改写；内部字段仍可在CPU和私有DCache之间传递，也不会进入共享从设备。
 
-`S_AXI_AWROUTE`和`M_AXI_AWROUTE`是乒乓缓存内部使用的6位写地址选择字段，不属于AXI4-Full。互连在AW进入乒乓缓存前根据`AWADDR`生成该字段，位0至位5依次代表IMEM、DMEM（Data Memory，数据存储器）、调试模块、APB（Advanced Peripheral Bus，高级外设总线）、CLINT和PLIC（Platform-Level Interrupt Controller，平台级中断控制器）。正常情况下该字段为独热值，与同一笔AW请求一起保存在弹性寄存器中；AW暂停时保持不变。
+#### 4.2.3 监听失效信号
 
-乒乓缓存输出端使用`M_AXI_AWROUTE`恢复这6位选择结果。开启写通道寄存级后，AW地址和选择结果始终属于同一笔请求，即使乒乓缓存中同时保存两笔写地址，也不会把较早请求的B响应送到错误从端。该字段只在互连内部使用，不送入IMEM、DMEM或外设，也不出现在CPU接口和SoC外部接口。未开启写通道寄存级时，互连直接使用当前选择状态，不依赖该字段。
+监听失效接口独立于AXI4-Full五个通道，不带`READY`，也没有接收确认或重试。三个信号必须在同一周期使用。
 
-设计没有增加`ARROUTE`或`WROUTE`。读响应根据各从端的未完成读事务数和R通道有效状态选择；W通道的目标在AW握手后由互连保存。B通道不带地址，而AW可能在弹性寄存器中等待，因此只有写地址通道需要携带`AWROUTE`，用于保持首次写请求与从端选择结果同步。
+| 信号 | 方向 | 位宽 | 含义 | 有效条件 | 暂停、错误与复位行为 |
+| --- | --- | ---: | --- | --- | --- |
+| `SNOOP_INVALIDATE_VALID` | 数据一致性控制输出 | 1位 | 指示本周期出现一笔需要通知另一个CPU的写地址 | 共享侧`AWVALID && AWREADY` | 不支持暂停和重试；复位期间没有有效AW握手时为0 |
+| `SNOOP_INVALIDATE_OWNER` | 数据一致性控制输出 | 1位 | 指示写地址来自hart0还是hart1 | `SNOOP_INVALIDATE_VALID=1` | 仅与有效信号同周期使用；复位期间不单独解释其值 |
+| `SNOOP_INVALIDATE_ADDR` | 数据一致性控制输出 | 32位 | 给出本次已接受的`AWADDR` | `SNOOP_INVALIDATE_VALID=1` | 仅与有效信号同周期使用；不携带突发长度、每拍大小、突发类型或写字节使能 |
 
-#### 4.2.4 Cache旁路字段
+`SNOOP_INVALIDATE_OWNER`名称中的`OWNER`仅表示本次写地址的来源hart，不表示Cache项归属，也不授予互斥访问权。SoC级来源选择消费该位，CPU本地失效接口只保留有效信号和地址，因此私有Cache不需要再次判断来源hart。
 
-`S_AXI_AW_BYPASS`和`S_AXI_AR_BYPASS`是AXI4-Lite Cache内部控制信号，不属于CPU接口，也不属于共享侧接口。写请求满足`AWLOCK=1`、`AWLEN`非零或`AWATOP`非零中的任一条件时，`S_AXI_AW_BYPASS`置1；读请求满足`ARLOCK=1`、`ARLEN`非零或`ARATOP`非零中的任一条件时，`S_AXI_AR_BYPASS`置1。Cache控制逻辑据此跳过普通单拍Cache处理，并保持原请求字段不变地发出访问。
+使用过程如下：数据一致性控制先固定本笔写请求的来源hart、共享侧ID以及AW和W完成状态；共享侧AW握手时写事务记录变为有效，同时产生监听失效事件；SoC级来源选择根据`SNOOP_INVALIDATE_OWNER`只向另一个CPU输出本地失效有效信号和地址；接收CPU按地址区域分别处理ICache、DCache与LSU L0 Cache；后续W握手和B响应仍按AXI4-Full独立进行。写请求仅被选择、仅完成CPU侧AW握手或仅完成W握手时，都不会产生监听失效事件。
 
-#### 4.2.5 监听失效接口
+当前数据一致性控制、SoC级来源选择和两个CPU使用同一系统时钟，接收端每周期都能够采样失效事件。若以后跨时钟集成，单周期`VALID`脉冲不能直接跨时钟传递，需要先转换为带接收确认的事件队列，并保证来源hart与地址和每一个有效事件同步保存。
 
-监听失效接口独立于AXI五个通道，没有`READY`信号，也不参与AXI握手。共享侧AW完成握手时，一致性控制在同一周期将`SNOOP_INVALIDATE_VALID`置1，`SNOOP_INVALIDATE_OWNER`给出写请求来源hart，`SNOOP_INVALIDATE_ADDR`给出已接受的写地址。系统根据来源hart只向另一个hart发出本地失效有效信号，接收hart清除私有ICache、私有DCache和LSU L0 Cache中的相关状态。
+监听事件在AW被接受时发生，早于B响应。即使后续写响应为`SLVERR`或`DECERR`，另一个CPU已经清除的Cache状态也不会恢复；这种保守处理只会增加后续重新读取，不会把失败写入的数据当作有效数据。失败SC不会向共享侧发出AW，因此不会产生监听事件；成功SC、AMO写阶段和普通写均按共享侧AW握手产生事件。无论`WSTRB`选择几个字节，接收方均清除包含该地址的完整数据总线字对应状态。
 
-该接口以共享侧`AWVALID && AWREADY`为触发条件。只有CPU侧AW被选择但尚未被共享侧接受时，不产生失效请求；只有W通道握手时也不产生失效请求。由于接口没有反压能力，接收端必须与一致性控制使用同一时钟，并在有效周期完成失效状态更新。
+数据一致性控制对所有共享侧写地址产生事件，接收方再按IMEM或DTCM（Data Tightly Coupled Memory，数据紧耦合存储器）地址范围决定是否处理。`SNOOP_INVALIDATE_ADDR`只描述一个起始地址。当前LSU固定产生自然对齐的单拍事务，`AWLEN=0`，因此一个事件覆盖当前CPU能够写入的一个数据总线字。若以后在数据一致性控制之前加入可产生多拍写的主设备，单个起始地址不能覆盖整个突发；集成方案需要为每个受影响的Cache项产生失效事件，或增加长度、大小和突发类型字段，或让对应共享地址范围不进入私有Cache。
+
+#### 4.2.4 写地址选择字段
+
+`S_AXI_AWROUTE`和`M_AXI_AWROUTE`是Crossbar内部使用的6位写地址选择字段，不属于AXI4-Full，也不属于一致性协议。Crossbar在AW进入乒乓缓存前根据`AWADDR`生成该字段，位0至位5依次代表IMEM、DMEM（Data Memory，数据存储器）、调试模块、APB（Advanced Peripheral Bus，高级外设总线）、CLINT和PLIC（Platform-Level Interrupt Controller，平台级中断控制器）。该字段为独热值，与同一笔AW请求一起保存在弹性寄存器中；AW暂停时保持不变。
+
+开启写通道寄存级后，`M_AXI_AWROUTE`用于恢复首次AW的从端选择结果。Crossbar在从端接受AW后分别记录等待W和等待B的事务数，并在这些事务结束前只允许同一从端继续接受新AW。W通道依据等待W的从端选择发送，B通道依据等待B的从端选择返回；同一从端可以保留多笔未完成写事务，不同从端不会同时处于未完成写状态。`AWROUTE`不是B响应的事务ID，也不替代`AWID`或`BID`。
+
+设计没有增加`ARROUTE`或`WROUTE`。读侧同样在存在未完成读事务时只允许相同从端继续接受AR，并通过从端选择状态和计数选择R响应。W通道目标来自已经接受的AW。未开启乒乓寄存级时，Crossbar直接使用当前地址选择和已保存状态，不依赖`AWROUTE`完成响应选择。
+
+#### 4.2.5 Cache旁路字段
+
+`S_AXI_AW_BYPASS`和`S_AXI_AR_BYPASS`是AXI4-Lite Cache内部控制信号，不属于CPU接口、共享侧接口或一致性协议。写请求满足`AWLOCK=1`、`AWLEN`非零或`AWATOP`非零中的任一条件时，`S_AXI_AW_BYPASS`置1；读请求满足`ARLOCK=1`、`ARLEN`非零或`ARATOP`非零中的任一条件时，`S_AXI_AR_BYPASS`置1。Cache控制逻辑据此跳过普通单拍Cache处理，并保持请求字段不变地发出访问。
 
 ### 4.3 取指读仲裁
 
@@ -190,7 +210,7 @@ AMO由LSU先发出带`ARATOP`的读请求，取得旧值并计算新值，再发
 
 ### 4.4 数据一致性控制
 
-`axi_dual_coherency_manager`合并两个hart的数据读写请求，并分别设置4项读事务记录和4项写事务记录。读表与写表相互独立，因此数值相同的共享侧读ID和写ID可以同时有效；R通道只查询读表，B通道只查询写表，不会相互混淆。
+`axi_dual_coherency_manager`合并两个hart的数据读写请求，并分别设置4项读事务记录和4项写事务记录。该模块同时是内部一致性扩展的集中处理点：它消费`AWATOP`与`ARATOP`，维护LR/SC保留状态和AMO互斥状态，阻止与未完成写重叠的读请求，并在共享侧接受写地址时产生监听失效事件。读表与写表相互独立，因此数值相同的共享侧读ID和写ID可以同时有效；R通道只查询读表，B通道只查询写表，不会相互混淆。
 
 #### 4.4.1 读请求仲裁
 
@@ -212,7 +232,7 @@ AMO由LSU先发出带`ARATOP`的读请求，取得旧值并计算新值，再发
 
 SC条件不成立时，请求不会发送到共享侧。控制逻辑在CPU侧产生内部B响应，直接使用已保存的来源hart和本地`AWID`，不占用共享侧写记录。该响应同样等待对应hart给出`BREADY`后结束。
 
-共享侧AW握手同时产生监听失效请求，携带来源hart和写地址。系统只把失效请求送给另一个hart，接收方清除私有ICache、私有DCache和LSU L0 Cache中的相关状态。监听失效以共享侧真正接受写地址为准，不会因仅选择了写请求或仅完成W握手而提前发生。
+共享侧AW握手同时产生监听失效事件，携带来源hart和写地址。系统只把事件送给另一个hart，接收CPU按第5章说明的方式分别处理ICache、DCache和LSU L0 Cache。监听失效以共享侧真正接受写地址为准，不会因仅选择了写请求或仅完成W握手而提前发生。
 
 #### 4.4.4 未完成事务容量
 
@@ -224,6 +244,19 @@ SC条件不成立时，请求不会发送到共享侧。控制逻辑在CPU侧产
 | 失败SC | 不占用共享记录 | CPU侧AW与W均被接受 | 内部B握手 | 只返回发起SC的hart |
 
 普通访问最多可以同时保留4笔数据读事务和4笔数据写事务。读写表使用独立有效位，即使读表和写表都使用共享侧ID 0，也能分别通过`RID`和`BID`找到正确记录。写请求处理中只允许一笔请求处于AW或W尚未完成的状态，这是因为AXI4的W通道不携带ID；已经完成AW与W握手、仅等待B响应的写请求可以有多笔。
+
+#### 4.4.5 一致性处理时序
+
+以下时序以hart0写共享DTCM、hart1随后读取相同数据总线字为例。ICache只在写地址属于IMEM时参与，处理方式见第5.1节。
+
+| 阶段 | 数据一致性控制 | hart0私有Cache | hart1私有Cache | 共享侧状态 |
+| --- | --- | --- | --- | --- |
+| 写请求进入 | 轮换选择hart0，固定共享侧ID并分别等待AW和W | DCache按写穿透方式发出写请求；LSU L0 Cache记录本地写影响 | 保持原状态 | 尚未接受写地址 |
+| 共享侧AW握手 | 分配写事务记录，同时输出`SNOOP_INVALIDATE_VALID=1`、来源hart和`AWADDR` | 不接收本次跨hart事件 | DCache当拍禁止使用冲突组的命中，LSU L0 Cache当拍禁止使用同地址命中，并更新有效位 | 写地址已经接受，W和B仍可继续等待 |
+| 写响应返回前 | 使用写事务记录阻止与该写范围重叠的共享读请求 | 等待本地写结果 | 被清除的访问重新进入共享读流程；未完成Cache填充不得把旧值重新写入有效状态 | W可独立握手，B尚未返回 |
+| B响应握手 | 通过`BID`查写表，恢复来源hart和本地`AWID`，随后释放记录 | 成功写响应后可按字节使能更新本地DCache项 | 保持失效状态，后续读从共享存储取得数据 | 写事务结束 |
+
+监听失效与读写范围阻止承担不同职责。监听失效清除另一个CPU已有的私有副本；读写范围阻止保证该CPU失效后的重新读取不会在较早写响应结束前进入共享侧。两者共同避免另一个CPU继续读到旧数据。
 
 ### 4.5 标准AXI4关键端口
 
@@ -273,17 +306,19 @@ SC条件不成立时，请求不会发送到共享侧。控制逻辑在CPU侧产
 
 下表中的信号均不属于AXI4-Full。`AWATOP`和`ARATOP`附加在CPU侧数据接口，`AWROUTE`和旁路字段只在内部模块之间使用，监听失效信号构成独立接口。集成时不得把这些字段作为标准AXI端口连接到通用AXI模块。
 
-| 信号                       | 方向        |  位宽 | 功能                 | 有效条件                       | 暂停、错误与复位行为                                      |
-| ------------------------ | --------- | --: | ------------------ | -------------------------- | ----------------------------------------------- |
-| `AWATOP`                 | CPU输出     |  4位 | 指示写阶段的Alkaid原子操作类型 | `AWVALID=1`                | `AWREADY=0`时与AW字段一起保持；非零时旁路普通Cache处理；复位后清零      |
-| `ARATOP`                 | CPU输出     |  4位 | 指示读阶段的Alkaid原子操作类型 | `ARVALID=1`                | `ARREADY=0`时与AR字段一起保持；非零时旁路普通Cache处理；复位后清零      |
-| `S_AXI_AWROUTE`          | 乒乓缓存输入    |  6位 | 携带写地址对应的从端选择结果     | `S_AXI_AWVALID=1`          | `S_AXI_AWREADY=0`时与其他AW字段一起保持；复位期间有效信号为0时不使用本字段 |
-| `M_AXI_AWROUTE`          | 乒乓缓存输出    |  6位 | 输出与当前AW请求同步的从端选择结果 | `M_AXI_AWVALID=1`          | `M_AXI_AWREADY=0`时保持；复位清除缓存内有效状态后不使用本字段         |
-| `S_AXI_AW_BYPASS`        | Cache控制输入 |  1位 | 指示写请求跳过普通Cache处理   | `S_AXI_AWVALID=1`          | 随AW标准字段和`AWATOP`组合产生；AW暂停时保持；复位期间请求无效           |
-| `S_AXI_AR_BYPASS`        | Cache控制输入 |  1位 | 指示读请求跳过普通Cache处理   | `S_AXI_ARVALID=1`          | 随AR标准字段和`ARATOP`组合产生；AR暂停时保持；复位期间请求无效           |
-| `SNOOP_INVALIDATE_VALID` | 一致性控制输出   |  1位 | 指示跨hart失效请求有效      | 共享侧AW完成握手的周期               | 没有暂停和重试能力；接收端当拍处理；复位期间没有有效AW请求时为0               |
-| `SNOOP_INVALIDATE_OWNER` | 一致性控制输出   |  1位 | 给出写请求来源hart        | `SNOOP_INVALIDATE_VALID=1` | 与有效信号同周期使用；系统不向来源hart发出本地失效请求；复位期间有效信号为0时不使用本字段 |
-| `SNOOP_INVALIDATE_ADDR`  | 一致性控制输出   | 32位 | 给出已被共享侧接受的写地址      | `SNOOP_INVALIDATE_VALID=1` | 与有效信号同周期使用；接收端清除相应Cache状态；复位期间有效信号为0时不使用本字段     |
+| 信号 | 方向 | 位宽 | 功能 | 有效条件 | 暂停、错误与复位行为 |
+| --- | --- | ---: | --- | --- | --- |
+| `AWATOP` | CPU输出 | 4位 | 指示写阶段的Alkaid原子操作类型 | `AWVALID=1` | `AWREADY=0`时与AW字段一起保持；非零时旁路普通Cache处理；复位后清零 |
+| `ARATOP` | CPU输出 | 4位 | 指示读阶段的Alkaid原子操作类型 | `ARVALID=1` | `ARREADY=0`时与AR字段一起保持；非零时旁路普通Cache处理；复位后清零 |
+| `S_AXI_AWROUTE` | 乒乓缓存输入 | 6位 | 携带Crossbar根据写地址得到的独热从端选择结果 | `S_AXI_AWVALID=1` | `S_AXI_AWREADY=0`时与其他AW字段一起保持；复位期间有效信号为0时不使用本字段 |
+| `M_AXI_AWROUTE` | 乒乓缓存输出 | 6位 | 输出与当前AW请求同步的独热从端选择结果 | `M_AXI_AWVALID=1` | `M_AXI_AWREADY=0`时保持；只辅助首次写目标选择，不替代`AWID`和`BID`；复位清除缓存内有效状态后不使用本字段 |
+| `S_AXI_AW_BYPASS` | Cache控制输入 | 1位 | 指示写请求跳过普通Cache处理 | `S_AXI_AWVALID=1` | 随AW标准字段和`AWATOP`组合产生；AW暂停时保持；复位期间请求无效 |
+| `S_AXI_AR_BYPASS` | Cache控制输入 | 1位 | 指示读请求跳过普通Cache处理 | `S_AXI_ARVALID=1` | 随AR标准字段和`ARATOP`组合产生；AR暂停时保持；复位期间请求无效 |
+| `SNOOP_INVALIDATE_VALID` | 一致性控制输出 | 1位 | 指示跨hart失效事件有效 | 共享侧AW完成握手的周期 | 没有暂停和重试能力；接收端当拍采样；复位期间没有有效AW请求时为0 |
+| `SNOOP_INVALIDATE_OWNER` | 一致性控制输出 | 1位 | 给出写请求来源hart | `SNOOP_INVALIDATE_VALID=1` | 与有效信号同周期使用；系统不向来源hart发出本地失效请求；复位期间有效信号为0时不使用本字段 |
+| `SNOOP_INVALIDATE_ADDR` | 一致性控制输出 | 32位 | 给出已被共享侧接受的写起始地址 | `SNOOP_INVALIDATE_VALID=1` | 与有效信号同周期使用；不描述突发后续地址；复位期间有效信号为0时不使用本字段 |
+| `lsu_snoop_invalidate_valid_i` | CPU输入 | 1位 | 指示来自另一个hart的本地失效事件有效 | SoC级来源选择确认全局事件不是本CPU发起时 | 没有暂停信号；CPU当拍采样；复位期间为0 |
+| `lsu_snoop_invalidate_addr_i` | CPU输入 | 32位 | 给出另一个hart已被共享侧接受的写起始地址 | `lsu_snoop_invalidate_valid_i=1` | 与有效信号同周期使用；ICache、DCache和LSU L0 Cache分别检查地址范围；复位期间有效信号为0时不使用本字段 |
 
 > [!WARNING]
 > AXI4的AW与W相互独立。控制逻辑分别记住两个通道是否握手，不限定它们在同一周期完成，也不会在只收到其中一个通道后提前产生B响应。
@@ -292,42 +327,51 @@ SC条件不成立时，请求不会发送到共享侧。控制逻辑在CPU侧产
 
 ### 5.1 私有ICache
 
-每个hart拥有独立只读ICache。双hart默认每核2048项、2路，并允许4笔取指读事务。共享侧写IMEM时，写地址会使两个hart中相关ICache项失效，防止自修改代码或程序下载完成后仍然执行旧指令。
+每个hart拥有独立只读ICache。双hart默认每核2048项、2路，并允许4笔取指读事务。ICache不使用写地址进行单项标签比较；只要本CPU的数据写通道接受一个IMEM写地址，或者本CPU收到另一个hart发出的IMEM监听失效事件，就启动全Cache失效，从第0组开始逐组清除所有路的有效位。因此，写入一个IMEM数据总线字会清除该CPU的整个ICache，而不是只清除写地址对应的一项。
+
+写入来源CPU依靠本地IMEM写地址握手使自己的ICache失效，另一个CPU依靠监听失效事件使自己的ICache失效。全Cache清除启动后，ICache停止采用原有Cache命中，也不允许新的返回数据成为有效项；已经发出的取指读响应仍可返回IFU，但失效期间返回的数据不重新写入Cache。该处理覆盖自修改代码、程序下载和另一个CPU修改IMEM的情况。
 
 ### 5.2 私有DCache
 
-私有DCache采用写穿透方式，提供1024项、2路配置能力，CPU侧默认只保留1笔未完成数据事务。普通单拍访问可使用Cache，突发、排他和原子访问直接旁路。当前双核CoreMark性能配置关闭DCache，因此性能结果主要反映LSU L0 Cache与共享总线行为。
+私有DCache采用写穿透方式，提供1024项、2路配置能力，CPU侧默认只保留1笔未完成数据事务。每个Cache项保存一个数据总线字，不形成包含多个数据总线字的Cache行。普通单拍访问可使用Cache，突发、排他和原子访问直接旁路；写请求始终发送到共享侧，只有B响应成功后才允许更新本地Cache项。写入来源CPU不接收自己的监听事件，本地写流程负责更新或保留自己的DCache状态。
+
+另一个hart的监听事件到达后，DCache先检查地址是否属于DTCM，再从地址取得组号。当前硬件不读取标签进行精确失效，而是清除目标组所有路的有效位。2路配置会同时清除该组的两路，即使其中一路保存的是不同标签；这种保守清除保持正确性，但可能增加一次无关地址的重新读取。
+
+DCache还处理失效与正在进行的读写相遇的情况。监听有效的当拍不采用普通Cache操作；若当前读探测使用相同组，则该探测不能报告命中；所有已经发出但尚未返回的未命中读均被标记为不得填充，返回数据仍可送给CPU，但不能重新写入Cache；等待提交的填充和本地写更新也在监听有效周期停止。这样可以防止较早发出的读响应在失效后再次形成有效旧副本。当前双核CoreMark性能配置关闭DCache，因此性能结果主要反映LSU L0 Cache与共享总线行为。
 
 ### 5.3 LSU L0 Cache
 
-两个CPU各自使用独立LSU L0 Cache，深度允许1至1024项，组相联度允许1路或2路。当前性能配置使用1024项、1路，只缓存DTCM（数据紧耦合存储器）区域。其他hart写入相关地址时，本hart清除命中项；本地写可以更新或清除对应项。原子操作期间禁止使用相关命中或填充，避免普通缓存状态干扰原子指令。
+两个CPU各自使用独立LSU L0 Cache，深度允许1至1024项，组相联度允许1路或2路。当前性能配置使用1024项、1路，只缓存DTCM区域，每项对应一个自然对齐的数据总线字。本地读按DTCM范围、组号和标签判断命中；本地写和读填充通过核内控制信息更新或清除相应项。
 
-```systemverilog
-l0_hit = l0_valid[index] &&
-         l0_tag[index] == request_tag &&
-         request_in_dtcm &&
-         !atomic_busy;
+监听失效采用比DCache更精确的处理。接收CPU先检查地址属于DTCM，再从自然对齐地址取得组号和标签，只清除目标组内标签相同的有效路。命中比较同时接收监听组号和标签，因此监听事件与本地读取同周期到达时，匹配地址的命中立即被禁止，不必等待有效位在时钟沿后更新。
 
-if (peer_snoop_valid && peer_snoop_match) begin
-    l0_valid[peer_index] <= 1'b0;
-end
-```
+本地填充或写更新可能与另一个hart的监听事件同周期发生。控制逻辑在同一个时序过程中合并两类更新：若两者指向相同组和相同标签，新写入的有效状态保持为0；若指向相同组但标签不同，只清除监听地址匹配的路；若组号不同，则分别更新。原子操作期间不使用LSU L0 Cache命中或填充，避免普通Cache状态影响原子读改写过程。
 
 ### 5.4 AXI4-Lite Cache与乒乓缓存
 
-`axi_lite_cache`保留其正式模块名，但标准端口已经携带完整AXI4-Full字段。旁路模式逐项传递全部标准控制字段；只读模式按ID跟踪多笔响应；读写模式仅优化普通单拍请求。CPU侧数据接口还单独传递`AWATOP`和`ARATOP`，任一有效地址请求携带非零原子操作编码时均旁路普通Cache处理。一致性控制处理并移除原子操作字段后，乒乓缓存只接收标准AXI4-Full字段和内部`AWROUTE`，利用弹性寄存器降低普通访问的等待周期，并保持突发信息、排他属性、响应ID和错误状态不变。
+`axi_lite_cache`是AXI4-Lite Cache的正式模块名，但其外部标准端口已经携带完整AXI4-Full字段。CPU内部的私有DCache位于数据一致性控制之前，能够接收`AWATOP`、`ARATOP`和另一个CPU的监听失效地址；非零原子操作编码使请求旁路普通Cache处理。双hart SoC中的互连侧Cache当前关闭并按标准AXI4-Full直通，其监听失效输入固定无效，原子操作字段也已经由数据一致性控制消费，因此它不保存需要参与双hart一致性处理的私有状态。
+
+乒乓缓存位于数据一致性控制之后。AW、W、B、AR和R通道分别设置参数化寄存级，每个启用的寄存级使用两项弹性存储。每个通道把数据、ID、突发字段、排他属性和响应状态作为同一组内容保存；AW还附带6位`AWROUTE`。乒乓缓存不分配ID、不判断地址冲突、不产生监听事件，也不记录跨通道事务关系，其职责是保存暂停期间的通道内容并切分较长的组合路径。
+
+### 5.5 Crossbar
+
+Crossbar接收取指读接口和共享数据接口。共享数据接口在进入Crossbar之前已经完成双hart仲裁、共享ID分配、原子处理和跨hart失效，因而Crossbar只处理标准AXI4-Full以及内部`AWROUTE`。它不会查看`AWATOP`、`ARATOP`或监听失效信号，也不维护私有Cache状态。
+
+读地址根据`ARADDR`选择IMEM、DMEM、调试模块、APB、CLINT或PLIC。第一个从端接受AR后，Crossbar保存读从端选择并增加该从端的未完成读事务数；未完成读存在期间，只允许相同从端继续接受新AR。R通道只从保存的从端接收响应，最后一拍握手时减少计数。这样可以支持同一从端的多笔未完成读，同时避免多个从端同时返回时无法确定R通道来源。
+
+写侧在AW进入乒乓缓存前生成`AWROUTE`。从端接受AW后，Crossbar分别增加等待W和等待B的计数，W最后一拍握手时减少等待W计数，B握手时减少等待B计数；只要任一写计数非零，新AW就只能选择同一从端。`AWROUTE`保证AW经过寄存级后仍携带首次选择结果，计数和从端选择状态保证W与B始终连接到该从端。数据一致性控制分配的`AWID`与`ARID`保持不变，从端返回的`BID`与`RID`继续用于上一级事务记录查询。
 
 ## 6. 原子操作
 
 ### 6.1 支持范围
 
-Alkaid实现RISC-V A（原子操作）扩展的LR/SC（保留读/条件写），并支持AMO（原子存储器操作）交换、加、异或、与、或、有符号最小值、有符号最大值、无符号最小值和无符号最大值。LSU用`AWLOCK`与`ARLOCK`传递标准AXI4排他属性，并用第4.2节定义的4位`AWATOP`与`ARATOP`指出具体操作。
+Alkaid实现RISC-V A（Atomic，原子操作）扩展的LR/SC，并支持AMO交换、加、异或、与、或、有符号最小值、有符号最大值、无符号最小值和无符号最大值。LSU用`AWLOCK`与`ARLOCK`传递标准AXI4排他属性，并用第4.2节定义的4位`AWATOP`与`ARATOP`指出具体操作。
 
 ### 6.2 保留监视
 
-每个hart保存独立的保留有效位与8字节粒度地址。任意hart成功写入同一8字节范围时，两个hart中匹配的保留都被清除。SC仅在当前hart保留有效且地址相同时向存储器发出写请求。
+每个hart保存独立的保留有效位与8字节粒度地址。带`ARATOP=1`的共享侧AR完成握手时立即建立保留，不等待R响应返回。任意共享侧AW完成握手时，数据一致性控制比较该写起始地址的8字节粒度值，并清除两个hart中匹配的保留；即使后续B响应报告错误，保留也不恢复。SC仅在当前hart保留有效且地址相同时向存储器发出写请求。
 
-SC成功时一致性控制返回`EXOKAY`，LSU向目的寄存器写0；SC失败时不发出共享写请求，由控制逻辑产生成功完成形式的内部响应，LSU向目的寄存器写1。无论成功或失败，本hart保留都会清除。
+SC被选择时立即清除本hart保留。条件成立时，写请求进入共享侧，B响应返回`EXOKAY`，LSU向目的寄存器写0；条件不成立时，AW和W只在CPU侧完成，不向共享侧发出写请求，也不产生监听失效事件，数据一致性控制返回内部`OKAY`响应，LSU向目的寄存器写1。
 
 ```systemverilog
 sc_success = reservation_valid[hart] &&
@@ -366,13 +410,13 @@ CLINT异常控制依次更新`mepc`、`mstatus`、可选`mtval`和`mcause`，`mr
 
 ### 7.3 软件中断
 
-`MSIP`用于IPI（核间中断）。主hart写目标hart的`MSIP`后，从hart进入软件中断处理；处理程序完成本地动作并清除自己的`MSIP`。每个hart的定时器比较值独立，因此RT-Thread可以为两个CPU分别维护调度节拍。
+`MSIP`用于IPI（Inter-Processor Interrupt，核间中断）。主hart写目标hart的`MSIP`后，从hart进入软件中断处理；处理程序完成本地动作并清除自己的`MSIP`。每个hart的定时器比较值独立，因此RT-Thread可以为两个CPU分别维护调度节拍。
 
 ## 8. 启动与AMP
 
 ### 8.1 汇编启动
 
-所有hart首先读取`mhartid`并选择独立且按ABI（应用二进制接口）对齐的栈，同时初始化保存寄存器。hart0清零全局未初始化数据区、设置异常入口并完成全局初始化；hart1在等待区检查启动标志，不重复清零全局状态。
+所有hart首先读取`mhartid`并选择独立且按ABI（Application Binary Interface，应用二进制接口）对齐的栈，同时初始化保存寄存器。hart0清零全局未初始化数据区、设置异常入口并完成全局初始化；hart1在等待区检查启动标志，不重复清零全局状态。
 
 hart0发布启动参数前执行`fence rw, rw`。hart1观察到启动标志后执行`fence r, rw`，设置异常入口并进入从hart函数。双hart各预留8 KiB栈空间，总栈空间为16 KiB。
 
@@ -393,7 +437,7 @@ RT-Thread使用专用Env配置工具处理Kconfig依赖。平台配置启用`RT_
 
 ### 9.2 CPU端口
 
-CPU端口读取`mhartid`作为当前CPU编号。自旋锁使用`amoswap.w.aq`循环获取，释放前执行`fence rw, w`再清零锁值。IPI函数遍历目标CPU位集合并写对应CLINT `MSIP`。从CPU启动时先调用AMP服务进入本地初始化，再进入调度器；空闲线程执行WFI（等待中断）。
+CPU端口读取`mhartid`作为当前CPU编号。自旋锁使用`amoswap.w.aq`循环获取，释放前执行`fence rw, w`再清零锁值。IPI函数遍历目标CPU位集合并写对应CLINT `MSIP`。从CPU启动时先调用AMP服务进入本地初始化，再进入调度器；空闲线程执行WFI（Wait For Interrupt，等待中断）。
 
 ```asm
 1:
@@ -408,7 +452,7 @@ CPU端口读取`mhartid`作为当前CPU编号。自旋锁使用`amoswap.w.aq`循
 
 ### 9.3 原子接口
 
-RT-Thread硬件原子API（应用程序接口）为RV32与RV64分别实现交换、加、减、异或、与、或、读取、写入、标志测试设置、标志清除和比较交换。交换使用`amoswap`，加减使用`amoadd`，读取可使用零值`amoxor`，比较交换使用带`aq`与`rl`属性的LR/SC循环。
+RT-Thread硬件原子API（Application Programming Interface，应用程序接口）为RV32与RV64分别实现交换、加、减、异或、与、或、读取、写入、标志测试设置、标志清除和比较交换。交换使用`amoswap`，加减使用`amoadd`，读取可使用零值`amoxor`，比较交换使用带`aq`与`rl`属性的LR/SC循环。
 
 ```c
 do {
@@ -453,7 +497,7 @@ TVIP-AXI VIP配置为AXI4、2位ID、32位地址、32位数据、最大16拍突�
 | RT-Thread SMP基础测试 | 1 | 1 | 通过 |
 | CoreMark公平性能测试 | 1 | 1 | 通过 |
 
-当前环境尚未得到TVIP UVM（通用验证方法学）运行结果。VCS（硬件仿真器）启动包装程序需要进入受限容器，但当前容器禁止该权限提升。用例注册、配置、激励与计分器已经完成；正式回归环境恢复VCS运行条件后，应把该用例纳入常规回归并保存覆盖率统计。
+当前环境尚未得到TVIP UVM（Universal Verification Methodology，通用验证方法学）运行结果。VCS（硬件仿真器）启动包装程序需要进入受限容器，但当前容器禁止该权限提升。用例注册、配置、激励与计分器已经完成；正式回归环境恢复VCS运行条件后，应把该用例纳入常规回归并保存覆盖率统计。
 
 > [!WARNING]
 > 上表中的RTL模块结果不代表尚未执行完成的TVIP UVM结果。文档分别记录两类结果，并明确区分“已注册”与“已通过”。
@@ -466,14 +510,14 @@ TVIP-AXI VIP配置为AXI4、2位ID、32位地址、32位数据、最大16拍突�
 - 普通、突发和排他请求保持正确旁路行为，`AWATOP`或`ARATOP`非零的内部原子请求不进入普通Cache处理。
 - LR后无冲突写时SC成功，LR后有冲突写时SC失败且不写存储器。
 - 各类AMO返回旧值并写入正确新值。
-- 其他hart写入后，ICache、DCache与LSU L0 Cache相关项失效。
+- 其他hart写入DTCM后，DCache目标组与LSU L0 Cache匹配项失效；写入IMEM后，整个私有ICache失效。
 - 复位清除事务记录、原子互斥状态、保留状态和有效响应。
 
 ## 11. 性能结果
 
 ### 11.1 公平比较
 
-性能测试固定使用相同源码、相同优化参数、相同并行构建设置和相同ISA。ELF（可执行与可链接格式）属性均为`rv32i2p1_m2p0_a2p1_b1p0_zicsr2p0_zmmul1p0_zaamo1p0_zalrsc1p0_zba1p0_zbb1p0_zbc1p0_zbs1p0`。硬件虽然支持C扩展，但两组ELF都不含C扩展，因而压缩指令不会造成单核和双核差异。
+性能测试固定使用相同源码、相同优化参数、相同并行构建设置和相同ISA。ELF（Executable and Linkable Format，可执行与可链接格式）属性均为`rv32i2p1_m2p0_a2p1_b1p0_zicsr2p0_zmmul1p0_zaamo1p0_zalrsc1p0_zba1p0_zbb1p0_zbc1p0_zbs1p0`。硬件虽然支持C扩展，但两组ELF都不含C扩展，因而压缩指令不会造成单核和双核差异。
 
 | 模式 | CoreMark分数 | 周期数 | 相对单核 |
 | --- | ---: | ---: | ---: |
@@ -504,7 +548,9 @@ TVIP-AXI VIP配置为AXI4、2位ID、32位地址、32位数据、最大16拍突�
 - 两个CPU各自使用私有L1，系统不使用共享L1。
 - 取指接口和一致性控制之后的共享数据接口使用标准AXI4-Full字段，并支持排他访问和多笔未完成事务。
 - CPU侧数据接口在AXI4-Full字段之外增加4位`AWATOP`和`ARATOP`，内部模块明确区分标准字段与Alkaid扩展字段。
-- AXI4-Lite Cache处理`AWATOP`和`ARATOP`的旁路控制，一致性控制移除原子操作字段后，乒乓缓存只附加内部`AWROUTE`并完整保留标准AXI4-Full请求与响应字段。
+- 私有DCache和LSU L0 Cache接收另一个CPU的监听失效地址；ICache在IMEM写入时执行全Cache失效。
+- 数据一致性控制消费`AWATOP`和`ARATOP`并产生监听失效事件；Crossbar不接收这些一致性扩展信号。
+- 数据一致性控制移除原子操作字段后，乒乓缓存只附加内部`AWROUTE`并完整保留标准AXI4-Full请求与响应字段。
 - LR/SC与AMO经过集中式一致性控制，不依赖单个Cache的局部状态。
 - CLINT按hart提供独立`MSIP`与`MTIMECMP`，两个hart共享`MTIME`。
 - CLINT控制流检查只使用BJP请求，不增加重复的指令控制流解码。

@@ -1,0 +1,184 @@
+digraph AlkaidCoherenceTopology {
+    graph [
+        rankdir=TB,
+        bgcolor="#FFFFFF",
+        pad="0.32",
+        nodesep="0.35",
+        ranksep="0.72",
+        splines=ortho,
+        fontname="Noto Sans CJK SC",
+        fontsize=32,
+        labelloc=t,
+        label="Alkaid双hart一致性扩展信号拓扑"
+    ];
+
+    node [
+        shape=box,
+        style="rounded,filled",
+        color="#64748B",
+        fillcolor="#F8FAFC",
+        fontcolor="#0F172A",
+        fontname="Noto Sans CJK SC",
+        fontsize=17,
+        penwidth=1.8,
+        margin="0.18,0.12"
+    ];
+
+    edge [
+        color="#475569",
+        fontcolor="#334155",
+        fontname="Noto Sans CJK SC",
+        fontsize=14,
+        penwidth=2.0,
+        arrowsize=0.8
+    ];
+
+    subgraph cluster_hart0 {
+        label="hart0私有部分";
+        color="#93C5FD";
+        fillcolor="#EFF6FF";
+        style="rounded,filled";
+        penwidth=2.0;
+        fontname="Noto Sans CJK SC";
+        fontsize=20;
+
+        c0_lsu [label="LSU与LSU L0 Cache\n按组号和标签精确清除", fillcolor="#DBEAFE", color="#3B82F6"];
+        c0_dc [label="DCache（可选、写穿透）\n清除目标组的全部路\n输出AXI4-Full + AWATOP / ARATOP", fillcolor="#DBEAFE", color="#3B82F6"];
+        c0_ic [label="ICache（只读）\nIMEM写触发全Cache失效", fillcolor="#DBEAFE", color="#3B82F6"];
+        c0_snoop [label="本地失效输入\nvalid + addr\n来源不是hart0", shape=ellipse, fillcolor="#FFEDD5", color="#F97316"];
+
+        c0_lsu -> c0_dc [color="#2563EB"];
+        c0_snoop -> c0_lsu [color="#F97316"];
+        c0_snoop -> c0_dc [color="#F97316"];
+        c0_snoop -> c0_ic [color="#F97316"];
+    }
+
+    subgraph cluster_hart1 {
+        label="hart1私有部分";
+        color="#86EFAC";
+        fillcolor="#F0FDF4";
+        style="rounded,filled";
+        penwidth=2.0;
+        fontname="Noto Sans CJK SC";
+        fontsize=20;
+
+        c1_lsu [label="LSU与LSU L0 Cache\n按组号和标签精确清除", fillcolor="#DCFCE7", color="#22C55E"];
+        c1_dc [label="DCache（可选、写穿透）\n清除目标组的全部路\n输出AXI4-Full + AWATOP / ARATOP", fillcolor="#DCFCE7", color="#22C55E"];
+        c1_ic [label="ICache（只读）\nIMEM写触发全Cache失效", fillcolor="#DCFCE7", color="#22C55E"];
+        c1_snoop [label="本地失效输入\nvalid + addr\n来源不是hart1", shape=ellipse, fillcolor="#FFEDD5", color="#F97316"];
+
+        c1_lsu -> c1_dc [color="#16A34A"];
+        c1_snoop -> c1_lsu [color="#F97316"];
+        c1_snoop -> c1_dc [color="#F97316"];
+        c1_snoop -> c1_ic [color="#F97316"];
+    }
+
+    iarb [
+        label="双hart取指读仲裁\n共享ID分配与响应回送",
+        fillcolor="#F1F5F9",
+        color="#64748B"
+    ];
+
+    cm [
+        label="数据一致性控制\n轮换仲裁、共享ID分配\n读写冲突控制、LR/SC、AMO\n消费AWATOP / ARATOP",
+        fillcolor="#FEE2E2",
+        color="#DC2626",
+        penwidth=2.6
+    ];
+
+    peer_select [
+        label="来源hart选择\n只通知另一个CPU",
+        fillcolor="#FFEDD5",
+        color="#F97316",
+        penwidth=2.4
+    ];
+
+    snoop_bus [
+        shape=plain,
+        fontname="Noto Sans CJK SC",
+        fontsize=15,
+        fontcolor="#C2410C",
+        label="共享侧AW握手\nSNOOP_INVALIDATE_VALID\nSNOOP_INVALIDATE_OWNER\nSNOOP_INVALIDATE_ADDR"
+    ];
+
+    shared_cache [
+        label="互连侧AXI4-Lite Cache\nSoC当前关闭，标准AXI4-Full直通",
+        fillcolor="#E0F2FE",
+        color="#0284C7"
+    ];
+
+    route [
+        label="写地址选择\n由AWADDR生成6位AWROUTE",
+        fillcolor="#F3E8FF",
+        color="#9333EA"
+    ];
+
+    pingpong [
+        label="乒乓缓存\nAW与AWROUTE同时保存\n其余AXI4-Full通道独立缓存",
+        fillcolor="#F3E8FF",
+        color="#9333EA"
+    ];
+
+    xbar [
+        label="Crossbar\n按地址选择从端\n以未完成事务计数保持W、B、R目标",
+        fillcolor="#E0E7FF",
+        color="#4F46E5",
+        penwidth=2.4
+    ];
+
+    subgraph cluster_shared {
+        label="共享地址空间";
+        color="#CBD5E1";
+        fillcolor="#F8FAFC";
+        style="rounded,filled";
+        penwidth=2.0;
+        fontname="Noto Sans CJK SC";
+        fontsize=20;
+
+        imem [label="IMEM", fillcolor="#FFFFFF"];
+        dmem [label="DMEM", fillcolor="#FFFFFF"];
+        mmio [label="调试模块、APB、CLINT、PLIC", fillcolor="#FFFFFF"];
+    }
+
+    c0_dc -> cm [color="#DC2626", penwidth=2.7];
+    c1_dc -> cm [color="#DC2626", penwidth=2.7];
+
+    cm -> snoop_bus [color="#F97316", penwidth=2.8];
+    snoop_bus -> peer_select [color="#F97316", penwidth=2.8];
+    peer_select -> c0_snoop [color="#F97316"];
+    peer_select -> c1_snoop [color="#F97316"];
+
+    c0_ic -> iarb [color="#64748B"];
+    c1_ic -> iarb [color="#64748B"];
+
+    cm -> shared_cache [
+        dir=both,
+        arrowtail=normal,
+        color="#0284C7",
+        penwidth=2.8
+    ];
+    shared_cache -> route [color="#0284C7"];
+    route -> pingpong [color="#9333EA", penwidth=2.6];
+    pingpong -> xbar [dir=both, arrowtail=normal, color="#4F46E5"];
+    iarb -> xbar [dir=both, arrowtail=normal, color="#64748B"];
+
+    xbar -> imem [dir=both, arrowtail=normal, color="#4F46E5"];
+    xbar -> dmem [dir=both, arrowtail=normal, color="#4F46E5"];
+    xbar -> mmio [dir=both, arrowtail=normal, color="#4F46E5"];
+
+    legend [
+        shape=plain,
+        label=<
+            <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="5" CELLPADDING="2">
+                <TR><TD ALIGN="LEFT" COLSPAN="2"><B>图例</B></TD></TR>
+                <TR><TD><FONT COLOR="#DC2626">●</FONT></TD><TD ALIGN="LEFT">CPU至数据一致性控制的原子操作扩展</TD></TR>
+                <TR><TD><FONT COLOR="#F97316">●</FONT></TD><TD ALIGN="LEFT">数据一致性控制至另一个CPU的监听失效接口</TD></TR>
+                <TR><TD><FONT COLOR="#0284C7">●</FONT></TD><TD ALIGN="LEFT">数据一致性控制之后的标准AXI4-Full</TD></TR>
+                <TR><TD><FONT COLOR="#9333EA">●</FONT></TD><TD ALIGN="LEFT">Crossbar内部AWROUTE与乒乓缓存</TD></TR>
+            </TABLE>
+        >
+    ];
+
+    { rank=same; cm; snoop_bus; peer_select; legend; }
+    peer_select -> legend [style=invis, weight=30];
+}
