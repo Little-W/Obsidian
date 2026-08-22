@@ -113,9 +113,33 @@ CPU数据接口在AXI4-Full五通道之外增加`AWATOP`和`ARATOP`。`AWATOP`�
 
 可编辑图源：[draw.io工程](./_media/alkaid_multicore/alkaid_coherence_signal_topology.drawio)。
 
-图中的红色信号只存在于CPU数据接口与数据一致性控制之间，橙色信号从数据一致性控制返回私有Cache，蓝色接口从数据一致性控制开始已经恢复为标准AXI4-Full。Crossbar不接收`AWATOP`、`ARATOP`或监听失效信号。
+图中的一条粗线用于概括一组相关信号，不表示只有一个物理信号。灰色取指连接同时包含向共享侧发送的AR（Read Address，读地址）通道和向ICache返回的R（Read Data，读数据）通道，因此在draw.io工程中使用双向箭头。红色箭头只强调CPU数据接口送往数据一致性控制的原子操作扩展字段，不代表完整AXI4-Full接口只有单向传输。橙色箭头表示数据一致性控制产生的单向监听失效事件。蓝色接口从数据一致性控制之后恢复为标准AXI4-Full。Crossbar不接收`AWATOP`、`ARATOP`或监听失效信号。
 
-#### 4.2.2 原子操作字段
+#### 4.2.2 拓扑图连接说明
+
+拓扑图中的模块文字描述模块自身完成的处理，连接线描述模块之间传递的请求、响应或控制事件，两者不能连读为一句话。例如，“ICache（只读）、IMEM写触发、全Cache失效”描述ICache的访问属性和失效条件；ICache与取指读仲裁之间的灰色连接描述取指未命中请求及其读响应。这条灰色连接不负责触发ICache失效。
+
+| 连接 | 传递内容 | 连接含义 |
+| --- | --- | --- |
+| 每个ICache与取指读仲裁之间的灰色双向连接 | AXI4-Full的AR与R通道 | ICache命中时在CPU内部直接返回指令；未命中、回填或预取需要访问IMEM时，ICache发送AR请求，R响应沿原连接返回ICache。关闭ICache时，每次取指读都经过该连接。 |
+| 取指读仲裁与Crossbar之间的灰色双向连接 | 合并后的M0只读AXI4-Full接口 | 取指读仲裁每周期至多选择一个hart的AR请求，分配空闲共享侧ID并记录来源hart与原始本地ID；Crossbar返回R响应后，仲裁器根据共享侧`RID`把响应送回对应hart并恢复原始本地ID。 |
+| Crossbar与IMEM之间的双向连接 | M0取指读以及M1数据侧对IMEM的读写 | M0只允许访问IMEM。M0与M1同时请求IMEM读端时，M1数据访问优先；IMEM的读响应再返回获得授权的主端。 |
+| Crossbar与DMEM、调试模块、APB、CLINT和PLIC之间的双向连接 | M1数据侧AXI4-Full请求与响应 | Crossbar根据M1地址选择一个共享从端。取指使用的M0不能通过该连接访问这些从端。 |
+| 每个DCache指向数据一致性控制的红色连接 | `AWATOP`、`ARATOP`及与原子操作相关的CPU侧请求信息 | 红色只突出Alkaid内部原子操作扩展。标准AW、W、B、AR和R通道仍同时存在，其中B和R响应返回CPU。 |
+| 数据一致性控制经监听失效分发到本地失效输入的橙色连接 | `SNOOP_INVALIDATE_VALID`、`SNOOP_INVALIDATE_OWNER`和`SNOOP_INVALIDATE_ADDR` | 数据一致性控制在共享侧AW握手时产生事件，SoC只把事件送往写请求来源之外的另一个CPU。接收CPU再按地址决定ICache、DCache和LSU L0 Cache的处理。 |
+| 数据一致性控制、AXI4-Lite Cache与乒乓缓存、Crossbar之间的蓝色和紫色连接 | 标准AXI4-Full，以及Crossbar内部使用的`AWROUTE` | AXI4-Lite Cache当前关闭，标准通道直接通过；`AWROUTE`只与AW一起经过乒乓缓存，用于保存写地址选择结果，不会传入共享从设备。 |
+
+“ICache（只读）”表示该Cache只保存取指读取得的数据，不设置CPU写通道；它不表示IMEM不能被数据接口写入。CPU可以通过数据侧访问修改IMEM。当前私有ICache有两个全Cache失效来源：本hart的数据侧AW请求被接受且地址位于IMEM，以及另一个hart的IMEM写地址被共享侧接受后送来的监听失效事件。任一条件成立都会清除该hart全部ICache项的有效状态。“全Cache失效”不会修改IMEM内容，也不表示每次IMEM读都会清除ICache。图中橙色箭头只画出另一个hart写入所产生的监听事件，本hart写IMEM的检测在CPU内部完成。
+
+“取指读仲裁、共享ID分配、响应准确回送”描述同一笔取指未命中事务的三个阶段。两个hart同时给出`ARVALID`时，仲裁器按轮换次序选择一个请求；存在空闲记录时，以编号最小的空闲记录号作为共享侧`ARID`，并在该记录中保存来源hart和CPU原始`ARID`。共享侧返回`RID`后，该值直接选中对应记录，记录中的来源hart决定哪一路`RVALID`置1，保存的原始ID作为返回给该hart的`RID`。最后一拍完成握手后释放记录。当前ID宽度为2位，所以两个hart合计最多保留4笔取指读事务；记录占满时停止接受新的AR请求。
+
+“Crossbar按地址选择从端”表示Crossbar检查请求地址属于IMEM、DMEM、调试模块、APB、CLINT还是PLIC。对于取指读仲裁输出的M0接口，合法目标只有IMEM；对于数据一致性控制输出的M1接口，目标由地址决定。Crossbar不会再次判断请求来自hart0还是hart1：取指响应的hart选择由取指读仲裁完成，数据响应的hart选择由数据一致性控制完成。
+
+“以未完成事务计数保持W、B、R目标”用于解决AXI4-Full各通道相互独立带来的从端选择问题。W通道本身没有地址，因此Crossbar必须记住先前已接受的AW选择了哪个从端；B响应和R响应返回时，也必须选择此前接受写地址或读地址的从端。Crossbar分别统计各从端尚未完成的W、B和R事务，并保持相应从端选择，直到W最后一拍、B响应或R最后一拍完成握手。M1已经有未完成事务时，只允许相同从端继续接受同类地址请求，因此同一从端可以保留多笔事务，不会在响应尚未结束时切换到另一个从端。这些计数解决的是共享从端选择，不替代取指读仲裁和数据一致性控制中的共享侧ID记录。
+
+一次取指未命中的完整过程如下：ICache先向取指读仲裁发送AR请求；仲裁器选择一个hart、分配共享侧ID并保存来源信息；Crossbar把M0请求送到IMEM；IMEM以相同共享侧ID返回R响应；Crossbar把响应返回M0；仲裁器恢复来源hart和原始本地ID；ICache接收数据并完成回填。若指令已经在ICache中命中，则上述共享访问不会发生。IMEM写入引起的ICache失效是另一项独立控制处理，不经过灰色取指连接。
+
+#### 4.2.3 原子操作字段
 
 `AWATOP`表示写阶段的内部原子操作类型，仅在`AWVALID=1`时有效；`ARATOP`表示读阶段的内部原子操作类型，仅在`ARVALID=1`时有效。`READY=0`期间，相应字段必须与同通道地址和控制字段保持不变。普通访问将字段置0；字段非零时，私有DCache跳过普通命中、填充和本地更新过程，请求继续进入数据一致性控制。
 
@@ -141,7 +165,7 @@ AMO由LSU先发出带`ARATOP`的读请求，取得旧值并计算新值，再发
 
 双hart模式下，数据一致性控制在完成原子处理后不再向共享侧输出`AWATOP`和`ARATOP`，Crossbar与共享从设备只接收标准AXI4-Full。单hart模式由LSU本地完成LR/SC保留检查和AMO读改写；内部字段仍可在CPU和私有DCache之间传递，也不会进入共享从设备。
 
-#### 4.2.3 监听失效信号
+#### 4.2.4 监听失效信号
 
 监听失效接口独立于AXI4-Full五个通道，不带`READY`，也没有接收确认或重试。三个信号必须在同一周期使用。
 
@@ -161,7 +185,7 @@ AMO由LSU先发出带`ARATOP`的读请求，取得旧值并计算新值，再发
 
 数据一致性控制对所有共享侧写地址产生事件，接收方再按IMEM或DTCM（Data Tightly Coupled Memory，数据紧耦合存储器）地址范围决定是否处理。`SNOOP_INVALIDATE_ADDR`只描述一个起始地址。当前LSU固定产生自然对齐的单拍事务，`AWLEN=0`，因此一个事件覆盖当前CPU能够写入的一个数据总线字。若以后在数据一致性控制之前加入可产生多拍写的主设备，单个起始地址不能覆盖整个突发；集成方案需要为每个受影响的Cache项产生失效事件，或增加长度、大小和突发类型字段，或让对应共享地址范围不进入私有Cache。
 
-#### 4.2.4 写地址选择字段
+#### 4.2.5 写地址选择字段
 
 `S_AXI_AWROUTE`和`M_AXI_AWROUTE`是Crossbar内部使用的6位写地址选择字段，不属于AXI4-Full，也不属于一致性协议。Crossbar在AW进入乒乓缓存前根据`AWADDR`生成该字段，位0至位5依次代表IMEM、DMEM（Data Memory，数据存储器）、调试模块、APB（Advanced Peripheral Bus，高级外设总线）、CLINT和PLIC（Platform-Level Interrupt Controller，平台级中断控制器）。该字段为独热值，与同一笔AW请求一起保存在弹性寄存器中；AW暂停时保持不变。
 
@@ -169,7 +193,7 @@ AMO由LSU先发出带`ARATOP`的读请求，取得旧值并计算新值，再发
 
 设计没有增加`ARROUTE`或`WROUTE`。读侧同样在存在未完成读事务时只允许相同从端继续接受AR，并通过从端选择状态和计数选择R响应。W通道目标来自已经接受的AW。未开启乒乓寄存级时，Crossbar直接使用当前地址选择和已保存状态，不依赖`AWROUTE`完成响应选择。
 
-#### 4.2.5 Cache旁路字段
+#### 4.2.6 Cache旁路字段
 
 `S_AXI_AW_BYPASS`和`S_AXI_AR_BYPASS`是AXI4-Lite Cache内部控制信号，不属于CPU接口、共享侧接口或一致性协议。写请求满足`AWLOCK=1`、`AWLEN`非零或`AWATOP`非零中的任一条件时，`S_AXI_AW_BYPASS`置1；读请求满足`ARLOCK=1`、`ARLEN`非零或`ARATOP`非零中的任一条件时，`S_AXI_AR_BYPASS`置1。Cache控制逻辑据此跳过普通单拍Cache处理，并保持请求字段不变地发出访问。
 

@@ -351,8 +351,14 @@ digraph AlkaidCoherenceTopology {
 
     c0_dc:e -> cm:w [color="#DC2626", penwidth=4.2, weight=0];
     c1_dc:w -> cm:e [color="#DC2626", penwidth=4.2, weight=0];
-    c0_ic:e -> iarb:w [color="#64748B", weight=0];
-    c1_left_cache:w -> iarb:e [color="#64748B", weight=0];
+    c0_ic:e -> iarb:w [
+        dir=both, arrowhead=normal, arrowtail=normal,
+        color="#64748B", weight=0
+    ];
+    c1_left_cache:w -> iarb:e [
+        dir=both, arrowhead=normal, arrowtail=normal,
+        color="#64748B", weight=0
+    ];
 
     snoop_router:w -> c0_snoop:e [color="#F97316", penwidth=4.0, constraint=false];
     snoop_router:e -> c1_snoop:w [color="#F97316", penwidth=4.0, constraint=false];

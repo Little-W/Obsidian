@@ -120,7 +120,8 @@
 <!-- c0_ic&#45;&gt;iarb -->
 <g id="edge36" class="edge">
 <title>c0_ic:e&#45;&gt;iarb:w</title>
-<path fill="none" stroke="#64748b" stroke-width="3.6" d="M640.02,-2505.97C640.02,-2505.97 640.02,-2228 640.02,-2228 640.02,-2228 828.25,-2228 828.25,-2228"/>
+<path fill="none" stroke="#64748b" stroke-width="3.6" d="M640.02,-2412V-2228H828.25"/>
+<polygon fill="#64748b" stroke="#64748b" stroke-width="3.6" points="636.69,-2412 640.02,-2421.5 643.35,-2412 636.69,-2412"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="3.6" points="828.25,-2231.33 837.75,-2228 828.25,-2224.68 828.25,-2231.33"/>
 </g>
 <!-- c0_middle&#45;&gt;c0_dc -->
@@ -204,7 +205,8 @@
 <!-- c1_left_cache&#45;&gt;iarb -->
 <g id="edge37" class="edge">
 <title>c1_left_cache:w&#45;&gt;iarb:e</title>
-<path fill="none" stroke="#64748b" stroke-width="3.6" d="M1417.98,-2505.97C1417.98,-2505.97 1417.98,-2201 1417.98,-2201 1417.98,-2201 1131.75,-2201 1131.75,-2201"/>
+<path fill="none" stroke="#64748b" stroke-width="3.6" d="M1417.98,-2412V-2201H1131.75"/>
+<polygon fill="#64748b" stroke="#64748b" stroke-width="3.6" points="1414.65,-2412 1417.98,-2421.5 1421.31,-2412 1414.65,-2412"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="3.6" points="1131.75,-2197.68 1122.25,-2201 1131.75,-2204.33 1131.75,-2197.68"/>
 </g>
 <!-- c1_dc&#45;&gt;c1_snoop -->
