@@ -109,7 +109,7 @@ CPU数据接口在AXI4-Full五通道之外增加`AWATOP`和`ARATOP`。`AWATOP`�
 | 写地址选择字段 | `S_AXI_AWROUTE`、`M_AXI_AWROUTE` | 否 | Crossbar地址选择逻辑 | 乒乓缓存和Crossbar响应选择逻辑 | 保持AW与从端选择结果同步 |
 | Cache旁路控制 | `S_AXI_AW_BYPASS`、`S_AXI_AR_BYPASS` | 否 | AXI4-Lite Cache封装 | Cache控制逻辑 | 跳过普通单拍Cache处理 |
 
-![Alkaid双hart一致性扩展信号拓扑](./_media/alkaid_multicore/alkaid_coherence_signal_topology.svg)
+![Alkaid双hart一致性扩展信号拓扑](./_media/alkaid_multicore/alkaid_coherence_signal_topology.png)
 
 图中的红色信号只存在于CPU数据接口与数据一致性控制之间，橙色信号从数据一致性控制返回私有Cache，蓝色接口从数据一致性控制开始已经恢复为标准AXI4-Full。Crossbar不接收`AWATOP`、`ARATOP`或监听失效信号。
 
