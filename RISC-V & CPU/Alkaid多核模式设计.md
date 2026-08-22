@@ -273,17 +273,17 @@ SC条件不成立时，请求不会发送到共享侧。控制逻辑在CPU侧产
 
 下表中的信号均不属于AXI4-Full。`AWATOP`和`ARATOP`附加在CPU侧数据接口，`AWROUTE`和旁路字段只在内部模块之间使用，监听失效信号构成独立接口。集成时不得把这些字段作为标准AXI端口连接到通用AXI模块。
 
-| 信号 | 方向 | 位宽 | 功能 | 有效条件 | 暂停、错误与复位行为 |
-| --- | --- | ---: | --- | --- | --- |
-| `AWATOP` | CPU输出 | 4位 | 指示写阶段的Alkaid原子操作类型 | `AWVALID=1` | `AWREADY=0`时与AW字段一起保持；非零时旁路普通Cache处理；复位后清零 |
-| `ARATOP` | CPU输出 | 4位 | 指示读阶段的Alkaid原子操作类型 | `ARVALID=1` | `ARREADY=0`时与AR字段一起保持；非零时旁路普通Cache处理；复位后清零 |
-| `S_AXI_AWROUTE` | 乒乓缓存输入 | 6位 | 携带写地址对应的从端选择结果 | `S_AXI_AWVALID=1` | `S_AXI_AWREADY=0`时与其他AW字段一起保持；复位期间有效信号为0时不使用本字段 |
-| `M_AXI_AWROUTE` | 乒乓缓存输出 | 6位 | 输出与当前AW请求同步的从端选择结果 | `M_AXI_AWVALID=1` | `M_AXI_AWREADY=0`时保持；复位清除缓存内有效状态后不使用本字段 |
-| `S_AXI_AW_BYPASS` | Cache控制输入 | 1位 | 指示写请求跳过普通Cache处理 | `S_AXI_AWVALID=1` | 随AW标准字段和`AWATOP`组合产生；AW暂停时保持；复位期间请求无效 |
-| `S_AXI_AR_BYPASS` | Cache控制输入 | 1位 | 指示读请求跳过普通Cache处理 | `S_AXI_ARVALID=1` | 随AR标准字段和`ARATOP`组合产生；AR暂停时保持；复位期间请求无效 |
-| `SNOOP_INVALIDATE_VALID` | 一致性控制输出 | 1位 | 指示跨hart失效请求有效 | 共享侧AW完成握手的周期 | 没有暂停和重试能力；接收端当拍处理；复位期间没有有效AW请求时为0 |
-| `SNOOP_INVALIDATE_OWNER` | 一致性控制输出 | 1位 | 给出写请求来源hart | `SNOOP_INVALIDATE_VALID=1` | 与有效信号同周期使用；系统不向来源hart发出本地失效请求；复位期间有效信号为0时不使用本字段 |
-| `SNOOP_INVALIDATE_ADDR` | 一致性控制输出 | 32位 | 给出已被共享侧接受的写地址 | `SNOOP_INVALIDATE_VALID=1` | 与有效信号同周期使用；接收端清除相应Cache状态；复位期间有效信号为0时不使用本字段 |
+| 信号                       | 方向        |  位宽 | 功能                 | 有效条件                       | 暂停、错误与复位行为                                      |
+| ------------------------ | --------- | --: | ------------------ | -------------------------- | ----------------------------------------------- |
+| `AWATOP`                 | CPU输出     |  4位 | 指示写阶段的Alkaid原子操作类型 | `AWVALID=1`                | `AWREADY=0`时与AW字段一起保持；非零时旁路普通Cache处理；复位后清零      |
+| `ARATOP`                 | CPU输出     |  4位 | 指示读阶段的Alkaid原子操作类型 | `ARVALID=1`                | `ARREADY=0`时与AR字段一起保持；非零时旁路普通Cache处理；复位后清零      |
+| `S_AXI_AWROUTE`          | 乒乓缓存输入    |  6位 | 携带写地址对应的从端选择结果     | `S_AXI_AWVALID=1`          | `S_AXI_AWREADY=0`时与其他AW字段一起保持；复位期间有效信号为0时不使用本字段 |
+| `M_AXI_AWROUTE`          | 乒乓缓存输出    |  6位 | 输出与当前AW请求同步的从端选择结果 | `M_AXI_AWVALID=1`          | `M_AXI_AWREADY=0`时保持；复位清除缓存内有效状态后不使用本字段         |
+| `S_AXI_AW_BYPASS`        | Cache控制输入 |  1位 | 指示写请求跳过普通Cache处理   | `S_AXI_AWVALID=1`          | 随AW标准字段和`AWATOP`组合产生；AW暂停时保持；复位期间请求无效           |
+| `S_AXI_AR_BYPASS`        | Cache控制输入 |  1位 | 指示读请求跳过普通Cache处理   | `S_AXI_ARVALID=1`          | 随AR标准字段和`ARATOP`组合产生；AR暂停时保持；复位期间请求无效           |
+| `SNOOP_INVALIDATE_VALID` | 一致性控制输出   |  1位 | 指示跨hart失效请求有效      | 共享侧AW完成握手的周期               | 没有暂停和重试能力；接收端当拍处理；复位期间没有有效AW请求时为0               |
+| `SNOOP_INVALIDATE_OWNER` | 一致性控制输出   |  1位 | 给出写请求来源hart        | `SNOOP_INVALIDATE_VALID=1` | 与有效信号同周期使用；系统不向来源hart发出本地失效请求；复位期间有效信号为0时不使用本字段 |
+| `SNOOP_INVALIDATE_ADDR`  | 一致性控制输出   | 32位 | 给出已被共享侧接受的写地址      | `SNOOP_INVALIDATE_VALID=1` | 与有效信号同周期使用；接收端清除相应Cache状态；复位期间有效信号为0时不使用本字段     |
 
 > [!WARNING]
 > AXI4的AW与W相互独立。控制逻辑分别记住两个通道是否握手，不限定它们在同一周期完成，也不会在只收到其中一个通道后提前产生B响应。
