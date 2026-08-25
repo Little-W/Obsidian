@@ -57,15 +57,6 @@ tags:
 | SBA | 系统总线访问 | 不借助 hart、用物理地址访问系统总线 |
 | Trigger | 触发器 | 对 PC、访存、数据或指令匹配后采取动作 |
 
----
-
-> [!warning]
-> **此规格已冻结。** 改变的可能性极小。将使用较高的门槛，并且只有在公共审查周期中发现一些真正关键的问题时才会发生更改。任何其他期望或需要的更改都可以成为后续新扩展的主题。
-
-该规范所有版本的贡献者按字母顺序排列（请联系编辑提出更正建议）：Bruce Ableidinger、Krste Asanović、Peter Ashenden、Allen Baum、Mark Beal、Alex Bradbury、Chuanhua Chang、Yenhao Chen、Zhong-Ho Chen、Monte Dalrymple、Paul Donahue、Vyacheslav Dyachenko、Ernie Edgar、Peter Egold、Marc Gauthier、Markus Goehrle、罗伯特·高拉、约翰·豪瑟、理查德·赫维尔、萧永青、黄博伟、斯科特·约翰逊、L.J. Madar、Grigorios Magklis、Daniel Mangum、Alexis Marquet、Jan Matyas、Kai Meinhard、Jean-Luc Nagel、Aram Nahidipour、Rishiyur Nikhil、Gajinder Panesar、Deepak Panwar、Antony Pavlov、Klaus Kruse Pedersen、Ken佩蒂特、达柳斯·拉德、乔·拉赫梅、乔什·沙伊德、维德维亚斯·尚博格、加文·斯塔克、本·斯塔维利、韦斯利·特普斯特拉、汤米·索恩、梅根·沃克斯、简·威廉·范·德瓦尔特、菲利普·瓦格纳、斯特凡·瓦伦托维茨、雷·范·德·沃克、安德鲁·沃特曼、托马斯·威基、安迪·赖特、布莱恩·怀亚特和弗洛里安·扎鲁巴。
-
-*本文档根据 Creative Commons Attribution 4.0 International License 发布。*
-
 ## 1. 引言
 
 > [!note]- Mote · 先建立心智模型
@@ -174,178 +165,20 @@ hart 看到的地址。如果 hart 使用地址转换，这可能与物理地址
 该规范试图支持大约在 2023 年上半年获得批准的所有 RISC-V ISA 扩展。不过，该规范特别针对以下扩展中的功能：
 
 1. A
-
 2. C
-
 3. D
-
 4. F
-
 5. H
-
 6. Sm1p13
-
 7. Smstateen
-
 8. Ss1p13
-
 9. V
-
 10. Zawrs
-
 11. Zcmp
-
 12. Zicbom
-
 13. Zicbop
-
 14. Zicboz
-
 15. Zicsr
-
-#### 1.2.1 版本
-
-本文档的 0.13 版本已获得 RISC-V 基金会董事会的批准。版本 0.13.x 是针对该已批准规范的错误修复版本。
-
-0.14 版是一个工作版本，从未得到正式批准。
-
-版本 1.0 几乎完全向前和向后兼容版本 0.13。
-
-##### 1.2.1.1 0.13 至 1.0 的错误修复
-
-修复规范中的错误的更改：
-
-1. 修复[sbdata0](#dm-sbdata0)中描述的操作顺序。 [\#392](https://github.com/riscv/riscv-debug-spec/pull/392)
-
-2. 恢复后设置恢复确认，在[第 3.5 节](#runcontrol)中。 [\#400](https://github.com/riscv/riscv-debug-spec/pull/400)
-
-3. [sselect](#textra32-sselect)适用于[svalue](#textra32-svalue)。 [\#402](https://github.com/riscv/riscv-debug-spec/pull/402)
-
-4. [mte](#tcontrol-mte)仅适用于action=0时。 [\#411](https://github.com/riscv/riscv-debug-spec/pull/411)
-
-5. [aamsize](#accessmemory-aamsize) 不影响参数宽度。 [\#420](https://github.com/riscv/riscv-debug-spec/pull/420)
-
-6. 明确如果 [haltreq](#dmcontrol-haltreq) =1，hart 将停止复位。 [\#419](https://github.com/riscv/riscv-debug-spec/pull/419)
-
-##### 1.2.1.2 从 0.13 到 1.0 的不兼容更改
-
-不向后兼容的更改。实现 0.13 的调试器或硬件实现必须进行一些更改才能实现 1.0：
-
-1. 如果只有一个hart，则将haltsum0设为可选。 [\#505](https://github.com/riscv/riscv-debug-spec/pull/505)
-
-2. 系统总线自动增量仅在实际发生访问时发生。 ([sbdata0](#dm-sbdata0)) [\#507](https://github.com/riscv/riscv-debug-spec/pull/507)
-
-3. 将 [version](#tinfo-version) 碰撞到 3. [\#512](https://github.com/riscv/riscv-debug-spec/pull/512)
-
-4. 要求调试器在降低 [dmactive](#dmcontrol-dmactive) 后轮询它。 [\#566](https://github.com/riscv/riscv-debug-spec/pull/566)
-
-5. 将 [pending](#icount-pending) 添加到 [icount](#csr-icount) 。 [\#574](https://github.com/riscv/riscv-debug-spec/pull/574)
-
-6. 当选定的触发器被禁用时，[tdata2](#csr-tdata2) 和 [tdata3](#csr-tdata3) 可以写入该触发器支持的任何类型支持的任何值。 [\#721](https://github.com/riscv/riscv-debug-spec/pull/721)
-
-7. [tcontrol](#csr-tcontrol) 字段仅适用于断点陷阱，不适用于任何陷阱。 [\#723](https://github.com/riscv/riscv-debug-spec/pull/723)
-
-8. 如果 [version](#tinfo-version) 大于 0，则当触发器在匹配的指令之后触发多个指令时，[hit0](#mcontrol6-hit0)（以前称为 [mcontrol6](#csr-mcontrol6).`hit`）现在包含 0。 （此信息现已反映在 [hit1](#mcontrol6-hit1) 中。） [\#795](https://github.com/riscv/riscv-debug-spec/pull/795)
-
-9. 如果[version](#tinfo-version)大于0，则[mcontrol6](#csr-mcontrol6)的位20不再用于定时信息。 （以前该位称为 [mcontrol6](#csr-mcontrol6).`timing`。） [\#807](https://github.com/riscv/riscv-debug-spec/pull/807)
-
-10. 如果 [version](#tinfo-version) 大于 0，则大于 64 位的大小的 [size](#mcontrol6-size) 的编码已更改。 [\#807](https://github.com/riscv/riscv-debug-spec/pull/807)
-
-##### 1.2.1.3 从 0.13 到 1.0 的微小变化
-
-稍微修改定义行为的更改。技术上向后不兼容，但不太可能被注意到：
-
-1. [stopcount](#dcsr-stopcount) 仅适用于 hart 本地计数器。 [\#405](https://github.com/riscv/riscv-debug-spec/pull/405)
-
-2. 当[dmactive](#dmcontrol-dmactive)=0 时，[version](#dmstatus-version) 可能无效。 [\#414](https://github.com/riscv/riscv-debug-spec/pull/414)
-
-3. 地址触发器 ([mcontrol](#csr-mcontrol)) 可以在任何访问的地址上触发。 [\#421](https://github.com/riscv/riscv-debug-spec/pull/421)
-
-4. 所有触发模块寄存器（[表 14](#tab:trigger)）都是可选的。 [\#431](https://github.com/riscv/riscv-debug-spec/pull/431)
-
-5. 扩展IR时，[bypass](#dtm-bypass)仍为全1。 [\#437](https://github.com/riscv/riscv-debug-spec/pull/437)
-
-6. [ebreaks](#dcsr-ebreaks) 和 [ebreaku](#dcsr-ebreaku) 为 WARL。 [\#458](https://github.com/riscv/riscv-debug-spec/pull/458)
-
-7. NMI 被 [stepie](#dcsr-stepie) 禁用。 [\#465](https://github.com/riscv/riscv-debug-spec/pull/465)
-
-8. R/W1C 字段应通过将每一位写入高电平来清除。 [\#472](https://github.com/riscv/riscv-debug-spec/pull/472)
-
-9. 在 [表 13](#tab:priority) 中指定相对于异常的触发优先级。 [\#478](https://github.com/riscv/riscv-debug-spec/pull/478)
-
-10. [dmactive](#dmcontrol-dmactive) 变高之前可能需要一段时间。 [\#500](https://github.com/riscv/riscv-debug-spec/pull/500)
-
-11. 恢复到较低权限模式时清除 MPRV。 [\#503](https://github.com/riscv/riscv-debug-spec/pull/503)
-
-12. 复位后可能无法保留暂停状态。 [\#504](https://github.com/riscv/riscv-debug-spec/pull/504)
-
-13. 当 [dmode](#tdata1-dmode) 清零且动作为 1 时，硬件应清除触发动作。 [\#501](https://github.com/riscv/riscv-debug-spec/pull/501)
-
-14. 更改快速访问异常以停止 [第 3.7.1.2 节](#ac-quickaccess) 中的目标。 [\#585](https://github.com/riscv/riscv-debug-spec/pull/585)
-
-15. 将 0 写入 [tdata1](#csr-tdata1) 强制 [tdata2](#csr-tdata2) 和 [tdata3](#csr-tdata3) 处于可写状态。 [\#598](https://github.com/riscv/riscv-debug-spec/pull/598)
-
-16. [第 5.4 节](#nativetrigger) 中处理重入的解决方案可防止触发器“匹配”，而不仅仅是“触发”。这主要影响 [icount](#csr-icount) 的行为。 [\#722](https://github.com/riscv/riscv-debug-spec/pull/722)
-
-17. 尝试访问未实现的 CSR 会引发非法指令异常。 [\#791](https://github.com/riscv/riscv-debug-spec/pull/791)
-
-##### 1.2.1.4 0.13到1.0的新功能
-
-以前不存在的新的向后兼容功能：
-
-1. 在[第 3.6 节](#hrgroups)中添加暂停组和外部触发器。 [\#404](https://github.com/riscv/riscv-debug-spec/pull/404)
-
-2. 预留部分DMI空间供非标使用。请参见 [custom](#dm-custom) 和 [custom0](#dm-custom0) 至 `custom15`。 [\#406](https://github.com/riscv/riscv-debug-spec/pull/406)
-
-3. 保留触发[type](#tdata1-type)值以供非标准使用。 [\#417](https://github.com/riscv/riscv-debug-spec/pull/417)
-
-4. 将 [nmi](#itrigger-nmi) 位添加到 [itrigger](#csr-itrigger)。 [\#408](https://github.com/riscv/riscv-debug-spec/pull/408) 和 [\#709](https://github.com/riscv/riscv-debug-spec/pull/709)
-
-5. 建议对每个访问的地址进行匹配。 [\#449](https://github.com/riscv/riscv-debug-spec/pull/449)
-
-6. 在[第 3.6 节](#hrgroups)中添加简历组。 [\#506](https://github.com/riscv/riscv-debug-spec/pull/506)
-
-7. 添加[relaxedpriv](#abstractcs-relaxedpriv)。 [\#536](https://github.com/riscv/riscv-debug-spec/pull/536)
-
-8. 移动[scontext](#csr-scontext)，将原来的重命名为[mscontext](#csr-mscontext)，并创建[hcontext](#csr-hcontext)。 [\#535](https://github.com/riscv/riscv-debug-spec/pull/535)
-
-9. 添加[mcontrol6](#csr-mcontrol6)，弃用[mcontrol](#csr-mcontrol)。 [\#538](https://github.com/riscv/riscv-debug-spec/pull/538)
-
-10. 添加虚拟机管理程序支持：[ebreakvs](#dcsr-ebreakvs)、[ebreakvu](#dcsr-ebreakvu)、[v](#dcsr-v)、[hcontext](#csr-hcontext)、[mcontrol](#csr-mcontrol)、[mcontrol6](#csr-mcontrol6) 和 [priv](#virt-priv)。 [\#549](https://github.com/riscv/riscv-debug-spec/pull/549)
-
-11. 可选择使[anyunavail](#dmstatus-anyunavail)和[allunavail](#dmstatus-allunavail)粘性，由[stickyunavail](#dmstatus-stickyunavail)控制。 [\#520](https://github.com/riscv/riscv-debug-spec/pull/520)
-
-12. 增加[tmexttrigger](#csr-tmexttrigger)支持触发模块外部触发输入。 [\#543](https://github.com/riscv/riscv-debug-spec/pull/543)
-
-13. 用原子指令描述 [mcontrol](#csr-mcontrol) 和 [mcontrol6](#csr-mcontrol6) 行为。 [\#561](https://github.com/riscv/riscv-debug-spec/pull/561)
-
-14. 触发命中位必须设置为点火，可以设置为匹配。 [\#593](https://github.com/riscv/riscv-debug-spec/pull/593)
-
-15. 将[sbytemask](#textra32-sbytemask)和[sbytemask](#textra32-sbytemask)添加到[textra32](#csr-textra32)和[textra64](#csr-textra64)。 [\#588](https://github.com/riscv/riscv-debug-spec/pull/588)
-
-16. 允许调试器通过 [setkeepalive](#dmcontrol-setkeepalive) 中的 keepalive 位请求 hart 保持活动状态。 [\#592](https://github.com/riscv/riscv-debug-spec/pull/592)
-
-17. 添加 [ndmresetpending](#dmstatus-ndmresetpending) 以允许调试器确定 ndmreset 何时完成。 [\#594](https://github.com/riscv/riscv-debug-spec/pull/594)
-
-18. 添加 [intctl](#tmexttrigger-intctl) 以支持来自中断控制器的触发器。 [\#599](https://github.com/riscv/riscv-debug-spec/pull/599)
-
-##### 1.2.1.5 1.0 稳定版期间不兼容的更改
-
-两个版本之间向后不兼容的更改都称为 1.0 稳定版。
-
-1. [nmi](#itrigger-nmi) 已从 [etrigger](#csr-etrigger) 移至 [itrigger](#csr-itrigger)，现在受该触发器中的模式位的影响。
-
-2. [\#728](https://github.com/riscv/riscv-debug-spec/pull/728)引入了消息寄存器，后来在[\#878](https://github.com/riscv/riscv-debug-spec/pull/878)中被删除。
-
-3. 可能无法使用 `progbuf` 寄存器读取程序缓冲区的内容。 [\#731](https://github.com/riscv/riscv-debug-spec/pull/731)
-
-4. [tcontrol](#csr-tcontrol) 字段适用于所有陷阱，而不仅仅是断点陷阱。这将恢复 [\#723](https://github.com/riscv/riscv-debug-spec/pull/723)。 [\#880](https://github.com/riscv/riscv-debug-spec/pull/880)
-
-##### 1.2.1.6 1.0.0-rc1 和 1.0.0-rc2 之间的不兼容更改
-
-1. 0.0-rc1 和 1.0.0-rc2 之间向后不兼容的更改。
-
-1. [\#981](https://github.com/riscv/riscv-debug-spec/pull/981) 缩小了 [scontext](#csr-scontext).[data](#scontext-data)、[mcontext](#csr-mcontext).[hcontext](#mcontext-hcontext)、[sbytemask](#textra64-sbytemask) 和 [textra64](#csr-textra64).`svalue` 的宽度。这样可以避免当 XLEN 再次减少和增加时，[scontext](#csr-scontext) 和 [mcontext](#csr-mcontext) 的内容发生混淆。
 
 ### 1.3 本文档
 
@@ -372,18 +205,7 @@ hart 看到的地址。如果 hart 使用地址转换，这可能与物理地址
 
 ##### 1.3.3.1 长名称（短名称，位于 0x123）
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "8" "7" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "0" {:font-size 20}) {:span 7})
-(draw-box (text "field" {:font-size 20}) {:span 5})
-(draw-box "" {:span 12 :borders {}})
-(draw-box "24" {:span 7 :borders {}})
-(draw-box "8" {:span 5 :borders {}})
-(draw-box "" {:span 12 :borders {}})
-```
+![寄存器位域图：1.3.3.1 长名称（短名称，位于 0x123）](RISC-V调试规范v1.0-中文学习版.assets/位域图-01.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -407,13 +229,9 @@ hart 看到的地址。如果 hart 使用地址转换，这可能与物理地址
 本规范解决了下面列出的用例。实现可以选择不实现每个功能，这意味着某些用例可能不受支持。
 
 - 在没有工作 CPU 的情况下访问硬件平台上的硬件。 （外部调试。）
-
 - 在硬件平台中存在任何可执行代码路径之前引导硬件平台以测试、配置和编程组件。 （外部调试。）
-
 - 在没有操作系统或其他软件的情况下调试低级软件。 （外部调试。）
-
 - 操作系统本身的调试问题。 （外部或本机调试。）
-
 - 调试操作系统上运行的进程。 （本机或外部调试。）
 
 ### 1.5 支持的特性
@@ -421,37 +239,21 @@ hart 看到的地址。如果 hart 使用地址转换，这可能与物理地址
 本规范中描述的调试接口支持以下功能：
 
 1. 所有hart寄存器（包括CSR）均可读/写。
-
 2. 可以从 hart 的角度访问内存，也可以直接通过系统总线访问内存，或者两者兼而有之。
-
 3. RV32、RV64以及未来的RV128均支持。
-
 4. 硬件平台中任意一个hart均可独立调试。
-
 5. 调试器几乎可以发现 <sup>\[[1](#_footnotedef_1)\]</sup> 它自己需要了解的一切，无需用户配置。
-
 6. 每个hart 都可以从执行的第一条指令开始进行调试。
-
 7. 当执行软件断点指令时，RISC-V hart 可以暂停。
-
 8. 硬件单步一次只能执行一条指令。
-
 9. 调试功能独立于所使用的调试传输。
-
 10. 调试器不需要了解其正在调试的hart的微架构的任何信息。
-
 11. hart 的任意子集可以同时停止和恢复。 （可选）
-
 12. 可以在暂停的 hart 上执行任意指令。这意味着当内核具有附加或自定义指令或状态时，不需要新的调试功能，只要存在可以将该状态移至 GPR 的程序即可。 （可选）
-
 13. 可以不间断地访问寄存器。 （可选）
-
 14. 可以指示正在运行的 hart 执行短指令序列，而开销很小。 （可选）
-
 15. 系统总线管理器允许存储器访问而不涉及任何hart。 （可选）
-
 16. 当触发器与 PC、读/写地址/数据或指令操作码匹配时，RISC-V hart 可以停止。 （可选）
-
 17. hart 可以分组，同一组中的 hart 任意一个停机时，全部停机。这些组还可以对外部触发因素做出反应或通知外部触发因素。 （可选）
 
 本文档不建议硬件测试、调试或错误检测技术的策略或实现。扫描、内置自测试（BIST）等不在本规范的范围内，但本规范无意限制它们在 RISC-V 系统中的使用。
@@ -487,52 +289,30 @@ DM 在硬件平台中提供对其 hart 的运行控制。抽象命令提供对 G
 调试模块实现了抽象调试操作与其具体实现之间的转换接口。它可能支持以下操作：
 
 1. 为调试器提供有关实现的必要信息。 （必填）
-
 2. 允许暂停和恢复任何单个 hart。 （必填）
-
 3. 提供 hart 是否暂停的状态。 （必填）
-
 4. 提供对已暂停 hart 的 GPR 的抽象读写访问。 （必填）
-
 5. 提供对复位信号的访问，允许从复位后的第一条指令开始进行调试。 （必填）
-
 6. 提供一种机制，允许在复位后立即调试 hart（无论复位原因如何）。 （可选）
-
 7. 提供对非 GPR hart 寄存器的抽象访问。 （可选）
-
 8. 提供程序缓冲区以强制hart 执行任意指令。 （可选）
-
 9. 允许同时停止、恢复和/或重置多个hart。 （可选）
-
 10. 允许从 hart 的角度进行内存访问。 （可选）
-
 11. 允许直接系统总线访问。 （可选）
-
 12. hart组。当组中任何一个 hart 停止时，它们都停止。 （可选）
-
 13. 通过停止配置组中的每个 hart 来响应外部触发。 （可选）
-
 14. 当组中的 hart 停止时发出外部触发信号。 （可选）
 
 为了与本规范兼容，实现必须：
 
 1. 实现上面列出的所有必需功能。
-
 2. 实现程序缓冲区、系统总线访问或抽象访问存储器命令机制中的至少一种。
-
 3. 至少执行以下一项操作：
+    1. 实现程序缓冲区。
+    2. 实现对 hart 上运行的软件可见的所有寄存器的抽象访问，包括 hart 上存在的和 [表 4](#tab:regno) 中列出的所有寄存器。
+    3. 实现至少对所有 GPR、[dcsr](#csr-dcsr) 和 [dpc](#csr-dpc) 的抽象访问，并将该实现宣传为符合“最小 RISC-V 调试规范”，而不是“RISC-V 调试规范”。
 
-    
-
-1. 实现程序缓冲区。
-
-2. 实现对 hart 上运行的软件可见的所有寄存器的抽象访问，包括 hart 上存在的和 [表 4](#tab:regno) 中列出的所有寄存器。
-
-3. 实现至少对所有 GPR、[dcsr](#csr-dcsr) 和 [dpc](#csr-dpc) 的抽象访问，并将该实现宣传为符合“最小 RISC-V 调试规范”，而不是“RISC-V 调试规范”。
-
-    
-
-单个 DM 最多可调试 \\2^{20}\\ hart。
+单个 DM 最多可调试 $2^{20}$ hart。
 
 ### 3.1 调试模块接口（DMI）
 
@@ -559,7 +339,7 @@ DMI 使用 7 到 32 个地址位。每个地址都指向一个可以读取或写
 
 ### 3.3 选择hart
 
-单个 DM 最多可连接 \\2^{20}\\ hart。向 DM 发出的命令仅适用于当前选定的 hart。
+单个 DM 最多可连接 $2^{20}$ hart。向 DM 发出的命令仅适用于当前选定的 hart。
 
 要枚举所有 hart，调试器必须首先通过将所有 1 写入 [hartsel](#hartsel)（假设最大大小）并读回该值以查看实际设置了哪些位来确定 `HARTSELLEN`。然后它从 0 开始选择每个 hart，直到 [dmstatus](#dm-dmstatus) 中的 [anynonexistent](#dmstatus-anynonexistent) 为 1，或者达到最高索引（取决于 `HARTSELLEN`）。
 
@@ -571,7 +351,7 @@ DMI 使用 7 到 32 个地址位。每个地址都指向一个可以读取或写
 
 #### 3.3.2 选择多个 hart
 
-调试模块可以实现 hart 阵列掩码寄存器，以允许一次选择多个 hart。 hart 数组掩码寄存器中的第 \\n\\ 位适用于索引为 \\n\\ 的 hart。如果该位为 1，则选择 hart。通常，DM 会有一个 hart 数组掩码寄存器，其宽度足以选择它支持的所有 hart，但允许将这些位中的任何一位绑定到 0。
+调试模块可以实现 hart 阵列掩码寄存器，以允许一次选择多个 hart。 hart 数组掩码寄存器中的第 $n$ 位适用于索引为 $n$ 的 hart。如果该位为 1，则选择 hart。通常，DM 会有一个 hart 数组掩码寄存器，其宽度足以选择它支持的所有 hart，但允许将这些位中的任何一位绑定到 0。
 
 调试器可以使用 [hawindowsel](#dm-hawindowsel) 和 [hawindow](#dm-hawindow) 设置 hart 阵列掩码寄存器中的位，然后通过设置 [hasel](#dmcontrol-hasel) 将操作应用于所有选定的 hart。如果支持此功能，则可以同时停止、恢复和重置多个 hart。 hart 阵列掩码寄存器的状态不受设置或清除 [hasel](#dmcontrol-hasel) 的影响。
 
@@ -616,9 +396,7 @@ DM 可以为每个 hart 实现可选的复位暂停位，这通过将 [hasreseth
 当停止组中的任何 hart 停止时：
 
 1. hart 正常停止，[cause](#dcsr-cause) 反映停止的原始原因。
-
 2. 暂停组中所有其他正在运行的hart将快速停止。对于那些 hart，[cause](#dcsr-cause) 应设置为 6，但也可以设置为 3。停止组中已停止但已开始恢复过程的其他 hart 也必须快速停止，即使它们确实短暂恢复。
-
 3. 该组中的任何外部触发器都会收到通知。
 
 将 hart 添加到停止组不会自动停止该 hart，即使该组中的其他 hart 已停止。
@@ -630,7 +408,6 @@ DM 可以为每个 hart 实现可选的复位暂停位，这通过将 [hasreseth
 当恢复组中的任何 hart 恢复时：
 
 1. 一旦当前正在执行的抽象命令完成，该组中所有其他暂停的 hart 将快速恢复。组中的每个 hart 一旦恢复就设置其恢复确认位。处于停止过程中的 hart 应完成该过程并保持停止状态。
-
 2. 该组中的任何外部触发器都会收到通知。
 
 将 hart 添加到恢复组不会自动恢复该 hart，即使该组中的其他 hart 当前正在运行。
@@ -697,11 +474,8 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 该命令使调试器能够访问 CPU 寄存器并允许其执行程序缓冲区。它执行以下操作序列：
 
 1. 如果 [write](#accessregister-write) 清零且 [transfer](#accessregister-transfer) 置位，则将数据从 [regno](#accessregister-regno) 指定的寄存器复制到 `data` 的 `arg0` 区域，并执行从 M 模式读取该寄存器时发生的任何副作用。
-
 2. 如果 [write](#accessregister-write) 被置位且 [transfer](#accessregister-transfer) 被置位，则将数据从 `data` 的 `arg0` 区域复制到 [regno](#accessregister-regno) 指定的寄存器中，并执行从 M 模式写入该寄存器时发生的任何副作用。
-
 3. 如果设置了 [aarpostincrement](#accessregister-aarpostincrement) 和 [transfer](#accessregister-transfer)，则递增 [regno](#accessregister-regno)。如果 [aarpostincrement](#accessregister-aarpostincrement) 置位且 [transfer](#accessregister-transfer) 清零，则 [regno](#accessregister-regno) 也可能会递增。
-
 4. 如果 [postexec](#accessregister-postexec) 被置位，则执行程序缓冲区。
 
 如果这些操作中的任何一个失败，则设置 [cmderr](#abstractcs-cmderr) 并且不会执行其余步骤。实现可以尽早检测到即将发生的故障，并在到达可能导致故障的步骤之前使整个命令失败。如果失败是因为hart中不存在所请求的寄存器，则[cmderr](#abstractcs-cmderr)必须设置为3（例外）。
@@ -724,67 +498,32 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 该命令仅在读取寄存器时修改 `arg0`。其他 `data` 寄存器不变。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 34)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "24" "23" "22" "" "" "" "20" "" "" "" "19" "" "" "" "" "18" "" "" "17" "" "" "16" "" "15" "" "" "" "" "" "0"]})
-(draw-box (text "cmdtype" {:font-size 20}) {:span 5})
-(draw-box (text "0" {:font-size 20}) {:span 1})
-(draw-box (text "aarsize" {:font-size 20}) {:span 5})
-(draw-box (text "aarpostincrement" {:font-size 20}) {:span 7})
-(draw-box (text "postexec" {:font-size 20}) {:span 3})
-(draw-box (text "transfer" {:font-size 20}) {:span 3})
-(draw-box (text "write" {:font-size 20}) {:span 3})
-(draw-box (text "regno" {:font-size 20}) {:span 7})
-(draw-box "8" {:span 5 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "3" {:span 5 :borders {}})
-(draw-box "1" {:span 7 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "16" {:span 7 :borders {}})
-```
+![寄存器位域图：3.7.1.1 `Access Register`](RISC-V调试规范v1.0-中文学习版.assets/位域图-02.svg)
 
-| 场 | 描述 |
-| --- | --- |
-| <a id="accessregister-cmdtype"></a> `cmdtype` | 此为0表示访问寄存器命令。 |
-| <a id="accessregister-aarsize"></a> `aarsize` | 2（32位）：访问寄存器的最低32位。 3（64位）：访问寄存器的最低64位。 4（128位）：访问寄存器的最低128位。 如果[aarsize](#accessregister-aarsize)指定的大小大于寄存器的实际大小，则访问必定失败。如果寄存器可访问，则必须支持读取小于或等于寄存器实际大小的 [aarsize](#accessregister-aarsize)。可能支持写入少于整个寄存器的内容，但在这种情况下高位会发生什么情况未知。 此字段控制 [Table 2](#tab:datareg). 中引用的参数宽度 |
-| <a id="accessregister-aarpostincrement"></a> `aarpostincrement` | 0（禁用）：无影响。必须支持此变体。 1（使能）：成功访问寄存器后，[regno](#accessregister-regno) 递增。增加超过支持的最高值会导致 [regno](#accessregister-regno) 变为 UNSPECIFIED。支持此变体是可选的。 [transfer](#accessregister-transfer)为0时是否增量未定义。 |
-| <a id="accessregister-postexec"></a> `postexec` | 0（禁用）：无影响。必须支持此变体，并且如果 [progbufsize](#abstractcs-progbufsize) 为 0.，则该变体是唯一受支持的变体 1（启用）：执行传输后，仅执行一次程序缓冲区中的程序（如果有）。支持此变体是可选的。 |
-| <a id="accessregister-transfer"></a> `transfer` | 0（禁用）：不执行[write](#accessregister-write).指定的操作 1（使能）：执行[write](#accessregister-write).指定的操作 该位可用于仅执行程序缓冲区，而不必担心将有效值放入 [aarsize](#accessregister-aarsize) 或 [regno](#accessregister-regno). |
-| <a id="accessregister-write"></a> `write` | 当[转](#accessregister-transfer)设置时： 0 (arg0)：将指定寄存器中的数据复制到`data`.的`arg0`部分 1（寄存器）：将`data`的`arg0`部分的数据复制到指定寄存器中。 |
-| <a id="accessregister-regno"></a> `regno` | 要访问的寄存器的编号，如 [ 表 4](#tab:regno) 中所述。如果非暂停 hart. 支持此命令，则 [dpc](#csr-dpc) 可以用作 PC 的别名 |
+| 场                                                               | 描述                                                                                                                                                                                                                                                                      |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="accessregister-cmdtype"></a> `cmdtype`                   | 此为0表示访问寄存器命令。                                                                                                                                                                                                                                                           |
+| <a id="accessregister-aarsize"></a> `aarsize`                   | 2（32位）：访问寄存器的最低32位。 3（64位）：访问寄存器的最低64位。 4（128位）：访问寄存器的最低128位。 如果[aarsize](#accessregister-aarsize)指定的大小大于寄存器的实际大小，则访问必定失败。如果寄存器可访问，则必须支持读取小于或等于寄存器实际大小的 [aarsize](#accessregister-aarsize)。可能支持写入少于整个寄存器的内容，但在这种情况下高位会发生什么情况未知。 此字段控制 [Table 2](#tab:datareg). 中引用的参数宽度 |
+| <a id="accessregister-aarpostincrement"></a> `aarpostincrement` | 0（禁用）：无影响。必须支持此变体。 1（使能）：成功访问寄存器后，[regno](#accessregister-regno) 递增。增加超过支持的最高值会导致 [regno](#accessregister-regno) 变为 UNSPECIFIED。支持此变体是可选的。 [transfer](#accessregister-transfer)为0时是否增量未定义。                                                                              |
+| <a id="accessregister-postexec"></a> `postexec`                 | 0（禁用）：无影响。必须支持此变体，并且如果 [progbufsize](#abstractcs-progbufsize) 为 0.，则该变体是唯一受支持的变体 1（启用）：执行传输后，仅执行一次程序缓冲区中的程序（如果有）。支持此变体是可选的。                                                                                                                                             |
+| <a id="accessregister-transfer"></a> `transfer`                 | 0（禁用）：不执行[write](#accessregister-write).指定的操作 1（使能）：执行[write](#accessregister-write).指定的操作 该位可用于仅执行程序缓冲区，而不必担心将有效值放入 [aarsize](#accessregister-aarsize) 或 [regno](#accessregister-regno).                                                                               |
+| <a id="accessregister-write"></a> `write`                       | 当[转](#accessregister-transfer)设置时： 0 (arg0)：将指定寄存器中的数据复制到`data`.的`arg0`部分 1（寄存器）：将`data`的`arg0`部分的数据复制到指定寄存器中。                                                                                                                                                          |
+| <a id="accessregister-regno"></a> `regno`                       | 要访问的寄存器的编号，如 [ 表 4](#tab:regno) 中所述。如果非暂停 hart. 支持此命令，则 [dpc](#csr-dpc) 可以用作 PC 的别名                                                                                                                                                                                     |
 
 ##### 3.7.1.2 `Quick Access`
 
 执行以下操作顺序：
 
 1. 如果 hart 暂停，该命令将 [cmderr](#abstractcs-cmderr) 设置为 `halt/resume` 并且不会继续。
-
 2. 停止 hart。如果 hart 由于某些其他原因（例如断点）而停止，则该命令将 [cmderr](#abstractcs-cmderr) 设置为 `halt/resume` 并且不会继续。
-
 3. 执行程序缓冲区。如果发生异常，则 [cmderr](#abstractcs-cmderr) 设置为 `Exception`，程序缓冲区执行结束，并且 hart 停止，[cause](#dcsr-cause) 设置为 3。
-
 4. 如果程序缓冲区执行无异常，则恢复 hart。
 
 执行此命令是可选的。
 
 该命令不触及 `data` 寄存器。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "24" "23" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "cmdtype" {:font-size 20}) {:span 5})
-(draw-box (text "0" {:font-size 20}) {:span 7})
-(draw-box "" {:span 12 :borders {}})
-(draw-box "8" {:span 5 :borders {}})
-(draw-box "24" {:span 7 :borders {}})
-(draw-box "" {:span 12 :borders {}})
-```
+![寄存器位域图：3.7.1.2 `Quick Access`](RISC-V调试规范v1.0-中文学习版.assets/位域图-03.svg)
 
 | 场 | 描述 |
 | --- | --- |
@@ -795,9 +534,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 此命令允许调试器执行内存访问，其内存视图和权限与在选定的 hart 上执行加载/存储完全相同。这包括访问 hart 本地内存对应关系寄存器等。该命令执行以下操作序列：
 
 1. 如果 [write](#accessregister-write) 清零，则将数据从 `arg1` 中指定的内存位置复制到 `data` 的 `arg0` 部分。
-
 2. 如果设置了 [write](#accessregister-write)，则将数据从 `data` 的 `arg0` 部分复制到 `arg1` 中指定的内存位置。
-
 3. 如果设置了 [aampostincrement](#accessmemory-aampostincrement)，则递增 `arg1`。
 
 如果这些操作中的任何一个失败，则设置 [cmderr](#abstractcs-cmderr) 并且不会执行其余步骤。仅当运行 M 模式代码的 hart 在尝试相同的访问时可能遇到相同的失败时，访问才可能失败。实现可以尽早检测到即将发生的故障，并在到达可能导致故障的步骤之前使整个命令失败。
@@ -809,28 +546,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 该命令仅在读取内存时修改 `arg0`。仅当设置了 [aampostincrement](#accessmemory-aampostincrement) 时才修改 `arg1`。其他 `data` 寄存器不变。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 40)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "24" "" "" "23" "" "" "22" "" "" "" "20" "" "" "" "19" "" "" "" "18" "" "17" "" "16" "" "15" "" "" "" "14" "13" "" "" "" "" "" "0"]})
-(draw-box (text "cmdtype" {:font-size 20}) {:span 5})
-(draw-box (text "aamvirtual" {:font-size 20}) {:span 5})
-(draw-box (text "aamsize" {:font-size 20}) {:span 5})
-(draw-box (text "aampostincrement" {:font-size 20}) {:span 7})
-(draw-box (text "0" {:font-size 20}) {:span 3})
-(draw-box (text "write" {:font-size 20}) {:span 3})
-(draw-box (text "target-specific" {:font-size 20}) {:span 5})
-(draw-box (text "0" {:font-size 20}) {:span 7})
-(draw-box "8" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "3" {:span 5 :borders {}})
-(draw-box "1" {:span 7 :borders {}})
-(draw-box "2" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "2" {:span 5 :borders {}})
-(draw-box "14" {:span 7 :borders {}})
-```
+![寄存器位域图：3.7.1.3 `Access Memory`](RISC-V调试规范v1.0-中文学习版.assets/位域图-04.svg)
 
 | 场 | 描述 |
 | --- | --- |
@@ -852,7 +568,6 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 如果 [progbufsize](#abstractcs-progbufsize) 为 1，则以下情况适用：
 
 1. [impebreak](#dmstatus-impebreak) 必须为 1。
-
 2. 如果调试器将压缩指令写入程序缓冲区，则必须将其放入低 16 位，并在高 16 位中附上压缩 `nop`。
 
 > [!note]
@@ -910,13 +625,9 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 另一种选择是仅允许拥有访问密钥的用户解锁 DM。 [authenticated](#dmstatus-authenticated)、[authbusy](#dmstatus-authbusy)、[authdata](#dm-authdata)之间可以支持任意复杂的认证机制。当 [authenticated](#dmstatus-authenticated) 清除时，DM 不得与硬件平台的其余部分交互，也不得暴露有关连接到 DM 的 hart 的详细信息。所有 DM 寄存器应读取 0，而写入应被忽略，但以下强制例外：
 
 1. [dmstatus](#dm-dmstatus)中的[authenticated](#dmstatus-authenticated)可读。
-
 2. [dmstatus](#dm-dmstatus) 中的 [authbusy](#dmstatus-authbusy) 可读。
-
 3. [dmstatus](#dm-dmstatus)中的[version](#tinfo-version)可读。
-
 4. [dmcontrol](#dm-dmcontrol)中的[dmactive](#dmcontrol-dmactive)可读可写。
-
 5. [authdata](#dm-authdata) 可读可写。
 
 无法使用 [authdata](#dm-authdata) 解锁 DM 的实现不应实现该寄存器。
@@ -926,27 +637,16 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 要检测副作用最小的调试模块的版本，请使用以下过程：
 
 1. 读取[dmcontrol](#dm-dmcontrol)。
-
 2. 如果 [dmactive](#dmcontrol-dmactive) 为 0 或 [ndmreset](#dmcontrol-ndmreset) 为 1：
-
-    
-
-1. 写入 [dmcontrol](#dm-dmcontrol)，保留读取值中的 [hartreset](#dmcontrol-hartreset)、[hasel](#dmcontrol-hasel)、[hartsello](#dmcontrol-hartsello) 和 [hartselhi](#dmcontrol-hartselhi)，设置 [dmactive](#dmcontrol-dmactive)，并清除所有其他位。
-
-2. 读取[dmcontrol](#dm-dmcontrol)，直到[dmactive](#dmcontrol-dmactive) 为高电平。
-
-    
-
+    1. 写入 [dmcontrol](#dm-dmcontrol)，保留读取值中的 [hartreset](#dmcontrol-hartreset)、[hasel](#dmcontrol-hasel)、[hartsello](#dmcontrol-hartsello) 和 [hartselhi](#dmcontrol-hartselhi)，设置 [dmactive](#dmcontrol-dmactive)，并清除所有其他位。
+    2. 读取[dmcontrol](#dm-dmcontrol)，直到[dmactive](#dmcontrol-dmactive) 为高电平。
 3. 读取[dmstatus](#dm-dmstatus)，其中包含[version](#dmstatus-version)。
 
 如果需要清除[ndmreset](#dmcontrol-ndmreset)，可能会产生以下副作用：
 
 1. [haltreq](#dmcontrol-haltreq) 被清除，可能会阻止先前调试器发出的暂停请求生效。
-
 2. [resumereq](#dmcontrol-resumereq) 被清除，可能会阻止先前调试器发出的恢复请求生效。
-
 3. [ndmreset](#dmcontrol-ndmreset) 被置为无效，如果先前的调试器已设置它，则释放硬件平台的复位状态。
-
 4. [dmactive](#dmcontrol-dmactive) 被置位，释放 DM 的复位状态。这本身是任何 hart 都无法观察到的。
 
 此过程保证在此规范的未来版本中有效。 [hartreset](#dmcontrol-hartreset)、[hasel](#dmcontrol-hasel)、[hartsello](#dmcontrol-hartsello) 和 [hartselhi](#dmcontrol-hartselhi) 当前所在的 [dmcontrol](#dm-dmcontrol) 位的含义可能会改变，但保留它们不会有副作用。清除此处未明确提及的 [dmcontrol](#dm-dmcontrol) 位不会产生除上述影响之外的副作用。
@@ -1041,70 +741,11 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 整个寄存器是只读的。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 31)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "25" "" "" "24" "" "" "" "" "23" "" "" "" "22" "" "21" "" "20" "" "" "19" "" "" "" "" "18" "" ""]})
-(draw-box (text "0" {:font-size 20}) {:span 5})
-(draw-box (text "ndmresetpending" {:font-size 20}) {:span 5})
-(draw-box (text "stickyunavail" {:font-size 20}) {:span 5})
-(draw-box (text "impebreak" {:font-size 20}) {:span 3})
-(draw-box (text "0" {:font-size 20}) {:span 3})
-(draw-box (text "allhavereset" {:font-size 20}) {:span 5})
-(draw-box (text "anyhavereset" {:font-size 20}) {:span 5})
-(draw-box "7" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "2" {:span 3 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-```
+![寄存器位域图：3.14.1 调试模块状态（dmstatus，位于 0x11）](RISC-V调试规范v1.0-中文学习版.assets/位域图-05.svg)
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 35)
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "" "17" "" "" "" "" "16" "" "" "" "" "15" "" "" "" "" "14" "" "" "" "" "13" "" "" "" "" "12" "" "" "" "" "11" "" ""]})
-(draw-box (text "allresumeack" {:font-size 20}) {:span 5})
-(draw-box (text "anyresumeack" {:font-size 20}) {:span 5})
-(draw-box (text "allnonexistent" {:font-size 20}) {:span 5})
-(draw-box (text "anynonexistent" {:font-size 20}) {:span 5})
-(draw-box (text "allunavail" {:font-size 20}) {:span 5})
-(draw-box (text "anyunavail" {:font-size 20}) {:span 5})
-(draw-box (text "allrunning" {:font-size 20}) {:span 5})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-```
+![寄存器位域图：3.14.1 调试模块状态（dmstatus，位于 0x11）](RISC-V调试规范v1.0-中文学习版.assets/位域图-06.svg)
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 34)
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "" "10" "" "" "" "9" "" "" "8" "" "" "" "7" "" "" "" "6" "" "" "" "5" "" "" "" "" "4" "" "" "3" "" "" "" "0"]})
-(draw-box (text "anyrunning" {:font-size 20}) {:span 5})
-(draw-box (text "allhalted" {:font-size 20}) {:span 3})
-(draw-box (text "anyhalted" {:font-size 20}) {:span 3})
-(draw-box (text "authenticated" {:font-size 20}) {:span 5})
-(draw-box (text "authbusy" {:font-size 20}) {:span 3})
-(draw-box (text "hasresethaltreq" {:font-size 20}) {:span 5})
-(draw-box (text "confstrptrvalid" {:font-size 20}) {:span 5})
-(draw-box (text "version" {:font-size 20}) {:span 5})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "4" {:span 5 :borders {}})
-```
+![寄存器位域图：3.14.1 调试模块状态（dmstatus，位于 0x11）](RISC-V调试规范v1.0-中文学习版.assets/位域图-07.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -1146,47 +787,9 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 为了向前兼容，当位 1 ([ndmreset](#dmcontrol-ndmreset)) 为 0 并且位 0 ([dmactive](#dmcontrol-dmactive)) 为 1 时，[version](#dmstatus-version) 将始终可读。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 29)
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "31" "" "" "30" "" "" "29" "" "" "" "28" "" "" "" "" "27" "" "" "" "26" "" "25" "" "" "" "" "" "16"]})
-(draw-box (text "haltreq" {:font-size 20}) {:span 3})
-(draw-box (text "resumereq" {:font-size 20}) {:span 3})
-(draw-box (text "hartreset" {:font-size 20}) {:span 3})
-(draw-box (text "ackhavereset" {:font-size 20}) {:span 5})
-(draw-box (text "ackunavail" {:font-size 20}) {:span 5})
-(draw-box (text "hasel" {:font-size 20}) {:span 3})
-(draw-box (text "hartsello" {:font-size 20}) {:span 7})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "10" {:span 7 :borders {}})
-```
+![寄存器位域图：3.14.2 调试模块控制（dmcontrol，位于 0x10）](RISC-V调试规范v1.0-中文学习版.assets/位域图-08.svg)
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 33)
-(draw-column-headers {:font-size 15 :height 17 :labels ["15" "" "" "" "" "" "6" "" "" "5" "" "" "" "" "4" "" "" "" "" "3" "" "" "" "" "2" "" "" "" "1" "" "" "0" ""]})
-(draw-box (text "hartselhi" {:font-size 20}) {:span 7})
-(draw-box (text "setkeepalive" {:font-size 20}) {:span 5})
-(draw-box (text "clrkeepalive" {:font-size 20}) {:span 5})
-(draw-box (text "setresethaltreq" {:font-size 20}) {:span 5})
-(draw-box (text "clrresethaltreq" {:font-size 20}) {:span 5})
-(draw-box (text "ndmreset" {:font-size 20}) {:span 3})
-(draw-box (text "dmactive" {:font-size 20}) {:span 3})
-(draw-box "10" {:span 7 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-```
+![寄存器位域图：3.14.2 调试模块控制（dmcontrol，位于 0x10）](RISC-V调试规范v1.0-中文学习版.assets/位域图-09.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -1215,24 +818,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 整个寄存器是只读的。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 32)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "24" "23" "" "" "" "20" "19" "" "" "" "17" "" "" "16" "" "" "15" "" "" "" "12" "11" "" "" "" "" "" "0"]})
-(draw-box (text "0" {:font-size 20}) {:span 5})
-(draw-box (text "nscratch" {:font-size 20}) {:span 5})
-(draw-box (text "0" {:font-size 20}) {:span 5})
-(draw-box (text "dataaccess" {:font-size 20}) {:span 5})
-(draw-box (text "datasize" {:font-size 20}) {:span 5})
-(draw-box (text "dataaddr" {:font-size 20}) {:span 7})
-(draw-box "8" {:span 5 :borders {}})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "3" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "12" {:span 7 :borders {}})
-```
+![寄存器位域图：3.14.3 hart 信息（hartinfo，位于 0x12）](RISC-V调试规范v1.0-中文学习版.assets/位域图-10.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -1245,18 +831,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 该寄存器选择 hart 阵列掩码寄存器（参见 [第 3.3.2 节](#hartarraymask)）的哪个 32 位部分可在 [hawindow](#dm-hawindow) 中访问。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "15" "14" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "0" {:font-size 20}) {:span 7})
-(draw-box (text "hawindowsel" {:font-size 20}) {:span 7})
-(draw-box "" {:span 10 :borders {}})
-(draw-box "17" {:span 7 :borders {}})
-(draw-box "15" {:span 7 :borders {}})
-(draw-box "" {:span 10 :borders {}})
-```
+![寄存器位域图：3.14.4 hart 数组窗口选择（hawindowsel，位于 0x14）](RISC-V调试规范v1.0-中文学习版.assets/位域图-11.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -1268,16 +843,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 由于hart数组掩码寄存器中的某些位可能是常量0，因此该寄存器中的某些位可能是常量0，具体取决于[hawindowsel](#dm-hawindowsel)的当前值。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "maskdata" {:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
-```
+![寄存器位域图：3.14.5 hart 数组窗口（hawindow，位于 0x15）](RISC-V调试规范v1.0-中文学习版.assets/位域图-12.svg)
 
 #### 3.14.6 抽象控制和状态（abstractcs，位于 0x16）
 
@@ -1286,28 +852,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 > [!note]
 > [datacount](#abstractcs-datacount) 必须至少为 1 才能支持 RV32 hart，2 才能支持 RV64 hart，或 4 才能支持 RV128 hart.
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 40)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "29" "28" "" "" "" "24" "23" "" "" "" "" "" "13" "" "12" "" "" "" "11" "" "" "10" "" "" "" "8" "7" "" "" "" "4" "3" "" "" "" "0"]})
-(draw-box (text "0" {:font-size 20}) {:span 5})
-(draw-box (text "progbufsize" {:font-size 20}) {:span 5})
-(draw-box (text "0" {:font-size 20}) {:span 7})
-(draw-box (text "busy" {:font-size 20}) {:span 3})
-(draw-box (text "relaxedpriv" {:font-size 20}) {:span 5})
-(draw-box (text "cmderr" {:font-size 20}) {:span 5})
-(draw-box (text "0" {:font-size 20}) {:span 5})
-(draw-box (text "datacount" {:font-size 20}) {:span 5})
-(draw-box "3" {:span 5 :borders {}})
-(draw-box "5" {:span 5 :borders {}})
-(draw-box "11" {:span 7 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "3" {:span 5 :borders {}})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "4" {:span 5 :borders {}})
-```
+![寄存器位域图：3.14.6 抽象控制和状态（abstractcs，位于 0x16）](RISC-V调试规范v1.0-中文学习版.assets/位域图-13.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -1328,18 +873,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 > [!note]
 > [cmderr](#abstractcs-cmderr) 禁止启动新命令以适应调试器，出于性能原因，调试器会连续发送多个要执行的命令，而不在其间检查 [cmderr](#abstractcs-cmderr)。他们可以安全地这样做，并在最后检查 [cmderr](#abstractcs-cmderr)，而不必担心一个命令失败，但随后的命令（可能取决于前一个命令的成功）通过。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "24" "23" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "cmdtype" {:font-size 20}) {:span 5})
-(draw-box (text "control" {:font-size 20}) {:span 7})
-(draw-box "" {:span 12 :borders {}})
-(draw-box "8" {:span 5 :borders {}})
-(draw-box "24" {:span 7 :borders {}})
-(draw-box "" {:span 12 :borders {}})
-```
+![寄存器位域图：3.14.7 抽象命令（命令，位于 0x17）](RISC-V调试规范v1.0-中文学习版.assets/位域图-14.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -1354,20 +888,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 如果在执行抽象命令时写入该寄存器，则写入将被忽略，并且一旦命令完成（忙变为 0），[cmderr](#abstractcs-cmderr) 将变为 1（忙）。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "16" "15" "" "" "" "12" "11" "" "" "" "" "" "0" "" "" "" "" ""]})
-(draw-box (text "autoexecprogbuf" {:font-size 20}) {:span 7})
-(draw-box (text "0" {:font-size 20}) {:span 5})
-(draw-box (text "autoexecdata" {:font-size 20}) {:span 7})
-(draw-box "" {:span 5 :borders {}})
-(draw-box "16" {:span 7 :borders {}})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "12" {:span 7 :borders {}})
-(draw-box "" {:span 5 :borders {}})
-```
+![寄存器位域图：3.14.8 抽象命令 Autoexec（abstractauto，位于 0x18）](RISC-V调试规范v1.0-中文学习版.assets/位域图-15.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -1386,16 +907,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 整个寄存器是只读的。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "addr" {:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
-```
+![寄存器位域图：3.14.9 配置结构指针 0（confstrptr0，位于 0x19）](RISC-V调试规范v1.0-中文学习版.assets/位域图-16.svg)
 
 #### 3.14.10 配置结构指针 1（confstrptr1，位于 0x1a）
 
@@ -1403,16 +915,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 整个寄存器是只读的。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "addr" {:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
-```
+![寄存器位域图：3.14.10 配置结构指针 1（confstrptr1，位于 0x1a）](RISC-V调试规范v1.0-中文学习版.assets/位域图-17.svg)
 
 #### 3.14.11 配置结构指针 2（confstrptr2，位于 0x1b）
 
@@ -1420,16 +923,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 整个寄存器是只读的。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "addr" {:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
-```
+![寄存器位域图：3.14.11 配置结构指针 2（confstrptr2，位于 0x1b）](RISC-V调试规范v1.0-中文学习版.assets/位域图-18.svg)
 
 #### 3.14.12 配置结构指针 3（confstrptr3，位于 0x1c）
 
@@ -1437,16 +931,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 整个寄存器是只读的。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "addr" {:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
-```
+![寄存器位域图：3.14.12 配置结构指针 3（confstrptr3，位于 0x1c）](RISC-V调试规范v1.0-中文学习版.assets/位域图-19.svg)
 
 #### 3.14.13 下一个调试模块（nextdm，位于 0x1d）
 
@@ -1454,16 +939,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 整个寄存器是只读的。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "addr" {:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
-```
+![寄存器位域图：3.14.13 下一个调试模块（nextdm，位于 0x1d）](RISC-V调试规范v1.0-中文学习版.assets/位域图-20.svg)
 
 #### 3.14.14 抽象数据 0（data0，位于 0x04）
 
@@ -1475,16 +951,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 执行抽象命令后，这些寄存器中的值可能不会保留。对其内容的唯一保证是相关命令提供的保证。如果命令失败，则无法对这些寄存器的内容做出任何假设。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "data" {:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
-```
+![寄存器位域图：3.14.14 抽象数据 0（data0，位于 0x04）](RISC-V调试规范v1.0-中文学习版.assets/位域图-21.svg)
 
 #### 3.14.15 程序缓冲区 0（progbuf0，位于 0x20）
 
@@ -1496,16 +963,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 在设置 [busy](#abstractcs-busy) 时尝试写入它们不会改变它们的值。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "data" {:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
-```
+![寄存器位域图：3.14.15 程序缓冲区 0（progbuf0，位于 0x20）](RISC-V调试规范v1.0-中文学习版.assets/位域图-22.svg)
 
 #### 3.14.16 身份验证数据（authdata，位于 0x30）
 
@@ -1513,16 +971,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 当[authbusy](#dmstatus-authbusy)清零时，调试器可以通过读或写该寄存器与认证模块进行通信。没有单独的机制来发出溢出/下溢信号。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "data" {:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
-```
+![寄存器位域图：3.14.16 身份验证数据（authdata，位于 0x30）](RISC-V调试规范v1.0-中文学习版.assets/位域图-23.svg)
 
 #### 3.14.17 调试模块控制和状态 2（dmcs2，位于 0x32）
 
@@ -1534,24 +983,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 可用于添加到暂停组的 DM 外部触发器可以与可用于添加到恢复组的 DM 外部触发器相同或不同。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 26)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "12" "" "11" "" "10" "" "" "" "7" "6" "" "" "" "2" "" "1" "" "" "0" ""]})
-(draw-box (text "0" {:font-size 20}) {:span 7})
-(draw-box (text "grouptype" {:font-size 20}) {:span 3})
-(draw-box (text "dmexttrigger" {:font-size 20}) {:span 5})
-(draw-box (text "group" {:font-size 20}) {:span 5})
-(draw-box (text "hgwrite" {:font-size 20}) {:span 3})
-(draw-box (text "hgselect" {:font-size 20}) {:span 3})
-(draw-box "20" {:span 7 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "5" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-```
+![寄存器位域图：3.14.17 调试模块控制和状态 2（dmcs2，位于 0x32）](RISC-V调试规范v1.0-中文学习版.assets/位域图-24.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -1571,16 +1003,7 @@ LSB 反映了 hart {hartsel\[19:5\],5'h0} 的停止状态，MSB 反映了 hart {
 
 整个寄存器是只读的。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "haltsum0" {:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
-```
+![寄存器位域图：3.14.18 停止摘要 0（haltsum0，位于 0x40）](RISC-V调试规范v1.0-中文学习版.assets/位域图-25.svg)
 
 #### 3.14.19 停止摘要 1（haltsum1，位于 0x13）
 
@@ -1592,16 +1015,7 @@ LSB 反映了 hart {hartsel\[19:10\],10'h0} 到 {hartsel\[19:10\],10'h1f} 的停
 
 整个寄存器是只读的。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "haltsum1" {:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
-```
+![寄存器位域图：3.14.19 停止摘要 1（haltsum1，位于 0x13）](RISC-V调试规范v1.0-中文学习版.assets/位域图-26.svg)
 
 #### 3.14.20 停止摘要 2（haltsum2，位于 0x34）
 
@@ -1613,16 +1027,7 @@ LSB 反映了 hart {hartsel\[19:15\],15'h0} 到 {hartsel\[19:15\],15'h3ff} 的�
 
 整个寄存器是只读的。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "haltsum2" {:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
-```
+![寄存器位域图：3.14.20 停止摘要 2（haltsum2，位于 0x34）](RISC-V调试规范v1.0-中文学习版.assets/位域图-27.svg)
 
 #### 3.14.21 停止摘要 3（haltsum3，位于 0x35）
 
@@ -1634,62 +1039,13 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 整个寄存器是只读的。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "haltsum3" {:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
-```
+![寄存器位域图：3.14.21 停止摘要 3（haltsum3，位于 0x35）](RISC-V调试规范v1.0-中文学习版.assets/位域图-28.svg)
 
 #### 3.14.22 系统总线访问控制和状态（sbcs，位于 0x38）
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 33)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "29" "28" "" "" "" "23" "" "" "22" "" "" "" "21" "" "" "" "20" "" "" "19" "" "" "" "17" "" "" "16" "" ""]})
-(draw-box (text "sbversion" {:font-size 20}) {:span 5})
-(draw-box (text "0" {:font-size 20}) {:span 5})
-(draw-box (text "sbbusyerror" {:font-size 20}) {:span 5})
-(draw-box (text "sbbusy" {:font-size 20}) {:span 3})
-(draw-box (text "sbreadonaddr" {:font-size 20}) {:span 5})
-(draw-box (text "sbaccess" {:font-size 20}) {:span 5})
-(draw-box (text "sbautoincrement" {:font-size 20}) {:span 5})
-(draw-box "3" {:span 5 :borders {}})
-(draw-box "6" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "3" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-```
+![寄存器位域图：3.14.22 系统总线访问控制和状态（sbcs，位于 0x38）](RISC-V调试规范v1.0-中文学习版.assets/位域图-29.svg)
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 38)
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "" "15" "" "" "14" "" "" "" "12" "11" "" "" "" "5" "" "" "4" "" "" "" "" "3" "" "" "" "" "2" "" "" "" "" "1" "" "" "" "0" ""]})
-(draw-box (text "sbreadondata" {:font-size 20}) {:span 5})
-(draw-box (text "sberror" {:font-size 20}) {:span 5})
-(draw-box (text "sbasize" {:font-size 20}) {:span 5})
-(draw-box (text "sbaccess128" {:font-size 20}) {:span 5})
-(draw-box (text "sbaccess64" {:font-size 20}) {:span 5})
-(draw-box (text "sbaccess32" {:font-size 20}) {:span 5})
-(draw-box (text "sbaccess16" {:font-size 20}) {:span 5})
-(draw-box (text "sbaccess8" {:font-size 20}) {:span 3})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "3" {:span 5 :borders {}})
-(draw-box "7" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-```
+![寄存器位域图：3.14.22 系统总线访问控制和状态（sbcs，位于 0x38）](RISC-V调试规范v1.0-中文学习版.assets/位域图-30.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -1717,23 +1073,11 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 如果 [sberror](#sbcs-sberror) 为 0，[sbbusyerror](#sbcs-sbbusyerror) 为 0，并且 [sbreadonaddr](#sbcs-sbreadonaddr) 被设置，则写入该寄存器将启动以下操作：
 
 1. 设置[sbbusy](#sbcs-sbbusy)。
-
 2. 从 `sbaddress` 的新值执行总线读取。
-
 3. 如果读取成功并且设置了 [sbautoincrement](#sbcs-sbautoincrement)，则递增 `sbaddress`。
-
 4. 清除[sbbusy](#sbcs-sbbusy)。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "address" {:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
-```
+![寄存器位域图：3.14.23 系统总线地址 31:0（sbaddress0，位于 0x39）](RISC-V调试规范v1.0-中文学习版.assets/位域图-31.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -1745,16 +1089,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 当系统总线管理器繁忙时，写入该寄存器将设置 [sbbusyerror](#sbcs-sbbusyerror) 并且不执行任何其他操作。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "address" {:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
-```
+![寄存器位域图：3.14.24 系统总线地址 63:32（sbaddress1，位于 0x3a）](RISC-V调试规范v1.0-中文学习版.assets/位域图-32.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -1766,16 +1101,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 当系统总线管理器繁忙时，写入该寄存器将设置 [sbbusyerror](#sbcs-sbbusyerror) 并且不执行任何其他操作。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "address" {:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
-```
+![寄存器位域图：3.14.25 系统总线地址 95:64（sbaddress2，位于 0x3b）](RISC-V调试规范v1.0-中文学习版.assets/位域图-33.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -1787,16 +1113,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 当系统总线管理器繁忙时，写入该寄存器将设置 [sbbusyerror](#sbcs-sbbusyerror) 并且不执行任何其他操作。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "address" {:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
-```
+![寄存器位域图：3.14.26 系统总线地址 127:96（sbaddress3，位于 0x37）](RISC-V调试规范v1.0-中文学习版.assets/位域图-34.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -1815,43 +1132,22 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 写入该寄存器将启动以下操作：
 
 1. 设置[sbbusy](#sbcs-sbbusy)。
-
 2. 将`sbdata` 的新值执行总线写入`sbaddress`。
-
 3. 如果写入成功且 [sbautoincrement](#sbcs-sbautoincrement) 被置位，则递增 `sbaddress`。
-
 4. 清除[sbbusy](#sbcs-sbbusy)。
 
 从此寄存器读取开始以下内容：
 
 1. “返回”数据。
-
 2. 设置[sbbusy](#sbcs-sbbusy)。
-
 3. 如果设置了 [sbreadondata](#sbcs-sbreadondata)：
-
-    
-
-1. 从 `sbaddress` 中包含的地址执行系统总线读取，并将结果放入 `sbdata` 中。
-
-2. 如果设置了 [sbautoincrement](#sbcs-sbautoincrement) 并且读取成功，则递增 `sbaddress`。
-
-    
-
+    1. 从 `sbaddress` 中包含的地址执行系统总线读取，并将结果放入 `sbdata` 中。
+    2. 如果设置了 [sbautoincrement](#sbcs-sbautoincrement) 并且读取成功，则递增 `sbaddress`。
 4. 清除[sbbusy](#sbcs-sbbusy)。
 
 只有 [sbdata0](#dm-sbdata0) 有此行为。其他 `sbdata` 寄存器没有副作用。在总线宽度超过 32 位的系统上，调试器应在访问其他 `sbdata` 寄存器后访问 [sbdata0](#dm-sbdata0)。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "data" {:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
-```
+![寄存器位域图：3.14.27 系统总线数据 31:0（sbdata0，位于 0x3c）](RISC-V调试规范v1.0-中文学习版.assets/位域图-35.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -1863,16 +1159,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 如果总线管理器忙，则访问设置 [sbbusyerror](#sbcs-sbbusyerror)，并且不执行任何其他操作。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "data" {:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
-```
+![寄存器位域图：3.14.28 系统总线数据 63:32（sbdata1，位于 0x3d）](RISC-V调试规范v1.0-中文学习版.assets/位域图-36.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -1884,16 +1171,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 如果总线管理器忙，则访问设置 [sbbusyerror](#sbcs-sbbusyerror)，并且不执行任何其他操作。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "data" {:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
-```
+![寄存器位域图：3.14.29 系统总线数据 95:64（sbdata2，位于 0x3e）](RISC-V调试规范v1.0-中文学习版.assets/位域图-37.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -1905,16 +1183,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 如果总线管理器忙，则访问设置 [sbbusyerror](#sbcs-sbbusyerror)，并且不执行任何其他操作。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "data" {:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
-```
+![寄存器位域图：3.14.30 系统总线数据 127:96（sbdata3，位于 0x3f）](RISC-V调试规范v1.0-中文学习版.assets/位域图-38.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -1948,33 +1217,19 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 当由于抽象命令而执行代码时，hart 保持在调试模式并且以下情况适用：
 
 1. 所有已实现的指令的运行方式与 M 模式下的运行方式相同，除非此列表中提到了例外情况。
-
 2. 所有操作均以机器模式权限执行，但可以访问附加调试模式 CSR，并且根据 [mprven](#dcsr-mprven)，`mstatus` 中的 `mprv` 可能会被忽略。完整的权限检查或一组宽松的权限检查将根据 [relaxedpriv](#abstractcs-relaxedpriv) 进行应用。
-
 3. 所有中断（包括NMI）被屏蔽。
-
 4. 不会出现陷阱。相反，它们会结束程序缓冲区的执行，并且 hart 仍处于调试模式。由于它们不会陷入 M 模式，因此不会更新 、`mepc`、`mcause`、`mtval`、`mtval2` 和 `mtinst` 等寄存器。对于在捕获到其他模式时更新的等效特权寄存器也是如此。在允许更新异常之前，可以作为执行的一部分更新的寄存器。例如，引发异常的向量加载/存储指令可能会部分更新目标寄存器并适当地设置 `vstart`。
-
 5. 触发器不匹配或触发。
-
 6. 如果 [stopcount](#dcsr-stopcount) 为 0，则计数器继续。如果为 1，则停止计数器。
-
 7. 如果[stoptime](#dcsr-stoptime) 为0，则`time` 继续更新。如果为 1，则 `time` 将不会更新。退出调试模式后，它将与 `time` 重新同步。
-
 8. 将 hart 置于停止状态的指令充当 `nop`。这包括 `wfi`、`wrs.sto` 和 `wrs.nto`。
-
 9. 几乎所有改变特权模式的指令都有未指定的行为。这包括 `ecall`、`mret`、`sret` 和 `uret`。 （要更改特权模式，调试器可以在[dcsr](#csr-dcsr)中写入[prv](#dcsr-prv)和[v](#dcsr-v)）。唯一的例外是`ebreak`，它在执行时结束程序缓冲区的执行。
-
 10. 如果所有控制传输指令的目的地位于程序缓冲区中，则它们可能会充当非法指令。如果其中一条指令被视为非法指令，则所有此类指令都必须被视为非法指令。
-
 11. 如果所有控制传输指令的目的地位于程序缓冲区之外，则它们可能会充当非法指令。如果其中一条指令被视为非法指令，则所有此类指令都必须被视为非法指令。
-
 12. 依赖于 PC 值的指令（例如 `auipc`）可能会被视为非法指令。
-
 13. 当实现Zicfilp扩展时，`ELP`状态为`NO_LP_EXPECTED`并且不被任何指令更新。 LPAD 指令作为无操作执行。
-
 14. XLEN 有效为 DXLEN。
-
 15. 前进的进展是有保证的。
 
 > [!note]
@@ -2020,7 +1275,6 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 这种方法确实有一些局限性：
 
 1. 中断将照常触发。想要在单步执行时禁用中断的调试器必须通过更改 `mstatus` 来禁用中断，并专门处理读取 `mstatus` 的指令。
-
 2. `wfi` 指令未经过特殊处理，可能需要很长时间才能完成。
 
 这种机制完全支持支持多个特权级别的系统，其中操作系统或调试存根在 M 模式下运行，而正在调试的程序在特权较低的模式下运行。仅支持 M 模式的系统也可以使用 [icount](#csr-icount)，但 [count](#icount-count) 必须能够计算多个指令（取决于软件实现）。参见 [Section B.3.1](#nativestep)。
@@ -2034,15 +1288,10 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 当 hart 停止时：
 
 1. 更新[cause](#dcsr-cause)。
-
 2. [prv](#dcsr-prv) 和[v](#dcsr-v) 设置为反映当前特权模式和虚拟化模式。
-
 3. 如果实现了Zicfilp扩展，则[pelp](#dcsr-pelp)设置为当前`ELP`状态，`ELP`设置为`NO_LP_EXPECTED`
-
 4. [dpc](#csr-dpc) 被设置为应该执行的下一条指令。
-
 5. 如果当前指令可以部分执行并且应该重新启动才能完成，则更新其相关状态。例如。如果在部分执行的向量指令期间发生暂停，则更新 `vstart`，并将 [dpc](#csr-dpc) 更新为部分执行的指令的地址。这类似于向量指令对于异常的行为方式。
-
 6. hart 进入调试模式。
 
 ### 4.8 恢复
@@ -2050,17 +1299,11 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 当 hart 恢复时：
 
 1. `pc` 更改为 [dpc](#csr-dpc) 中存储的值。
-
 2. 将当前的特权模式和虚拟化模式更改为[prv](#dcsr-prv)和[v](#dcsr-v)指定的模式。
-
 3. 如果在新特权模式下启用了 Zicfilp 扩展，则当前 `ELP` 状态将更改为 [pelp](#dcsr-pelp) 指定的状态，否则将设置为 `NO_LP_EXPECTED`。 [pelp](#dcsr-pelp) 设置为 `NO_LP_EXPECTED`。
-
 4. 如果新特权模式的特权低于 M 模式，则 `mstatus` 中的 `MPRV` 被清除。
-
 5. 如果实现了 Smdbltrp 扩展并且新的特权模式不是 M，则 `MDT` 位设置为 0。
-
 6. 如果实现了 Ssdbltrp 扩展，并且新的特权模式是 U、VS 或 VU，则 `sstatus.SDT` 设置为 0。此外，如果是 VU，则 `vsstatus.SDT` 也设置为 0。
-
 7. hart 不再处于调试模式。
 
 ### 4.9 核心调试寄存器
@@ -2087,7 +1330,6 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 [表 8](#tab:dcsrcausepriority) 显示进入调试模式的原因的优先级。实施应实施表中所示的优先级。为了与本规范的旧版本兼容，允许resethaltreq和haltreq位于与所示不同的位置，只要：
 
 1. resethaltreq的优先级高于haltreq
-
 2. 其他四个原因的相对顺序保持不变
 
 | [cause](#dcsr-cause) 编码 |原因 |
@@ -2106,61 +1348,9 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 该 CSR 是读/写的。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 32)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "28" "27" "26" "" "" "" "24" "23" "" "" "" "20" "" "19" "" "" "18" "" "" "17" "" "" "16" "" "" "15" "" "14"]})
-(draw-box (text "debugver" {:font-size 20}) {:span 5})
-(draw-box (text "0" {:font-size 20}) {:span 1})
-(draw-box (text "extcause" {:font-size 20}) {:span 5})
-(draw-box (text "0" {:font-size 20}) {:span 5})
-(draw-box (text "cetrig" {:font-size 20}) {:span 3})
-(draw-box (text "pelp" {:font-size 20}) {:span 3})
-(draw-box (text "ebreakvs" {:font-size 20}) {:span 3})
-(draw-box (text "ebreakvu" {:font-size 20}) {:span 3})
-(draw-box (text "ebreakm" {:font-size 20}) {:span 3})
-(draw-box (text "0" {:font-size 20}) {:span 1})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "3" {:span 5 :borders {}})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-```
+![寄存器位域图：4.9.1 调试控制和状态（dcsr，位于 0x7b0）](RISC-V调试规范v1.0-中文学习版.assets/位域图-39.svg)
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 33)
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "13" "" "" "12" "" "" "11" "" "" "10" "" "" "9" "" "8" "" "" "" "6" "5" "" "4" "" "" "3" "" "" "2" "" "1" "" "0"]})
-(draw-box (text "ebreaks" {:font-size 20}) {:span 3})
-(draw-box (text "ebreaku" {:font-size 20}) {:span 3})
-(draw-box (text "stepie" {:font-size 20}) {:span 3})
-(draw-box (text "stopcount" {:font-size 20}) {:span 3})
-(draw-box (text "stoptime" {:font-size 20}) {:span 3})
-(draw-box (text "cause" {:font-size 20}) {:span 5})
-(draw-box (text "v" {:font-size 20}) {:span 1})
-(draw-box (text "mprven" {:font-size 20}) {:span 3})
-(draw-box (text "nmip" {:font-size 20}) {:span 3})
-(draw-box (text "step" {:font-size 20}) {:span 3})
-(draw-box (text "prv" {:font-size 20}) {:span 3})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "3" {:span 5 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "2" {:span 3 :borders {}})
-```
+![寄存器位域图：4.9.1 调试控制和状态（dcsr，位于 0x7b0）](RISC-V调试规范v1.0-中文学习版.assets/位域图-40.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -2211,16 +1401,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 该 CSR 是读/写的。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "DXLEN-1" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "dpc" {:font-size 20}) {:span 7})
-(draw-box "" {:span 17 :borders {}})
-(draw-box "DXLEN" {:span 7 :borders {}})
-(draw-box "" {:span 17 :borders {}})
-```
+![寄存器位域图：4.9.2 调试 PC（dpc，位于 0x7b1）](RISC-V调试规范v1.0-中文学习版.assets/位域图-41.svg)
 
 #### 4.9.3 调试暂存寄存器 0（dscratch0，位于 0x7b2）
 
@@ -2228,16 +1409,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 该 CSR 是读/写的。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "DXLEN-1" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "dscratch0" {:font-size 20}) {:span 7})
-(draw-box "" {:span 17 :borders {}})
-(draw-box "DXLEN" {:span 7 :borders {}})
-(draw-box "" {:span 17 :borders {}})
-```
+![寄存器位域图：4.9.3 调试暂存寄存器 0（dscratch0，位于 0x7b2）](RISC-V调试规范v1.0-中文学习版.assets/位域图-42.svg)
 
 #### 4.9.4 调试暂存寄存器 1（dscratch1，位于 0x7b3）
 
@@ -2245,16 +1417,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 该 CSR 是读/写的。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "DXLEN-1" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "dscratch1" {:font-size 20}) {:span 7})
-(draw-box "" {:span 17 :borders {}})
-(draw-box "DXLEN" {:span 7 :borders {}})
-(draw-box "" {:span 17 :borders {}})
-```
+![寄存器位域图：4.9.4 调试暂存寄存器 1（dscratch1，位于 0x7b3）](RISC-V调试规范v1.0-中文学习版.assets/位域图-43.svg)
 
 ### 4.10 虚拟调试寄存器
 
@@ -2285,18 +1448,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 表 11. 特权模式和虚拟化模式编码
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["2" "1" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "v" {:font-size 20}) {:span 1})
-(draw-box (text "prv" {:font-size 20}) {:span 3})
-(draw-box "" {:span 20 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "2" {:span 3 :borders {}})
-(draw-box "" {:span 20 :borders {}})
-```
+![寄存器位域图：4.10.1 特权模式（priv、at virtual）](RISC-V调试规范v1.0-中文学习版.assets/位域图-44.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -2323,17 +1475,11 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 每个触发器可以支持多种功能。调试器可以构建所有触发器及其功能的列表，如下所示：
 
 1. 将 0 写入 [tselect](#csr-tselect)。如果这导致非法指令异常，则不会执行任何触发器。
-
 2. 读回 [tselect](#csr-tselect) 并检查其是否包含写入的值。如果不是，则退出循环。
-
 3. 读取[tinfo](#csr-tinfo)。
-
 4. 如果这导致了异常，调试器必须读取 [tdata1](#csr-tdata1) 来发现类型。 （如果[type](#tdata1-type)为0，则该触发器不存在，退出循环。）
-
 5. 如果[info](#tinfo-info)为1，则该触发器不存在。退出循环。
-
 6. 否则，所选触发器支持 [info](#tinfo-info) 中发现的类型。
-
 7. 重复上述操作，增加 [tselect](#csr-tselect) 中的值。
 
 > [!note]
@@ -2393,7 +1539,6 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 支持 [action](#mcontrol-action)=0 触发器的 hart 应实现以下两种解决方案之一来解决重入问题：
 
 1. 当处于 M 模式且 `mstatus` 中的 `MIE` 为 0 时，硬件会阻止 [action](#mcontrol-action)=0 的触发器匹配或触发。如果 `medeleg` \[3\]=1，则它会阻止 [action](#mcontrol-action)=0 的触发器在 S 模式下且 `sstatus` 中的 `SIE` 为 0 时匹配或触发。如果 `medeleg` \[3\]=1 和 `hedeleg` \[3\]=1 那么它会阻止 [action](#mcontrol-action)=0 的触发器在 VS 模式下以及 `vstatus` 中的 `SIE` 为 0 时匹配或触发。
-
 2. 实现[tcontrol](#csr-tcontrol)中的[mte](#tcontrol-mte)和[mpte](#tcontrol-mpte)。 `medeleg` \[3\] 硬连接到 0。
 
 > [!note]
@@ -2408,15 +1553,10 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 如果支持 A 扩展，则加载/存储上的触发器将按如下方式处理它们：
 
 1. `lr` 指令是负荷。
-
 2. 成功的`sc`指令被存储。
-
 3. 未指定失败的 `sc` 指令是否存储。
-
 4. 每条 AMO 指令都是操作读取部分的负荷。该地址始终可用于触发，但加载的值可能不可用，具体取决于硬件实现。
-
 5. 每条 AMO 指令都是用于操作写入部分的存储。该地址始终可用于触发。数据存储触发器是否在 AMO 上匹配尚未指定。
-
 6. 如果任何加载或 AMO 的目标寄存器是 `zero`，则未指定数据加载触发是否匹配。
 
 #### 5.5.2 组合访问
@@ -2428,15 +1568,12 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 缓存操作很少执行，并且使用它们的代码可能存在难以发现的错误。为了调试触发器的目的，两类缓存操作必须匹配存储：
 
 1. 高速缓存操作使软件能够保持原本不相干的隐式和显式存储器访问之间的一致性。
-
 2. 执行常量数据块写入的缓存操作。
 
 只有 [size](#mcontrol6-size)=0 和 [select](#mcontrol6-select)=0 的触发器才会匹配。由于缓存操作影响多个地址，因此有多个可能的值可供比较。实现必须实现以下选项之一。从最理想到最不理想，它们是：
 
 1. 从向下舍入到最近的缓存块边界（含）的有效地址到向上舍入到最近的缓存块边界（不包括）的有效地址之间的每个地址都是一个比较值。
-
 2. 向下舍入到最近的缓存块边界的有效地址是比较值。
-
 3. 指令的有效地址是比较值。
 
 编码为 HINT 的缓存操作与调试触发器不匹配。
@@ -2476,9 +1613,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 因此，调试器可以编写任何支持的触发器，如下所示：
 
 1. 将 0 写入 [tdata1](#csr-tdata1)。 （这将导致 [tdata1](#csr-tdata1) 包含非零值，因为寄存器是 **WARL**。）
-
 2. 将所需值写入[tdata2](#csr-tdata2) 和[tdata3](#csr-tdata3)。
-
 3. 将所需值写入[tdata1](#csr-tdata1)。
 
 恢复可能配置为在当前特权模式下触发的触发器的 CSR 上下文的代码必须使用相同的序列来恢复触发器。这避免了部分写入的触发器在与预期不同的时间触发的问题。
@@ -2522,16 +1657,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 该 CSR 是读/写的。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "index" {:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "XLEN" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
-```
+![寄存器位域图：5.7.1 触发选择（tselect，位于 0x7a0）](RISC-V调试规范v1.0-中文学习版.assets/位域图-45.svg)
 
 #### 5.7.2 触发数据 1（tdata1，位于 0x7a1）
 
@@ -2543,20 +1669,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 该 CSR 是读/写的。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "XLEN-4" "" "" "XLEN-5" "" "" "XLEN-6" "" "" "" "" "" "" "0" "" "" "" "" "" "" ""]})
-(draw-box (text "type" {:font-size 20}) {:span 5})
-(draw-box (text "dmode" {:font-size 20}) {:span 3})
-(draw-box (text "data" {:font-size 20}) {:span 9})
-(draw-box "" {:span 7 :borders {}})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "XLEN - 5" {:span 9 :borders {}})
-(draw-box "" {:span 7 :borders {}})
-```
+![寄存器位域图：5.7.2 触发数据 1（tdata1，位于 0x7a1）](RISC-V调试规范v1.0-中文学习版.assets/位域图-46.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -2576,16 +1689,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 该 CSR 是读/写的。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "data" {:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "XLEN" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
-```
+![寄存器位域图：5.7.3 触发数据 2（tdata2，位于 0x7a2）](RISC-V调试规范v1.0-中文学习版.assets/位域图-47.svg)
 
 #### 5.7.4 触发数据 3（tdata3，位于 0x7a3）
 
@@ -2599,16 +1703,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 该 CSR 是读/写的。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "data" {:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "XLEN" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
-```
+![寄存器位域图：5.7.4 触发数据 3（tdata3，位于 0x7a3）](RISC-V调试规范v1.0-中文学习版.assets/位域图-48.svg)
 
 #### 5.7.5 触发信息（tinfo，位于 0x7a4）
 
@@ -2618,22 +1713,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 写入此读/写CSR 没有任何效果。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "32" "31" "" "" "" "24" "23" "" "" "" "16" "15" "" "" "" "" "" "0" "" "" "" ""]})
-(draw-box (text "0" {:font-size 20}) {:span 3})
-(draw-box (text "version" {:font-size 20}) {:span 5})
-(draw-box (text "0" {:font-size 20}) {:span 5})
-(draw-box (text "info" {:font-size 20}) {:span 7})
-(draw-box "" {:span 4 :borders {}})
-(draw-box "XLEN - 32" {:span 3 :borders {}})
-(draw-box "8" {:span 5 :borders {}})
-(draw-box "8" {:span 5 :borders {}})
-(draw-box "16" {:span 7 :borders {}})
-(draw-box "" {:span 4 :borders {}})
-```
+![寄存器位域图：5.7.5 触发信息（tinfo，位于 0x7a4）](RISC-V调试规范v1.0-中文学习版.assets/位域图-49.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -2646,24 +1726,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 该 CSR 是读/写的。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "" "" "" "8" "" "7" "" "6" "" "" "" "4" "3" "2" "" "" "" "0" "" "" ""]})
-(draw-box (text "0" {:font-size 20}) {:span 7})
-(draw-box (text "mpte" {:font-size 20}) {:span 3})
-(draw-box (text "0" {:font-size 20}) {:span 5})
-(draw-box (text "mte" {:font-size 20}) {:span 1})
-(draw-box (text "0" {:font-size 20}) {:span 5})
-(draw-box "" {:span 3 :borders {}})
-(draw-box "XLEN - 8" {:span 7 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "3" {:span 5 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "3" {:span 5 :borders {}})
-(draw-box "" {:span 3 :borders {}})
-```
+![寄存器位域图：5.7.6 触发控制（tcontrol，位于 0x7a5）](RISC-V调试规范v1.0-中文学习版.assets/位域图-50.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -2686,18 +1749,7 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 该 CSR 是读/写的。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "32" "31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "0" {:font-size 20}) {:span 3})
-(draw-box (text "data" {:font-size 20}) {:span 9})
-(draw-box "" {:span 12 :borders {}})
-(draw-box "XLEN - 32" {:span 3 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 12 :borders {}})
-```
+![寄存器位域图：5.7.8 主管上下文（scontext，位于 0x5a8）](RISC-V调试规范v1.0-中文学习版.assets/位域图-51.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -2712,18 +1764,7 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 该 CSR 是读/写的。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "" "" "" "14" "13" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "0" {:font-size 20}) {:span 7})
-(draw-box (text "hcontext" {:font-size 20}) {:span 7})
-(draw-box "" {:span 10 :borders {}})
-(draw-box "XLEN - 14" {:span 7 :borders {}})
-(draw-box "14" {:span 7 :borders {}})
-(draw-box "" {:span 10 :borders {}})
-```
+![寄存器位域图：5.7.9 机器上下文（mcontext，位于 0x7a8）](RISC-V调试规范v1.0-中文学习版.assets/位域图-52.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -2755,57 +1796,9 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 该 CSR 是读/写的。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 28)
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "XLEN-4" "" "" "XLEN-5" "" "" "XLEN-6" "" "XLEN-11" "" "" "XLEN-12" "" "" "23" "22" "" "21" "20" "" "19" "" "" "18" ""]})
-(draw-box (text "type" {:font-size 20}) {:span 5})
-(draw-box (text "dmode" {:font-size 20}) {:span 3})
-(draw-box (text "maskmax" {:font-size 20}) {:span 5})
-(draw-box (text "0" {:font-size 20}) {:span 5})
-(draw-box (text "sizehi" {:font-size 20}) {:span 3})
-(draw-box (text "hit" {:font-size 20}) {:span 1})
-(draw-box (text "select" {:font-size 20}) {:span 3})
-(draw-box (text "timing" {:font-size 20}) {:span 3})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "6" {:span 5 :borders {}})
-(draw-box "XLEN - 34" {:span 5 :borders {}})
-(draw-box "2" {:span 3 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-```
+![寄存器位域图：5.7.11 匹配控制（mcontrol，位于 0x7a1）](RISC-V调试规范v1.0-中文学习版.assets/位域图-53.svg)
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 29)
-(draw-column-headers {:font-size 15 :height 17 :labels ["17" "" "16" "15" "" "" "" "12" "" "11" "" "10" "" "" "" "7" "6" "5" "4" "3" "" "2" "" "" "1" "" "" "0" ""]})
-(draw-box (text "sizelo" {:font-size 20}) {:span 3})
-(draw-box (text "action" {:font-size 20}) {:span 5})
-(draw-box (text "chain" {:font-size 20}) {:span 3})
-(draw-box (text "match" {:font-size 20}) {:span 5})
-(draw-box (text "m" {:font-size 20}) {:span 1})
-(draw-box (text "0" {:font-size 20}) {:span 1})
-(draw-box (text "s" {:font-size 20}) {:span 1})
-(draw-box (text "u" {:font-size 20}) {:span 1})
-(draw-box (text "execute" {:font-size 20}) {:span 3})
-(draw-box (text "store" {:font-size 20}) {:span 3})
-(draw-box (text "load" {:font-size 20}) {:span 3})
-(draw-box "2" {:span 3 :borders {}})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-```
+![寄存器位域图：5.7.11 匹配控制（mcontrol，位于 0x7a1）](RISC-V调试规范v1.0-中文学习版.assets/位域图-54.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -2860,15 +1853,10 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 在支持 [match](#mcontrol6-match) 模式 1 (NAPOT) 的实现中，并非所有 NAPOT 范围都受支持。支持 \\2^1\\ 和 \\2^{maskmax6}\\ 之间的所有 NAPOT 范围，其中 \\{maskmax6} ≥ 1\\。 maskmax6 的值可以由调试器通过以下顺序确定：
 
 1. 写入 [tdata1](#csr-tdata1)=0，以防 mcontrol6 触发器不支持当前 [tdata2](#csr-tdata2) 值。
-
 2. 写入[tdata2](#csr-tdata2)=0，mcontrol6 触发器始终支持该设置。
-
 3. 写入 [tdata1](#csr-tdata1)，其中 [type](#tdata1-type)=mcontrol6 且 [match](#mcontrol6-match)=1。
-
 4. 读取[match](#mcontrol6-match)。如果不是 1，则不支持 NAPOT 匹配。
-
 5. 将所有值写入[tdata2](#csr-tdata2)。
-
 6. 读取[tdata2](#csr-tdata2)。 maskmax6的值是最高有效0位的索引加1。
 
 如果为此触发器实现 [textra32](#csr-textra32) 或 [textra64](#csr-textra64)，则仅当满足其中设置的条件时才匹配。
@@ -2878,61 +1866,9 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 该 CSR 是读/写的。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 33)
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "XLEN-4" "" "" "XLEN-5" "" "" "XLEN-6" "27" "" "26" "" "" "25" "" "24" "23" "" "22" "" "" "21" "" "20" "" "19" "18" "" "" "" "16"]})
-(draw-box (text "type" {:font-size 20}) {:span 5})
-(draw-box (text "dmode" {:font-size 20}) {:span 3})
-(draw-box (text "0" {:font-size 20}) {:span 3})
-(draw-box (text "uncertain" {:font-size 20}) {:span 3})
-(draw-box (text "hit1" {:font-size 20}) {:span 3})
-(draw-box (text "vs" {:font-size 20}) {:span 1})
-(draw-box (text "vu" {:font-size 20}) {:span 1})
-(draw-box (text "hit0" {:font-size 20}) {:span 3})
-(draw-box (text "select" {:font-size 20}) {:span 3})
-(draw-box (text "0" {:font-size 20}) {:span 3})
-(draw-box (text "size" {:font-size 20}) {:span 5})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "XLEN - 32" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "2" {:span 3 :borders {}})
-(draw-box "3" {:span 5 :borders {}})
-```
+![寄存器位域图：5.7.12 匹配控制类型 6（mcontrol6，位于 0x7a1）](RISC-V调试规范v1.0-中文学习版.assets/位域图-55.svg)
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 30)
-(draw-column-headers {:font-size 15 :height 17 :labels ["15" "" "" "" "12" "" "11" "" "10" "" "" "" "7" "6" "" "" "5" "" "" "4" "3" "" "2" "" "" "1" "" "" "0" ""]})
-(draw-box (text "action" {:font-size 20}) {:span 5})
-(draw-box (text "chain" {:font-size 20}) {:span 3})
-(draw-box (text "match" {:font-size 20}) {:span 5})
-(draw-box (text "m" {:font-size 20}) {:span 1})
-(draw-box (text "uncertainen" {:font-size 20}) {:span 5})
-(draw-box (text "s" {:font-size 20}) {:span 1})
-(draw-box (text "u" {:font-size 20}) {:span 1})
-(draw-box (text "execute" {:font-size 20}) {:span 3})
-(draw-box (text "store" {:font-size 20}) {:span 3})
-(draw-box (text "load" {:font-size 20}) {:span 3})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-```
+![寄存器位域图：5.7.12 匹配控制类型 6（mcontrol6，位于 0x7a1）](RISC-V调试规范v1.0-中文学习版.assets/位域图-56.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -2962,7 +1898,6 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 此触发器在以下情况下匹配：
 
 1. 指令在触发器启用的特权模式下被获取后退出。这明确包括来自各种模式的所有 RET 指令。
-
 2. 从启用触发器的特权模式中获取陷阱。这明确包括由于中断而发生的陷阱。
 
 如果在单条指令执行期间发生多个上述事件，则触发器仍然只对该指令匹配一次。
@@ -2992,36 +1927,7 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 该 CSR 是读/写的。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 32)
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "XLEN-4" "" "" "XLEN-5" "" "" "XLEN-6" "27" "26" "25" "24" "23" "" "" "" "" "" "10" "9" "" "8" "" "7" "6" "5" "" "" "" "0"]})
-(draw-box (text "type" {:font-size 20}) {:span 5})
-(draw-box (text "dmode" {:font-size 20}) {:span 3})
-(draw-box (text "0" {:font-size 20}) {:span 3})
-(draw-box (text "vs" {:font-size 20}) {:span 1})
-(draw-box (text "vu" {:font-size 20}) {:span 1})
-(draw-box (text "hit" {:font-size 20}) {:span 1})
-(draw-box (text "count" {:font-size 20}) {:span 7})
-(draw-box (text "m" {:font-size 20}) {:span 1})
-(draw-box (text "pending" {:font-size 20}) {:span 3})
-(draw-box (text "s" {:font-size 20}) {:span 1})
-(draw-box (text "u" {:font-size 20}) {:span 1})
-(draw-box (text "action" {:font-size 20}) {:span 5})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "XLEN - 32" {:span 3 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "14" {:span 7 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "6" {:span 5 :borders {}})
-```
+![寄存器位域图：5.7.13 指令计数（icount，位于 0x7a1）](RISC-V调试规范v1.0-中文学习版.assets/位域图-57.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -3056,36 +1962,7 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 该 CSR 是读/写的。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 30)
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "XLEN-4" "" "" "XLEN-5" "" "" "XLEN-6" "" "" "XLEN-7" "" "" "" "" "13" "12" "11" "10" "9" "8" "7" "6" "5" "" "" "" "0"]})
-(draw-box (text "type" {:font-size 20}) {:span 5})
-(draw-box (text "dmode" {:font-size 20}) {:span 3})
-(draw-box (text "hit" {:font-size 20}) {:span 3})
-(draw-box (text "0" {:font-size 20}) {:span 7})
-(draw-box (text "vs" {:font-size 20}) {:span 1})
-(draw-box (text "vu" {:font-size 20}) {:span 1})
-(draw-box (text "nmi" {:font-size 20}) {:span 1})
-(draw-box (text "m" {:font-size 20}) {:span 1})
-(draw-box (text "0" {:font-size 20}) {:span 1})
-(draw-box (text "s" {:font-size 20}) {:span 1})
-(draw-box (text "u" {:font-size 20}) {:span 1})
-(draw-box (text "action" {:font-size 20}) {:span 5})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "XLEN - 19" {:span 7 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "6" {:span 5 :borders {}})
-```
+![寄存器位域图：5.7.14 中断触发器（itrigger，位于 0x7a1）](RISC-V调试规范v1.0-中文学习版.assets/位域图-58.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -3117,36 +1994,7 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 该 CSR 是读/写的。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 30)
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "XLEN-4" "" "" "XLEN-5" "" "" "XLEN-6" "" "" "XLEN-7" "" "" "" "" "13" "12" "11" "10" "9" "8" "7" "6" "5" "" "" "" "0"]})
-(draw-box (text "type" {:font-size 20}) {:span 5})
-(draw-box (text "dmode" {:font-size 20}) {:span 3})
-(draw-box (text "hit" {:font-size 20}) {:span 3})
-(draw-box (text "0" {:font-size 20}) {:span 7})
-(draw-box (text "vs" {:font-size 20}) {:span 1})
-(draw-box (text "vu" {:font-size 20}) {:span 1})
-(draw-box (text "0" {:font-size 20}) {:span 1})
-(draw-box (text "m" {:font-size 20}) {:span 1})
-(draw-box (text "0" {:font-size 20}) {:span 1})
-(draw-box (text "s" {:font-size 20}) {:span 1})
-(draw-box (text "u" {:font-size 20}) {:span 1})
-(draw-box (text "action" {:font-size 20}) {:span 5})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "XLEN - 19" {:span 7 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "6" {:span 5 :borders {}})
-```
+![寄存器位域图：5.7.15 异常触发器（etrigger，位于 0x7a1）](RISC-V调试规范v1.0-中文学习版.assets/位域图-59.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -3175,26 +2023,7 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 该 CSR 是读/写的。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 31)
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "XLEN-4" "" "" "XLEN-5" "" "" "XLEN-6" "" "" "XLEN-7" "" "" "23" "" "22" "" "21" "" "" "" "" "" "6" "5" "" "" "" "0"]})
-(draw-box (text "type" {:font-size 20}) {:span 5})
-(draw-box (text "dmode" {:font-size 20}) {:span 3})
-(draw-box (text "hit" {:font-size 20}) {:span 3})
-(draw-box (text "0" {:font-size 20}) {:span 5})
-(draw-box (text "intctl" {:font-size 20}) {:span 3})
-(draw-box (text "select" {:font-size 20}) {:span 7})
-(draw-box (text "action" {:font-size 20}) {:span 5})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "XLEN - 29" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "16" {:span 7 :borders {}})
-(draw-box "6" {:span 5 :borders {}})
-```
+![寄存器位域图：5.7.16 外部触发器（tmexttrigger，位于 0x7a1）](RISC-V调试规范v1.0-中文学习版.assets/位域图-60.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -3222,24 +2051,7 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 该 CSR 是读/写的。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 28)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "26" "25" "" "" "" "23" "22" "" "" "" "20" "19" "" "18" "17" "" "" "" "" "" "2" "1" "" "0"]})
-(draw-box (text "mhvalue" {:font-size 20}) {:span 5})
-(draw-box (text "mhselect" {:font-size 20}) {:span 5})
-(draw-box (text "0" {:font-size 20}) {:span 5})
-(draw-box (text "sbytemask" {:font-size 20}) {:span 3})
-(draw-box (text "svalue" {:font-size 20}) {:span 7})
-(draw-box (text "sselect" {:font-size 20}) {:span 3})
-(draw-box "6" {:span 5 :borders {}})
-(draw-box "3" {:span 5 :borders {}})
-(draw-box "3" {:span 5 :borders {}})
-(draw-box "2" {:span 3 :borders {}})
-(draw-box "16" {:span 7 :borders {}})
-(draw-box "2" {:span 3 :borders {}})
-```
+![寄存器位域图：5.7.17 触发额外 (RV32)（textra32，位于 0x7a3）](RISC-V调试规范v1.0-中文学习版.assets/位域图-61.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -3261,26 +2073,7 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 该 CSR 是读/写的。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 37)
-(draw-column-headers {:font-size 15 :height 17 :labels ["63" "" "" "" "" "" "51" "50" "" "" "" "48" "47" "" "" "" "40" "39" "" "" "" "36" "35" "" "34" "33" "" "" "" "" "" "" "" "2" "1" "" "0"]})
-(draw-box (text "mhvalue" {:font-size 20}) {:span 7})
-(draw-box (text "mhselect" {:font-size 20}) {:span 5})
-(draw-box (text "0" {:font-size 20}) {:span 5})
-(draw-box (text "sbytemask" {:font-size 20}) {:span 5})
-(draw-box (text "0" {:font-size 20}) {:span 3})
-(draw-box (text "svalue" {:font-size 20}) {:span 9})
-(draw-box (text "sselect" {:font-size 20}) {:span 3})
-(draw-box "13" {:span 7 :borders {}})
-(draw-box "3" {:span 5 :borders {}})
-(draw-box "8" {:span 5 :borders {}})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "2" {:span 3 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "2" {:span 3 :borders {}})
-```
+![寄存器位域图：5.7.18 触发额外 (RV64)（textra64，位于 0x7a3）](RISC-V调试规范v1.0-中文学习版.assets/位域图-62.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -3337,22 +2130,7 @@ JTAG 指 IEEE Std 1149.1-2013。它是一个定义测试逻辑的标准，可以
 
 整个寄存器是只读的。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "28" "27" "" "" "" "" "" "12" "11" "" "" "" "" "" "1" "0" "" "" "" ""]})
-(draw-box (text "Version" {:font-size 20}) {:span 5})
-(draw-box (text "PartNumber" {:font-size 20}) {:span 7})
-(draw-box (text "ManufId" {:font-size 20}) {:span 7})
-(draw-box (text "1" {:font-size 20}) {:span 1})
-(draw-box "" {:span 4 :borders {}})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "16" {:span 7 :borders {}})
-(draw-box "11" {:span 7 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "" {:span 4 :borders {}})
-```
+![寄存器位域图：6.1.3 `IDCODE`（位于 0x01）](RISC-V调试规范v1.0-中文学习版.assets/位域图-63.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -3364,30 +2142,7 @@ JTAG 指 IEEE Std 1149.1-2013。它是一个定义测试逻辑的标准，可以
 
 该寄存器的大小在未来版本中将保持不变，以便调试器始终可以确定 DTM 的版本。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 39)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "21" "20" "" "" "" "18" "" "" "17" "" "" "" "16" "" "15" "14" "" "" "" "12" "11" "" "10" "9" "" "" "" "4" "3" "" "" "" "0"]})
-(draw-box (text "0" {:font-size 20}) {:span 7})
-(draw-box (text "errinfo" {:font-size 20}) {:span 5})
-(draw-box (text "dtmhardreset" {:font-size 20}) {:span 5})
-(draw-box (text "dmireset" {:font-size 20}) {:span 3})
-(draw-box (text "0" {:font-size 20}) {:span 1})
-(draw-box (text "idle" {:font-size 20}) {:span 5})
-(draw-box (text "dmistat" {:font-size 20}) {:span 3})
-(draw-box (text "abits" {:font-size 20}) {:span 5})
-(draw-box (text "version" {:font-size 20}) {:span 5})
-(draw-box "11" {:span 7 :borders {}})
-(draw-box "3" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "3" {:span 5 :borders {}})
-(draw-box "2" {:span 3 :borders {}})
-(draw-box "6" {:span 5 :borders {}})
-(draw-box "4" {:span 5 :borders {}})
-```
+![寄存器位域图：6.1.4 DTM 控制和状态（dtmcs，位于 0x10）](RISC-V调试规范v1.0-中文学习版.assets/位域图-64.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -3412,20 +2167,7 @@ JTAG 指 IEEE Std 1149.1-2013。它是一个定义测试逻辑的标准，可以
 > [!note]
 > 仍然进行中的状态是粘性的，以适应将多个扫描批处理在一起的调试器，这些扫描必须全部执行或一旦出现问题就停止。 例如，一系列扫描可以编写调试程序并执行它。如果其中一项写入失败但执行继续，则调试程序可能会挂起或产生其他意外的副作用。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "abits+33" "" "" "" "" "34" "33" "" "" "" "" "" "" "" "2" "1" "" "0" "" "" "" "" ""]})
-(draw-box (text "address" {:font-size 20}) {:span 7})
-(draw-box (text "data" {:font-size 20}) {:span 9})
-(draw-box (text "op" {:font-size 20}) {:span 3})
-(draw-box "" {:span 5 :borders {}})
-(draw-box "abits" {:span 7 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "2" {:span 3 :borders {}})
-(draw-box "" {:span 5 :borders {}})
-```
+![寄存器位域图：6.1.5 调试模块接口访问（dmi，位于 0x11）](RISC-V调试规范v1.0-中文学习版.assets/位域图-65.svg)
 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
@@ -3439,16 +2181,7 @@ JTAG 指 IEEE Std 1149.1-2013。它是一个定义测试逻辑的标准，可以
 
 整个寄存器是只读的。
 
-```text
-(def row-height 45)
-(def row-header-fn nil)
-(def boxes-per-row 24)
-(draw-column-headers {:font-size 15 :height 17 :labels ["0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "0" {:font-size 20}) {:span 1})
-(draw-box "" {:span 23 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "" {:span 23 :borders {}})
-```
+![寄存器位域图：6.1.6 `BYPASS`（位于 0x1f）](RISC-V调试规范v1.0-中文学习版.assets/位域图-66.svg)
 
 #### 6.1.7 JTAG 连接器
 
@@ -3456,7 +2189,7 @@ JTAG 指 IEEE Std 1149.1-2013。它是一个定义测试逻辑的标准，可以
 
 为了方便获取调试硬件，本规范建议使用与 MIPI-10 .05 英寸连接器规范兼容的连接器，如 MIPI 调试和跟踪连接器建议，版本 1.20，2021 年 7 月 2 日所述。
 
-该连接器具有 0.05 英寸间距、镀金公头和 0.016 英寸厚的硬化铜或铍青铜方柱（SAMTEC FTSH 或同等产品）。母连接器兼容\\20\mu m\\金连接器。
+该连接器具有 0.05 英寸间距、镀金公头和 0.016 英寸厚的硬化铜或铍青铜方柱（SAMTEC FTSH 或同等产品）。母连接器兼容$20\,\mu\mathrm{m}$金连接器。
 
 从上方查看公头（引脚指向您的眼睛），目标的连接器看起来与 [表 17](#tab:mipiten) 中的一样。 [表 18](#tab:pinout) 中描述了每个引脚的功能。
 
@@ -3629,17 +2362,17 @@ MIPI-10 连接器应该为所有现代硬件提供充足的信号。如果设计
 
 使用抽象命令读取`s0`：
 
-|欧普|地址 |价值|评论 |
-|----|----|----|----|
-|写 | [command](#dm-command) | [aarsize](#accessregister-aarsize)\\=2\\，[transfer](#accessregister-transfer)，[regno](#accessregister-regno) = 0x1008 |阅读 `s0` |
-|阅读 | [data0](#dm-data0) | \-|返回 `s0` | 中的值
+| 操作 | 地址 | 值 | 说明 |
+| --- | --- | --- | --- |
+| 写入 | [command](#dm-command) | [aarsize](#accessregister-aarsize)=2，[transfer](#accessregister-transfer)，[regno](#accessregister-regno) = 0x1008 | 读取 `s0` |
+| 读取 | [data0](#dm-data0) | — | 返回 `s0`中的值 |
 
 使用抽象命令写入`mstatus`：
 
-|欧普|地址 |价值|评论 |
-|----|----|----|----|
-|写 | [data0](#dm-data0) |新价值|  |
-|写 | [command](#dm-command) | [aarsize](#accessregister-aarsize)\\=2\\、[transfer](#accessregister-transfer)、[write](#accessregister-write)、[regno](#accessregister-regno) = 0x300 |写 `mstatus` |
+| 操作 | 地址 | 值 | 说明 |
+| --- | --- | --- | --- |
+| 写入 | [data0](#dm-data0) | 新值 |  |
+| 写入 | [command](#dm-command) | [aarsize](#accessregister-aarsize)=2、[transfer](#accessregister-transfer)、[write](#accessregister-write)、[regno](#accessregister-regno) = 0x300 | 写 `mstatus` |
 
 ##### B.2.6.2 使用程序缓冲区
 
@@ -3647,22 +2380,22 @@ MIPI-10 连接器应该为所有现代硬件提供充足的信号。如果设计
 
 使用程序缓冲区写入 `mstatus`：
 
-|欧普|地址 |价值|评论 |
-|----|----|----|----|
-|写 | [progbuf0](#dm-progbuf0) | `csrw s0, MSTATUS` |  |
-|写 | `progbuf1` | `ebreak` |  |
-|写 | [data0](#dm-data0) |新价值|  |
-|写 | [command](#dm-command) | [aarsize](#accessregister-aarsize)\\=2\\、[postexec](#accessregister-postexec)、[transfer](#accessregister-transfer)、[write](#accessregister-write)、[regno](#accessregister-regno) = 0x1008 |写入`s0`，然后执行程序缓冲区|
+| 操作 | 地址 | 值 | 说明 |
+| --- | --- | --- | --- |
+| 写入 | [progbuf0](#dm-progbuf0) | `csrw s0, MSTATUS` |  |
+| 写入 | `progbuf1` | `ebreak` |  |
+| 写入 | [data0](#dm-data0) | 新值 |  |
+| 写入 | [command](#dm-command) | [aarsize](#accessregister-aarsize)=2、[postexec](#accessregister-postexec)、[transfer](#accessregister-transfer)、[write](#accessregister-write)、[regno](#accessregister-regno) = 0x1008 | 写入`s0`，然后执行程序缓冲区 |
 
 使用程序缓冲区读取 `f1`：
 
-|欧普|地址 |价值|评论 |
-|----|----|----|----|
-|写 | [progbuf0](#dm-progbuf0) | {`fmv.x.s s0, f1`} |  |
-|写 | `progbuf1` | `ebreak` |  |
-|写 | [command](#dm-command) | [postexec](#accessregister-postexec) |执行程序缓冲区|
-|写 | [command](#dm-command) | [transfer](#accessregister-transfer)、[regno](#accessregister-regno) = 0x1008 |阅读 `s0` |
-|阅读 | [data0](#dm-data0) | \-|返回 `f1` | 中的值
+| 操作 | 地址 | 值 | 说明 |
+| --- | --- | --- | --- |
+| 写入 | [progbuf0](#dm-progbuf0) | {`fmv.x.s s0, f1`} |  |
+| 写入 | `progbuf1` | `ebreak` |  |
+| 写入 | [command](#dm-command) | [postexec](#accessregister-postexec) | 执行程序缓冲区 |
+| 写入 | [command](#dm-command) | [transfer](#accessregister-transfer)、[regno](#accessregister-regno) = 0x1008 | 读取 `s0` |
+| 读取 | [data0](#dm-data0) | — | 返回 `f1`中的值 |
 
 #### B.2.7 读取记忆
 
@@ -3672,23 +2405,23 @@ MIPI-10 连接器应该为所有现代硬件提供充足的信号。如果设计
 
 使用系统总线访问从内存中读取一个字：
 
-|欧普|地址 |价值|评论 |
-|----|----|----|----|
-|写 | [sbcs](#dm-sbcs) | [sbaccess](#sbcs-sbaccess)\\=2\\，[sbreadonaddr](#sbcs-sbreadonaddr) |设置 |
-|写 | [sbaddress0](#dm-sbaddress0) |地址 |  |
-|阅读 | [sbdata0](#dm-sbdata0) | \-|从内存中读取的值 |
+| 操作 | 地址 | 值 | 说明 |
+| --- | --- | --- | --- |
+| 写入 | [sbcs](#dm-sbcs) | [sbaccess](#sbcs-sbaccess)=2，[sbreadonaddr](#sbcs-sbreadonaddr) | 设置 |
+| 写入 | [sbaddress0](#dm-sbaddress0) | 地址 |  |
+| 读取 | [sbdata0](#dm-sbdata0) | — | 从内存中读取的值 |
 
 使用系统总线访问读取内存块：
 
-|欧普|地址 |价值|评论 |
-|----|----|----|----|
-|写 | [sbcs](#dm-sbcs) | [sbaccess](#sbcs-sbaccess)\\=2\\、[sbreadonaddr](#sbcs-sbreadonaddr)、[sbreadondata](#sbcs-sbreadondata)、[sbautoincrement](#sbcs-sbautoincrement) |打开自动读取和自动增量 |
-|写 | [sbaddress0](#dm-sbaddress0) |地址 |写入地址触发读取并递增 |
-|阅读 | [sbdata0](#dm-sbdata0) | \-|从内存中读取的值 |
-|阅读 | [sbdata0](#dm-sbdata0) | \-|从内存中读取的下一个值 |
+| 操作 | 地址 | 值 | 说明 |
+| --- | --- | --- | --- |
+| 写入 | [sbcs](#dm-sbcs) | [sbaccess](#sbcs-sbaccess)=2、[sbreadonaddr](#sbcs-sbreadonaddr)、[sbreadondata](#sbcs-sbreadondata)、[sbautoincrement](#sbcs-sbautoincrement) | 打开自动读取和自动增量 |
+| 写入 | [sbaddress0](#dm-sbaddress0) | 地址 | 写入地址触发读取并递增 |
+| 读取 | [sbdata0](#dm-sbdata0) | — | 从内存中读取的值 |
+| 读取 | [sbdata0](#dm-sbdata0) | — | 从内存中读取的下一个值 |
 | …​ | …​ | …​ | …​ |
-|写 | [sbcs](#dm-sbcs) | 0 |禁用自动阅读 |
-|阅读 | [sbdata0](#dm-sbdata0) | \-|获取从内存中读取的最后一个值。 |
+| 写入 | [sbcs](#dm-sbcs) | 0 | 禁用自动读取 |
+| 读取 | [sbdata0](#dm-sbdata0) | — | 获取从内存中读取的最后一个值。 |
 
 ##### B.2.7.2 使用程序缓冲区
 
@@ -3696,31 +2429,31 @@ MIPI-10 连接器应该为所有现代硬件提供充足的信号。如果设计
 
 使用程序缓冲区从内存中读取一个字：
 
-|欧普|地址 |价值|评论 |
-|----|----|----|----|
-|写 | [progbuf0](#dm-progbuf0) | `lw s0, 0(s0)` |  |
-|写 | `progbuf1` | `ebreak` |  |
-|写 | [data0](#dm-data0) |地址 |  |
-|写 | [command](#dm-command) | [transfer](#accessregister-transfer)、[write](#accessregister-write)、[postexec](#accessregister-postexec)、[regno](#accessregister-regno) = 0x1008写入`s0`，然后执行程序缓冲区|
-|写 | [command](#dm-command) | [regno](#accessregister-regno) = 0x1008 |阅读 `s0` |
-|阅读 | [data0](#dm-data0) | \-|从内存中读取的值 |
+| 操作 | 地址 | 值 | 说明 |
+| --- | --- | --- | --- |
+| 写入 | [progbuf0](#dm-progbuf0) | `lw s0, 0(s0)` |  |
+| 写入 | `progbuf1` | `ebreak` |  |
+| 写入 | [data0](#dm-data0) | 地址 |  |
+| 写入 | [command](#dm-command) | [transfer](#accessregister-transfer)、[write](#accessregister-write)、[postexec](#accessregister-postexec)、[regno](#accessregister-regno) = 0x1008 | 写入`s0`，然后执行程序缓冲区 |
+| 写入 | [command](#dm-command) | [regno](#accessregister-regno) = 0x1008 | 读取 `s0` |
+| 读取 | [data0](#dm-data0) | — | 从内存中读取的值 |
 
 使用程序缓冲区读取内存块：
 
-|欧普|地址 |价值|评论 |
-|----|----|----|----|
-|写 | [progbuf0](#dm-progbuf0) | `lw s1, 0(s0)` |  |
-|写 | `progbuf1` | `addi s0, s1, 4` |  |
-|写 | `progbuf2` | `ebreak` |  |
-|写 | [data0](#dm-data0) |地址 |  |
-|写 | [command](#dm-command) | [transfer](#accessregister-transfer)、[write](#accessregister-write)、[postexec](#accessregister-postexec)、[regno](#accessregister-regno) = 0x1008写入`s0`，然后执行程序缓冲区|
-|写 | [command](#dm-command) | [postexec](#accessregister-postexec)、[regno](#accessregister-regno) = 0x1009 |读取`s1`，然后执行程序缓冲区|
-|写 | [abstractauto](#dm-abstractauto) | [autoexecdata](#abstractauto-autoexecdata)\[0\] |设置 [autoexecdata](#abstractauto-autoexecdata)\[0\] |
-|阅读 | [data0](#dm-data0) | \-|获取从内存中读取的值，然后执行程序缓冲区 |
-|阅读 | [data0](#dm-data0) | \-|获取从内存中读取的下一个值，然后执行程序缓冲区 |
+| 操作 | 地址 | 值 | 说明 |
+| --- | --- | --- | --- |
+| 写入 | [progbuf0](#dm-progbuf0) | `lw s1, 0(s0)` |  |
+| 写入 | `progbuf1` | `addi s0, s1, 4` |  |
+| 写入 | `progbuf2` | `ebreak` |  |
+| 写入 | [data0](#dm-data0) | 地址 |  |
+| 写入 | [command](#dm-command) | [transfer](#accessregister-transfer)、[write](#accessregister-write)、[postexec](#accessregister-postexec)、[regno](#accessregister-regno) = 0x1008 | 写入`s0`，然后执行程序缓冲区 |
+| 写入 | [command](#dm-command) | [postexec](#accessregister-postexec)、[regno](#accessregister-regno) = 0x1009 | 读取`s1`，然后执行程序缓冲区 |
+| 写入 | [abstractauto](#dm-abstractauto) | [autoexecdata](#abstractauto-autoexecdata)[0] | 设置 [autoexecdata](#abstractauto-autoexecdata)[0] |
+| 读取 | [data0](#dm-data0) | — | 获取从内存中读取的值，然后执行程序缓冲区 |
+| 读取 | [data0](#dm-data0) | — | 获取从内存中读取的下一个值，然后执行程序缓冲区 |
 | …​ | …​ | …​ | …​ |
-|写 | [abstractauto](#dm-abstractauto) | 0 |清除 [autoexecdata](#abstractauto-autoexecdata)\[0\] |
-|阅读 | [data0](#dm-data0) | \-|获取从内存中读取的最后一个值。 |
+| 写入 | [abstractauto](#dm-abstractauto) | 0 | 清除 [autoexecdata](#abstractauto-autoexecdata)[0] |
+| 读取 | [data0](#dm-data0) | — | 获取从内存中读取的最后一个值。 |
 
 ##### B.2.7.3 使用抽象内存访问
 
@@ -3728,23 +2461,23 @@ MIPI-10 连接器应该为所有现代硬件提供充足的信号。如果设计
 
 使用抽象内存访问从内存中读取一个字：
 
-|欧普|地址 |价值|评论 |
-|----|----|----|----|
-|写 | `data1` |地址 |  |
-|写 | [command](#dm-command) | cmdtype=2, [aamsize](#accessmemory-aamsize)\\=2\\ |  |
-|阅读 | [data0](#dm-data0) | \-|从内存中读取的值 |
+| 操作 | 地址 | 值 | 说明 |
+| --- | --- | --- | --- |
+| 写入 | `data1` | 地址 |  |
+| 写入 | [command](#dm-command) | cmdtype=2, [aamsize](#accessmemory-aamsize)=2 |  |
+| 读取 | [data0](#dm-data0) | — | 从内存中读取的值 |
 
 使用抽象内存访问读取内存块：
 
-|欧普|地址 |价值|评论 |
-|----|----|----|----|
-|写 | [abstractauto](#dm-abstractauto) | 1 |访问[data0](#dm-data0)时重新执行命令 |
-|写 | `data1` |地址 |  |
-|写 | [command](#dm-command) | cmdtype=2, [aamsize](#accessmemory-aamsize)\\=2\\, [aampostincrement](#accessmemory-aampostincrement)\\=1\\ |  |
-|阅读 | [data0](#dm-data0) | \-|读取值，并触发读取下一个地址|
+| 操作 | 地址 | 值 | 说明 |
+| --- | --- | --- | --- |
+| 写入 | [abstractauto](#dm-abstractauto) | 1 | 访问[data0](#dm-data0)时重新执行命令 |
+| 写入 | `data1` | 地址 |  |
+| 写入 | [command](#dm-command) | cmdtype=2, [aamsize](#accessmemory-aamsize)=2, [aampostincrement](#accessmemory-aampostincrement)=1 |  |
+| 读取 | [data0](#dm-data0) | — | 读取值，并触发读取下一个地址 |
 | …​ | …​ | …​ | …​ |
-|写 | [abstractauto](#dm-abstractauto) | 0 |禁用自动执行 |
-|阅读 | [data0](#dm-data0) | \-|获取从内存中读取的最后一个值。 |
+| 写入 | [abstractauto](#dm-abstractauto) | 0 | 禁用自动执行 |
+| 读取 | [data0](#dm-data0) | — | 获取从内存中读取的最后一个值。 |
 
 #### B.2.8 写入记忆
 
@@ -3754,22 +2487,22 @@ MIPI-10 连接器应该为所有现代硬件提供充足的信号。如果设计
 
 使用系统总线访问将一个字写入存储器：
 
-|欧普|地址 |价值|评论 |
-|----|----|----|----|
-|写 | [sbcs](#dm-sbcs) | [sbaccess](#sbcs-sbaccess)\\=2\\ |配置访问大小 |
-|写 | [sbaddress0](#dm-sbaddress0) |地址 |  |
-|写 | [sbdata0](#dm-sbdata0) |价值|  |
+| 操作 | 地址 | 值 | 说明 |
+| --- | --- | --- | --- |
+| 写入 | [sbcs](#dm-sbcs) | [sbaccess](#sbcs-sbaccess)=2 | 配置访问大小 |
+| 写入 | [sbaddress0](#dm-sbaddress0) | 地址 |  |
+| 写入 | [sbdata0](#dm-sbdata0) | 值 |  |
 
 使用系统总线访问写入内存块：
 
-|欧普|地址 |价值|评论 |
-|----|----|----|----|
-|写 | [sbcs](#dm-sbcs) | [sbaccess](#sbcs-sbaccess)\\=2\\，[sbautoincrement](#sbcs-sbautoincrement) |开启自动增量|
-|写 | [sbaddress0](#dm-sbaddress0) |地址 |  |
-|写 | [sbdata0](#dm-sbdata0) |值 0 |  |
-|写 | [sbdata0](#dm-sbdata0) |值1 |  |
+| 操作 | 地址 | 值 | 说明 |
+| --- | --- | --- | --- |
+| 写入 | [sbcs](#dm-sbcs) | [sbaccess](#sbcs-sbaccess)=2，[sbautoincrement](#sbcs-sbautoincrement) | 开启自动增量 |
+| 写入 | [sbaddress0](#dm-sbaddress0) | 地址 |  |
+| 写入 | [sbdata0](#dm-sbdata0) | 值 0 |  |
+| 写入 | [sbdata0](#dm-sbdata0) | 值1 |  |
 | …​ | …​ | …​ | …​ |
-|写 | [sbdata0](#dm-sbdata0) |值N |  |
+| 写入 | [sbdata0](#dm-sbdata0) | 值N |  |
 
 ##### B.2.8.2 使用程序缓冲区
 
@@ -3777,31 +2510,31 @@ MIPI-10 连接器应该为所有现代硬件提供充足的信号。如果设计
 
 使用程序缓冲区将一个字写入内存：
 
-|欧普|地址 |价值|评论 |
-|----|----|----|----|
-|写 | [progbuf0](#dm-progbuf0) | `sw s1, 0(s0)` |  |
-|写 | `progbuf1` | `ebreak` |  |
-|写 | [data0](#dm-data0) |地址 |  |
-|写 | [command](#dm-command) | [transfer](#accessregister-transfer)、[write](#accessregister-write)、[regno](#accessregister-regno) = 0x1008 |写 `s0` |
-|写 | [data0](#dm-data0) |价值|  |
-|写 | [command](#dm-command) | [transfer](#accessregister-transfer)、[write](#accessregister-write)、[postexec](#accessregister-postexec)、[regno](#accessregister-regno) = 0x1009 |写入`s1`，然后执行程序缓冲区|
+| 操作 | 地址 | 值 | 说明 |
+| --- | --- | --- | --- |
+| 写入 | [progbuf0](#dm-progbuf0) | `sw s1, 0(s0)` |  |
+| 写入 | `progbuf1` | `ebreak` |  |
+| 写入 | [data0](#dm-data0) | 地址 |  |
+| 写入 | [command](#dm-command) | [transfer](#accessregister-transfer)、[write](#accessregister-write)、[regno](#accessregister-regno) = 0x1008 | 写 `s0` |
+| 写入 | [data0](#dm-data0) | 值 |  |
+| 写入 | [command](#dm-command) | [transfer](#accessregister-transfer)、[write](#accessregister-write)、[postexec](#accessregister-postexec)、[regno](#accessregister-regno) = 0x1009 | 写入`s1`，然后执行程序缓冲区 |
 
 使用程序缓冲区写入内存块：
 
-|欧普|地址 |价值|评论 |
-|----|----|----|----|
-|写 | [progbuf0](#dm-progbuf0) | `sw s1, 0(s0)` |  |
-|写 | `progbuf1` | `addi s0, s1, 4` |  |
-|写 | `progbuf2` | `ebreak` |  |
-|写 | [data0](#dm-data0) |地址 |  |
-|写 | [command](#dm-command) | [transfer](#accessregister-transfer)、[write](#accessregister-write)、[regno](#accessregister-regno) = 0x1008 |写 `s0` |
-|写 | [data0](#dm-data0) |值 0 |  |
-|写 | [command](#dm-command) | [transfer](#accessregister-transfer)、[write](#accessregister-write)、[postexec](#accessregister-postexec)、[regno](#accessregister-regno) = 0x1009 |写入`s1`，然后执行程序缓冲区|
-|写 | [abstractauto](#dm-abstractauto) | [autoexecdata](#abstractauto-autoexecdata)\[0\] |设置 [autoexecdata](#abstractauto-autoexecdata)\[0\] |
-|写 | [data0](#dm-data0) |值1 |  |
+| 操作 | 地址 | 值 | 说明 |
+| --- | --- | --- | --- |
+| 写入 | [progbuf0](#dm-progbuf0) | `sw s1, 0(s0)` |  |
+| 写入 | `progbuf1` | `addi s0, s1, 4` |  |
+| 写入 | `progbuf2` | `ebreak` |  |
+| 写入 | [data0](#dm-data0) | 地址 |  |
+| 写入 | [command](#dm-command) | [transfer](#accessregister-transfer)、[write](#accessregister-write)、[regno](#accessregister-regno) = 0x1008 | 写 `s0` |
+| 写入 | [data0](#dm-data0) | 值 0 |  |
+| 写入 | [command](#dm-command) | [transfer](#accessregister-transfer)、[write](#accessregister-write)、[postexec](#accessregister-postexec)、[regno](#accessregister-regno) = 0x1009 | 写入`s1`，然后执行程序缓冲区 |
+| 写入 | [abstractauto](#dm-abstractauto) | [autoexecdata](#abstractauto-autoexecdata)[0] | 设置 [autoexecdata](#abstractauto-autoexecdata)[0] |
+| 写入 | [data0](#dm-data0) | 值1 |  |
 | …​ | …​ | …​ | …​ |
-|写 | [data0](#dm-data0) |值N |  |
-|写 | [abstractauto](#dm-abstractauto) | 0 |清除 [autoexecdata](#abstractauto-autoexecdata)\[0\] |
+| 写入 | [data0](#dm-data0) | 值N |  |
+| 写入 | [abstractauto](#dm-abstractauto) | 0 | 清除 [autoexecdata](#abstractauto-autoexecdata)[0] |
 
 ##### B.2.8.3 使用抽象内存访问
 
@@ -3809,25 +2542,25 @@ MIPI-10 连接器应该为所有现代硬件提供充足的信号。如果设计
 
 使用抽象内存访问将一个字写入内存：
 
-|欧普|地址 |价值|评论 |
-|----|----|----|----|
-|写 | `data1` |地址 |  |
-|写 | [data0](#dm-data0) |价值|  |
-|写 | [command](#dm-command) | cmdtype=2，[aamsize](#accessmemory-aamsize)=2，写入=1 |  |
+| 操作 | 地址 | 值 | 说明 |
+| --- | --- | --- | --- |
+| 写入 | `data1` | 地址 |  |
+| 写入 | [data0](#dm-data0) | 值 |  |
+| 写入 | [command](#dm-command) | cmdtype=2，[aamsize](#accessmemory-aamsize)=2，写入=1 |  |
 
 使用抽象内存访问写入内存块：
 
-|欧普|地址 |价值|评论 |
-|----|----|----|----|
-|写 | `data1` |地址 |  |
-|写 | [data0](#dm-data0) |值 0 |  |
-|写 | [command](#dm-command) | cmdtype=2，[aamsize](#accessmemory-aamsize)\\=2\\，写入\\=1\\，[aampostincrement](#accessmemory-aampostincrement)\\=1\\ |  |
-|写 | [abstractauto](#dm-abstractauto) | 1 |访问[data0](#dm-data0)时重新执行命令 |
-|写 | [data0](#dm-data0) |值1 |  |
-|写 | [data0](#dm-data0) |值2 |  |
+| 操作 | 地址 | 值 | 说明 |
+| --- | --- | --- | --- |
+| 写入 | `data1` | 地址 |  |
+| 写入 | [data0](#dm-data0) | 值 0 |  |
+| 写入 | [command](#dm-command) | cmdtype=2，[aamsize](#accessmemory-aamsize)=2，写入=1，[aampostincrement](#accessmemory-aampostincrement)=1 |  |
+| 写入 | [abstractauto](#dm-abstractauto) | 1 | 访问[data0](#dm-data0)时重新执行命令 |
+| 写入 | [data0](#dm-data0) | 值1 |  |
+| 写入 | [data0](#dm-data0) | 值2 |  |
 | …​ | …​ | …​ | …​ |
-|写 | [data0](#dm-data0) |值N |  |
-|写 | [abstractauto](#dm-abstractauto) | 0 |禁用自动执行 |
+| 写入 | [data0](#dm-data0) | 值N |  |
+| 写入 | [abstractauto](#dm-abstractauto) | 0 | 禁用自动执行 |
 
 #### B.2.9 触发器
 
@@ -3886,30 +2619,30 @@ MIPI-10 连接器应该为所有现代硬件提供充足的信号。如果设计
 
 将 hart 停止最短时间以执行单次内存写入：
 
-|欧普|地址 |价值|评论 |
-|----|----|----|----|
-|写 | [progbuf0](#dm-progbuf0) | `transfer arg2, s0` |保存 `s0` |
-|写 | `progbuf1` | `transfer s0, arg0` |读取第一个参数（地址）|
-|写 | `progbuf2` | `transfer arg0, s1` |保存 `s1` |
-|写 | `progbuf3` | `transfer s1, arg1` |读取第二个参数（数据）|
-|写 | `progbuf4` | `sw s1, 0(s0)` |  |
-|写 | `progbuf5` | `transfer s1, arg0` |恢复`s1` |
-|写 | `progbuf6` | `transfer s0, arg2` |恢复`s0` |
-|写 | `progbuf7` | `ebreak` |  |
-|写 | [data0](#dm-data0) |地址 |  |
-|写 | `data1` |数据|  |
-|写 | [command](#dm-command) | 0x10000000 |执行快速访问 |
+| 操作 | 地址 | 值 | 说明 |
+| --- | --- | --- | --- |
+| 写入 | [progbuf0](#dm-progbuf0) | `transfer arg2, s0` | 保存 `s0` |
+| 写入 | `progbuf1` | `transfer s0, arg0` | 读取第一个参数（地址） |
+| 写入 | `progbuf2` | `transfer arg0, s1` | 保存 `s1` |
+| 写入 | `progbuf3` | `transfer s1, arg1` | 读取第二个参数（数据） |
+| 写入 | `progbuf4` | `sw s1, 0(s0)` |  |
+| 写入 | `progbuf5` | `transfer s1, arg0` | 恢复`s1` |
+| 写入 | `progbuf6` | `transfer s0, arg2` | 恢复`s0` |
+| 写入 | `progbuf7` | `ebreak` |  |
+| 写入 | [data0](#dm-data0) | 地址 |  |
+| 写入 | `data1` | 数据 |  |
+| 写入 | [command](#dm-command) | 0x10000000 | 执行快速访问 |
 
 这显示了设置 [m](#mcontrol-m) 位以在 M 模式下启用硬件断点的示例。之前可以使用类似的快速访问指令来配置此处启用的触发器：
 
-|欧普|地址 |价值|评论 |
-|----|----|----|----|
-|写 | [progbuf0](#dm-progbuf0) | `transfer arg0, s0` |保存 `s0` |
-|写 | `progbuf1` | `li s0, (1 << 6)` |形成 [m](#mcontrol-m) 位的掩码 |
-|写 | `progbuf2` | `csrrs x0, tdata1, s0` |将掩码应用到[mcontrol](#csr-mcontrol) |
-|写 | `progbuf3` | `transfer s0, arg2` |恢复`s0` |
-|写 | `progbuf4` | `ebreak` |  |
-|写 | [command](#dm-command) | 0x10000000 |执行快速访问 |
+| 操作 | 地址 | 值 | 说明 |
+| --- | --- | --- | --- |
+| 写入 | [progbuf0](#dm-progbuf0) | `transfer arg0, s0` | 保存 `s0` |
+| 写入 | `progbuf1` | `li s0, (1 << 6)` | 形成 [m](#mcontrol-m) 位的掩码 |
+| 写入 | `progbuf2` | `csrrs x0, tdata1, s0` | 将掩码应用到[mcontrol](#csr-mcontrol) |
+| 写入 | `progbuf3` | `transfer s0, arg2` | 恢复`s0` |
+| 写入 | `progbuf4` | `ebreak` |  |
+| 写入 | [command](#dm-command) | 0x10000000 | 执行快速访问 |
 
 ### B.3 本机调试器实现
 
