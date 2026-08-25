@@ -180,6 +180,9 @@ TCK 域：下次 Capture-DR / Shift-DR
         └─ 返回上一笔响应
 ~~~
 
+![[RISC-V & CPU/DM/DM的设计与实现.assets/图05-DTM-DMI事务状态机.png|1200]]
+<div align="center">图 4．JTAG DTM 的单笔 DMI 事务状态机</div>
+
 对于异步 TCK，单比特握手可使用双触发器同步与请求翻转位；多位地址和数据应在源域保持稳定到接收确认，或使用异步 FIFO。只对状态位做同步、却让多位数据直接跨时钟域，会产生难以复现的错误。
 
 ### 4.2 DM 寄存器与命令执行器
@@ -228,6 +231,9 @@ RESUME_REQUESTED
   ▼
 RUNNING
 ~~~
+
+![[RISC-V & CPU/DM/DM的设计与实现.assets/图04-运行控制状态机.png|1200]]
+<div align="center">图 5．DM 与 hart 的运行控制状态机</div>
 
 实现要点如下。
 
@@ -375,6 +381,9 @@ ebreak                          # 返回暂停循环
                                                 OpenOCD
 ~~~
 
+![[RISC-V & CPU/DM/DM的设计与实现.assets/图06-ProgramBuffer访存数据流.png|1200]]
+<div align="center">图 6．无 SBA 时的 Program Buffer 访存数据流</div>
+
 这种方式有三个重要限制。
 
 1. hart 必须先暂停，访问会改变 CPU 的执行现场，因此保存和恢复寄存器不可省略。
@@ -462,6 +471,9 @@ SBA 控制寄存器 ──► SBA 事务状态机 ──► AXI AW/W/B 或 AR/R
   ▲                                           │
   └────────── sbdata0、sbbusy、sberror ◄──────┘
 ~~~
+
+![[RISC-V & CPU/DM/DM的设计与实现.assets/图07-SBA访问数据流.png|1200]]
+<div align="center">图 7．SBA 的系统总线访问数据流</div>
 
 调试存储窗口则相反：它通常是 SoC 总线的从设备，供 Debug Mode 下的 hart 读取 ROM、Data 和 Program Buffer。一个 DM 可以同时包含“Debug Memory 的从设备接口”和“SBA 的主设备接口”；两者功能完全不同，不能合并处理。
 

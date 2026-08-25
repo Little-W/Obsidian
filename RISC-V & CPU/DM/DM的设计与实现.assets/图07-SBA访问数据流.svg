@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <marker id="blue" markerUnits="userSpaceOnUse" markerWidth="15" markerHeight="15" refX="15" refY="7.5" orient="auto"><path d="M0,0 L15,7.5 L0,15 Z" fill="#1f5e98"/></marker>
+    <marker id="orange" markerUnits="userSpaceOnUse" markerWidth="15" markerHeight="15" refX="15" refY="7.5" orient="auto"><path d="M0,0 L15,7.5 L0,15 Z" fill="#d97706"/></marker>
+    <style>
+      .title { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 48px; font-weight: 700; fill: #15365b; }
+      .sub { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 26px; fill: #49627f; }
+      .head { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 32px; font-weight: 700; fill: #15365b; }
+      .text { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 25px; fill: #24496d; }
+      .blue { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 25px; font-weight: 700; fill: #1f5e98; }
+      .orange { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 25px; font-weight: 700; fill: #b45309; }
+    </style>
+  </defs>
+  <rect width="1920" height="1080" fill="#ffffff"/>
+  <text x="960" y="74" text-anchor="middle" class="title">SBA 的系统总线访问数据流</text>
+  <text x="960" y="116" text-anchor="middle" class="sub">SBA 由 DM 作为 AXI 主设备发起事务，不依赖 hart 执行 load/store</text>
+
+  <rect x="65" y="375" width="260" height="165" rx="22" fill="#e8f1fb" stroke="#1f5e98" stroke-width="5"/>
+  <text x="195" y="437" text-anchor="middle" class="head">OpenOCD</text>
+  <text x="195" y="482" text-anchor="middle" class="text">DMI 读写请求</text>
+
+  <rect x="450" y="285" width="370" height="345" rx="22" fill="#dff2f4" stroke="#1f5e98" stroke-width="5"/>
+  <text x="635" y="350" text-anchor="middle" class="head">DM 的 SBA 控制寄存器</text>
+  <rect x="510" y="395" width="250" height="50" rx="10" fill="#d9ebff" stroke="#1f5e98" stroke-width="3"/>
+  <rect x="510" y="470" width="250" height="50" rx="10" fill="#d9ebff" stroke="#1f5e98" stroke-width="3"/>
+  <rect x="510" y="545" width="250" height="50" rx="10" fill="#fff0c9" stroke="#1f5e98" stroke-width="3"/>
+  <text x="635" y="428" text-anchor="middle" class="text">sbaddress0</text>
+  <text x="635" y="503" text-anchor="middle" class="text">sbdata0</text>
+  <text x="635" y="578" text-anchor="middle" class="text">sbcs：sbbusy / sberror</text>
+
+  <rect x="975" y="375" width="300" height="165" rx="22" fill="#fff4d5" stroke="#d97706" stroke-width="5"/>
+  <text x="1125" y="437" text-anchor="middle" class="head">SBA 事务状态机</text>
+  <text x="1125" y="482" text-anchor="middle" class="text">地址、数据、大小与错误处理</text>
+
+  <rect x="1430" y="375" width="360" height="165" rx="22" fill="#edf4ff" stroke="#1f5e98" stroke-width="5"/>
+  <text x="1610" y="437" text-anchor="middle" class="head">AXI 与 SoC 从设备</text>
+  <text x="1610" y="482" text-anchor="middle" class="text">RAM / Flash / MMIO</text>
+
+  <path d="M325,430 L450,430" stroke="#1f5e98" stroke-width="7" fill="none" marker-end="url(#blue)"/>
+  <text x="387" y="395" text-anchor="middle" class="blue">DMI</text>
+  <path d="M820,430 L975,430" stroke="#d97706" stroke-width="7" fill="none" marker-end="url(#orange)"/>
+  <text x="897" y="395" text-anchor="middle" class="orange">启动读写</text>
+  <path d="M1275,430 L1430,430" stroke="#d97706" stroke-width="7" fill="none" marker-end="url(#orange)"/>
+  <text x="1352" y="350" text-anchor="middle" class="orange">AXI：AR/R 或 AW/W/B</text>
+
+  <path d="M1430,500 L1275,500" stroke="#1f5e98" stroke-width="7" fill="none" marker-end="url(#blue)"/>
+  <path d="M975,500 L820,500" stroke="#1f5e98" stroke-width="7" fill="none" marker-end="url(#blue)"/>
+  <path d="M450,500 L325,500" stroke="#1f5e98" stroke-width="7" fill="none" marker-end="url(#blue)"/>
+  <text x="915" y="680" text-anchor="middle" class="blue">读数据与总线错误：AXI → SBA → sbdata0 / sberror → DMI</text>
+
+  <rect x="130" y="730" width="1660" height="185" rx="18" fill="#fbfdff" stroke="#7fa5cb" stroke-width="3"/>
+  <text x="180" y="785" class="head">设计要求</text>
+  <text x="180" y="836" class="text">• 仅声明实际支持的 <tspan font-family="monospace">sbaccess8/16/32/64</tspan>。</text>
+  <text x="180" y="880" class="text">• AXI 的 DECERR、SLVERR、超时和对齐错误必须记录到 <tspan font-family="monospace">sberror</tspan>。</text>
+  <text x="1120" y="836" class="text">• 运行中访问会与 hart 竞争总线；需要仲裁策略。</text>
+  <text x="1120" y="880" class="text">• cache、DMA 与 MMIO 副作用由平台和调试器共同处理。</text>
+</svg>

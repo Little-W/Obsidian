@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <marker id="blue" markerUnits="userSpaceOnUse" markerWidth="15" markerHeight="15" refX="15" refY="7.5" orient="auto"><path d="M0,0 L15,7.5 L0,15 Z" fill="#1f5e98"/></marker>
+    <marker id="orange" markerUnits="userSpaceOnUse" markerWidth="15" markerHeight="15" refX="15" refY="7.5" orient="auto"><path d="M0,0 L15,7.5 L0,15 Z" fill="#d97706"/></marker>
+    <style>
+      .title { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 48px; font-weight: 700; fill: #15365b; }
+      .sub { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 26px; fill: #49627f; }
+      .head { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 32px; font-weight: 700; fill: #15365b; }
+      .text { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 25px; fill: #24496d; }
+      .blue { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 25px; font-weight: 700; fill: #1f5e98; }
+      .orange { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 25px; font-weight: 700; fill: #b45309; }
+    </style>
+  </defs>
+  <rect width="1920" height="1080" fill="#ffffff"/>
+  <text x="960" y="74" text-anchor="middle" class="title">无 SBA 时的 Program Buffer 访存数据流</text>
+  <text x="960" y="116" text-anchor="middle" class="sub">E1：progbufsize=4、无 Abstract Memory Command，全部内存访问由已暂停 hart 执行</text>
+
+  <rect x="70" y="375" width="270" height="170" rx="22" fill="#e8f1fb" stroke="#1f5e98" stroke-width="5"/>
+  <text x="205" y="438" text-anchor="middle" class="head">OpenOCD</text>
+  <text x="205" y="483" text-anchor="middle" class="text">写地址、数据与指令</text>
+  <text x="205" y="522" text-anchor="middle" class="text">读取 data0 返回值</text>
+
+  <rect x="485" y="300" width="350" height="320" rx="22" fill="#dff2f4" stroke="#1f5e98" stroke-width="5"/>
+  <text x="660" y="360" text-anchor="middle" class="head">DM / Debug Memory</text>
+  <rect x="540" y="400" width="240" height="55" rx="10" fill="#d9ebff" stroke="#1f5e98" stroke-width="3"/>
+  <rect x="540" y="478" width="240" height="55" rx="10" fill="#dff2f4" stroke="#1f5e98" stroke-width="3"/>
+  <rect x="540" y="556" width="240" height="38" rx="10" fill="#fff0c9" stroke="#1f5e98" stroke-width="3"/>
+  <text x="660" y="436" text-anchor="middle" class="text">data0 / data1</text>
+  <text x="660" y="514" text-anchor="middle" class="text">Program Buffer</text>
+  <text x="660" y="582" text-anchor="middle" class="text">postexec</text>
+
+  <rect x="1005" y="375" width="300" height="170" rx="22" fill="#fff4d5" stroke="#d97706" stroke-width="5"/>
+  <text x="1155" y="438" text-anchor="middle" class="head">hart</text>
+  <text x="1155" y="483" text-anchor="middle" class="text">GPR：s0 地址，s1 数据</text>
+  <text x="1155" y="522" text-anchor="middle" class="text">LSU 执行 load / store</text>
+
+  <rect x="1510" y="375" width="300" height="170" rx="22" fill="#edf4ff" stroke="#1f5e98" stroke-width="5"/>
+  <text x="1660" y="438" text-anchor="middle" class="head">目标存储或 MMIO</text>
+  <text x="1660" y="487" text-anchor="middle" class="text">hart 可访问的地址空间</text>
+
+  <path d="M340,430 L485,430" stroke="#1f5e98" stroke-width="7" fill="none" marker-end="url(#blue)"/>
+  <text x="412" y="395" text-anchor="middle" class="blue">DMI：data / progbuf</text>
+  <path d="M835,450 L1005,450" stroke="#d97706" stroke-width="7" fill="none" marker-end="url(#orange)"/>
+  <text x="920" y="415" text-anchor="middle" class="orange">Debug ROM 触发执行</text>
+  <path d="M1305,460 L1510,460" stroke="#d97706" stroke-width="7" fill="none" marker-end="url(#orange)"/>
+  <text x="1408" y="425" text-anchor="middle" class="orange">LSU：load / store</text>
+
+  <path d="M1510,520 L1305,520" stroke="#1f5e98" stroke-width="7" fill="none" marker-end="url(#blue)"/>
+  <path d="M1005,520 L835,520" stroke="#1f5e98" stroke-width="7" fill="none" marker-end="url(#blue)"/>
+  <path d="M485,500 L340,500" stroke="#1f5e98" stroke-width="7" fill="none" marker-end="url(#blue)"/>
+  <text x="920" y="680" text-anchor="middle" class="blue">读操作结果：目标存储 → s1 → Data 区 → DMI → OpenOCD</text>
+
+  <rect x="170" y="730" width="1580" height="165" rx="18" fill="#fbfdff" stroke="#7fa5cb" stroke-width="3"/>
+  <text x="215" y="783" class="head">4 字 Program Buffer 示例</text>
+  <text x="215" y="833" class="text">读：<tspan font-family="monospace">lw s1, 0(s0)</tspan> → <tspan font-family="monospace">sw s1, DATA_ADDR(x0)</tspan> → <tspan font-family="monospace">ebreak</tspan></text>
+  <text x="215" y="875" class="text">写：<tspan font-family="monospace">lw s1, DATA_ADDR(x0)</tspan> → <tspan font-family="monospace">sw s1, 0(s0)</tspan> → <tspan font-family="monospace">ebreak</tspan></text>
+  <text x="1160" y="833" class="text">调试程序需保存并恢复借用的 GPR。</text>
+  <text x="1160" y="875" class="text">hart 必须保持在 Debug Mode。</text>
+</svg>

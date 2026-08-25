@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="15" markerHeight="15" refX="15" refY="7.5" orient="auto"><path d="M0,0 L15,7.5 L0,15 Z" fill="#1f5e98"/></marker>
+    <marker id="orange" markerUnits="userSpaceOnUse" markerWidth="15" markerHeight="15" refX="15" refY="7.5" orient="auto"><path d="M0,0 L15,7.5 L0,15 Z" fill="#d97706"/></marker>
+    <style>
+      .title { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 48px; font-weight: 700; fill: #15365b; }
+      .sub { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 26px; fill: #49627f; }
+      .state { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 32px; font-weight: 700; fill: #15365b; }
+      .stateLong { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 28px; font-weight: 700; fill: #15365b; }
+      .detail { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 24px; fill: #24496d; }
+      .label { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 25px; font-weight: 700; fill: #1f5e98; }
+      .warn { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 25px; font-weight: 700; fill: #b45309; }
+    </style>
+  </defs>
+  <rect width="1920" height="1080" fill="#ffffff"/>
+  <text x="960" y="74" text-anchor="middle" class="title">JTAG DTM 的 DMI 事务状态机</text>
+  <text x="960" y="116" text-anchor="middle" class="sub">DMI 读结果在后续扫描中返回；同一时间只接受一笔未完成请求</text>
+
+  <rect x="120" y="400" width="270" height="150" rx="22" fill="#e8f1fb" stroke="#1f5e98" stroke-width="5"/>
+  <text x="255" y="462" text-anchor="middle" class="state">IDLE</text>
+  <text x="255" y="508" text-anchor="middle" class="detail">无未完成 DMI 请求</text>
+
+  <rect x="530" y="240" width="330" height="150" rx="22" fill="#e5f4f5" stroke="#1f5e98" stroke-width="5"/>
+  <text x="695" y="302" text-anchor="middle" class="stateLong">REQUEST_LATCHED</text>
+  <text x="695" y="348" text-anchor="middle" class="detail">锁存 address / data / op</text>
+
+  <rect x="1030" y="240" width="300" height="150" rx="22" fill="#fff4d5" stroke="#d97706" stroke-width="5"/>
+  <text x="1180" y="302" text-anchor="middle" class="state">WAIT_DM</text>
+  <text x="1180" y="348" text-anchor="middle" class="detail">跨时钟域等待响应</text>
+
+  <rect x="1030" y="610" width="300" height="150" rx="22" fill="#e5f4f5" stroke="#1f5e98" stroke-width="5"/>
+  <text x="1180" y="672" text-anchor="middle" class="stateLong">RESPONSE_READY</text>
+  <text x="1180" y="718" text-anchor="middle" class="detail">保存 rdata / status</text>
+
+  <rect x="530" y="610" width="330" height="150" rx="22" fill="#e8f1fb" stroke="#1f5e98" stroke-width="5"/>
+  <text x="695" y="672" text-anchor="middle" class="stateLong">RETURN_RESPONSE</text>
+  <text x="695" y="718" text-anchor="middle" class="detail">下次 Capture-DR 返回</text>
+
+  <path d="M390,445 L530,315" stroke="#1f5e98" stroke-width="7" fill="none" marker-end="url(#arrow)"/>
+  <text x="440" y="300" text-anchor="middle" class="label">Update-DR</text>
+  <path d="M860,315 L1030,315" stroke="#1f5e98" stroke-width="7" fill="none" marker-end="url(#arrow)"/>
+  <text x="945" y="215" text-anchor="middle" class="label">系统侧请求</text>
+  <path d="M1180,390 L1180,610" stroke="#1f5e98" stroke-width="7" fill="none" marker-end="url(#arrow)"/>
+  <text x="1230" y="520" class="label">DM 响应到达</text>
+  <path d="M1030,685 L860,685" stroke="#1f5e98" stroke-width="7" fill="none" marker-end="url(#arrow)"/>
+  <text x="945" y="650" text-anchor="middle" class="label">响应就绪</text>
+  <path d="M530,685 L255,550" stroke="#1f5e98" stroke-width="7" fill="none" marker-end="url(#arrow)"/>
+  <text x="365" y="655" text-anchor="middle" class="label">NOP 或下一次扫描</text>
+
+  <path d="M1330,315 C1430,315 1430,170 1180,170 L1180,240" stroke="#d97706" stroke-width="6" fill="none" marker-end="url(#orange)"/>
+  <text x="1330" y="150" text-anchor="middle" class="warn">新扫描到来：返回 busy，保留原请求</text>
+
+  <rect x="155" y="875" width="1610" height="105" rx="18" fill="#fbfdff" stroke="#7fa5cb" stroke-width="3"/>
+  <text x="205" y="928" class="state">时序要求</text>
+  <text x="445" y="928" class="detail">• DTMCS 的 <tspan font-family="monospace">idle</tspan> 应反映实际空闲周期</text>
+  <text x="945" y="928" class="detail">• 失败响应为 <tspan font-family="monospace">failed</tspan>，由 <tspan font-family="monospace">dmireset</tspan> 清除</text>
+  <text x="1460" y="928" class="detail">• 多位数据不可直接跨时钟域</text>
+</svg>
