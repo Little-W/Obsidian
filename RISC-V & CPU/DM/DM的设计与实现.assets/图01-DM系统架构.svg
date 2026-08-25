@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <marker id="arrowBlue" markerWidth="14" markerHeight="14" refX="11" refY="7" orient="auto"><path d="M0,0 L14,7 L0,14 Z" fill="#1f5e98"/></marker>
+    <marker id="arrowOrange" markerWidth="14" markerHeight="14" refX="11" refY="7" orient="auto"><path d="M0,0 L14,7 L0,14 Z" fill="#d97706"/></marker>
+    <style>
+      .title { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 48px; font-weight: 700; fill: #15365b; }
+      .subtitle { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 26px; fill: #49627f; }
+      .box-title { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 34px; font-weight: 700; fill: #15365b; }
+      .box-text { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 27px; fill: #24496d; }
+      .arrow-text { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 27px; font-weight: 700; fill: #1f5e98; }
+      .orange-text { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 27px; font-weight: 700; fill: #b45309; }
+      .box { stroke: #1f5e98; stroke-width: 5; rx: 24; }
+    </style>
+  </defs>
+  <rect width="1920" height="1080" fill="#ffffff"/>
+  <text x="960" y="82" text-anchor="middle" class="title">RISC-V 调试系统与 DM 的位置</text>
+  <text x="960" y="124" text-anchor="middle" class="subtitle">蓝色为基础调试控制；橙色为可选的系统总线访问</text>
+
+  <rect x="60" y="370" width="290" height="210" fill="#e8f1fb" class="box"/>
+  <text x="205" y="445" text-anchor="middle" class="box-title">调试主机</text>
+  <text x="205" y="493" text-anchor="middle" class="box-text">GDB</text>
+  <text x="205" y="535" text-anchor="middle" class="box-text">OpenOCD</text>
+
+  <rect x="430" y="395" width="220" height="160" fill="#eef5ff" class="box"/>
+  <text x="540" y="463" text-anchor="middle" class="box-title">JTAG 适配器</text>
+  <text x="540" y="510" text-anchor="middle" class="box-text">TCK / TMS</text>
+
+  <rect x="730" y="395" width="230" height="160" fill="#e5f4f5" class="box"/>
+  <text x="845" y="463" text-anchor="middle" class="box-title">DTM</text>
+  <text x="845" y="510" text-anchor="middle" class="box-text">JTAG → DMI</text>
+
+  <rect x="1040" y="310" width="370" height="310" fill="#dff2f4" class="box"/>
+  <text x="1225" y="378" text-anchor="middle" class="box-title">DM</text>
+  <text x="1225" y="430" text-anchor="middle" class="box-text">dmcontrol · dmstatus</text>
+  <text x="1225" y="472" text-anchor="middle" class="box-text">data · command</text>
+  <text x="1225" y="514" text-anchor="middle" class="box-text">abstractcs · Program Buffer</text>
+  <text x="1225" y="556" text-anchor="middle" class="box-text">Debug ROM · 运行控制</text>
+
+  <rect x="1065" y="765" width="320" height="180" fill="#fff4d5" class="box"/>
+  <text x="1225" y="838" text-anchor="middle" class="box-title">hart</text>
+  <text x="1225" y="886" text-anchor="middle" class="box-text">Debug Mode</text>
+
+  <rect x="1490" y="305" width="370" height="500" fill="#edf4ff" class="box"/>
+  <text x="1675" y="372" text-anchor="middle" class="box-title">SoC 总线与从设备</text>
+  <rect x="1535" y="412" width="280" height="62" rx="12" fill="#dff2f4" stroke="#1f5e98" stroke-width="3"/>
+  <rect x="1535" y="500" width="280" height="62" rx="12" fill="#d9ebff" stroke="#1f5e98" stroke-width="3"/>
+  <rect x="1535" y="588" width="280" height="44" rx="12" fill="#dff2f4" stroke="#1f5e98" stroke-width="3"/>
+  <text x="1675" y="455" text-anchor="middle" class="box-text">RAM / Flash</text>
+  <text x="1675" y="543" text-anchor="middle" class="box-text">MMIO</text>
+  <text x="1675" y="620" text-anchor="middle" class="box-text">其他从设备</text>
+
+  <path d="M350,475 L420,475" stroke="#1f5e98" stroke-width="7" fill="none" marker-end="url(#arrowBlue)"/>
+  <path d="M650,475 L720,475" stroke="#1f5e98" stroke-width="7" fill="none" marker-end="url(#arrowBlue)"/>
+  <path d="M960,475 L1030,475" stroke="#1f5e98" stroke-width="7" fill="none" marker-end="url(#arrowBlue)"/>
+  <text x="385" y="340" text-anchor="middle" class="arrow-text">远程调试</text>
+  <text x="685" y="340" text-anchor="middle" class="arrow-text">JTAG</text>
+  <text x="995" y="340" text-anchor="middle" class="arrow-text">DMI</text>
+
+  <path d="M1148,620 L1148,747" stroke="#d97706" stroke-width="7" fill="none" marker-end="url(#arrowOrange)"/>
+  <path d="M1302,747 L1302,620" stroke="#d97706" stroke-width="7" fill="none" marker-end="url(#arrowOrange)"/>
+  <text x="1120" y="672" text-anchor="end" class="orange-text">haltreq</text>
+  <text x="1120" y="710" text-anchor="end" class="orange-text">resumereq</text>
+  <text x="1340" y="672" class="orange-text">halted</text>
+  <text x="1340" y="710" class="orange-text">resumeack</text>
+
+  <path d="M1410,475 L1480,475" stroke="#d97706" stroke-width="7" fill="none" marker-end="url(#arrowOrange)"/>
+  <text x="1445" y="445" text-anchor="middle" class="orange-text">SBA（可选）</text>
+
+  <path d="M1385,855 L1450,855 L1450,795 L1480,795" stroke="#1f5e98" stroke-width="7" fill="none" marker-end="url(#arrowBlue)"/>
+  <text x="1435" y="920" text-anchor="middle" class="arrow-text">hart 的正常访存</text>
+
+  <rect x="120" y="715" width="680" height="200" rx="20" fill="#f7faff" stroke="#7fa5cb" stroke-width="3"/>
+  <text x="160" y="770" class="box-title">关键区分</text>
+  <text x="160" y="820" class="box-text">DMI 地址：调试器访问 DM 寄存器</text>
+  <text x="160" y="862" class="box-text">Debug Memory 地址：Debug Mode 中的 hart 取指和数据交换</text>
+  <text x="160" y="904" class="box-text">SBA 地址：DM 经系统总线访问的物理地址</text>
+</svg>

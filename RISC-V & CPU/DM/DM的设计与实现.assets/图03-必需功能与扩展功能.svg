@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <style>
+      .title { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 47px; font-weight: 700; fill: #15365b; }
+      .subtitle { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 25px; fill: #49627f; }
+      .head { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 34px; font-weight: 700; fill: #ffffff; }
+      .main { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 29px; font-weight: 700; fill: #15365b; }
+      .text { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 25px; fill: #24496d; }
+      .small { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 23px; fill: #24496d; }
+      .panel { stroke-width: 4; rx: 22; }
+    </style>
+  </defs>
+  <rect width="1920" height="1080" fill="#ffffff"/>
+  <text x="960" y="72" text-anchor="middle" class="title">DM：规范必需功能、扩展功能与设计取舍</text>
+  <text x="960" y="115" text-anchor="middle" class="subtitle">“可选”指规范可不实现；但符合规范的 DM 必须具有至少一种内存访问机制</text>
+
+  <rect x="55" y="165" width="570" height="430" fill="#edf5ff" stroke="#1f5e98" class="panel"/>
+  <rect x="55" y="165" width="570" height="78" rx="22" fill="#1f5e98"/>
+  <text x="340" y="218" text-anchor="middle" class="head">规范必需</text>
+  <text x="95" y="305" class="main">每个 DM 都必须提供</text>
+  <text x="95" y="357" class="text">1. 实现信息与 hart 选择</text>
+  <text x="95" y="407" class="text">2. 单个 hart 的 halt / resume</text>
+  <text x="95" y="457" class="text">3. hart 暂停状态报告</text>
+  <text x="95" y="507" class="text">4. 已暂停 hart 的全部 GPR 抽象读写</text>
+  <text x="95" y="557" class="text">5. 从复位首条指令开始调试的复位控制</text>
+
+  <rect x="675" y="165" width="570" height="430" fill="#fff8e7" stroke="#d99127" class="panel"/>
+  <rect x="675" y="165" width="570" height="78" rx="22" fill="#d97706"/>
+  <text x="960" y="218" text-anchor="middle" class="head">合规时必须选择一项</text>
+  <text x="715" y="305" class="main">内存访问机制三选一或多选</text>
+  <rect x="718" y="337" width="485" height="57" rx="12" fill="#fff1c9" stroke="#d99127" stroke-width="2"/>
+  <rect x="718" y="418" width="485" height="70" rx="12" fill="#fff1c9" stroke="#d99127" stroke-width="2"/>
+  <rect x="718" y="508" width="485" height="70" rx="12" fill="#fff1c9" stroke="#d99127" stroke-width="2"/>
+  <text x="960" y="375" text-anchor="middle" class="text">Program Buffer：hart 执行 load / store</text>
+  <text x="960" y="450" text-anchor="middle" class="text">Abstract Memory Command</text>
+  <text x="960" y="478" text-anchor="middle" class="small">DM 发出内存命令</text>
+  <text x="960" y="540" text-anchor="middle" class="text">SBA：DM 经总线主设备</text>
+  <text x="960" y="568" text-anchor="middle" class="small">访问物理地址</text>
+
+  <rect x="1295" y="165" width="570" height="430" fill="#f4edfb" stroke="#8a5ca8" class="panel"/>
+  <rect x="1295" y="165" width="570" height="78" rx="22" fill="#8a5ca8"/>
+  <text x="1580" y="218" text-anchor="middle" class="head">典型扩展</text>
+  <text x="1335" y="305" class="main">按产品需求增加</text>
+  <text x="1335" y="357" class="text">• 非 GPR CSR 抽象访问、Quick Access</text>
+  <text x="1335" y="407" class="text">• 8/16 字 Program Buffer、隐含 ebreak</text>
+  <text x="1335" y="457" class="text">• 多 hart、hasel、halt group、reset halt</text>
+  <text x="1335" y="507" class="text">• trigger、外部触发、认证与调试禁用</text>
+  <text x="1335" y="557" class="text">• 宽 SBA、自动递增与总线错误细分</text>
+
+  <text x="80" y="682" class="main">性能影响：按运行态影响、调试效率与硬件代价分别判断</text>
+  <rect x="70" y="720" width="1780" height="245" rx="18" fill="#fbfdff" stroke="#7fa5cb" stroke-width="3"/>
+  <line x1="510" y1="720" x2="510" y2="965" stroke="#7fa5cb" stroke-width="2"/>
+  <line x1="965" y1="720" x2="965" y2="965" stroke="#7fa5cb" stroke-width="2"/>
+  <line x1="1415" y1="720" x2="1415" y2="965" stroke="#7fa5cb" stroke-width="2"/>
+  <text x="290" y="770" text-anchor="middle" class="main">基础运行控制</text>
+  <text x="290" y="815" text-anchor="middle" class="small">正常运行：仅保留调试请求检查</text>
+  <text x="290" y="855" text-anchor="middle" class="small">调试效率：寄存器访问为基础水平</text>
+  <text x="290" y="895" text-anchor="middle" class="small">硬件：状态与确认逻辑较少</text>
+  <text x="737" y="770" text-anchor="middle" class="main">Program Buffer</text>
+  <text x="737" y="815" text-anchor="middle" class="small">正常运行：通常无持续性能损失</text>
+  <text x="737" y="855" text-anchor="middle" class="small">调试效率：访问内存需暂停 hart</text>
+  <text x="737" y="895" text-anchor="middle" class="small">硬件：ROM、Data、取指支持</text>
+  <text x="1190" y="770" text-anchor="middle" class="main">SBA 与直接寄存器端口</text>
+  <text x="1190" y="815" text-anchor="middle" class="small">正常运行：取决于总线仲裁与端口仲裁</text>
+  <text x="1190" y="855" text-anchor="middle" class="small">调试效率：大块内存与寄存器访问更快</text>
+  <text x="1190" y="895" text-anchor="middle" class="small">硬件：AXI 主设备或 CPU 专用端口</text>
+  <text x="1632" y="770" text-anchor="middle" class="main">多 hart 与 trigger</text>
+  <text x="1632" y="815" text-anchor="middle" class="small">正常运行：比较器可能进入关键路径</text>
+  <text x="1632" y="855" text-anchor="middle" class="small">调试效率：支持断点、观察点与 SMP</text>
+  <text x="1632" y="895" text-anchor="middle" class="small">硬件：状态规模与比较逻辑增加</text>
+
+  <text x="960" y="1030" text-anchor="middle" class="subtitle">性能结论：先实现必需功能与一种内存访问机制；性能瓶颈出现后，再优先加入 SBA 和更大的 Program Buffer。</text>
+</svg>

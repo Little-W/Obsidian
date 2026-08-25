@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <marker id="arrow" markerWidth="13" markerHeight="13" refX="10" refY="6.5" orient="auto"><path d="M0,0 L13,6.5 L0,13 Z" fill="#1f5e98"/></marker>
+    <style>
+      .title { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 47px; font-weight: 700; fill: #15365b; }
+      .subtitle { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 25px; fill: #49627f; }
+      .head { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 33px; font-weight: 700; fill: #ffffff; }
+      .main { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 30px; font-weight: 700; fill: #15365b; }
+      .text { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 25px; fill: #24496d; }
+      .small { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 23px; fill: #24496d; }
+      .panel { fill: #fbfdff; stroke: #5b89b6; stroke-width: 4; rx: 22; }
+      .node { fill: #e5f4f5; stroke: #1f5e98; stroke-width: 3; rx: 12; }
+      .note { fill: #fff7e2; stroke: #d99127; stroke-width: 3; rx: 12; }
+    </style>
+  </defs>
+  <rect width="1920" height="1080" fill="#ffffff"/>
+  <text x="960" y="74" text-anchor="middle" class="title">Program Buffer 的三种物理实现</text>
+  <text x="960" y="116" text-anchor="middle" class="subtitle">三种方案对 OpenOCD 暴露相同的 DMI 寄存器；差别只在 hart 如何获得指令</text>
+
+  <rect x="55" y="160" width="555" height="730" class="panel"/>
+  <rect x="55" y="160" width="555" height="78" rx="22" fill="#1f5e98"/>
+  <text x="332" y="213" text-anchor="middle" class="head">方案 A：调试存储窗口</text>
+  <text x="332" y="295" text-anchor="middle" class="main">hart 的 PC 指向 Debug Memory</text>
+  <rect x="125" y="350" width="170" height="80" class="node"/>
+  <text x="210" y="400" text-anchor="middle" class="text">hart IF</text>
+  <path d="M295,390 L370,390" stroke="#1f5e98" stroke-width="6" fill="none" marker-end="url(#arrow)"/>
+  <rect x="385" y="315" width="160" height="240" class="node"/>
+  <text x="465" y="360" text-anchor="middle" class="text">地址译码</text>
+  <rect x="400" y="370" width="130" height="38" rx="8" fill="#d9ebff" stroke="#1f5e98" stroke-width="2"/>
+  <rect x="400" y="420" width="130" height="60" rx="8" fill="#dff2f4" stroke="#1f5e98" stroke-width="2"/>
+  <rect x="400" y="492" width="130" height="38" rx="8" fill="#fff0c9" stroke="#1f5e98" stroke-width="2"/>
+  <text x="465" y="396" text-anchor="middle" class="small">Debug ROM</text>
+  <text x="465" y="447" text-anchor="middle" style="font-family: 'Noto Sans CJK SC', sans-serif; font-size: 20px; fill: #24496d;">Program</text>
+  <text x="465" y="471" text-anchor="middle" style="font-family: 'Noto Sans CJK SC', sans-serif; font-size: 20px; fill: #24496d;">Buffer</text>
+  <text x="465" y="518" text-anchor="middle" class="small">Data 区</text>
+  <rect x="98" y="605" width="470" height="180" class="note"/>
+  <text x="126" y="654" class="main">设计要求</text>
+  <text x="126" y="701" class="text">• Debug Mode 才可访问调试存储</text>
+  <text x="126" y="741" class="text">• ICache 必须旁路或失效</text>
+  <text x="126" y="771" class="text">• 最适合 ROM + RAM 式实现</text>
+
+  <rect x="682" y="160" width="555" height="730" class="panel"/>
+  <rect x="682" y="160" width="555" height="78" rx="22" fill="#227c9d"/>
+  <text x="959" y="213" text-anchor="middle" class="head">方案 B：IF 选择器</text>
+  <text x="959" y="295" text-anchor="middle" class="main">取指端按 Debug Mode 选择指令源</text>
+  <rect x="740" y="350" width="150" height="80" class="node"/>
+  <text x="815" y="400" text-anchor="middle" class="text">PC 范围</text>
+  <path d="M890,390 L955,390" stroke="#1f5e98" stroke-width="6" fill="none" marker-end="url(#arrow)"/>
+  <rect x="970" y="345" width="150" height="90" class="node"/>
+  <text x="1045" y="383" text-anchor="middle" class="text">IF 选择器</text>
+  <text x="1045" y="416" text-anchor="middle" class="small">debug_mode</text>
+  <path d="M1045,435 L1045,500" stroke="#1f5e98" stroke-width="6" fill="none" marker-end="url(#arrow)"/>
+  <rect x="940" y="515" width="210" height="80" class="node"/>
+  <text x="1045" y="565" text-anchor="middle" class="text">progbuf[0:N]</text>
+  <rect x="725" y="640" width="470" height="145" class="note"/>
+  <text x="753" y="688" class="main">设计要求</text>
+  <text x="753" y="728" class="text">• 处理流水清空与异常 PC</text>
+  <text x="753" y="768" class="text">• Data 区仍需独立访问位置</text>
+
+  <rect x="1310" y="160" width="555" height="730" class="panel"/>
+  <rect x="1310" y="160" width="555" height="78" rx="22" fill="#8a5ca8"/>
+  <text x="1587" y="213" text-anchor="middle" class="head">方案 C：直接指令注入</text>
+  <text x="1587" y="295" text-anchor="middle" class="main">DM 向 CPU 调试入口逐条送入指令</text>
+  <rect x="1380" y="350" width="175" height="90" class="node"/>
+  <text x="1467" y="388" text-anchor="middle" class="text">调试执行器</text>
+  <text x="1467" y="421" text-anchor="middle" class="small">指令 + 有效信号</text>
+  <path d="M1555,395 L1630,395" stroke="#1f5e98" stroke-width="6" fill="none" marker-end="url(#arrow)"/>
+  <rect x="1640" y="350" width="150" height="90" class="node"/>
+  <text x="1715" y="388" text-anchor="middle" class="text">IF / Decode</text>
+  <text x="1715" y="421" text-anchor="middle" class="small">接收与提交</text>
+  <path d="M1715,440 L1715,500" stroke="#1f5e98" stroke-width="6" fill="none" marker-end="url(#arrow)"/>
+  <rect x="1610" y="515" width="210" height="80" class="node"/>
+  <text x="1715" y="565" text-anchor="middle" class="text">hart 执行结果</text>
+  <rect x="1353" y="640" width="470" height="145" class="note"/>
+  <text x="1381" y="688" class="main">设计要求</text>
+  <text x="1381" y="728" class="text">• 指令提交与异常必须确认</text>
+  <text x="1381" y="768" class="text">• CPU 改动最大，存储最少</text>
+
+  <rect x="155" y="935" width="1610" height="88" rx="18" fill="#edf5ff" stroke="#5b89b6" stroke-width="3"/>
+  <text x="960" y="990" text-anchor="middle" class="main">对外接口保持一致：progbuf0...progbufN、progbufsize、impebreak、postexec 与 cmderr</text>
+</svg>
