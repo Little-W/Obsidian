@@ -1,0 +1,3 @@
+[console_scripts]
+dft-flow = dft_agent_flow.cli:main
+dft-gui = dft_agent_flow.gui:main

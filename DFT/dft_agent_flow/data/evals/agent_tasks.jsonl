@@ -1,0 +1,3 @@
+{"id":"s27_compact","circuit":"s27","min_coverage":94.5,"max_patterns":5,"expected_profile":"static_dynamic"}
+{"id":"s208_compact","circuit":"s208","min_coverage":97.4,"max_patterns":29,"expected_profile":"static_dynamic"}
+{"id":"s510_compact","circuit":"s510","min_coverage":99.1,"max_patterns":59,"expected_profile":"static_dynamic"}
