@@ -57,6 +57,7 @@ tags:
 | SBA | 系统总线访问 | 不借助 hart、用物理地址访问系统总线 |
 | Trigger | 触发器 | 对 PC、访存、数据或指令匹配后采取动作 |
 
+<a id="intro"></a>
 ## 1. 引言
 
 > [!note]- Mote · 先建立心智模型
@@ -68,6 +69,7 @@ tags:
 
 系统设计人员可以选择添加额外的硬件调试支持，但该规范定义了通用功能的标准接口。
 
+<a id="_terminology"></a>
 ### 1.1 术语
 
 **高级功能**  
@@ -160,6 +162,7 @@ hart 看到的地址。如果 hart 使用地址转换，这可能与物理地址
 **xepc**  
 适合捕获模式的异常程序计数器 CSR（例如 `mepc`）。
 
+<a id="_context"></a>
 ### 1.2 背景信息
 
 该规范试图支持大约在 2023 年上半年获得批准的所有 RISC-V ISA 扩展。不过，该规范特别针对以下扩展中的功能：
@@ -180,16 +183,20 @@ hart 看到的地址。如果 hart 使用地址转换，这可能与物理地址
 14. Zicboz
 15. Zicsr
 
+<a id="_about_this_document"></a>
 ### 1.3 本文档
 
+<a id="_structure"></a>
 #### 1.3.1 结构
 
 本文档包含两部分。该文档的主要部分是规范，在编号的章节中给出。该文件的第二部分是一组附录。附录中的信息旨在澄清并提供示例，但不是实际规范的一部分。
 
+<a id="_isa_vs_non_isa"></a>
 #### 1.3.2 ISA 与非 ISA
 
 该规范包含 ISA 和非 ISA 部件。 ISA 部分定义了独立的 ISA 扩展。文档的其他部分描述了非 ISA 外部调试扩展。内容仅为其中之一的章节在其标题中标记为此类。没有此类标签的章节适用于 ISA 和非 ISA。
 
+<a id="_register_definition_format"></a>
 #### 1.3.3 寄存器定义格式
 
 本文档中的所有寄存器定义均遵循如下所示的格式。一个简单的图形显示了寄存器中的字段。高位索引和低位索引显示在每个字段的左上角和右上角。该字段的总位数显示在其下方。
@@ -203,6 +210,7 @@ hart 看到的地址。如果 hart 使用地址转换，这可能与物理地址
 
 寄存器名称及其字段是其定义的超链接，也列在 [Index](#index) 中。
 
+<a id="shortname"></a>
 ##### 1.3.3.1 长名称（短名称，位于 0x123）
 
 ![寄存器位域图：1.3.3.1 长名称（短名称，位于 0x123）](RISC-V调试规范v1.0-中文学习版.assets/位域图-01.svg)
@@ -211,17 +219,19 @@ hart 看到的地址。如果 hart 使用地址转换，这可能与物理地址
 | --- | --- | --- | --- |
 | <a id="shortname-field"></a> `field` | 该字段用途的描述。 | **R/W** | 15 |
 
-|  |  |
-|----|----|
-|右 |只读。 |
-|读/写 |读/写。 |
-| R/W1C |读/写要清除的。向每一位写入 0 没有任何效果。向每一位写入 1 会清除该字段。其他写入的结果未定义。 |
-|沃兹 |写任意，读零。调试器可以写入任何值。读取时此字段返回 0。
-| W1 |只写。只有写1才有效果。读取时返回值应为 0。
-| WARL |写任意，读合法。调试器可以写入任何值。如果某个值不受支持，则实现会将该值转换为受支持的值。 |
+| 访问类型 | 说明 |
+| --- | --- |
+| R | 只读。 |
+| R/W | 读/写。 |
+| R/W1C | 写 1 清除。向每一位写入 0 无效；向每一位写入 1 会清除该字段；其他写入结果未定义。 |
+| WARZ | 任意写入、读 0。调试器可写入任意值；读取时该字段返回 0。 |
+| W1 | 只写。只有写入 1 有效；读取时应返回 0。 |
+| WARL | 任意写入、合法读出。调试器可写入任意值；若该值不受支持，实现会返回支持的值。 |
 
+<a id="tab:access"></a>
 表 1. 寄存器访问缩写
 
+<a id="_background"></a>
 ### 1.4 背景
 
 专用调试硬件有多种用例，包括本机调试和外部调试。本机调试（有时称为自托管调试）是指在 RISC-V 平台上运行的调试软件，对同一平台进行调试。可选的触发器模块提供了对本机调试有用的功能。外部调试是指在其他地方运行的调试软件，通过 JTAG 等调试传输来调试 RISC-V 平台。整个文档提供了对外部调试有用的功能。
@@ -234,6 +244,7 @@ hart 看到的地址。如果 hart 使用地址转换，这可能与物理地址
 - 操作系统本身的调试问题。 （外部或本机调试。）
 - 调试操作系统上运行的进程。 （本机或外部调试。）
 
+<a id="_supported_features"></a>
 ### 1.5 支持的特性
 
 本规范中描述的调试接口支持以下功能：
@@ -242,7 +253,8 @@ hart 看到的地址。如果 hart 使用地址转换，这可能与物理地址
 2. 可以从 hart 的角度访问内存，也可以直接通过系统总线访问内存，或者两者兼而有之。
 3. RV32、RV64以及未来的RV128均支持。
 4. 硬件平台中任意一个hart均可独立调试。
-5. 调试器几乎可以发现 <sup>\[[1](#_footnotedef_1)\]</sup> 它自己需要了解的一切，无需用户配置。
+5. 调试器几乎可以发现 <sup>[<a id="_footnoteref_1"></a>
+[1](#_footnotedef_1)]</sup> 它自己需要了解的一切，无需用户配置。
 6. 每个hart 都可以从执行的第一条指令开始进行调试。
 7. 当执行软件断点指令时，RISC-V hart 可以暂停。
 8. 硬件单步一次只能执行一条指令。
@@ -260,6 +272,7 @@ hart 看到的地址。如果 hart 使用地址转换，这可能与物理地址
 
 可以调试使用软件线程的代码，但没有特殊的调试支持。
 
+<a id="overview"></a>
 ## 2. 系统概述
 
 > [!note]- Mote · 从外到内看调试通路
@@ -277,10 +290,13 @@ DM 在硬件平台中提供对其 hart 的运行控制。抽象命令提供对 G
 
 每个 RISC-V hart 可以实现一个触发模块。当满足触发条件时，hart 将停止并通知调试模块已停止。
 
+<a id="systemoverview"></a>
+
 ![图 1：RISC-V 调试系统总览（原 PDF 插图）](RISC-V调试规范v1.0-中文学习版.assets/图01-RISC-V调试系统概览.png)
 
 图 1. RISC-V 调试系统概述
 
+<a id="dm"></a>
 ## 3. 调试模块（DM，非 ISA 扩展）
 
 > [!note]- Mote · DM 是外部调试的控制中枢
@@ -314,6 +330,7 @@ DM 在硬件平台中提供对其 hart 的运行控制。抽象命令提供对 G
 
 单个 DM 最多可调试 $2^{20}$ hart。
 
+<a id="dmi"></a>
 ### 3.1 调试模块接口（DMI）
 
 调试模块是称为调试模块接口 (DMI) 的总线上的从属组件。总线管理器是调试传输模块。调试模块接口可以是具有一个管理器和一个从属器的普通总线（请参阅 [表 21](#tab:dmi_signals)），也可以使用功能更齐全的总线，例如 TileLink 或 AMBA 高级外设总线。细节留给系统设计者。
@@ -322,6 +339,7 @@ DMI 使用 7 到 32 个地址位。每个地址都指向一个可以读取或写
 
 调试模块通过对其 DMI 地址空间的寄存器访问进行控制。
 
+<a id="reset"></a>
 ### 3.2 复位控制
 
 有两种方法允许调试器重置 hart。 [ndmreset](#dmcontrol-ndmreset) 重置硬件平台中的所有 hart，以及硬件平台除调试模块、调试传输模块和调试模块接口之外的所有其他部分。受此复位影响的具体内容取决于实现，但必须能够从执行的第一条指令开始调试程序。 [hartreset](#dmcontrol-hartreset) 重置所有当前选择的 hart。在这种情况下，实现可能会重置更多的 hart 而不仅仅是所选的 hart。调试器可以通过选择并检查 [anyhavereset](#dmstatus-anyhavereset) 和 [allhavereset](#dmstatus-allhavereset) 来发现哪些其他 hart 被重置（如果有）。
@@ -337,6 +355,7 @@ DMI 使用 7 到 32 个地址位。每个地址都指向一个可以读取或写
 
 当 hart 复位后，它们必须设置粘性 `havereset` 状态位。可以读取 [anyhavereset](#dmstatus-anyhavereset) 中选定的 hart 和 [dmstatus](#dm-dmstatus) 中的 [allhavereset](#dmstatus-allhavereset) 的概念性 `havereset` 状态位。无论复位原因如何，都必须设置这些位。可以通过向 [dmcontrol](#dm-dmcontrol) 中的 [ackhavereset](#dmcontrol-ackhavereset) 写入 1 来清除所选 hart 的 `havereset` 位。当 [dmactive](#dmcontrol-dmactive) 为低电平时，`havereset` 位可能会也可能不会被清除。
 
+<a id="selectingharts"></a>
 ### 3.3 选择hart
 
 单个 DM 最多可连接 $2^{20}$ hart。向 DM 发出的命令仅适用于当前选定的 hart。
@@ -345,10 +364,12 @@ DMI 使用 7 到 32 个地址位。每个地址都指向一个可以读取或写
 
 调试器可以通过读取`mhartid`的接口，或者通过读取硬件平台的配置结构来发现hart索引和`mhartid`之间的对应关系。
 
+<a id="_selecting_a_single_hart"></a>
 #### 3.3.1 选择单个 hart
 
 所有调试模块必须支持选择单个 hart。调试器可以通过将其索引写入 [hartsel](#hartsel) 来选择 hart。 hart 索引从 0 开始并且连续直到最终索引。
 
+<a id="hartarraymask"></a>
 #### 3.3.2 选择多个 hart
 
 调试模块可以实现 hart 阵列掩码寄存器，以允许一次选择多个 hart。 hart 数组掩码寄存器中的第 $n$ 位适用于索引为 $n$ 的 hart。如果该位为 1，则选择 hart。通常，DM 会有一个 hart 数组掩码寄存器，其宽度足以选择它支持的所有 hart，但允许将这些位中的任何一位绑定到 0。
@@ -357,6 +378,7 @@ DMI 使用 7 到 32 个地址位。每个地址都指向一个可以读取或写
 
 执行抽象命令会忽略此机制，仅适用于 [hartsel](#hartsel) 选择的 hart。
 
+<a id="_hart_dm_states"></a>
 ### 3.4 hart DM 状态
 
 每个可选择的 hart 都处于以下四种 DM 状态之一：不存在、不可用、正在运行或已停止。所选hart处于哪种状态由[allnonexistent](#dmstatus-allnonexistent)、[anynonexistent](#dmstatus-anynonexistent)、[allunavail](#dmstatus-allunavail)、[anyunavail](#dmstatus-anyunavail)、[allrunning](#dmstatus-allrunning)、[anyrunning](#dmstatus-anyrunning)、[allhalted](#dmstatus-allhalted)和[anyhalted](#dmstatus-anyhalted)反映。
@@ -373,6 +395,7 @@ hart 在调试模式下停止，仅代表调试器执行任务。
 
 其中规定复位的 hart 的执行情况取决于实现。当复位有效时，hart 可能不可用，并且在复位无效后的一段时间内，hart 可能不可用。在重置无效后，它们可能会过渡到运行一段时间。最后，它们最终要么运行，要么停止，具体取决于 [haltreq](#dmcontrol-haltreq) 和 `resethaltreq`。
 
+<a id="runcontrol"></a>
 ### 3.5 运行控制
 
 对于每个 hart，调试模块跟踪 4 个概念状态位：暂停请求、恢复确认、暂停复位请求和 hart 复位。 （hart 复位和复位暂停请求位是可选的。）这 4 位复位为 0，恢复确认除外，恢复确认可以复位为 0 或 1。DM 从每个 hart 接收暂停、运行和已复位信号。调试器可以观察[allresumeack](#dmstatus-allresumeack)和[anyresumeack](#dmstatus-anyresumeack)中的resume ack状态，以及[allhalted](#dmstatus-allhalted)、[anyhalted](#dmstatus-anyhalted)、[allrunning](#dmstatus-allrunning)、[anyrunning](#dmstatus-anyrunning)、[allhavereset](#dmstatus-allhavereset)和[anyhavereset](#dmstatus-anyhavereset)中的halted、running和havereset信号的状态。其他位的状态无法直接观察。
@@ -387,6 +410,7 @@ DM 可以为每个 hart 实现可选的复位暂停位，这通过将 [hasreseth
 
 如果 DM 在 hart 暂停时复位，则 hart 是否恢复是不确定的。调试器应在清除 [dmactive](#dmcontrol-dmactive) 并断开连接之前使用 [resumereq](#dmcontrol-resumereq) 显式恢复 hart。
 
+<a id="hrgroups"></a>
 ### 3.6 暂停组、恢复组和外部触发器
 
 可选功能允许调试器将 hart 分为两种组：暂停组和恢复组。还可以将外部触发器添加到暂停和恢复组中。在任何给定时间，每个 hart 和每个触发器都是一个暂停组和一个恢复组的成员。
@@ -425,6 +449,7 @@ DM 可以为每个 hart 实现可选的复位暂停位，这通过将 [hasreseth
 
 某些设计可能会选择将 hart 组硬编码为组 0 以外的组，这意味着永远不可能仅停止或恢复单个 hart。这是明确允许的。在这种情况下，即使无法更改配置，也必须能够使用 [dmcs2](#dm-dmcs2) 发现组。
 
+<a id="abstractcommands"></a>
 ### 3.7 抽象命令
 
 > [!tip] Tips · 发命令前后都检查 `abstractcs.busy` 与 `cmderr`；发生错误后用写 1 清除 `cmderr`，不要假设下一条命令会自动恢复。
@@ -444,6 +469,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 | 64 | 64 [data0](#dm-data0)、`data1` | `data2`、`data3` | `data4`、`data5` |
 | 128 | 128 [data0](#dm-data0)-`data3` | `data4`-`data7` | `data8`-`data11` |
 
+<a id="tab:datareg"></a>
 表 2. 数据寄存器的使用
 
 > [!note]
@@ -455,6 +481,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 如果在选定的 hart 不可用时启动抽象命令，或者在执行抽象命令时 hart 变得不可用，则调试模块可以终止抽象命令，将 [busy](#abstractcs-busy) 设置为低，并将 [cmderr](#abstractcs-cmderr) 设置为 4（停止/恢复）。或者，该命令可能只是显示为挂起（[busy](#abstractcs-busy) 永远不会变低）。
 
+<a id="_abstract_command_listing"></a>
 #### 3.7.1 抽象命令列表
 
 本节描述每个不同的抽象命令以及将它们写入 [command](#dm-command) 时应如何解释它们的字段。
@@ -467,8 +494,10 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 | 1 | [Quick Access](#ac-quickaccess) |
 | 2 | [Access Memory Command](#ac-accessmemory) |
 
+<a id="tab:cmdtype"></a>
 表 3. [cmdtype](#command-cmdtype) 的含义
 
+<a id="ac-accessregister"></a>
 ##### 3.7.1.1 `Access Register`
 
 该命令使调试器能够访问 CPU 寄存器并允许其执行程序缓冲区。它执行以下操作序列：
@@ -491,6 +520,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 | 0x1020 — 0x103f |浮点寄存器 |
 | 0xc000 — 0xffff |保留供非标准扩展和内部使用。 |
 
+<a id="tab:regno"></a>
 表 4. 抽象寄存器编号
 
 > [!note]
@@ -500,16 +530,17 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 ![寄存器位域图：3.7.1.1 `Access Register`](RISC-V调试规范v1.0-中文学习版.assets/位域图-02.svg)
 
-| 场                                                               | 描述                                                                                                                                                                                                                                                                      |
-| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="accessregister-cmdtype"></a> `cmdtype`                   | 此为0表示访问寄存器命令。                                                                                                                                                                                                                                                           |
-| <a id="accessregister-aarsize"></a> `aarsize`                   | 2（32位）：访问寄存器的最低32位。 3（64位）：访问寄存器的最低64位。 4（128位）：访问寄存器的最低128位。 如果[aarsize](#accessregister-aarsize)指定的大小大于寄存器的实际大小，则访问必定失败。如果寄存器可访问，则必须支持读取小于或等于寄存器实际大小的 [aarsize](#accessregister-aarsize)。可能支持写入少于整个寄存器的内容，但在这种情况下高位会发生什么情况未知。 此字段控制 [Table 2](#tab:datareg). 中引用的参数宽度 |
-| <a id="accessregister-aarpostincrement"></a> `aarpostincrement` | 0（禁用）：无影响。必须支持此变体。 1（使能）：成功访问寄存器后，[regno](#accessregister-regno) 递增。增加超过支持的最高值会导致 [regno](#accessregister-regno) 变为 UNSPECIFIED。支持此变体是可选的。 [transfer](#accessregister-transfer)为0时是否增量未定义。                                                                              |
-| <a id="accessregister-postexec"></a> `postexec`                 | 0（禁用）：无影响。必须支持此变体，并且如果 [progbufsize](#abstractcs-progbufsize) 为 0.，则该变体是唯一受支持的变体 1（启用）：执行传输后，仅执行一次程序缓冲区中的程序（如果有）。支持此变体是可选的。                                                                                                                                             |
-| <a id="accessregister-transfer"></a> `transfer`                 | 0（禁用）：不执行[write](#accessregister-write).指定的操作 1（使能）：执行[write](#accessregister-write).指定的操作 该位可用于仅执行程序缓冲区，而不必担心将有效值放入 [aarsize](#accessregister-aarsize) 或 [regno](#accessregister-regno).                                                                               |
-| <a id="accessregister-write"></a> `write`                       | 当[转](#accessregister-transfer)设置时： 0 (arg0)：将指定寄存器中的数据复制到`data`.的`arg0`部分 1（寄存器）：将`data`的`arg0`部分的数据复制到指定寄存器中。                                                                                                                                                          |
-| <a id="accessregister-regno"></a> `regno`                       | 要访问的寄存器的编号，如 [ 表 4](#tab:regno) 中所述。如果非暂停 hart. 支持此命令，则 [dpc](#csr-dpc) 可以用作 PC 的别名                                                                                                                                                                                     |
+| 场 | 描述 |
+| --- | --- |
+| <a id="accessregister-cmdtype"></a> `cmdtype` | 此为0表示访问寄存器命令。 |
+| <a id="accessregister-aarsize"></a> `aarsize` | 2（32位）：访问寄存器的最低32位。 3（64位）：访问寄存器的最低64位。 4（128位）：访问寄存器的最低128位。 如果[aarsize](#accessregister-aarsize)指定的大小大于寄存器的实际大小，则访问必定失败。如果寄存器可访问，则必须支持读取小于或等于寄存器实际大小的 [aarsize](#accessregister-aarsize)。可能支持写入少于整个寄存器的内容，但在这种情况下高位会发生什么情况未知。 此字段控制 [Table 2](#tab:datareg). 中引用的参数宽度 |
+| <a id="accessregister-aarpostincrement"></a> `aarpostincrement` | 0（禁用）：无影响。必须支持此变体。 1（使能）：成功访问寄存器后，[regno](#accessregister-regno) 递增。增加超过支持的最高值会导致 [regno](#accessregister-regno) 变为 UNSPECIFIED。支持此变体是可选的。 [transfer](#accessregister-transfer)为0时是否增量未定义。 |
+| <a id="accessregister-postexec"></a> `postexec` | 0（禁用）：无影响。必须支持此变体，并且如果 [progbufsize](#abstractcs-progbufsize) 为 0.，则该变体是唯一受支持的变体 1（启用）：执行传输后，仅执行一次程序缓冲区中的程序（如果有）。支持此变体是可选的。 |
+| <a id="accessregister-transfer"></a> `transfer` | 0（禁用）：不执行[write](#accessregister-write).指定的操作 1（使能）：执行[write](#accessregister-write).指定的操作 该位可用于仅执行程序缓冲区，而不必担心将有效值放入 [aarsize](#accessregister-aarsize) 或 [regno](#accessregister-regno). |
+| <a id="accessregister-write"></a> `write` | 当[转](#accessregister-transfer)设置时： 0 (arg0)：将指定寄存器中的数据复制到`data`.的`arg0`部分 1（寄存器）：将`data`的`arg0`部分的数据复制到指定寄存器中。 |
+| <a id="accessregister-regno"></a> `regno` | 要访问的寄存器的编号，如 [ 表 4](#tab:regno) 中所述。如果非暂停 hart. 支持此命令，则 [dpc](#csr-dpc) 可以用作 PC 的别名 |
 
+<a id="ac-quickaccess"></a>
 ##### 3.7.1.2 `Quick Access`
 
 执行以下操作顺序：
@@ -529,6 +560,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 | --- | --- |
 | <a id="quickaccess-cmdtype"></a> `cmdtype` | 这是1表示快速访问命令。 |
 
+<a id="ac-accessmemory"></a>
 ##### 3.7.1.3 `Access Memory`
 
 此命令允许调试器执行内存访问，其内存视图和权限与在选定的 hart 上执行加载/存储完全相同。这包括访问 hart 本地内存对应关系寄存器等。该命令执行以下操作序列：
@@ -557,6 +589,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 | <a id="accessmemory-write"></a> `write` | 0 (arg0)：将数据从`arg1`指定的内存位置复制到`arg0`的低位。 `arg0` 其余位的值未指定。 1（存储器）：将数据从`arg0`的低位复制到`arg1`.指定的存储器位置 |
 | <a id="accessmemory-target-specific"></a> `target-specific` | 这些位保留用于特定于目标的用途。 |
 
+<a id="programbuffer"></a>
 ### 3.8 程序缓冲区
 
 为了支持在停止的 hart 上执行任意指令，调试模块可以包含一个程序缓冲区，调试器可以向其中写入小程序。仅使用抽象命令支持所有必要功能的 DM 可以选择省略程序缓冲区。
@@ -575,16 +608,20 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 程序缓冲器可以被实现为可由hart访问的RAM。调试器可以通过执行小程序来确定是否是这种情况，这些小程序在从程序缓冲区执行时尝试相对于 `pc` 进行写入和读回。如果是这样，调试器在使用程序缓冲区时可以更加灵活。
 
+<a id="_overview_of_hart_debug_states"></a>
 ### 3.9 hart 调试状态概述
 
 > [!tip] Tips · 把图中的“概念状态”对应关系为寄存器可见条件：`anyrunning/allrunning`、`anyhalted/allhalted`、`busy` 与 `cmderr`。它们比内部 RTL 状态名更具可移植性。
 
 [图 2](#abstract_sm) 显示了 hart 在运行/停止调试期间受 [dmcontrol](#dm-dmcontrol)、[abstractcs](#dm-abstractcs)、[abstractauto](#dm-abstractauto) 和 [command](#dm-command) 不同字段影响所经过的状态的概念视图。
 
+<a id="abstract_sm"></a>
+
 ![图 2：单 hart 平台的运行/暂停调试状态机（原 PDF 插图）](RISC-V调试规范v1.0-中文学习版.assets/图02-运行暂停调试状态机.png)
 
 图 2. 单 hart 硬件平台的运行/停止调试状态机。由于调试器只能看到少量状态，因此状态和转换是概念性的。
 
+<a id="systembusaccess"></a>
 ### 3.10 系统总线访问
 
 > [!tip] Tips · SBA 使用物理地址，且未必与各 hart 观察到的数据自动一致。调试 cache 或 DMA 问题时，须由调试器/平台自行安排一致性操作。
@@ -601,6 +638,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 | 64 | 64 [sbdata1](#dm-sbdata1)、[sbdata0](#dm-sbdata0) |
 | 128 | 128 [sbdata3](#dm-sbdata3)、[sbdata2](#dm-sbdata2)、[sbdata1](#dm-sbdata1)、[sbdata0](#dm-sbdata0) |
 
+<a id="sbdatabits"></a>
 表 5. 系统总线数据位
 
 根据微架构的不同，通过系统总线访问访问的数据可能并不总是与每个 hart 观察到的数据一致。如果实现没有实现一致性，则由调试器来强制执行一致性。本规范没有定义执行此操作的标准方法。可能性可能包括写入特殊的内存对应关系位置，或通过程序缓冲区执行特殊指令。
@@ -608,6 +646,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 > [!note]
 > 即使调试模块也实现了程序缓冲区，实现系统总线访问块也有很多好处。首先，可以以最小的影响访问正在运行的系统中的内存。其次，它可以提高访问内存时的性能。第三，它可以提供对 hart 无法访问的设备的访问。
 
+<a id="_minimally_intrusive_debugging"></a>
 ### 3.11 最小侵入式调试
 
 根据正在执行的任务，某些 hart 只能短暂停止。有多种机制允许访问此类正在运行的系统中的资源，同时对正在运行的 hart 的影响最小。
@@ -618,6 +657,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 第三，如果实现了系统总线访问模块，则可以在 hart 运行时使用它来访问系统内存。
 
+<a id="_security"></a>
 ### 3.12 安全性
 
 为了保护知识产权，可能需要锁定对调试模块的访问。为了允许在制造过程中而不是之后进行访问，合理的解决方案可能是向调试模块添加一个熔丝位，用于永久禁用它。由于这是特定于技术的，因此本规范中没有进一步讨论。
@@ -632,6 +672,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 无法使用 [authdata](#dm-authdata) 解锁 DM 的实现不应实现该寄存器。
 
+<a id="_version_detection"></a>
 ### 3.13 版本检测
 
 要检测副作用最小的调试模块的版本，请使用以下过程：
@@ -651,6 +692,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 此过程保证在此规范的未来版本中有效。 [hartreset](#dmcontrol-hartreset)、[hasel](#dmcontrol-hasel)、[hartsello](#dmcontrol-hartsello) 和 [hartselhi](#dmcontrol-hartselhi) 当前所在的 [dmcontrol](#dm-dmcontrol) 位的含义可能会改变，但保留它们不会有副作用。清除此处未明确提及的 [dmcontrol](#dm-dmcontrol) 位不会产生除上述影响之外的副作用。
 
+<a id="debbus"></a>
 ### 3.14 调试模块寄存器
 
 本节中描述的寄存器是通过 DMI 总线访问的。每个DM都有一个基地址（第一个DM为0）。下面的寄存器地址是相对于该基地址的偏移量。
@@ -659,82 +701,84 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 |地址 |名称 |部分|
 |----|----|----|
-| 0x04 | 0x04摘要数据 0 ([data0](#dm-data0)) | [第 3.14.14 节](#dm-data0) |
-| 0x05 | 0x05摘要数据 1 (data1) |  |
-| 0x06 | 0x06摘要数据 2 (data2) |  |
-| 0x07 | 0x07摘要数据 3 (data3) |  |
-| 0x08 | 0x08摘要数据 4 (data4) |  |
-| 0x09 | 0x09摘要数据 5 (data5) |  |
-| 0x0a | 0x0a |摘要数据 6 (data6) |  |
-| 0x0b | 0x0b |摘要数据 7 (data7) |  |
-| 0x0c | 0x0c |摘要数据 8 (data8) |  |
-| 0x0d | 0x0d摘要数据 9 (data9) |  |
-| 0x0e | 0x0e |摘要数据 10 (data10) |  |
-| 0x0f | 0x0f |摘要数据 11 (data11) |  |
-| 0x10 | 0x10调试模块控制（[dmcontrol](#dm-dmcontrol)）| [第 3.14.2 节](#dm-dmcontrol) |
-| 0x11 | 0x11调试模块状态（[dmstatus](#dm-dmstatus)）| [第 3.14.1 节](#dm-dmstatus) |
-| 0x12 | 0x12 hart 信息 ([hartinfo](#dm-hartinfo)) | [第 3.14.3 节](#dm-hartinfo) |
-| 0x13 | 0x13停止摘要 1 ([haltsum1](#dm-haltsum1)) | [第 3.14.19 节](#dm-haltsum1) |
-| 0x14 | 0x14 hart 阵列窗口选择 ([hawindowsel](#dm-hawindowsel)) | [第 3.14.4 节](#dm-hawindowsel) |
-| 0x15 | 0x15 hart 阵列窗口 ([hawindow](#dm-hawindow)) | [第 3.14.5 节](#dm-hawindow) |
-| 0x16 | 0x16抽象控制和状态（[abstractcs](#dm-abstractcs)）| [第 3.14.6 节](#dm-abstractcs) |
-| 0x17 | 0x17抽象命令（[command](#dm-command)）| [第 3.14.7 节](#dm-command) |
-| 0x18 | 0x18抽象命令 Autoexec ([abstractauto](#dm-abstractauto)) | [第 3.14.8 节](#dm-abstractauto) |
-| 0x19 | 0x19配置结构指针0（[confstrptr0](#dm-confstrptr0)）| [第 3.14.9 节](#dm-confstrptr0) |
-| 0x1a | 0x1a |配置结构指针1（[confstrptr1](#dm-confstrptr1)）| [第 3.14.10 节](#dm-confstrptr1) |
-| 0x1b | 0x1b配置结构指针2（[confstrptr2](#dm-confstrptr2)）| [第 3.14.11 节](#dm-confstrptr2) |
-| 0x1c | 0x1c |配置结构指针3（[confstrptr3](#dm-confstrptr3)）| [第 3.14.12 节](#dm-confstrptr3) |
-| 0x1d | 0x1d |下一个调试模块（[nextdm](#dm-nextdm)）| [第 3.14.13 节](#dm-nextdm) |
-| 0x1f | 0x1f |自定义功能 ([custom](#dm-custom)) | [第 3.14.31 节](#dm-custom) |
-| 0x20 | 0x20程序缓冲区 0 ([progbuf0](#dm-progbuf0)) | [第 3.14.15 节](#dm-progbuf0) |
-| 0x21 | 0x21程序缓冲区 1 (progbuf1) |  |
-| 0x22 | 0x22程序缓冲区 2 (progbuf2) |  |
-| 0x23 | 0x23程序缓冲区 3 (progbuf3) |  |
-| 0x24 | 0x24程序缓冲区 4 (progbuf4) |  |
-| 0x25 | 0x25程序缓冲区 5 (progbuf5) |  |
-| 0x26 | 0x26程序缓冲区 6 (progbuf6) |  |
-| 0x27 | 0x27程序缓冲区 7 (progbuf7) |  |
-| 0x28 | 0x28程序缓冲区 8 (progbuf8) |  |
-| 0x29 | 0x29程序缓冲区 9 (progbuf9) |  |
-| 0x2a | 0x2a |程序缓冲区 10 (progbuf10) |  |
-| 0x2b | 0x2b程序缓冲区 11 (progbuf11) |  |
-| 0x2c | 0x2c程序缓冲区 12 (progbuf12) |  |
-| 0x2d | 0x2d程序缓冲区 13 (progbuf13) |  |
-| 0x2e | 0x2e |程序缓冲区 14 (progbuf14) |  |
-| 0x2f | 0x2f |程序缓冲区 15 (progbuf15) |  |
-| 0x30 | 0x30认证数据（[authdata](#dm-authdata)）| [第 3.14.16 节](#dm-authdata) |
-| 0x32 | 0x32调试模块控制和状态2 ([dmcs2](#dm-dmcs2)) | [第 3.14.17 节](#dm-dmcs2) |
-| 0x34 | 0x34停止摘要 2 ([haltsum2](#dm-haltsum2)) | [第 3.14.20 节](#dm-haltsum2) |
-| 0x35 | 0x35停止摘要 3 ([haltsum3](#dm-haltsum3)) | [第 3.14.21 节](#dm-haltsum3) |
-| 0x37 | 0x37系统总线地址 127:96 ([sbaddress3](#dm-sbaddress3)) | [第 3.14.26 节](#dm-sbaddress3) |
-| 0x38 | 0x38系统总线访问控制和状态（[sbcs](#dm-sbcs)）| [第 3.14.22 节](#dm-sbcs) |
-| 0x39 | 0x39系统总线地址31：0（[sbaddress0](#dm-sbaddress0)）| [第 3.14.23 节](#dm-sbaddress0) |
-| 0x3a | 0x3a |系统总线地址 63:32 ([sbaddress1](#dm-sbaddress1)) | [第 3.14.24 节](#dm-sbaddress1) |
-| 0x3b | 0x3b系统总线地址 95:64 ([sbaddress2](#dm-sbaddress2)) | [第 3.14.25 节](#dm-sbaddress2) |
-| 0x3c | 0x3c系统总线数据31:0 ([sbdata0](#dm-sbdata0)) | [第 3.14.27 节](#dm-sbdata0) |
-| 0x3d | 0x3d系统总线数据 63:32 ([sbdata1](#dm-sbdata1)) | [第 3.14.28 节](#dm-sbdata1) |
-| 0x3e | 0x3e系统总线数据 95:64 ([sbdata2](#dm-sbdata2)) | [第 3.14.29 节](#dm-sbdata2) |
-| 0x3f | 0x3f |系统总线数据 127:96 ([sbdata3](#dm-sbdata3)) | [第 3.14.30 节](#dm-sbdata3) |
-| 0x40 | 0x40停止摘要 0 ([haltsum0](#dm-haltsum0)) | [第 3.14.18 节](#dm-haltsum0) |
-| 0x70 | 0x70自定义功能 0 ([custom0](#dm-custom0)) | [第 3.14.32 节](#dm-custom0) |
-| 0x71 | 0x71自定义功能 1 (custom1) |  |
-| 0x72 | 0x72自定义功能 2 (custom2) |  |
-| 0x73 | 0x73自定义功能 3 (custom3) |  |
-| 0x74 | 0x74自定义功能 4 (​​custom4) |  |
-| 0x75 | 0x75自定义功能 5 (custom5) |  |
-| 0x76 | 0x76自定义功能 6 (custom6) |  |
-| 0x77 | 0x77自定义功能 7 (custom7) |  |
-| 0x78 | 0x78自定义功能 8 (custom8) |  |
-| 0x79 | 0x79自定义功能 9 (custom9) |  |
-| 0x7a | 0x7a |自定义功能 10 (custom10) |  |
-| 0x7b | 0x7b自定义功能 11 (custom11) |  |
-| 0x7c | 0x7c自定义功能 12 (custom12) |  |
-| 0x7d | 0x7d自定义功能 13 (custom13) |  |
-| 0x7e | 0x7e自定义功能 14 (custom14) |  |
-| 0x7f | 0x7f |自定义功能 15 (custom15) |  |
+| 0x04 |摘要数据 0 ([data0](#dm-data0)) | [第 3.14.14 节](#dm-data0) |
+| 0x05 |摘要数据 1 (data1) |  |
+| 0x06 |摘要数据 2 (data2) |  |
+| 0x07 |摘要数据 3 (data3) |  |
+| 0x08 |摘要数据 4 (data4) |  |
+| 0x09 |摘要数据 5 (data5) |  |
+| 0x0a |摘要数据 6 (data6) |  |
+| 0x0b |摘要数据 7 (data7) |  |
+| 0x0c |摘要数据 8 (data8) |  |
+| 0x0d |摘要数据 9 (data9) |  |
+| 0x0e |摘要数据 10 (data10) |  |
+| 0x0f |摘要数据 11 (data11) |  |
+| 0x10 |调试模块控制（[dmcontrol](#dm-dmcontrol)）| [第 3.14.2 节](#dm-dmcontrol) |
+| 0x11 |调试模块状态（[dmstatus](#dm-dmstatus)）| [第 3.14.1 节](#dm-dmstatus) |
+| 0x12 | hart 信息 ([hartinfo](#dm-hartinfo)) | [第 3.14.3 节](#dm-hartinfo) |
+| 0x13 |停止摘要 1 ([haltsum1](#dm-haltsum1)) | [第 3.14.19 节](#dm-haltsum1) |
+| 0x14 | hart 阵列窗口选择 ([hawindowsel](#dm-hawindowsel)) | [第 3.14.4 节](#dm-hawindowsel) |
+| 0x15 | hart 阵列窗口 ([hawindow](#dm-hawindow)) | [第 3.14.5 节](#dm-hawindow) |
+| 0x16 |抽象控制和状态（[abstractcs](#dm-abstractcs)）| [第 3.14.6 节](#dm-abstractcs) |
+| 0x17 |抽象命令（[command](#dm-command)）| [第 3.14.7 节](#dm-command) |
+| 0x18 |抽象命令 Autoexec ([abstractauto](#dm-abstractauto)) | [第 3.14.8 节](#dm-abstractauto) |
+| 0x19 |配置结构指针0（[confstrptr0](#dm-confstrptr0)）| [第 3.14.9 节](#dm-confstrptr0) |
+| 0x1a |配置结构指针1（[confstrptr1](#dm-confstrptr1)）| [第 3.14.10 节](#dm-confstrptr1) |
+| 0x1b |配置结构指针2（[confstrptr2](#dm-confstrptr2)）| [第 3.14.11 节](#dm-confstrptr2) |
+| 0x1c |配置结构指针3（[confstrptr3](#dm-confstrptr3)）| [第 3.14.12 节](#dm-confstrptr3) |
+| 0x1d |下一个调试模块（[nextdm](#dm-nextdm)）| [第 3.14.13 节](#dm-nextdm) |
+| 0x1f |自定义功能 ([custom](#dm-custom)) | [第 3.14.31 节](#dm-custom) |
+| 0x20 |程序缓冲区 0 ([progbuf0](#dm-progbuf0)) | [第 3.14.15 节](#dm-progbuf0) |
+| 0x21 |程序缓冲区 1 (progbuf1) |  |
+| 0x22 |程序缓冲区 2 (progbuf2) |  |
+| 0x23 |程序缓冲区 3 (progbuf3) |  |
+| 0x24 |程序缓冲区 4 (progbuf4) |  |
+| 0x25 |程序缓冲区 5 (progbuf5) |  |
+| 0x26 |程序缓冲区 6 (progbuf6) |  |
+| 0x27 |程序缓冲区 7 (progbuf7) |  |
+| 0x28 |程序缓冲区 8 (progbuf8) |  |
+| 0x29 |程序缓冲区 9 (progbuf9) |  |
+| 0x2a |程序缓冲区 10 (progbuf10) |  |
+| 0x2b |程序缓冲区 11 (progbuf11) |  |
+| 0x2c |程序缓冲区 12 (progbuf12) |  |
+| 0x2d |程序缓冲区 13 (progbuf13) |  |
+| 0x2e |程序缓冲区 14 (progbuf14) |  |
+| 0x2f |程序缓冲区 15 (progbuf15) |  |
+| 0x30 |认证数据（[authdata](#dm-authdata)）| [第 3.14.16 节](#dm-authdata) |
+| 0x32 |调试模块控制和状态2 ([dmcs2](#dm-dmcs2)) | [第 3.14.17 节](#dm-dmcs2) |
+| 0x34 |停止摘要 2 ([haltsum2](#dm-haltsum2)) | [第 3.14.20 节](#dm-haltsum2) |
+| 0x35 |停止摘要 3 ([haltsum3](#dm-haltsum3)) | [第 3.14.21 节](#dm-haltsum3) |
+| 0x37 |系统总线地址 127:96 ([sbaddress3](#dm-sbaddress3)) | [第 3.14.26 节](#dm-sbaddress3) |
+| 0x38 |系统总线访问控制和状态（[sbcs](#dm-sbcs)）| [第 3.14.22 节](#dm-sbcs) |
+| 0x39 |系统总线地址31：0（[sbaddress0](#dm-sbaddress0)）| [第 3.14.23 节](#dm-sbaddress0) |
+| 0x3a |系统总线地址 63:32 ([sbaddress1](#dm-sbaddress1)) | [第 3.14.24 节](#dm-sbaddress1) |
+| 0x3b |系统总线地址 95:64 ([sbaddress2](#dm-sbaddress2)) | [第 3.14.25 节](#dm-sbaddress2) |
+| 0x3c |系统总线数据31:0 ([sbdata0](#dm-sbdata0)) | [第 3.14.27 节](#dm-sbdata0) |
+| 0x3d |系统总线数据 63:32 ([sbdata1](#dm-sbdata1)) | [第 3.14.28 节](#dm-sbdata1) |
+| 0x3e |系统总线数据 95:64 ([sbdata2](#dm-sbdata2)) | [第 3.14.29 节](#dm-sbdata2) |
+| 0x3f |系统总线数据 127:96 ([sbdata3](#dm-sbdata3)) | [第 3.14.30 节](#dm-sbdata3) |
+| 0x40 |停止摘要 0 ([haltsum0](#dm-haltsum0)) | [第 3.14.18 节](#dm-haltsum0) |
+| 0x70 |自定义功能 0 ([custom0](#dm-custom0)) | [第 3.14.32 节](#dm-custom0) |
+| 0x71 |自定义功能 1 (custom1) |  |
+| 0x72 |自定义功能 2 (custom2) |  |
+| 0x73 |自定义功能 3 (custom3) |  |
+| 0x74 |自定义功能 4 (​​custom4) |  |
+| 0x75 |自定义功能 5 (custom5) |  |
+| 0x76 |自定义功能 6 (custom6) |  |
+| 0x77 |自定义功能 7 (custom7) |  |
+| 0x78 |自定义功能 8 (custom8) |  |
+| 0x79 |自定义功能 9 (custom9) |  |
+| 0x7a |自定义功能 10 (custom10) |  |
+| 0x7b |自定义功能 11 (custom11) |  |
+| 0x7c |自定义功能 12 (custom12) |  |
+| 0x7d |自定义功能 13 (custom13) |  |
+| 0x7e |自定义功能 14 (custom14) |  |
+| 0x7f |自定义功能 15 (custom15) |  |
 
+<a id="tab:None"></a>
 表 6. 调试模块调试总线寄存器
 
+<a id="dm-dmstatus"></a>
 #### 3.14.1 调试模块状态（dmstatus，位于 0x11）
 
 该寄存器报告整个调试模块以及当前选择的 hart 的状态，如 [hasel](#dmcontrol-hasel) 中所定义。它的地址以后不会改变，因为它包含[version](#dmstatus-version)。
@@ -770,9 +814,12 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 | <a id="dmstatus-confstrptrvalid"></a> `confstrptrvalid` | 0（无效）：[confstrptr0](#dm-confstrptr0)--[confstrptr3](#dm-confstrptr3)保存与配置结构无关的信息。 1（有效）：[confstrptr0](#dm-confstrptr0)--[confstrptr3](#dm-confstrptr3)保存配置结构体的地址。 | **R** | 预设 |
 | <a id="dmstatus-version"></a> `version` | 0（无）：不存在调试模块。 1 (0.11)：有一个调试模块，并且符合该规范的0.11版本。 2 (0.13)：有一个调试模块，符合该规范的0.13版本。 3（1.0）：有一个调试模块，并且符合该规范的1.0版本。 15（自定义）：有一个调试模块，但它不符合此规范的任何可用版本。 | **R** | 3 |
 
+<a id="dm-dmcontrol"></a>
 #### 3.14.2 调试模块控制（dmcontrol，位于 0x10）
 
 该寄存器控制整个调试模块以及当前选择的 hart，如 [hasel](#dmcontrol-hasel) 中所定义。
+
+<a id="hartsel"></a>
 
 在本文档中，我们提到 [hartsel](#hartsel)，它是 [hartselhi](#dmcontrol-hartselhi) 与 [hartsello](#dmcontrol-hartsello) 的组合。虽然规范允许 20 个 [hartsel](#hartsel) 位，但实现可能会选择实现少于此数量的位。 [hartsel](#hartsel)的实际宽度称为`HARTSELLEN`。它必须至少为 0，最多为 20。调试器应通过将所有 1 写入 [hartsel](#hartsel)（假设最大大小）并读回该值以查看实际设置了哪些位来发现 `HARTSELLEN`。在执行抽象命令时，调试器不得更改 [hartsel](#hartsel)。硬件应通过在设置 [busy](#abstractcs-busy) 时忽略对 [hartsel](#hartsel) 的更改来强制执行此操作。
 
@@ -781,7 +828,11 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 在任何给定的写入中，调试器最多只能向以下位之一写入 1：[resumereq](#dmcontrol-resumereq)、[hartreset](#dmcontrol-hartreset)、[ackhavereset](#dmcontrol-ackhavereset)、[setresethaltreq](#dmcontrol-setresethaltreq) 和 [clrresethaltreq](#dmcontrol-clrresethaltreq)。其他的必须写0。
 
+<a id="resethaltreq"></a>
+
 [resethaltreq](#resethaltreq) 是每个 hart 状态的可选内部位，无法读取，但可以使用 [setresethaltreq](#dmcontrol-setresethaltreq) 和 [clrresethaltreq](#dmcontrol-clrresethaltreq) 写入。
+
+<a id="keepalive"></a>
 
 [keepalive](#keepalive) 是每个 hart 状态的可选内部位。设置后，它建议硬件应尝试保持 hart 对调试器可用，例如通过防止其在通电后进入低功耗状态。即使该位被实现，硬件也可能无法保持 hart 可用。该位通过 [setkeepalive](#dmcontrol-setkeepalive) 和 [clrkeepalive](#dmcontrol-clrkeepalive) 写入。
 
@@ -808,6 +859,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 | <a id="dmcontrol-ndmreset"></a> `ndmreset` | 该位控制从 DM 到硬件平台其余部分的复位信号。该信号应重置硬件平台的每个部分，包括每个 hart，但 DM 和访问 DM 所需的任何逻辑除外。要执行硬件平台复位，调试器写入 1，然后写入 0 以取消复位。 | **R/W** | 0 |
 | <a id="dmcontrol-dmactive"></a> `dmactive` | 该位用作调试模块本身的复位信号。更改该位的值后，调试器必须轮询 [dmcontrol](#dm-dmcontrol)，直到 [dmactive](#dmcontrol-dmactive) 获取请求的值，然后再执行假定请求的 [dmactive](#dmcontrol-dmactive) 状态更改已完成的任何操作。硬件可能需要任意长的时间来完成激活或停用，并且将通过将 [dmactive](#dmcontrol-dmactive) 设置为请求的值来指示完成。在此期间，DM 可能会忽略任何寄存器写入。 0（无效）：模块的状态，包括身份验证机制，采用其复位值（[dmactive](#dmcontrol-dmactive) 位是唯一可以写入复位值以外的位）。对模块的任何访问都可能失败。具体来说，[version](#dmstatus-version) 可能不会返回正确的数据。 当写入该值时，DM可能会忽略同一写入中写入{dmcontrol}的任何其他位。 1（有效）：模块功能正常。 不应存在其他可能导致上电后重置调试模块的机制。 要将调试模块置于已知状态，调试器应将 0 写入 [dmactive](#dmcontrol-dmactive)，轮询直至观察到 [dmactive](#dmcontrol-dmactive) 为 0，将 1 写入 [dmactive](#dmcontrol-dmactive)，并轮询直至观察到 [dmactive](#dmcontrol-dmactive) 1. 实现可能会注意该位以进一步帮助调试，例如通过防止调试模块在调试处于活动状态时被电源门控。 | **R/W** | 0 |
 
+<a id="dm-hartinfo"></a>
 #### 3.14.3 hart 信息（hartinfo，位于 0x12）
 
 该寄存器提供有关 [hartsel](#hartsel) 当前选择的 hart 的信息。
@@ -827,6 +879,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 | <a id="hartinfo-datasize"></a> `datasize` | 如果 [dataaccess](#hartinfo-dataaccess) 为 0：专用于对应关系 `data` 寄存器的 CSR 数量。 如果 [dataaccess](#hartinfo-dataaccess) 为 1：存储器对应关系中专用于隐藏 `data` 寄存器的 32 位字的数量。 由于`data`寄存器最多有12个，因此该寄存器中的值必须为12或更小。 | **R** | 预设 |
 | <a id="hartinfo-dataaddr"></a> `dataaddr` | 如果 [dataaccess](#hartinfo-dataaccess) 为 0：专用于对应关系 `data` 寄存器的第一个 CSR 的编号。 如果[dataaccess](#hartinfo-dataaccess)为1：数据寄存器被隐藏的RAM地址。该地址经过符号扩展，范围为 -2048 到 2047，可以使用 `x0` 作为地址寄存器通过加载或存储轻松寻址。 | **R** | 预设 |
 
+<a id="dm-hawindowsel"></a>
 #### 3.14.4 hart 数组窗口选择（hawindowsel，位于 0x14）
 
 该寄存器选择 hart 阵列掩码寄存器（参见 [第 3.3.2 节](#hartarraymask)）的哪个 32 位部分可在 [hawindow](#dm-hawindow) 中访问。
@@ -837,6 +890,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 | --- | --- | --- | --- |
 | <a id="hawindowsel-hawindowsel"></a> `hawindowsel` | 该字段的高位可以绑定为 0，具体取决于数组掩码寄存器有多大。例如。在具有 48 个 hart 的硬件平台上，该字段中只有位 0 实际上是可写的。 | **WARL** | 0 |
 
+<a id="dm-hawindow"></a>
 #### 3.14.5 hart 数组窗口（hawindow，位于 0x15）
 
 该寄存器提供对 hart 阵列掩码寄存器的 32 位部分的 R/W 访问（请参见 [第 3.3.2 节](#hartarraymask)）。窗口的位置由[hawindowsel](#dm-hawindowsel)决定。 IE。位0指的是hart [hawindowsel](#dm-hawindowsel) \\\* 32\\，而位31指的是hart [hawindowsel](#dm-hawindowsel) \\\* 32 + 31\\。
@@ -845,6 +899,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 ![寄存器位域图：3.14.5 hart 数组窗口（hawindow，位于 0x15）](RISC-V调试规范v1.0-中文学习版.assets/位域图-12.svg)
 
+<a id="dm-abstractcs"></a>
 #### 3.14.6 抽象控制和状态（abstractcs，位于 0x16）
 
 在执行抽象命令时写入该寄存器会导致命令完成后 [cmderr](#abstractcs-cmderr) 变为 1（忙）（[busy](#abstractcs-busy) 变为 0）。
@@ -862,6 +917,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 | <a id="abstractcs-cmderr"></a> `cmderr` | 如果抽象命令失败则设置。该字段中的位保持设置状态，直到通过向其写入 1 将其清除为止。在该值重置为 0. 之前，不会启动任何抽象命令 仅当 [busy](#abstractcs-busy) 为 0 时，该字段才包含有效值。 0（无）：无错误。 1（忙）：在写入 [command](#dm-command)、[abstractcs](#dm-abstractcs) 或 [abstractauto](#dm-abstractauto) 时，或者在读取或写入 `data` 或 `progbuf` 寄存器之一时，正在执行抽象命令。仅当 [cmderr](#abstractcs-cmderr) 包含 0. 时才写入此状态 2（不支持）：不支持[command](#dm-command)中的命令。不同的选项设置可能会支持，但以后当 hart 或系统状态不同时，将不再支持。 3（异常）：执行命令时（例如执行程序缓冲区时）发生异常。 4（停止/恢复）：抽象命令无法执行，因为 hart 未处于所需状态（运行/停止）或不可用。 5（总线）：由于总线错误（例如对齐、访问大小或超时），抽象命令失败。 6（保留）：保留供将来使用。 7（其他）：命令因其他原因失败。 | **R/W1C** | 0 |
 | <a id="abstractcs-datacount"></a> `datacount` | 作为抽象命令接口的一部分实现的 `data` 寄存器的数量。有效尺寸为 1 — 12. | **R** | 预设 |
 
+<a id="dm-command"></a>
 #### 3.14.7 抽象命令（命令，位于 0x17）
 
 写入该寄存器会导致执行相应的抽象命令。
@@ -880,6 +936,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 | <a id="command-cmdtype"></a> `cmdtype` | 的类型决定了这个抽象命令的整体功能。 | **WARZ** | 0 |
 | <a id="command-control"></a> `control` | 该字段以特定于命令的方式解释，为每个抽象命令进行描述。 | **WARZ** | 0 |
 
+<a id="dm-abstractauto"></a>
 #### 3.14.8 抽象命令 Autoexec（abstractauto，位于 0x18）
 
 该寄存器是可选的。包含它可以实现更高效的突发访问。调试器可以通过设置位并读回它们来检测是否支持。
@@ -895,6 +952,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 | <a id="abstractauto-autoexecprogbuf"></a> `autoexecprogbuf` | 当该字段中的某个位为 1 时，对相应 `progbuf` 字的读或写访问会导致 DM 的行为就像在对 `progbuf` 的访问完成后再次写入 [ 命令 ](#dm-command) 中的当前值一样。 | **WARL** | 0 |
 | <a id="abstractauto-autoexecdata"></a> `autoexecdata` | 当该字段中的某个位为 1 时，对相应 `data` 字的读或写访问会导致 DM 的行为就像在对 `data` 的访问完成后再次写入 [ 命令 ](#dm-command) 中的当前值一样。 | **WARL** | 0 |
 
+<a id="dm-confstrptr0"></a>
 #### 3.14.9 配置结构指针 0（confstrptr0，位于 0x19）
 
 当 [confstrptrvalid](#dmstatus-confstrptrvalid) 置位时，读取该寄存器将返回配置结构指针的位 31:0。读取其他 `confstrptr` 寄存器将返回地址的高位。
@@ -909,6 +967,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 ![寄存器位域图：3.14.9 配置结构指针 0（confstrptr0，位于 0x19）](RISC-V调试规范v1.0-中文学习版.assets/位域图-16.svg)
 
+<a id="dm-confstrptr1"></a>
 #### 3.14.10 配置结构指针 1（confstrptr1，位于 0x1a）
 
 当 [confstrptrvalid](#dmstatus-confstrptrvalid) 置位时，读取该寄存器将返回配置结构指针的位 63:32。更多详情请参见 [confstrptr0](#dm-confstrptr0)。
@@ -917,6 +976,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 ![寄存器位域图：3.14.10 配置结构指针 1（confstrptr1，位于 0x1a）](RISC-V调试规范v1.0-中文学习版.assets/位域图-17.svg)
 
+<a id="dm-confstrptr2"></a>
 #### 3.14.11 配置结构指针 2（confstrptr2，位于 0x1b）
 
 当 [confstrptrvalid](#dmstatus-confstrptrvalid) 置位时，读取该寄存器将返回配置结构指针的位 95:64。更多详情请参见 [confstrptr0](#dm-confstrptr0)。
@@ -925,6 +985,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 ![寄存器位域图：3.14.11 配置结构指针 2（confstrptr2，位于 0x1b）](RISC-V调试规范v1.0-中文学习版.assets/位域图-18.svg)
 
+<a id="dm-confstrptr3"></a>
 #### 3.14.12 配置结构指针 3（confstrptr3，位于 0x1c）
 
 当 [confstrptrvalid](#dmstatus-confstrptrvalid) 置位时，读取该寄存器将返回配置结构指针的位 127:96。更多详情请参见 [confstrptr0](#dm-confstrptr0)。
@@ -933,6 +994,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 ![寄存器位域图：3.14.12 配置结构指针 3（confstrptr3，位于 0x1c）](RISC-V调试规范v1.0-中文学习版.assets/位域图-19.svg)
 
+<a id="dm-nextdm"></a>
 #### 3.14.13 下一个调试模块（nextdm，位于 0x1d）
 
 如果在此 DMI 上可访问多个 DM，则该寄存器包含链中下一个的基地址，如果这是链中的最后一个，则为 0。
@@ -941,6 +1003,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 ![寄存器位域图：3.14.13 下一个调试模块（nextdm，位于 0x1d）](RISC-V调试规范v1.0-中文学习版.assets/位域图-20.svg)
 
+<a id="dm-data0"></a>
 #### 3.14.14 抽象数据 0（data0，位于 0x04）
 
 [data0](#dm-data0) 到 data11 是可以通过抽象命令读取或更改的寄存器。 [datacount](#abstractcs-datacount)表示实现了多少个，从[data0](#dm-data0)开始，向上计数。 [表 2](#tab:datareg) 显示了抽象命令如何使用这些寄存器。
@@ -953,6 +1016,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 ![寄存器位域图：3.14.14 抽象数据 0（data0，位于 0x04）](RISC-V调试规范v1.0-中文学习版.assets/位域图-21.svg)
 
+<a id="dm-progbuf0"></a>
 #### 3.14.15 程序缓冲区 0（progbuf0，位于 0x20）
 
 [progbuf0](#dm-progbuf0) 到 progbuf15 必须提供对可选程序缓冲区的写访问。调试器还可以通过这些寄存器从程序缓冲区读取数据。如果不支持读取，则所有读取都返回 0。
@@ -965,6 +1029,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 ![寄存器位域图：3.14.15 程序缓冲区 0（progbuf0，位于 0x20）](RISC-V调试规范v1.0-中文学习版.assets/位域图-22.svg)
 
+<a id="dm-authdata"></a>
 #### 3.14.16 身份验证数据（authdata，位于 0x30）
 
 该寄存器用作与认证模块之间的 32 位串行端口。
@@ -973,6 +1038,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 ![寄存器位域图：3.14.16 身份验证数据（authdata，位于 0x30）](RISC-V调试规范v1.0-中文学习版.assets/位域图-23.svg)
 
+<a id="dm-dmcs2"></a>
 #### 3.14.17 调试模块控制和状态 2（dmcs2，位于 0x32）
 
 该寄存器包含 DM 控制和状态位，这些位不容易适合 [dmcontrol](#dm-dmcontrol) 和 [dmstatus](#dm-dmstatus)。全部都是可选的。
@@ -993,42 +1059,46 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 | <a id="dmcs2-hgwrite"></a> `hgwrite` | 当写入 1 且 [hgselect](#dmcs2-hgselect) 为 0 时，对于每个选定的 hart，DM 会将其组更改为写入 [group](#dmcs2-group) 的值（如果硬件支持该 hart 的该组）。如果由于硬件限制而有必要，实现也可以以相同的方式更改未选择的 hart 的最小集合的组。 当写入 1 且 [hgselect](#dmcs2-hgselect) 为 1 时，如果硬件支持该触发组，则 DM 会将 [dmexttrigger](#dmcs2-dmexttrigger) 选择的 DM 外部触发组更改为写入 [group](#dmcs2-group) 的值。 写0无效。 | **W1** | - |
 | <a id="dmcs2-hgselect"></a> `hgselect` | 0（hart）：在hart.上操作 1（触发器）：在 DM 外部触发器上操作。 如果没有 DM 外部触发器，则该字段必须绑定到 0. | **WARL** | 0 |
 
+<a id="dm-haltsum0"></a>
 #### 3.14.18 停止摘要 0（haltsum0，位于 0x40）
 
 该只读寄存器中的每一位指示一个特定的 hart 是否停止。不可用/不存在的 hart 不被视为已停止。
 
 如果少于 2 个 hart 连接到该 DM，则该寄存器可能不存在。
 
-LSB 反映了 hart {hartsel\[19:5\],5'h0} 的停止状态，MSB 反映了 hart {hartsel\[19:5\],5'h1f} 的停止状态。
+LSB 反映了 hart {hartsel[19:5],5'h0} 的停止状态，MSB 反映了 hart {hartsel[19:5],5'h1f} 的停止状态。
 
 整个寄存器是只读的。
 
 ![寄存器位域图：3.14.18 停止摘要 0（haltsum0，位于 0x40）](RISC-V调试规范v1.0-中文学习版.assets/位域图-25.svg)
 
+<a id="dm-haltsum1"></a>
 #### 3.14.19 停止摘要 1（haltsum1，位于 0x13）
 
 该只读寄存器中的每一位指示是否有一组 hart 被暂停。不可用/不存在的 hart 不被视为已停止。
 
 如果少于 33 个 hart 连接到该 DM，则该寄存器可能不存在。
 
-LSB 反映了 hart {hartsel\[19:10\],10'h0} 到 {hartsel\[19:10\],10'h1f} 的停止状态。 MSB反映了hart {hartsel\[19:10\],10'h3e0}到{hartsel\[19:10\],10'h3ff}的停止状态。
+LSB 反映了 hart {hartsel[19:10],10'h0} 到 {hartsel[19:10],10'h1f} 的停止状态。 MSB反映了hart {hartsel[19:10],10'h3e0}到{hartsel[19:10],10'h3ff}的停止状态。
 
 整个寄存器是只读的。
 
 ![寄存器位域图：3.14.19 停止摘要 1（haltsum1，位于 0x13）](RISC-V调试规范v1.0-中文学习版.assets/位域图-26.svg)
 
+<a id="dm-haltsum2"></a>
 #### 3.14.20 停止摘要 2（haltsum2，位于 0x34）
 
 该只读寄存器中的每一位指示是否有一组 hart 被暂停。不可用/不存在的 hart 不被视为已停止。
 
 如果少于 1025 个 hart 连接到该 DM，则该寄存器可能不存在。
 
-LSB 反映了 hart {hartsel\[19:15\],15'h0} 到 {hartsel\[19:15\],15'h3ff} 的停止状态。 MSB反映了hart {hartsel\[19:15\],15'h7c00}到{hartsel\[19:15\],15'h7fff}的停止状态。
+LSB 反映了 hart {hartsel[19:15],15'h0} 到 {hartsel[19:15],15'h3ff} 的停止状态。 MSB反映了hart {hartsel[19:15],15'h7c00}到{hartsel[19:15],15'h7fff}的停止状态。
 
 整个寄存器是只读的。
 
 ![寄存器位域图：3.14.20 停止摘要 2（haltsum2，位于 0x34）](RISC-V调试规范v1.0-中文学习版.assets/位域图-27.svg)
 
+<a id="dm-haltsum3"></a>
 #### 3.14.21 停止摘要 3（haltsum3，位于 0x35）
 
 该只读寄存器中的每一位指示是否有一组 hart 被暂停。不可用/不存在的 hart 不被视为已停止。
@@ -1041,6 +1111,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 ![寄存器位域图：3.14.21 停止摘要 3（haltsum3，位于 0x35）](RISC-V调试规范v1.0-中文学习版.assets/位域图-28.svg)
 
+<a id="dm-sbcs"></a>
 #### 3.14.22 系统总线访问控制和状态（sbcs，位于 0x38）
 
 ![寄存器位域图：3.14.22 系统总线访问控制和状态（sbcs，位于 0x38）](RISC-V调试规范v1.0-中文学习版.assets/位域图-29.svg)
@@ -1064,6 +1135,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 | <a id="sbcs-sbaccess16"></a> `sbaccess16` | 当支持16位系统总线访问时为1。 | **R** | 预设 |
 | <a id="sbcs-sbaccess8"></a> `sbaccess8` | 当支持8位系统总线访问时为1。 | **R** | 预设 |
 
+<a id="dm-sbaddress0"></a>
 #### 3.14.23 系统总线地址 31:0（sbaddress0，位于 0x39）
 
 如果 [sbasize](#sbcs-sbasize) 为 0，则该寄存器不存在。
@@ -1083,6 +1155,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 | --- | --- | --- | --- |
 | <a id="sbaddress0-address"></a> `address` | 访问`sbaddress`.中物理地址的位31:0 | **R/W** | 0 |
 
+<a id="dm-sbaddress1"></a>
 #### 3.14.24 系统总线地址 63:32（sbaddress1，位于 0x3a）
 
 如果 [sbasize](#sbcs-sbasize) 小于 33，则该寄存器不存在。
@@ -1095,6 +1168,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 | --- | --- | --- | --- |
 | <a id="sbaddress1-address"></a> `address` | 访问 `sbaddress` 中物理地址的位 63:32（如果系统地址总线那么宽）。 | **R/W** | 0 |
 
+<a id="dm-sbaddress2"></a>
 #### 3.14.25 系统总线地址 95:64（sbaddress2，位于 0x3b）
 
 如果 [sbasize](#sbcs-sbasize) 小于 65，则该寄存器不存在。
@@ -1107,6 +1181,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 | --- | --- | --- | --- |
 | <a id="sbaddress2-address"></a> `address` | 访问 `sbaddress` 中物理地址的位 95:64（如果系统地址总线那么宽）。 | **R/W** | 0 |
 
+<a id="dm-sbaddress3"></a>
 #### 3.14.26 系统总线地址 127:96（sbaddress3，位于 0x37）
 
 如果 [sbasize](#sbcs-sbasize) 小于 97，则该寄存器不存在。
@@ -1119,6 +1194,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 | --- | --- | --- | --- |
 | <a id="sbaddress3-address"></a> `address` | 访问 `sbaddress` 中物理地址的位 127:96（如果系统地址总线那么宽）。 | **R/W** | 0 |
 
+<a id="dm-sbdata0"></a>
 #### 3.14.27 系统总线数据 31:0（sbdata0，位于 0x3c）
 
 如果 [sbcs](#dm-sbcs) 中的所有 `sbaccess` 位均为 0，则该寄存器不存在。
@@ -1153,6 +1229,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 | --- | --- | --- | --- |
 | <a id="sbdata0-data"></a> `data` | 访问 `sbdata`. 的位 31:0 | **R/W** | 0 |
 
+<a id="dm-sbdata1"></a>
 #### 3.14.28 系统总线数据 63:32（sbdata1，位于 0x3d）
 
 如果 [sbaccess64](#sbcs-sbaccess64) 和 [sbaccess128](#sbcs-sbaccess128) 为 0，则该寄存器不存在。
@@ -1165,6 +1242,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 | --- | --- | --- | --- |
 | <a id="sbdata1-data"></a> `data` | 访问 `sbdata` 的位 63:32（如果系统总线那么宽）。 | **R/W** | 0 |
 
+<a id="dm-sbdata2"></a>
 #### 3.14.29 系统总线数据 95:64（sbdata2，位于 0x3e）
 
 仅当 [sbaccess128](#sbcs-sbaccess128) 为 1 时该寄存器才存在。
@@ -1177,6 +1255,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 | --- | --- | --- | --- |
 | <a id="sbdata2-data"></a> `data` | 访问 `sbdata` 的位 95:64（如果系统总线那么宽）。 | **R/W** | 0 |
 
+<a id="dm-sbdata3"></a>
 #### 3.14.30 系统总线数据 127:96（sbdata3，位于 0x3f）
 
 仅当 [sbaccess128](#sbcs-sbaccess128) 为 1 时该寄存器才存在。
@@ -1189,14 +1268,17 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 | --- | --- | --- | --- |
 | <a id="sbdata3-data"></a> `data` | 访问 `sbdata` 的位 127:96（如果系统总线那么宽）。 | **R/W** | 0 |
 
+<a id="dm-custom"></a>
 #### 3.14.31 自定义功能（自定义，位于 0x1f）
 
 该可选寄存器可用于非标准功能。未来版本的调试规范将不会使用此地址。
 
+<a id="dm-custom0"></a>
 #### 3.14.32 自定义功能 0（custom0，位于 0x70）
 
 可选的 [custom0](#dm-custom0) 到 custom15 寄存器可用于非标准功能。调试规范的未来版本将不会使用这些地址。
 
+<a id="core_debug"></a>
 ## 4. Sdext（ISA 扩展）
 
 > [!note]- Mote · 这是 hart 内部的调试规则
@@ -1210,6 +1292,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 如果实现了 Sdext 而未实现 Sdtrig，则访问任何 Sdtrig CSR 都必须引发非法指令异常。
 
+<a id="debugmode"></a>
 ### 4.1 调试模式
 
 调试模式是一种特殊的处理器模式，仅在 hart 停止进行外部调试时使用。由于 hart 已暂停，因此正常指令流中没有前进进度。调试模式是如何实现的，这里不做具体说明。
@@ -1235,6 +1318,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 > [!note]
 > 当 [mprven](#dcsr-mprven) 时，外部调试器可以适当地设置 MPRV 和 MPP，以使硬件以适当的字节序、地址转换、权限检查和 PMP/PMA 检查（受 [relaxedpriv](#abstractcs-relaxedpriv) 约束）执行内存访问。当 Sv32 hart 支持 34 位物理地址时，这也是访问所有物理内存的唯一方法。如果硬件将 [mprven](#dcsr-mprven) 绑定到 0，则外部调试器预计将模拟 MPRV 的所有效果，包括影响内存访问的任何扩展。由于这些原因，建议将 [mprven](#dcsr-mprven) 绑定到 1.
 
+<a id="_load_reservedstore_conditional_instructions"></a>
 ### 4.2 加载保留/条件存储指令
 
 当进入调试模式或处于调试模式时，由 `lr` 指令在内存地址上注册的保留可能会丢失。这意味着如果在 `lr` 和 `sc` 对之间进入调试模式，则可能不会有任何进展。
@@ -1242,18 +1326,22 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 > [!note]
 > 这是调试用户必须注意的行为。如果他们在 `lr` 和 `sc` 对之间设置了断点，或者单步执行此类代码，则 `sc` 可能永远不会成功。幸运的是，在一般使用中，这样的序列中的指令很少，任何调试它的人都会很快注意到预留没有发生。这种情况的解决方案是在 `sc` 之后的第一条指令上设置断点并运行到该指令。更高级别的调试器可能会选择自动执行此操作。
 
+<a id="_wait_for_interrupt_instruction"></a>
 ### 4.3 等待中断指令
 
 如果在 `wfi` 执行时请求暂停，则 hart 必须离开停止状态，完成该指令的执行，然后进入调试模式。
 
+<a id="_wait_on_reservation_set_instructions"></a>
 ### 4.4 等待保留集指令
 
 如果在执行 `wrs.sto` 或 `wrs.nto` 时请求暂停，则 hart 必须离开停止状态，完成该指令的执行，然后进入调试模式。
 
+<a id="_single_step"></a>
 ### 4.5 单步
 
 > [!tip] Tips · 单步不是“执行一条后永远无中断”：`stepie` 决定是否允许中断；触发器和异常的优先级也会影响最终停下的位置。
 
+<a id="stepbit"></a>
 #### 4.5.1 DCSR 中的步进位
 
 此方法仅适用于外部调试器，并且是单步的首选方法。
@@ -1268,6 +1356,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 如果被跳过的指令通常会停止 hart，则该指令将被视为 `nop`。这包括 `wfi`、`wrs.sto` 和 `wrs.nto`。
 
+<a id="stepicount"></a>
 #### 4.5.2 计数触发
 
 本机调试器无法访问 [dcsr](#csr-dcsr)，但可以通过将 [count](#icount-count) 设置为 1 来使用 [icount](#csr-icount) 触发器。
@@ -1279,10 +1368,12 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 这种机制完全支持支持多个特权级别的系统，其中操作系统或调试存根在 M 模式下运行，而正在调试的程序在特权较低的模式下运行。仅支持 M 模式的系统也可以使用 [icount](#csr-icount)，但 [count](#icount-count) 必须能够计算多个指令（取决于软件实现）。参见 [Section B.3.1](#nativestep)。
 
+<a id="_reset"></a>
 ### 4.6 复位
 
 如果在 hart 退出复位时停止信号（由调试模块中 hart 的停止请求位驱动）或 [hasresethaltreq](#dmstatus-hasresethaltreq) 被置位，则 hart 必须在执行任何指令之前（但在执行通常在执行第一条指令之前发生的任何初始化之后）进入调试模式。
 
+<a id="_halt"></a>
 ### 4.7 暂停
 
 当 hart 停止时：
@@ -1294,6 +1385,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 5. 如果当前指令可以部分执行并且应该重新启动才能完成，则更新其相关状态。例如。如果在部分执行的向量指令期间发生暂停，则更新 `vstart`，并将 [dpc](#csr-dpc) 更新为部分执行的指令的地址。这类似于向量指令对于异常的行为方式。
 6. hart 进入调试模式。
 
+<a id="_resume"></a>
 ### 4.8 恢复
 
 当 hart 恢复时：
@@ -1306,6 +1398,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 6. 如果实现了 Ssdbltrp 扩展，并且新的特权模式是 U、VS 或 VU，则 `sstatus.SDT` 设置为 0。此外，如果是 VU，则 `vsstatus.SDT` 也设置为 0。
 7. hart 不再处于调试模式。
 
+<a id="debreg"></a>
 ### 4.9 核心调试寄存器
 
 必须为每个可调试的 hart 实现受支持的内核调试寄存器。它们是 CSR，可以使用 RISC-V `csr` 操作码进行访问，也可以选择使用抽象调试命令。
@@ -1316,13 +1409,15 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 |地址 |名称 |部分|
 |----|----|----|
-| 0x7b0 | 0x7b0 |调试控制和状态（[dcsr](#csr-dcsr)）| [第 4.9.1 节](#csr-dcsr) |
-| 0x7b1 | 0x7b1调试电脑（[dpc](#csr-dpc)）| [第 4.9.2 节](#csr-dpc) |
-| 0x7b2 | 0x7b2调试暂存寄存器 0 ([dscratch0](#csr-dscratch0)) | [第 4.9.3 节](#csr-dscratch0) |
-| 0x7b3 | 0x7b3调试暂存寄存器 1 ([dscratch1](#csr-dscratch1)) | [第 4.9.4 节](#csr-dscratch1) |
+| 0x7b0 |调试控制和状态（[dcsr](#csr-dcsr)）| [第 4.9.1 节](#csr-dcsr) |
+| 0x7b1 |调试电脑（[dpc](#csr-dpc)）| [第 4.9.2 节](#csr-dpc) |
+| 0x7b2 |调试暂存寄存器 0 ([dscratch0](#csr-dscratch0)) | [第 4.9.3 节](#csr-dscratch0) |
+| 0x7b3 |调试暂存寄存器 1 ([dscratch1](#csr-dscratch1)) | [第 4.9.4 节](#csr-dscratch1) |
 
+<a id="tab:core"></a>
 表 7. 核心调试寄存器
 
+<a id="csr-dcsr"></a>
 #### 4.9.1 调试控制和状态（dcsr，位于 0x7b0）
 
 进入调试模式后，[v](#dcsr-v) 和 [prv](#dcsr-prv) 将更新为 hart 之前所处的权限级别，[cause](#dcsr-cause) 将更新为进入调试模式的原因。除了这些字段和[nmip](#dcsr-nmip)之外，[dcsr](#csr-dcsr)的其他字段只能由外部调试器写入。
@@ -1341,6 +1436,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 | 1 |电子突破 |
 | 4 |步骤|
 
+<a id="tab:dcsrcausepriority"></a>
 表 8. 进入调试模式的原因优先级从最高到最低。
 
 > [!note]
@@ -1373,6 +1469,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 | <a id="dcsr-step"></a> `step` | 当设置且未处于调试模式时，hart 将仅执行单个指令，然后进入调试模式。详细信息请参见[第4.5.1](#stepbit)。 hart 运行时，调试器不得更改该位的值。 | **R/W** | 0 |
 | <a id="dcsr-prv"></a> `prv` | 包含进入调试模式时 hart 运行的特权模式。 [表11](#tab:privmode)中描述了编码。调试器可以在退出调试模式时更改此值以更改 hart 的特权模式。 并非所有权限模式在所有 hart 上均受支持。如果不支持写入的编码或不允许调试器更改它，则 hart 可能会更改为任何支持的特权模式。 | **WARL** | 3 |
 
+<a id="csr-dpc"></a>
 #### 4.9.2 调试 PC（dpc，位于 0x7b1）
 
 进入调试模式后，[dpc](#csr-dpc) 将更新为要执行的下一条指令的虚拟地址。 [表 9](#tab:dpc) 中更详细地描述了该行为。
@@ -1384,6 +1481,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 |触发模块|进入调试模式时要执行的下一条指令的地址。如果触发器是 [mcontrol](#csr-mcontrol) 且 [timing](#mcontrol-timing) 为 0，或者触发器为 [mcontrol6](#csr-mcontrol6) 且 `hit1` 为 0，则这对应于导致触发器触发的指令的地址。 |
 |停止请求|进入调试模式时要执行的下一条指令的地址。 |
 
+<a id="tab:dpc"></a>
 表 9. DPC 中的虚拟地址。
 
 执行程序缓冲区可能会导致 [dpc](#csr-dpc) 的值变为 UNSPECIFIED。如果是这种情况，则必须可以使用未设置 [postexec](#accessregister-postexec) 的抽象命令来读/写 [dpc](#csr-dpc)。调试器必须尝试在停止和执行程序缓冲区之间保存 [dpc](#csr-dpc)，然后在离开调试模式之前恢复 [dpc](#csr-dpc)。
@@ -1403,6 +1501,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 ![寄存器位域图：4.9.2 调试 PC（dpc，位于 0x7b1）](RISC-V调试规范v1.0-中文学习版.assets/位域图-41.svg)
 
+<a id="csr-dscratch0"></a>
 #### 4.9.3 调试暂存寄存器 0（dscratch0，位于 0x7b2）
 
 可选的暂存寄存器可供需要它的实现使用。调试器不得写入该寄存器，除非 [hartinfo](#dm-hartinfo) 明确提及它（调试模块可以在内部使用该寄存器）。
@@ -1411,6 +1510,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 ![寄存器位域图：4.9.3 调试暂存寄存器 0（dscratch0，位于 0x7b2）](RISC-V调试规范v1.0-中文学习版.assets/位域图-42.svg)
 
+<a id="csr-dscratch1"></a>
 #### 4.9.4 调试暂存寄存器 1（dscratch1，位于 0x7b3）
 
 可选的暂存寄存器可供需要它的实现使用。调试器不得写入该寄存器，除非 [hartinfo](#dm-hartinfo) 明确提及它（调试模块可以在内部使用该寄存器）。
@@ -1419,6 +1519,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 ![寄存器位域图：4.9.4 调试暂存寄存器 1（dscratch1，位于 0x7b3）](RISC-V调试规范v1.0-中文学习版.assets/位域图-43.svg)
 
+<a id="virtreg"></a>
 ### 4.10 虚拟调试寄存器
 
 虚拟寄存器并不直接存在于硬件中，但调试器将其公开，就好像它确实存在一样。调试软件应该实现它们，但硬件可以跳过这一部分。虚拟寄存器的存在是为了让用户能够访问不属于标准调试器的功能，而无需他们在调试器访问这些相同的寄存器时仔细修改调试寄存器。
@@ -1427,8 +1528,10 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 |---------|-------------------------------------|------------------------------|
 |虚拟|特权模式（[priv](#virt-priv)）| [第 4.10.1 节](#virt-priv) |
 
+<a id="tab:virtual"></a>
 表 10. 虚拟内核调试寄存器
 
+<a id="virt-priv"></a>
 #### 4.10.1 特权模式（priv、at virtual）
 
 用户可以读取该寄存器来检查 hart 停止时 hart 运行的特权模式。用户可以写入该寄存器来更改hart恢复时运行的特权模式。
@@ -1446,6 +1549,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 |是的 | 1 | 0 | VU 模式 |虚拟用户模式|
 |是的 | 1 | 1 | VS 模式 |虚拟主管模式 |
 
+<a id="tab:privmode"></a>
 表 11. 特权模式和虚拟化模式编码
 
 ![寄存器位域图：4.10.1 特权模式（priv、at virtual）](RISC-V调试规范v1.0-中文学习版.assets/位域图-44.svg)
@@ -1455,6 +1559,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 | <a id="priv-v"></a> `v` | 包含进入调试模式时 hart 运行的虚拟化模式。 [表 11](#tab:privmode) 中描述了该编码，并且与特权规范中的虚拟化模式编码相匹配。用户可以在退出调试模式时写入该值来更改hart的虚拟化模式。 | **WARL** | 0 |
 | <a id="priv-prv"></a> `prv` | 包含进入调试模式时 hart 运行的特权模式。该编码在 [ 表 11](#tab:privmode) 中进行了描述，并且与特权规范中的特权模式编码相匹配。用户可以在退出调试模式时写入此值来更改 hart 的权限模式。 | **R/W** | 0 |
 
+<a id="trigger"></a>
 ## 5. Sdtrig（ISA 扩展）
 
 > [!note]- Mote · Trigger 是“何时停”的硬件条件器
@@ -1470,6 +1575,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 在调试模式下触发器不会触发。
 
+<a id="_enumeration"></a>
 ### 5.1 枚举
 
 每个触发器可以支持多种功能。调试器可以构建所有触发器及其功能的列表，如下所示：
@@ -1485,10 +1591,12 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 > [!note]
 > 上述算法读回[tselect](#csr-tselect)，以便具有$2^n$个触发器的实现只需要实现[tselect](#csr-tselect).的$n$位 该算法检查 [tinfo](#csr-tinfo) 和 [type](#tdata1-type)，以防实现具有 $m$ 位 [tselect](#csr-tselect) 但少于 $2^m$ 个触发器。
 
+<a id="_actions"></a>
 ### 5.2 动作
 
 触发器可以配置为在触发时执行多种操作之一。 [表 12](#tab:action) 列出了所有选项。
 
+<a id="tab:action"></a>
 | 值 | 描述 |
 | --- | --- |
 | 0 | 引发断点异常。 （当软件想要在没有连接外部调试器的情况下使用触发模块时使用。）`xepc` 必须包含必须执行的下一条指令的虚拟地址以保留程序流程。 |
@@ -1503,12 +1611,14 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 > [!note]
 > 操作 8 和 9 旨在增加自定义事件计数器，但这些信号也可以传送到输出以供外部逻辑使用。
 
+<a id="_priority"></a>
 ### 5.3 优先级
 
 [表 13](#tab:priority) 列出了特权规范中的同步异常，以及各种类型的触发器适合的位置。前 3 列来自特权规范，最后一列显示触发器适合的位置。表中的优先级由水平线分隔，因此例如etrigger 和 itrigger 具有相同的优先级。如果此表与特权规范中的表相矛盾，则后者优先。
 
 该表仅适用于触发器精确的情况。否则，触发器将在事件发生后的某个不确定时间触发，并且优先级无关紧要。当触发器被链接时，优先级是链中触发器的最低优先级。
 
+<a id="tab:priority"></a>
 | 优先级 | 异常代码 | 描述 | 触发器 |
 | --- | --- | --- | --- |
 | *最高* | 3 3 3 3 |  | etrigger icount 触发 mcontrol/mcontrol6 之后（在上一条指令上） |
@@ -1525,6 +1635,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 当同一优先级的多个触发器同时触发时，将为所有触发器设置 [hit](#mcontrol-hit)（如果已实现）。如果这些触发器中有多个 [action](#mcontrol-action)=0 ，则 `tval` 根据其中之一进行更新，但哪一个是 UNSPECIFIED 。如果这些触发器之一具有“进入调试模式”操作 (1)，而另一个触发器具有“引发断点异常”操作 (0)，则首选行为是同时执行这两个操作。两者中哪一个先发生取决于实现。这确保了外部调试器的存在不会影响执行，并且用户代码设置的触发器不会影响外部调试器。如果未实现，则 hart 必须进入调试模式并忽略断点异常。在后一种情况下，动作为 0 的触发器的 [hit](#mcontrol-hit) 仍必须被设置，从而使调试器有机会处理这种情况。由于动作为 0 或 1 以外的触发器不会影响 hart 的执行，因此优先级表中未提及它们。此类触发器独立于动作为 0 或 1 的触发器而触发。
 
+<a id="nativetrigger"></a>
 ### 5.4 原生触发器
 
 > [!tip] Tips · 配置 trigger 前先枚举 `tselect`/`tinfo`。不同槽位支持的类型和可写字段可能不同；写入后应读回确认 WARL 约束后的值。
@@ -1538,16 +1649,18 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 支持 [action](#mcontrol-action)=0 触发器的 hart 应实现以下两种解决方案之一来解决重入问题：
 
-1. 当处于 M 模式且 `mstatus` 中的 `MIE` 为 0 时，硬件会阻止 [action](#mcontrol-action)=0 的触发器匹配或触发。如果 `medeleg` \[3\]=1，则它会阻止 [action](#mcontrol-action)=0 的触发器在 S 模式下且 `sstatus` 中的 `SIE` 为 0 时匹配或触发。如果 `medeleg` \[3\]=1 和 `hedeleg` \[3\]=1 那么它会阻止 [action](#mcontrol-action)=0 的触发器在 VS 模式下以及 `vstatus` 中的 `SIE` 为 0 时匹配或触发。
-2. 实现[tcontrol](#csr-tcontrol)中的[mte](#tcontrol-mte)和[mpte](#tcontrol-mpte)。 `medeleg` \[3\] 硬连接到 0。
+1. 当处于 M 模式且 `mstatus` 中的 `MIE` 为 0 时，硬件会阻止 [action](#mcontrol-action)=0 的触发器匹配或触发。如果 `medeleg` [3]=1，则它会阻止 [action](#mcontrol-action)=0 的触发器在 S 模式下且 `sstatus` 中的 `SIE` 为 0 时匹配或触发。如果 `medeleg` [3]=1 和 `hedeleg` [3]=1 那么它会阻止 [action](#mcontrol-action)=0 的触发器在 VS 模式下以及 `vstatus` 中的 `SIE` 为 0 时匹配或触发。
+2. 实现[tcontrol](#csr-tcontrol)中的[mte](#tcontrol-mte)和[mpte](#tcontrol-mpte)。 `medeleg` [3] 硬连接到 0。
 
 > [!note]
 > 第一个选项有这样的限制：当用户仍希望触发触发器时，有时可能会禁用中断。它的好处是M模式下不需要处理断点。 第二个选项的优点是它仅在陷阱处理程序期间禁用触发器，尽管它需要 M 模式陷阱处理程序中的此调试功能的特定软件支持。仅当断点未委托给特权较低的模式时它才能工作，因此主要针对没有 S 模式的实现。 由于 [tcontrol](#csr-tcontrol) 无法访问 S 模式，因此在不添加额外的 S 模式和 VS 模式 CSR 的情况下，无法扩展第二个选项以适应委派。 这两个选项都可以防止 etrigger 和 itrigger 对 M 模式下处理的异常和中断产生任何影响。它们还可以防止在每个处理程序的某些初始部分期间触发。调试器应使用其他机制来调试这些情况，例如修补处理程序或在清除 `MIE` 后在指令上设置断点。
 
+<a id="_memory_access_triggers"></a>
 ### 5.5 内存访问触发器
 
 [mcontrol](#csr-mcontrol) 和 [mcontrol6](#csr-mcontrol6) 均启用内存访问触发器。本节介绍了如何处理某些极端情况。
 
+<a id="_a_extension"></a>
 #### 5.5.1 扩展
 
 如果支持 A 扩展，则加载/存储上的触发器将按如下方式处理它们：
@@ -1559,10 +1672,12 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 5. 每条 AMO 指令都是用于操作写入部分的存储。该地址始终可用于触发。数据存储触发器是否在 AMO 上匹配尚未指定。
 6. 如果任何加载或 AMO 的目标寄存器是 `zero`，则未指定数据加载触发是否匹配。
 
+<a id="_combined_accesses"></a>
 #### 5.5.2 组合访问
 
 某些指令导致 hart 执行多次内存访问。这包括向量加载和存储，以及 `cm.push` 和 `cm.pop` 指令。触发模块应该匹配此类访问，就好像它们都是单独发生的一样。例如。矢量加载应被视为执行了大小为 SEW（所选元素宽度）的多个加载，而 `cm.push` 应被视为执行了大小为 XLEN 的多个存储。
 
+<a id="_cache_operations"></a>
 #### 5.5.3 缓存操作
 
 缓存操作很少执行，并且使用它们的代码可能存在难以发现的错误。为了调试触发器的目的，两类缓存操作必须匹配存储：
@@ -1581,6 +1696,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 > [!note]
 > 上述语言旨在捕获与即将在 I/D 一致性扩展中引入的缓存操作相关的触发行为。 对于 RISC-V 基本缓存管理操作 ISA 扩展 1.0.1，这意味着以下内容： `cbo.clean`、`cbo.flush` 和 `cbo.inval` 会像存储一样进行匹配，因为它们会影响一致性。 `cbo.zero` 匹配就像存储一样，因为它执行常量数据的块写入。 预取指令根本不匹配。
 
+<a id="_address_matches"></a>
 #### 5.5.4 地址匹配
 
 对于没有掩码的地址匹配，[tdata2](#csr-tdata2) 必须能够在所有支持的转换模式下保存所有有效地址。这意味着在写入任何这些有效地址后，将读回完全相同的 XLEN 范围值，包括任何高位。实现可能能够优化所需的存储，具体取决于它支持的最宽地址。
@@ -1588,6 +1704,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 > [!note]
 > 如果物理地址小于XLEN位宽，则它们被零扩展。如果虚拟地址的宽度小于 XLEN 位，则对它们进行符号扩展。 [tdata2](#csr-tdata2) 必须使用足够的存储位来实现，以表示软件读取和硬件使用时支持的全部物理和虚拟地址值。
 
+<a id="_invalid_addresses"></a>
 ##### 5.5.4.1 无效地址
 
 如果[tdata2](#csr-tdata2)可以保存任何无效地址，则不能按原样表示的无效地址的写入应转换为可以表示的不同无效地址。
@@ -1596,12 +1713,14 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 此外，实现可以选择禁止所有与无效地址匹配的触发器，特别是在不支持在 tdata2 中存储任何无效地址值的情况下。
 
+<a id="multistate"></a>
 ### 5.6 多状态变化指令
 
 执行多个体系结构状态更改（例如，寄存器更新和/或内存访问）的指令可能会导致触发器在其执行的中间点触发。因此，截至该点的体系结构状态更改可能已执行，而从激活触发器的事件开始的后续状态更改可能尚未执行。这种指令的定义将指定架构状态改变发生的顺序。或者，它可能声明不允许部分执行，这意味着中间执行触发器必须防止发生任何架构状态更改。
 
 调试器不会知道指令是否已部分执行。当它们恢复执行时，它们将再次执行相同的指令。因此，部分执行该指令然后再次执行该指令使 hart 处于与该指令仅执行一次时的状态非常相似的状态，这一点至关重要。
 
+<a id="_trigger_module_registers"></a>
 ### 5.7 触发模块寄存器
 
 这些寄存器是 CSR，可使用 RISC-V `csr` 操作码进行访问，也可以选择使用抽象调试命令。它们是访问触发器的唯一机制。
@@ -1626,27 +1745,29 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 |地址 |名称 |部分|
 |----|----|----|
-| 0x5a8 | 0x5a8主管上下文（[scontext](#csr-scontext)）| [第 5.7.8 节](#csr-scontext) |
-| 0x6a8 | 0x6a8管理程序上下文 ([hcontext](#csr-hcontext)) | [第 5.7.7 节](#csr-hcontext) |
-| 0x7a0 | 0x7a0触发选择（[tselect](#csr-tselect)）| [第 5.7.1 节](#csr-tselect) |
-| 0x7a1 | 0x7a1触发数据1 ([tdata1](#csr-tdata1)) | [第 5.7.2 节](#csr-tdata1) |
-| 0x7a1 | 0x7a1比赛控制 ([mcontrol](#csr-mcontrol)) | [第 5.7.11 节](#csr-mcontrol) |
-| 0x7a1 | 0x7a1比赛控制类型 6 ([mcontrol6](#csr-mcontrol6)) | [第 5.7.12 节](#csr-mcontrol6) |
-| 0x7a1 | 0x7a1指令计数（[icount](#csr-icount)）| [第 5.7.13 节](#csr-icount) |
-| 0x7a1 | 0x7a1中断触发（[itrigger](#csr-itrigger)）| [第 5.7.14 节](#csr-itrigger) |
-| 0x7a1 | 0x7a1异常触发器（[etrigger](#csr-etrigger)）| [第 5.7.15 节](#csr-etrigger) |
-| 0x7a1 | 0x7a1外部触发（[tmexttrigger](#csr-tmexttrigger)）| [第 5.7.16 节](#csr-tmexttrigger) |
-| 0x7a2 | 0x7a2触发数据2 ([tdata2](#csr-tdata2)) | [第 5.7.3 节](#csr-tdata2) |
-| 0x7a3 | 0x7a3触发数据3 ([tdata3](#csr-tdata3)) | [第 5.7.4 节](#csr-tdata3) |
-| 0x7a3 | 0x7a3额外触发器 (RV32) ([textra32](#csr-textra32)) | [第 5.7.17 节](#csr-textra32) |
-| 0x7a3 | 0x7a3额外触发器 (RV64) ([textra64](#csr-textra64)) | [第 5.7.18 节](#csr-textra64) |
-| 0x7a4 | 0x7a4触发信息（[tinfo](#csr-tinfo)）| [第 5.7.5 节](#csr-tinfo) |
-| 0x7a5 | 0x7a5触发控制（[tcontrol](#csr-tcontrol)）| [第 5.7.6 节](#csr-tcontrol) |
-| 0x7a8 | 0x7a8机器上下文（[mcontext](#csr-mcontext)）| [第 5.7.9 节](#csr-mcontext) |
-| 0x7aa | 0x7aa |机器主管上下文（[mscontext](#csr-mscontext)）| [第 5.7.10 节](#csr-mscontext) |
+| 0x5a8 |主管上下文（[scontext](#csr-scontext)）| [第 5.7.8 节](#csr-scontext) |
+| 0x6a8 |管理程序上下文 ([hcontext](#csr-hcontext)) | [第 5.7.7 节](#csr-hcontext) |
+| 0x7a0 |触发选择（[tselect](#csr-tselect)）| [第 5.7.1 节](#csr-tselect) |
+| 0x7a1 |触发数据1 ([tdata1](#csr-tdata1)) | [第 5.7.2 节](#csr-tdata1) |
+| 0x7a1 |比赛控制 ([mcontrol](#csr-mcontrol)) | [第 5.7.11 节](#csr-mcontrol) |
+| 0x7a1 |比赛控制类型 6 ([mcontrol6](#csr-mcontrol6)) | [第 5.7.12 节](#csr-mcontrol6) |
+| 0x7a1 |指令计数（[icount](#csr-icount)）| [第 5.7.13 节](#csr-icount) |
+| 0x7a1 |中断触发（[itrigger](#csr-itrigger)）| [第 5.7.14 节](#csr-itrigger) |
+| 0x7a1 |异常触发器（[etrigger](#csr-etrigger)）| [第 5.7.15 节](#csr-etrigger) |
+| 0x7a1 |外部触发（[tmexttrigger](#csr-tmexttrigger)）| [第 5.7.16 节](#csr-tmexttrigger) |
+| 0x7a2 |触发数据2 ([tdata2](#csr-tdata2)) | [第 5.7.3 节](#csr-tdata2) |
+| 0x7a3 |触发数据3 ([tdata3](#csr-tdata3)) | [第 5.7.4 节](#csr-tdata3) |
+| 0x7a3 |额外触发器 (RV32) ([textra32](#csr-textra32)) | [第 5.7.17 节](#csr-textra32) |
+| 0x7a3 |额外触发器 (RV64) ([textra64](#csr-textra64)) | [第 5.7.18 节](#csr-textra64) |
+| 0x7a4 |触发信息（[tinfo](#csr-tinfo)）| [第 5.7.5 节](#csr-tinfo) |
+| 0x7a5 |触发控制（[tcontrol](#csr-tcontrol)）| [第 5.7.6 节](#csr-tcontrol) |
+| 0x7a8 |机器上下文（[mcontext](#csr-mcontext)）| [第 5.7.9 节](#csr-mcontext) |
+| 0x7aa |机器主管上下文（[mscontext](#csr-mscontext)）| [第 5.7.10 节](#csr-mscontext) |
 
+<a id="tab:trigger"></a>
 表 14. 触发模块寄存器
 
+<a id="csr-tselect"></a>
 #### 5.7.1 触发选择（tselect，位于 0x7a0）
 
 该寄存器确定可通过其他触发模块寄存器访问哪个触发。如果没有实现触发器，则它是可选的。可访问的触发器集必须从 0 开始，并且是连续的。
@@ -1659,6 +1780,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 ![寄存器位域图：5.7.1 触发选择（tselect，位于 0x7a0）](RISC-V调试规范v1.0-中文学习版.assets/位域图-45.svg)
 
+<a id="csr-tdata1"></a>
 #### 5.7.2 触发数据 1（tdata1，位于 0x7a1）
 
 该寄存器提供对 [tselect](#csr-tselect) 选择的触发器的访问。此处列出的重置值适用于每个基础触发器。
@@ -1674,9 +1796,10 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 | 场 | 描述 | 访问 | 复位 |
 | --- | --- | --- | --- |
 | <a id="tdata1-type"></a> `type` | 0（无）：[tselect](#csr-tselect).处没有触发 1（传统）：触发器是传统 SiFive 地址匹配触发器。这些不应该被实现，也不会在这里进一步记录。 2（mcontrol）：该触发器是地址/数据匹配触发器。该寄存器中的其余位的作用如 [mcontrol](#csr-mcontrol). 中所述 3(icount)：该触发器是指令计数触发器。该寄存器中的其余位的作用如 [icount](#csr-icount). 中所述 4(itrigger)：触发为中断触发。该寄存器中的其余位的作用如 [itrigger](#csr-itrigger). 中所述 5(etrigger)：该触发器为异常触发器。该寄存器中的其余位的作用如 [etrigger](#csr-etrigger). 中所述 6 (mcontrol6)：该触发器是地址/数据匹配触发器。该寄存器中的其余位的作用如 [mcontrol6](#csr-mcontrol6) 中所述。这类似于类型 2 触发器，但提供了附加功能，应该在较新的实现中代替类型 2 使用。 7（tmexttrigger）：触发器是TM外部的触发源。该寄存器中的其余位的作用如 [tmexttrigger](#csr-tmexttrigger). 中所述 12—​14（自定义）：这些触发器类型可用于非标准用途。 15（禁用）：该触发器被禁用。在此状态下，可以使用此触发器实现的任何类型支持的任何值写入 [tdata2](#csr-tdata2) 和 [tdata3](#csr-tdata3)。该寄存器中的其余位（[dmode](#tdata1-dmode) 除外）将被忽略。 其他值保留供将来使用。 | **WARL** | 预设 |
-| <a id="tdata1-dmode"></a> `dmode` | 如果[type](#tdata1-type)为0，则该位硬连线为0。 0（两者）：调试和 M 模式都可以在选定的 [tselect](#csr-tselect). 处写入 `tdata` 寄存器 1 (dmode)：只有调试模式才能在选定的 [tselect](#csr-tselect) 处写入 `tdata` 寄存器。来自其他模式的写入将被忽略。 该位只能在调试模式下写入。在日常使用中，外部调试器在配置触发器时始终会设置该位。清除该位时，调试器还应将操作字段（其位置取决于 [type](#tdata1-type)）设置为除 1. 之外的其他值 | **WARL** | 0 |
+| <a id="mcontrol-dmode"></a><a id="tdata1-dmode"></a> `dmode` | 如果[type](#tdata1-type)为0，则该位硬连线为0。 0（两者）：调试和 M 模式都可以在选定的 [tselect](#csr-tselect). 处写入 `tdata` 寄存器 1 (dmode)：只有调试模式才能在选定的 [tselect](#csr-tselect) 处写入 `tdata` 寄存器。来自其他模式的写入将被忽略。 该位只能在调试模式下写入。在日常使用中，外部调试器在配置触发器时始终会设置该位。清除该位时，调试器还应将操作字段（其位置取决于 [type](#tdata1-type)）设置为除 1. 之外的其他值 | **WARL** | 0 |
 | <a id="tdata1-data"></a> `data` | 如果[type](#tdata1-type)为0，则该字段硬连线为0. 触发器特定数据。 | **WARL** | 预设 |
 
+<a id="csr-tdata2"></a>
 #### 5.7.3 触发数据 2（tdata2，位于 0x7a2）
 
 该寄存器提供对 [tselect](#csr-tselect) 选择的触发器的访问。此处列出的重置值适用于每个基础触发器。
@@ -1691,6 +1814,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 ![寄存器位域图：5.7.3 触发数据 2（tdata2，位于 0x7a2）](RISC-V调试规范v1.0-中文学习版.assets/位域图-47.svg)
 
+<a id="csr-tdata3"></a>
 #### 5.7.4 触发数据 3（tdata3，位于 0x7a3）
 
 该寄存器提供对 [tselect](#csr-tselect) 选择的触发器的访问。此处列出的重置值适用于每个基础触发器。
@@ -1705,6 +1829,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 ![寄存器位域图：5.7.4 触发数据 3（tdata3，位于 0x7a3）](RISC-V调试规范v1.0-中文学习版.assets/位域图-48.svg)
 
+<a id="csr-tinfo"></a>
 #### 5.7.5 触发信息（tinfo，位于 0x7a4）
 
 该寄存器提供对 [tselect](#csr-tselect) 选择的触发器的访问。此处列出的重置值适用于每个基础触发器。
@@ -1720,6 +1845,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 | <a id="tinfo-version"></a> `version` | 包含实现的Sdtrig扩展的版本。 0 (0)：支持 2023 年 2 月 2 日提交的规范 5a5c078 中描述的触发器。 在这些旧版本中： [mcontrol6](#csr-mcontrol6) 的时序位与 [timing](#mcontrol-timing) 相同 [hit0](#mcontrol6-hit0) 的行为与 [hit](#mcontrol-hit). 相同 [hit1](#mcontrol6-hit1) 为只读 0. E 对于大于 64 位的访问大小，[size](#mcontrol6-size) 的编码是不同的。 1 (1)：支持本文档已批准版本 1.0 中所述的触发器。 | **R** | 预设 |
 | <a id="tinfo-info"></a> `info` | 对于 [tdata1](#csr-tdata1) 中枚举的每个可能的 [type](#tdata1-type) 都有一个位。位 N 对应类型 N。如果设置该位，则当前选择的触发器支持该类型。 如果当前选择的触发器不存在，则该字段包含1. | **R** | 预设 |
 
+<a id="csr-tcontrol"></a>
 #### 5.7.6 触发控制（tcontrol，位于 0x7a5）
 
 该可选寄存器只能在 M 模式和调试模式下访问，并提供与触发器相关的各种控制位。
@@ -1733,6 +1859,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 | <a id="tcontrol-mpte"></a> `mpte` | M-模式前一个触发使能字段。 [mpte](#tcontrol-mpte) 和 [mte](#tcontrol-mte) 为 M 模式陷阱处理程序中动作 = 0 触发的触发器问题提供了一种解决方案。更多详细信息，请参见 [ 第 5.4 节 ](#nativetrigger)。 当采取任何进入 M 模式的陷阱时，[mpte](#tcontrol-mpte) 被设置为 [mte](#tcontrol-mte). 的值 | **WARL** | 0 |
 | <a id="tcontrol-mte"></a> `mte` | M-模式触发使能字段。 0（禁用）：当 hart 处于 M 模式时，动作 = 0 的触发器不匹配/触发。 1（启用）：当 hart 处于 M 模式时，触发器会匹配/触发。 当采取任何进入M模式的陷阱时，[mte](#tcontrol-mte)被设置为0。当执行`mret`时，[mte](#tcontrol-mte)被设置为[mpte](#tcontrol-mpte).的值 | **WARL** | 0 |
 
+<a id="csr-hcontext"></a>
 #### 5.7.7 虚拟机管理程序上下文（hcontext，位于 0x6a8）
 
 仅当实现了 H 扩展时，才可以实现该可选寄存器。如果实现了，[mcontext](#csr-mcontext)也必须实现。
@@ -1741,6 +1868,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 该寄存器是 [mcontext](#csr-mcontext) 寄存器的别名，提供从 HS 模式对 [hcontext](#mcontext-hcontext) 字段的访问。
 
+<a id="csr-scontext"></a>
 #### 5.7.8 主管上下文（scontext，位于 0x5a8）
 
 该可选寄存器只能在 S/HS 模式、VS 模式、M 模式和调试模式下访问。
@@ -1755,6 +1883,7 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 | --- | --- | --- | --- |
 | <a id="scontext-data"></a> `data` | Supervisor模式软件可以将上下文编号写入该寄存器，该寄存器可用于设置仅在该特定上下文中触发的触发器。 An 实现可以将该字段中的任意数量的高位绑定到 0。建议在 RV32 上实现 16 位，在 RV64. 上实现 32 位 | **WARL** | 0 |
 
+<a id="csr-mcontext"></a>
 #### 5.7.9 机器上下文（mcontext，位于 0x7a8）
 
 如果实现了 [hcontext](#csr-hcontext)，则该寄存器必须实现，否则是可选的。它只能在 M 模式和调试模式下访问。
@@ -1770,6 +1899,7 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 | --- | --- | --- | --- |
 | <a id="mcontext-hcontext"></a> `hcontext` | M-Mode 或 HS-Mode（使用 [hcontext](#csr-hcontext)）软件可以将上下文编号写入该寄存器，该寄存器可用于设置仅在该特定上下文中触发的触发器。 An 实现可以将此字段中的任意数量的高位与 0 绑定。如果未实现 H 扩展，建议在 RV32 上实现 6 位，在 RV64 上实现 13 位（通过 [mcontext](#csr-mcontext) 寄存器可见）。如果实现H扩展，建议在RV32上实现7位，在RV64.上实现14位 | **WARL** | 0 |
 
+<a id="csr-mscontext"></a>
 #### 5.7.10 机器主管上下文（mscontext，位于 0x7aa）
 
 该可选寄存器是 [scontext](#csr-scontext) 的别名。它只能在 S/HS 模式、M 模式和调试模式下访问。包含它是为了向后兼容版本 0.13。
@@ -1777,6 +1907,7 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 > [!note]
 > 此CSR的编码不符合特权规范中的CSR地址对应关系约定。预计新的实现将不支持此编码，并且如果 [scontext](#csr-scontext) 可用，新的调试器将不会使用此 CSR。
 
+<a id="csr-mcontrol"></a>
 #### 5.7.11 匹配控制（mcontrol，位于 0x7a1）
 
 该寄存器提供对 [tselect](#csr-tselect) 选择的触发器的访问。此处列出的重置值适用于每个基础触发器。
@@ -1818,6 +1949,7 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 | <a id="mcontrol-store"></a> `store` | 设置后，触发器在任何存储的虚拟地址或数据上触发。 | **WARL** | 0 |
 | <a id="mcontrol-load"></a> `load` | 设置后，触发器在任何负荷的虚拟地址或数据上触发。 | **WARL** | 0 |
 
+<a id="csr-mcontrol6"></a>
 #### 5.7.12 匹配控制类型 6（mcontrol6，位于 0x7a1）
 
 该寄存器提供对 [tselect](#csr-tselect) 选择的触发器的访问。此处列出的重置值适用于每个基础触发器。
@@ -1844,6 +1976,7 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 |存储数据 |之前 |
 |存储地址+数据 |之前 |
 
+<a id="tab:hwbp_timing"></a>
 表 15. 建议的触发时序
 
 仅当链中的每个触发器都与相同指令匹配时，触发器链才必须触发。
@@ -1875,7 +2008,7 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 | <a id="mcontrol6-uncertain"></a> `uncertain` | 如果实施，TM每次触发器触发时都会更新此字段。 0（确定）：触发的触发器满足配置的条件，或者该位未实现。 1（不确定）：触发的触发器可能未完全满足配置的条件。由于实现的原因，硬件无法确定。 | **WARL** | 0 |
 | <a id="mcontrol6-vs"></a> `vs` | 设置时，在 VS 模式下启用此触发器。如果 hart 不支持虚拟化模式，则该位硬连线为 0。 | **WARL** | 0 |
 | <a id="mcontrol6-vu"></a> `vu` | 设置后，在 VU 模式下启用此触发器。如果 hart 不支持虚拟化模式，则该位硬连线为 0。 | **WARL** | 0 |
-| <a id="mcontrol6-hit0"></a> `hit0` | 如果被实现，[hit1](#mcontrol6-hit1)（MSB）和[hit0](#mcontrol6-hit0)（LSB）组合成单个2位字段。当触发器触发时，TM 更新该字段。调试器看到更新后，通常会向该字段写入 0，以便可以看到未来的更改。 如果任一位未实现，则未实现的位将为只读 0. 0（假）：扳机未触发。 1（之前）：触发器在与其匹配的指令退出之前触发，但在所有前面的指令退出之后。这明确允许指令部分执行，如 [ 第 5.6 节 ](#multistate). 中所述 `xepc`或[dpc](#csr-dpc)（取决于[action](#mcontrol6-action)）必须设置为匹配的指令的虚拟地址。 2（之后）：在触发的指令和至少一条附加指令退出后触发触发器。 `xepc` 或 [dpc](#csr-dpc)（取决于 [action](#mcontrol6-action)）必须设置为必须执行的下一条指令的虚拟地址，以保留程序流。 3（紧接着）：触发器在触发它的指令退出后、但在执行任何后续指令之前触发。 `xepc` 或 [dpc](#csr-dpc)（取决于 [action](#mcontrol6-action)）必须设置为必须执行的下一条指令的虚拟地址，以保留程序流。 如果该指令执行了多次内存访问，则所有访问都已完成。 | **WARL** | 0 |
+| <a id="mcontrol6-hit1"></a><a id="mcontrol6-hit0"></a> `hit0` | 如果被实现，[hit1](#mcontrol6-hit1)（MSB）和[hit0](#mcontrol6-hit0)（LSB）组合成单个2位字段。当触发器触发时，TM 更新该字段。调试器看到更新后，通常会向该字段写入 0，以便可以看到未来的更改。 如果任一位未实现，则未实现的位将为只读 0. 0（假）：扳机未触发。 1（之前）：触发器在与其匹配的指令退出之前触发，但在所有前面的指令退出之后。这明确允许指令部分执行，如 [ 第 5.6 节 ](#multistate). 中所述 `xepc`或[dpc](#csr-dpc)（取决于[action](#mcontrol6-action)）必须设置为匹配的指令的虚拟地址。 2（之后）：在触发的指令和至少一条附加指令退出后触发触发器。 `xepc` 或 [dpc](#csr-dpc)（取决于 [action](#mcontrol6-action)）必须设置为必须执行的下一条指令的虚拟地址，以保留程序流。 3（紧接着）：触发器在触发它的指令退出后、但在执行任何后续指令之前触发。 `xepc` 或 [dpc](#csr-dpc)（取决于 [action](#mcontrol6-action)）必须设置为必须执行的下一条指令的虚拟地址，以保留程序流。 如果该指令执行了多次内存访问，则所有访问都已完成。 | **WARL** | 0 |
 | <a id="mcontrol6-select"></a> `select` | 该位决定XLEN位比较值的内容。 0（地址）：至少有一个比较值，它包含访问的最低虚拟地址。另外，建议有额外的比较值用于其他访问的虚拟地址匹配。 （例如，从 0x4000 读取 32 位数据时，最低地址为 0x4000，其他地址为 0x4001、0x4002 和 0x4003。） 1（数据）：只有一个比较值，它包含加载或存储的数据值，或执行的指令。超出数据访问大小的任何位都将包含 0. | **WARL** | 0 |
 | <a id="mcontrol6-size"></a> `size` | 0（任意）：触发器将尝试匹配任意大小的访问。仅当 [select](#mcontrol6-select)=0 或访问大小为 XLEN. 时，该行为才是明确定义的 1（8位）：触发器仅匹配8位内存访问。 2（16位）：触发器仅匹配16位内存访问或16位指令执行。 3（32位）：触发器仅匹配32位内存访问或32位指令执行。 4（48位）：触发器仅匹配48位指令的执行。 5（64位）：触发器仅匹配64位内存访问或64位指令执行。 6（128位）：触发器仅匹配128位内存访问或128位指令执行。 实现必须支持 0 值，但所有其他值都是可选的。当实现支持地址触发器 ([select](#mcontrol6-select)=0) 时，建议这些触发器支持 hart 支持的每个访问大小以及 hart 支持的每个指令大小。 RV32D 或 RV64V 等实现能够执行比 XLEN 更宽的加载和存储。自定义扩展还可能支持比 XLEN 更宽的指令。由于 [tdata2](#csr-tdata2) 的大小为 XLEN，因此存在一个已知限制，即数据值触发器 ([select](#mcontrol6-select)=1) 只能支持高达 XLEN 位的访问大小。当实现支持数据值触发器 ([select](#mcontrol6-select)=1) 时，建议这些触发器支持 hart 支持的最大 XLEN 的每个访问大小，以及 hart 支持的最大 XLEN 的每个指令长度。 | **WARL** | 0 |
 | <a id="mcontrol6-action"></a> `action` | 触发器触发时要采取的操作。这些值在 [ 表 12](#tab:action). 中进行了解释 | **WARL** | 0 |
@@ -1889,6 +2022,7 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 | <a id="mcontrol6-store"></a> `store` | 设置后，触发器在任何存储的虚拟地址或数据上触发。 | **WARL** | 0 |
 | <a id="mcontrol6-load"></a> `load` | 设置后，触发器在任何负荷的虚拟地址或数据上触发。 | **WARL** | 0 |
 
+<a id="csr-icount"></a>
 #### 5.7.13 指令计数（icount，位于 0x7a1）
 
 该寄存器提供对 [tselect](#csr-tselect) 选择的触发器的访问。此处列出的重置值适用于每个基础触发器。
@@ -1941,6 +2075,7 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 | <a id="icount-u"></a> `u` | 设置时，在 U 模式下启用此触发器。如果 hart 不支持 U 模式，则该位硬连线为 0。 | **WARL** | 0 |
 | <a id="icount-action"></a> `action` | 触发器触发时要采取的操作。这些值在 [ 表 12](#tab:action). 中进行了解释 | **WARL** | 0 |
 
+<a id="csr-itrigger"></a>
 #### 5.7.14 中断触发器（itrigger，位于 0x7a1）
 
 该寄存器提供对 [tselect](#csr-tselect) 选择的触发器的访问。此处列出的重置值适用于每个基础触发器。
@@ -1975,6 +2110,7 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 | <a id="itrigger-u"></a> `u` | 置位后，为从 U 模式获取的中断启用此触发器。如果 hart 不支持 U 模式，则该位硬连线为 0。 | **WARL** | 0 |
 | <a id="itrigger-action"></a> `action` | 触发器触发时要采取的操作。这些值在 [ 表 12](#tab:action). 中进行了解释 | **WARL** | 0 |
 
+<a id="csr-etrigger"></a>
 #### 5.7.15 异常触发器（etrigger，位于 0x7a1）
 
 该寄存器提供对 [tselect](#csr-tselect) 选择的触发器的访问。此处列出的重置值适用于每个基础触发器。
@@ -2006,6 +2142,7 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 | <a id="etrigger-u"></a> `u` | 设置后，为从 U 模式获取的异常启用此触发器。如果 hart 不支持 U 模式，则该位硬连线为 0。 | **WARL** | 0 |
 | <a id="etrigger-action"></a> `action` | 触发器触发时要采取的操作。这些值在 [ 表 12](#tab:action). 中进行了解释 | **WARL** | 0 |
 
+<a id="csr-tmexttrigger"></a>
 #### 5.7.16 外部触发器（tmexttrigger，位于 0x7a1）
 
 该寄存器提供对 [tselect](#csr-tselect) 选择的触发器的访问。此处列出的重置值适用于每个基础触发器。
@@ -2014,7 +2151,7 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 当任何选定的 TM 外部触发输入信号时，该触发器触发。最多可以选择来自 TM 外部其他模块的 16 个 TM 外部触发输入（例如，发出 hpm 计数器溢出信号）。硬件可能不支持或仅支持几个 TM 外部触发输入（从 TM 外部触发输入 0 开始并按顺序继续）。不支持的输入被硬连线为不活动状态。
 
-如果触发器在 [action](#tmexttrigger-action)=0 的情况下触发，则断点陷阱上的 `tval` CSR 中将写入零。此触发器异步触发，但与其他触发器一样，它受 medeleg\[3\] 委托。
+如果触发器在 [action](#tmexttrigger-action)=0 的情况下触发，则断点陷阱上的 `tval` CSR 中将写入零。此触发器异步触发，但与其他触发器一样，它受 medeleg[3] 委托。
 
 当由于 [第 5.4 节](#nativetrigger) 中的一种机制而阻止触发器触发时，TM 外部触发器输入可以发出信号。当无法触发时，实现可以完全忽略该信号（丢弃触发事件），或者可以将操作保持为挂起状态，并在合法时触发触发器。
 
@@ -2032,6 +2169,7 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 | <a id="tmexttrigger-select"></a> `select` | 选择最多 16 个 TM 外部触发器输入的任意组合，导致该触发器触发。 | **WARL** | 0 |
 | <a id="tmexttrigger-action"></a> `action` | 触发器触发时要采取的操作。这些值在 [ 表 12](#tab:action). 中进行了解释 | **WARL** | 0 |
 
+<a id="csr-textra32"></a>
 #### 5.7.17 触发额外 (RV32)（textra32，位于 0x7a3）
 
 该寄存器提供对 [tselect](#csr-tselect) 选择的触发器的访问。此处列出的重置值适用于每个基础触发器。
@@ -2061,6 +2199,9 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 | <a id="textra32-svalue"></a> `svalue` | 数据与[sselect](#textra32-sselect).一起使用 当不支持 S 模式时，该字段应绑定为 0。 | **WARL** | 0 |
 | <a id="textra32-sselect"></a> `sselect` | 0（忽略）：忽略[svalue](#textra32-svalue). 1（scontext）：仅当 [scontext](#csr-scontext) 的低位等于 [svalue](#textra32-svalue). 时，此触发器才会匹配或触发 2（asid）：此触发器仅在以下情况下匹配或触发： 模式为 VS 模式或 VU 模式，`vsatp` 中的 ASID 等于 [ 值 ](#textra32-svalue). 的较低 ASIDMAX（在特权规范中定义）位 在所有其他模式中，`satp` 中的 ASID 等于 [svalue](#textra32-svalue). 的较低 ASIDMAX（在特权规范中定义）位 当不支持 S 模式时，该字段应绑定为 0。 | **WARL** | 0 |
 
+<a id="textra64-svalue"></a>
+<a id="textra64-sselect"></a>
+<a id="csr-textra64"></a>
 #### 5.7.18 触发额外 (RV64)（textra64，位于 0x7a3）
 
 该寄存器提供对 [tselect](#csr-tselect) 选择的触发器的访问。此处列出的重置值适用于每个基础触发器。
@@ -2079,6 +2220,7 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 | --- | --- | --- | --- |
 | <a id="textra64-sbytemask"></a> `sbytemask` | 当该字段的最低有效位为1时，当[s选择](#textra64-sselect)=1时，会导致比较中的位7:0被忽略。同样，第二位控制位 15:8 的比较，第三位控制位 23:16 的比较，第四位控制位 31:24 的比较。 | **WARL** | 0 |
 
+<a id="dtm"></a>
 ## 6. 调试传输模块（DTM，非 ISA 扩展）
 
 > [!note]- Mote · DTM 只负责搬运，不解释调试意图
@@ -2094,36 +2236,41 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 实现可以与本规范兼容，而无需实现本节的任何内容。在这种情况下，它必须被宣传为符合“RISC-V 调试规范，带有自定义 DTM”。如果实现此处描述的 JTAG DTM，则必须将其声明为符合“RISC-V 调试规范，带有 JTAG DTM”。
 
+<a id="sec:jtagdtm"></a>
 ### 6.1 JTAG 调试传输模块
 
 > [!tip] Tips · 遇到 JTAG 访问异常，先读 `dtmcs`：确认版本、`abits`、`idle` 与 `dmistat`，必要时用 `dmireset` 清除粘滞失败状态。
 
 该调试传输模块基于普通的 JTAG 测试访问端口 (TAP)。 JTAG TAP 允许访问任意 JTAG 寄存器，首先使用 JTAG 指令寄存器（IR）选择一个，然后通过 JTAG 数据寄存器（DR）访问它。
 
+<a id="_jtag_background"></a>
 #### 6.1.1 JTAG 背景
 
 JTAG 指 IEEE Std 1149.1-2013。它是一个定义测试逻辑的标准，可以包含在集成电路中，以测试集成电路之间的互连、测试集成电路本身以及观察或修改组件正常运行期间的电路活动。本规范使用后一种功能。 JTAG 标准定义了一个测试访问端口 (TAP)，可用于读写一些自定义寄存器，这些寄存器可用于与组件中的调试硬件进行通信。
 
+<a id="_jtag_dtm_registers"></a>
 #### 6.1.2 JTAG DTM 寄存器
 
 用作 DTM 的 JTAG TAP 必须具有至少 5 位的 IR。当TAP复位时，IR必须默认为00001，选择IDCODE指令。 JTAG 寄存器及其编码的完整列表位于 [表 16](#tab:jtag_registers) 中。如果 IR 实际上有超过 5 位，则 [表 16](#tab:jtag_registers) 中的编码应在最高有效位中用 0 进行扩展，但 BYPASS 的 0x1f 编码必须在最高有效位中用 1 进行扩展。调试器可能使用的唯一常规 JTAG 寄存器是 BYPASS 和 IDCODE，但此规范为许多其他标准 JTAG 指令留出了 IR 空间。未实现的指令必须选择BYPASS寄存器。
 
 |地址 |名称 |描述 |部分|
 |----|----|----|----|
-| 0x00 | 0x00 [bypass](#dtm-bypass) | JTAG 推荐此编码 |  |
-| 0x01 | 0x01 [idcode](#dtm-idcode) |识别特定的芯片版本 | [第 6.1.3 节](#dtm-idcode) |
-| 0x10 | 0x10 DTM 控制和状态 ([dtmcs](#dtm-dtmcs)) |用于调试| [第 6.1.4 节](#dtm-dtmcs) |
-| 0x11 | 0x11调试模块接口访问（[dmi](#dtm-dmi)）|用于调试| [第 6.1.5 节](#dtm-dmi) |
-| 0x12 | 0x12保留（绕过）|为未来RISC-V调试保留|  |
-| 0x13 | 0x13保留（绕过）|为未来RISC-V调试保留|  |
-| 0x14 | 0x14保留（绕过）|为未来RISC-V调试保留|  |
-| 0x15 | 0x15保留（绕过）|为未来的 RISC-V 标准保留 |  |
-| 0x16 | 0x16保留（绕过）|为未来的 RISC-V 标准保留 |  |
-| 0x17 | 0x17保留（绕过）|为未来的 RISC-V 标准保留 |  |
-| 0x1f | 0x1f | [bypass](#dtm-bypass) | JTAG 需要此编码 | [第 6.1.6 节](#dtm-bypass) |
+| 0x00 | [bypass](#dtm-bypass) | JTAG 推荐此编码 |  |
+| 0x01 | [idcode](#dtm-idcode) |识别特定的芯片版本 | [第 6.1.3 节](#dtm-idcode) |
+| 0x10 | DTM 控制和状态 ([dtmcs](#dtm-dtmcs)) |用于调试| [第 6.1.4 节](#dtm-dtmcs) |
+| 0x11 |调试模块接口访问（[dmi](#dtm-dmi)）|用于调试| [第 6.1.5 节](#dtm-dmi) |
+| 0x12 |保留（绕过）|为未来RISC-V调试保留|  |
+| 0x13 |保留（绕过）|为未来RISC-V调试保留|  |
+| 0x14 |保留（绕过）|为未来RISC-V调试保留|  |
+| 0x15 |保留（绕过）|为未来的 RISC-V 标准保留 |  |
+| 0x16 |保留（绕过）|为未来的 RISC-V 标准保留 |  |
+| 0x17 |保留（绕过）|为未来的 RISC-V 标准保留 |  |
+| 0x1f | [bypass](#dtm-bypass) | JTAG 需要此编码 | [第 6.1.6 节](#dtm-bypass) |
 
+<a id="tab:jtag_registers"></a>
 表 16. JTAG DTM TAP 寄存器
 
+<a id="dtm-idcode"></a>
 #### 6.1.3 `IDCODE`（位于 0x01）
 
 当 TAP 状态机复位时，选择该寄存器（在 IR 中）。其定义与 IEEE Std 1149.1-2013 中的定义完全相同。
@@ -2138,6 +2285,7 @@ JTAG 指 IEEE Std 1149.1-2013。它是一个定义测试逻辑的标准，可以
 | <a id="idcode-partnumber"></a> `PartNumber` | 标识该部件的设计者部件号。 | **R** | 预设 |
 | <a id="idcode-manufid"></a> `ManufId` | 标识该部件的设计者/制造商。位 6:0 必须是 JEDEC 标准 JEP106 指定的设计者/制造商标识码的位 6:0。位 10:7 包含同一标识码中连续字符 (0x7f) 数量的模 16 计数。 | **R** | 预设 |
 
+<a id="dtm-dtmcs"></a>
 #### 6.1.4 DTM 控制和状态（dtmcs，位于 0x10）
 
 该寄存器的大小在未来版本中将保持不变，以便调试器始终可以确定 DTM 的版本。
@@ -2154,6 +2302,7 @@ JTAG 指 IEEE Std 1149.1-2013。它是一个定义测试逻辑的标准，可以
 | <a id="dtmcs-abits"></a> `abits` | [地址](#dmi-address)中[dmi](#dtm-dmi).的大小 | **R** | 预设 |
 | <a id="dtmcs-version"></a> `version` | 0 (0.11)：规范版本 0.11. 中描述的版本 1 (1.0)：规范版本 0.13 和 1.0. 中描述的版本 15（自定义）：本规范的任何可用版本中均未描述该版本。 | **R** | 1 |
 
+<a id="dtm-dmi"></a>
 #### 6.1.5 调试模块接口访问（dmi，位于 0x11）
 
 该寄存器允许访问调试模块接口（DMI）。
@@ -2175,6 +2324,7 @@ JTAG 指 IEEE Std 1149.1-2013。它是一个定义测试逻辑的标准，可以
 | <a id="dmi-data"></a> `data` | Update-DR期间通过DMI发送到DM的数据，以及作为先前操作的结果从DM返回的数据。 | **R/W** | 0 |
 | <a id="dmi-op"></a> `op` | 当调试器写入该字段时，其含义如下： 0 (nop)：忽略 [data](#sbdata0-data) 和 [address](#sbaddress0-address). 在 Update-DR 期间不要通过 DMI 发送任何内容。此操作绝不会影响 DMI 繁忙或错误状态。以下Capture-DR中报告的地址和数据未定义。 此操作将 [address](#dmi-address) 和 [data](#dmi-data) 中的值保留为 UNSPECIFIED. 1（读）：从[地址](#dmi-address).读取 此操作成功时，[address](#dmi-address)包含读取的地址，[data](#dmi-data)包含读取的值。 2（写）：将[数据](#dmi-data)写入[地址](#dmi-address). 此操作将 [address](#dmi-address) 和 [data](#dmi-data) 中的值保留为 UNSPECIFIED. 3（保留）：保留. 当调试器读取该字段时，含义如下： 0（成功）：之前的操作成功完成。 1（保留）：保留。 2（失败）：之前的操作失败。本次访问中扫描到 [dmi](#dtm-dmi) 的数据将被忽略。该状态为粘滞状态，可通过在 [dtmcs](#dtm-dtmcs). 中写入 [dmireset](#dtmcs-dmireset) 来清除 这表明DM本身或DMI响应错误。没有特定情况下 DM 会响应错误，并且 DMI 不需要支持返回错误。 如果调试器看到此状态，[errinfo](#dtmcs-errinfo). 中可能有其他信息 3（忙）：尝试执行 DMI 操作，而先前的 DMI 操作仍在进行中。本次访问中扫描到 [dmi](#dtm-dmi) 的数据将被忽略。该状态是粘性的，可以通过在 [dtmcs](#dtm-dtmcs) 中写入 [dmireset](#dtmcs-dmireset) 来清除。如果调试器看到此状态，则需要在 Update-DR 和 Capture-DR 之间为目标提供更多 TCK 边沿。最简单的方法是在 Run-Test/Idle. 中添加额外的转换 | **R/W** | 0 |
 
+<a id="dtm-bypass"></a>
 #### 6.1.6 `BYPASS`（位于 0x1f）
 
 1 位寄存器无效。当调试器不想与此 TAP 通信时使用它。
@@ -2183,8 +2333,10 @@ JTAG 指 IEEE Std 1149.1-2013。它是一个定义测试逻辑的标准，可以
 
 ![寄存器位域图：6.1.6 `BYPASS`（位于 0x1f）](RISC-V调试规范v1.0-中文学习版.assets/位域图-66.svg)
 
+<a id="_jtag_connector"></a>
 #### 6.1.7 JTAG 连接器
 
+<a id="_recommended_jtag_connector"></a>
 ##### 6.1.7.1 推荐 JTAG 连接器
 
 为了方便获取调试硬件，本规范建议使用与 MIPI-10 .05 英寸连接器规范兼容的连接器，如 MIPI 调试和跟踪连接器建议，版本 1.20，2021 年 7 月 2 日所述。
@@ -2193,25 +2345,28 @@ JTAG 指 IEEE Std 1149.1-2013。它是一个定义测试逻辑的标准，可以
 
 从上方查看公头（引脚指向您的眼睛），目标的连接器看起来与 [表 17](#tab:mipiten) 中的一样。 [表 18](#tab:pinout) 中描述了每个引脚的功能。
 
-|            |     |     |        |
-|------------|-----|-----|--------|
-| VREF 调试 | 1 | 2 |经颅磁刺激 |
-|接地 | 3 | 4 | TCK |
-|接地 | 5 | 6 | TD0 |
+| 目标端信号 | 引脚 | 引脚 | 调试适配器信号 |
+| --- | --- | --- | --- |
+| VREF DEBUG | 1 | 2 | TMS |
+| GND | 3 | 4 | TCK |
+| GND | 5 | 6 | TDO |
 | GND 或 KEY | 7 | 8 | TDI |
-|接地 | 9 | 10 | 10重置 |
+| GND | 9 | 10 | nRESET |
 
+<a id="tab:mipiten"></a>
 表 17. MIPI 10 引脚 JTAG + nRESET 连接器图
 
 如果硬件平台需要 nTRST，则允许将 nRESET 引脚重新用作 nTRST 信号，从而产生 MIPI 10 引脚 JTAG\
 nTRST 连接器。
 
+<a id="_alternate_jtag_connector"></a>
 ##### 6.1.7.2 备用 JTAG 连接器
 
 MIPI-10 连接器应该为所有现代硬件提供充足的信号。如果设计确实需要传统的 JTAG 信号，则应使用 MIPI-20 连接器。不需要功能的引脚可以保持未连接状态。
 
 它的物理连接器实际上与 MIPI-10 相同，只是长度是原来的两倍，支持的引脚数量是原来的两倍。其引脚排列如 [表 19](#tab:mipitwenty) 所示。 [表 18](#tab:pinout) 中描述了每个引脚的功能。
 
+<a id="tab:pinout"></a>
 | 类别 | 引脚 | 功能 |
 | --- | --- | --- |
 | Essential | GND | 接地。 |
@@ -2229,21 +2384,23 @@ MIPI-10 连接器应该为所有现代硬件提供充足的信号。如果设计
 | 旧版 | RTCK | 返回测试时钟，由目标驱动。目标处理完 TCK 信号后可以在此处中继该信号，从而允许调试器调整其 TCK 频率作为响应。 该信号只能用于支持依赖此功能的传统组件。 |
 | 旧版 | nTRST_PD | Test 复位下拉，由调试适配器驱动。与 nTRST 功能相同，但目标上有下拉电阻。 该信号只能用于支持依赖此功能的传统组件。 |
 
-|            |     |     |                |
-|------------|-----|-----|----------------|
-| VREF 调试 | 1 | 2 |经颅磁刺激 |
-|接地 | 3 | 4 | TCK |
-|接地 | 5 | 6 | TD0 |
+| 目标端信号 | 引脚 | 引脚 | 调试适配器信号 |
+| --- | --- | --- | --- |
+| VREF DEBUG | 1 | 2 | TMS |
+| GND | 3 | 4 | TCK |
+| GND | 5 | 6 | TDO |
 | GND 或 KEY | 7 | 8 | TDI |
-|接地 | 9 | 10 | 10重置 |
-|接地 | 11 | 11 12 | 12 GND 或 RTCK |
-|接地 | 13 | 14 | 14 NC 或 nTRST_PD |
-|接地 | 15 | 15 16 | 16 nTRST 或 NC |
-|接地 | 17 | 17 18 | 18 TRIGIN 或 NC |
-|接地 | 19 | 19 20 | TRIGOUT 或 GND |
+| GND | 9 | 10 | nRESET |
+| GND | 11 | 12 | GND 或 RTCK |
+| GND | 13 | 14 | NC 或 nTRST_PD |
+| GND | 15 | 16 | nTRST 或 NC |
+| GND | 17 | 18 | TRIGIN 或 NC |
+| GND | 19 | 20 | TRIGOUT 或 GND |
 
+<a id="tab:mipitwenty"></a>
 表 19. MIPI 20 引脚 JTAG 连接器图
 
+<a id="_cjtag"></a>
 #### 6.1.8 cJTAG
 
 该规范没有关于如何使用 cJTAG 协议的具体建议。
@@ -2252,20 +2409,23 @@ MIPI-10 连接器应该为所有现代硬件提供充足的信号。如果设计
 
 从上方查看公头（引脚指向您的眼睛），目标的连接器看起来与 [表 20](#tab:mipicjtag) 中的一样。
 
-|            |     |     |                |
-|------------|-----|-----|----------------|
-| VREF 调试 | 1 | 2 | TMMSC |
-|接地 | 3 | 4 | TCKC |
-|接地 | 5 | 6 | EXT 或 NC |
+| 目标端信号 | 引脚 | 引脚 | 调试适配器信号 |
+| --- | --- | --- | --- |
+| VREF DEBUG | 1 | 2 | TMSC |
+| GND | 3 | 4 | TCKC |
+| GND | 5 | 6 | EXT 或 NC |
 | GND 或 KEY | 7 | 8 | NC 或 nTRST_PD |
-|接地 | 9 | 10 | 10重置 |
+| GND | 9 | 10 | nRESET |
 
+<a id="tab:mipicjtag"></a>
 表 20. MIPI 10 引脚窄 JTAG 连接器图
 
+<a id="sec:implementations"></a>
 ## 附录 A：硬件实现
 
 下面是两种可能的实现方式。设计师可以选择其中一种，进行混合搭配，或者提出自己的设计。
 
+<a id="_abstract_command_based"></a>
 ### A.1 基于抽象命令
 
 停止是通过停止 hart 执行管道来实现的。
@@ -2276,6 +2436,7 @@ MIPI-10 连接器应该为所有现代硬件提供充足的信号。如果设计
 
 即使 hart 无法执行指令，此实现也可以允许调试器从 hart 收集信息。
 
+<a id="execution_based"></a>
 ### A.2 基于执行
 
 此实现仅在停止的 hart 上实现 GPR 的访问寄存器抽象命令，并依赖程序缓冲区来执行所有其他操作。它使用 hart 的现有管道和从任意内存位置执行的能力，以避免修改 hart 的数据路径。
@@ -2296,6 +2457,7 @@ MIPI-10 连接器应该为所有现代硬件提供充足的信号。如果设计
 
 当 hart 处于调试模式时，无论 PMP 如何配置，PMP 都不得禁止在与调试模块关联的地址范围内进行取指、加载或存储。 PMA也是如此。如果没有这种保证，park 循环将进入陷阱的无限循环，并且无法进行调试。
 
+<a id="dmi_signals"></a>
 ### A.3 调试模块接口信号
 
 如 [第 3.1 节](#dmi) 部分所述，DMI 的详细信息留给系统设计人员。通常情况下，仅实现一个 DTM 和一个 DM。在这种情况下，遵守 [表 21](#tab:dmi_signals) 中建议的信号可能会很有用，[表 21](#tab:dmi_signals) 是开源 [rocket-chip](https://github.com/chipsalliance/rocket-chip/blob/375045a7db1bdc7b4f7851f1a59b3f10a2b922ff/src/main/scala/devices/debug/Debug.scala#L170) RISC-V 内核中使用的实现。
@@ -2304,26 +2466,30 @@ MIPI-10 连接器应该为所有现代硬件提供充足的信号。如果设计
 
 当 RSP_READY 为高电平时，DM 必须响应来自 DTM 的请求。响应的状态由 RSP_OP 信号指示（参见 [op](#dmi-op)）。响应的数据被驱动到RSP_DATA。通过设置 RSP_VALID 来表示待处理的响应。
 
-|信号|宽度|来源 |描述 |
-|----|----|----|----|
-|请求有效 | 1 | DTM |表示有效请求正在等待处理 |
-| REQ_READY | 要求1 | DM |表示DM能够处理请求|
-|请求地址 | [abits](#dtmcs-abits) | DTM |请求地址 |
-|请求数据 | 32 | 32 DTM |请求的数据 |
-|请求_OP | 2 | DTM |与[op](#dmi-op)字段含义相同|
-| RSP_VALID | 1 | DM |表示有效响应正在等待 |
-| RSP_READY | RSP_READY 1 | DTM |表示DTM能够处理响应|
-| RSP_数据| 32 | 32 DM |响应数据|
-| RSP_OP | 2 | DM |与[op](#dmi-op)字段含义相同|
+| 信号 | 宽度 | 来源 | 描述 |
+| --- | --- | --- | --- |
+| REQ_VALID | 1 | DTM | 表示存在待处理的有效请求。 |
+| REQ_READY | 1 | DM | 表示 DM 可以处理请求。 |
+| REQ_ADDRESS | [abits](#dtmcs-abits) | DTM | 请求地址。 |
+| REQ_DATA | 32 | DTM | 请求数据。 |
+| REQ_OP | 2 | DTM | 与 [op](#dmi-op) 字段含义相同。 |
+| RSP_VALID | 1 | DM | 表示存在待处理的有效响应。 |
+| RSP_READY | 1 | DTM | 表示 DTM 可以处理响应。 |
+| RSP_DATA | 32 | DM | 响应数据。 |
+| RSP_OP | 2 | DM | 与 [op](#dmi-op) 字段含义相同。 |
 
+<a id="tab:dmi_signals"></a>
 表 21. 一台 DTM 和一台 DM 之间建议的 DMI 信号
 
+<a id="_debugger_implementation"></a>
 ## 附录 B：调试器实现
 
+<a id="_c_header_file"></a>
 ### B.1 C 头文件
 
 [github.com/riscv/riscv-debug-spec](https://github.com/riscv/riscv-debug-spec) 包含用于生成 C 头文件的指令，该文件为本文档中提到的每个寄存器/抽象命令中的每个字段定义宏。
 
+<a id="_external_debugger_implementation"></a>
 ### B.2 外部调试器实现
 
 > [!tip] Tips · 将本节流程实现为可重试的事务：DMI 操作 → 检查状态 → 遇到 `busy` 等待/退避 → 遇到失败复位 DMI → 重试。不要把一次扫描链操作当作必然成功。
@@ -2332,6 +2498,7 @@ MIPI-10 连接器应该为所有现代硬件提供充足的信号。如果设计
 
 为了保持示例的可读性，它们都假设一切都成功，并且它们完成的速度比调试器执行下一次访问的速度快。典型的 JTAG 设置就是这种情况。但是，调试器在执行一系列操作后必须始终检查粘性错误状态位。如果它看到任何设置，那么它应该再次尝试相同的操作，可能同时添加一些延迟，或者显式检查状态位。
 
+<a id="dmiaccess"></a>
 #### B.2.1 调试模块接口访问
 
 要读取任意调试模块寄存器，请选择 [dmi](#dtm-dmi)，然后扫描一个值，将 [op](#dmi-op) 设置为 1，并将 [address](#dmi-address) 设置为所需的寄存器地址。在Update-DR中，操作将开始，在Capture-DR中，其结果将被捕获到[data](#dmi-data)中。如果操作没有及时完成，[op](#dmi-op) 将为 3，并且 [data](#dmi-data) 中的值必须被忽略。必须通过将[dmireset](#dtmcs-dmireset)写入[dtmcs](#dtm-dtmcs)来清除繁忙状态，然后必须再次执行第二次扫描。必须重复此过程，直到 [op](#dmi-op) 返回 0。在后续操作中，调试器应在 Update-DR 和 Capture-DR 之间留出更多时间。
@@ -2340,24 +2507,30 @@ MIPI-10 连接器应该为所有现代硬件提供充足的信号。如果设计
 
 几乎不需要扫描 IR，从而避免了典型 JTAG 使用中的低效率问题。
 
+<a id="_checking_for_halted_harts"></a>
 #### B.2.2 检查是否已停止 hart
 
 用户希望尽快知道 hart 何时停止（例如由于断点）。当存在多个 hart 时，为了有效地确定哪个 hart 被停止，调试器使用 `haltsum` 寄存器。假设存在最大数量的 hart ，首先检查 [haltsum3](#dm-haltsum3) 。对于设置的每个位，它写入 [hartsel](#dm-dmcontrol)，并检查 [haltsum2](#dm-haltsum2)。此过程通过 [haltsum1](#dm-haltsum1) 和 [haltsum0](#dm-haltsum0) 重复进行。根据存在的 hart 数量，该过程应从较低的 `haltsum` 寄存器之一开始。
 
+<a id="deb:halt"></a>
 #### B.2.3 停止
 
 要停止一个或多个 hart，调试器会选择它们，设置 [haltreq](#dmcontrol-haltreq)，然后等待 [allhalted](#dmstatus-allhalted) 指示 hart 已停止。然后它可以将 [haltreq](#dmcontrol-haltreq) 清除为 0，或者将其保持为高电平以捕获在停止时复位的 hart。
 
+<a id="_running"></a>
 #### B.2.4 跑步
 
 首先，调试器应该恢复它已覆盖的所有寄存器。然后可以通过设置[resumereq](#dmcontrol-resumereq)让选中的hart运行。一旦设置了 [allresumeack](#dmstatus-allresumeack)，调试器就知道所选的 hart 已恢复。 hart 在恢复后可能会很快停止（例如，通过命中软件断点），因此调试器无法使用 [allhalted](#dmstatus-allhalted)/[anyhalted](#dmstatus-anyhalted) 来检查 hart 是否恢复。
 
+<a id="_single_step_2"></a>
 #### B.2.5 单步
 
 使用硬件单步功能与常规运行几乎相同。调试器只是在让 hart 运行之前设置。 hart 的行为与运行情况完全相同，只是中断可能被禁用（取决于 [stepie](#dcsr-stepie)），并且它在重新进入调试模式之前仅获取并执行单个指令。
 
+<a id="_accessing_registers"></a>
 #### B.2.6 访问寄存器
 
+<a id="deb:abstractreg"></a>
 ##### B.2.6.1 使用抽象命令
 
 使用抽象命令读取`s0`：
@@ -2365,7 +2538,7 @@ MIPI-10 连接器应该为所有现代硬件提供充足的信号。如果设计
 | 操作 | 地址 | 值 | 说明 |
 | --- | --- | --- | --- |
 | 写入 | [command](#dm-command) | [aarsize](#accessregister-aarsize)=2，[transfer](#accessregister-transfer)，[regno](#accessregister-regno) = 0x1008 | 读取 `s0` |
-| 读取 | [data0](#dm-data0) | — | 返回 `s0`中的值 |
+| 读取 | [data0](#dm-data0) | — | 返回 `s0` 中的值 |
 
 使用抽象命令写入`mstatus`：
 
@@ -2374,6 +2547,7 @@ MIPI-10 连接器应该为所有现代硬件提供充足的信号。如果设计
 | 写入 | [data0](#dm-data0) | 新值 |  |
 | 写入 | [command](#dm-command) | [aarsize](#accessregister-aarsize)=2、[transfer](#accessregister-transfer)、[write](#accessregister-write)、[regno](#accessregister-regno) = 0x300 | 写 `mstatus` |
 
+<a id="deb:regprogbuf"></a>
 ##### B.2.6.2 使用程序缓冲区
 
 仅需要抽象命令来支持 GPR 访问。要访问非 GPR 寄存器，调试器可以使用程序缓冲区将值移入/移出 GPR，然后使用抽象命令访问 GPR 值。
@@ -2385,7 +2559,7 @@ MIPI-10 连接器应该为所有现代硬件提供充足的信号。如果设计
 | 写入 | [progbuf0](#dm-progbuf0) | `csrw s0, MSTATUS` |  |
 | 写入 | `progbuf1` | `ebreak` |  |
 | 写入 | [data0](#dm-data0) | 新值 |  |
-| 写入 | [command](#dm-command) | [aarsize](#accessregister-aarsize)=2、[postexec](#accessregister-postexec)、[transfer](#accessregister-transfer)、[write](#accessregister-write)、[regno](#accessregister-regno) = 0x1008 | 写入`s0`，然后执行程序缓冲区 |
+| 写入 | [command](#dm-command) | [aarsize](#accessregister-aarsize)=2、[postexec](#accessregister-postexec)、[transfer](#accessregister-transfer)、[write](#accessregister-write)、[regno](#accessregister-regno) = 0x1008 | 写入 `s0`，然后执行程序缓冲区 |
 
 使用程序缓冲区读取 `f1`：
 
@@ -2395,10 +2569,12 @@ MIPI-10 连接器应该为所有现代硬件提供充足的信号。如果设计
 | 写入 | `progbuf1` | `ebreak` |  |
 | 写入 | [command](#dm-command) | [postexec](#accessregister-postexec) | 执行程序缓冲区 |
 | 写入 | [command](#dm-command) | [transfer](#accessregister-transfer)、[regno](#accessregister-regno) = 0x1008 | 读取 `s0` |
-| 读取 | [data0](#dm-data0) | — | 返回 `f1`中的值 |
+| 读取 | [data0](#dm-data0) | — | 返回 `f1` 中的值 |
 
+<a id="_reading_memory"></a>
 #### B.2.7 读取记忆
 
+<a id="deb:mrsysbus"></a>
 ##### B.2.7.1 使用系统总线访问
 
 对于系统总线访问，地址是物理系统总线地址。
@@ -2423,6 +2599,7 @@ MIPI-10 连接器应该为所有现代硬件提供充足的信号。如果设计
 | 写入 | [sbcs](#dm-sbcs) | 0 | 禁用自动读取 |
 | 读取 | [sbdata0](#dm-sbdata0) | — | 获取从内存中读取的最后一个值。 |
 
+<a id="deb:mrprogbuf"></a>
 ##### B.2.7.2 使用程序缓冲区
 
 通过让 hart 执行加载/存储，可以通过程序缓冲区访问内存。地址是物理地址还是虚拟地址取决于系统配置。
@@ -2434,7 +2611,7 @@ MIPI-10 连接器应该为所有现代硬件提供充足的信号。如果设计
 | 写入 | [progbuf0](#dm-progbuf0) | `lw s0, 0(s0)` |  |
 | 写入 | `progbuf1` | `ebreak` |  |
 | 写入 | [data0](#dm-data0) | 地址 |  |
-| 写入 | [command](#dm-command) | [transfer](#accessregister-transfer)、[write](#accessregister-write)、[postexec](#accessregister-postexec)、[regno](#accessregister-regno) = 0x1008 | 写入`s0`，然后执行程序缓冲区 |
+| 写入 | [command](#dm-command) | [transfer](#accessregister-transfer)、[write](#accessregister-write)、[postexec](#accessregister-postexec)、[regno](#accessregister-regno) = 0x1008 | 写入 `s0`，然后执行程序缓冲区 |
 | 写入 | [command](#dm-command) | [regno](#accessregister-regno) = 0x1008 | 读取 `s0` |
 | 读取 | [data0](#dm-data0) | — | 从内存中读取的值 |
 
@@ -2446,7 +2623,7 @@ MIPI-10 连接器应该为所有现代硬件提供充足的信号。如果设计
 | 写入 | `progbuf1` | `addi s0, s1, 4` |  |
 | 写入 | `progbuf2` | `ebreak` |  |
 | 写入 | [data0](#dm-data0) | 地址 |  |
-| 写入 | [command](#dm-command) | [transfer](#accessregister-transfer)、[write](#accessregister-write)、[postexec](#accessregister-postexec)、[regno](#accessregister-regno) = 0x1008 | 写入`s0`，然后执行程序缓冲区 |
+| 写入 | [command](#dm-command) | [transfer](#accessregister-transfer)、[write](#accessregister-write)、[postexec](#accessregister-postexec)、[regno](#accessregister-regno) = 0x1008 | 写入 `s0`，然后执行程序缓冲区 |
 | 写入 | [command](#dm-command) | [postexec](#accessregister-postexec)、[regno](#accessregister-regno) = 0x1009 | 读取`s1`，然后执行程序缓冲区 |
 | 写入 | [abstractauto](#dm-abstractauto) | [autoexecdata](#abstractauto-autoexecdata)[0] | 设置 [autoexecdata](#abstractauto-autoexecdata)[0] |
 | 读取 | [data0](#dm-data0) | — | 获取从内存中读取的值，然后执行程序缓冲区 |
@@ -2455,6 +2632,7 @@ MIPI-10 连接器应该为所有现代硬件提供充足的信号。如果设计
 | 写入 | [abstractauto](#dm-abstractauto) | 0 | 清除 [autoexecdata](#abstractauto-autoexecdata)[0] |
 | 读取 | [data0](#dm-data0) | — | 获取从内存中读取的最后一个值。 |
 
+<a id="deb:mrabstract"></a>
 ##### B.2.7.3 使用抽象内存访问
 
 抽象内存访问的行为就好像它们是由 hart 执行的，尽管实际的实现可能有所不同。
@@ -2479,8 +2657,10 @@ MIPI-10 连接器应该为所有现代硬件提供充足的信号。如果设计
 | 写入 | [abstractauto](#dm-abstractauto) | 0 | 禁用自动执行 |
 | 读取 | [data0](#dm-data0) | — | 获取从内存中读取的最后一个值。 |
 
+<a id="writemem"></a>
 #### B.2.8 写入记忆
 
+<a id="deb:mrsysbuswrite"></a>
 ##### B.2.8.1 使用系统总线访问
 
 对于系统总线访问，地址是物理系统总线地址。
@@ -2504,6 +2684,7 @@ MIPI-10 连接器应该为所有现代硬件提供充足的信号。如果设计
 | …​ | …​ | …​ | …​ |
 | 写入 | [sbdata0](#dm-sbdata0) | 值N |  |
 
+<a id="deb:mrprogbufwrite"></a>
 ##### B.2.8.2 使用程序缓冲区
 
 通过程序缓冲区，hart 执行存储器访问。地址是物理的或虚拟的（取决于其他系统配置）。
@@ -2517,7 +2698,7 @@ MIPI-10 连接器应该为所有现代硬件提供充足的信号。如果设计
 | 写入 | [data0](#dm-data0) | 地址 |  |
 | 写入 | [command](#dm-command) | [transfer](#accessregister-transfer)、[write](#accessregister-write)、[regno](#accessregister-regno) = 0x1008 | 写 `s0` |
 | 写入 | [data0](#dm-data0) | 值 |  |
-| 写入 | [command](#dm-command) | [transfer](#accessregister-transfer)、[write](#accessregister-write)、[postexec](#accessregister-postexec)、[regno](#accessregister-regno) = 0x1009 | 写入`s1`，然后执行程序缓冲区 |
+| 写入 | [command](#dm-command) | [transfer](#accessregister-transfer)、[write](#accessregister-write)、[postexec](#accessregister-postexec)、[regno](#accessregister-regno) = 0x1009 | 写入 `s1`，然后执行程序缓冲区 |
 
 使用程序缓冲区写入内存块：
 
@@ -2529,13 +2710,14 @@ MIPI-10 连接器应该为所有现代硬件提供充足的信号。如果设计
 | 写入 | [data0](#dm-data0) | 地址 |  |
 | 写入 | [command](#dm-command) | [transfer](#accessregister-transfer)、[write](#accessregister-write)、[regno](#accessregister-regno) = 0x1008 | 写 `s0` |
 | 写入 | [data0](#dm-data0) | 值 0 |  |
-| 写入 | [command](#dm-command) | [transfer](#accessregister-transfer)、[write](#accessregister-write)、[postexec](#accessregister-postexec)、[regno](#accessregister-regno) = 0x1009 | 写入`s1`，然后执行程序缓冲区 |
+| 写入 | [command](#dm-command) | [transfer](#accessregister-transfer)、[write](#accessregister-write)、[postexec](#accessregister-postexec)、[regno](#accessregister-regno) = 0x1009 | 写入 `s1`，然后执行程序缓冲区 |
 | 写入 | [abstractauto](#dm-abstractauto) | [autoexecdata](#abstractauto-autoexecdata)[0] | 设置 [autoexecdata](#abstractauto-autoexecdata)[0] |
 | 写入 | [data0](#dm-data0) | 值1 |  |
 | …​ | …​ | …​ | …​ |
 | 写入 | [data0](#dm-data0) | 值N |  |
 | 写入 | [abstractauto](#dm-abstractauto) | 0 | 清除 [autoexecdata](#abstractauto-autoexecdata)[0] |
 
+<a id="deb:mwabstract"></a>
 ##### B.2.8.3 使用抽象内存访问
 
 抽象内存访问的行为就好像它们是由 hart 执行的，尽管实际的实现可能有所不同。
@@ -2562,57 +2744,60 @@ MIPI-10 连接器应该为所有现代硬件提供充足的信号。如果设计
 | 写入 | [data0](#dm-data0) | 值N |  |
 | 写入 | [abstractauto](#dm-abstractauto) | 0 | 禁用自动执行 |
 
+<a id="_triggers"></a>
 #### B.2.9 触发器
 
 当特定事件发生时，调试器可以使用硬件触发器来停止 hart。下面是一些示例，但由于对 hart 实现的触发器的功能数量没有要求，因此这些示例可能不适用于所有实现。当调试器想要设置触发器时，它会写入所需的配置，然后读回以查看该配置是否受支持。所有示例均假设 XLEN=32。
 
 执行0x80001234处的指令时进入调试模式，用作ROM中的指令断点：
 
-|  |  |  |
-|----|----|----|
+| 寄存器 | 写入值 | 配置说明 |
+| --- | --- | --- |
 | [tdata1](#csr-tdata1) | 0x6980105c |类型 = 6、dmode = 1、操作 = 1、选择 = 0、匹配 = 0、m = 1、s = 1、u = 1、vs = 1、vu = 1、执行 = 1 |
-| [tdata2](#csr-tdata2) | 0x80001234|地址 |
+| [tdata2](#csr-tdata2) | 0x80001234 | 地址 |
 
 在 M 模式或 S 模式或 U 模式下在地址 0x80007f80 处执行加载时进入调试模式：
 
-|  |  |  |
-|----|----|----|
+| 寄存器 | 写入值 | 配置说明 |
+| --- | --- | --- |
 | [tdata1](#csr-tdata1) | 0x68001059 |类型 = 6，dmode = 1，操作 = 1，选择 = 0，匹配 = 0，m = 1，s = 1，u = 1，负荷 = 1 |
-| [tdata2](#csr-tdata2) | 0x80007f80 | 0x80007f80地址 |
+| [tdata2](#csr-tdata2) | 0x80007f80 | 地址 |
 
 当 hgatp.VMID=1 时，在 VS 模式或 VU 模式下存储到 0x80007c80 和 0x80007cef（含）之间的地址时，进入调试模式：
 
-|  |  |  |
-|----|----|----|
+| 寄存器 | 写入值 | 配置说明 |
+| --- | --- | --- |
 | [tdata1](#csr-tdata1) 0 | 0x69801902 |类型 = 6、dmode = 1、操作 = 1、链 = 1、选择 = 0、匹配 = 2、vs = 1、vu = 1、存储 = 1 |
 | [tdata2](#csr-tdata2) 0 | 0x80007c80 |起始地址（含）|
 | [textra32](#csr-textra32) 0 | 0x03000000| mhselect=6，mhvalue=0 |
 | [tdata1](#csr-tdata1) 1 | 0x69801182 |类型 = 6、dmode = 1、操作 = 1、选择 = 0、匹配 = 3、vs = 1、vu = 1、存储 = 1 |
-| [tdata2](#csr-tdata2) 1 | 0x80007cf0 | 0x80007cf0结束地址（独家）|
+| [tdata2](#csr-tdata2) 1 | 0x80007cf0 | 结束地址（不含） |
 | [textra32](#csr-textra32) 1 | 0x03000000| mhselect=6，mhvalue=0 |
 
 存储到 0x81230000 和 0x8123ffff（含）之间的地址时进入调试模式：
 
-|  |  |  |
-|----|----|----|
+| 寄存器 | 写入值 | 配置说明 |
+| --- | --- | --- |
 | [tdata1](#csr-tdata1) | 0x698010da |类型 = 6、dmode = 1、操作 = 1、选择 = 0、匹配 = 1、m = 1、s = 1、u = 1、vs = 1、vu = 1、存储 = 1 |
 | [tdata2](#csr-tdata2) | 0x81237fff | 0x81237fff 16 个高位完全匹配，然后是 0，然后是全 1。 |
 
 从 0x86753090 到 0x8675309f 之间或 0x96753090 到 0x9675309f（含）之间的地址加载时进入调试模式：
 
-|  |  |  |
-|----|----|----|
-| [tdata1](#csr-tdata1) 0 | 0x69801a59 | 0x69801a59类型=6、dmode=1、动作=1、链=1、匹配=4、m=1、s=1、u=1、vs=1、vu=1、负荷=1 |
+| 寄存器 | 写入值 | 配置说明 |
+| --- | --- | --- |
+| [tdata1](#csr-tdata1) 0 | 0x69801a59 | 类型 =6、dmode=1、动作=1、链=1、匹配=4、m=1、s=1、u=1、vs=1、vu=1、负荷=1 |
 | [tdata2](#csr-tdata2) 0 | 0xfff03090 |屏蔽下半部分，然后匹配下半部分 |
-| [tdata1](#csr-tdata1) 1 | 0x698012d9 | 0x698012d9类型 = 6、dmode = 1、操作 = 1、匹配 = 5、m = 1、s = 1、u = 1、vs = 1、vu = 1、负荷 = 1 |
-| [tdata2](#csr-tdata2) 1 | 0xefff8675 | 0xefff8675屏蔽上半部分，然后匹配上半部分|
+| [tdata1](#csr-tdata1) 1 | 0x698012d9 | 类型 = 6、dmode = 1、操作 = 1、匹配 = 5、m = 1、s = 1、u = 1、vs = 1、vu = 1、负荷 = 1 |
+| [tdata2](#csr-tdata2) 1 | 0xefff8675 | 屏蔽上半部分，然后匹配上半部分|
 
+<a id="_handling_exceptions"></a>
 #### B.2.10 处理异常
 
 通常，调试器可以通过小心其编写的程序来避免异常。有时它们是不可避免的，例如如果用户要求访问未实现的内存或 CSR。典型的调试器对硬件平台的了解不够，无法知道将要发生什么，并且必须尝试访问以确定结果。
 
 当执行程序缓冲区时发生异常时，[command](#dm-command) 被置位。调试器可以检查该字段以查看程序是否遇到异常。如果出现异常，调试器就会知道导致异常的原因。
 
+<a id="quickaccess"></a>
 #### B.2.11 快速访问
 
 有多种指令可在 GPR 和 `data` 寄存器之间传输数据。它们要么是加载/存储，要么是 CSR 读/写。具体地址也各不相同。这都是在[hartinfo](#dm-hartinfo)中指定的。这里的示例使用伪操作 `transfer dest, src` 来表示所有这些选项。
@@ -2644,10 +2829,12 @@ MIPI-10 连接器应该为所有现代硬件提供充足的信号。如果设计
 | 写入 | `progbuf4` | `ebreak` |  |
 | 写入 | [command](#dm-command) | 0x10000000 | 执行快速访问 |
 
+<a id="_native_debugger_implementation"></a>
 ### B.3 本机调试器实现
 
 该规范包含一些有助于编写本机调试器的功能。本节描述如何实现一些常见任务。
 
+<a id="nativestep"></a>
 #### B.3.1 单步
 
 如果操作系统或调试存根在 M 模式下运行，而正在调试的程序在特权较低的模式下运行，那么单步操作就很简单。当需要一个步骤时，操作系统或调试存根会写入 [count](#icount-count)=1、[action](#icount-action)=0、[m](#icount-m)=0，然后使用 `mret` 指令将控制权返回给下层用户程序。
@@ -2677,11 +2864,20 @@ mret /* 返回到正在调试的程序。计数减1 */
 
 为了避免在异常处理程序未解决异常原因时出现无限循环，调试器执行的额外步骤不得超过一个。
 
+<a id="index"></a>
 ## 索引
+
+<a id="footnotes"></a>
 
 ------------------------------------------------------------------------
 
+<a id="_footnotedef_1"></a>
+
 [1](#_footnoteref_1)。值得注意的例外包括有关内存对应关系和外设的信息。
+
+<a id="footer"></a>
+
+<a id="footer-text"></a>
 
 1. 0版本\
 
@@ -2705,3 +2901,4 @@ mret /* 返回到正在调试的程序。计数减1 */
 - 文本：由相同版本的官方 AsciiDoc 源（commit `5695c0a`）渲染、转为 Markdown，再逐段中文化；包含全部章节、附录、寄存器表、字段说明与代码示例。
 - 插图：保留源 PDF 的 3 张嵌入图（封面图标、图 1、图 2），置于 `RISC-V调试规范v1.0-中文学习版.assets/`。
 - 许可与署名：原文为 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)；本文保留来源、版本与作者信息，供个人学习使用。
+
