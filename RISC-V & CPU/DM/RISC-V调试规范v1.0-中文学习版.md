@@ -118,7 +118,7 @@ tags:
 
 <div class="sect2">
 
-### 1.1 术语
+### 1.1 1 术语
 
 <div class="dlist">
 
@@ -218,7 +218,7 @@ hart 看到的地址。如果 hart 使用地址转换，这可能与物理地址
 
 <div class="sect2">
 
-### 1.2 背景信息
+### 1.2 2 背景信息
 
 <div class="paragraph">
 
@@ -262,7 +262,7 @@ hart 看到的地址。如果 hart 使用地址转换，这可能与物理地址
 
 <div class="sect3">
 
-#### 1.2.1。版本
+#### 1.2.1 版本
 
 <div class="paragraph">
 
@@ -284,7 +284,7 @@ hart 看到的地址。如果 hart 使用地址转换，这可能与物理地址
 
 <div class="sect4">
 
-##### 1.2.1.1。 0.13 至 1.0 的错误修复
+##### 1.2.1.1 0.13 至 1.0 的错误修复
 
 <div class="paragraph">
 
@@ -312,7 +312,7 @@ hart 看到的地址。如果 hart 使用地址转换，这可能与物理地址
 
 <div class="sect4">
 
-##### 1.2.1.2。从 0.13 到 1.0 的不兼容更改
+##### 1.2.1.2 从 0.13 到 1.0 的不兼容更改
 
 <div class="paragraph">
 
@@ -348,7 +348,7 @@ hart 看到的地址。如果 hart 使用地址转换，这可能与物理地址
 
 <div class="sect4">
 
-##### 1.2.1.3。从 0.13 到 1.0 的微小变化
+##### 1.2.1.3 从 0.13 到 1.0 的微小变化
 
 <div class="paragraph">
 
@@ -398,7 +398,7 @@ hart 看到的地址。如果 hart 使用地址转换，这可能与物理地址
 
 <div class="sect4">
 
-##### 1.2.1.4。 0.13到1.0的新功能
+##### 1.2.1.4 0.13到1.0的新功能
 
 <div class="paragraph">
 
@@ -450,7 +450,7 @@ hart 看到的地址。如果 hart 使用地址转换，这可能与物理地址
 
 <div class="sect4">
 
-##### 1.2.1.5。 1.0 稳定版期间不兼容的更改
+##### 1.2.1.5 1.0 稳定版期间不兼容的更改
 
 <div class="paragraph">
 
@@ -474,7 +474,7 @@ hart 看到的地址。如果 hart 使用地址转换，这可能与物理地址
 
 <div class="sect4">
 
-##### 1.2.1.6。 1.0.0-rc1 和 1.0.0-rc2 之间的不兼容更改
+##### 1.2.1.6 1.0.0-rc1 和 1.0.0-rc2 之间的不兼容更改
 
 <div class="paragraph">
 
@@ -496,11 +496,11 @@ hart 看到的地址。如果 hart 使用地址转换，这可能与物理地址
 
 <div class="sect2">
 
-### 1.3 本文档
+### 1.3 3 本文档
 
 <div class="sect3">
 
-#### 1.3.1。结构
+#### 1.3.1 结构
 
 <div class="paragraph">
 
@@ -512,7 +512,7 @@ hart 看到的地址。如果 hart 使用地址转换，这可能与物理地址
 
 <div class="sect3">
 
-#### 1.3.2。 ISA 与非 ISA
+#### 1.3.2 ISA 与非 ISA
 
 <div class="paragraph">
 
@@ -524,7 +524,7 @@ hart 看到的地址。如果 hart 使用地址转换，这可能与物理地址
 
 <div class="sect3">
 
-#### 1.3.3。寄存器定义格式
+#### 1.3.3 寄存器定义格式
 
 <div class="paragraph">
 
@@ -571,22 +571,22 @@ hart 看到的地址。如果 hart 使用地址转换，这可能与物理地址
 
 <div class="sect4">
 
-##### 1.3.3.1。长名称（短名称，位于 0x123）
+##### 1.3.3.1 长名称（短名称，位于 0x123）
 
 <div class="listingblock">
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "8" "7" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (文本 "0" {:font-size 20}) {:span 7})
-(draw-box (文本“字段”{:font-size 20}) {:span 5})
-(draw-box "" {:span 12 :borders {}})
-(draw-box "24" {:span 7 :borders {}})
-(draw-box "8" {:span 5 :borders {}})
-(draw-box "" {:span 12 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "8" "7" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" ""]})
+    (draw-box (text "0" {:font-size 20}) {:span 7})
+    (draw-box (text "field" {:font-size 20}) {:span 5})
+    (draw-box "" {:span 12 :borders {}})
+    (draw-box "24" {:span 7 :borders {}})
+    (draw-box "8" {:span 5 :borders {}})
+    (draw-box "" {:span 12 :borders {}})
 
 </div>
 
@@ -648,7 +648,7 @@ hart 看到的地址。如果 hart 使用地址转换，这可能与物理地址
 
 <div class="sect2">
 
-### 1.4 背景
+### 1.4 4 背景
 
 <div class="paragraph">
 
@@ -680,7 +680,7 @@ hart 看到的地址。如果 hart 使用地址转换，这可能与物理地址
 
 <div class="sect2">
 
-### 1.5 支持的特性
+### 1.5 5 支持的特性
 
 <div class="paragraph">
 
@@ -890,7 +890,7 @@ DM 在硬件平台中提供对其 hart 的运行控制。抽象命令提供对 G
 
 <div class="sect2">
 
-### 3.1。调试模块接口（DMI）
+### 3.1 调试模块接口（DMI）
 
 <div class="paragraph">
 
@@ -914,7 +914,7 @@ DMI 使用 7 到 32 个地址位。每个地址都指向一个可以读取或写
 
 <div class="sect2">
 
-### 3.2。复位控制
+### 3.2 复位控制
 
 <div class="paragraph">
 
@@ -969,7 +969,7 @@ DMI 使用 7 到 32 个地址位。每个地址都指向一个可以读取或写
 
 <div class="sect2">
 
-### 3.3。选择hart
+### 3.3 选择hart
 
 <div class="paragraph">
 
@@ -991,7 +991,7 @@ DMI 使用 7 到 32 个地址位。每个地址都指向一个可以读取或写
 
 <div class="sect3">
 
-#### 3.3.1.选择单个 hart
+#### 3.3.1 选择单个 hart
 
 <div class="paragraph">
 
@@ -1003,7 +1003,7 @@ DMI 使用 7 到 32 个地址位。每个地址都指向一个可以读取或写
 
 <div class="sect3">
 
-#### 3.3.2.选择多个 hart
+#### 3.3.2 选择多个 hart
 
 <div class="paragraph">
 
@@ -1029,7 +1029,7 @@ DMI 使用 7 到 32 个地址位。每个地址都指向一个可以读取或写
 
 <div class="sect2">
 
-### 3.4。 hart DM 状态
+### 3.4 hart DM 状态
 
 <div class="paragraph">
 
@@ -1077,7 +1077,7 @@ hart 在调试模式下停止，仅代表调试器执行任务。
 
 <div class="sect2">
 
-### 3.5。运行控制
+### 3.5 运行控制
 
 <div class="paragraph">
 
@@ -1119,7 +1119,7 @@ DM 可以为每个 hart 实现可选的复位暂停位，这通过将 [hasreseth
 
 <div class="sect2">
 
-### 3.6。暂停组、恢复组和外部触发器
+### 3.6 暂停组、恢复组和外部触发器
 
 <div class="paragraph">
 
@@ -1240,7 +1240,7 @@ DM 可以为每个 hart 实现可选的复位暂停位，这通过将 [hasreseth
 
 <div class="sect2">
 
-### 3.7。抽象命令
+### 3.7 抽象命令
 
 > [!tip] Tips · 发命令前后都检查 `abstractcs.busy` 与 `cmderr`；发生错误后用写 1 清除 `cmderr`，不要假设下一条命令会自动恢复。
 
@@ -1328,7 +1328,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="sect3">
 
-#### 3.7.1.抽象命令列表
+#### 3.7.1 抽象命令列表
 
 <div class="paragraph">
 
@@ -1352,7 +1352,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="sect4">
 
-##### 3.7.1.1。 `Access Register`
+##### 3.7.1.1 `Access Register`
 
 <div class="paragraph">
 
@@ -1428,26 +1428,26 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（默认每行 34 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "24" "23" "22" "" "" "" "20" "" "" "" "19" "" "" "" "" "18" "" "" "17" "" "" 16" "" "15" "" "" "" "" "" “0”]})
-(draw-box (text "cmdtype" {:font-size 20}) {:span 5})
-(draw-box (文本 "0" {:font-size 20}) {:span 1})
-(draw-box (text "aarsize" {:font-size 20}) {:span 5})
-(draw-box (text "aarpostincrement" {:font-size 20}) {:span 7})
-(draw-box (text "postexec" {:font-size 20}) {:span 3})
-(draw-box (文本“传输”{:font-size 20}) {:span 3})
-(draw-box (文本 "write" {:font-size 20}) {:span 3})
-(draw-box (text "regno" {:font-size 20}) {:span 7})
-(draw-box "8" {:span 5 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "3" {:span 5 :borders {}})
-(draw-box "1" {:span 7 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "16" {:span 7 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 34)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "24" "23" "22" "" "" "" "20" "" "" "" "19" "" "" "" "" "18" "" "" "17" "" "" "16" "" "15" "" "" "" "" "" "0"]})
+    (draw-box (text "cmdtype" {:font-size 20}) {:span 5})
+    (draw-box (text "0" {:font-size 20}) {:span 1})
+    (draw-box (text "aarsize" {:font-size 20}) {:span 5})
+    (draw-box (text "aarpostincrement" {:font-size 20}) {:span 7})
+    (draw-box (text "postexec" {:font-size 20}) {:span 3})
+    (draw-box (text "transfer" {:font-size 20}) {:span 3})
+    (draw-box (text "write" {:font-size 20}) {:span 3})
+    (draw-box (text "regno" {:font-size 20}) {:span 7})
+    (draw-box "8" {:span 5 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "3" {:span 5 :borders {}})
+    (draw-box "1" {:span 7 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "16" {:span 7 :borders {}})
 
 </div>
 
@@ -1558,7 +1558,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="sect4">
 
-##### 3.7.1.2。 `Quick Access`
+##### 3.7.1.2 `Quick Access`
 
 <div class="paragraph">
 
@@ -1594,16 +1594,16 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "24" "23" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "cmdtype" {:font-size 20}) {:span 5})
-(draw-box (文本 "0" {:font-size 20}) {:span 7})
-(draw-box "" {:span 12 :borders {}})
-(draw-box "8" {:span 5 :borders {}})
-(draw-box "24" {:span 7 :borders {}})
-(draw-box "" {:span 12 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "24" "23" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" ""]})
+    (draw-box (text "cmdtype" {:font-size 20}) {:span 5})
+    (draw-box (text "0" {:font-size 20}) {:span 7})
+    (draw-box "" {:span 12 :borders {}})
+    (draw-box "8" {:span 5 :borders {}})
+    (draw-box "24" {:span 7 :borders {}})
+    (draw-box "" {:span 12 :borders {}})
 
 </div>
 
@@ -1636,7 +1636,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="sect4">
 
-##### 3.7.1.3。 `Access Memory`
+##### 3.7.1.3 `Access Memory`
 
 <div class="paragraph">
 
@@ -1695,26 +1695,26 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（默认每行 40 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "24" "" "" "23" "" "" "22" "" "" "" "20" "" "" "" "19" "" "" "" "18" "" "17" "" "16" "" "15" "" "" "" "14" "13" "" "" "" "" "" "0"]})
-(draw-box (text "cmdtype" {:font-size 20}) {:span 5})
-(draw-box (text "aamvirtual" {:font-size 20}) {:span 5})
-(draw-box (text "aamsize" {:font-size 20}) {:span 5})
-(draw-box (text "aampostincrement" {:font-size 20}) {:span 7})
-(draw-box (文本 "0" {:font-size 20}) {:span 3})
-(draw-box (文本 "write" {:font-size 20}) {:span 3})
-(draw-box (文本“目标特定”{:font-size 20}) {:span 5})
-(draw-box (文本 "0" {:font-size 20}) {:span 7})
-(draw-box "8" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "3" {:span 5 :borders {}})
-(draw-box "1" {:span 7 :borders {}})
-(draw-box "2" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "2" {:span 5 :borders {}})
-(draw-box "14" {:span 7 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 40)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "24" "" "" "23" "" "" "22" "" "" "" "20" "" "" "" "19" "" "" "" "18" "" "17" "" "16" "" "15" "" "" "" "14" "13" "" "" "" "" "" "0"]})
+    (draw-box (text "cmdtype" {:font-size 20}) {:span 5})
+    (draw-box (text "aamvirtual" {:font-size 20}) {:span 5})
+    (draw-box (text "aamsize" {:font-size 20}) {:span 5})
+    (draw-box (text "aampostincrement" {:font-size 20}) {:span 7})
+    (draw-box (text "0" {:font-size 20}) {:span 3})
+    (draw-box (text "write" {:font-size 20}) {:span 3})
+    (draw-box (text "target-specific" {:font-size 20}) {:span 5})
+    (draw-box (text "0" {:font-size 20}) {:span 7})
+    (draw-box "8" {:span 5 :borders {}})
+    (draw-box "1" {:span 5 :borders {}})
+    (draw-box "3" {:span 5 :borders {}})
+    (draw-box "1" {:span 7 :borders {}})
+    (draw-box "2" {:span 3 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "2" {:span 5 :borders {}})
+    (draw-box "14" {:span 7 :borders {}})
 
 </div>
 
@@ -1818,7 +1818,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="sect2">
 
-### 3.8。程序缓冲区
+### 3.8 程序缓冲区
 
 <div class="paragraph">
 
@@ -1881,7 +1881,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="sect2">
 
-### 3.9。 hart 调试状态概述
+### 3.9 hart 调试状态概述
 
 > [!tip] Tips · 把图中的“概念状态”对应关系为寄存器可见条件：`anyrunning/allrunning`、`anyhalted/allhalted`、`busy` 与 `cmderr`。它们比内部 RTL 状态名更具可移植性。
 
@@ -1911,7 +1911,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="sect2">
 
-### 3.10。系统总线访问
+### 3.10 系统总线访问
 
 > [!tip] Tips · SBA 使用物理地址，且未必与各 hart 观察到的数据自动一致。调试 cache 或 DMA 问题时，须由调试器/平台自行安排一致性操作。
 
@@ -1968,7 +1968,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="sect2">
 
-### 3.11。最小侵入式调试
+### 3.11 最小侵入式调试
 
 <div class="paragraph">
 
@@ -1998,7 +1998,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="sect2">
 
-### 3.12。安全性
+### 3.12 安全性
 
 <div class="paragraph">
 
@@ -2036,7 +2036,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="sect2">
 
-### 3.13。版本检测
+### 3.13 版本检测
 
 <div class="paragraph">
 
@@ -2090,7 +2090,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="sect2">
 
-### 3.14。调试模块寄存器
+### 3.14 调试模块寄存器
 
 <div class="paragraph">
 
@@ -2184,7 +2184,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="sect3">
 
-#### 3.14.1.调试模块状态（dmstatus，位于 0x11）
+#### 3.14.1 调试模块状态（dmstatus，位于 0x11）
 
 <div class="paragraph">
 
@@ -2202,24 +2202,24 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（默认每行盒子数 31）
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "25" "" "" "24" "" "" "" "" "23" "" "" "" "22" "" "21" "" "20" "" "" "19" "" "" "" "" "18" "" ""]})
-(draw-box (文本 "0" {:font-size 20}) {:span 5})
-(draw-box (text "ndmresetpending" {:font-size 20}) {:span 5})
-(draw-box (text "stickyunavail" {:font-size 20}) {:span 5})
-(draw-box (text "impebreak" {:font-size 20}) {:span 3})
-(draw-box (文本 "0" {:font-size 20}) {:span 3})
-(draw-box (text "allhavereset" {:font-size 20}) {:span 5})
-(draw-box (text "anyhavereset" {:font-size 20}) {:span 5})
-(draw-box "7" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "2" {:span 3 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 31)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "25" "" "" "24" "" "" "" "" "23" "" "" "" "22" "" "21" "" "20" "" "" "19" "" "" "" "" "18" "" ""]})
+    (draw-box (text "0" {:font-size 20}) {:span 5})
+    (draw-box (text "ndmresetpending" {:font-size 20}) {:span 5})
+    (draw-box (text "stickyunavail" {:font-size 20}) {:span 5})
+    (draw-box (text "impebreak" {:font-size 20}) {:span 3})
+    (draw-box (text "0" {:font-size 20}) {:span 3})
+    (draw-box (text "allhavereset" {:font-size 20}) {:span 5})
+    (draw-box (text "anyhavereset" {:font-size 20}) {:span 5})
+    (draw-box "7" {:span 5 :borders {}})
+    (draw-box "1" {:span 5 :borders {}})
+    (draw-box "1" {:span 5 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "2" {:span 3 :borders {}})
+    (draw-box "1" {:span 5 :borders {}})
+    (draw-box "1" {:span 5 :borders {}})
 
 </div>
 
@@ -2229,24 +2229,24 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（默认每行 35 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "" "17" "" "" "" "" "16" "" "" "" "" "15" "" "" "" "" "14" "" "" "" "" "13" "" "" "" "" "12" "" "" "" "" "11" "" ""]})
-(draw-box (text "allresumeack" {:font-size 20}) {:span 5})
-(draw-box (text "anyresumeack" {:font-size 20}) {:span 5})
-(draw-box (text "allnonexistent" {:font-size 20}) {:span 5})
-(draw-box (text "anynonexistent" {:font-size 20}) {:span 5})
-(draw-box (text "allunavail" {:font-size 20}) {:span 5})
-(draw-box (text "anyunavail" {:font-size 20}) {:span 5})
-(draw-box (text "allrunning" {:font-size 20}) {:span 5})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 35)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["" "" "17" "" "" "" "" "16" "" "" "" "" "15" "" "" "" "" "14" "" "" "" "" "13" "" "" "" "" "12" "" "" "" "" "11" "" ""]})
+    (draw-box (text "allresumeack" {:font-size 20}) {:span 5})
+    (draw-box (text "anyresumeack" {:font-size 20}) {:span 5})
+    (draw-box (text "allnonexistent" {:font-size 20}) {:span 5})
+    (draw-box (text "anynonexistent" {:font-size 20}) {:span 5})
+    (draw-box (text "allunavail" {:font-size 20}) {:span 5})
+    (draw-box (text "anyunavail" {:font-size 20}) {:span 5})
+    (draw-box (text "allrunning" {:font-size 20}) {:span 5})
+    (draw-box "1" {:span 5 :borders {}})
+    (draw-box "1" {:span 5 :borders {}})
+    (draw-box "1" {:span 5 :borders {}})
+    (draw-box "1" {:span 5 :borders {}})
+    (draw-box "1" {:span 5 :borders {}})
+    (draw-box "1" {:span 5 :borders {}})
+    (draw-box "1" {:span 5 :borders {}})
 
 </div>
 
@@ -2256,26 +2256,26 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（默认每行 34 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "" "10" "" "" "" "9" "" "" "8" "" "" "" "7" "" "" "" "6" "" "" "" "5" "" "" "" "" "4" "" "" "3" "" "" "" "0"]})
-(draw-box (text "anyrunning" {:font-size 20}) {:span 5})
-(draw-box (text "allhalted" {:font-size 20}) {:span 3})
-(draw-box (text "anyhalted" {:font-size 20}) {:span 3})
-(draw-box (文本“已验证”{:font-size 20}) {:span 5})
-(draw-box (text "authbusy" {:font-size 20}) {:span 3})
-(draw-box (text "hasresethaltreq" {:font-size 20}) {:span 5})
-(draw-box (text "confstrptrvalid" {:font-size 20}) {:span 5})
-(draw-box (文本“版本”{:font-size 20}) {:span 5})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "4" {:span 5 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 34)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["" "" "10" "" "" "" "9" "" "" "8" "" "" "" "7" "" "" "" "6" "" "" "" "5" "" "" "" "" "4" "" "" "3" "" "" "" "0"]})
+    (draw-box (text "anyrunning" {:font-size 20}) {:span 5})
+    (draw-box (text "allhalted" {:font-size 20}) {:span 3})
+    (draw-box (text "anyhalted" {:font-size 20}) {:span 3})
+    (draw-box (text "authenticated" {:font-size 20}) {:span 5})
+    (draw-box (text "authbusy" {:font-size 20}) {:span 3})
+    (draw-box (text "hasresethaltreq" {:font-size 20}) {:span 5})
+    (draw-box (text "confstrptrvalid" {:font-size 20}) {:span 5})
+    (draw-box (text "version" {:font-size 20}) {:span 5})
+    (draw-box "1" {:span 5 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 5 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 5 :borders {}})
+    (draw-box "1" {:span 5 :borders {}})
+    (draw-box "4" {:span 5 :borders {}})
 
 </div>
 
@@ -2700,7 +2700,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="sect3">
 
-#### 3.14.2.调试模块控制（dmcontrol，位于 0x10）
+#### 3.14.2 调试模块控制（dmcontrol，位于 0x10）
 
 <div class="paragraph">
 
@@ -2761,24 +2761,24 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 29 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "31" "" "" "30" "" "" "29" "" "" "" "28" "" "" "" "" "27" "" "" "" "26" "" "25" "" "" "" "" "" "16"]})
-(draw-box (text "haltreq" {:font-size 20}) {:span 3})
-(draw-box (text "resumereq" {:font-size 20}) {:span 3})
-(draw-box (文本“hartreset”{:font-size 20}) {:span 3})
-(draw-box (text "ackhavereset" {:font-size 20}) {:span 5})
-(draw-box (text "ackunavail" {:font-size 20}) {:span 5})
-(draw-box (text "hasel" {:font-size 20}) {:span 3})
-(draw-box (text "hartsello" {:font-size 20}) {:span 7})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "10" {:span 7 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 29)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["" "31" "" "" "30" "" "" "29" "" "" "" "28" "" "" "" "" "27" "" "" "" "26" "" "25" "" "" "" "" "" "16"]})
+    (draw-box (text "haltreq" {:font-size 20}) {:span 3})
+    (draw-box (text "resumereq" {:font-size 20}) {:span 3})
+    (draw-box (text "hartreset" {:font-size 20}) {:span 3})
+    (draw-box (text "ackhavereset" {:font-size 20}) {:span 5})
+    (draw-box (text "ackunavail" {:font-size 20}) {:span 5})
+    (draw-box (text "hasel" {:font-size 20}) {:span 3})
+    (draw-box (text "hartsello" {:font-size 20}) {:span 7})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 5 :borders {}})
+    (draw-box "1" {:span 5 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "10" {:span 7 :borders {}})
 
 </div>
 
@@ -2788,24 +2788,24 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（默认每行盒子数 33）
-(draw-column-headers {:font-size 15 :height 17 :labels ["15" "" "" "" "" "" "6" "" "" "5" "" "" "" "" "4" "" "" "" "" "3" "" "" "" "" "2" "" "" "" "1" "" "" "0" ""]})
-(draw-box (text "hartselhi" {:font-size 20}) {:span 7})
-(draw-box (text "setkeepalive" {:font-size 20}) {:span 5})
-(draw-box (text "clrkeepalive" {:font-size 20}) {:span 5})
-(draw-box (text "setresethaltreq" {:font-size 20}) {:span 5})
-(draw-box (text "clrresethaltreq" {:font-size 20}) {:span 5})
-(draw-box (text "ndmreset" {:font-size 20}) {:span 3})
-(draw-box (text "dmactive" {:font-size 20}) {:span 3})
-(draw-box "10" {:span 7 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 33)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["15" "" "" "" "" "" "6" "" "" "5" "" "" "" "" "4" "" "" "" "" "3" "" "" "" "" "2" "" "" "" "1" "" "" "0" ""]})
+    (draw-box (text "hartselhi" {:font-size 20}) {:span 7})
+    (draw-box (text "setkeepalive" {:font-size 20}) {:span 5})
+    (draw-box (text "clrkeepalive" {:font-size 20}) {:span 5})
+    (draw-box (text "setresethaltreq" {:font-size 20}) {:span 5})
+    (draw-box (text "clrresethaltreq" {:font-size 20}) {:span 5})
+    (draw-box (text "ndmreset" {:font-size 20}) {:span 3})
+    (draw-box (text "dmactive" {:font-size 20}) {:span 3})
+    (draw-box "10" {:span 7 :borders {}})
+    (draw-box "1" {:span 5 :borders {}})
+    (draw-box "1" {:span 5 :borders {}})
+    (draw-box "1" {:span 5 :borders {}})
+    (draw-box "1" {:span 5 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
 
 </div>
 
@@ -3176,7 +3176,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="sect3">
 
-#### 3.14.3。 hart 信息（hartinfo，位于 0x12）
+#### 3.14.3 hart 信息（hartinfo，位于 0x12）
 
 <div class="paragraph">
 
@@ -3206,22 +3206,22 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-(def 每行 32 个盒子)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "24" "23" "" "" "" "20" "19" "" "" "" "17" "" "" "16" "" "" "15" "" "" "" "12" "11" "" "" "" "" "" “0”]})
-(draw-box (文本 "0" {:font-size 20}) {:span 5})
-(draw-box (text "nscratch" {:font-size 20}) {:span 5})
-(draw-box (文本 "0" {:font-size 20}) {:span 5})
-(draw-box (text "dataaccess" {:font-size 20}) {:span 5})
-(draw-box (文本“datasize”{:font-size 20}) {:span 5})
-(draw-box (text "dataaddr" {:font-size 20}) {:span 7})
-(draw-box "8" {:span 5 :borders {}})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "3" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "12" {:span 7 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 32)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "24" "23" "" "" "" "20" "19" "" "" "" "17" "" "" "16" "" "" "15" "" "" "" "12" "11" "" "" "" "" "" "0"]})
+    (draw-box (text "0" {:font-size 20}) {:span 5})
+    (draw-box (text "nscratch" {:font-size 20}) {:span 5})
+    (draw-box (text "0" {:font-size 20}) {:span 5})
+    (draw-box (text "dataaccess" {:font-size 20}) {:span 5})
+    (draw-box (text "datasize" {:font-size 20}) {:span 5})
+    (draw-box (text "dataaddr" {:font-size 20}) {:span 7})
+    (draw-box "8" {:span 5 :borders {}})
+    (draw-box "4" {:span 5 :borders {}})
+    (draw-box "3" {:span 5 :borders {}})
+    (draw-box "1" {:span 5 :borders {}})
+    (draw-box "4" {:span 5 :borders {}})
+    (draw-box "12" {:span 7 :borders {}})
 
 </div>
 
@@ -3334,7 +3334,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="sect3">
 
-#### 3.14.4。 hart 数组窗口选择（hawindowsel，位于 0x14）
+#### 3.14.4 hart 数组窗口选择（hawindowsel，位于 0x14）
 
 <div class="paragraph">
 
@@ -3346,16 +3346,16 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "15" "14" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (文本 "0" {:font-size 20}) {:span 7})
-(draw-box (text "hawindowsel" {:font-size 20}) {:span 7})
-(draw-box "" {:span 10 :borders {}})
-(draw-box "17" {:span 7 :borders {}})
-(draw-box "15" {:span 7 :borders {}})
-(draw-box "" {:span 10 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "15" "14" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" ""]})
+    (draw-box (text "0" {:font-size 20}) {:span 7})
+    (draw-box (text "hawindowsel" {:font-size 20}) {:span 7})
+    (draw-box "" {:span 10 :borders {}})
+    (draw-box "17" {:span 7 :borders {}})
+    (draw-box "15" {:span 7 :borders {}})
+    (draw-box "" {:span 10 :borders {}})
 
 </div>
 
@@ -3402,7 +3402,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="sect3">
 
-#### 3.14.5。 hart 数组窗口（hawindow，位于 0x15）
+#### 3.14.5 hart 数组窗口（hawindow，位于 0x15）
 
 <div class="paragraph">
 
@@ -3420,14 +3420,14 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "maskdata" {:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
+    (draw-box (text "maskdata" {:font-size 20}) {:span 9})
+    (draw-box "" {:span 15 :borders {}})
+    (draw-box "32" {:span 9 :borders {}})
+    (draw-box "" {:span 15 :borders {}})
 
 </div>
 
@@ -3437,7 +3437,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="sect3">
 
-#### 3.14.6。抽象控制和状态（abstractcs，位于 0x16）
+#### 3.14.6 抽象控制和状态（abstractcs，位于 0x16）
 
 <div class="paragraph">
 
@@ -3468,26 +3468,26 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（默认每行 40 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "29" "28" "" "" "" "24" "23" "" "" "" "" "" "13" "" "12" "" "" "" "11" "" "" "10" "" "" "" "8" "7" "" "" "" "4" "3" "" "" "" "0"]})
-(draw-box (文本 "0" {:font-size 20}) {:span 5})
-(draw-box (文本 "progbufsize" {:font-size 20}) {:span 5})
-(draw-box (文本 "0" {:font-size 20}) {:span 7})
-(draw-box (text "busy" {:font-size 20}) {:span 3})
-(draw-box (text "relaxedpriv" {:font-size 20}) {:span 5})
-(draw-box (text "cmderr" {:font-size 20}) {:span 5})
-(draw-box (文本 "0" {:font-size 20}) {:span 5})
-(draw-box (text "datacount" {:font-size 20}) {:span 5})
-(draw-box "3" {:span 5 :borders {}})
-(draw-box "5" {:span 5 :borders {}})
-(draw-box "11" {:span 7 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "3" {:span 5 :borders {}})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "4" {:span 5 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 40)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "29" "28" "" "" "" "24" "23" "" "" "" "" "" "13" "" "12" "" "" "" "11" "" "" "10" "" "" "" "8" "7" "" "" "" "4" "3" "" "" "" "0"]})
+    (draw-box (text "0" {:font-size 20}) {:span 5})
+    (draw-box (text "progbufsize" {:font-size 20}) {:span 5})
+    (draw-box (text "0" {:font-size 20}) {:span 7})
+    (draw-box (text "busy" {:font-size 20}) {:span 3})
+    (draw-box (text "relaxedpriv" {:font-size 20}) {:span 5})
+    (draw-box (text "cmderr" {:font-size 20}) {:span 5})
+    (draw-box (text "0" {:font-size 20}) {:span 5})
+    (draw-box (text "datacount" {:font-size 20}) {:span 5})
+    (draw-box "3" {:span 5 :borders {}})
+    (draw-box "5" {:span 5 :borders {}})
+    (draw-box "11" {:span 7 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 5 :borders {}})
+    (draw-box "3" {:span 5 :borders {}})
+    (draw-box "4" {:span 5 :borders {}})
+    (draw-box "4" {:span 5 :borders {}})
 
 </div>
 
@@ -3645,7 +3645,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="sect3">
 
-#### 3.14.7。抽象命令（命令，位于 0x17）
+#### 3.14.7 抽象命令（命令，位于 0x17）
 
 <div class="paragraph">
 
@@ -3688,16 +3688,16 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "24" "23" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "cmdtype" {:font-size 20}) {:span 5})
-(draw-box (文本“control”{:font-size 20}) {:span 7})
-(draw-box "" {:span 12 :borders {}})
-(draw-box "8" {:span 5 :borders {}})
-(draw-box "24" {:span 7 :borders {}})
-(draw-box "" {:span 12 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "24" "23" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" ""]})
+    (draw-box (text "cmdtype" {:font-size 20}) {:span 5})
+    (draw-box (text "control" {:font-size 20}) {:span 7})
+    (draw-box "" {:span 12 :borders {}})
+    (draw-box "8" {:span 5 :borders {}})
+    (draw-box "24" {:span 7 :borders {}})
+    (draw-box "" {:span 12 :borders {}})
 
 </div>
 
@@ -3762,7 +3762,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="sect3">
 
-#### 3.14.8。抽象命令 Autoexec（abstractauto，位于 0x18）
+#### 3.14.8 抽象命令 Autoexec（abstractauto，位于 0x18）
 
 <div class="paragraph">
 
@@ -3786,18 +3786,18 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "16" "15" "" "" "" "12" "11" "" "" "" "" "" "0" "" "" "" "" ""]})
-(draw-box (text "autoexecprogbuf" {:font-size 20}) {:span 7})
-(draw-box (文本 "0" {:font-size 20}) {:span 5})
-(draw-box (文本“autoexecdata”{:font-size 20}) {:span 7})
-(draw-box "" {:span 5 :borders {}})
-(draw-box "16" {:span 7 :borders {}})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "12" {:span 7 :borders {}})
-(draw-box "" {:span 5 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "16" "15" "" "" "" "12" "11" "" "" "" "" "" "0" "" "" "" "" ""]})
+    (draw-box (text "autoexecprogbuf" {:font-size 20}) {:span 7})
+    (draw-box (text "0" {:font-size 20}) {:span 5})
+    (draw-box (text "autoexecdata" {:font-size 20}) {:span 7})
+    (draw-box "" {:span 5 :borders {}})
+    (draw-box "16" {:span 7 :borders {}})
+    (draw-box "4" {:span 5 :borders {}})
+    (draw-box "12" {:span 7 :borders {}})
+    (draw-box "" {:span 5 :borders {}})
 
 </div>
 
@@ -3862,7 +3862,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="sect3">
 
-#### 3.14.9。配置结构指针 0（confstrptr0，位于 0x19）
+#### 3.14.9 配置结构指针 0（confstrptr0，位于 0x19）
 
 <div class="paragraph">
 
@@ -3898,14 +3898,14 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "addr" {:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
+    (draw-box (text "addr" {:font-size 20}) {:span 9})
+    (draw-box "" {:span 15 :borders {}})
+    (draw-box "32" {:span 9 :borders {}})
+    (draw-box "" {:span 15 :borders {}})
 
 </div>
 
@@ -3915,7 +3915,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="sect3">
 
-#### 2010 年 3 月 14 日。配置结构指针 1（confstrptr1，位于 0x1a）
+#### 3.14.10 配置结构指针 1（confstrptr1，位于 0x1a）
 
 <div class="paragraph">
 
@@ -3933,14 +3933,14 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "addr" {:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
+    (draw-box (text "addr" {:font-size 20}) {:span 9})
+    (draw-box "" {:span 15 :borders {}})
+    (draw-box "32" {:span 9 :borders {}})
+    (draw-box "" {:span 15 :borders {}})
 
 </div>
 
@@ -3950,7 +3950,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="sect3">
 
-#### 2011 年 3 月 14 日。配置结构指针 2（confstrptr2，位于 0x1b）
+#### 3.14.11 配置结构指针 2（confstrptr2，位于 0x1b）
 
 <div class="paragraph">
 
@@ -3968,14 +3968,14 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "addr" {:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
+    (draw-box (text "addr" {:font-size 20}) {:span 9})
+    (draw-box "" {:span 15 :borders {}})
+    (draw-box "32" {:span 9 :borders {}})
+    (draw-box "" {:span 15 :borders {}})
 
 </div>
 
@@ -3985,7 +3985,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="sect3">
 
-#### 2012 年 3 月 14 日。配置结构指针 3（confstrptr3，位于 0x1c）
+#### 3.14.12 配置结构指针 3（confstrptr3，位于 0x1c）
 
 <div class="paragraph">
 
@@ -4003,14 +4003,14 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "addr" {:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
+    (draw-box (text "addr" {:font-size 20}) {:span 9})
+    (draw-box "" {:span 15 :borders {}})
+    (draw-box "32" {:span 9 :borders {}})
+    (draw-box "" {:span 15 :borders {}})
 
 </div>
 
@@ -4020,7 +4020,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="sect3">
 
-#### 2013 年 3 月 14 日。下一个调试模块（nextdm，位于 0x1d）
+#### 3.14.13 下一个调试模块（nextdm，位于 0x1d）
 
 <div class="paragraph">
 
@@ -4038,14 +4038,14 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "addr" {:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
+    (draw-box (text "addr" {:font-size 20}) {:span 9})
+    (draw-box "" {:span 15 :borders {}})
+    (draw-box "32" {:span 9 :borders {}})
+    (draw-box "" {:span 15 :borders {}})
 
 </div>
 
@@ -4055,7 +4055,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="sect3">
 
-#### 2014 年 3 月 14 日。抽象数据 0（data0，位于 0x04）
+#### 3.14.14 抽象数据 0（data0，位于 0x04）
 
 <div class="paragraph">
 
@@ -4085,14 +4085,14 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (文本“数据”{:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
+    (draw-box (text "data" {:font-size 20}) {:span 9})
+    (draw-box "" {:span 15 :borders {}})
+    (draw-box "32" {:span 9 :borders {}})
+    (draw-box "" {:span 15 :borders {}})
 
 </div>
 
@@ -4102,7 +4102,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="sect3">
 
-#### 2015 年 3 月 14 日。程序缓冲区 0（progbuf0，位于 0x20）
+#### 3.14.15 程序缓冲区 0（progbuf0，位于 0x20）
 
 <div class="paragraph">
 
@@ -4132,14 +4132,14 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (文本“数据”{:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
+    (draw-box (text "data" {:font-size 20}) {:span 9})
+    (draw-box "" {:span 15 :borders {}})
+    (draw-box "32" {:span 9 :borders {}})
+    (draw-box "" {:span 15 :borders {}})
 
 </div>
 
@@ -4149,7 +4149,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="sect3">
 
-#### 2016 年 3 月 14 日。身份验证数据（authdata，位于 0x30）
+#### 3.14.16 身份验证数据（authdata，位于 0x30）
 
 <div class="paragraph">
 
@@ -4167,14 +4167,14 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (文本“数据”{:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
+    (draw-box (text "data" {:font-size 20}) {:span 9})
+    (draw-box "" {:span 15 :borders {}})
+    (draw-box "32" {:span 9 :borders {}})
+    (draw-box "" {:span 15 :borders {}})
 
 </div>
 
@@ -4184,7 +4184,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="sect3">
 
-#### 2017 年 3 月 14 日。调试模块控制和状态 2（dmcs2，位于 0x32）
+#### 3.14.17 调试模块控制和状态 2（dmcs2，位于 0x32）
 
 <div class="paragraph">
 
@@ -4214,22 +4214,22 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（默认每行 26 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "12" "" "11" "" "10" "" "" "" "7" "6" "" "" "" "2" "" "1" "" "" "0" ""]})
-(draw-box (文本 "0" {:font-size 20}) {:span 7})
-(draw-box (text "grouptype" {:font-size 20}) {:span 3})
-(draw-box (text "dmexttrigger" {:font-size 20}) {:span 5})
-(draw-box (text "group" {:font-size 20}) {:span 5})
-(draw-box (text "hgwrite" {:font-size 20}) {:span 3})
-(draw-box (text "hgselect" {:font-size 20}) {:span 3})
-(draw-box "20" {:span 7 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "5" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 26)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "12" "" "11" "" "10" "" "" "" "7" "6" "" "" "" "2" "" "1" "" "" "0" ""]})
+    (draw-box (text "0" {:font-size 20}) {:span 7})
+    (draw-box (text "grouptype" {:font-size 20}) {:span 3})
+    (draw-box (text "dmexttrigger" {:font-size 20}) {:span 5})
+    (draw-box (text "group" {:font-size 20}) {:span 5})
+    (draw-box (text "hgwrite" {:font-size 20}) {:span 3})
+    (draw-box (text "hgselect" {:font-size 20}) {:span 3})
+    (draw-box "20" {:span 7 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "4" {:span 5 :borders {}})
+    (draw-box "5" {:span 5 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
 
 </div>
 
@@ -4378,7 +4378,7 @@ DM 支持一组抽象命令，其中大部分是可选的。根据实现的不�
 
 <div class="sect3">
 
-#### 2018 年 3 月 14 日。停止摘要 0（haltsum0，位于 0x40）
+#### 3.14.18 停止摘要 0（haltsum0，位于 0x40）
 
 <div class="paragraph">
 
@@ -4408,14 +4408,14 @@ LSB 反映了 hart {hartsel\[19:5\],5'h0} 的停止状态，MSB 反映了 hart {
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (文本 "haltsum0" {:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
+    (draw-box (text "haltsum0" {:font-size 20}) {:span 9})
+    (draw-box "" {:span 15 :borders {}})
+    (draw-box "32" {:span 9 :borders {}})
+    (draw-box "" {:span 15 :borders {}})
 
 </div>
 
@@ -4425,7 +4425,7 @@ LSB 反映了 hart {hartsel\[19:5\],5'h0} 的停止状态，MSB 反映了 hart {
 
 <div class="sect3">
 
-#### 2019 年 3 月 14 日。停止摘要 1（haltsum1，位于 0x13）
+#### 3.14.19 停止摘要 1（haltsum1，位于 0x13）
 
 <div class="paragraph">
 
@@ -4455,14 +4455,14 @@ LSB 反映了 hart {hartsel\[19:10\],10'h0} 到 {hartsel\[19:10\],10'h1f} 的停
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (文本 "haltsum1" {:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
+    (draw-box (text "haltsum1" {:font-size 20}) {:span 9})
+    (draw-box "" {:span 15 :borders {}})
+    (draw-box "32" {:span 9 :borders {}})
+    (draw-box "" {:span 15 :borders {}})
 
 </div>
 
@@ -4472,7 +4472,7 @@ LSB 反映了 hart {hartsel\[19:10\],10'h0} 到 {hartsel\[19:10\],10'h1f} 的停
 
 <div class="sect3">
 
-#### 20 年 3 月 14 日。停止摘要 2（haltsum2，位于 0x34）
+#### 3.14.20 停止摘要 2（haltsum2，位于 0x34）
 
 <div class="paragraph">
 
@@ -4502,14 +4502,14 @@ LSB 反映了 hart {hartsel\[19:15\],15'h0} 到 {hartsel\[19:15\],15'h3ff} 的�
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (文本 "haltsum2" {:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
+    (draw-box (text "haltsum2" {:font-size 20}) {:span 9})
+    (draw-box "" {:span 15 :borders {}})
+    (draw-box "32" {:span 9 :borders {}})
+    (draw-box "" {:span 15 :borders {}})
 
 </div>
 
@@ -4519,7 +4519,7 @@ LSB 反映了 hart {hartsel\[19:15\],15'h0} 到 {hartsel\[19:15\],15'h3ff} 的�
 
 <div class="sect3">
 
-#### 21 年 3 月 14 日。停止摘要 3（haltsum3，位于 0x35）
+#### 3.14.21 停止摘要 3（haltsum3，位于 0x35）
 
 <div class="paragraph">
 
@@ -4549,14 +4549,14 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (文本 "haltsum3" {:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
+    (draw-box (text "haltsum3" {:font-size 20}) {:span 9})
+    (draw-box "" {:span 15 :borders {}})
+    (draw-box "32" {:span 9 :borders {}})
+    (draw-box "" {:span 15 :borders {}})
 
 </div>
 
@@ -4566,30 +4566,30 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="sect3">
 
-#### 22 年 3 月 14 日。系统总线访问控制和状态（sbcs，位于 0x38）
+#### 3.14.22 系统总线访问控制和状态（sbcs，位于 0x38）
 
 <div class="listingblock">
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（默认每行盒子数 33）
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "29" "28" "" "" "" "23" "" "" "22" "" "" "" "21" "" "" "" "20" "" "" "19" "" "" "" "17" "" "" "16" "" “”]})
-(draw-box (text "sbversion" {:font-size 20}) {:span 5})
-(draw-box (文本 "0" {:font-size 20}) {:span 5})
-(draw-box (text "sbbusyerror" {:font-size 20}) {:span 5})
-(draw-box (text "sbbusy" {:font-size 20}) {:span 3})
-(draw-box (text "sbreadonaddr" {:font-size 20}) {:span 5})
-(draw-box (文本 "sbaccess" {:font-size 20}) {:span 5})
-(draw-box (文本 "sbautoincrement" {:font-size 20}) {:span 5})
-(draw-box "3" {:span 5 :borders {}})
-(draw-box "6" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "3" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 33)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "29" "28" "" "" "" "23" "" "" "22" "" "" "" "21" "" "" "" "20" "" "" "19" "" "" "" "17" "" "" "16" "" ""]})
+    (draw-box (text "sbversion" {:font-size 20}) {:span 5})
+    (draw-box (text "0" {:font-size 20}) {:span 5})
+    (draw-box (text "sbbusyerror" {:font-size 20}) {:span 5})
+    (draw-box (text "sbbusy" {:font-size 20}) {:span 3})
+    (draw-box (text "sbreadonaddr" {:font-size 20}) {:span 5})
+    (draw-box (text "sbaccess" {:font-size 20}) {:span 5})
+    (draw-box (text "sbautoincrement" {:font-size 20}) {:span 5})
+    (draw-box "3" {:span 5 :borders {}})
+    (draw-box "6" {:span 5 :borders {}})
+    (draw-box "1" {:span 5 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 5 :borders {}})
+    (draw-box "3" {:span 5 :borders {}})
+    (draw-box "1" {:span 5 :borders {}})
 
 </div>
 
@@ -4599,26 +4599,26 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（默认每行 38 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "" "15" "" "" "14" "" "" "" "12" "11" "" "" "" "5" "" "" "4" "" "" "" "" "3" "" "" "" "" "2" "" "" "" "" "1" "" "" "" “0”“”]})
-(draw-box (text "sbreadondata" {:font-size 20}) {:span 5})
-(draw-box (text "sberror" {:font-size 20}) {:span 5})
-(draw-box (text "sbasize" {:font-size 20}) {:span 5})
-(draw-box (文本 "sbaccess128" {:font-size 20}) {:span 5})
-(draw-box (text "sbaccess64" {:font-size 20}) {:span 5})
-(draw-box (文本 "sbaccess32" {:font-size 20}) {:span 5})
-(draw-box (文本 "sbaccess16" {:font-size 20}) {:span 5})
-(draw-box (文本 "sbaccess8" {:font-size 20}) {:span 3})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "3" {:span 5 :borders {}})
-(draw-box "7" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 38)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["" "" "15" "" "" "14" "" "" "" "12" "11" "" "" "" "5" "" "" "4" "" "" "" "" "3" "" "" "" "" "2" "" "" "" "" "1" "" "" "" "0" ""]})
+    (draw-box (text "sbreadondata" {:font-size 20}) {:span 5})
+    (draw-box (text "sberror" {:font-size 20}) {:span 5})
+    (draw-box (text "sbasize" {:font-size 20}) {:span 5})
+    (draw-box (text "sbaccess128" {:font-size 20}) {:span 5})
+    (draw-box (text "sbaccess64" {:font-size 20}) {:span 5})
+    (draw-box (text "sbaccess32" {:font-size 20}) {:span 5})
+    (draw-box (text "sbaccess16" {:font-size 20}) {:span 5})
+    (draw-box (text "sbaccess8" {:font-size 20}) {:span 3})
+    (draw-box "1" {:span 5 :borders {}})
+    (draw-box "3" {:span 5 :borders {}})
+    (draw-box "7" {:span 5 :borders {}})
+    (draw-box "1" {:span 5 :borders {}})
+    (draw-box "1" {:span 5 :borders {}})
+    (draw-box "1" {:span 5 :borders {}})
+    (draw-box "1" {:span 5 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
 
 </div>
 
@@ -4950,7 +4950,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="sect3">
 
-#### 23.14.3。系统总线地址 31:0（sbaddress0，位于 0x39）
+#### 3.14.23 系统总线地址 31:0（sbaddress0，位于 0x39）
 
 <div class="paragraph">
 
@@ -4986,14 +4986,14 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (文本“地址”{:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
+    (draw-box (text "address" {:font-size 20}) {:span 9})
+    (draw-box "" {:span 15 :borders {}})
+    (draw-box "32" {:span 9 :borders {}})
+    (draw-box "" {:span 15 :borders {}})
 
 </div>
 
@@ -5040,7 +5040,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="sect3">
 
-#### 24 年 3 月 14 日。系统总线地址 63:32（sbaddress1，位于 0x3a）
+#### 3.14.24 系统总线地址 63:32（sbaddress1，位于 0x3a）
 
 <div class="paragraph">
 
@@ -5058,14 +5058,14 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (文本“地址”{:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
+    (draw-box (text "address" {:font-size 20}) {:span 9})
+    (draw-box "" {:span 15 :borders {}})
+    (draw-box "32" {:span 9 :borders {}})
+    (draw-box "" {:span 15 :borders {}})
 
 </div>
 
@@ -5112,7 +5112,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="sect3">
 
-#### 25 年 3 月 14 日。系统总线地址 95:64（sbaddress2，位于 0x3b）
+#### 3.14.25 系统总线地址 95:64（sbaddress2，位于 0x3b）
 
 <div class="paragraph">
 
@@ -5130,14 +5130,14 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (文本“地址”{:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
+    (draw-box (text "address" {:font-size 20}) {:span 9})
+    (draw-box "" {:span 15 :borders {}})
+    (draw-box "32" {:span 9 :borders {}})
+    (draw-box "" {:span 15 :borders {}})
 
 </div>
 
@@ -5184,7 +5184,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="sect3">
 
-#### 26 年 3 月 14 日。系统总线地址 127:96（sbaddress3，位于 0x37）
+#### 3.14.26 系统总线地址 127:96（sbaddress3，位于 0x37）
 
 <div class="paragraph">
 
@@ -5202,14 +5202,14 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (文本“地址”{:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
+    (draw-box (text "address" {:font-size 20}) {:span 9})
+    (draw-box "" {:span 15 :borders {}})
+    (draw-box "32" {:span 9 :borders {}})
+    (draw-box "" {:span 15 :borders {}})
 
 </div>
 
@@ -5256,7 +5256,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="sect3">
 
-#### 27 年 3 月 14 日。系统总线数据 31:0（sbdata0，位于 0x3c）
+#### 3.14.27 系统总线数据 31:0（sbdata0，位于 0x3c）
 
 <div class="paragraph">
 
@@ -5336,14 +5336,14 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (文本“数据”{:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
+    (draw-box (text "data" {:font-size 20}) {:span 9})
+    (draw-box "" {:span 15 :borders {}})
+    (draw-box "32" {:span 9 :borders {}})
+    (draw-box "" {:span 15 :borders {}})
 
 </div>
 
@@ -5390,7 +5390,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="sect3">
 
-#### 28 年 3 月 14 日。系统总线数据 63:32（sbdata1，位于 0x3d）
+#### 3.14.28 系统总线数据 63:32（sbdata1，位于 0x3d）
 
 <div class="paragraph">
 
@@ -5408,14 +5408,14 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (文本“数据”{:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
+    (draw-box (text "data" {:font-size 20}) {:span 9})
+    (draw-box "" {:span 15 :borders {}})
+    (draw-box "32" {:span 9 :borders {}})
+    (draw-box "" {:span 15 :borders {}})
 
 </div>
 
@@ -5462,7 +5462,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="sect3">
 
-#### 29 年 3 月 14 日。系统总线数据 95:64（sbdata2，位于 0x3e）
+#### 3.14.29 系统总线数据 95:64（sbdata2，位于 0x3e）
 
 <div class="paragraph">
 
@@ -5480,14 +5480,14 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (文本“数据”{:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
+    (draw-box (text "data" {:font-size 20}) {:span 9})
+    (draw-box "" {:span 15 :borders {}})
+    (draw-box "32" {:span 9 :borders {}})
+    (draw-box "" {:span 15 :borders {}})
 
 </div>
 
@@ -5534,7 +5534,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="sect3">
 
-#### 30 年 14 月 3 日。系统总线数据 127:96（sbdata3，位于 0x3f）
+#### 3.14.30 系统总线数据 127:96（sbdata3，位于 0x3f）
 
 <div class="paragraph">
 
@@ -5552,14 +5552,14 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (文本“数据”{:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
+    (draw-box (text "data" {:font-size 20}) {:span 9})
+    (draw-box "" {:span 15 :borders {}})
+    (draw-box "32" {:span 9 :borders {}})
+    (draw-box "" {:span 15 :borders {}})
 
 </div>
 
@@ -5606,7 +5606,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="sect3">
 
-#### 31 年 14 月 3 日。自定义功能（自定义，位于 0x1f）
+#### 3.14.31 自定义功能（自定义，位于 0x1f）
 
 <div class="paragraph">
 
@@ -5618,7 +5618,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="sect3">
 
-#### 3.14.32。自定义功能 0（custom0，位于 0x70）
+#### 3.14.32 自定义功能 0（custom0，位于 0x70）
 
 <div class="paragraph">
 
@@ -5669,7 +5669,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="sect2">
 
-### 4.1。调试模式
+### 4.1 调试模式
 
 <div class="paragraph">
 
@@ -5740,7 +5740,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="sect2">
 
-### 4.2 加载保留/条件存储指令
+### 4.2 2 加载保留/条件存储指令
 
 <div class="paragraph">
 
@@ -5771,7 +5771,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="sect2">
 
-### 4.3。等待中断指令
+### 4.3 等待中断指令
 
 <div class="paragraph">
 
@@ -5783,7 +5783,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="sect2">
 
-### 4.4 等待保留集指令
+### 4.4 4 等待保留集指令
 
 <div class="paragraph">
 
@@ -5795,13 +5795,13 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="sect2">
 
-### 4.5。单步
+### 4.5 单步
 
 > [!tip] Tips · 单步不是“执行一条后永远无中断”：`stepie` 决定是否允许中断；触发器和异常的优先级也会影响最终停下的位置。
 
 <div class="sect3">
 
-#### 4.5.1. DCSR 中的步进位
+#### 4.5.1 DCSR 中的步进位
 
 <div class="paragraph">
 
@@ -5843,7 +5843,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="sect3">
 
-#### 4.5.2.计数触发
+#### 4.5.2 计数触发
 
 <div class="paragraph">
 
@@ -5877,7 +5877,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="sect2">
 
-### 4.6 复位
+### 4.6 6 复位
 
 <div class="paragraph">
 
@@ -5889,7 +5889,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="sect2">
 
-### 4.7 暂停
+### 4.7 7 暂停
 
 <div class="paragraph">
 
@@ -5917,7 +5917,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="sect2">
 
-### 4.8 恢复
+### 4.8 8 恢复
 
 <div class="paragraph">
 
@@ -5947,7 +5947,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="sect2">
 
-### 4.9。核心调试寄存器
+### 4.9 核心调试寄存器
 
 <div class="paragraph">
 
@@ -5978,7 +5978,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="sect3">
 
-#### 4.9.1。调试控制和状态（dcsr，位于 0x7b0）
+#### 4.9.1 调试控制和状态（dcsr，位于 0x7b0）
 
 <div class="paragraph">
 
@@ -6043,30 +6043,30 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-(def 每行 32 个盒子)
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "28" "27" "26" "" "" "" "24" "23" "" "" "" "20" "" "19" "" "" "18" "" "" "17" "" "" "16" "" "" "15" "" “14”]})
-(draw-box (text "debugver" {:font-size 20}) {:span 5})
-(draw-box (文本 "0" {:font-size 20}) {:span 1})
-(draw-box (text "extcause" {:font-size 20}) {:span 5})
-(draw-box (文本 "0" {:font-size 20}) {:span 5})
-(draw-box (text "cetrig" {:font-size 20}) {:span 3})
-(draw-box (text "pelp" {:font-size 20}) {:span 3})
-(draw-box (text "ebreakvs" {:font-size 20}) {:span 3})
-(draw-box (text "ebreakvu" {:font-size 20}) {:span 3})
-(draw-box (text "ebreakm" {:font-size 20}) {:span 3})
-(draw-box (文本 "0" {:font-size 20}) {:span 1})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "3" {:span 5 :borders {}})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 32)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "28" "27" "26" "" "" "" "24" "23" "" "" "" "20" "" "19" "" "" "18" "" "" "17" "" "" "16" "" "" "15" "" "14"]})
+    (draw-box (text "debugver" {:font-size 20}) {:span 5})
+    (draw-box (text "0" {:font-size 20}) {:span 1})
+    (draw-box (text "extcause" {:font-size 20}) {:span 5})
+    (draw-box (text "0" {:font-size 20}) {:span 5})
+    (draw-box (text "cetrig" {:font-size 20}) {:span 3})
+    (draw-box (text "pelp" {:font-size 20}) {:span 3})
+    (draw-box (text "ebreakvs" {:font-size 20}) {:span 3})
+    (draw-box (text "ebreakvu" {:font-size 20}) {:span 3})
+    (draw-box (text "ebreakm" {:font-size 20}) {:span 3})
+    (draw-box (text "0" {:font-size 20}) {:span 1})
+    (draw-box "4" {:span 5 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "3" {:span 5 :borders {}})
+    (draw-box "4" {:span 5 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
 
 </div>
 
@@ -6076,32 +6076,32 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（默认每行盒子数 33）
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "13" "" "" "12" "" "" "11" "" "" "10" "" "" "9" "" "8" "" "" "" "6" "5" "" "4" "" "" "3" "" "" "2" "" "1" "" "0"]})
-(draw-box (text "ebreaks" {:font-size 20}) {:span 3})
-(draw-box (text "ebreaku" {:font-size 20}) {:span 3})
-(draw-box (text "stepie" {:font-size 20}) {:span 3})
-(draw-box (text "stopcount" {:font-size 20}) {:span 3})
-(draw-box (文本“stoptime”{:font-size 20}) {:span 3})
-(draw-box (文本“原因”{:font-size 20}) {:span 5})
-(draw-box (text "v" {:font-size 20}) {:span 1})
-(draw-box (text "mprven" {:font-size 20}) {:span 3})
-(draw-box (text "nmip" {:font-size 20}) {:span 3})
-(draw-box (text "step" {:font-size 20}) {:span 3})
-(draw-box (text "prv" {:font-size 20}) {:span 3})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "3" {:span 5 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "2" {:span 3 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 33)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["" "13" "" "" "12" "" "" "11" "" "" "10" "" "" "9" "" "8" "" "" "" "6" "5" "" "4" "" "" "3" "" "" "2" "" "1" "" "0"]})
+    (draw-box (text "ebreaks" {:font-size 20}) {:span 3})
+    (draw-box (text "ebreaku" {:font-size 20}) {:span 3})
+    (draw-box (text "stepie" {:font-size 20}) {:span 3})
+    (draw-box (text "stopcount" {:font-size 20}) {:span 3})
+    (draw-box (text "stoptime" {:font-size 20}) {:span 3})
+    (draw-box (text "cause" {:font-size 20}) {:span 5})
+    (draw-box (text "v" {:font-size 20}) {:span 1})
+    (draw-box (text "mprven" {:font-size 20}) {:span 3})
+    (draw-box (text "nmip" {:font-size 20}) {:span 3})
+    (draw-box (text "step" {:font-size 20}) {:span 3})
+    (draw-box (text "prv" {:font-size 20}) {:span 3})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "3" {:span 5 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "2" {:span 3 :borders {}})
 
 </div>
 
@@ -6584,7 +6584,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="sect3">
 
-#### 4.9.2。调试 PC（dpc，位于 0x7b1）
+#### 4.9.2 调试 PC（dpc，位于 0x7b1）
 
 <div class="paragraph">
 
@@ -6660,14 +6660,14 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "DXLEN-1" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "dpc" {:font-size 20}) {:span 7})
-(draw-box "" {:span 17 :borders {}})
-(绘图框“DXLEN”{:span 7 :borders {}})
-(draw-box "" {:span 17 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["" "DXLEN-1" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
+    (draw-box (text "dpc" {:font-size 20}) {:span 7})
+    (draw-box "" {:span 17 :borders {}})
+    (draw-box "DXLEN" {:span 7 :borders {}})
+    (draw-box "" {:span 17 :borders {}})
 
 </div>
 
@@ -6677,7 +6677,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="sect3">
 
-#### 4.9.3。调试暂存寄存器 0（dscratch0，位于 0x7b2）
+#### 4.9.3 调试暂存寄存器 0（dscratch0，位于 0x7b2）
 
 <div class="paragraph">
 
@@ -6695,14 +6695,14 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "DXLEN-1" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "dscratch0" {:font-size 20}) {:span 7})
-(draw-box "" {:span 17 :borders {}})
-(绘图框“DXLEN”{:span 7 :borders {}})
-(draw-box "" {:span 17 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["" "DXLEN-1" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
+    (draw-box (text "dscratch0" {:font-size 20}) {:span 7})
+    (draw-box "" {:span 17 :borders {}})
+    (draw-box "DXLEN" {:span 7 :borders {}})
+    (draw-box "" {:span 17 :borders {}})
 
 </div>
 
@@ -6712,7 +6712,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="sect3">
 
-#### 4.9.4。调试暂存寄存器 1（dscratch1，位于 0x7b3）
+#### 4.9.4 调试暂存寄存器 1（dscratch1，位于 0x7b3）
 
 <div class="paragraph">
 
@@ -6730,14 +6730,14 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "DXLEN-1" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "dscratch1" {:font-size 20}) {:span 7})
-(draw-box "" {:span 17 :borders {}})
-(绘图框“DXLEN”{:span 7 :borders {}})
-(draw-box "" {:span 17 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["" "DXLEN-1" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
+    (draw-box (text "dscratch1" {:font-size 20}) {:span 7})
+    (draw-box "" {:span 17 :borders {}})
+    (draw-box "DXLEN" {:span 7 :borders {}})
+    (draw-box "" {:span 17 :borders {}})
 
 </div>
 
@@ -6749,7 +6749,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="sect2">
 
-### 4.10。虚拟调试寄存器
+### 4.10 虚拟调试寄存器
 
 <div class="paragraph">
 
@@ -6765,7 +6765,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="sect3">
 
-#### 4.10.1。特权模式（priv、at virtual）
+#### 4.10.1 特权模式（priv、at virtual）
 
 <div class="paragraph">
 
@@ -6796,16 +6796,16 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["2" "1" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "v" {:font-size 20}) {:span 1})
-(draw-box (text "prv" {:font-size 20}) {:span 3})
-(draw-box "" {:span 20 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "2" {:span 3 :borders {}})
-(draw-box "" {:span 20 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["2" "1" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
+    (draw-box (text "v" {:font-size 20}) {:span 1})
+    (draw-box (text "prv" {:font-size 20}) {:span 3})
+    (draw-box "" {:span 20 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "2" {:span 3 :borders {}})
+    (draw-box "" {:span 20 :borders {}})
 
 </div>
 
@@ -6915,7 +6915,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="sect2">
 
-### 5.1。枚举
+### 5.1 枚举
 
 <div class="paragraph">
 
@@ -6967,7 +6967,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="sect2">
 
-### 5.2 动作
+### 5.2 2 动作
 
 <div class="paragraph">
 
@@ -7048,7 +7048,7 @@ LSB 反映了 hart 20’h0 到 20’h7fff 的停止状态。 MSB 反映了 hart 
 
 <div class="sect2">
 
-### 5.3。优先级
+### 5.3 优先级
 
 <div class="paragraph">
 
@@ -7176,7 +7176,7 @@ mcontrol/mcontrol6 之后（在上一条指令上）<br />
 
 <div class="sect2">
 
-### 5.4。原生触发器
+### 5.4 原生触发器
 
 > [!tip] Tips · 配置 trigger 前先枚举 `tselect`/`tinfo`。不同槽位支持的类型和可写字段可能不同；写入后应读回确认 WARL 约束后的值。
 
@@ -7269,7 +7269,7 @@ mcontrol/mcontrol6 之后（在上一条指令上）<br />
 
 <div class="sect2">
 
-### 5.5。内存访问触发器
+### 5.5 内存访问触发器
 
 <div class="paragraph">
 
@@ -7279,7 +7279,7 @@ mcontrol/mcontrol6 之后（在上一条指令上）<br />
 
 <div class="sect3">
 
-#### 5.5.1。扩展
+#### 5.5.1 扩展
 
 <div class="paragraph">
 
@@ -7307,7 +7307,7 @@ mcontrol/mcontrol6 之后（在上一条指令上）<br />
 
 <div class="sect3">
 
-#### 5.5.2。组合访问
+#### 5.5.2 组合访问
 
 <div class="paragraph">
 
@@ -7319,7 +7319,7 @@ mcontrol/mcontrol6 之后（在上一条指令上）<br />
 
 <div class="sect3">
 
-#### 5.5.3。缓存操作
+#### 5.5.3 缓存操作
 
 <div class="paragraph">
 
@@ -7390,7 +7390,7 @@ mcontrol/mcontrol6 之后（在上一条指令上）<br />
 
 <div class="sect3">
 
-#### 5.5.4。地址匹配
+#### 5.5.4 地址匹配
 
 <div class="paragraph">
 
@@ -7419,7 +7419,7 @@ mcontrol/mcontrol6 之后（在上一条指令上）<br />
 
 <div class="sect4">
 
-##### 5.5.4.1。无效地址
+##### 5.5.4.1 无效地址
 
 <div class="paragraph">
 
@@ -7447,7 +7447,7 @@ mcontrol/mcontrol6 之后（在上一条指令上）<br />
 
 <div class="sect2">
 
-### 5.6 多状态变化指令
+### 5.6 6 多状态变化指令
 
 <div class="paragraph">
 
@@ -7465,7 +7465,7 @@ mcontrol/mcontrol6 之后（在上一条指令上）<br />
 
 <div class="sect2">
 
-### 5.7。触发模块寄存器
+### 5.7 触发模块寄存器
 
 <div class="paragraph">
 
@@ -7550,7 +7550,7 @@ mcontrol/mcontrol6 之后（在上一条指令上）<br />
 
 <div class="sect3">
 
-#### 5.7.1。触发选择（tselect，位于 0x7a0）
+#### 5.7.1 触发选择（tselect，位于 0x7a0）
 
 <div class="paragraph">
 
@@ -7580,14 +7580,14 @@ mcontrol/mcontrol6 之后（在上一条指令上）<br />
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (text "index" {:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "XLEN" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
+    (draw-box (text "index" {:font-size 20}) {:span 9})
+    (draw-box "" {:span 15 :borders {}})
+    (draw-box "XLEN" {:span 9 :borders {}})
+    (draw-box "" {:span 15 :borders {}})
 
 </div>
 
@@ -7597,7 +7597,7 @@ mcontrol/mcontrol6 之后（在上一条指令上）<br />
 
 <div class="sect3">
 
-#### 5.7.2。触发数据 1（tdata1，位于 0x7a1）
+#### 5.7.2 触发数据 1（tdata1，位于 0x7a1）
 
 <div class="paragraph">
 
@@ -7627,18 +7627,18 @@ mcontrol/mcontrol6 之后（在上一条指令上）<br />
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "XLEN-4" "" "" "XLEN-5" "" "" "XLEN-6" "" "" "" "" "" "" "0" "" "" "" "" "" "" “”]})
-(draw-box (文本“类型”{:font-size 20}) {:span 5})
-(draw-box (text "dmode" {:font-size 20}) {:span 3})
-(draw-box (文本“数据”{:font-size 20}) {:span 9})
-(draw-box "" {:span 7 :borders {}})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(绘图框 "XLEN - 5" {:span 9 :borders {}})
-(draw-box "" {:span 7 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "XLEN-4" "" "" "XLEN-5" "" "" "XLEN-6" "" "" "" "" "" "" "0" "" "" "" "" "" "" ""]})
+    (draw-box (text "type" {:font-size 20}) {:span 5})
+    (draw-box (text "dmode" {:font-size 20}) {:span 3})
+    (draw-box (text "data" {:font-size 20}) {:span 9})
+    (draw-box "" {:span 7 :borders {}})
+    (draw-box "4" {:span 5 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "XLEN - 5" {:span 9 :borders {}})
+    (draw-box "" {:span 7 :borders {}})
 
 </div>
 
@@ -7763,7 +7763,7 @@ mcontrol/mcontrol6 之后（在上一条指令上）<br />
 
 <div class="sect3">
 
-#### 5.7.3。触发数据 2（tdata2，位于 0x7a2）
+#### 5.7.3 触发数据 2（tdata2，位于 0x7a2）
 
 <div class="paragraph">
 
@@ -7799,14 +7799,14 @@ mcontrol/mcontrol6 之后（在上一条指令上）<br />
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (文本“数据”{:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "XLEN" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
+    (draw-box (text "data" {:font-size 20}) {:span 9})
+    (draw-box "" {:span 15 :borders {}})
+    (draw-box "XLEN" {:span 9 :borders {}})
+    (draw-box "" {:span 15 :borders {}})
 
 </div>
 
@@ -7816,7 +7816,7 @@ mcontrol/mcontrol6 之后（在上一条指令上）<br />
 
 <div class="sect3">
 
-#### 5.7.4。触发数据 3（tdata3，位于 0x7a3）
+#### 5.7.4 触发数据 3（tdata3，位于 0x7a3）
 
 <div class="paragraph">
 
@@ -7852,14 +7852,14 @@ mcontrol/mcontrol6 之后（在上一条指令上）<br />
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (文本“数据”{:font-size 20}) {:span 9})
-(draw-box "" {:span 15 :borders {}})
-(draw-box "XLEN" {:span 9 :borders {}})
-(draw-box "" {:span 15 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
+    (draw-box (text "data" {:font-size 20}) {:span 9})
+    (draw-box "" {:span 15 :borders {}})
+    (draw-box "XLEN" {:span 9 :borders {}})
+    (draw-box "" {:span 15 :borders {}})
 
 </div>
 
@@ -7869,7 +7869,7 @@ mcontrol/mcontrol6 之后（在上一条指令上）<br />
 
 <div class="sect3">
 
-#### 5.7.5。触发信息（tinfo，位于 0x7a4）
+#### 5.7.5 触发信息（tinfo，位于 0x7a4）
 
 <div class="paragraph">
 
@@ -7893,20 +7893,20 @@ mcontrol/mcontrol6 之后（在上一条指令上）<br />
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "32" "31" "" "" "" "24" "23" "" "" "" "16" "15" "" "" "" "" "" "0" "" "" "" ""]})
-(draw-box (文本 "0" {:font-size 20}) {:span 3})
-(draw-box (文本“版本”{:font-size 20}) {:span 5})
-(draw-box (文本 "0" {:font-size 20}) {:span 5})
-(draw-box (text "info" {:font-size 20}) {:span 7})
-(draw-box "" {:span 4 :borders {}})
-(绘图框“XLEN - 32”{:span 3 :borders {}})
-(draw-box "8" {:span 5 :borders {}})
-(draw-box "8" {:span 5 :borders {}})
-(draw-box "16" {:span 7 :borders {}})
-(draw-box "" {:span 4 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "32" "31" "" "" "" "24" "23" "" "" "" "16" "15" "" "" "" "" "" "0" "" "" "" ""]})
+    (draw-box (text "0" {:font-size 20}) {:span 3})
+    (draw-box (text "version" {:font-size 20}) {:span 5})
+    (draw-box (text "0" {:font-size 20}) {:span 5})
+    (draw-box (text "info" {:font-size 20}) {:span 7})
+    (draw-box "" {:span 4 :borders {}})
+    (draw-box "XLEN - 32" {:span 3 :borders {}})
+    (draw-box "8" {:span 5 :borders {}})
+    (draw-box "8" {:span 5 :borders {}})
+    (draw-box "16" {:span 7 :borders {}})
+    (draw-box "" {:span 4 :borders {}})
 
 </div>
 
@@ -7991,7 +7991,7 @@ mcontrol/mcontrol6 之后（在上一条指令上）<br />
 
 <div class="sect3">
 
-#### 5.7.6。触发控制（tcontrol，位于 0x7a5）
+#### 5.7.6 触发控制（tcontrol，位于 0x7a5）
 
 <div class="paragraph">
 
@@ -8009,22 +8009,22 @@ mcontrol/mcontrol6 之后（在上一条指令上）<br />
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "" "" "" "8" "" "7" "" "6" "" "" "" "4" "3" "2" "" "" "" "0" "" "" ""]})
-(draw-box (文本 "0" {:font-size 20}) {:span 7})
-(draw-box (text "mpte" {:font-size 20}) {:span 3})
-(draw-box (文本 "0" {:font-size 20}) {:span 5})
-(draw-box (text "mte" {:font-size 20}) {:span 1})
-(draw-box (文本 "0" {:font-size 20}) {:span 5})
-(draw-box "" {:span 3 :borders {}})
-(绘图框“XLEN - 8”{:span 7 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "3" {:span 5 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "3" {:span 5 :borders {}})
-(draw-box "" {:span 3 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "" "" "" "8" "" "7" "" "6" "" "" "" "4" "3" "2" "" "" "" "0" "" "" ""]})
+    (draw-box (text "0" {:font-size 20}) {:span 7})
+    (draw-box (text "mpte" {:font-size 20}) {:span 3})
+    (draw-box (text "0" {:font-size 20}) {:span 5})
+    (draw-box (text "mte" {:font-size 20}) {:span 1})
+    (draw-box (text "0" {:font-size 20}) {:span 5})
+    (draw-box "" {:span 3 :borders {}})
+    (draw-box "XLEN - 8" {:span 7 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "3" {:span 5 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "3" {:span 5 :borders {}})
+    (draw-box "" {:span 3 :borders {}})
 
 </div>
 
@@ -8104,7 +8104,7 @@ mcontrol/mcontrol6 之后（在上一条指令上）<br />
 
 <div class="sect3">
 
-#### 5.7.7。虚拟机管理程序上下文（hcontext，位于 0x6a8）
+#### 5.7.7 虚拟机管理程序上下文（hcontext，位于 0x6a8）
 
 <div class="paragraph">
 
@@ -8128,7 +8128,7 @@ mcontrol/mcontrol6 之后（在上一条指令上）<br />
 
 <div class="sect3">
 
-#### 5.7.8。主管上下文（scontext，位于 0x5a8）
+#### 5.7.8 主管上下文（scontext，位于 0x5a8）
 
 <div class="paragraph">
 
@@ -8152,16 +8152,16 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "32" "31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (文本 "0" {:font-size 20}) {:span 3})
-(draw-box (文本“数据”{:font-size 20}) {:span 9})
-(draw-box "" {:span 12 :borders {}})
-(绘图框“XLEN - 32”{:span 3 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "" {:span 12 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "32" "31" "" "" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" "" "" ""]})
+    (draw-box (text "0" {:font-size 20}) {:span 3})
+    (draw-box (text "data" {:font-size 20}) {:span 9})
+    (draw-box "" {:span 12 :borders {}})
+    (draw-box "XLEN - 32" {:span 3 :borders {}})
+    (draw-box "32" {:span 9 :borders {}})
+    (draw-box "" {:span 12 :borders {}})
 
 </div>
 
@@ -8211,7 +8211,7 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 <div class="sect3">
 
-#### 5.7.9。机器上下文（mcontext，位于 0x7a8）
+#### 5.7.9 机器上下文（mcontext，位于 0x7a8）
 
 <div class="paragraph">
 
@@ -8248,16 +8248,16 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "" "" "" "14" "13" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (文本 "0" {:font-size 20}) {:span 7})
-(draw-box (text "hcontext" {:font-size 20}) {:span 7})
-(draw-box "" {:span 10 :borders {}})
-(绘图框 "XLEN - 14" {:span 7 :borders {}})
-(draw-box "14" {:span 7 :borders {}})
-(draw-box "" {:span 10 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "" "" "" "14" "13" "" "" "" "" "" "0" "" "" "" "" "" "" "" "" "" ""]})
+    (draw-box (text "0" {:font-size 20}) {:span 7})
+    (draw-box (text "hcontext" {:font-size 20}) {:span 7})
+    (draw-box "" {:span 10 :borders {}})
+    (draw-box "XLEN - 14" {:span 7 :borders {}})
+    (draw-box "14" {:span 7 :borders {}})
+    (draw-box "" {:span 10 :borders {}})
 
 </div>
 
@@ -8307,7 +8307,7 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 <div class="sect3">
 
-#### 5.7.10。机器主管上下文（mscontext，位于 0x7aa）
+#### 5.7.10 机器主管上下文（mscontext，位于 0x7aa）
 
 <div class="paragraph">
 
@@ -8338,7 +8338,7 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 <div class="sect3">
 
-#### 5.7.11。匹配控制（mcontrol，位于 0x7a1）
+#### 5.7.11 匹配控制（mcontrol，位于 0x7a1）
 
 <div class="paragraph">
 
@@ -8405,26 +8405,26 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（默认每行 28 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "XLEN-4" "" "" "XLEN-5" "" "" "XLEN-6" "" "XLEN-11" "" "" "XLEN-12" "" "" "23" "22" "" "21" "20" "" "19" "" "" "18" ""]})
-(draw-box (文本“类型”{:font-size 20}) {:span 5})
-(draw-box (text "dmode" {:font-size 20}) {:span 3})
-(draw-box (text "maskmax" {:font-size 20}) {:span 5})
-(draw-box (文本 "0" {:font-size 20}) {:span 5})
-(draw-box (text "sizehi" {:font-size 20}) {:span 3})
-(draw-box (文本 "hit" {:font-size 20}) {:span 1})
-(draw-box (文本“选择”{:font-size 20}) {:span 3})
-(draw-box (文本“timing”{:font-size 20}) {:span 3})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "6" {:span 5 :borders {}})
-(绘图框 "XLEN - 34" {:span 5 :borders {}})
-(draw-box "2" {:span 3 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 28)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "XLEN-4" "" "" "XLEN-5" "" "" "XLEN-6" "" "XLEN-11" "" "" "XLEN-12" "" "" "23" "22" "" "21" "20" "" "19" "" "" "18" ""]})
+    (draw-box (text "type" {:font-size 20}) {:span 5})
+    (draw-box (text "dmode" {:font-size 20}) {:span 3})
+    (draw-box (text "maskmax" {:font-size 20}) {:span 5})
+    (draw-box (text "0" {:font-size 20}) {:span 5})
+    (draw-box (text "sizehi" {:font-size 20}) {:span 3})
+    (draw-box (text "hit" {:font-size 20}) {:span 1})
+    (draw-box (text "select" {:font-size 20}) {:span 3})
+    (draw-box (text "timing" {:font-size 20}) {:span 3})
+    (draw-box "4" {:span 5 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "6" {:span 5 :borders {}})
+    (draw-box "XLEN - 34" {:span 5 :borders {}})
+    (draw-box "2" {:span 3 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
 
 </div>
 
@@ -8434,32 +8434,32 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 29 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["17" "" "16" "15" "" "" "" "12" "" "11" "" "10" "" "" "" "7" "6" "5" "4" "3" "" "2" "" "" "1" "" "" "0" ""]})
-(draw-box (text "sizelo" {:font-size 20}) {:span 3})
-(draw-box (文本“action”{:font-size 20}) {:span 5})
-(draw-box (text "chain" {:font-size 20}) {:span 3})
-(draw-box (文本 "match" {:font-size 20}) {:span 5})
-(draw-box (文本 "m" {:font-size 20}) {:span 1})
-(draw-box (文本 "0" {:font-size 20}) {:span 1})
-(draw-box (text "s" {:font-size 20}) {:span 1})
-(draw-box (文本 "u" {:font-size 20}) {:span 1})
-(draw-box (文本“执行”{:font-size 20}) {:span 3})
-(draw-box (text "store" {:font-size 20}) {:span 3})
-(draw-box (text "load" {:font-size 20}) {:span 3})
-(draw-box "2" {:span 3 :borders {}})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 29)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["17" "" "16" "15" "" "" "" "12" "" "11" "" "10" "" "" "" "7" "6" "5" "4" "3" "" "2" "" "" "1" "" "" "0" ""]})
+    (draw-box (text "sizelo" {:font-size 20}) {:span 3})
+    (draw-box (text "action" {:font-size 20}) {:span 5})
+    (draw-box (text "chain" {:font-size 20}) {:span 3})
+    (draw-box (text "match" {:font-size 20}) {:span 5})
+    (draw-box (text "m" {:font-size 20}) {:span 1})
+    (draw-box (text "0" {:font-size 20}) {:span 1})
+    (draw-box (text "s" {:font-size 20}) {:span 1})
+    (draw-box (text "u" {:font-size 20}) {:span 1})
+    (draw-box (text "execute" {:font-size 20}) {:span 3})
+    (draw-box (text "store" {:font-size 20}) {:span 3})
+    (draw-box (text "load" {:font-size 20}) {:span 3})
+    (draw-box "2" {:span 3 :borders {}})
+    (draw-box "4" {:span 5 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "4" {:span 5 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
 
 </div>
 
@@ -8866,7 +8866,7 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 <div class="sect3">
 
-#### 5.7.12。匹配控制类型 6（mcontrol6，位于 0x7a1）
+#### 5.7.12 匹配控制类型 6（mcontrol6，位于 0x7a1）
 
 <div class="paragraph">
 
@@ -8990,32 +8990,32 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（默认每行盒子数 33）
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "XLEN-4" "" "" "XLEN-5" "" "" "XLEN-6" "27" "" "26" "" "" "25" "" "24" "23" "" "22" "" "" "21" "" "20" "" "19" "18" "" "" "" "16"]})
-(draw-box (文本“类型”{:font-size 20}) {:span 5})
-(draw-box (text "dmode" {:font-size 20}) {:span 3})
-(draw-box (文本 "0" {:font-size 20}) {:span 3})
-(draw-box (文本“不确定”{:font-size 20}) {:span 3})
-(draw-box (文本 "hit1" {:font-size 20}) {:span 3})
-(draw-box (text "vs" {:font-size 20}) {:span 1})
-(draw-box (text "vu" {:font-size 20}) {:span 1})
-(draw-box (文本 "hit0" {:font-size 20}) {:span 3})
-(draw-box (文本“选择”{:font-size 20}) {:span 3})
-(draw-box (文本 "0" {:font-size 20}) {:span 3})
-(draw-box (文本“size”{:font-size 20}) {:span 5})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(绘图框“XLEN - 32”{:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "2" {:span 3 :borders {}})
-(draw-box "3" {:span 5 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 33)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "XLEN-4" "" "" "XLEN-5" "" "" "XLEN-6" "27" "" "26" "" "" "25" "" "24" "23" "" "22" "" "" "21" "" "20" "" "19" "18" "" "" "" "16"]})
+    (draw-box (text "type" {:font-size 20}) {:span 5})
+    (draw-box (text "dmode" {:font-size 20}) {:span 3})
+    (draw-box (text "0" {:font-size 20}) {:span 3})
+    (draw-box (text "uncertain" {:font-size 20}) {:span 3})
+    (draw-box (text "hit1" {:font-size 20}) {:span 3})
+    (draw-box (text "vs" {:font-size 20}) {:span 1})
+    (draw-box (text "vu" {:font-size 20}) {:span 1})
+    (draw-box (text "hit0" {:font-size 20}) {:span 3})
+    (draw-box (text "select" {:font-size 20}) {:span 3})
+    (draw-box (text "0" {:font-size 20}) {:span 3})
+    (draw-box (text "size" {:font-size 20}) {:span 5})
+    (draw-box "4" {:span 5 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "XLEN - 32" {:span 3 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "2" {:span 3 :borders {}})
+    (draw-box "3" {:span 5 :borders {}})
 
 </div>
 
@@ -9025,30 +9025,30 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（默认每行 30 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["15" "" "" "" "12" "" "11" "" "10" "" "" "" "7" "6" "" "" "5" "" "" "4" "3" "" "2" "" "" "1" "" "" "0" ""]})
-(draw-box (文本“action”{:font-size 20}) {:span 5})
-(draw-box (text "chain" {:font-size 20}) {:span 3})
-(draw-box (文本 "match" {:font-size 20}) {:span 5})
-(draw-box (文本 "m" {:font-size 20}) {:span 1})
-(draw-box (text "uncertainen" {:font-size 20}) {:span 5})
-(draw-box (text "s" {:font-size 20}) {:span 1})
-(draw-box (文本 "u" {:font-size 20}) {:span 1})
-(draw-box (文本“执行”{:font-size 20}) {:span 3})
-(draw-box (text "store" {:font-size 20}) {:span 3})
-(draw-box (text "load" {:font-size 20}) {:span 3})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 30)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["15" "" "" "" "12" "" "11" "" "10" "" "" "" "7" "6" "" "" "5" "" "" "4" "3" "" "2" "" "" "1" "" "" "0" ""]})
+    (draw-box (text "action" {:font-size 20}) {:span 5})
+    (draw-box (text "chain" {:font-size 20}) {:span 3})
+    (draw-box (text "match" {:font-size 20}) {:span 5})
+    (draw-box (text "m" {:font-size 20}) {:span 1})
+    (draw-box (text "uncertainen" {:font-size 20}) {:span 5})
+    (draw-box (text "s" {:font-size 20}) {:span 1})
+    (draw-box (text "u" {:font-size 20}) {:span 1})
+    (draw-box (text "execute" {:font-size 20}) {:span 3})
+    (draw-box (text "store" {:font-size 20}) {:span 3})
+    (draw-box (text "load" {:font-size 20}) {:span 3})
+    (draw-box "4" {:span 5 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "4" {:span 5 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "1" {:span 5 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
 
 </div>
 
@@ -9473,7 +9473,7 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 <div class="sect3">
 
-#### 5.7.13。指令计数（icount，位于 0x7a1）
+#### 5.7.13 指令计数（icount，位于 0x7a1）
 
 <div class="paragraph">
 
@@ -9616,34 +9616,34 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-(def 每行 32 个盒子)
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "XLEN-4" "" "" "XLEN-5" "" "" "XLEN-6" "27" "26" "25" "24" "23" "" "" "" "" "" "10" "9" "" "8" "" "7" "6" "5" "" "" "" "0"]})
-(draw-box (文本“类型”{:font-size 20}) {:span 5})
-(draw-box (text "dmode" {:font-size 20}) {:span 3})
-(draw-box (文本 "0" {:font-size 20}) {:span 3})
-(draw-box (text "vs" {:font-size 20}) {:span 1})
-(draw-box (text "vu" {:font-size 20}) {:span 1})
-(draw-box (文本 "hit" {:font-size 20}) {:span 1})
-(draw-box (文本 "count" {:font-size 20}) {:span 7})
-(draw-box (文本 "m" {:font-size 20}) {:span 1})
-(draw-box (text "pending" {:font-size 20}) {:span 3})
-(draw-box (text "s" {:font-size 20}) {:span 1})
-(draw-box (文本 "u" {:font-size 20}) {:span 1})
-(draw-box (文本“action”{:font-size 20}) {:span 5})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(绘图框“XLEN - 32”{:span 3 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "14" {:span 7 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "6" {:span 5 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 32)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "XLEN-4" "" "" "XLEN-5" "" "" "XLEN-6" "27" "26" "25" "24" "23" "" "" "" "" "" "10" "9" "" "8" "" "7" "6" "5" "" "" "" "0"]})
+    (draw-box (text "type" {:font-size 20}) {:span 5})
+    (draw-box (text "dmode" {:font-size 20}) {:span 3})
+    (draw-box (text "0" {:font-size 20}) {:span 3})
+    (draw-box (text "vs" {:font-size 20}) {:span 1})
+    (draw-box (text "vu" {:font-size 20}) {:span 1})
+    (draw-box (text "hit" {:font-size 20}) {:span 1})
+    (draw-box (text "count" {:font-size 20}) {:span 7})
+    (draw-box (text "m" {:font-size 20}) {:span 1})
+    (draw-box (text "pending" {:font-size 20}) {:span 3})
+    (draw-box (text "s" {:font-size 20}) {:span 1})
+    (draw-box (text "u" {:font-size 20}) {:span 1})
+    (draw-box (text "action" {:font-size 20}) {:span 5})
+    (draw-box "4" {:span 5 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "XLEN - 32" {:span 3 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "14" {:span 7 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "6" {:span 5 :borders {}})
 
 </div>
 
@@ -9834,7 +9834,7 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 <div class="sect3">
 
-#### 5.7.14。中断触发器（itrigger，位于 0x7a1）
+#### 5.7.14 中断触发器（itrigger，位于 0x7a1）
 
 <div class="paragraph">
 
@@ -9907,34 +9907,34 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（默认每行 30 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "XLEN-4" "" "" "XLEN-5" "" "" "XLEN-6" "" "" "XLEN-7" "" "" "" "" "13" "12" "11" "10" "9" "8" "7" "6" "5" "" "" "" "0"]})
-(draw-box (文本“类型”{:font-size 20}) {:span 5})
-(draw-box (text "dmode" {:font-size 20}) {:span 3})
-(draw-box (文本 "hit" {:font-size 20}) {:span 3})
-(draw-box (文本 "0" {:font-size 20}) {:span 7})
-(draw-box (text "vs" {:font-size 20}) {:span 1})
-(draw-box (text "vu" {:font-size 20}) {:span 1})
-(draw-box (文本 "nmi" {:font-size 20}) {:span 1})
-(draw-box (文本 "m" {:font-size 20}) {:span 1})
-(draw-box (文本 "0" {:font-size 20}) {:span 1})
-(draw-box (text "s" {:font-size 20}) {:span 1})
-(draw-box (文本 "u" {:font-size 20}) {:span 1})
-(draw-box (文本“action”{:font-size 20}) {:span 5})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(绘图框 "XLEN - 19" {:span 7 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "6" {:span 5 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 30)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "XLEN-4" "" "" "XLEN-5" "" "" "XLEN-6" "" "" "XLEN-7" "" "" "" "" "13" "12" "11" "10" "9" "8" "7" "6" "5" "" "" "" "0"]})
+    (draw-box (text "type" {:font-size 20}) {:span 5})
+    (draw-box (text "dmode" {:font-size 20}) {:span 3})
+    (draw-box (text "hit" {:font-size 20}) {:span 3})
+    (draw-box (text "0" {:font-size 20}) {:span 7})
+    (draw-box (text "vs" {:font-size 20}) {:span 1})
+    (draw-box (text "vu" {:font-size 20}) {:span 1})
+    (draw-box (text "nmi" {:font-size 20}) {:span 1})
+    (draw-box (text "m" {:font-size 20}) {:span 1})
+    (draw-box (text "0" {:font-size 20}) {:span 1})
+    (draw-box (text "s" {:font-size 20}) {:span 1})
+    (draw-box (text "u" {:font-size 20}) {:span 1})
+    (draw-box (text "action" {:font-size 20}) {:span 5})
+    (draw-box "4" {:span 5 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "XLEN - 19" {:span 7 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "6" {:span 5 :borders {}})
 
 </div>
 
@@ -10107,7 +10107,7 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 <div class="sect3">
 
-#### 5.7.15。异常触发器（etrigger，位于 0x7a1）
+#### 5.7.15 异常触发器（etrigger，位于 0x7a1）
 
 <div class="paragraph">
 
@@ -10174,34 +10174,34 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（默认每行 30 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "XLEN-4" "" "" "XLEN-5" "" "" "XLEN-6" "" "" "XLEN-7" "" "" "" "" "13" "12" "11" "10" "9" "8" "7" "6" "5" "" "" "" "0"]})
-(draw-box (文本“类型”{:font-size 20}) {:span 5})
-(draw-box (text "dmode" {:font-size 20}) {:span 3})
-(draw-box (文本 "hit" {:font-size 20}) {:span 3})
-(draw-box (文本 "0" {:font-size 20}) {:span 7})
-(draw-box (text "vs" {:font-size 20}) {:span 1})
-(draw-box (text "vu" {:font-size 20}) {:span 1})
-(draw-box (文本 "0" {:font-size 20}) {:span 1})
-(draw-box (文本 "m" {:font-size 20}) {:span 1})
-(draw-box (文本 "0" {:font-size 20}) {:span 1})
-(draw-box (text "s" {:font-size 20}) {:span 1})
-(draw-box (文本 "u" {:font-size 20}) {:span 1})
-(draw-box (文本“action”{:font-size 20}) {:span 5})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(绘图框 "XLEN - 19" {:span 7 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "6" {:span 5 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 30)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "XLEN-4" "" "" "XLEN-5" "" "" "XLEN-6" "" "" "XLEN-7" "" "" "" "" "13" "12" "11" "10" "9" "8" "7" "6" "5" "" "" "" "0"]})
+    (draw-box (text "type" {:font-size 20}) {:span 5})
+    (draw-box (text "dmode" {:font-size 20}) {:span 3})
+    (draw-box (text "hit" {:font-size 20}) {:span 3})
+    (draw-box (text "0" {:font-size 20}) {:span 7})
+    (draw-box (text "vs" {:font-size 20}) {:span 1})
+    (draw-box (text "vu" {:font-size 20}) {:span 1})
+    (draw-box (text "0" {:font-size 20}) {:span 1})
+    (draw-box (text "m" {:font-size 20}) {:span 1})
+    (draw-box (text "0" {:font-size 20}) {:span 1})
+    (draw-box (text "s" {:font-size 20}) {:span 1})
+    (draw-box (text "u" {:font-size 20}) {:span 1})
+    (draw-box (text "action" {:font-size 20}) {:span 5})
+    (draw-box "4" {:span 5 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "XLEN - 19" {:span 7 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "6" {:span 5 :borders {}})
 
 </div>
 
@@ -10356,7 +10356,7 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 <div class="sect3">
 
-#### 5.7.16。外部触发器（tmexttrigger，位于 0x7a1）
+#### 5.7.16 外部触发器（tmexttrigger，位于 0x7a1）
 
 <div class="paragraph">
 
@@ -10417,24 +10417,24 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（默认每行盒子数 31）
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "XLEN-4" "" "" "XLEN-5" "" "" "XLEN-6" "" "" "XLEN-7" "" "" "23" "" "22" "" "21" "" "" "" "" "" "6" "5" "" "" "" "0"]})
-(draw-box (文本“类型”{:font-size 20}) {:span 5})
-(draw-box (text "dmode" {:font-size 20}) {:span 3})
-(draw-box (文本 "hit" {:font-size 20}) {:span 3})
-(draw-box (文本 "0" {:font-size 20}) {:span 5})
-(draw-box (text "intctl" {:font-size 20}) {:span 3})
-(draw-box (文本“选择”{:font-size 20}) {:span 7})
-(draw-box (文本“action”{:font-size 20}) {:span 5})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(绘图框 "XLEN - 29" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "16" {:span 7 :borders {}})
-(draw-box "6" {:span 5 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 31)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["" "XLEN-1" "" "XLEN-4" "" "" "XLEN-5" "" "" "XLEN-6" "" "" "XLEN-7" "" "" "23" "" "22" "" "21" "" "" "" "" "" "6" "5" "" "" "" "0"]})
+    (draw-box (text "type" {:font-size 20}) {:span 5})
+    (draw-box (text "dmode" {:font-size 20}) {:span 3})
+    (draw-box (text "hit" {:font-size 20}) {:span 3})
+    (draw-box (text "0" {:font-size 20}) {:span 5})
+    (draw-box (text "intctl" {:font-size 20}) {:span 3})
+    (draw-box (text "select" {:font-size 20}) {:span 7})
+    (draw-box (text "action" {:font-size 20}) {:span 5})
+    (draw-box "4" {:span 5 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "XLEN - 29" {:span 5 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "16" {:span 7 :borders {}})
+    (draw-box "6" {:span 5 :borders {}})
 
 </div>
 
@@ -10535,7 +10535,7 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 <div class="sect3">
 
-#### 5.7.17。触发额外 (RV32)（textra32，位于 0x7a3）
+#### 5.7.17 触发额外 (RV32)（textra32，位于 0x7a3）
 
 <div class="paragraph">
 
@@ -10602,22 +10602,22 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（默认每行 28 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "26" "25" "" "" "" "23" "22" "" "" "" "20" "19" "" "18" "17" "" "" "" "" "" "2" "1" "" "0"]})
-(draw-box (text "mhvalue" {:font-size 20}) {:span 5})
-(draw-box (text "mhselect" {:font-size 20}) {:span 5})
-(draw-box (文本 "0" {:font-size 20}) {:span 5})
-(draw-box (text "sbytemask" {:font-size 20}) {:span 3})
-(draw-box (text "svalue" {:font-size 20}) {:span 7})
-(draw-box (text "sselect" {:font-size 20}) {:span 3})
-(draw-box "6" {:span 5 :borders {}})
-(draw-box "3" {:span 5 :borders {}})
-(draw-box "3" {:span 5 :borders {}})
-(draw-box "2" {:span 3 :borders {}})
-(draw-box "16" {:span 7 :borders {}})
-(draw-box "2" {:span 3 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 28)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "26" "25" "" "" "" "23" "22" "" "" "" "20" "19" "" "18" "17" "" "" "" "" "" "2" "1" "" "0"]})
+    (draw-box (text "mhvalue" {:font-size 20}) {:span 5})
+    (draw-box (text "mhselect" {:font-size 20}) {:span 5})
+    (draw-box (text "0" {:font-size 20}) {:span 5})
+    (draw-box (text "sbytemask" {:font-size 20}) {:span 3})
+    (draw-box (text "svalue" {:font-size 20}) {:span 7})
+    (draw-box (text "sselect" {:font-size 20}) {:span 3})
+    (draw-box "6" {:span 5 :borders {}})
+    (draw-box "3" {:span 5 :borders {}})
+    (draw-box "3" {:span 5 :borders {}})
+    (draw-box "2" {:span 3 :borders {}})
+    (draw-box "16" {:span 7 :borders {}})
+    (draw-box "2" {:span 3 :borders {}})
 
 </div>
 
@@ -10769,7 +10769,7 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 <div class="sect3">
 
-#### 5.7.18。触发额外 (RV64)（textra64，位于 0x7a3）
+#### 5.7.18 触发额外 (RV64)（textra64，位于 0x7a3）
 
 <div class="paragraph">
 
@@ -10805,24 +10805,24 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（默认每行盒子数 37）
-(draw-column-headers {:font-size 15 :height 17 :labels ["63" "" "" "" "" "" "51" "50" "" "" "" "48" "47" "" "" "" "40" "39" "" "" "" "36" "35" "" "34" "33" "" "" "" "" "" "" "" "2" "1" "" "0"]})
-(draw-box (text "mhvalue" {:font-size 20}) {:span 7})
-(draw-box (text "mhselect" {:font-size 20}) {:span 5})
-(draw-box (文本 "0" {:font-size 20}) {:span 5})
-(draw-box (text "sbytemask" {:font-size 20}) {:span 5})
-(draw-box (文本 "0" {:font-size 20}) {:span 3})
-(draw-box (text "svalue" {:font-size 20}) {:span 9})
-(draw-box (text "sselect" {:font-size 20}) {:span 3})
-(draw-box "13" {:span 7 :borders {}})
-(draw-box "3" {:span 5 :borders {}})
-(draw-box "8" {:span 5 :borders {}})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "2" {:span 3 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "2" {:span 3 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 37)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["63" "" "" "" "" "" "51" "50" "" "" "" "48" "47" "" "" "" "40" "39" "" "" "" "36" "35" "" "34" "33" "" "" "" "" "" "" "" "2" "1" "" "0"]})
+    (draw-box (text "mhvalue" {:font-size 20}) {:span 7})
+    (draw-box (text "mhselect" {:font-size 20}) {:span 5})
+    (draw-box (text "0" {:font-size 20}) {:span 5})
+    (draw-box (text "sbytemask" {:font-size 20}) {:span 5})
+    (draw-box (text "0" {:font-size 20}) {:span 3})
+    (draw-box (text "svalue" {:font-size 20}) {:span 9})
+    (draw-box (text "sselect" {:font-size 20}) {:span 3})
+    (draw-box "13" {:span 7 :borders {}})
+    (draw-box "3" {:span 5 :borders {}})
+    (draw-box "8" {:span 5 :borders {}})
+    (draw-box "4" {:span 5 :borders {}})
+    (draw-box "2" {:span 3 :borders {}})
+    (draw-box "32" {:span 9 :borders {}})
+    (draw-box "2" {:span 3 :borders {}})
 
 </div>
 
@@ -10914,7 +10914,7 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 <div class="sect2">
 
-### 6.1。 JTAG 调试传输模块
+### 6.1 JTAG 调试传输模块
 
 > [!tip] Tips · 遇到 JTAG 访问异常，先读 `dtmcs`：确认版本、`abits`、`idle` 与 `dmistat`，必要时用 `dmireset` 清除粘滞失败状态。
 
@@ -10926,7 +10926,7 @@ CSR 的可访问性由 Smstateen 扩展中的 `mstateenzero[57]` 和 `hstateenze
 
 <div class="sect3">
 
-#### 6.1.1。 JTAG 背景
+#### 6.1.1 JTAG 背景
 
 <div class="paragraph">
 
@@ -10938,7 +10938,7 @@ JTAG 指 IEEE Std 1149.1-2013。它是一个定义测试逻辑的标准，可以
 
 <div class="sect3">
 
-#### 6.1.2。 JTAG DTM 寄存器
+#### 6.1.2 JTAG DTM 寄存器
 
 <div class="paragraph">
 
@@ -10966,7 +10966,7 @@ JTAG 指 IEEE Std 1149.1-2013。它是一个定义测试逻辑的标准，可以
 
 <div class="sect3">
 
-#### 6.1.3。 `IDCODE`（位于 0x01）
+#### 6.1.3 `IDCODE`（位于 0x01）
 
 <div class="paragraph">
 
@@ -10984,20 +10984,20 @@ JTAG 指 IEEE Std 1149.1-2013。它是一个定义测试逻辑的标准，可以
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "28" "27" "" "" "" "" "" "12" "11" "" "" "" "" "" "1" "0" "" "" "" ""]})
-(draw-box (文本“版本”{:font-size 20}) {:span 5})
-(draw-box (text "PartNumber" {:font-size 20}) {:span 7})
-(draw-box (text "ManufId" {:font-size 20}) {:span 7})
-(draw-box (文本 "1" {:font-size 20}) {:span 1})
-(draw-box "" {:span 4 :borders {}})
-(draw-box "4" {:span 5 :borders {}})
-(draw-box "16" {:span 7 :borders {}})
-(draw-box "11" {:span 7 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "" {:span 4 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "28" "27" "" "" "" "" "" "12" "11" "" "" "" "" "" "1" "0" "" "" "" ""]})
+    (draw-box (text "Version" {:font-size 20}) {:span 5})
+    (draw-box (text "PartNumber" {:font-size 20}) {:span 7})
+    (draw-box (text "ManufId" {:font-size 20}) {:span 7})
+    (draw-box (text "1" {:font-size 20}) {:span 1})
+    (draw-box "" {:span 4 :borders {}})
+    (draw-box "4" {:span 5 :borders {}})
+    (draw-box "16" {:span 7 :borders {}})
+    (draw-box "11" {:span 7 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "" {:span 4 :borders {}})
 
 </div>
 
@@ -11080,7 +11080,7 @@ JTAG 指 IEEE Std 1149.1-2013。它是一个定义测试逻辑的标准，可以
 
 <div class="sect3">
 
-#### 6.1.4。 DTM 控制和状态（dtmcs，位于 0x10）
+#### 6.1.4 DTM 控制和状态（dtmcs，位于 0x10）
 
 <div class="paragraph">
 
@@ -11092,28 +11092,28 @@ JTAG 指 IEEE Std 1149.1-2013。它是一个定义测试逻辑的标准，可以
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（默认每行盒子数 39）
-(draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "21" "20" "" "" "" "18" "" "" "17" "" "" "" "16" "" "15" "14" "" "" "" "12" "11" "" "10" "9" "" "" "" "4" "3" "" "" "" "0"]})
-(draw-box (文本 "0" {:font-size 20}) {:span 7})
-(draw-box (text "errinfo" {:font-size 20}) {:span 5})
-(draw-box (text "dtmhardreset" {:font-size 20}) {:span 5})
-(draw-box (text "dmireset" {:font-size 20}) {:span 3})
-(draw-box (文本 "0" {:font-size 20}) {:span 1})
-(draw-box (text "idle" {:font-size 20}) {:span 5})
-(draw-box (text "dmistat" {:font-size 20}) {:span 3})
-(draw-box (text "bits" {:font-size 20}) {:span 5})
-(draw-box (文本“版本”{:font-size 20}) {:span 5})
-(draw-box "11" {:span 7 :borders {}})
-(draw-box "3" {:span 5 :borders {}})
-(draw-box "1" {:span 5 :borders {}})
-(draw-box "1" {:span 3 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "3" {:span 5 :borders {}})
-(draw-box "2" {:span 3 :borders {}})
-(draw-box "6" {:span 5 :borders {}})
-(draw-box "4" {:span 5 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 39)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["31" "" "" "" "" "" "21" "20" "" "" "" "18" "" "" "17" "" "" "" "16" "" "15" "14" "" "" "" "12" "11" "" "10" "9" "" "" "" "4" "3" "" "" "" "0"]})
+    (draw-box (text "0" {:font-size 20}) {:span 7})
+    (draw-box (text "errinfo" {:font-size 20}) {:span 5})
+    (draw-box (text "dtmhardreset" {:font-size 20}) {:span 5})
+    (draw-box (text "dmireset" {:font-size 20}) {:span 3})
+    (draw-box (text "0" {:font-size 20}) {:span 1})
+    (draw-box (text "idle" {:font-size 20}) {:span 5})
+    (draw-box (text "dmistat" {:font-size 20}) {:span 3})
+    (draw-box (text "abits" {:font-size 20}) {:span 5})
+    (draw-box (text "version" {:font-size 20}) {:span 5})
+    (draw-box "11" {:span 7 :borders {}})
+    (draw-box "3" {:span 5 :borders {}})
+    (draw-box "1" {:span 5 :borders {}})
+    (draw-box "1" {:span 3 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "3" {:span 5 :borders {}})
+    (draw-box "2" {:span 3 :borders {}})
+    (draw-box "6" {:span 5 :borders {}})
+    (draw-box "4" {:span 5 :borders {}})
 
 </div>
 
@@ -11304,7 +11304,7 @@ JTAG 指 IEEE Std 1149.1-2013。它是一个定义测试逻辑的标准，可以
 
 <div class="sect3">
 
-#### 6.1.5。调试模块接口访问（dmi，位于 0x11）
+#### 6.1.5 调试模块接口访问（dmi，位于 0x11）
 
 <div class="paragraph">
 
@@ -11356,18 +11356,18 @@ JTAG 指 IEEE Std 1149.1-2013。它是一个定义测试逻辑的标准，可以
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["" "abits+33" "" "" "" "" "34" "33" "" "" "" "" "" "" "" "2" "1" "" "0" "" "" "" "" ""]})
-(draw-box (文本“地址”{:font-size 20}) {:span 7})
-(draw-box (文本“数据”{:font-size 20}) {:span 9})
-(draw-box (text "op" {:font-size 20}) {:span 3})
-(draw-box "" {:span 5 :borders {}})
-(draw-box "bits" {:span 7 :borders {}})
-(draw-box "32" {:span 9 :borders {}})
-(draw-box "2" {:span 3 :borders {}})
-(draw-box "" {:span 5 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["" "abits+33" "" "" "" "" "34" "33" "" "" "" "" "" "" "" "2" "1" "" "0" "" "" "" "" ""]})
+    (draw-box (text "address" {:font-size 20}) {:span 7})
+    (draw-box (text "data" {:font-size 20}) {:span 9})
+    (draw-box (text "op" {:font-size 20}) {:span 3})
+    (draw-box "" {:span 5 :borders {}})
+    (draw-box "abits" {:span 7 :borders {}})
+    (draw-box "32" {:span 9 :borders {}})
+    (draw-box "2" {:span 3 :borders {}})
+    (draw-box "" {:span 5 :borders {}})
 
 </div>
 
@@ -11495,7 +11495,7 @@ JTAG 指 IEEE Std 1149.1-2013。它是一个定义测试逻辑的标准，可以
 
 <div class="sect3">
 
-#### 6.1.6。 `BYPASS`（位于 0x1f）
+#### 6.1.6 `BYPASS`（位于 0x1f）
 
 <div class="paragraph">
 
@@ -11513,14 +11513,14 @@ JTAG 指 IEEE Std 1149.1-2013。它是一个定义测试逻辑的标准，可以
 
 <div class="content">
 
-（默认行高 45）
-(def row-header-fn nil)
-（定义每行 24 个盒子）
-(draw-column-headers {:font-size 15 :height 17 :labels ["0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
-(draw-box (文本 "0" {:font-size 20}) {:span 1})
-(draw-box "" {:span 23 :borders {}})
-(draw-box "1" {:span 1 :borders {}})
-(draw-box "" {:span 23 :borders {}})
+    (def row-height 45)
+    (def row-header-fn nil)
+    (def boxes-per-row 24)
+    (draw-column-headers {:font-size 15 :height 17 :labels ["0" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]})
+    (draw-box (text "0" {:font-size 20}) {:span 1})
+    (draw-box "" {:span 23 :borders {}})
+    (draw-box "1" {:span 1 :borders {}})
+    (draw-box "" {:span 23 :borders {}})
 
 </div>
 
@@ -11530,11 +11530,11 @@ JTAG 指 IEEE Std 1149.1-2013。它是一个定义测试逻辑的标准，可以
 
 <div class="sect3">
 
-#### 6.1.7。 JTAG 连接器
+#### 6.1.7 JTAG 连接器
 
 <div class="sect4">
 
-##### 6.1.7.1。推荐 JTAG 连接器
+##### 6.1.7.1 推荐 JTAG 连接器
 
 <div class="paragraph">
 
@@ -11575,7 +11575,7 @@ nTRST 连接器。
 
 <div class="sect4">
 
-##### 6.1.7.2。备用 JTAG 连接器
+##### 6.1.7.2 备用 JTAG 连接器
 
 <div class="paragraph">
 
@@ -11681,7 +11681,7 @@ nRESET 永远不应连接到 TAP 复位，否则调试器可能无法通过复�
 
 <div class="sect3">
 
-#### 6.1.8。 cJTAG
+#### 6.1.8 cJTAG
 
 <div class="paragraph">
 
@@ -11733,7 +11733,7 @@ nRESET 永远不应连接到 TAP 复位，否则调试器可能无法通过复�
 
 <div class="sect2">
 
-### A.1。基于抽象命令
+### A.1 基于抽象命令
 
 <div class="paragraph">
 
@@ -11763,7 +11763,7 @@ nRESET 永远不应连接到 TAP 复位，否则调试器可能无法通过复�
 
 <div class="sect2">
 
-### A.2。基于执行
+### A.2 基于执行
 
 <div class="paragraph">
 
@@ -11823,7 +11823,7 @@ nRESET 永远不应连接到 TAP 复位，否则调试器可能无法通过复�
 
 <div class="sect2">
 
-### A.3。调试模块接口信号
+### A.3 调试模块接口信号
 
 <div class="paragraph">
 
@@ -11871,7 +11871,7 @@ nRESET 永远不应连接到 TAP 复位，否则调试器可能无法通过复�
 
 <div class="sect2">
 
-### B.1。 C 头文件
+### B.1 C 头文件
 
 <div class="paragraph">
 
@@ -11883,7 +11883,7 @@ nRESET 永远不应连接到 TAP 复位，否则调试器可能无法通过复�
 
 <div class="sect2">
 
-### B.2。外部调试器实现
+### B.2 外部调试器实现
 
 > [!tip] Tips · 将本节流程实现为可重试的事务：DMI 操作 → 检查状态 → 遇到 `busy` 等待/退避 → 遇到失败复位 DMI → 重试。不要把一次扫描链操作当作必然成功。
 
@@ -11901,7 +11901,7 @@ nRESET 永远不应连接到 TAP 复位，否则调试器可能无法通过复�
 
 <div class="sect3">
 
-#### B.2.1。调试模块接口访问
+#### B.2.1 调试模块接口访问
 
 <div class="paragraph">
 
@@ -11925,7 +11925,7 @@ nRESET 永远不应连接到 TAP 复位，否则调试器可能无法通过复�
 
 <div class="sect3">
 
-#### B.2.2。检查是否已停止 hart
+#### B.2.2 检查是否已停止 hart
 
 <div class="paragraph">
 
@@ -11937,7 +11937,7 @@ nRESET 永远不应连接到 TAP 复位，否则调试器可能无法通过复�
 
 <div class="sect3">
 
-#### B.2.3。停止
+#### B.2.3 停止
 
 <div class="paragraph">
 
@@ -11949,7 +11949,7 @@ nRESET 永远不应连接到 TAP 复位，否则调试器可能无法通过复�
 
 <div class="sect3">
 
-#### B.2.4。跑步
+#### B.2.4 跑步
 
 <div class="paragraph">
 
@@ -11961,7 +11961,7 @@ nRESET 永远不应连接到 TAP 复位，否则调试器可能无法通过复�
 
 <div class="sect3">
 
-#### B.2.5。单步
+#### B.2.5 单步
 
 <div class="paragraph">
 
@@ -11973,11 +11973,11 @@ nRESET 永远不应连接到 TAP 复位，否则调试器可能无法通过复�
 
 <div class="sect3">
 
-#### B.2.6。访问寄存器
+#### B.2.6 访问寄存器
 
 <div class="sect4">
 
-##### B.2.6.1。使用抽象命令
+##### B.2.6.1 使用抽象命令
 
 <div class="paragraph">
 
@@ -12005,7 +12005,7 @@ nRESET 永远不应连接到 TAP 复位，否则调试器可能无法通过复�
 
 <div class="sect4">
 
-##### B.2.6.2。使用程序缓冲区
+##### B.2.6.2 使用程序缓冲区
 
 <div class="paragraph">
 
@@ -12046,11 +12046,11 @@ nRESET 永远不应连接到 TAP 复位，否则调试器可能无法通过复�
 
 <div class="sect3">
 
-#### B.2.7。读取记忆
+#### B.2.7 读取记忆
 
 <div class="sect4">
 
-##### B.2.7.1。使用系统总线访问
+##### B.2.7.1 使用系统总线访问
 
 <div class="paragraph">
 
@@ -12090,7 +12090,7 @@ nRESET 永远不应连接到 TAP 复位，否则调试器可能无法通过复�
 
 <div class="sect4">
 
-##### B.2.7.2。使用程序缓冲区
+##### B.2.7.2 使用程序缓冲区
 
 <div class="paragraph">
 
@@ -12138,7 +12138,7 @@ nRESET 永远不应连接到 TAP 复位，否则调试器可能无法通过复�
 
 <div class="sect4">
 
-##### B.2.7.3。使用抽象内存访问
+##### B.2.7.3 使用抽象内存访问
 
 <div class="paragraph">
 
@@ -12180,11 +12180,11 @@ nRESET 永远不应连接到 TAP 复位，否则调试器可能无法通过复�
 
 <div class="sect3">
 
-#### B.2.8。写入记忆
+#### B.2.8 写入记忆
 
 <div class="sect4">
 
-##### B.2.8.1。使用系统总线访问
+##### B.2.8.1 使用系统总线访问
 
 <div class="paragraph">
 
@@ -12223,7 +12223,7 @@ nRESET 永远不应连接到 TAP 复位，否则调试器可能无法通过复�
 
 <div class="sect4">
 
-##### B.2.8.2。使用程序缓冲区
+##### B.2.8.2 使用程序缓冲区
 
 <div class="paragraph">
 
@@ -12271,7 +12271,7 @@ nRESET 永远不应连接到 TAP 复位，否则调试器可能无法通过复�
 
 <div class="sect4">
 
-##### B.2.8.3。使用抽象内存访问
+##### B.2.8.3 使用抽象内存访问
 
 <div class="paragraph">
 
@@ -12315,7 +12315,7 @@ nRESET 永远不应连接到 TAP 复位，否则调试器可能无法通过复�
 
 <div class="sect3">
 
-#### B.2.9。触发器
+#### B.2.9 触发器
 
 <div class="paragraph">
 
@@ -12388,7 +12388,7 @@ nRESET 永远不应连接到 TAP 复位，否则调试器可能无法通过复�
 
 <div class="sect3">
 
-#### B.2.10。处理异常
+#### B.2.10 处理异常
 
 <div class="paragraph">
 
@@ -12406,7 +12406,7 @@ nRESET 永远不应连接到 TAP 复位，否则调试器可能无法通过复�
 
 <div class="sect3">
 
-#### B.2.11。快速访问
+#### B.2.11 快速访问
 
 <div class="paragraph">
 
@@ -12455,7 +12455,7 @@ nRESET 永远不应连接到 TAP 复位，否则调试器可能无法通过复�
 
 <div class="sect2">
 
-### B.3。本机调试器实现
+### B.3 本机调试器实现
 
 <div class="paragraph">
 
@@ -12465,7 +12465,7 @@ nRESET 永远不应连接到 TAP 复位，否则调试器可能无法通过复�
 
 <div class="sect3">
 
-#### B.3.1。单步
+#### B.3.1 单步
 
 <div class="paragraph">
 
