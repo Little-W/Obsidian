@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
   <defs>
-    <marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="15" markerHeight="15" refX="15" refY="7.5" orient="auto"><path d="M0,0 L15,7.5 L0,15 Z" fill="#1f5e98"/></marker>
-    <marker id="orange" markerUnits="userSpaceOnUse" markerWidth="15" markerHeight="15" refX="15" refY="7.5" orient="auto"><path d="M0,0 L15,7.5 L0,15 Z" fill="#d97706"/></marker>
+    <marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="18" markerHeight="18" refX="18" refY="9" orient="auto"><path d="M0,0 L18,9 L0,18 Z" fill="#1f5e98"/></marker>
+    <marker id="orange" markerUnits="userSpaceOnUse" markerWidth="18" markerHeight="18" refX="18" refY="9" orient="auto"><path d="M0,0 L18,9 L0,18 Z" fill="#d97706"/></marker>
     <style>
       .title { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 48px; font-weight: 700; fill: #15365b; }
       .sub { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 26px; fill: #49627f; }

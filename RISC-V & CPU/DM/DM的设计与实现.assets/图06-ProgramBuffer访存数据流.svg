@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
   <defs>
-    <marker id="blue" markerUnits="userSpaceOnUse" markerWidth="15" markerHeight="15" refX="15" refY="7.5" orient="auto"><path d="M0,0 L15,7.5 L0,15 Z" fill="#1f5e98"/></marker>
-    <marker id="orange" markerUnits="userSpaceOnUse" markerWidth="15" markerHeight="15" refX="15" refY="7.5" orient="auto"><path d="M0,0 L15,7.5 L0,15 Z" fill="#d97706"/></marker>
+    <marker id="blue" markerUnits="userSpaceOnUse" markerWidth="18" markerHeight="18" refX="18" refY="9" orient="auto"><path d="M0,0 L18,9 L0,18 Z" fill="#1f5e98"/></marker>
+    <marker id="orange" markerUnits="userSpaceOnUse" markerWidth="18" markerHeight="18" refX="18" refY="9" orient="auto"><path d="M0,0 L18,9 L0,18 Z" fill="#d97706"/></marker>
     <style>
       .title { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 48px; font-weight: 700; fill: #15365b; }
       .sub { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 26px; fill: #49627f; }
@@ -39,11 +39,12 @@
   <text x="1660" y="487" text-anchor="middle" class="text">hart 可访问的地址空间</text>
 
   <path d="M340,430 L485,430" stroke="#1f5e98" stroke-width="7" fill="none" marker-end="url(#blue)"/>
-  <text x="412" y="395" text-anchor="middle" class="blue">DMI：data / progbuf</text>
+  <text x="412" y="395" text-anchor="middle" class="blue">DMI</text>
   <path d="M835,450 L1005,450" stroke="#d97706" stroke-width="7" fill="none" marker-end="url(#orange)"/>
-  <text x="920" y="415" text-anchor="middle" class="orange">Debug ROM 触发执行</text>
+  <text x="920" y="387" text-anchor="middle" class="orange">Debug ROM</text>
+  <text x="920" y="417" text-anchor="middle" class="orange">postexec</text>
   <path d="M1305,460 L1510,460" stroke="#d97706" stroke-width="7" fill="none" marker-end="url(#orange)"/>
-  <text x="1408" y="425" text-anchor="middle" class="orange">LSU：load / store</text>
+  <text x="1408" y="425" text-anchor="middle" class="orange">LSU</text>
 
   <path d="M1510,520 L1305,520" stroke="#1f5e98" stroke-width="7" fill="none" marker-end="url(#blue)"/>
   <path d="M1005,520 L835,520" stroke="#1f5e98" stroke-width="7" fill="none" marker-end="url(#blue)"/>

@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
   <defs>
-    <marker id="blue" markerUnits="userSpaceOnUse" markerWidth="15" markerHeight="15" refX="15" refY="7.5" orient="auto"><path d="M0,0 L15,7.5 L0,15 Z" fill="#1f5e98"/></marker>
-    <marker id="orange" markerUnits="userSpaceOnUse" markerWidth="15" markerHeight="15" refX="15" refY="7.5" orient="auto"><path d="M0,0 L15,7.5 L0,15 Z" fill="#d97706"/></marker>
+    <marker id="blue" markerUnits="userSpaceOnUse" markerWidth="18" markerHeight="18" refX="18" refY="9" orient="auto"><path d="M0,0 L18,9 L0,18 Z" fill="#1f5e98"/></marker>
+    <marker id="orange" markerUnits="userSpaceOnUse" markerWidth="18" markerHeight="18" refX="18" refY="9" orient="auto"><path d="M0,0 L18,9 L0,18 Z" fill="#d97706"/></marker>
     <style>
       .title { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 48px; font-weight: 700; fill: #15365b; }
       .sub { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 26px; fill: #49627f; }
@@ -23,14 +23,14 @@
   <text x="635" y="350" text-anchor="middle" class="head">DM 的 SBA 控制寄存器</text>
   <rect x="510" y="395" width="250" height="50" rx="10" fill="#d9ebff" stroke="#1f5e98" stroke-width="3"/>
   <rect x="510" y="470" width="250" height="50" rx="10" fill="#d9ebff" stroke="#1f5e98" stroke-width="3"/>
-  <rect x="510" y="545" width="250" height="50" rx="10" fill="#fff0c9" stroke="#1f5e98" stroke-width="3"/>
+  <rect x="490" y="545" width="290" height="50" rx="10" fill="#fff0c9" stroke="#1f5e98" stroke-width="3"/>
   <text x="635" y="428" text-anchor="middle" class="text">sbaddress0</text>
   <text x="635" y="503" text-anchor="middle" class="text">sbdata0</text>
-  <text x="635" y="578" text-anchor="middle" class="text">sbcs：sbbusy / sberror</text>
+  <text x="635" y="578" text-anchor="middle" style="font-family: 'Noto Sans CJK SC', sans-serif; font-size: 22px; fill: #24496d;">sbcs：sbbusy / sberror</text>
 
   <rect x="975" y="375" width="300" height="165" rx="22" fill="#fff4d5" stroke="#d97706" stroke-width="5"/>
   <text x="1125" y="437" text-anchor="middle" class="head">SBA 事务状态机</text>
-  <text x="1125" y="482" text-anchor="middle" class="text">地址、数据、大小与错误处理</text>
+  <text x="1125" y="482" text-anchor="middle" class="text">地址、数据与错误处理</text>
 
   <rect x="1430" y="375" width="360" height="165" rx="22" fill="#edf4ff" stroke="#1f5e98" stroke-width="5"/>
   <text x="1610" y="437" text-anchor="middle" class="head">AXI 与 SoC 从设备</text>

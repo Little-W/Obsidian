@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
   <defs>
-    <marker id="arrowBlue" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" refX="14" refY="7" orient="auto"><path d="M0,0 L14,7 L0,14 Z" fill="#1f5e98"/></marker>
-    <marker id="arrowOrange" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" refX="14" refY="7" orient="auto"><path d="M0,0 L14,7 L0,14 Z" fill="#d97706"/></marker>
+    <marker id="arrowBlue" markerUnits="userSpaceOnUse" markerWidth="17" markerHeight="17" refX="17" refY="8.5" orient="auto"><path d="M0,0 L17,8.5 L0,17 Z" fill="#1f5e98"/></marker>
+    <marker id="arrowOrange" markerUnits="userSpaceOnUse" markerWidth="17" markerHeight="17" refX="17" refY="8.5" orient="auto"><path d="M0,0 L17,8.5 L0,17 Z" fill="#d97706"/></marker>
     <style>
       .title { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 48px; font-weight: 700; fill: #15365b; }
       .subtitle { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 26px; fill: #49627f; }
@@ -66,7 +66,7 @@
   <path d="M1410,475 L1490,475" stroke="#d97706" stroke-width="7" fill="none" marker-end="url(#arrowOrange)"/>
   <text x="1445" y="445" text-anchor="middle" class="orange-text">SBA（可选）</text>
 
-  <path d="M1385,855 L1450,855 L1450,795 L1490,795" stroke="#1f5e98" stroke-width="7" fill="none" marker-end="url(#arrowBlue)"/>
+  <path d="M1385,855 L1450,855 L1450,720 L1490,720" stroke="#1f5e98" stroke-width="7" fill="none" marker-end="url(#arrowBlue)"/>
   <text x="1435" y="920" text-anchor="middle" class="arrow-text">hart 的正常访存</text>
 
   <rect x="120" y="715" width="680" height="200" rx="20" fill="#f7faff" stroke="#7fa5cb" stroke-width="3"/>

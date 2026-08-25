@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
   <defs>
-    <marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" refX="14" refY="7" orient="auto"><path d="M0,0 L14,7 L0,14 Z" fill="#1f5e98"/></marker>
+    <marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="17" markerHeight="17" refX="17" refY="8.5" orient="auto"><path d="M0,0 L17,8.5 L0,17 Z" fill="#1f5e98"/></marker>
     <style>
       .title { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 47px; font-weight: 700; fill: #15365b; }
       .subtitle { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 25px; fill: #49627f; }

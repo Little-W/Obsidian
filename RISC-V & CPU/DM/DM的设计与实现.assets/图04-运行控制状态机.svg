@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
   <defs>
-    <marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="15" markerHeight="15" refX="15" refY="7.5" orient="auto"><path d="M0,0 L15,7.5 L0,15 Z" fill="#1f5e98"/></marker>
-    <marker id="orange" markerUnits="userSpaceOnUse" markerWidth="15" markerHeight="15" refX="15" refY="7.5" orient="auto"><path d="M0,0 L15,7.5 L0,15 Z" fill="#d97706"/></marker>
+    <marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="18" markerHeight="18" refX="18" refY="9" orient="auto"><path d="M0,0 L18,9 L0,18 Z" fill="#1f5e98"/></marker>
+    <marker id="orange" markerUnits="userSpaceOnUse" markerWidth="18" markerHeight="18" refX="18" refY="9" orient="auto"><path d="M0,0 L18,9 L0,18 Z" fill="#d97706"/></marker>
     <style>
       .title { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 48px; font-weight: 700; fill: #15365b; }
       .sub { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 26px; fill: #49627f; }
@@ -45,22 +45,22 @@
   <text x="420" y="343" text-anchor="middle" class="warn">haltreq</text>
   <path d="M820,325 L980,325" stroke="#1f5e98" stroke-width="7" fill="none" marker-end="url(#arrow)"/>
   <text x="900" y="292" text-anchor="middle" class="label">hart_halted</text>
-  <path d="M1250,430 L1430,430" stroke="#d97706" stroke-width="7" fill="none" marker-end="url(#orange)"/>
-  <text x="1340" y="395" text-anchor="middle" class="warn">resumereq</text>
-  <path d="M1585,540 L1585,840 L225,840 L225,540" stroke="#1f5e98" stroke-width="7" fill="none" marker-end="url(#arrow)"/>
-  <text x="905" y="820" text-anchor="middle" class="label">resumeack / hart_running</text>
+  <path d="M1250,350 L1340,350 L1340,430 L1430,430" stroke="#d97706" stroke-width="7" fill="none" marker-end="url(#orange)"/>
+  <text x="1340" y="325" text-anchor="middle" class="warn">resumereq</text>
+  <path d="M1585,540 L1585,855 L225,855 L225,540" stroke="#1f5e98" stroke-width="7" fill="none" marker-end="url(#arrow)"/>
+  <text x="905" y="835" text-anchor="middle" class="label">resumeack / hart_running</text>
 
   <path d="M1115,400 L1115,610" stroke="#1f5e98" stroke-width="7" fill="none" marker-end="url(#arrow)"/>
-  <text x="1165" y="525" class="label">command / postexec</text>
+  <text x="1140" y="585" class="label">command / postexec</text>
   <path d="M1040,610 L1040,400" stroke="#1f5e98" stroke-width="7" fill="none" marker-end="url(#arrow)"/>
-  <text x="930" y="525" text-anchor="end" class="label">done</text>
-  <path d="M1250,685 C1370,685 1370,775 1250,775 L1115,775" stroke="#d97706" stroke-width="6" fill="none" marker-end="url(#orange)"/>
+  <text x="1010" y="575" text-anchor="end" class="label">done</text>
+  <path d="M1250,685 C1370,685 1370,790 1280,790 L1115,790 L1115,760" stroke="#d97706" stroke-width="6" fill="none" marker-end="url(#orange)"/>
   <text x="1360" y="750" class="warn">exception → cmderr</text>
 
   <path d="M575,400 L575,650" stroke="#8a5ca8" stroke-width="6" fill="none" marker-end="url(#arrow)"/>
-  <text x="510" y="545" text-anchor="end" class="label">hart_unavailable</text>
-  <path d="M820,710 C900,710 900,430 980,430" stroke="#8a5ca8" stroke-width="6" fill="none" marker-end="url(#arrow)"/>
-  <text x="870" y="625" text-anchor="middle" class="label">重新可用并暂停</text>
+  <text x="510" y="590" text-anchor="end" class="label">hart_unavailable</text>
+  <path d="M820,710 C910,710 910,350 980,350" stroke="#8a5ca8" stroke-width="6" fill="none" marker-end="url(#arrow)"/>
+  <text x="900" y="790" text-anchor="middle" class="label">重新可用并暂停</text>
 
   <rect x="170" y="875" width="1580" height="105" rx="18" fill="#fbfdff" stroke="#7fa5cb" stroke-width="3"/>
   <text x="210" y="927" class="state">设计要求</text>
