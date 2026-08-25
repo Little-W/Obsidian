@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
   <defs>
-    <marker id="arrow" markerWidth="13" markerHeight="13" refX="10" refY="6.5" orient="auto"><path d="M0,0 L13,6.5 L0,13 Z" fill="#1f5e98"/></marker>
+    <marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" refX="14" refY="7" orient="auto"><path d="M0,0 L14,7 L0,14 Z" fill="#1f5e98"/></marker>
     <style>
       .title { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 47px; font-weight: 700; fill: #15365b; }
       .subtitle { font-family: 'Noto Sans CJK SC', sans-serif; font-size: 25px; fill: #49627f; }
@@ -23,7 +23,7 @@
   <text x="332" y="295" text-anchor="middle" class="main">hart 的 PC 指向 Debug Memory</text>
   <rect x="125" y="350" width="170" height="80" class="node"/>
   <text x="210" y="400" text-anchor="middle" class="text">hart IF</text>
-  <path d="M295,390 L370,390" stroke="#1f5e98" stroke-width="6" fill="none" marker-end="url(#arrow)"/>
+  <path d="M295,390 L385,390" stroke="#1f5e98" stroke-width="6" fill="none" marker-end="url(#arrow)"/>
   <rect x="385" y="315" width="160" height="240" class="node"/>
   <text x="465" y="360" text-anchor="middle" class="text">地址译码</text>
   <rect x="400" y="370" width="130" height="38" rx="8" fill="#d9ebff" stroke="#1f5e98" stroke-width="2"/>
@@ -45,11 +45,11 @@
   <text x="959" y="295" text-anchor="middle" class="main">取指端按 Debug Mode 选择指令源</text>
   <rect x="740" y="350" width="150" height="80" class="node"/>
   <text x="815" y="400" text-anchor="middle" class="text">PC 范围</text>
-  <path d="M890,390 L955,390" stroke="#1f5e98" stroke-width="6" fill="none" marker-end="url(#arrow)"/>
+  <path d="M890,390 L970,390" stroke="#1f5e98" stroke-width="6" fill="none" marker-end="url(#arrow)"/>
   <rect x="970" y="345" width="150" height="90" class="node"/>
   <text x="1045" y="383" text-anchor="middle" class="text">IF 选择器</text>
   <text x="1045" y="416" text-anchor="middle" class="small">debug_mode</text>
-  <path d="M1045,435 L1045,500" stroke="#1f5e98" stroke-width="6" fill="none" marker-end="url(#arrow)"/>
+  <path d="M1045,435 L1045,515" stroke="#1f5e98" stroke-width="6" fill="none" marker-end="url(#arrow)"/>
   <rect x="940" y="515" width="210" height="80" class="node"/>
   <text x="1045" y="565" text-anchor="middle" class="text">progbuf[0:N]</text>
   <rect x="725" y="640" width="470" height="145" class="note"/>
@@ -64,11 +64,11 @@
   <rect x="1380" y="350" width="175" height="90" class="node"/>
   <text x="1467" y="388" text-anchor="middle" class="text">调试执行器</text>
   <text x="1467" y="421" text-anchor="middle" class="small">指令 + 有效信号</text>
-  <path d="M1555,395 L1630,395" stroke="#1f5e98" stroke-width="6" fill="none" marker-end="url(#arrow)"/>
+  <path d="M1555,395 L1640,395" stroke="#1f5e98" stroke-width="6" fill="none" marker-end="url(#arrow)"/>
   <rect x="1640" y="350" width="150" height="90" class="node"/>
   <text x="1715" y="388" text-anchor="middle" class="text">IF / Decode</text>
   <text x="1715" y="421" text-anchor="middle" class="small">接收与提交</text>
-  <path d="M1715,440 L1715,500" stroke="#1f5e98" stroke-width="6" fill="none" marker-end="url(#arrow)"/>
+  <path d="M1715,440 L1715,515" stroke="#1f5e98" stroke-width="6" fill="none" marker-end="url(#arrow)"/>
   <rect x="1610" y="515" width="210" height="80" class="node"/>
   <text x="1715" y="565" text-anchor="middle" class="text">hart 执行结果</text>
   <rect x="1353" y="640" width="470" height="145" class="note"/>

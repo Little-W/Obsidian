@@ -42,31 +42,65 @@
 
 E1 是“能用”的最小方案，E2 是较稳妥的首次 OpenOCD 接入方案，E3 是大多数可下载固件的 SoC 的推荐方案。E4 并不天然更容易：它减少了 Program Buffer 指令，却把复杂度放进寄存器堆、CSR 和流水线控制。
 
+### 1.3 规范必需功能、扩展功能与性能影响
+
+本节以 [RISC-V Debug Specification v1.0 官方 PDF](riscv-debug-specification.pdf) 第 3 章为准。这里的“必需”指 DM 声称符合该规范时必须具备的能力；“可选”指规范允许不实现。JTAG DTM 是传输方式的一种：通用规范允许使用自定义 DTM，但若目标是直接接入常见的 JTAG OpenOCD 配置，则应实现规范定义的 JTAG DTM。
+
+![[RISC-V & CPU/DM/DM的设计与实现.assets/图03-必需功能与扩展功能.png|1200]]
+<div align="center">图 1．DM 的必需功能、扩展功能与设计取舍</div>
+
+#### 1.3.1 规范必需功能
+
+| 必需功能 | 规范要求 | RTL 设计要求 | 对正常运行的影响 |
+| --- | --- | --- | --- |
+| 实现信息与 hart 选择 | 调试器能够得知实现能力，并选择单个 hart | <code>dmstatus</code>、<code>hartinfo</code>、<code>hartsel</code> 与不存在/不可用状态必须有确定返回值 | 仅有控制寄存器和状态汇总，通常不进入普通取指或执行路径 |
+| 单 hart 运行控制 | 能暂停和恢复任意单个 hart | <code>haltreq</code>、<code>resumereq</code> 必须保持到 hart 确认；<code>dmstatus</code> 必须反映真实状态 | hart 需要在合法提交位置检查调试请求；应避免把该检查放入过长的组合路径 |
+| 暂停状态报告 | 能报告各 hart 的暂停状态 | 运行、暂停、不可用、复位后状态应通过同步后的真实反馈产生 | 状态位和同步器面积很小；不应以固定延迟猜测 hart 已暂停 |
+| 已暂停 GPR 抽象读写 | 必须支持已暂停 hart 的全部 GPR 抽象读写 | 可采用直接寄存器端口，或由 Debug ROM、Data 区和 Program Buffer 执行寄存器传输 | 执行式方式通常只在 Debug Mode 活动；直接端口可能增加寄存器堆仲裁 |
+| 复位控制 | 调试器可以从复位后的首条指令开始调试 | <code>ndmreset</code>、hart reset 行为、<code>havereset</code> 和调试入口必须协同 | 复位控制只在复位时工作；必须保证 DM/DTM 仍可被访问 |
+
+除上述五项外，符合规范的 DM 还必须具有<strong>至少一种</strong>内存访问机制：Program Buffer、SBA 或 Abstract Memory Command。它还必须满足下列三项之一：
+
+1. 实现 Program Buffer。
+2. 对软件可见的全部 hart 寄存器提供抽象访问。
+3. 至少对所有 GPR、<code>dcsr</code> 和 <code>dpc</code> 提供抽象访问，并明确标示为“最小 RISC-V 调试规范”实现。
+
+因此，<code>progbufsize=4</code>、无 SBA、无 Abstract Memory Command 的 E1 方案可以符合规范：它以 Program Buffer 作为唯一内存访问机制，并仍需完整支持已暂停 hart 的 GPR 抽象读写。若只做 halt/resume 而无法读写 GPR 或没有三类内存机制中的任何一种，则不满足该合规条件。
+
+#### 1.3.2 扩展功能与采用条件
+
+| 扩展功能 | 规范分类 | 何时应采用 | 调试效率影响 | 硬件与正常运行影响 |
+| --- | --- | --- | --- | --- |
+| Program Buffer | 可选；但可作为合规所需的内存机制 | 几乎所有执行式 DM | 可执行任意短指令；无 SBA 时是主要访存方法 | Debug Memory 取指方式若直接接入 IF，需检查时序；只在 Debug Mode 选择该路径时，普通执行影响可很小 |
+| Abstract Memory Command | 可选；可作为合规所需的内存机制 | 需要由命令直接完成小粒度访存 | 省去调试器显式填写 Program Buffer 的部分步骤 | 需要命令执行器、地址处理、异常与权限处理 |
+| SBA | 可选；可作为合规所需的内存机制 | 下载镜像、大片 RAM、MMIO、启动前初始化 | 通常是最高效的块内存访问方式 | 增加 AXI 主设备和总线仲裁；若在 hart 运行时使用，可能与 CPU 争用总线带宽 |
+| 非 GPR 的 CSR 抽象访问 | 可选 | GDB 需要查看控制状态、特权状态或扩展寄存器 | 减少借助 Program Buffer 的次数 | 执行式方式增加自动指令；直接方式增加 CSR 仲裁 |
+| <code>postexec</code>、<code>autoexec</code>、较大 Program Buffer | 可选 | 重复寄存器传输、连续内存访问、复杂调试程序 | 减少 DMI 往返次数，提升调试吞吐量 | RAM 与控制状态略增；<code>progbuf=8/16</code> 对普通执行一般无持续影响 |
+| 多 hart、<code>hasel</code>、halt group | 可选 | SMP、异构多核与需要近似同时暂停的系统 | 可批量控制多个 hart | 选择位图、状态汇总和请求扇出增加；普通单 hart 提交路径通常不受影响 |
+| trigger | 可选 | 硬件断点、观察点和异常条件暂停 | 不必改写被调试代码即可停止 | 比较器可能位于取指或 LSU 的关键路径；需进行时序收敛和充分覆盖率统计 |
+| Quick Access、最小侵入式调试 | 可选 | hart 只能短暂暂停的实时系统 | 降低运行中获取状态的停顿时间 | 需要更复杂的协调状态机；验证难度显著提高 |
+| 认证与调试禁用 | 可选 | 量产芯片、安全启动和现场维护 | 不提高调试速度，但限制未授权访问 | 正常运行通常无持续性能损失；调试连接时增加认证步骤 |
+
+> [!warning]
+> “可选”不表示可以随意读回为成功。未实现的 command、寄存器或字段组合必须按规范返回“不支持”或相应错误；错误能力声明会使 OpenOCD 走入不成立的访问路径，问题通常比明确拒绝更难定位。
+
+#### 1.3.3 性能设计要求
+
+设计时应将“普通软件运行性能”和“调试服务性能”分开评估。
+
+- 基础运行控制的关键要求是：<code>debug_req</code> 在正确的提交位置被观察，且不在普通取指、译码或 LSU 的关键路径上形成过长逻辑。
+- 选择“调试存储窗口”时，Debug Memory 应在 Debug Mode 中通过独立地址区域或旁路规则访问；普通程序不应经过 Program Buffer 取指选择。
+- 选择 IF 选择器时，应把 <code>debug_mode</code> 和 Program Buffer 选择控制在流水线寄存器边界处稳定下来，再进入取指数据选择，避免影响 ICache 命中路径。
+- SBA 可显著缩短下载和连续读写时间，但在 hart 运行时也可能占用 AXI 仲裁机会。可通过优先级、限流或只允许已暂停 hart 使用 SBA 来限制影响。
+- trigger 的地址、数据或指令比较应并行完成；若比较结果无法在目标阶段及时得到，应增加专用流水寄存器，并保证暂停位置符合所声明的 before/after 行为。
+- 更大的 Program Buffer 首先提高调试吞吐量，而不是提高程序本身 IPC。对于 P0/P1 设计，<code>8</code> 个字通常比 <code>4</code> 个字更能容纳保存、访存、恢复、<code>fence</code> 与 <code>ebreak</code>。
+
 ## 2. 系统组成与地址空间
 
 ### 2.1 从 GDB 到 hart 的数据路径
 
-~~~text
-GDB
- │  Remote Serial Protocol
- ▼
-OpenOCD
- │  JTAG 扫描事务
- ▼
-JTAG 适配器 ── TCK / TMS / TDI / TDO ──► DTM
-                                           │ DMI 请求与响应
-                                           ▼
-                                          DM
-                         ┌─────────────────┼─────────────────┐
-                         │                 │                 │
-                         ▼                 ▼                 ▼
-                  hart 调试控制       Debug Memory          SBA
-                  halt/resume         ROM / Data /          AXI 主设备
-                         │             Program Buffer         │
-                         ▼                 │                 ▼
-                        hart ◄─────────────┘            AXI 从设备
-                                                          RAM / Flash / MMIO
-~~~
+![[RISC-V & CPU/DM/DM的设计与实现.assets/图01-DM系统架构.png|1200]]
+<div align="center">图 2．RISC-V 调试系统与 DM 的位置</div>
 
 - JTAG 只规定 TAP（Test Access Port，测试访问端口）的扫描行为；它不规定 DM 寄存器。
 - DTM（Debug Transport Module，调试传输模块）将 JTAG 扫描数据转换为 DMI（Debug Module Interface，调试模块接口）读写请求。
@@ -288,6 +322,9 @@ Program Buffer 是调试器可写、hart 可执行的小型指令存储。它至
 | 独立微程序执行器 | DM 自己执行固定的寄存器搬运和访存微操作 | Program Buffer 可只服务调试器自定义短程序 | 最大；需要复制部分寄存器与 LSU 功能 | 很难完整复现 RISC-V 指令、地址转换和异常行为 |
 
 第一种方案最通用：Debug ROM、Abstract Program、Program Buffer 和 Data 区都由一段 Debug Memory 提供，hart 在 Debug Mode 下像读取普通存储一样读取它。第二种方案可省去对系统总线的调试存储读访问，但仍必须为 Data 区提供 hart 可访问的位置，或另行增加数据交换端口。第三种方案适用于极小 CPU，却最容易在异常、压缩指令和流水线停顿处出现与普通执行不一致的行为。
+
+![[RISC-V & CPU/DM/DM的设计与实现.assets/图02-ProgramBuffer物理实现.png|1200]]
+<div align="center">图 3．Program Buffer 的三种物理实现</div>
 
 > [!tip]
 > 对 OpenOCD 而言，Program Buffer 是 DMI 中的标准接口，不是某个固定地址。即使采用 IF 选择器或直接指令注入，也应如实报告 <code>progbufsize</code>、<code>impebreak</code> 和 <code>hartinfo.dataaddr</code>，并保证 <code>postexec</code> 的可观察结果与规范一致。
