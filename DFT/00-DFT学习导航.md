@@ -5,7 +5,7 @@ tags:
   - DFT
   - 可测性设计
   - Design-For-Test
-updated: 2026-08-12
+updated: 2026-08-26
 ---
 
 # DFT 学习导航
@@ -13,6 +13,9 @@ updated: 2026-08-12
 > 本文档集覆盖数字电路可测性、扫描链、DFT Compiler/DC 命令和实验流程。
 
 术语参照：[[术语与翻译规范]]。
+
+> [!tip] 一体化入门教程
+> [[从零开始的DFT Flow搭建]] 从 RTL、工艺库和 SDC 开始，依次讲解综合、扫描、ATPG、MBIST/BISR、LBIST、OCC、JTAG、IJTAG、低功耗测试和物理阶段处理，并提供可复制的示例脚本与逐句说明。
 
 ## 一、先建立整体认识
 

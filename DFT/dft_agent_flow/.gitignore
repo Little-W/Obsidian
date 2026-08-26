@@ -1,8 +1,0 @@
-.ollama_models/
-artifacts/
-data/feedback.jsonl
-data/training/
-adapters/
-__pycache__/
-.pytest_cache/
-*.pyc

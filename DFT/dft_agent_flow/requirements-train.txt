@@ -1,8 +1,0 @@
--r requirements.txt
-# Optional QLoRA training stack. Install only when supervised samples are ready.
-accelerate>=1.2,<2
-bitsandbytes>=0.45,<1
-datasets>=3.2,<4
-peft>=0.14,<1
-transformers>=4.48,<6
-trl>=0.14,<1
