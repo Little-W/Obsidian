@@ -106,13 +106,4 @@ digraph multicore_architecture {
 
   { rank=same; memory; irq; mmio; }
 
-  note [
-    shape=note,
-    label="每个hart独立保存L1 Cache状态；跨hart写可见性与原子互斥由共享控制处理。",
-    fillcolor="#F1F5F9",
-    color="#64748B",
-    fontsize=17,
-    margin="0.24,0.18"
-  ];
-  memory -> note [style=invis];
 }
