@@ -1,0 +1,3 @@
+interface:
+  display_name: "Wayland Virtual UI Debug"
+  short_description: "Validate QML UI in nested Wayland"
