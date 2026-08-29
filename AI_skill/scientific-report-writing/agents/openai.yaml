@@ -1,0 +1,4 @@
+interface:
+  display_name: "科技报告写作与排版"
+  short_description: "编写、排版、导出并审查正式中文科技报告及Word交付文档"
+  default_prompt: "使用 $scientific-report-writing 编写或审查一份正式中文科技报告，并检查 Word 排版。"
