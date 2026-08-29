@@ -1,0 +1,4 @@
+interface:
+  display_name: "Technical PPT Production"
+  short_description: "Create, restyle, and visually audit technical PPTX decks"
+  default_prompt: "Use $technical-presentation-production to revise this technical deck, preserve editable sources, and visually inspect every slide."
