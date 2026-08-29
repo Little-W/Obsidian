@@ -1,0 +1,4 @@
+interface:
+  display_name: "技术插图检查"
+  short_description: "绘制并审核技术图，确保箭头、文字与渲染均正确"
+  default_prompt: "Use $technical-diagram-review to create or repair this technical diagram and verify its rendered output."
