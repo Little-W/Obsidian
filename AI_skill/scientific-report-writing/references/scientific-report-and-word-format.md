@@ -322,6 +322,8 @@ DOCX 是结构交付件，PDF 是版面验证件。两者都应保留：DOCX 便
 
 - 国家标准全文公开系统：GB/T 7713.3—2014《科技报告编写规则》，用于核对科技报告组成和编写要求：<https://openstd.samr.gov.cn/bzgk/std/newGbInfo?hcno=E2BA32B0F5E570E5844A9E7E2D42393F>
 - 科技部公布的 GB/T 7713.3—2014 全文，第 5.3.3 条用于核对公式居中、同行右编号和编号前不写“式”字：<https://most.gov.cn/ztzl/jlkjbg/kjbgxxjl/201409/P020140915541579212871.pdf>
+- 电子科技大学《研究生学位论文撰写规范》，表 2-2 用于核对独立公式及编号的小四号、单倍行距和段前后各 6 pt 要求：<https://gr.uestc.edu.cn/attached/papers/101/202201/%E7%94%B5%E5%AD%90%E7%A7%91%E6%8A%80%E5%A4%A7%E5%AD%A6%E7%A0%94%E7%A9%B6%E7%94%9F%E5%AD%A6%E4%BD%8D%E8%AE%BA%E6%96%87%E6%92%B0%E5%86%99%E8%A7%84%E8%8C%83_20220117.pdf>
+- 北京航空航天大学《研究生学位论文撰写规范》，表达式部分用于交叉核对独立公式小四号、单倍行距和段前后各 6 pt 的单位规范示例：<https://graduate.buaa.edu.cn/__local/4/27/6F/4E099CEBEC1B251AAE2796893F6_8A8AEEED_A4384.pdf>
 - 中国石油大学（北京）图书馆《科技论文 Word 排版技巧》，用于参考无单位模板时的公式字号、行距和段间距：<https://library.cup.edu.cn/docs/2023-03/28be0a3bdb974deb91b4f3e1f7b766d0.pdf>
 - 国家标准全文公开系统：GB/T 7714—2025《信息与文献 参考文献著录规则》，用于核对现行参考文献著录要求：<https://openstd.samr.gov.cn/bzgk/std/std_list?p.p1=0&p.p2=T7714&p.p90=circulation_date&p.p91=desc>
 - 国家科技报告服务系统：“科技报告格式模板 2020”，用于查阅科技报告模板资源：<https://www.nstrs.cn/standard/detail?arid=5652>

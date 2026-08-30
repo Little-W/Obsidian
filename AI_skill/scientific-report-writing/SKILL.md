@@ -43,6 +43,7 @@ For a narrow sentence edit that cannot affect report structure or formatting, pr
 - Preserve the user's explicit choices, including requested omissions, unless they make the document unsafe or internally impossible.
 - Never fabricate measurements, product specifications, bibliographic records, calculations, or conclusions.
 - Keep headings, cross-references, figures, tables, equations, citations, and the reference list mutually consistent.
+- Treat displayed equations, body inline math, and table inline math as distinct format roles. Apply the governing template to each role; never force one global math font size merely because the body text has a single size.
 - Treat the PDF rendering as evidence of pagination and layout quality.
 - Reject blank pages, unexplained sparse pages, orphan headings, detached captions, unreadable tables, stale fields, broken superscripts, and inconsistent numbering.
 - If an authoritative requirement cannot be established, label the choice as a project baseline or recommendation rather than attributing it to a standard.
