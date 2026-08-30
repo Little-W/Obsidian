@@ -1,2 +1,0 @@
-#!/usr/bin/env bash
-exec /home/yusen/dft_agent_training/scripts/eval_role_guard_v9.sh role_tool_dev10
