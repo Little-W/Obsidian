@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
 
 set -euo pipefail
-
 root=/home/yusen/dft_agent_training
 python=/home/yusen/miniforge3/envs/dft_lora/bin/python
-dataset="$root/data/training/dft_agent_unified_v3_candidate_20260830.jsonl"
+dataset="$root/data/training/dft_agent_unified_v5_candidate_20260830.jsonl"
 model="$root/models/Qwen3.5-4B"
-output="$root/artifacts/training/amd/dft_agent_unified_v3_qwen35_4b_20260830"
+output="$root/artifacts/training/amd/dft_agent_unified_v5_qwen35_4b_20260830"
 
 unset HTTP_PROXY HTTPS_PROXY ALL_PROXY http_proxy https_proxy all_proxy
 export HF_ENDPOINT=https://hf-mirror.com
@@ -19,7 +18,7 @@ export PYTHONPATH="$root/src"
 export HSA_OVERRIDE_GFX_VERSION=10.3.0
 export PYTORCH_ROCM_ARCH=gfx1030
 
-test "$(sha256sum "$dataset" | awk '{print $1}')" = "045bf52f20a393aa1c1edcbf25d9b288a45e8c180484f3a502ee5eaeb794e6a0"
+test "$(sha256sum "$dataset" | awk '{print $1}')" = "8e2802c6e182e6fd708e029548a004343cb50d1758da8a503b50ba6abf4daadd"
 test -d "$model"
 if [ -e "$output" ]; then
   echo "输出目录已经存在，拒绝覆盖：$output" >&2
@@ -50,4 +49,5 @@ exec "$python" -u -m dft_agent_flow.train_lora \
   --lora-alpha 32 \
   --lora-dropout 0.05 \
   --seed 20260827 \
-  --execution-mode gpu_4bit
+  --execution-mode gpu_4bit \
+  --deployment-backend llama_cpp
