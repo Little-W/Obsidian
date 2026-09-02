@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1020" viewBox="0 0 1800 1020">
+  <rect width="1800" height="1020" fill="#ffffff"/>
+  <defs>
+    <style>
+      .title { font: 700 36px 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif; fill: #15213b; }
+      .subtitle { font: 20px 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif; fill: #50627f; }
+      .cycle { font: 700 21px 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif; fill: #27364f; text-anchor: middle; }
+      .label { font: 700 23px 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif; fill: #15213b; text-anchor: end; }
+      .small { font: 19px 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif; fill: #34445e; }
+      .value { font: 700 21px 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif; fill: #173d72; text-anchor: middle; }
+      .note { font: 20px 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif; fill: #57420d; }
+    </style>
+  </defs>
+
+  <text x="900" y="65" class="title" text-anchor="middle">CHI REQ 通道的 L-Credit 时序示例</text>
+  <text x="900" y="105" class="subtitle" text-anchor="middle">无 Resource Plane 的单方向连接；各列表示相邻两个时钟上升沿之间的一个周期</text>
+  <line x1="410" y1="155" x2="1770" y2="155" stroke="#52657f" stroke-width="3"/>
+  <path d="M1770,155 L1750,146 L1750,164 Z" fill="#52657f"/>
+  <text x="410" y="145" class="small">时间</text>
+
+  <rect x="410" y="180" width="1350" height="610" rx="18" fill="#f8fbff" stroke="#b8c8dc" stroke-width="3"/>
+  <rect x="410" y="180" width="150" height="610" fill="#eef4fb"/>
+  <g stroke="#d4dfed" stroke-width="2">
+    <line x1="410" y1="245" x2="1760" y2="245"/>
+    <line x1="410" y1="350" x2="1760" y2="350"/>
+    <line x1="410" y1="485" x2="1760" y2="485"/>
+    <line x1="410" y1="620" x2="1760" y2="620"/>
+    <line x1="410" y1="715" x2="1760" y2="715"/>
+  </g>
+  <g stroke="#c8d5e5" stroke-width="2" stroke-dasharray="6 8">
+    <line x1="710" y1="180" x2="710" y2="790"/>
+    <line x1="860" y1="180" x2="860" y2="790"/>
+    <line x1="1010" y1="180" x2="1010" y2="790"/>
+    <line x1="1160" y1="180" x2="1160" y2="790"/>
+    <line x1="1310" y1="180" x2="1310" y2="790"/>
+    <line x1="1460" y1="180" x2="1460" y2="790"/>
+    <line x1="1610" y1="180" x2="1610" y2="790"/>
+  </g>
+  <g stroke="#b8c8dc" stroke-width="2">
+    <line x1="560" y1="180" x2="560" y2="790"/>
+    <line x1="1760" y1="180" x2="1760" y2="790"/>
+  </g>
+  <g class="cycle">
+    <text x="635" y="220">T0</text><text x="785" y="220">T1</text><text x="935" y="220">T2</text><text x="1085" y="220">T3</text>
+    <text x="1235" y="220">T4</text><text x="1385" y="220">T5</text><text x="1535" y="220">T6</text><text x="1685" y="220">T7</text>
+  </g>
+
+  <text x="380" y="310" class="label">CLK</text>
+  <path d="M560,320 H610 V275 H685 V320 H760 V275 H835 V320 H910 V275 H985 V320 H1060 V275 H1135 V320 H1210 V275 H1285 V320 H1360 V275 H1435 V320 H1510 V275 H1585 V320 H1660 V275 H1735 V320 H1760" fill="none" stroke="#52657f" stroke-width="4"/>
+
+  <text x="380" y="415" class="label">RXREQLCRDV</text>
+  <path d="M560,445 H710 V380 H860 V445 H1010 V380 H1460 V445 H1760" fill="none" stroke="#008f7a" stroke-width="5"/>
+  <text x="785" y="365" class="small" text-anchor="middle">归还 1</text>
+  <text x="1235" y="355" class="small" text-anchor="middle">连续归还 3 个 credit</text>
+
+  <text x="380" y="550" class="label">TXREQFLITV</text>
+  <path d="M560,580 H860 V515 H1010 V580 H1310 V515 H1610 V580 H1760" fill="none" stroke="#2563eb" stroke-width="5"/>
+  <text x="935" y="505" class="small" text-anchor="middle">发送</text>
+  <text x="1460" y="505" class="small" text-anchor="middle">连续发送</text>
+
+  <text x="380" y="680" class="label">TXREQFLIT</text>
+  <line x1="560" y1="680" x2="1760" y2="680" stroke="#98a8bb" stroke-width="3"/>
+  <rect x="872" y="642" width="126" height="76" rx="9" fill="#dce9ff" stroke="#2563eb" stroke-width="3"/>
+  <rect x="1322" y="642" width="126" height="76" rx="9" fill="#dce9ff" stroke="#2563eb" stroke-width="3"/>
+  <rect x="1472" y="642" width="126" height="76" rx="9" fill="#dce9ff" stroke="#2563eb" stroke-width="3"/>
+  <text x="935" y="688" class="value">REQ A</text>
+  <text x="1385" y="688" class="value">REQ B</text>
+  <text x="1535" y="688" class="value">REQ C</text>
+
+  <text x="380" y="755" class="label">可用 credit</text>
+  <g class="value">
+    <text x="635" y="755">0</text><text x="785" y="755">1</text><text x="935" y="755">0</text><text x="1085" y="755">1</text>
+    <text x="1235" y="755">2</text><text x="1385" y="755">2</text><text x="1535" y="755">1</text><text x="1685" y="755">1</text>
+  </g>
+
+  <rect x="150" y="850" width="1500" height="110" rx="16" fill="#fff6d8" stroke="#d6a729" stroke-width="3"/>
+  <text x="185" y="895" class="note">规则 1：每个 TXREQFLITV = 1 的周期发送一个 Flit，并消耗发送方已持有的一个 L-Credit。</text>
+  <text x="185" y="935" class="note">规则 2：T5 同时出现发送和 RXREQLCRDV；T5 收到的 credit 不能用于 T5 的发送，只能在 T6 或更晚周期使用。</text>
+</svg>

@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="900" viewBox="0 0 1800 900">
+  <rect width="1800" height="900" fill="#ffffff"/>
+  <defs>
+    <marker id="arrow" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#33445f"/>
+    </marker>
+    <marker id="arrowBlue" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#2563eb"/>
+    </marker>
+    <style>
+      .title { font: 700 36px 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif; fill: #15213b; }
+      .subtitle { font: 20px 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif; fill: #50627f; }
+      .panel { font: 700 25px 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif; fill: #173d72; }
+      .node { font: 700 25px 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif; fill: #15213b; text-anchor: middle; }
+      .nodeSub { font: 18px 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif; fill: #41516a; text-anchor: middle; }
+      .msg { font: 19px 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif; fill: #24334a; text-anchor: middle; }
+      .note { font: 20px 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif; fill: #57420d; }
+    </style>
+  </defs>
+
+  <text x="900" y="65" class="title" text-anchor="middle">CHI 请求重试的事务时序</text>
+  <text x="900" y="105" class="subtitle" text-anchor="middle">两种消息到达次序均符合协议；纵向位置只表示因果先后，不表示固定时钟周期</text>
+
+  <rect x="65" y="145" width="790" height="590" rx="20" fill="#f8fbff" stroke="#b8c8dc" stroke-width="3"/>
+  <rect x="945" y="145" width="790" height="590" rx="20" fill="#f8fbff" stroke="#b8c8dc" stroke-width="3"/>
+  <text x="100" y="190" class="panel">常见到达次序</text>
+  <text x="980" y="190" class="panel">响应重新排序后的到达次序</text>
+
+  <rect x="160" y="220" width="240" height="80" rx="16" fill="#dce9ff" stroke="#2563eb" stroke-width="3"/>
+  <rect x="560" y="220" width="240" height="80" rx="16" fill="#d9f6ed" stroke="#008f7a" stroke-width="3"/>
+  <text x="280" y="255" class="node">RN-F</text><text x="280" y="282" class="nodeSub">请求方</text>
+  <text x="680" y="255" class="node">HN-F</text><text x="680" y="282" class="nodeSub">完成方</text>
+  <line x1="280" y1="300" x2="280" y2="700" stroke="#8ba2c5" stroke-width="3" stroke-dasharray="9 10"/>
+  <line x1="680" y1="300" x2="680" y2="700" stroke="#8ba2c5" stroke-width="3" stroke-dasharray="9 10"/>
+  <line x1="280" y1="350" x2="680" y2="350" stroke="#2563eb" stroke-width="4" marker-end="url(#arrowBlue)"/>
+  <text x="480" y="336" class="msg">REQ：AllowRetry = 1</text>
+  <line x1="680" y1="460" x2="280" y2="460" stroke="#33445f" stroke-width="4" marker-end="url(#arrow)"/>
+  <text x="480" y="446" class="msg">CRSP：RetryAck，给出 PCrdType</text>
+  <line x1="680" y1="570" x2="280" y2="570" stroke="#33445f" stroke-width="4" marker-end="url(#arrow)"/>
+  <text x="480" y="556" class="msg">CRSP：PCrdGrant，相同 PCrdType</text>
+  <line x1="280" y1="680" x2="680" y2="680" stroke="#2563eb" stroke-width="4" marker-end="url(#arrowBlue)"/>
+  <text x="480" y="666" class="msg">REQ：AllowRetry = 0，携带 P-Credit</text>
+
+  <rect x="1040" y="220" width="240" height="80" rx="16" fill="#dce9ff" stroke="#2563eb" stroke-width="3"/>
+  <rect x="1440" y="220" width="240" height="80" rx="16" fill="#d9f6ed" stroke="#008f7a" stroke-width="3"/>
+  <text x="1160" y="255" class="node">RN-F</text><text x="1160" y="282" class="nodeSub">请求方</text>
+  <text x="1560" y="255" class="node">HN-F</text><text x="1560" y="282" class="nodeSub">完成方</text>
+  <line x1="1160" y1="300" x2="1160" y2="700" stroke="#8ba2c5" stroke-width="3" stroke-dasharray="9 10"/>
+  <line x1="1560" y1="300" x2="1560" y2="700" stroke="#8ba2c5" stroke-width="3" stroke-dasharray="9 10"/>
+  <line x1="1160" y1="350" x2="1560" y2="350" stroke="#2563eb" stroke-width="4" marker-end="url(#arrowBlue)"/>
+  <text x="1360" y="336" class="msg">REQ：AllowRetry = 1</text>
+  <line x1="1560" y1="460" x2="1160" y2="460" stroke="#33445f" stroke-width="4" marker-end="url(#arrow)"/>
+  <text x="1360" y="446" class="msg">CRSP：PCrdGrant</text>
+  <line x1="1560" y1="570" x2="1160" y2="570" stroke="#33445f" stroke-width="4" marker-end="url(#arrow)"/>
+  <text x="1360" y="556" class="msg">CRSP：RetryAck，给出 PCrdType</text>
+  <line x1="1160" y1="680" x2="1560" y2="680" stroke="#2563eb" stroke-width="4" marker-end="url(#arrowBlue)"/>
+  <text x="1360" y="666" class="msg">REQ：AllowRetry = 0，携带 P-Credit</text>
+
+  <rect x="120" y="780" width="1560" height="70" rx="14" fill="#fff6d8" stroke="#d6a729" stroke-width="3"/>
+  <text x="160" y="825" class="note">请求方只有同时记录到 RetryAck 与匹配 PCrdType 的 PCrdGrant 后，才可以重新发送原请求；带 P-Credit 的重发保证被完成方接受。</text>
+</svg>
