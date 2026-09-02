@@ -125,6 +125,74 @@ CHI 的端口按通道分别提供 Flit 有效标志、Flit 内容和反向的�
 
 `TX` 和 `RX` 以 RN 端口为参照，因此同一条物理连接两侧的命名相反。`LCRDV` 只保证该通道可再接收一个 Flit；它不保证目录、数据缓冲或监听处理资源已经可用。后者由 `RetryAck` 和 `PCrdGrant` 所涉及的 Protocol Credit 控制。
 
+#### 3.3.1 <code>REQ</code> 通道的完整端口定义
+
+设 <code>R</code> 为 <code>REQFLIT</code> 位宽，<code>Num_RP_REQ</code> 为请求资源平面数量。RP（Resource Plane，资源平面）仅在配置多资源平面时存在，用于使不同类别的 <code>REQ</code> 传送各自获得接收空间。下表均以 RN-F 为观察点。
+
+| 信号 | 方向 | 位宽 | 功能 | 有效条件 | 复位与暂停行为 |
+| --- | --- | ---: | --- | --- | --- |
+| <code>TXREQFLITPEND</code> | 输出 | 1 | 提前指出下一个周期可能有 <code>REQ</code> Flit 待发送，供时钟门控使用 | 仅为预告；即使为高也不代表当前周期已经传送 Flit | 不构成传送条件；规范不要求其在复位期间保持特定值 |
+| <code>TXREQFLITV</code> | 输出 | 1 | 指示 <code>TXREQFLIT</code> 在当前周期有效并发送一个请求 Flit | 发送方在当前周期开始前已持有对应 <code>REQ</code> L-Credit 时才允许置高 | 复位期间必须为 0；<code>RESETn</code> 为高后的第一个时钟上升沿起才允许置高 |
+| <code>TXREQFLIT[(R-1):0]</code> | 输出 | <code>R</code> | 承载 <code>REQ</code> 分组，包括 <code>Opcode</code>、地址、ID 和属性字段 | 仅在 <code>TXREQFLITV=1</code> 时读取 | <code>TXREQFLITV=0</code> 时其数值不具有传送含义，复位期间不应读取 |
+| <code>TXREQFLITRP</code> | 输出 | <code>clog2(Num_RP_REQ)</code> | 指定当前 <code>REQ</code> Flit 使用的 RP | 仅当 <code>Num_RP_REQ>1</code> 且 <code>TXREQFLITV=1</code> 时存在并有效 | <code>TXREQFLITV=0</code> 时忽略；复位期间不具有传送含义 |
+| <code>TXREQSHAREDCRD</code> | 输出 | 1 | 表示当前 <code>REQ</code> Flit 使用共享 L-Credit，而非指定 RP 的专用 L-Credit | 仅当实现启用 <code>Shared_Credits_REQ</code> 且 <code>TXREQFLITV=1</code> 时存在并有效 | 未启用共享 credit 时端口不存在；<code>TXREQFLITV=0</code> 时忽略 |
+| <code>RXREQLCRDV[Num_RP_REQ-1:0]</code> | 输入 | <code>Num_RP_REQ</code> | 对端对每个 RP 归还专用 <code>REQ</code> L-Credit；置高的每一位归还一个 credit | 连接处于活动状态时，每个置高位在该周期归还相应 RP 的一个 credit | 复位期间 RN-F 不得依赖输入值；收到复位后的有效脉冲后才增加本地可用 credit 计数 |
+| <code>RXREQLCRDSHV</code> | 输入 | 1 | 对端归还一个可供任意 RP 使用的共享 <code>REQ</code> L-Credit | 仅当实现启用 <code>Shared_Credits_REQ</code> 时存在；高一个周期归还一个共享 credit | 未启用共享 credit 时端口不存在；复位后按有效脉冲累计 |
+
+对不使用 RP 的端口，<code>LCRDV</code> 是 1 位信号。使用 RP 时，<code>LCRDV</code> 的每一位对应一个 RP；同一周期可以为多个 RP 分别归还 credit，但每个方向仍只发送一个 Flit。发送端即使在当前周期同时看到 <code>RXREQLCRDV</code>，也不能使用刚收到的 credit 在这个周期发送 <code>TXREQFLIT</code>。
+
+#### 3.3.2 RSP、DAT 与 SNP 端口信号
+
+RSP 和 DAT 通道不使用 RP 扩展。SNP 的 <code>FLITRP</code>、<code>SHAREDCRD</code>、<code>LCRDV</code> 扩展方式与 REQ 相同，参数名分别为 <code>Num_RP_SNP</code> 和 <code>Shared_Credits_SNP</code>。下表按信号逐项说明；所有输出方向的 <code>***FLITV</code> 与 <code>***LCRDV</code> 在复位期间必须为 0，所有 <code>***FLIT</code> 只在相应 <code>***FLITV=1</code> 时读取。
+
+| 信号 | 方向 | 位宽 | 功能 | 有效条件 | 复位与暂停行为 |
+| --- | --- | ---: | --- | --- | --- |
+| <code>TXRSPFLITPEND</code> | 输出 | 1 | 预告下一个周期可能发送 <code>SRSP</code> Flit | 不表示当前周期已经发送 | 仅用于时钟门控，复位期间无传送含义 |
+| <code>TXRSPFLITV</code> | 输出 | 1 | 发送 <code>SnpResp</code>、<code>SnpRespData</code> 或 <code>CompAck</code> | 已持有一个 RSP L-Credit | 复位期间为 0；无 credit 时暂停发送 |
+| <code>TXRSPFLIT[(T-1):0]</code> | 输出 | <code>T</code> | 承载 <code>SRSP</code> 的响应字段 | <code>TXRSPFLITV=1</code> | <code>TXRSPFLITV=0</code> 时忽略 |
+| <code>RXRSPLCRDV</code> | 输入 | 1 | 对端归还一个发送 <code>SRSP</code> 所需的 RSP L-Credit | 高一个周期归还一个 credit | 复位后按有效脉冲累计 |
+| <code>RXRSPFLITPEND</code> | 输入 | 1 | 预告下一个周期可能收到 <code>CRSP</code> Flit | 不表示响应已经到达 | 不作为事务完成条件 |
+| <code>RXRSPFLITV</code> | 输入 | 1 | 指示收到 <code>Comp</code>、<code>RetryAck</code>、<code>PCrdGrant</code> 或 <code>DBIDResp</code> | 高时读取 <code>RXRSPFLIT</code> | 复位后才允许接收有效 Flit |
+| <code>RXRSPFLIT[(T-1):0]</code> | 输入 | <code>T</code> | 承载 <code>CRSP</code> 的响应字段 | <code>RXRSPFLITV=1</code> | <code>RXRSPFLITV=0</code> 时忽略 |
+| <code>TXRSPLCRDV</code> | 输出 | 1 | RN-F 对收到的 <code>CRSP</code> 归还一个 RSP L-Credit | 高一个周期归还一个 credit | 复位期间为 0；本地接收空间不足时暂停归还 |
+| <code>TXDATFLITPEND</code> | 输出 | 1 | 预告下一个周期可能发送 <code>WDAT</code> Flit | 不表示当前周期已经发送 | 仅用于时钟门控，复位期间无传送含义 |
+| <code>TXDATFLITV</code> | 输出 | 1 | 发送 <code>WriteData</code> 或原子访问写数据 | 已持有一个 DAT L-Credit | 复位期间为 0；无 credit 时暂停发送 |
+| <code>TXDATFLIT[(D-1):0]</code> | 输出 | <code>D</code> | 承载 <code>WDAT</code> 的数据、字节使能和关联字段 | <code>TXDATFLITV=1</code> | <code>TXDATFLITV=0</code> 时忽略 |
+| <code>RXDATLCRDV</code> | 输入 | 1 | 对端归还一个发送 <code>WDAT</code> 所需的 DAT L-Credit | 高一个周期归还一个 credit | 复位后按有效脉冲累计 |
+| <code>RXDATFLITPEND</code> | 输入 | 1 | 预告下一个周期可能收到 <code>RDAT</code> Flit | 不表示读数据已经到达 | 不作为读数据有效条件 |
+| <code>RXDATFLITV</code> | 输入 | 1 | 指示收到 <code>CompData</code> 或原子访问返回数据 | 高时读取 <code>RXDATFLIT</code> | 复位后才允许接收有效 Flit |
+| <code>RXDATFLIT[(D-1):0]</code> | 输入 | <code>D</code> | 承载 <code>RDAT</code> 的数据、响应和关联字段 | <code>RXDATFLITV=1</code> | <code>RXDATFLITV=0</code> 时忽略 |
+| <code>TXDATLCRDV</code> | 输出 | 1 | RN-F 对收到的 <code>RDAT</code> 归还一个 DAT L-Credit | 高一个周期归还一个 credit | 复位期间为 0；本地接收空间不足时暂停归还 |
+| <code>RXSNPFLITPEND</code> | 输入 | 1 | 预告下一个周期可能收到监听 Flit | 不表示监听已经到达 | 不作为监听有效条件 |
+| <code>RXSNPFLITV</code> | 输入 | 1 | 指示收到 <code>SnpShared</code>、<code>SnpMakeInvalid</code> 等监听请求 | 高时读取 <code>RXSNPFLIT</code> | 复位后才允许接收有效 Flit |
+| <code>RXSNPFLIT[(S-1):0]</code> | 输入 | <code>S</code> | 承载监听 Opcode、地址和转发字段 | <code>RXSNPFLITV=1</code> | <code>RXSNPFLITV=0</code> 时忽略 |
+| <code>RXSNPFLITRP</code> | 输入 | <code>clog2(Num_RP_SNP)</code> | 指出收到的监听 Flit 所属 RP | 仅当 <code>Num_RP_SNP>1</code> 且 <code>RXSNPFLITV=1</code> 时存在并有效 | <code>RXSNPFLITV=0</code> 时忽略 |
+| <code>RXSNPSHAREDCRD</code> | 输入 | 1 | 指出收到的监听 Flit 使用共享 L-Credit | 仅在启用 <code>Shared_Credits_SNP</code> 且 <code>RXSNPFLITV=1</code> 时存在并有效 | 未启用共享 credit 时端口不存在 |
+| <code>TXSNPLCRDV[Num_RP_SNP-1:0]</code> | 输出 | <code>Num_RP_SNP</code> | RN-F 对收到的监听按 RP 归还专用 SNP L-Credit | 每个置高位归还一个对应 RP 的 credit | 复位期间为 0；接收空间不足时暂停归还 |
+| <code>TXSNPLCRDSHV</code> | 输出 | 1 | RN-F 对收到的监听归还共享 SNP L-Credit | 仅在启用 <code>Shared_Credits_SNP</code> 时存在 | 复位期间为 0；未启用时端口不存在 |
+
+<code>LCRDV</code> 只保证该通道还可接收一个 Flit，不保证 HN-F 已经具备目录、监听或数据处理资源。完成方是否接受一笔完整请求由 <code>RetryAck</code> 和 <code>PCrdGrant</code> 所对应的 Protocol Credit 决定。
+
+#### 3.3.3 连接启动、停止与复位
+
+每个单方向通道组都使用 <code>LINKACTIVEREQ</code> 和 <code>LINKACTIVEACK</code> 完成四相启动或停止过程。RN-F 发出 REQ、SRSP、WDAT 的方向使用 <code>TXLINKACTIVEREQ</code> 与 <code>TXLINKACTIVEACK</code>；RN-F 接收 CRSP、RDAT、SNP 的方向使用 <code>RXLINKACTIVEREQ</code> 与 <code>RXLINKACTIVEACK</code>。请求信号由该方向的发送端驱动，确认信号由该方向的接收端驱动。
+
+| 信号 | 相对 RN-F 的方向 | 位宽 | 功能 | 有效条件 | 复位与暂停行为 |
+| --- | --- | ---: | --- | --- | --- |
+| <code>TXLINKACTIVEREQ</code> | 输出 | 1 | 请求启动 RN-F 发出 REQ、SRSP、WDAT 的通道组，或请求退出 RUN 状态 | RN-F 需要发送 Flit 时置为 1；请求停止时置为 0 | 复位期间必须为 0；复位释放后的时钟上升沿起才允许置高 |
+| <code>TXLINKACTIVEACK</code> | 输入 | 1 | 表示对端已经确认 RN-F 发出方向的通道组可进入 RUN 状态 | 与 <code>TXLINKACTIVEREQ=1</code> 共同为 1 时，该方向处于 RUN 状态 | 复位期间 RN-F 不得依赖输入值；为 0 时不得按 RUN 状态发送 Flit |
+| <code>RXLINKACTIVEREQ</code> | 输入 | 1 | 表示对端请求启动或停止发送到 RN-F 的通道组 | 与 <code>RXLINKACTIVEACK</code> 一起决定 RN-F 接收方向的状态 | 复位期间 RN-F 不得依赖输入值 |
+| <code>RXLINKACTIVEACK</code> | 输出 | 1 | RN-F 确认接收方向的通道组能够进入 RUN 状态 | 对端请求启动且 RN-F 已准备接收时置为 1；停止完成后置为 0 | 复位期间必须为 0；本地接收资源未准备好时保持为 0 |
+
+| 状态 | <code>LINKACTIVEREQ</code> | <code>LINKACTIVEACK</code> | 发送端与接收端的行为 |
+| --- | ---: | ---: | --- |
+| STOP | 0 | 0 | 发送端没有可用 L-Credit，不发送 Flit；接收端不接收 Flit，也不归还 credit |
+| ACTIVATE | 1 | 0 | 启动过程；发送端不得发送 Flit，接收端不得接收 Flit。即使出现 credit，发送端也不得使用 |
+| RUN | 1 | 1 | 允许按 L-Credit 规则发送和接收 Flit |
+| DEACTIVATE | 0 | 1 | 停止过程；发送端停止普通协议 Flit，并归还尚未使用的 L-Credit；接收端等待全部 credit 返回后再撤销确认 |
+
+复位退出时，接口从 STOP 状态开始。只有完成启动过程并完成所需 L-Credit 的交换后，才能发送第一个 Flit。<code>TXSACTIVE</code> 和 <code>RXSACTIVE</code> 还用于指示协议层是否存在需要继续处理的事务；它们不替代 <code>LINKACTIVEREQ</code>、<code>LINKACTIVEACK</code> 和 L-Credit 的发送条件。
+
 ### 3.4 必须读懂的字段
 
 不同 Opcode 使用的字段组合不同，下表只列出快速分析常用事务时最重要的字段。字段取值范围、保留编码和每种 Opcode 的必选字段应查 IHI0050H 对应表格。
@@ -156,7 +224,7 @@ CHI 同时使用 `Link layer` credit 和 Protocol Credit。两者都被称为 cr
 
 | 类型 | 作用位置 | 解决的问题 | 典型消息或字段 |
 | --- | --- | --- | --- |
-| `Link layer` credit | 每一跳连接两端 | 接收端缓冲不足时，不允许继续送入 Flit | `LCrdReturn` |
+| `Link layer` credit | 每一跳连接两端 | 接收端缓冲不足时，不允许继续送入 Flit | 相应通道的 `LCRDV` |
 | Protocol Credit | 请求方与完成方之间 | 完成方暂时没有协议处理资源时，规定何时允许请求重新发送 | `RetryAck`、`PCrdGrant`、`PCrdReturn` |
 
 `Link layer` credit 是局部流量控制：发送端只在对端确认有空间时发送一个 Flit。它不表示 HN-F 已经具备完成整笔请求的目录、监听或数据缓冲资源。
@@ -169,7 +237,43 @@ Protocol Credit 是端到端的处理资源保证。常用的重试过程如下�
 4. 请求方同时收到 `RetryAck` 与 `PCrdGrant` 后，可以携带该 credit 重发原请求；这次请求保证被接受。
 5. 请求方不再需要重发时，发送 `PCrdReturn` 归还 credit。
 
-这套过程避免请求方持续盲目重发，也使完成方能够按自身资源情况安排接收时机。验证中应分别统计 `LCrdReturn` 与 `PCrdGrant`，它们不是同一种资源。
+这套过程避免请求方持续盲目重发，也使完成方能够按自身资源情况安排接收时机。验证中应分别统计各通道的 `LCRDV` 与 `PCrdGrant`，它们不是同一种资源。
+
+#### 4.1.1 L-Credit 的时钟周期规则
+
+L-Credit 只用于一个通道在相邻连接两端之间传送 Flit。接收端高一个周期驱动相应 <code>LCRDV</code>，向发送端归还一个 L-Credit；发送端每发送一个 <code>FLITV=1</code> 的 Flit，就消耗一个已经持有的 L-Credit。没有 RP 时，每个通道独立使用 1 位 <code>LCRDV</code>；规范规定接收端至少能够提供 1 个、最多能够提供 15 个 L-Credit。
+
+发送方不得把当前周期刚收到的 <code>LCRDV</code> 用于当前周期的 <code>FLITV</code>。换言之，某周期是否允许发送，由该周期开始前的可用 credit 数量决定。接收端一旦归还 credit，就必须能够接收该 credit 所允许的 Flit；因此，接收端在本地缓冲空间不足时必须暂停归还 <code>LCRDV</code>，而不是先归还再拒收 Flit。
+
+> [!note] <code>LCRDV</code> 与 <code>LCrdReturn</code> 的区别
+> 正常运行时，接收端使用 <code>LCRDV</code> 脉冲归还接收空间。<code>LCrdReturn</code> 则是连接停止过程中发送的维护 Flit，用于把尚未使用的 L-Credit 归还给原接收端。<code>LCrdReturn</code> 的 <code>Opcode</code> 为 0，<code>TxnID</code> 必须为 0；它不能当作正常运行时的 <code>LCRDV</code> 脉冲统计。
+
+![[一致性处理进阶：CHI+CMN.assets/图03-REQ通道L-Credit时序.png|1200]]
+
+*图 3　无 RP 的 <code>REQ</code> 通道 L-Credit 时序。图中的 T0 至 T7 是示例周期，不是 CHI 对事务延迟的规定。*
+
+图 3 中，T1 的 <code>RXREQLCRDV</code> 归还一个 credit，因此 RN-F 可在 T2 发送 <code>REQ A</code>。T3、T4 和 T5 连续归还三个 credit；RN-F 在 T5 发送 <code>REQ B</code> 时使用的是 T4 及以前持有的 credit，T5 同时收到的 credit 最早只能由 T6 使用。<code>TXREQFLITPEND</code> 可以在发送前一周期预告可能出现 Flit，但它不是传送和事务完成的依据。
+
+RP 只用于 REQ 和 SNP 通道。多个 RP 让不同 RP 的 Flit 分别使用专用 credit；接收端还可以配置共享 credit 以提高缓冲空间利用率。<code>FLITRP</code> 仅在 <code>FLITV=1</code> 时有效，<code>SHAREDCRD</code> 为高表示当前 Flit 使用共享 credit。即使使用多个 RP，一个方向每个周期仍只传送一个 Flit。
+
+#### 4.1.2 Protocol Credit 的事务时序
+
+Protocol Credit 不是端口上的单拍握手，而是完成方作出的“带此 credit 重发后会接受请求”的事务保证。第一次请求把 <code>AllowRetry</code> 置为 1，且 <code>PCrdType</code> 必须为 <code>0b0000</code>。完成方暂时无法接受请求时，以 <code>RetryAck</code> 返回未接受结果，并给出该请求所需的 <code>PCrdType</code>；资源可用时，再以 <code>PCrdGrant</code> 授予这个类型的 P-Credit。
+
+<code>RetryAck</code> 和 <code>PCrdGrant</code> 不具有固定到达先后。通常先收到 <code>RetryAck</code>，但互连中响应的先后不同也可能让 <code>PCrdGrant</code> 先到达。请求方必须保存先到达的消息，只有同时获得 <code>RetryAck</code> 和相同 <code>PCrdType</code> 的 <code>PCrdGrant</code> 后，才能重发原请求。重发时 <code>AllowRetry</code> 置为 0，<code>PCrdType</code> 改为该 credit 类型；完成方保证接受这次重发。
+
+![[一致性处理进阶：CHI+CMN.assets/图04-请求重试事务时序.png|1200]]
+
+*图 4　请求重试的两种有效事务时序。两侧均在收到 <code>RetryAck</code> 与匹配的 <code>PCrdGrant</code> 后才重发请求。*
+
+请求方若不再需要某个已授予的 P-Credit，必须发出 <code>PCrdReturn</code>。该请求的 <code>TgtID</code> 与授予该 credit 的完成方 <code>SrcID</code> 相同，<code>TxnID</code> 置为 0，<code>PCrdType</code> 与原 <code>PCrdGrant</code> 相同；<code>PCrdReturn</code> 不需要响应，也不使用 <code>DBID</code>。这使完成方能够把不用的处理资源交给其他重试请求。
+
+| 观察到的消息或信号 | 可得出的结论 | 不能据此得出的结论 |
+| --- | --- | --- |
+| <code>RXREQLCRDV=1</code> | RN-F 在下一周期起多出一个 REQ L-Credit | HN-F 已经接受某笔完整请求 |
+| <code>RetryAck</code> | 原请求未被接受，需等待匹配的 P-Credit | 可以立即重发原请求 |
+| <code>PCrdGrant</code> | 已获得某类型的 P-Credit | 已经收到对应原请求的 <code>RetryAck</code> |
+| <code>RetryAck</code> 与匹配 <code>PCrdGrant</code> | 可以以 <code>AllowRetry=0</code> 重发 | 原请求已经完成 |
 
 ### 4.2 分离请求、响应和数据
 
@@ -185,7 +289,21 @@ AXI4 的一个读事务常让读数据和读响应在同一 R 通道出现。CHI
 
 ![[一致性处理进阶：CHI+CMN.assets/图02-ReadShared事务流程.png|1200]]
 
-*图 2　RN-F A 通过 `ReadShared` 读取 RN-F B 的脏副本。箭头仅保留理解主过程所需的消息。*
+*图 2　RN-F A 通过 `ReadShared` 读取 RN-F B 的脏副本的因果时序。箭头仅保留理解主过程所需的消息，不表示固定时钟周期。*
+
+#### 5.1.1 <code>ReadShared</code> 的时序定义
+
+图 2 的纵向位置表示必须满足的因果先后，而不是“每一步只占一个时钟周期”。从 RN-F A 送出请求到 HN-F 发出监听之间，HN-F 需要完成地址选择和目录查询；RN-F B 收到监听后，还需要读取本地 Cache 状态。网格跳数、目录命中、SLC 命中、RN-F B 的 Cache 状态以及同一地址的其他活动事务都会改变实际等待周期。因此，验证时应检查每一步的前置条件是否成立，而不应把图中的上下距离当作周期数。
+
+| 阶段 | RN-F 端口上的有效信号 | 必须先满足的条件 | 本阶段完成后可进行的动作 |
+| --- | --- | --- | --- |
+| 发送共享读 | <code>TXREQFLITV=1</code>，<code>TXREQFLIT</code> 为 <code>ReadShared</code> | RN-F A 已有 REQ L-Credit，且请求的 <code>SrcID</code> 与 <code>TxnID</code> 未被活动事务使用 | HN-F 接收请求并查询目录 |
+| 发送监听 | RN-F B 看到 <code>RXSNPFLITV=1</code>，<code>RXSNPFLIT</code> 为 <code>SnpShared</code> | HN-F 已确定 RN-F B 需要被监听，并已持有 SNP 通道所需的 L-Credit | RN-F B 查找本地 Cache 行并准备响应 |
+| 返回脏数据 | <code>TXRSPFLITV=1</code>，<code>TXRSPFLIT</code> 为 <code>SnpRespData</code> | RN-F B 已完成对该监听的 Cache 查找 | HN-F 获得数据和监听结果，判断请求方可取得的权限 |
+| 返回完成数据 | RN-F A 看到 <code>RXDATFLITV=1</code>，<code>RXDATFLIT</code> 为 <code>CompData</code> | HN-F 已收齐本流程所需的监听结果，并已确定数据来源和 <code>Resp</code> | RN-F A 接收数据和共享权限 |
+| 完成确认 | <code>TXRSPFLITV=1</code>，<code>TXRSPFLIT</code> 为 <code>CompAck</code> | 原请求 <code>ExpCompAck=1</code>，且 RN-F A 至少已收到一个 <code>CompData</code> | HN-F 可以结束该完成确认阶段并释放相应事务资源 |
+
+在图 2 所示的读数据返回方式中，<code>CompData</code> 中的 <code>HomeNID</code> 指出完成确认应送往的 HN-F；当需要 <code>CompAck</code> 时，请求方以该 <code>HomeNID</code> 作为 <code>CompAck</code> 的 <code>TgtID</code>，并用读数据的 <code>DBID</code> 填写 <code>TxnID</code>。这也是波形中不应仅根据原请求 <code>TgtID</code> 推断 <code>CompAck</code> 目的地的原因。
 
 1. RN-F A 通过 `REQ` 发送 `ReadShared`，其中含有 `Addr`、`SrcID`、`TxnID` 和请求属性。
 2. HN-F 根据地址确定自己负责该行，查询目录后发现 RN-F B 可能保存更新数据，因而通过 `SNP` 发送 `SnpShared`。
@@ -288,7 +406,7 @@ Arm 的 CMN 培训材料将 CHI 事务、系统地址表、初始化、错误处
 | 数据阶段 | `DBID`、`DataID`、`BE`、数据内容 | 组合多段数据，检查写数据是否属于正确事务 |
 | 监听阶段 | `SnpOpcode`、被监听 RN-F、`SnpResp` 或 `SnpRespData` | 检查 HN-F 是否向正确节点发出监听并收齐结果 |
 | 完成阶段 | `Resp`、`HomeNID`、`ExpCompAck`、`CompAck` | 检查权限、完成条件和资源释放条件 |
-| 流量控制 | `LCrdReturn`、`RetryAck`、`PCrdGrant`、`PCrdReturn` | 检查没有在缺少相应 credit 时发送分组 |
+| 流量控制 | 各通道的 `LCRDV`、`RetryAck`、`PCrdGrant`、`PCrdReturn` | 检查没有在缺少相应 L-Credit 或 P-Credit 时发送分组 |
 
 ### 7.2 推荐的最小测试集合
 
@@ -314,21 +432,7 @@ Arm 的 CMN 培训材料将 CHI 事务、系统地址表、初始化、错误处
 | 两个 HN-F 都处理同一 Cache 行 | 系统地址表的范围或分布粒度错误 | 记录同一物理地址到达的 `TgtID` 与 HN-F | 修正地址范围和 HN-F 选择关系 |
 | 监听数量异常大 | 目录未命中处理错误，或目录状态没有随 Cache 维护更新 | 比较目录记录与实际 Cache 状态 | 修正目录更新和目录容量不足时的处理 |
 
-## 8. 练习题
-
-> [!question] 练习 1：区分两个 credit
-> HN-F 对一笔请求返回 `RetryAck`，但 RN-F 仍持续收到 `LCrdReturn`。RN-F 能否立即重发该请求？为什么？
-
-> [!note]- 参考答案
-> 不能。`LCrdReturn` 只说明相邻连接接收 Flit 的缓冲空间可用，不代表 HN-F 已经具备接受整笔协议请求的资源。RN-F 必须同时收到 `RetryAck` 和 `PCrdGrant`，才能携带 Protocol Credit 重发该请求。
-
-> [!question] 练习 2：判断数据来源
-> RN-F A 发出 `ReadShared`。目录显示 RN-F B 保存 `UD` 副本，而 SLC 也命中该行。HN-F 应先确认什么，才能安全地向 RN-F A 返回数据？
-
-> [!note]- 参考答案
-> HN-F 必须先按目录和请求类型完成对 RN-F B 的必要监听，并根据 `SnpRespData`、目录状态和自身数据状态确定更新数据来源。SLC 命中本身不能证明该数据已经包含 RN-F B 的修改。
-
-## 9. 快速检查表
+## 8. 快速检查表
 
 - [ ] 先判断访问方是 `RN-F`、`RN-D` 还是 `RN-I`。
 - [ ] 由物理地址确认目标 HN-F，而不是把 DRAM 控制器直接当作一致性处理点。
@@ -336,11 +440,11 @@ Arm 的 CMN 培训材料将 CHI 事务、系统地址表、初始化、错误处
 - [ ] 分别检查 `REQ`、`WDAT`、`SRSP`、`CRSP`、`RDAT` 和 `SNP` 的方向与消息类型。
 - [ ] 对共享读确认数据来自 SLC、被监听 RN-F 或 SN-F 中的正确位置。
 - [ ] 对独占请求确认所有必要副本已经处理后才授予独占权限。
-- [ ] 对 `RetryAck` 等待 `PCrdGrant`，不要把 `LCrdReturn` 当作 Protocol Credit。
+- [ ] 对 `RetryAck` 等待匹配的 `PCrdGrant`，不要把通道 `LCRDV` 当作 Protocol Credit。
 - [ ] 对需要完成确认的事务，使用 `HomeNID` 把 `CompAck` 送到正确 HN-F。
 - [ ] 把 CHI 协议规则与 CMN 产品配置分开检查。
 
-## 10. 参考资料
+## 9. 参考资料
 
 - [[IHI0050H_amba_chi_architecture_spec.pdf|AMBA CHI Architecture Specification IHI0050H]]：本文的主要协议依据，覆盖节点类型、分组字段、事务流程、Cache 状态和信用控制。
 - [Arm CoreLink CMN and AMBA](https://developer.arm.com/support/training/-/media/B51E4B89029847979F879CFFEB07EEC9.ashx?hash=7970DD424A1CB2656D4CA2230DF07D3ACD71A3C8&revision=785f19f0-ace4-4528-8cec-1de25331c683)：Arm 的 CMN 培训主题，列出 CHI 事务、CMN 地址表、初始化、调试和性能监测内容。
