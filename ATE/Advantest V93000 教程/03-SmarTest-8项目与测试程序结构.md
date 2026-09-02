@@ -4,7 +4,7 @@ type: tutorial
 tags:
   - SmarTest8
   - test-program
-updated: 2026-09-01
+updated: 2026-09-02
 related:
   - "[[04-DUT板描述与引脚配置]]"
   - "[[08-Test-Method、Test-Suite与Testflow]]"
@@ -50,14 +50,18 @@ Advantest 将 SmarTest 8 描述为基于 Red Hat Linux、Eclipse IDE 和 Java �
 建立测试程序时，推荐依赖顺序如下：
 
 1. 从 DUT 数据手册和 test plan 提取信号、电源、限值和顺序。
-2. 建立 DUT board description 和 site 对应关系。
-3. 建立规格变量，再建立 level 与 timing setup。
-4. 导入或创建 pattern，并检查信号名和波形字符。
-5. 建立 operating sequence，定义 pattern 与 action 的先后关系。
-6. 选择或编写 Test Method。
-7. 用 Test Suite 绑定 method、setup 和参数。
-8. 在 Testflow 中安排执行、条件、datalog 和 binning。
-9. 先做构建和离线检查，再申请在线机台运行。
+2. 在批准的 Workspace 中创建或导入 Project，选择软件 target 和 tester configuration。
+3. 建立或激活 Test Program file，并建立能打开、保存和参与构建的 Testflow/Test Suite 外壳。
+4. 建立 DUT Board Description 和 site 对应关系。
+5. 建立规格变量，再建立 level 与 timing setup。
+6. 导入或创建 pattern，并检查 signal 名和波形字符。
+7. 建立 operating sequence，定义 pattern 与 action 的先后关系。
+8. 选择或编写 Test Method。
+9. 用 Test Suite 绑定 method、setup 和参数。
+10. 回到 Testflow，完成执行条件、datalog、binning 和异常结束动作。
+11. 先做构建和离线检查，再申请在线机台运行。
+
+第 3 项只是建立程序对象的最小外壳，不表示 Testflow 已经完成。官方五天课程在第一天安排 Project、Test Program、DUT Board Description 和 Testflow 实验，随后才讲 level、timing、pattern 和 Test Method；因此“flow 对象可先建立”与“flow 内容应在底层对象可用后完成”并不矛盾。完整分支顺序见 [[00A-一次完整测试流程操作顺序#2. 开发顺序]]。
 
 如果顺序反过来，最常见的结果是 Testflow 已经很复杂，但底层 signal、level、timing 或资源仍未确定，调试时难以分层定位。
 
@@ -133,4 +137,3 @@ counter_demo/
 - [ ] 能按依赖顺序从 DUT board description 追踪到 test table；
 - [ ] 知道离线构建完成不代表已测量 DUT；
 - [ ] 在创建 GUI 对象前已填写最小测试程序工作表。
-
