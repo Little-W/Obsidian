@@ -29,6 +29,10 @@ Read [references/scientific-report-and-word-format.md](references/scientific-rep
 
 For a narrow sentence edit that cannot affect report structure or formatting, preserve the document's established conventions without loading unrelated material.
 
+## Product test and validation reports
+
+Read [references/product-test-method-report.md](references/product-test-method-report.md) completely when the deliverable defines product performance checks, instrument connections, test cases, or verification methods, especially when it intentionally contains methods but no measured data or result records. Use it together with the general format reference; the user's requested scope and omissions remain authoritative.
+
 ## Terminology and prohibited-word control
 
 Before drafting or revising a report, inspect every user-supplied terminology, wording, and language-style constraint. When the local Chinese report baseline applies, read the prohibited-word rules in [references/scientific-report-and-word-format.md](references/scientific-report-and-word-format.md) and treat them as a mandatory content check, not an optional polishing pass.
