@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">CHI ReadShared事务流程</title>
+  <desc id="desc">RN-F A读取共享数据时，HN-F向持有脏副本的RN-F B发起监听，并向RN-F A返回数据的简化时序图。</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 20 14" refX="20" refY="7" markerWidth="20" markerHeight="14" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#334155"/>
+    </marker>
+  </defs>
+  <rect width="1600" height="900" fill="#FFFFFF"/>
+  <text x="800" y="58" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="34" font-weight="700" fill="#0F172A">CHI ReadShared：另一RN-F持有脏副本</text>
+
+  <rect x="80" y="100" width="280" height="88" rx="16" fill="#DBEAFE" stroke="#2563EB" stroke-width="3"/>
+  <text x="220" y="140" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="26" font-weight="700" fill="#0F172A">RN-F A</text>
+  <text x="220" y="169" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" fill="#0F172A">请求共享读</text>
+
+  <rect x="660" y="100" width="280" height="88" rx="16" fill="#CCFBF1" stroke="#0F766E" stroke-width="3"/>
+  <text x="800" y="140" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="26" font-weight="700" fill="#0F172A">HN-F</text>
+  <text x="800" y="169" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" fill="#0F172A">PoC与目录查询</text>
+
+  <rect x="1240" y="100" width="280" height="88" rx="16" fill="#EDE9FE" stroke="#7C3AED" stroke-width="3"/>
+  <text x="1380" y="140" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="26" font-weight="700" fill="#0F172A">RN-F B</text>
+  <text x="1380" y="169" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="20" fill="#0F172A">持有脏副本</text>
+
+  <line x1="220" y1="188" x2="220" y2="790" stroke="#94A3B8" stroke-width="2" stroke-dasharray="10 10"/>
+  <line x1="800" y1="188" x2="800" y2="790" stroke="#94A3B8" stroke-width="2" stroke-dasharray="10 10"/>
+  <line x1="1380" y1="188" x2="1380" y2="790" stroke="#94A3B8" stroke-width="2" stroke-dasharray="10 10"/>
+
+  <line x1="220" y1="280" x2="800" y2="280" stroke="#2563EB" stroke-width="4" marker-end="url(#arrow)"/>
+  <rect x="398" y="238" width="224" height="34" rx="6" fill="#FFFFFF"/>
+  <text x="510" y="263" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="22" fill="#1D4ED8">1. REQ：ReadShared</text>
+
+  <line x1="800" y1="405" x2="1380" y2="405" stroke="#7C3AED" stroke-width="4" marker-end="url(#arrow)"/>
+  <rect x="986" y="363" width="208" height="34" rx="6" fill="#FFFFFF"/>
+  <text x="1090" y="388" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="22" fill="#6D28D9">2. SNP：SnpShared</text>
+
+  <line x1="1380" y1="530" x2="800" y2="530" stroke="#7C3AED" stroke-width="4" marker-end="url(#arrow)"/>
+  <rect x="945" y="488" width="290" height="34" rx="6" fill="#FFFFFF"/>
+  <text x="1090" y="513" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="22" fill="#6D28D9">3. SRSP：SnpRespData</text>
+
+  <line x1="800" y1="655" x2="220" y2="655" stroke="#0F766E" stroke-width="4" marker-end="url(#arrow)"/>
+  <rect x="425" y="613" width="170" height="34" rx="6" fill="#FFFFFF"/>
+  <text x="510" y="638" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="22" fill="#0F766E">4. DAT：CompData</text>
+
+  <line x1="220" y1="770" x2="800" y2="770" stroke="#334155" stroke-width="4" marker-end="url(#arrow)"/>
+  <rect x="359" y="728" width="302" height="34" rx="6" fill="#FFFFFF"/>
+  <text x="510" y="753" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="22" fill="#334155">5. SRSP：CompAck（需要时）</text>
+</svg>
