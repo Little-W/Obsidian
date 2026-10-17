@@ -1,6 +1,8 @@
 # SystemVerilog Assertions（SVA）完整中文教程
 
-> **第 4 册 · 断言语言与设计规则**　版本 1.0 · 2026-10-17  
+> **源码内嵌版。** 本章的完整案例以“保存为”标明文件路径，并在下方直接列出全文。代码框不带显示行号，可直接复制；`案例工程/` 只表示目录结构，不要求另找源码附件。包含占位符或保护性 `error` 的专用流程另行明确标为模板。
+
+> **第 4 册 · 断言语言与设计规则**　版本 1.1（源码内嵌修订版） · 2026-10-17  
 > 面向 SystemVerilog IEEE 1800 的主要并发断言语法与工程应用；具体 VC Formal 支持范围和限制见 User Guide §3.7～3.9（第 89～105 页）及附录 B（第 1109 页起）。部分标准允许的写法可能因工具版本、求解方式或多时钟条件而不可用，使用前需验证实际编译。
 
 ## 1. SVA 解决什么问题
@@ -74,10 +76,10 @@ ap_onehot: assert property ($onehot0(grant));
 
 | 表达式 | 正确读法 | `a` 于第 5 拍成立时 |
 |---|---|---|
-| `a |-> b` | 同一触发位置检查 b | 第 5 拍检查 b |
-| `a |=> b` | 下一个采样位置检查 b | 第 6 拍检查 b |
-| `a |-> ##2 b` | 后件延迟 2 拍 | 第 7 拍检查 b |
-| `a |=> ##2 b` | 下拍开始再延迟 2 拍 | 第 8 拍检查 b |
+| `a \|-> b` | 同一触发位置检查 b | 第 5 拍检查 b |
+| `a \|=> b` | 下一个采样位置检查 b | 第 6 拍检查 b |
+| `a \|-> ##2 b` | 后件延迟 2 拍 | 第 7 拍检查 b |
+| `a \|=> ##2 b` | 下拍开始再延迟 2 拍 | 第 8 拍检查 b |
 
 对**长度大于 1 的前件序列**，后件从前件**完成匹配的那个周期**计算，而不简单从前件的第一个周期计算。逻辑上可以把 `a |=> b` 视为 `a |-> ##1 b`（对这里简单的布尔时序表达），但是复杂序列与时间区域需要按定义分析。
 
@@ -445,18 +447,18 @@ cp_req_ack: cover property (@(posedge clk) disable iff(!rst_n)
 
 ## 15. 容易写错的规则与修正
 
-| 错误写法或理解 | 风险 | 推荐修正 |
-|---|---|---|
-| `req |-> ack` 代表“下一拍应答” | 实际检查同拍 | 使用 `req |=> ack` 或 `##1` |
-| `req |=> ##2 ack` 代表延迟 2 拍 | 实际延迟 3 拍 | 使用 `req |-> ##2 ack` |
-| 直接 `$past(data)` 不检查历史 | 起始周期样本无效 | 以 `past_valid` 或 `$past(rst_n)` 守卫 |
-| `req |-> ##[0:$] ack` 必然要求最终应答 | 弱匹配及工具处理可能不符合意图 | 使用有界响应或合适的强活性形式 |
-| `req |-> ack` 证明通过就认为请求已发生 | 前件可能不可达 | 添加 `cover property(req)` |
-| 在所有周期假设 `ready=1` | 屏蔽背压缺陷 | 只根据环境规格约束 `ready` |
-| 用 `$onehot(grant)` 检查允许全零的授权 | 空闲周期错误失败 | 使用 `$onehot0(grant)` |
-| 用 `count < DEPTH` 当作假设 | 直接假设安全性 | 改成 `assert`，必要时增加真实输入前提 |
-| 用 `disable iff(!rst_n)` 就认为复位值已被证明 | 禁用了复位期间检查 | 另写复位属性或复位启动流程 |
-| `cover property(done)` 认为所有请求都能完成 | 只证明至少存在一次完成 | 对每次合法请求写断言 |
+| 错误写法或理解                            | 风险              | 推荐修正                               |
+| ---------------------------------- | --------------- | ---------------------------------- |
+| `req \|-> ack` 代表“下一拍应答”           | 实际检查同拍          | 使用 `req \|=> ack` 或 `##1`          |
+| `req \|=> ##2 ack` 代表延迟 2 拍        | 实际延迟 3 拍        | 使用 `req \|-> ##2 ack`              |
+| 直接 `$past(data)` 不检查历史             | 起始周期样本无效        | 以 `past_valid` 或 `$past(rst_n)` 守卫 |
+| `req \|-> ##[0:$] ack` 必然要求最终应答    | 弱匹配及工具处理可能不符合意图 | 使用有界响应或合适的强活性形式                    |
+| `req \|-> ack` 证明通过就认为请求已发生        | 前件可能不可达         | 添加 `cover property(req)`           |
+| 在所有周期假设 `ready=1`                  | 屏蔽背压缺陷          | 只根据环境规格约束 `ready`                  |
+| 用 `$onehot(grant)` 检查允许全零的授权       | 空闲周期错误失败        | 使用 `$onehot0(grant)`               |
+| 用 `count < DEPTH` 当作假设             | 直接假设安全性         | 改成 `assert`，必要时增加真实输入前提            |
+| 用 `disable iff(!rst_n)` 就认为复位值已被证明 | 禁用了复位期间检查       | 另写复位属性或复位启动流程                      |
+| `cover property(done)` 认为所有请求都能完成  | 只证明至少存在一次完成     | 对每次合法请求写断言                         |
 
 ## 16. 多时钟属性、X 值与复杂语法的限制
 
@@ -464,45 +466,135 @@ cp_req_ack: cover property (@(posedge clk) disable iff(!rst_n)
 
 `$isunknown` 在四值仿真中很直观，但传统形式证明的二值布尔编码可能与仿真中的 X 传播语义不同；检查 RTL 中 X 传播风险更适合配合 VC Formal FXP 和明确的注入/观察模型。写有 `casex`、`casez`、`unique case` 的 RTL 时，还应结合综合与仿真对 X 的不同处理方式审查。
 
-## 17. 完整示例：有界计数器
+## 17. 完整示例：有界计数器及 VC Formal 工程
+
+前文的短代码块用于解释单个语法；本节则给出可保存成文件的完整设计、检查器、编译列表和 Tcl。代码与 FPV 章的计数器案例保持一致。
+
+### 17.1 被验证的计数器 RTL
+
+规格：复位后计数为零；使能时从 0 计到 9 后回到 0；没有使能时保持。RTL 文件只包含设计，不把待验证结论写成环境假设。
+
+**保存为 `案例工程/rtl/counter.sv`：**
+
+<!-- source-begin: 案例工程/rtl/counter.sv -->
 
 ```systemverilog
-module bounded_counter (
-  input  logic clk, rst_n, enable,
-  output logic [3:0] count
+module counter (
+    input  logic       clk,
+    input  logic       rst_n,
+    input  logic       enable,
+    output logic [3:0] count
 );
   always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) count <= '0;
-    else if (enable && count == 4'd9) count <= '0;
-    else if (enable) count <= count + 4'd1;
+    if (!rst_n)             count <= 4'd0;
+    else if (enable) begin
+      if (count == 4'd9)    count <= 4'd0;
+      else                  count <= count + 4'd1;
+    end
   end
 endmodule
+```
 
-module bounded_counter_props (
-  input logic clk, rst_n, enable,
-  input logic [3:0] count
+<!-- source-end -->
+
+
+### 17.2 完整断言与绑定文件
+
+`history_valid` 在复位后建立历史有效标志。`ap_range` 检查范围，`ap_hold` 检查保持，`ap_wrap` 检查回绕；两条 `cover` 检查最高计数值及回绕场景是否能够出现。末尾 `bind` 将检查器接入同名设计信号，不需要修改 RTL。
+
+**保存为 `案例工程/formal/counter_props.sv`：**
+
+<!-- source-begin: 案例工程/formal/counter_props.sv -->
+
+```systemverilog
+module counter_props (
+    input logic       clk, rst_n, enable,
+    input logic [3:0] count
 );
   logic history_valid;
   always_ff @(posedge clk or negedge rst_n)
     if (!rst_n) history_valid <= 1'b0;
     else        history_valid <= 1'b1;
 
-  ap_range: assert property (@(posedge clk) disable iff(!rst_n)
-    count <= 4'd9);
-  ap_wrap: assert property (@(posedge clk) disable iff(!rst_n)
-    history_valid && $past(enable && count == 4'd9)
+  ap_range: assert property (@(posedge clk) disable iff (!rst_n)
+      count <= 4'd9);
+
+  ap_hold: assert property (@(posedge clk) disable iff (!rst_n)
+      history_valid && $past(!enable) |-> count == $past(count));
+
+  ap_wrap: assert property (@(posedge clk) disable iff (!rst_n)
+      history_valid && $past(enable && count == 4'd9)
       |-> count == 4'd0);
-  ap_hold: assert property (@(posedge clk) disable iff(!rst_n)
-    history_valid && $past(!enable)
-      |-> count == $past(count));
-  cp_wrap: cover property (@(posedge clk) disable iff(!rst_n)
-    count == 4'd9 ##1 count == 4'd0);
+
+  cp_reaches_nine: cover property (@(posedge clk) disable iff (!rst_n)
+      count == 4'd9);
+  cp_wrap: cover property (@(posedge clk) disable iff (!rst_n)
+      count == 4'd9 ##1 count == 4'd0);
 endmodule
 
-bind bounded_counter bounded_counter_props u_fpv_props (.*);
+bind counter counter_props u_counter_props (.*);
 ```
 
-这组属性涵盖取值范围、回绕、保持和覆盖；但若绑定语句通配端口遇到编译限制，可以改成显式端口连接。假定 `rst_n` 在属性检查前被适当地初始化，否则有些属性仍可能在任意初始状态下失败。若把 RTL 中 `count == 9` 错写成 `count == 10`，`ap_range` 会在可达的第 10 个状态给出反例。
+<!-- source-end -->
+
+
+### 17.3 编译文件列表
+
+先列 RTL，再列包含 `bind` 的属性文件；路径相对于运行 VC Formal 的 `案例工程/` 目录，而不是 Tcl 文件所在目录。
+
+**保存为 `案例工程/filelist_counter.f`：**
+
+<!-- source-begin: 案例工程/filelist_counter.f -->
+
+```text
+./rtl/counter.sv
+./formal/counter_props.sv
+```
+
+<!-- source-end -->
+
+
+### 17.4 完整运行脚本
+
+依次选择应用、读入设计与 SVA、定义时钟复位、保存初始状态、检查设置、列出属性并开始证明。初始化步骤需要在实际安装环境核对复位状态，不能把声明复位等同于已经完成复位。
+
+**保存为 `案例工程/scripts/fpv_counter.tcl`：**
+
+<!-- source-begin: 案例工程/scripts/fpv_counter.tcl -->
+
+```tcl
+# Run from the example project root with: vcf -f scripts/fpv_counter.tcl -batch
+set_fml_appmode FPV
+read_file -top counter -sva -format sverilog -vcs {-f filelist_counter.f}
+create_clock clk -period 100
+create_reset rst_n -sense low
+sim_run -stable
+sim_save_reset
+check_fv_setup
+report_fv_setup -list
+report_fv -list
+set_fml_var fml_max_time 1H
+set_fml_var fml_max_memory 8GB
+check_fv -block
+report_fv -verbose
+```
+
+<!-- source-end -->
+
+
+**运行命令（Bash）：**
+
+```bash
+# 从包含“案例工程”目录的上一级目录开始。
+cd 案例工程
+mkdir -p logs
+set -o pipefail
+vcf -f scripts/fpv_counter.tcl -batch 2>&1 | tee logs/fpv_counter.log
+```
+
+这些命令应在本机具备相应 VC Formal 版本和许可证时执行。日志中的属性状态才是证明结论；命令退出、脚本结束或没有打印错误都不能代替属性结果检查。
+
+**结果阅读。** 在初始状态正确的前提下，正确版预期满足这些断言，并存在到达 9 和回绕的覆盖轨迹。这不是本次 VC Formal 的实际运行结果。该属性集合也不是全部计数器规格：例如每次普通递增的精确关系仍可另加属性，不能仅凭范围成立就认定全部功能正确。
 
 ## 18. 工程练习（建议自行运行与审查）
 
@@ -512,7 +604,7 @@ bind bounded_counter bounded_counter_props u_fpv_props (.*);
 4. 为 ready/valid 通道编写背压保持、握手可达与连续握手覆盖。
 5. 故意加入约束 `assume(!enable)`，观察覆盖目标为什么无法满足，并撤销该约束。
 
-可直接使用 [案例工程](案例工程/README.md) 提供的源代码和 VC Formal Tcl 脚本进行练习。
+本章第 17 节已直接列出练习所需的 RTL、SVA、文件列表与完整运行脚本；独立源码文件仅用于方便编辑，不是阅读本章的前置要求。
 
 ## 19. 语法检索表
 
@@ -524,7 +616,7 @@ bind bounded_counter bounded_counter_props u_fpv_props (.*);
 | `[*n]` / `[*m:n]` | 连续重复 | 连续匹配指定次数 |
 | `[=n]` | 非连续重复 | 指定次数事件出现 |
 | `[->n]` | goto 重复 | 第 n 次出现时匹配结束 |
-| `|->` / `|=>` | 蕴含 | 重叠 / 非重叠 |
+| `\|->` / `\|=>` | 蕴含 | 重叠 / 非重叠 |
 | `and` / `or` | 序列组合 | 双方均满足 / 任意一方满足 |
 | `intersect` | 序列组合 | 区间起止匹配一致 |
 | `within` | 序列组合 | 序列完整包含于另一序列区间 |

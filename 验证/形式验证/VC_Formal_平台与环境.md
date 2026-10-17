@@ -1,5 +1,7 @@
 # VC Formal 平台、环境与命令执行
 
+> **源码内嵌版。** 本章的完整案例以“保存为”标明文件路径，并在下方直接列出全文。代码框不带显示行号，可直接复制；`案例工程/` 只表示目录结构，不要求另找源码附件。包含占位符或保护性 `error` 的专用流程另行明确标为模板。
+
 > **第 2 册 · 工具基础**　依据 VC Formal X-2025.06-SP1 用户指南 §1～4、§8 及同版本快速参考指南。本文所有 `$` 表示操作系统终端，`vcf>` 表示 VC Formal Tcl 提示符；示例中的文件、层级和信号必须按工程替换。
 
 ## 1. 平台定位与基本结构
@@ -12,20 +14,20 @@ VC Formal 是 Synopsys 的形式验证平台，以共同的编译、展开、属
 
 ## 2. 应用名称与 Tcl 模式的区别
 
-| 中文用途     | 文档中的应用名称 | Tcl 模式（优先以 User Guide 为准） | 专用资料                     |
-| -------- | -------- | ------------------------- | ------------------------ |
-| 功能属性证明   | FPV      | `FPV`                     | [FPV.md](FPV.md)         |
-| 自动提取设计检查 | AEP      | `AEP`                     | [AEP.md](AEP.md)         |
-| 连通性      | CC       | `CC`                      | [CC.md](CC.md)           |
-| 形式覆盖率分析  | FCA      | **`COV`**                 | [FCA.md](FCA.md)         |
-| 未知值传播    | FXP      | `FXP`                     | [FXP.md](FXP.md)         |
-| 顺序等价     | SEQ      | `SEQ`                     | [SEQ.md](SEQ.md)         |
-| 寄存器验证    | FRV      | `FRV`                     | [FRV.md](FRV.md)         |
-| 测试平台分析   | FTA      | `FTA`（通常由 FPV 会话切换）       | [FTA.md](FTA.md)         |
-| 功能安全     | FuSa     | `FUSA`                    | [FuSa.md](FuSa.md)       |
-| 信息流安全    | FSV      | `FSV`                     | [FSV.md](FSV.md)         |
-| 数据路径对照   | DPV      | `DPV`                     | [DPV.md](DPV.md)         |
-| 低功耗连通性   | FLP/LPC  | `CC` + 低功耗命令（该使用流程）       | [FLP_LPC.md](FLP_LPC.md) |
+| 中文用途 | 文档中的应用名称 | Tcl 模式（优先以 User Guide 为准） | 专用资料 |
+|---|---|---|---|
+| 功能属性证明 | FPV | `FPV` | [FPV.md](FPV.md) |
+| 自动提取设计检查 | AEP | `AEP` | [AEP.md](AEP.md) |
+| 连通性 | CC | `CC` | [CC.md](CC.md) |
+| 形式覆盖率分析 | FCA | **`COV`** | [FCA.md](FCA.md) |
+| 未知值传播 | FXP | `FXP` | [FXP.md](FXP.md) |
+| 顺序等价 | SEQ | `SEQ` | [SEQ.md](SEQ.md) |
+| 寄存器验证 | FRV | `FRV` | [FRV.md](FRV.md) |
+| 测试平台分析 | FTA | `FTA`（通常由 FPV 会话切换） | [FTA.md](FTA.md) |
+| 功能安全 | FuSa | `FUSA` | [FuSa.md](FuSa.md) |
+| 信息流安全 | FSV | `FSV` | [FSV.md](FSV.md) |
+| 数据路径对照 | DPV | `DPV` | [DPV.md](DPV.md) |
+| 低功耗连通性 | FLP/LPC | `CC` + 低功耗命令（该使用流程） | [FLP_LPC.md](FLP_LPC.md) |
 
 **经过源文件对照的重要更正：**2025 年 9 月快速指南的 FCA 命令行示例使用 `set_fml_appmode FCA`，但同版本 1,168 页 User Guide 在第 65、395、430 页明确展示 `COV`。本教程的 FCA 脚本以 `COV` 为首选，启动后通过 `get_fml_appmode` 确认。FTA 模式在 User Guide 第 65 页明确指出不应直接使用 `vcf -fmode FTA` 启动，而应在 VC Formal 会话内用 `set_fml_appmode FTA`。这两处必须与实际安装版本核对。
 
@@ -50,6 +52,136 @@ vcf -f scripts/run_fpv.tcl
 ```
 
 典型授权选项示例：`-fml_elite`、`-fml_token`；只有在内部许可证策略支持且确实有需要时再使用。实际提示和参数通过 `vcf -help` 检查，不要把 shell 指令原样放入 Tcl 脚本。
+
+### 3.1 首次运行所需的全部文件
+
+环境准备后，可以先保存以下最小工程。每个文件的完整内容都在本节；不必先下载或寻找独立案例附件。后续章节再解释这些命令和属性的细节。
+
+### 3.1.1 被验证的计数器 RTL
+
+规格：复位后计数为零；使能时从 0 计到 9 后回到 0；没有使能时保持。RTL 文件只包含设计，不把待验证结论写成环境假设。
+
+**保存为 `案例工程/rtl/counter.sv`：**
+
+<!-- source-begin: 案例工程/rtl/counter.sv -->
+
+```systemverilog
+module counter (
+    input  logic       clk,
+    input  logic       rst_n,
+    input  logic       enable,
+    output logic [3:0] count
+);
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n)             count <= 4'd0;
+    else if (enable) begin
+      if (count == 4'd9)    count <= 4'd0;
+      else                  count <= count + 4'd1;
+    end
+  end
+endmodule
+```
+
+<!-- source-end -->
+
+
+### 3.1.2 完整断言与绑定文件
+
+`history_valid` 在复位后建立历史有效标志。`ap_range` 检查范围，`ap_hold` 检查保持，`ap_wrap` 检查回绕；两条 `cover` 检查最高计数值及回绕场景是否能够出现。末尾 `bind` 将检查器接入同名设计信号，不需要修改 RTL。
+
+**保存为 `案例工程/formal/counter_props.sv`：**
+
+<!-- source-begin: 案例工程/formal/counter_props.sv -->
+
+```systemverilog
+module counter_props (
+    input logic       clk, rst_n, enable,
+    input logic [3:0] count
+);
+  logic history_valid;
+  always_ff @(posedge clk or negedge rst_n)
+    if (!rst_n) history_valid <= 1'b0;
+    else        history_valid <= 1'b1;
+
+  ap_range: assert property (@(posedge clk) disable iff (!rst_n)
+      count <= 4'd9);
+
+  ap_hold: assert property (@(posedge clk) disable iff (!rst_n)
+      history_valid && $past(!enable) |-> count == $past(count));
+
+  ap_wrap: assert property (@(posedge clk) disable iff (!rst_n)
+      history_valid && $past(enable && count == 4'd9)
+      |-> count == 4'd0);
+
+  cp_reaches_nine: cover property (@(posedge clk) disable iff (!rst_n)
+      count == 4'd9);
+  cp_wrap: cover property (@(posedge clk) disable iff (!rst_n)
+      count == 4'd9 ##1 count == 4'd0);
+endmodule
+
+bind counter counter_props u_counter_props (.*);
+```
+
+<!-- source-end -->
+
+
+### 3.1.3 编译文件列表
+
+先列 RTL，再列包含 `bind` 的属性文件；路径相对于运行 VC Formal 的 `案例工程/` 目录，而不是 Tcl 文件所在目录。
+
+**保存为 `案例工程/filelist_counter.f`：**
+
+<!-- source-begin: 案例工程/filelist_counter.f -->
+
+```text
+./rtl/counter.sv
+./formal/counter_props.sv
+```
+
+<!-- source-end -->
+
+
+### 3.1.4 完整运行脚本
+
+依次选择应用、读入设计与 SVA、定义时钟复位、保存初始状态、检查设置、列出属性并开始证明。初始化步骤需要在实际安装环境核对复位状态，不能把声明复位等同于已经完成复位。
+
+**保存为 `案例工程/scripts/fpv_counter.tcl`：**
+
+<!-- source-begin: 案例工程/scripts/fpv_counter.tcl -->
+
+```tcl
+# Run from the example project root with: vcf -f scripts/fpv_counter.tcl -batch
+set_fml_appmode FPV
+read_file -top counter -sva -format sverilog -vcs {-f filelist_counter.f}
+create_clock clk -period 100
+create_reset rst_n -sense low
+sim_run -stable
+sim_save_reset
+check_fv_setup
+report_fv_setup -list
+report_fv -list
+set_fml_var fml_max_time 1H
+set_fml_var fml_max_memory 8GB
+check_fv -block
+report_fv -verbose
+```
+
+<!-- source-end -->
+
+
+**运行命令（Bash）：**
+
+```bash
+# 从包含“案例工程”目录的上一级目录开始。
+cd 案例工程
+mkdir -p logs
+set -o pipefail
+vcf -f scripts/fpv_counter.tcl -batch 2>&1 | tee logs/fpv_counter.log
+```
+
+这些命令应在本机具备相应 VC Formal 版本和许可证时执行。日志中的属性状态才是证明结论；命令退出、脚本结束或没有打印错误都不能代替属性结果检查。
+
+**结果阅读。** 在初始状态正确的前提下，正确版预期满足这些断言，并存在到达 9 和回绕的覆盖轨迹。这不是本次 VC Formal 的实际运行结果。该属性集合也不是全部计数器规格：例如每次普通递增的精确关系仍可另加属性，不能仅凭范围成立就认定全部功能正确。
 
 ## 4. Tcl 外壳与帮助系统
 

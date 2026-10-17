@@ -1,5 +1,7 @@
 # FSV：形式安全信息流验证完整指南
 
+> **源码内嵌版。** 本章的完整案例以“保存为”标明文件路径，并在下方直接列出全文。代码框不带显示行号，可直接复制；`案例工程/` 只表示目录结构，不要求另找源码附件。包含占位符或保护性 `error` 的专用流程另行明确标为模板。
+
 > **第 14 册 · 专用应用**　Formal Security Verification。依据 User Guide 第 22 章（第 961～1008 页）及 Quick Reference Guide FSV 部分。
 
 ## 1. 目标：检查本不应出现的信息传播
@@ -34,15 +36,50 @@ report_fv -list
 
 脚本中信号名和复位过程是教学占位，真正的形式模型必须包含完整的普通输入、授权模式及初态。`fsv_generate` 的实际语法支持一个或多个源、一个或多个目的，以及 `-src_condition`、`-dest_condition`、`-exclude`、`-name`、`-zone` 等选项（见 User Guide 第 966 页）。
 
+### 3.1 面向真实系统的完整模板
+
+此模板用于替换成真实安全域层级；第 5 节另有完整的小型设计与运行脚本。这里保留保护性 `error`，不会把尚未审查的系统安全策略自动启用。
+
+**保存为 `案例工程/templates/fsv_secure_flow.tcl`：**
+
+<!-- source-begin: 案例工程/templates/fsv_secure_flow.tcl -->
+
+```tcl
+# FSV：信息流安全。请先完成 source、destination 与授权策略审查。
+error "此文件是 FSV 教学模板：必须指定真正的安全源与公开输出"
+# set_fml_appmode FSV
+# read_file -top secure_top -format sverilog -vcs {-f filelist.f}
+# create_clock clk -period 100
+# create_reset rst_n -sense low
+# sim_run -stable
+# sim_save_reset
+# fsv_generate -src u_core.secret -dest u_dbg.out
+# check_fv -block
+# fsv_report
+```
+
+<!-- source-end -->
+
 ## 4. 可控的允许传播
 
 有些设计需要在合法授权后输出秘密信息的某种变换结果，例如密钥派生操作的授权输出。此时不能简单禁止所有相关数据依赖，而应制定允许传播的安全策略。FSV 的 `-src_condition`、`-dest_condition` 等选项可帮助表达仅对特定工作条件分析的信息传播。任何白名单范围都需要安全审查，避免授权信号可由不可信输入随意置位。
 
-## 5. 案例：保护调试输出
+## 5. 案例：保护调试输出的完整工程
+
+策略是：无论调试是否开启，公开输出都不得依赖 `secret_key`。允许调试输出普通状态，但不允许输出秘密数据。本节不用“调试永久关闭”这样的假设掩盖泄漏。
+
+### 5.1 正确版本 RTL
+
+
+
+**保存为 `案例工程/rtl/debug_guard.sv`：**
+
+<!-- source-begin: 案例工程/rtl/debug_guard.sv -->
 
 ```systemverilog
+// 安全策略：公开调试输出永远不得依赖 secret_key。
 module debug_guard (
-  input  logic clk, rst_n, debug_enable,
+  input  logic       clk, rst_n, debug_enable,
   input  logic [7:0] secret_key, normal_status,
   output logic [7:0] debug_out
 );
@@ -53,7 +90,126 @@ module debug_guard (
 endmodule
 ```
 
-该示例中 `debug_out` 并不读取 `secret_key`，理论上 `secret_key` 的变化不应对 `debug_out` 产生影响。如果错误地把 `normal_status` 改为 `secret_key`，或者在某条分支中泄漏密钥位，则 FSV 可用于寻找违反不允许传播规则的输入情况。必须同时检查调试使能是否被真实安全策略控制。
+<!-- source-end -->
+
+### 5.2 故意泄漏的完整 RTL
+
+两份文件模块名相同，必须分别读入。坏版只把普通状态替换为秘密数据，让读者能看清被检查的差异。
+
+**保存为 `案例工程/rtl/debug_guard_bad.sv`：**
+
+<!-- source-begin: 案例工程/rtl/debug_guard_bad.sv -->
+
+```systemverilog
+// 故意泄漏版本；模块名与正确版相同，必须分开编译。
+module debug_guard (
+  input  logic       clk, rst_n, debug_enable,
+  input  logic [7:0] secret_key, normal_status,
+  output logic [7:0] debug_out
+);
+  always_comb begin
+    if (debug_enable) debug_out = secret_key;
+    else              debug_out = 8'h00;
+  end
+endmodule
+```
+
+<!-- source-end -->
+
+### 5.3 正确版文件列表
+
+
+
+**保存为 `案例工程/filelist_fsv_good.f`：**
+
+<!-- source-begin: 案例工程/filelist_fsv_good.f -->
+
+```text
+./rtl/debug_guard.sv
+```
+
+<!-- source-end -->
+
+### 5.4 正确版完整 FSV 脚本
+
+本例有明确的源、目的与实际 RTL，不再只使用 `security_top/filelist.f` 占位名称。仍须核对本机 `fsv_generate` 的接口及对象解析结果。
+
+**保存为 `案例工程/scripts/fsv_debug_good.tcl`：**
+
+<!-- source-begin: 案例工程/scripts/fsv_debug_good.tcl -->
+
+```tcl
+# 读取一个版本；先检查源/目的是否成功解析，不能把零属性当作通过。
+set_fml_appmode FSV
+read_file -top debug_guard -format sverilog -vcs {-f filelist_fsv_good.f}
+create_clock clk -period 100
+create_reset rst_n -sense low
+sim_run -stable
+sim_save_reset
+check_fv_setup
+fsv_generate -src secret_key -dest debug_out
+report_fv -list
+check_fv -block
+fsv_report
+report_fv -verbose
+```
+
+<!-- source-end -->
+
+### 5.5 错误版文件列表
+
+
+
+**保存为 `案例工程/filelist_fsv_bad.f`：**
+
+<!-- source-begin: 案例工程/filelist_fsv_bad.f -->
+
+```text
+./rtl/debug_guard_bad.sv
+```
+
+<!-- source-end -->
+
+### 5.6 错误版完整 FSV 脚本
+
+
+
+**保存为 `案例工程/scripts/fsv_debug_bad.tcl`：**
+
+<!-- source-begin: 案例工程/scripts/fsv_debug_bad.tcl -->
+
+```tcl
+# 读取一个版本；先检查源/目的是否成功解析，不能把零属性当作通过。
+set_fml_appmode FSV
+read_file -top debug_guard -format sverilog -vcs {-f filelist_fsv_bad.f}
+create_clock clk -period 100
+create_reset rst_n -sense low
+sim_run -stable
+sim_save_reset
+check_fv_setup
+fsv_generate -src secret_key -dest debug_out
+report_fv -list
+check_fv -block
+fsv_report
+report_fv -verbose
+```
+
+<!-- source-end -->
+
+**运行命令（Bash）：**
+
+```bash
+# 从包含“案例工程”目录的上一级目录开始。
+cd 案例工程
+mkdir -p logs
+set -o pipefail
+vcf -f scripts/fsv_debug_good.tcl -batch 2>&1 | tee logs/fsv_debug_good.log
+vcf -f scripts/fsv_debug_bad.tcl -batch 2>&1 | tee logs/fsv_debug_bad.log
+```
+
+这些命令应在本机具备相应 VC Formal 版本和许可证时执行。日志中的属性状态才是证明结论；命令退出、脚本结束或没有打印错误都不能代替属性结果检查。
+
+**结果核查。** 正确版源端不参与输出计算，错误版在调试开启时有明确依赖。工具可能对未使用的源做优化，必须先确认属性生成、源目的解析及报告分类；零属性或对象找不到不能当作通过。示例结果仍待本机 VC Formal 执行确认。
 
 ## 6. 信息流安全与普通功能断言相互补充
 

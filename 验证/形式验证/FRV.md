@@ -1,5 +1,7 @@
 # FRV：形式寄存器验证完整指南
 
+> **源码内嵌版。** 本章的完整案例以“保存为”标明文件路径，并在下方直接列出全文。代码框不带显示行号，可直接复制；`案例工程/` 只表示目录结构，不要求另找源码附件。包含占位符或保护性 `error` 的专用流程另行明确标为模板。
+
 > **第 11 册 · 专用应用**　Formal Register Verification。依据 User Guide 第 16 章（第 619～685 页）、Quick Reference Guide FRV 部分。
 
 ## 1. 典型目标和输入资料
@@ -30,6 +32,174 @@ SoC 中寄存器字段数量多，容易出现复位值错误、读写权限错�
 
 FRV 的自动检查可以缩小手工工作量，但对多写入源冲突、硬件置位和软件清零同周期优先级等复杂语义，通常仍需要补充明确的 SVA。假定硬件事件优先级高于 W1C，需要实现与规格一致的条件判断。
 
+### 3.1 完整教学实现与手写属性
+
+以下把上述规格写成可以独立保存的 RTL 和 SVA。接口不是 APB/AXI：`wr_en=1` 的上升沿立即接受写入，读取是由 `rd_en` 控制的组合输出；无字节使能，无等待周期。这样可以先理解 RW、W1C 与硬件置位优先级，再接入真实总线。
+
+#### 3.1.1 寄存器 RTL
+
+
+
+**保存为 `案例工程/rtl/reg_block_demo.sv`：**
+
+<!-- source-begin: 案例工程/rtl/reg_block_demo.sv -->
+
+```systemverilog
+// 单周期教学寄存器接口，不是 APB/AXI 适配器。
+// 上升沿 wr_en=1 即接受写入；rd_en=1 时组合读出。
+module reg_block_demo (
+  input  logic        clk, rst_n,
+  input  logic        wr_en, rd_en,
+  input  logic [7:0]  addr,
+  input  logic [31:0] wdata,
+  input  logic        hw_done,
+  output logic [31:0] rdata,
+  output logic        ctrl_enable, status_done
+);
+  localparam logic [7:0] CTRL_ADDR   = 8'h00;
+  localparam logic [7:0] STATUS_ADDR = 8'h04;
+
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ctrl_enable <= 1'b0;
+      status_done <= 1'b0;
+    end else begin
+      // CTRL[0] 为 RW，其他位忽略写入。
+      if (wr_en && addr == CTRL_ADDR)
+        ctrl_enable <= wdata[0];
+
+      // 硬件置位优先于软件写一清零；写零保持原状态。
+      if (hw_done)
+        status_done <= 1'b1;
+      else if (wr_en && addr == STATUS_ADDR && wdata[0])
+        status_done <= 1'b0;
+    end
+  end
+
+  always_comb begin
+    rdata = 32'd0;
+    if (rd_en) begin
+      case (addr)
+        CTRL_ADDR:   rdata = {31'd0, ctrl_enable};
+        STATUS_ADDR: rdata = {31'd0, status_done};
+        default:     rdata = 32'd0;
+      endcase
+    end
+  end
+endmodule
+```
+
+<!-- source-end -->
+
+#### 3.1.2 完整检查器
+
+W1C 检查只有在上一拍没有硬件事件时才要求清零；如果硬件事件和软件写清除同时发生，本例明确要求硬件置位优先。
+
+**保存为 `案例工程/formal/reg_block_demo_props.sv`：**
+
+<!-- source-begin: 案例工程/formal/reg_block_demo_props.sv -->
+
+```systemverilog
+module reg_block_demo_props (
+  input logic clk, rst_n, wr_en, rd_en, hw_done,
+  input logic [7:0] addr,
+  input logic [31:0] wdata, rdata,
+  input logic ctrl_enable, status_done
+);
+  logic history_valid;
+  always_ff @(posedge clk or negedge rst_n)
+    if (!rst_n) history_valid <= 1'b0;
+    else        history_valid <= 1'b1;
+
+  // 当前采样值应等于上一拍已接受写事务的结果。
+  ap_rw_write: assert property (@(posedge clk) disable iff (!rst_n)
+    history_valid && $past(wr_en && addr == 8'h00)
+      |-> ctrl_enable == $past(wdata[0]));
+  ap_rw_hold: assert property (@(posedge clk) disable iff (!rst_n)
+    history_valid && !$past(wr_en && addr == 8'h00)
+      |-> ctrl_enable == $past(ctrl_enable));
+  ap_hw_set_priority: assert property (@(posedge clk) disable iff (!rst_n)
+    history_valid && $past(hw_done) |-> status_done);
+  ap_w1c: assert property (@(posedge clk) disable iff (!rst_n)
+    history_valid && $past(!hw_done && wr_en && addr == 8'h04 && wdata[0])
+      |-> !status_done);
+  ap_status_hold: assert property (@(posedge clk) disable iff (!rst_n)
+    history_valid && $past(!hw_done && !(wr_en && addr == 8'h04 && wdata[0]))
+      |-> status_done == $past(status_done));
+
+  ap_read_ctrl: assert property (@(posedge clk) disable iff (!rst_n)
+    rd_en && addr == 8'h00 |-> rdata == {31'd0, ctrl_enable});
+  ap_read_status: assert property (@(posedge clk) disable iff (!rst_n)
+    rd_en && addr == 8'h04 |-> rdata == {31'd0, status_done});
+  ap_read_default: assert property (@(posedge clk) disable iff (!rst_n)
+    (!rd_en || (addr != 8'h00 && addr != 8'h04)) |-> rdata == 32'd0);
+
+  // 不使用 disable iff，单独说明采样到复位时的后继状态。
+  ap_reset: assert property (@(posedge clk)
+    !rst_n |=> !ctrl_enable && !status_done);
+  cp_hw_sw_conflict: cover property (@(posedge clk) disable iff (!rst_n)
+    hw_done && wr_en && addr == 8'h04 && wdata[0]);
+endmodule
+
+bind reg_block_demo reg_block_demo_props u_reg_props (.*);
+```
+
+<!-- source-end -->
+
+#### 3.1.3 文件列表
+
+
+
+**保存为 `案例工程/filelist_fpv_register_demo.f`：**
+
+<!-- source-begin: 案例工程/filelist_fpv_register_demo.f -->
+
+```text
+./rtl/reg_block_demo.sv
+./formal/reg_block_demo_props.sv
+```
+
+<!-- source-end -->
+
+#### 3.1.4 手写属性的 FPV 运行脚本
+
+这是 FRV 专章中的配套 FPV 练习，不调用 `frv_load`，不会生成 FRV 自动检查器。
+
+**保存为 `案例工程/scripts/fpv_register_demo.tcl`：**
+
+<!-- source-begin: 案例工程/scripts/fpv_register_demo.tcl -->
+
+```tcl
+# 从案例工程目录执行；结果必须以本机 VC Formal 日志为准。
+set_fml_appmode FPV
+read_file -top reg_block_demo -sva -format sverilog -vcs {-f filelist_fpv_register_demo.f}
+create_clock clk -period 100
+create_reset rst_n -sense low
+# 先核验实际复位状态，再保存初始状态。
+sim_run -stable
+sim_save_reset
+check_fv_setup
+report_fv -list
+check_fv -block
+report_fv -verbose
+```
+
+<!-- source-end -->
+
+**运行命令（Bash）：**
+
+```bash
+# 从包含“案例工程”目录的上一级目录开始。
+cd 案例工程
+mkdir -p logs
+set -o pipefail
+vcf -f scripts/fpv_register_demo.tcl -batch 2>&1 | tee logs/fpv_register_demo.log
+```
+
+这些命令应在本机具备相应 VC Formal 版本和许可证时执行。日志中的属性状态才是证明结论；命令退出、脚本结束或没有打印错误都不能代替属性结果检查。
+
+**检查范围。** 本节源码足以说明并验证这个简化接口下的寄存器规则，但不能替代 FRV 对 IP-XACT/RALF 的加载、总线适配和自动生成属性。原生 FRV 工程仍须由本节之后的规格输入及接口桥接组成。
+
 ## 4. 一个最小脚本模板
 
 ```tcl
@@ -51,6 +221,31 @@ report_fv -class register -verbose
 ```
 
 `bind_frv.sv` 必须实现与实际总线的接口对应关系，不能把此占位文件视作工具自动生成的所有环境组件。在上述 `-top block:REG_BLOCK` 中，`REG_BLOCK` 是 RALF 定义的地址块名称，**不是随意从 RTL 顶层抄来的实例名**；如果使用其他层级，可指定 `comp:`、`mmap:` 或 `block:`，详见 UG 第 626～630 页。IP-XACT 和 RALF 的可支持字段、命名空间及访问类型以该版本 User Guide 16.4～16.11 为准。
+
+### 4.1 原生 FRV 模板完整源码
+
+模板也直接列在文内。它保留防误执行的 `error`；RALF/IP-XACT、生成检查器接口以及真实总线绑定并未伪造成已经存在的文件。补齐输入并审查后才能启用相应命令。
+
+**保存为 `案例工程/templates/frv_ralf.tcl`：**
+
+<!-- source-begin: 案例工程/templates/frv_ralf.tcl -->
+
+```tcl
+# FRV：RALF/IP-XACT 寄存器检查模板。绝不能原样执行。
+# 替换 RTL 顶层、RALF、总线桥接与复位时序，并按 User Guide §16 审核。
+error "此文件是 FRV 教学模板：请先替换设计、寄存器定义、接口桥接和复位序列"
+set_fml_appmode FRV
+# frv_load -ral /project/csr/regs.ralf -top block:REG_BLOCK -auto_load
+# read_file -top reg_top -sva -format sverilog -vcs {-f filelist_reg.f} bind_frv.sv
+# create_clock clk -period 100
+# create_reset rst_n -sense low
+# sim_run -stable
+# sim_save_reset
+# check_fv -block
+# frv_report
+```
+
+<!-- source-end -->
 
 ## 5. `frv_load` 与检查器配置
 

@@ -1,0 +1,36 @@
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { max-width: 1080px; margin: 0 auto; padding: 48px 44px 96px;
+  font-family: "Noto Serif CJK SC", "Source Han Serif SC", serif;
+  font-size: 17px; line-height: 1.85; color: #172d40; background: #fff; }
+h1,h2,h3,h4 { font-family: "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+  line-height: 1.45; overflow-wrap: anywhere; color: #13314d; }
+h1 { font-size: 2em; margin-top: 2.7em; padding-bottom: .55em; border-bottom: 2px solid #254f6a; }
+h2 { font-size: 1.42em; margin-top: 2em; }
+h3 { font-size: 1.17em; margin-top: 1.8em; }
+h4 { font-size: 1.05em; margin-top: 1.6em; }
+a { color: #1b6285; text-underline-offset: 3px; }
+blockquote { margin: 1.5em 0; padding: 12px 20px; border-left: 4px solid #3d798b; background: #f2f6f8; }
+blockquote p { margin: .35em 0; }
+pre { overflow-x: auto; white-space: pre; padding: 18px 22px; border: 1px solid #d7e1e8;
+  border-radius: 4px; background: #f6f8fa; font-size: 14px; line-height: 1.65; }
+code { font-family: "Noto Sans Mono CJK SC", "DejaVu Sans Mono", monospace; font-size: .9em; }
+p code,li code,td code { overflow-wrap: anywhere; white-space: normal; }
+pre code { white-space: pre; font-size: 1em; }
+table { border-collapse: collapse; width: 100%; margin: 1.4em 0; font-size: .91em; }
+th,td { padding: 10px 12px; border: 1px solid #c8d6df; vertical-align: top;
+  text-align: left; overflow-wrap: anywhere; }
+th { background: #eaf1f5; color: #17394e; }
+tbody tr:nth-child(even) { background: #f8fafb; }
+img { max-width: 100%; height: auto; display: block; margin: 22px auto; }
+figure { margin: 2em 0; }
+figcaption { text-align: center; font-size: .9em; color: #496270; }
+#TOC { background: #f6f8fa; padding: 24px 30px; margin: 2em 0; border: 1px solid #d7e1e8; }
+#TOC ul { list-style-type: none; padding-left: 1.25em; }
+#TOC > ul { padding-left: 0; }
+#title-block-header { padding: 16px 0 24px; }
+#title-block-header h1 { margin-top: 0; }
+@media (max-width: 720px) { body { padding: 24px 16px; font-size: 16px; } table { font-size: .81em; } th,td { padding: 7px; } }
+@media print { body { max-width: none; font-size: 10pt; } pre { white-space: pre-wrap; }
+  h1 { break-before: page; } a { color: inherit; } #TOC { break-after: page; } }

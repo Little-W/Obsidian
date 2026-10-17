@@ -1,5 +1,7 @@
 # FuSa：功能安全形式分析完整指南
 
+> **源码内嵌版。** 本章的完整案例以“保存为”标明文件路径，并在下方直接列出全文。代码框不带显示行号，可直接复制；`案例工程/` 只表示目录结构，不要求另找源码附件。包含占位符或保护性 `error` 的专用流程另行明确标为模板。
+
 > **第 13 册 · 专用应用**　Functional Safety。依据 User Guide 第 23 章（第 1009～1039 页），Quick Reference Guide FuSa 部分。与 FTA 的目的不同：FuSa 对故障的可控性、可观察性、检测路径等进行安全分析，输出可以参与功能安全分析报告的数据。
 
 ## 1. 场景与关键概念
@@ -48,6 +50,34 @@ fusa_report
 
 在这个教学骨架中，`faults.sff`、`safety_output`、`alarm` 是必须由实际故障清单和 RTL 替换的对象。正式项目应先在 FPV 环境完成 `check_fv_setup -block` 等准备核查，并了解 UG 关于正式 FuSa 重复执行这些检查的性能提示。
 
+### 4.1 原生 FuSa 模板完整源码
+
+真实 SFF/FDB 文件和系统安全故障定义属于必要输入，不能用下面的教学异或掩码代替这些输入来声称完成 FuSa。模板默认停止执行。
+
+**保存为 `案例工程/templates/fusa_safety.tcl`：**
+
+<!-- source-begin: 案例工程/templates/fusa_safety.tcl -->
+
+```tcl
+# FuSa：功能安全分析，需要 SFF/FDB、真实的安全检测点和失效定义。
+error "此文件是 FuSa 教学模板：请先提供 SFF/FDB、观察点、检测点、RTL 和安全场景"
+# set_fml_appmode FUSA
+# fusa_config -sff /project/faults/campaign.sff
+# read_file -top safety_top -format sverilog -vcs {-f filelist.f}
+# create_clock clk -period 100
+# create_reset rst_n -sense low
+# sim_run -stable
+# sim_save_reset
+# fusa_observation -add ...     ;# 参照 help/UG §23
+# fusa_detection -add ...       ;# 参照 help/UG §23
+# fusa_generate
+# set_fml_var fusa_run_mode structural
+# check_fv -block
+# fusa_report
+```
+
+<!-- source-end -->
+
 ## 5. 逐步提高分析精度
 
 ```tcl
@@ -79,6 +109,136 @@ check_fv -block
 ## 7. 案例：带奇偶校验的安全寄存器
 
 一个重要配置寄存器使用奇偶校验位，写入时更新校验；读取/使用时，如果校验与数据不一致则拉高 `alarm`。可以指定寄存器数据寄存器及校验位中的故障为分析对象，把 `alarm` 作为检测点，关键输出作为观察点。分析时区分：故障是否真正改变了数据；改变是否到达输出；奇偶校验是否在规定时延内报警。即使一个故障未影响输出，也不能把其他故障的检测结果套用在它身上。
+
+### 7.1 完整代码：观察值、报警与漏检场景
+
+为把“输出受影响”与“报警检测到”分开，以下只在读取路径增加教学用异或掩码。数据寄存器和校验寄存器正常更新；`fault_mask` 改变读出的数据位，`fault_parity` 改变读出校验位。这个模型既不是晶体管故障模型，也不是故障数据库文件。
+
+#### 7.1.1 完整 RTL
+
+
+
+**保存为 `案例工程/rtl/safety_reg_demo.sv`：**
+
+<!-- source-begin: 案例工程/rtl/safety_reg_demo.sv -->
+
+```systemverilog
+// 教学故障模型：用异或掩码改变读取路径的数据/校验位。
+// 不是 SFF/FDB 注入器，也不代表真实硬件故障的全部类型。
+module safety_reg_demo (
+  input  logic       clk, rst_n, write_en,
+  input  logic [7:0] write_data,
+  input  logic [7:0] fault_mask,
+  input  logic       fault_parity,
+  output logic [7:0] safety_output,
+  output logic       alarm
+);
+  logic [7:0] stored_data;
+  logic       stored_parity;
+
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      stored_data   <= 8'd0;
+      stored_parity <= 1'b0;
+    end else if (write_en) begin
+      stored_data   <= write_data;
+      stored_parity <= ^write_data;
+    end
+  end
+
+  assign safety_output = stored_data ^ fault_mask;
+  assign alarm = (^safety_output) ^ stored_parity ^ fault_parity;
+endmodule
+```
+
+<!-- source-end -->
+
+#### 7.1.2 完整 SVA
+
+除了单比特错误报警，还覆盖两位数据同时翻转但不报警的情况。这有助于识别奇偶校验的能力限制，不能把单个场景的结果推广为全部故障检出率。
+
+**保存为 `案例工程/formal/safety_reg_demo_props.sv`：**
+
+<!-- source-begin: 案例工程/formal/safety_reg_demo_props.sv -->
+
+```systemverilog
+module safety_reg_demo_props (
+  input logic clk, rst_n,
+  input logic [7:0] fault_mask,
+  input logic fault_parity, alarm
+);
+  ap_no_fault_no_alarm: assert property (@(posedge clk) disable iff (!rst_n)
+    fault_mask == 8'd0 && !fault_parity |-> !alarm);
+  ap_single_bit_detected: assert property (@(posedge clk) disable iff (!rst_n)
+    $onehot(fault_mask) && !fault_parity |-> alarm);
+  ap_parity_bit_detected: assert property (@(posedge clk) disable iff (!rst_n)
+    fault_mask == 8'd0 && fault_parity |-> alarm);
+  // 两位数据同时翻转不改变奇偶性，用覆盖目标寻找漏检场景。
+  cp_two_bit_undetected: cover property (@(posedge clk) disable iff (!rst_n)
+    fault_mask == 8'h03 && !fault_parity && !alarm);
+endmodule
+
+bind safety_reg_demo safety_reg_demo_props u_safety_props (
+  .clk(clk), .rst_n(rst_n), .fault_mask(fault_mask),
+  .fault_parity(fault_parity), .alarm(alarm)
+);
+```
+
+<!-- source-end -->
+
+#### 7.1.3 文件列表
+
+
+
+**保存为 `案例工程/filelist_fpv_safety_demo.f`：**
+
+<!-- source-begin: 案例工程/filelist_fpv_safety_demo.f -->
+
+```text
+./rtl/safety_reg_demo.sv
+./formal/safety_reg_demo_props.sv
+```
+
+<!-- source-end -->
+
+#### 7.1.4 配套 FPV 脚本
+
+
+
+**保存为 `案例工程/scripts/fpv_safety_demo.tcl`：**
+
+<!-- source-begin: 案例工程/scripts/fpv_safety_demo.tcl -->
+
+```tcl
+# 从案例工程目录执行；结果必须以本机 VC Formal 日志为准。
+set_fml_appmode FPV
+read_file -top safety_reg_demo -sva -format sverilog -vcs {-f filelist_fpv_safety_demo.f}
+create_clock clk -period 100
+create_reset rst_n -sense low
+# 先核验实际复位状态，再保存初始状态。
+sim_run -stable
+sim_save_reset
+check_fv_setup
+report_fv -list
+check_fv -block
+report_fv -verbose
+```
+
+<!-- source-end -->
+
+**运行命令（Bash）：**
+
+```bash
+# 从包含“案例工程”目录的上一级目录开始。
+cd 案例工程
+mkdir -p logs
+set -o pipefail
+vcf -f scripts/fpv_safety_demo.tcl -batch 2>&1 | tee logs/fpv_safety_demo.log
+```
+
+这些命令应在本机具备相应 VC Formal 版本和许可证时执行。日志中的属性状态才是证明结论；命令退出、脚本结束或没有打印错误都不能代替属性结果检查。
+
+在该教学模型中，单个数据位或单独校验位改变预期会报警；两位数据同时翻转的覆盖目标预期可达。只有将真实故障清单、观察点、检测点和系统失效定义接入原生 FuSa 流程后，才能解释该流程的实际故障分类。
 
 ## 8. 与 ISO 26262 / FMEDA 的关系
 

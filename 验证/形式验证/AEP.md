@@ -1,5 +1,7 @@
 # AEP：自动提取属性应用完整指南
 
+> **源码内嵌版。** 本章的完整案例以“保存为”标明文件路径，并在下方直接列出全文。代码框不带显示行号，可直接复制；`案例工程/` 只表示目录结构，不要求另找源码附件。包含占位符或保护性 `error` 的专用流程另行明确标为模板。
+
 > **第 6 册 · 专用应用**　Automatically Extracted Properties。依据 User Guide 第 10 章（第 362～385 页）与 Quick Reference Guide 的 AEP 部分。
 
 ## 1. AEP 的角色与应用价值
@@ -30,10 +32,19 @@ AEP **不等于自动证明全部功能规格**。它擅长发现通用的实现
 
 ## 3. 初学者第一个 AEP 案例：数组越界
 
+### 3.1 完整设计源码
+
+数组只有两个元素，但两位 `index` 能表示 0、1、2、3。这里故意保留未检查的索引访问；数组内容是否已初始化与本例的索引越界问题应分开分析。
+
+**保存为 `案例工程/rtl/array_demo.sv`：**
+
+<!-- source-begin: 案例工程/rtl/array_demo.sv -->
+
 ```systemverilog
+// Deliberately has an index range wider than the 2-element memory.
 module array_demo (
-  input logic clk,
-  input logic [1:0] index,
+  input  logic       clk,
+  input  logic [1:0] index,
   output logic [7:0] data_out
 );
   logic [7:0] mem [0:1];
@@ -42,14 +53,38 @@ module array_demo (
 endmodule
 ```
 
-数组合法索引只有 0 和 1，但 `index` 可以为 2 或 3。若没有真实协议前提禁止非法索引，`bounds_check` 应能够为这样的访问生成检查并可能给出反例。若该端口来自外部用户，设计究竟要“拒绝非法索引”还是“输入协议禁止非法索引”，必须首先由规格明确，然后决定是修 RTL 还是增加**有出处的**环境约束。
+<!-- source-end -->
+
+如果接口规格确实允许任意两位索引，就应当由 RTL 拒绝非法访问。只有在接口规范明确禁止索引 2、3 时，才可以建立相应环境假设，不能为了消除反例任意限制输入。
+
+### 3.2 完整文件列表
+
+
+
+**保存为 `案例工程/filelist_aep.f`：**
+
+<!-- source-begin: 案例工程/filelist_aep.f -->
+
+```text
+./rtl/array_demo.sv
+```
+
+<!-- source-end -->
 
 ## 4. 标准运行步骤
 
+
+### 4.1 最小数组检查脚本
+
+先选择 `bounds_check`，再检查属性是否实际生成。没有生成属性不等同于数组安全。
+
+**保存为 `案例工程/scripts/aep_bounds.tcl`：**
+
+<!-- source-begin: 案例工程/scripts/aep_bounds.tcl -->
+
 ```tcl
 set_fml_appmode AEP
-read_file -top array_demo -aep bounds_check -format sverilog \
-  -vcs {-f filelist_aep.f}
+read_file -top array_demo -aep bounds_check -format sverilog -vcs {-f filelist_aep.f}
 create_clock clk -period 100
 check_fv_setup
 report_fv -list
@@ -57,9 +92,24 @@ check_fv -block
 report_fv -verbose
 ```
 
+<!-- source-end -->
+
+**运行命令（Bash）：**
+
+```bash
+# 从包含“案例工程”目录的上一级目录开始。
+cd 案例工程
+mkdir -p logs
+set -o pipefail
+vcf -f scripts/aep_bounds.tcl -batch 2>&1 | tee logs/aep_bounds.log
+```
+
+这些命令应在本机具备相应 VC Formal 版本和许可证时执行。日志中的属性状态才是证明结论；命令退出、脚本结束或没有打印错误都不能代替属性结果检查。
+
+
 真实工程有复位的，应加上 `create_reset` 和必要的初始化序列；上述 `array_demo` 刻意只有时钟，突出数组检查的概念。若工具对该语言、数组形式或优化方式没有生成相应属性，先检查 `-aep` 语法与对象是否符合其抽取前提。
 
-### 4.1 多种 AEP 组合
+### 4.2 多种 AEP 组合
 
 ```tcl
 read_file -top my_top -aep fsm_deadlock+fsm_livelock \
@@ -68,7 +118,7 @@ read_file -top my_top -aep fsm_deadlock+fsm_livelock \
 
 这里的 `+` 表示组合多个检查选择值，是指南中提供的一种常见写法；`-aep all` 并不意味着对每个设计都推荐一开始就开启所有检查。建议先对高优先级逻辑运行小集合，再逐步扩展，以便降低误报排查成本。
 
-### 4.2 VHDL 的相关配置
+### 4.3 VHDL 的相关配置
 
 ```tcl
 set_app_var fml_enable_vhdl_aep true

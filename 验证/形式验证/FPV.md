@@ -1,6 +1,8 @@
 # FPV：功能属性验证应用完整指南
 
-> **第 5 册 · 专用应用**　Functional Property Verification。依据 User Guide 第 17 章（第 686～713 页），并结合第 3～8、18～20 章及 Quick Reference Guide 的 FPV 部分。提供带设计、断言和 Tcl 的可复现教学工程，见 [案例工程](案例工程/README.md)。
+> **源码内嵌版。** 本章的完整案例以“保存为”标明文件路径，并在下方直接列出全文。代码框不带显示行号，可直接复制；`案例工程/` 只表示目录结构，不要求另找源码附件。包含占位符或保护性 `error` 的专用流程另行明确标为模板。
+
+> **第 5 册 · 专用应用**　Functional Property Verification。依据 User Guide 第 17 章（第 686～713 页），并结合第 3～8、18～20 章及 Quick Reference Guide 的 FPV 部分。本章直接列出设计、断言、文件列表与 Tcl；独立源码文件只作为便于编辑的副本。
 
 ## 1. 定位、能力与不适用范围
 
@@ -22,12 +24,104 @@ FPV 不会自动理解芯片规格，也不自动生成所有应该证明的规�
 | 分析 | 输出证明状态和反例 | `report_fv`、`view_trace` | 性质与前提一致 |
 | 回归 | 保存可复现结果 | `save_session`、日志/manifest | 版本与运行资源可追踪 |
 
-## 3. 最小脚本：单时钟计数器
+## 3. 单时钟计数器：完整 RTL、SVA 与运行流程
 
-以下示例以 `案例工程/` 为根目录运行；复位序列需按你的 DUT 实际建立，脚本重点展示 FPV 的正确调用顺序。教学 RTL 参见 `案例工程/rtl/counter.sv`，属性参见 `案例工程/formal/counter_props.sv`。
+本节直接给出全部依赖文件。按“保存为”的路径建立目录并保存代码，就能准备对应教学工程，不必再到附件寻找 RTL、断言或脚本。
+
+### 3.1 被验证的计数器 RTL
+
+规格：复位后计数为零；使能时从 0 计到 9 后回到 0；没有使能时保持。RTL 文件只包含设计，不把待验证结论写成环境假设。
+
+**保存为 `案例工程/rtl/counter.sv`：**
+
+<!-- source-begin: 案例工程/rtl/counter.sv -->
+
+```systemverilog
+module counter (
+    input  logic       clk,
+    input  logic       rst_n,
+    input  logic       enable,
+    output logic [3:0] count
+);
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n)             count <= 4'd0;
+    else if (enable) begin
+      if (count == 4'd9)    count <= 4'd0;
+      else                  count <= count + 4'd1;
+    end
+  end
+endmodule
+```
+
+<!-- source-end -->
+
+
+### 3.2 完整断言与绑定文件
+
+`history_valid` 在复位后建立历史有效标志。`ap_range` 检查范围，`ap_hold` 检查保持，`ap_wrap` 检查回绕；两条 `cover` 检查最高计数值及回绕场景是否能够出现。末尾 `bind` 将检查器接入同名设计信号，不需要修改 RTL。
+
+**保存为 `案例工程/formal/counter_props.sv`：**
+
+<!-- source-begin: 案例工程/formal/counter_props.sv -->
+
+```systemverilog
+module counter_props (
+    input logic       clk, rst_n, enable,
+    input logic [3:0] count
+);
+  logic history_valid;
+  always_ff @(posedge clk or negedge rst_n)
+    if (!rst_n) history_valid <= 1'b0;
+    else        history_valid <= 1'b1;
+
+  ap_range: assert property (@(posedge clk) disable iff (!rst_n)
+      count <= 4'd9);
+
+  ap_hold: assert property (@(posedge clk) disable iff (!rst_n)
+      history_valid && $past(!enable) |-> count == $past(count));
+
+  ap_wrap: assert property (@(posedge clk) disable iff (!rst_n)
+      history_valid && $past(enable && count == 4'd9)
+      |-> count == 4'd0);
+
+  cp_reaches_nine: cover property (@(posedge clk) disable iff (!rst_n)
+      count == 4'd9);
+  cp_wrap: cover property (@(posedge clk) disable iff (!rst_n)
+      count == 4'd9 ##1 count == 4'd0);
+endmodule
+
+bind counter counter_props u_counter_props (.*);
+```
+
+<!-- source-end -->
+
+
+### 3.3 编译文件列表
+
+先列 RTL，再列包含 `bind` 的属性文件；路径相对于运行 VC Formal 的 `案例工程/` 目录，而不是 Tcl 文件所在目录。
+
+**保存为 `案例工程/filelist_counter.f`：**
+
+<!-- source-begin: 案例工程/filelist_counter.f -->
+
+```text
+./rtl/counter.sv
+./formal/counter_props.sv
+```
+
+<!-- source-end -->
+
+
+### 3.4 完整运行脚本
+
+依次选择应用、读入设计与 SVA、定义时钟复位、保存初始状态、检查设置、列出属性并开始证明。初始化步骤需要在实际安装环境核对复位状态，不能把声明复位等同于已经完成复位。
+
+**保存为 `案例工程/scripts/fpv_counter.tcl`：**
+
+<!-- source-begin: 案例工程/scripts/fpv_counter.tcl -->
 
 ```tcl
-# 文件：案例工程/scripts/fpv_counter.tcl
+# Run from the example project root with: vcf -f scripts/fpv_counter.tcl -batch
 set_fml_appmode FPV
 read_file -top counter -sva -format sverilog -vcs {-f filelist_counter.f}
 create_clock clk -period 100
@@ -35,15 +129,115 @@ create_reset rst_n -sense low
 sim_run -stable
 sim_save_reset
 check_fv_setup
+report_fv_setup -list
 report_fv -list
 set_fml_var fml_max_time 1H
 set_fml_var fml_max_memory 8GB
 check_fv -block
-report_fv -list
 report_fv -verbose
 ```
 
-这是面向具有明确复位模型的教学模板。工程中应先检查 `sim_save_reset` 所保存的状态是否符合真实上电要求；**不能仅仅因为脚本中有 `create_reset` 就认定初始状态已正确设置**。可使用 `sim_force`、`sim_run N -clk clk`、`view_trace -reset` 辅助构造、检查启动过程。文件路径按照脚本执行的工作目录解析。
+<!-- source-end -->
+
+
+**运行命令（Bash）：**
+
+```bash
+# 从包含“案例工程”目录的上一级目录开始。
+cd 案例工程
+mkdir -p logs
+set -o pipefail
+vcf -f scripts/fpv_counter.tcl -batch 2>&1 | tee logs/fpv_counter.log
+```
+
+这些命令应在本机具备相应 VC Formal 版本和许可证时执行。日志中的属性状态才是证明结论；命令退出、脚本结束或没有打印错误都不能代替属性结果检查。
+
+**结果阅读。** 在初始状态正确的前提下，正确版预期满足这些断言，并存在到达 9 和回绕的覆盖轨迹。这不是本次 VC Formal 的实际运行结果。该属性集合也不是全部计数器规格：例如每次普通递增的精确关系仍可另加属性，不能仅凭范围成立就认定全部功能正确。
+
+
+### 3.5 故意错误的 RTL
+
+错误只在回绕阈值：把 9 改为 10。模块名仍为 `counter`，所以此文件与正确版必须分别编译。属性文件沿用本节已经完整列出的 `counter_props.sv`。
+
+**保存为 `案例工程/rtl/counter_bad.sv`：**
+
+<!-- source-begin: 案例工程/rtl/counter_bad.sv -->
+
+```systemverilog
+// Intentionally buggy teaching variant: roll-over condition is 10 instead of 9.
+// Do NOT include with rtl/counter.sv in the same compilation.
+module counter (
+    input  logic       clk,
+    input  logic       rst_n,
+    input  logic       enable,
+    output logic [3:0] count
+);
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n)             count <= 4'd0;
+    else if (enable) begin
+      if (count == 4'd10)   count <= 4'd0;
+      else                  count <= count + 4'd1;
+    end
+  end
+endmodule
+```
+
+<!-- source-end -->
+
+
+### 3.6 错误版编译文件列表
+
+只读入错误设计及同一份检查器，不同时包含两个同名设计。
+
+**保存为 `案例工程/filelist_counter_bad.f`：**
+
+<!-- source-begin: 案例工程/filelist_counter_bad.f -->
+
+```text
+./rtl/counter_bad.sv
+./formal/counter_props.sv
+```
+
+<!-- source-end -->
+
+
+### 3.7 错误版完整运行脚本
+
+与正确版采用相同接口和初始化方法，不为了让错误版通过而增加输入限制。
+
+**保存为 `案例工程/scripts/fpv_counter_bad.tcl`：**
+
+<!-- source-begin: 案例工程/scripts/fpv_counter_bad.tcl -->
+
+```tcl
+# Intentionally failing counter example. Do not include the good counter at once.
+set_fml_appmode FPV
+read_file -top counter -sva -format sverilog -vcs {-f filelist_counter_bad.f}
+create_clock clk -period 100
+create_reset rst_n -sense low
+sim_run -stable
+sim_save_reset
+check_fv_setup
+check_fv -block
+report_fv -verbose
+```
+
+<!-- source-end -->
+
+
+**运行命令（Bash）：**
+
+```bash
+# 从包含“案例工程”目录的上一级目录开始。
+cd 案例工程
+mkdir -p logs
+set -o pipefail
+vcf -f scripts/fpv_counter_bad.tcl -batch 2>&1 | tee logs/fpv_counter_bad.log
+```
+
+这些命令应在本机具备相应 VC Formal 版本和许可证时执行。日志中的属性状态才是证明结论；命令退出、脚本结束或没有打印错误都不能代替属性结果检查。
+
+错误版的预期反例是：在允许连续使能的输入下，计数从 9 进入 10，违反范围与回绕规则。查看反例时应区分时钟沿的采样值与非阻塞赋值后的寄存器值；不能把这里描述的预期现象伪装成工具日志。
 
 ## 4. 如何组织断言
 
@@ -143,6 +337,134 @@ cp_contend: cover property (@(posedge clk) disable iff(!rst_n)
 ```
 
 这是最基础的安全性和触发覆盖。若想证明“等待不超过 8 拍”，必须明确持续请求和仲裁器能否接收新请求，并对每一个端口分别写属性。状态空间复杂时，可先证明互斥与请求合法，再证明有界公平性。
+
+### 6.5 FIFO 控制器：完整代码
+
+这个例子只验证 FIFO 的占用计数、空满标志和请求接受规则，不包含存储阵列，因此不能据此宣称已经证明数据顺序正确。满状态允许同时读写；空状态不能读出，且本例没有空 FIFO 直通功能。
+
+#### 6.5.1 控制器 RTL
+
+`pop_accept` 先排除空读；`push_accept` 在未满或本拍成功读出的条件下接受写入。实际更新依据接受信号，而不是原始 `push/pop` 请求。
+
+**保存为 `案例工程/rtl/fifo_ctrl.sv`：**
+
+<!-- source-begin: 案例工程/rtl/fifo_ctrl.sv -->
+
+```systemverilog
+module fifo_ctrl #(
+    parameter int DEPTH = 4,
+    parameter int CW = $clog2(DEPTH + 1)
+) (
+    input logic clk, rst_n,
+    input logic push, pop,
+    output logic full, empty,
+    output logic push_accept, pop_accept,
+    output logic [CW-1:0] occupancy
+);
+  assign full       = (occupancy == DEPTH);
+  assign empty      = (occupancy == 0);
+  assign pop_accept  = pop && !empty;
+  assign push_accept = push && (!full || pop_accept);
+
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) occupancy <= '0;
+    else case ({push_accept, pop_accept})
+      2'b10: occupancy <= occupancy + 1'b1;
+      2'b01: occupancy <= occupancy - 1'b1;
+      default: occupancy <= occupancy;
+    endcase
+  end
+endmodule
+```
+
+<!-- source-end -->
+
+#### 6.5.2 完整 SVA 与参数绑定
+
+属性参数与 RTL 的 `DEPTH/CW` 对应；检查范围、标志一致性以及禁止空读、禁止无空间写入。覆盖目标辅助确认满状态与使用后回到空状态可达。
+
+**保存为 `案例工程/formal/fifo_ctrl_props.sv`：**
+
+<!-- source-begin: 案例工程/formal/fifo_ctrl_props.sv -->
+
+```systemverilog
+module fifo_ctrl_props #(
+  parameter int DEPTH = 4,
+  parameter int CW = $clog2(DEPTH + 1)
+) (
+  input logic clk, rst_n, push, pop,
+  input logic full, empty, push_accept, pop_accept,
+  input logic [CW-1:0] occupancy
+);
+  ap_safe_count: assert property (@(posedge clk) disable iff (!rst_n)
+    occupancy <= DEPTH);
+  ap_flag_full: assert property (@(posedge clk) disable iff (!rst_n)
+    full == (occupancy == DEPTH));
+  ap_flag_empty: assert property (@(posedge clk) disable iff (!rst_n)
+    empty == (occupancy == 0));
+  ap_no_empty_pop: assert property (@(posedge clk) disable iff (!rst_n)
+    pop_accept |-> !empty);
+  ap_no_overflow_push: assert property (@(posedge clk) disable iff (!rst_n)
+    push_accept |-> (!full || pop_accept));
+  cp_full: cover property (@(posedge clk) disable iff (!rst_n)
+    full);
+  cp_empty_after_use: cover property (@(posedge clk) disable iff (!rst_n)
+    !empty ##[1:5] empty);
+endmodule
+
+bind fifo_ctrl fifo_ctrl_props #(.DEPTH(DEPTH), .CW(CW)) u_fifo_ctrl_props (.*);
+```
+
+<!-- source-end -->
+
+#### 6.5.3 文件列表
+
+
+
+**保存为 `案例工程/filelist_fifo.f`：**
+
+<!-- source-begin: 案例工程/filelist_fifo.f -->
+
+```text
+./rtl/fifo_ctrl.sv
+./formal/fifo_ctrl_props.sv
+```
+
+<!-- source-end -->
+
+#### 6.5.4 完整脚本
+
+
+
+**保存为 `案例工程/scripts/fpv_fifo.tcl`：**
+
+<!-- source-begin: 案例工程/scripts/fpv_fifo.tcl -->
+
+```tcl
+set_fml_appmode FPV
+read_file -top fifo_ctrl -sva -format sverilog -vcs {-f filelist_fifo.f}
+create_clock clk -period 100
+create_reset rst_n -sense low
+sim_run -stable
+sim_save_reset
+check_fv_setup
+check_fv -block
+report_fv -verbose
+```
+
+<!-- source-end -->
+
+**运行命令（Bash）：**
+
+```bash
+# 从包含“案例工程”目录的上一级目录开始。
+cd 案例工程
+mkdir -p logs
+set -o pipefail
+vcf -f scripts/fpv_fifo.tcl -batch 2>&1 | tee logs/fpv_fifo.log
+```
+
+这些命令应在本机具备相应 VC Formal 版本和许可证时执行。日志中的属性状态才是证明结论；命令退出、脚本结束或没有打印错误都不能代替属性结果检查。
 
 ## 7. 如何分析结果
 

@@ -1,5 +1,7 @@
 # FCA：形式覆盖率分析完整指南
 
+> **源码内嵌版。** 本章的完整案例以“保存为”标明文件路径，并在下方直接列出全文。代码框不带显示行号，可直接复制；`案例工程/` 只表示目录结构，不要求另找源码附件。包含占位符或保护性 `error` 的专用流程另行明确标为模板。
+
 > **第 9 册 · 专用应用**　Formal Coverage Analyzer。依据 User Guide 第 11 章（第 386～443 页），Quick Reference Guide FCA 部分。**重要：该版本 User Guide 使用 Tcl 模式 `COV`，而应用名称缩写为 FCA。**
 
 ## 1. FCA 与 FPV 的区别
@@ -21,43 +23,101 @@ FCA 的结果与 VCS 的覆盖数据通常相配合，常涉及 `simv.vdb`、排
 
 不同覆盖目标的生成与排除规则并不完全相同。某些类型还需要额外变量启用，例如 `set_fml_var fml_cov_enable_branch_cov true`。
 
-## 3. 第一个 FCA 用例：不可到达的代码分支
+## 3. 第一个 FCA 用例：输入条件与代码分支可达性
+
+### 3.1 完整设计源码
+
+本例没有限制 `mode`，因此四种输入组合都允许出现。分析其可达性不是预先宣布某个分支不可到达。
+
+**保存为 `案例工程/rtl/coverage_demo.sv`：**
+
+<!-- source-begin: 案例工程/rtl/coverage_demo.sv -->
 
 ```systemverilog
-module simple_mode (
-  input logic clk, rst_n,
-  input logic [1:0] mode,
-  output logic out
+// FCA exercise: branch conditions and reachability.
+// mode is intentionally unconstrained, unless the verification environment
+// supplies an explicitly reviewed operating-mode assumption.
+module coverage_demo (
+  input  logic       clk,
+  input  logic       rst_n,
+  input  logic [1:0] mode,
+  output logic [1:0] result
 );
   always_comb begin
-    out = 1'b0;
-    if (mode == 2'b00) out = 1'b1;
-    else if (mode == 2'b01) out = 1'b0;
-    else if (mode == 2'b10) out = 1'b1;
-    else out = 1'b0;
+    result = 2'd0;
+    case (mode)
+      2'd0: result = 2'd1;
+      2'd1: result = 2'd2;
+      2'd2: result = 2'd3;
+      default: result = 2'd0;
+    endcase
   end
 endmodule
 ```
 
-如果没有额外约束，四种 `mode` 输入组合均可能发生，所有分支一般都应可达；如果设计环境规定 `mode[1]=0`，则高两种模式将不可达。但这份限制是否为真实系统规格，必须由模块接口确认，不能为提高覆盖率而随意增加。
+<!-- source-end -->
 
-## 4. 主要流程
+如果真实系统规范要求 `mode[1]` 恒为零，另外两个模式在该约束下才不可达；必须记录约束出处，并区分真实限制与为了提高覆盖数字而新增的假设。组合分支能否保留并产生检查，还受编译优化和覆盖类型配置影响。
+
+### 3.2 完整文件列表
+
+
+
+**保存为 `案例工程/filelist_fca.f`：**
+
+<!-- source-begin: 案例工程/filelist_fca.f -->
+
+```text
+./rtl/coverage_demo.sv
+```
+
+<!-- source-end -->
+
+## 4. 主要流程：完整 Tcl
+
+### 4.1 完整运行脚本
+
+此版本按 User Guide 使用 `COV` 模式。脚本保留检查设置和结果报告；没有在未审查结果时自动把所有未完成目标导出为排除项。
+
+**保存为 `案例工程/scripts/fca_coverage.tcl`：**
+
+<!-- source-begin: 案例工程/scripts/fca_coverage.tcl -->
 
 ```tcl
-# 版本 X-2025.06-SP1 User Guide §11.2.2
+# Formal Coverage Analyzer uses COV appmode in X-2025.06-SP1 User Guide.
+# Run from example project root; treat result as tool-dependent.
 set_fml_appmode COV
-read_file -top simple_mode -format sverilog -cov all \
-  -vcs {simple_mode.sv}
+read_file -top coverage_demo -format sverilog -cov all -vcs {-f filelist_fca.f}
 create_clock clk -period 100
 create_reset rst_n -sense low
 sim_run -stable
 sim_save_reset
+check_fv_setup
 check_fv -block
 report_fv -verbose
+```
+
+<!-- source-end -->
+
+**运行命令（Bash）：**
+
+```bash
+# 从包含“案例工程”目录的上一级目录开始。
+cd 案例工程
+mkdir -p logs
+set -o pipefail
+vcf -f scripts/fca_coverage.tcl -batch 2>&1 | tee logs/fca_coverage.log
+```
+
+这些命令应在本机具备相应 VC Formal 版本和许可证时执行。日志中的属性状态才是证明结论；命令退出、脚本结束或没有打印错误都不能代替属性结果检查。
+
+需要导出经过审查的不可达候选时，再按实际会话执行：
+
+```tcl
 save_cov_exclusion -file formal_unreachable.el
 ```
 
-`-cov all` 的覆盖类型要与所需范围及版本一致；User Guide 明确提到某些覆盖类型并不会自动通过 `all` 打开（例如 branch 可有单独变量）。示例时钟和复位输入的真实初始化是否生效需要检查。`save_cov_exclusion` 的输出应由工程师审查后再交给覆盖率工具使用。
+`-cov all` 的覆盖类型仍须核对版本，某些类型有单独的启用变量。应先确认生成了哪些目标、目标数量以及实际完成状态，再解释覆盖率或排除文件。
 
 ## 5. 从仿真数据库开始
 

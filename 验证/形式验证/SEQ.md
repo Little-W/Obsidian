@@ -1,5 +1,7 @@
 # SEQ：顺序等价检查完整指南
 
+> **源码内嵌版。** 本章的完整案例以“保存为”标明文件路径，并在下方直接列出全文。代码框不带显示行号，可直接复制；`案例工程/` 只表示目录结构，不要求另找源码附件。包含占位符或保护性 `error` 的专用流程另行明确标为模板。
+
 > **第 10 册 · 专用应用**　Sequential Equivalence Checking。依据 User Guide 第 14 章（第 517～611 页），Quick Reference Guide SEQ 部分。
 
 ## 1. 为什么不能只比较组合逻辑
@@ -12,36 +14,79 @@ SEQ 可用于 RTL 重构、状态机重编码、寄存器重定时、时钟门�
 
 ## 2. 初学者例子：两种计数器写法
 
-参考设计：
+两边都是四位模 16 计数器；不是 FPV 章的模 10 计数器。接口相同，代码组织不同。
+
+### 2.1 参考实现完整源码
+
+使能时加一，不使能时通过未赋值保持状态。
+
+**保存为 `案例工程/rtl/counter_spec.sv`：**
+
+<!-- source-begin: 案例工程/rtl/counter_spec.sv -->
 
 ```systemverilog
-module counter_spec (input logic clk, rst_n, en,
-                     output logic [3:0] q);
+module counter_spec(input logic clk, rst_n, en, output logic [3:0] q);
   always_ff @(posedge clk or negedge rst_n)
     if (!rst_n) q <= 4'd0;
     else if (en) q <= q + 4'd1;
 endmodule
 ```
 
-实现设计：
+<!-- source-end -->
+
+### 2.2 待比较实现完整源码
+
+将使能扩展为四位加数；为零时相当于保持，为一时相当于递增。
+
+**保存为 `案例工程/rtl/counter_impl.sv`：**
+
+<!-- source-begin: 案例工程/rtl/counter_impl.sv -->
 
 ```systemverilog
-module counter_impl (input logic clk, rst_n, en,
-                     output logic [3:0] q);
+module counter_impl(input logic clk, rst_n, en, output logic [3:0] q);
   always_ff @(posedge clk or negedge rst_n)
-    if (!rst_n) q <= '0;
-    else q <= q + {3'b000, en};
+    if (!rst_n) q <= 4'd0;
+    else        q <= q + {3'b000,en};
 endmodule
 ```
 
-两个实现正常情况下逐拍功能一致。教学工程在 [案例工程](案例工程/README.md) 中给出这些文件与完整脚本。若将第二个实现改成 `q <= q + 4'd2`，预期在 `en=1` 的合法轨迹上得到不一致反例。
+<!-- source-end -->
 
-## 3. 编译两个独立设计库
+### 2.3 故意不等价版本
+
+同样使用 `counter_impl` 作为模块名，但使能时加二。正确版与错误版只能选一个加入本次比较。
+
+**保存为 `案例工程/rtl/counter_impl_bad.sv`：**
+
+<!-- source-begin: 案例工程/rtl/counter_impl_bad.sv -->
+
+```systemverilog
+// 故意错误版本：模块名仍为 counter_impl；不要与正确版本同时编译。
+module counter_impl(input logic clk, rst_n, en, output logic [3:0] q);
+  always_ff @(posedge clk or negedge rst_n)
+    if (!rst_n) q <= 4'd0;
+    else        q <= q + (en ? 4'd2 : 4'd0);
+endmodule
+```
+
+<!-- source-end -->
+
+在合法初始化和对应关系下，前两种写法预期等价，第三种则可在使能后产生差异。预期结果不代替实际的工具证明。
+
+## 3. 编译两个独立设计库并运行
+
+### 3.1 正确实现的完整 SEQ 脚本
+
+参考设计放入 `spec` 库，待比较设计放入 `impl` 库。此脚本直接列出 RTL 路径，没有额外未展示的文件列表。`map_by_name` 后必须查看对应结果，不能认为名字相同就完成了初始化审查。
+
+**保存为 `案例工程/scripts/seq_counter.tcl`：**
+
+<!-- source-begin: 案例工程/scripts/seq_counter.tcl -->
 
 ```tcl
 set_fml_appmode SEQ
-analyze -format sverilog -library spec -vcs {counter_spec.sv}
-analyze -format sverilog -library impl -vcs {counter_impl.sv}
+analyze -format sverilog -library spec -vcs {./rtl/counter_spec.sv}
+analyze -format sverilog -library impl -vcs {./rtl/counter_impl.sv}
 elaborate_seq -spectop counter_spec -impltop counter_impl
 create_clock clk -period 100
 create_reset rst_n -sense low
@@ -52,7 +97,46 @@ check_fv -block
 report_fv -list
 ```
 
-这里 `spec` 和 `impl` 是用于区分源代码的编译库。部分工程使用 `seq_config` 控制配方、初始未定义值和 X 处理；这类选项应基于两个实现真正的启动要求配置，切忌为证明通过而把不一致的初态硬设成相同。`elaborate_seq -spectop ... -impltop ...` 是两份不同顶层设计的用法；同一设计前后比较还存在 `-same_design` 等使用模式。
+<!-- source-end -->
+
+### 3.2 错误实现的完整 SEQ 脚本
+
+只替换待比较侧的源文件，参考侧和环境条件不变。
+
+**保存为 `案例工程/scripts/seq_counter_bad.tcl`：**
+
+<!-- source-begin: 案例工程/scripts/seq_counter_bad.tcl -->
+
+```tcl
+set_fml_appmode SEQ
+analyze -format sverilog -library spec -vcs {./rtl/counter_spec.sv}
+analyze -format sverilog -library impl -vcs {./rtl/counter_impl_bad.sv}
+elaborate_seq -spectop counter_spec -impltop counter_impl
+create_clock clk -period 100
+create_reset rst_n -sense low
+map_by_name
+report_seq_mappings
+check_fv_setup
+check_fv -block
+report_fv -list
+```
+
+<!-- source-end -->
+
+**运行命令（Bash）：**
+
+```bash
+# 从包含“案例工程”目录的上一级目录开始。
+cd 案例工程
+mkdir -p logs
+set -o pipefail
+vcf -f scripts/seq_counter.tcl -batch 2>&1 | tee logs/seq_counter.log
+vcf -f scripts/seq_counter_bad.tcl -batch 2>&1 | tee logs/seq_counter_bad.log
+```
+
+这些命令应在本机具备相应 VC Formal 版本和许可证时执行。日志中的属性状态才是证明结论；命令退出、脚本结束或没有打印错误都不能代替属性结果检查。
+
+这里保留原有教学脚本的初始化框架；实际项目应检查两个设计的复位状态和初始状态关系，不能把 `create_reset` 或名称对应当作“任意初态自动一致”。如需额外复位激励，应按 SEQ 的本地运行流程补充并记录。
 
 ## 4. 对应关系是什么
 

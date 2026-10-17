@@ -1,5 +1,7 @@
 # FLP / LPC：低功耗连通性形式验证完整指南
 
+> **源码内嵌版。** 本章的完整案例以“保存为”标明文件路径，并在下方直接列出全文。代码框不带显示行号，可直接复制；`案例工程/` 只表示目录结构，不要求另找源码附件。包含占位符或保护性 `error` 的专用流程另行明确标为模板。
+
 > **第 16 册 · 专用应用**　Formal Low Power / Low Power Connectivity Check。依据 User Guide 第 24 章（第 1040～1065 页）及 Quick Reference Guide 的 Low Power Connectivity Check 部分。
 
 ## 1. 核心问题
@@ -39,6 +41,32 @@ create_reset rst_n -sense low
 
 `fvlp_instrument` 启用低功耗语义插桩，`-type` 可根据设计需要选择 `iso`、`pnm`、`ret` 等，具体支持类型参照 UG 1043 页。插入低功耗支持、读入 RTL/UPF 的顺序需要与安装版本示例一致。`read_upf` 中的路径必须指向该工程真实 UPF 文件。
 
+### 3.1 原生低功耗检查模板完整源码
+
+UPF、电源状态及隔离策略必须来自实际项目。本模板的省略对象属于明确的待配置输入，不是已提供的完整低功耗工程。
+
+**保存为 `案例工程/templates/flp_low_power.tcl`：**
+
+<!-- source-begin: 案例工程/templates/flp_low_power.tcl -->
+
+```tcl
+# 低功耗 CC：必须有 RTL、UPF、电源状态表、真正的电源域信号。
+# 不支持普通 CC 的 delayed connectivity check（UG 第 1041 页）。
+error "此文件是 FLP 教学模板：须先提供 UPF、电源控制与隔离策略"
+# set_fml_appmode CC
+# fvlp_instrument -type "iso pnm"
+# set_fml_var fvlp_enable_pst_constraint true
+# read_file -top lp_top -format sverilog -vcs {-f filelist.f}
+# read_upf /project/upf/power_intent.upf
+# create_clock clk -period 100
+# create_reset rst_n -sense low
+# add_cc -src ... -dest ... -lpa_type ... ;# 填写真实端点与类型
+# check_fv -block
+# report_fv -verbose
+```
+
+<!-- source-end -->
+
 ## 4. 最小系统案例
 
 上游处理单元运行于可关断电源域 `PD_A`，下游控制单元在始终通电的 `PD_AON`。上游输出 `data_o` 经隔离单元到下游 `data_i`。规格：当 `PD_A` 供电正常且隔离关闭时，`data_i` 应等于 `data_o`；当 `PD_A` 关断时，`data_i` 应被钳位为零。
@@ -53,6 +81,119 @@ create_reset rst_n -sense low
 ```
 
 以上包含 `<...>` 的两行是示例占位内容，不得未经替换直接运行。
+
+### 4.1 完整源码：先理解逻辑隔离关系
+
+为了不把 UPF 环境和普通逻辑混在一起，以下单独给出理想隔离控制的 RTL 与 SVA。这里的 `source_power_good` 只是布尔输入，不会使仿真器或形式工具真的把某个电源域关断，也没有建立掉电后的未知值模型。
+
+#### 4.1.1 完整逻辑模型
+
+源电源不正常时，理想控制模型立即使能隔离；真实系统的电源控制时序、跨时钟处理和故障行为必须另行验证。
+
+**保存为 `案例工程/rtl/lp_isolation_demo.sv`：**
+
+<!-- source-begin: 案例工程/rtl/lp_isolation_demo.sv -->
+
+```systemverilog
+// 仅表示理想的逻辑隔离关系，不模拟电源关断产生的未知值。
+module lp_isolation_demo (
+  input  logic       clk, rst_n,
+  input  logic       source_power_good, isolation_request,
+  input  logic [7:0] source_data,
+  output logic       isolation_enable,
+  output logic [7:0] destination_data
+);
+  // 理想控制模型：源电源不正常时强制隔离；真实 PMC 必须另行验证。
+  assign isolation_enable = !source_power_good || isolation_request;
+  assign destination_data = isolation_enable ? 8'h00 : source_data;
+endmodule
+```
+
+<!-- source-end -->
+
+#### 4.1.2 完整 SVA
+
+
+
+**保存为 `案例工程/formal/lp_isolation_demo_props.sv`：**
+
+<!-- source-begin: 案例工程/formal/lp_isolation_demo_props.sv -->
+
+```systemverilog
+module lp_isolation_demo_props (
+  input logic clk, rst_n,
+  input logic source_power_good, isolation_request, isolation_enable,
+  input logic [7:0] source_data, destination_data
+);
+  ap_isolation_clamp: assert property (@(posedge clk) disable iff (!rst_n)
+    isolation_enable |-> destination_data == 8'h00);
+  ap_power_off_clamp: assert property (@(posedge clk) disable iff (!rst_n)
+    !source_power_good |-> destination_data == 8'h00);
+  ap_normal_connection: assert property (@(posedge clk) disable iff (!rst_n)
+    source_power_good && !isolation_request
+      |-> destination_data == source_data);
+  cp_off_on_sequence: cover property (@(posedge clk) disable iff (!rst_n)
+    !source_power_good ##1 source_power_good && !isolation_request);
+endmodule
+
+bind lp_isolation_demo lp_isolation_demo_props u_lp_props (.*);
+```
+
+<!-- source-end -->
+
+#### 4.1.3 文件列表
+
+
+
+**保存为 `案例工程/filelist_fpv_lp_logic_demo.f`：**
+
+<!-- source-begin: 案例工程/filelist_fpv_lp_logic_demo.f -->
+
+```text
+./rtl/lp_isolation_demo.sv
+./formal/lp_isolation_demo_props.sv
+```
+
+<!-- source-end -->
+
+#### 4.1.4 普通 FPV 练习脚本
+
+
+
+**保存为 `案例工程/scripts/fpv_lp_logic_demo.tcl`：**
+
+<!-- source-begin: 案例工程/scripts/fpv_lp_logic_demo.tcl -->
+
+```tcl
+# 从案例工程目录执行；结果必须以本机 VC Formal 日志为准。
+set_fml_appmode FPV
+read_file -top lp_isolation_demo -sva -format sverilog -vcs {-f filelist_fpv_lp_logic_demo.f}
+create_clock clk -period 100
+create_reset rst_n -sense low
+# 先核验实际复位状态，再保存初始状态。
+sim_run -stable
+sim_save_reset
+check_fv_setup
+report_fv -list
+check_fv -block
+report_fv -verbose
+```
+
+<!-- source-end -->
+
+**运行命令（Bash）：**
+
+```bash
+# 从包含“案例工程”目录的上一级目录开始。
+cd 案例工程
+mkdir -p logs
+set -o pipefail
+vcf -f scripts/fpv_lp_logic_demo.tcl -batch 2>&1 | tee logs/fpv_lp_logic_demo.log
+```
+
+这些命令应在本机具备相应 VC Formal 版本和许可证时执行。日志中的属性状态才是证明结论；命令退出、脚本结束或没有打印错误都不能代替属性结果检查。
+
+**与原生 FLP 的区别。** 上述练习说明隔离钳位和正常连接的布尔关系，并不验证 UPF 插入位置、电源网络、保持单元或电源关断行为。真正的 FLP 检查还需要第 3 节列出的 UPF 和工具低功耗配置，不能用本节 FPV 结果替代。
 
 ## 5. UPF 可信性与 PMC
 

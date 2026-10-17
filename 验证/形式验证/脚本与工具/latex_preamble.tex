@@ -3,7 +3,7 @@
 \usepackage{etoolbox}
 \usepackage{graphicx}
 \usepackage{fvextra}
-\fvset{breaklines=true,breakanywhere=true}
+\fvset{breaklines=true,breakanywhere=true,fontsize=\small}
 \setlength{\headheight}{17pt}
 \pagestyle{fancy}
 \fancyhf{}
@@ -20,7 +20,8 @@
   \vspace*{17mm}
   {\LARGE\bfseries VC Formal 中文形式验证手册\par}
   \vspace{8mm}
-  {\large 形式验证原理 · SystemVerilog Assertions · 12 类应用 · 工程案例\par}
+  {\large 源码内嵌修订版\par}\vspace{3mm}
+{\large 形式验证原理 · SystemVerilog Assertions · 12 类应用\par}
   \vspace{12mm}
   \rule{.87\textwidth}{1pt}
   \vspace{13mm}
@@ -30,10 +31,14 @@
   \vfill
   {\large 文档基线：X-2025.06-SP1\par}
   \vspace{4mm}
-  {\large 2026 年 10 月 | 独立中文技术教程\par}
+  {\large 2026 年 10 月 · 手册修订 1.1\par}
   \vspace{4mm}
   {\small 非 Synopsys 官方译本；命令与行为以安装版本为准\par}
   \vspace*{8mm}
   \end{center}
   \end{titlepage}%
 }
+
+\ctexset{section={format=\Large\bfseries\raggedright,beforeskip=1.25em,afterskip=.7em},subsection={beforeskip=1.0em,afterskip=.5em},subsubsection={beforeskip=.9em,afterskip=.4em}}
+
+\setCJKmonofont{Noto Sans Mono CJK SC}

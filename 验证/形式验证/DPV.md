@@ -1,5 +1,7 @@
 # DPV：数据路径验证与 C/C++—RTL 事务等价完整指南
 
+> **源码内嵌版。** 本章的完整案例以“保存为”标明文件路径，并在下方直接列出全文。代码框不带显示行号，可直接复制；`案例工程/` 只表示目录结构，不要求另找源码附件。包含占位符或保护性 `error` 的专用流程另行明确标为模板。
+
 > **第 15 册 · 专用应用**　Data Path Validation。依据 User Guide 第 25 章（第 1066～1080 页）和 Quick Reference Guide DPV 部分；深度用法需参考单独出版的 *VC Formal Data Path Validation User Guide*（该文件未包含在此次上传材料中）。
 
 ## 1. 解决的问题与 SEQ 的区别
@@ -18,7 +20,7 @@
 
 ## 3. C++ 事务接口的结构
 
-User Guide 第 1067 页示例提到 `Hector::registerInput`、`Hector::registerOutput` 以及 `Hector::beginCapture`、`Hector::endCapture` 用于定义事务输入输出及捕获范围。实际完整 C++ 包装代码需要适配安装提供的 HECTOR 头文件与编译前端；**本教程不会凭空编写一个未经验证的完整 HECTOR API 程序并声称可执行**。下列伪接口表达数学规格，而非可直接编译的 HECTOR wrapper：
+User Guide 第 1067 页示例提到 `Hector::registerInput`、`Hector::registerOutput` 以及 `Hector::beginCapture`、`Hector::endCapture` 用于定义事务输入输出及捕获范围。实际完整 C++ 包装代码需要适配安装提供的 HECTOR 头文件与编译前端；**本教程不会凭空编写一个未经验证的完整 HECTOR API 程序并声称可执行**。下列普通 C++ 函数表达数学规格，可以作为普通 C++ 代码编译，但它不是 HECTOR wrapper：
 
 ```cpp
 #include <cstdint>
@@ -28,6 +30,77 @@ uint8_t add_mod256(uint8_t a, uint8_t b) {
 ```
 
 编写正式 DPV C++ spec 时还应处理整型符号、移位、未定义行为、数组访问和宿主编译器的优化规则，否则会出现“高层规范自身就不精确”的问题。
+
+### 3.1 完整 C++ 源文件与穷举自测
+
+下面两个文件可以用普通 C++ 编译器构建，用于先确认参考函数的模 256 运算。它们不包含、也不伪装成 HECTOR 的接口包装；运行成功不等同于 DPV 已经证明 C++ 与 RTL 等价。
+
+#### 3.1.1 参考函数完整源码
+
+
+
+**保存为 `案例工程/cpp/add_mod256.cc`：**
+
+<!-- source-begin: 案例工程/cpp/add_mod256.cc -->
+
+```cpp
+#include <cstdint>
+
+// 普通 C++ 参考函数；此文件没有调用 HECTOR 接口。
+std::uint8_t add_mod256(std::uint8_t a, std::uint8_t b) {
+    const unsigned sum = static_cast<unsigned>(a)
+                       + static_cast<unsigned>(b);
+    return static_cast<std::uint8_t>(sum & 0xffu);
+}
+```
+
+<!-- source-end -->
+
+#### 3.1.2 完整自测程序
+
+枚举 256×256 组输入，遇到不一致返回非零退出状态；检查的是参考函数，不是 RTL。
+
+**保存为 `案例工程/cpp/add_mod256_selftest.cc`：**
+
+<!-- source-begin: 案例工程/cpp/add_mod256_selftest.cc -->
+
+```cpp
+#include <cstdint>
+#include <iostream>
+
+std::uint8_t add_mod256(std::uint8_t a, std::uint8_t b);
+
+int main() {
+    unsigned tested = 0;
+    for (unsigned a = 0; a < 256; ++a) {
+        for (unsigned b = 0; b < 256; ++b) {
+            const auto actual = add_mod256(
+                static_cast<std::uint8_t>(a),
+                static_cast<std::uint8_t>(b));
+            const unsigned expected = (a + b) % 256u;
+            if (static_cast<unsigned>(actual) != expected) {
+                std::cerr << "Mismatch: a=" << a << " b=" << b << '\n';
+                return 1;
+            }
+            ++tested;
+        }
+    }
+    std::cout << "PASS: " << tested << " C++ input pairs\n";
+    return 0;
+}
+```
+
+<!-- source-end -->
+
+**普通 C++ 自测命令（从 `案例工程/` 目录执行）：**
+
+```bash
+mkdir -p build
+g++ -std=c++11 -Wall -Wextra -Werror \
+  cpp/add_mod256.cc cpp/add_mod256_selftest.cc \
+  -o build/add_mod256_selftest
+./build/add_mod256_selftest
+```
 
 ## 4. 创建双设计环境
 
@@ -64,6 +137,37 @@ set _hector_comp_use_new_flow true
 
 两者不是同一条 Tcl 命令，且 User Guide 指出 C++11 前端可能需要额外许可证。因此本教程以 User Guide 形式提示版本差异，正式脚本应在实际安装环境核验支持的变量及其配置方式，避免照抄未经核实的快速笔记。
 
+### 4.2 原生 DPV 流程模板完整源码
+
+此模板仍需要正式 HECTOR 包装函数和由实际捕获过程确定的阶段关系。不能把普通 `add_mod256` 函数直接重命名为 `hector_wrapper` 后宣称完成对接。
+
+**保存为 `案例工程/templates/dpv_hector.tcl`：**
+
+<!-- source-begin: 案例工程/templates/dpv_hector.tcl -->
+
+```tcl
+# DPV：C/C++ 与 RTL 计算结果对照。需要 HECTOR 事务包装与阶段定义。
+error "此文件是 DPV 教学模板：补齐真实 HECTOR C++ wrapper 和 spec/impl 阶段定义"
+# set_fml_appmode DPV
+# set _hector_comp_use_new_flow true ;# 此写法见 UG；须复核本地安装帮助
+# create_design -name spec -top hector_wrapper
+# cppan /project/ref/model.cc
+# compile_design spec
+# create_design -name impl -top alu_pipe -clock clk -reset rst_n -negReset
+# vcs -sverilog -f filelist_impl.f
+# compile_design impl
+# proc ual {} {
+#   map_by_name -inputs -specphase 1 -implphase 1
+#   map_by_name -outputs -specphase 1 -implphase 3
+# }
+# set_user_assumes_lemmas_procedure ual
+# report_dpv_mappings
+# check_fv
+# proofwait
+```
+
+<!-- source-end -->
+
 ## 5. 通过阶段对应建立事务关系
 
 ```tcl
@@ -77,6 +181,146 @@ set_user_assumes_lemmas_procedure "ual"
 示例将参考模型输入第 1 阶段与 RTL 第 1 阶段相匹配，同时将参考模型输出第 1 阶段与 RTL 第 3 阶段相匹配。两边所使用的相位编号由实际 C++ wrapper/RTL 捕获和阶段定义决定；“第 3 阶段”只是这个例子的合法约定，不能机械用于所有流水线。
 
 `map_by_name` 根据名称批量形成输入假设及输出对照关系；名称不同的信号需要显式指定。处理加法器输出时还要确保 C++ 与 SystemVerilog 的截断规则、运算宽度及溢出处理相同。
+
+### 5.1 完整 RTL 与独立的时序检查
+
+以下 RTL 有输入采集、求和、结果提交三个寄存器阶段。由于并发 SVA 在上升沿使用更新前的采样值，本例用接受输入后的第 3 个后继采样沿检查输出。这个 SVA 采样间隔不等于 HECTOR 阶段编号，不能由 `##3` 直接推导 DPV 的 `-implphase`。
+
+#### 5.1.1 完整流水线 RTL
+
+
+
+**保存为 `案例工程/rtl/alu_pipe_demo.sv`：**
+
+<!-- source-begin: 案例工程/rtl/alu_pipe_demo.sv -->
+
+```systemverilog
+// 三个寄存器阶段：输入采集、求和、结果提交。
+// 不含 ready/stall；in_valid=1 的每个上升沿都接受一项输入。
+module alu_pipe_demo (
+  input  logic       clk, rst_n, in_valid,
+  input  logic [7:0] a, b,
+  output logic       out_valid,
+  output logic [7:0] out
+);
+  logic [7:0] a_q, b_q, sum_q;
+  logic       valid_q, sum_valid;
+
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      a_q       <= 8'd0;
+      b_q       <= 8'd0;
+      sum_q     <= 8'd0;
+      out       <= 8'd0;
+      valid_q   <= 1'b0;
+      sum_valid <= 1'b0;
+      out_valid <= 1'b0;
+    end else begin
+      valid_q   <= in_valid;
+      sum_valid <= valid_q;
+      out_valid <= sum_valid;
+      if (in_valid) begin
+        a_q <= a;
+        b_q <= b;
+      end
+      if (valid_q)   sum_q <= a_q + b_q;
+      if (sum_valid) out   <= sum_q;
+    end
+  end
+endmodule
+```
+
+<!-- source-end -->
+
+#### 5.1.2 完整 SVA
+
+属性局部变量为每个并发事务保存自己的八位预期值；另一条属性检查有效标志的延迟关系。本例不含停止、反压或冲刷。
+
+**保存为 `案例工程/formal/alu_pipe_demo_props.sv`：**
+
+<!-- source-begin: 案例工程/formal/alu_pipe_demo_props.sv -->
+
+```systemverilog
+module alu_pipe_demo_props (
+  input logic clk, rst_n, in_valid, out_valid,
+  input logic [7:0] a, b, out
+);
+  // expected 只属于当前这一次属性匹配，连续事务不会共用一个值。
+  property p_add_result;
+    logic [7:0] expected;
+    @(posedge clk) disable iff (!rst_n)
+      (in_valid, expected = a + b)
+      |-> ##3 (out_valid && out == expected);
+  endproperty
+  ap_add_result: assert property (p_add_result);
+
+  logic [2:0] history_valid;
+  always_ff @(posedge clk or negedge rst_n)
+    if (!rst_n) history_valid <= 3'b000;
+    else history_valid <= {history_valid[1:0], 1'b1};
+
+  ap_valid_delay: assert property (@(posedge clk) disable iff (!rst_n)
+    history_valid[2] |-> out_valid == $past(in_valid, 3));
+  cp_consecutive_results: cover property (@(posedge clk) disable iff (!rst_n)
+    out_valid ##1 out_valid ##1 out_valid);
+endmodule
+
+bind alu_pipe_demo alu_pipe_demo_props u_alu_props (.*);
+```
+
+<!-- source-end -->
+
+#### 5.1.3 文件列表
+
+
+
+**保存为 `案例工程/filelist_fpv_alu_demo.f`：**
+
+<!-- source-begin: 案例工程/filelist_fpv_alu_demo.f -->
+
+```text
+./rtl/alu_pipe_demo.sv
+./formal/alu_pipe_demo_props.sv
+```
+
+<!-- source-end -->
+
+#### 5.1.4 配套 FPV 脚本
+
+这是检查 RTL 事务行为的独立练习，不会自动构成 C++—RTL 的 DPV 证明。
+
+**保存为 `案例工程/scripts/fpv_alu_demo.tcl`：**
+
+<!-- source-begin: 案例工程/scripts/fpv_alu_demo.tcl -->
+
+```tcl
+# 从案例工程目录执行；结果必须以本机 VC Formal 日志为准。
+set_fml_appmode FPV
+read_file -top alu_pipe_demo -sva -format sverilog -vcs {-f filelist_fpv_alu_demo.f}
+create_clock clk -period 100
+create_reset rst_n -sense low
+# 先核验实际复位状态，再保存初始状态。
+sim_run -stable
+sim_save_reset
+check_fv_setup
+report_fv -list
+check_fv -block
+report_fv -verbose
+```
+
+<!-- source-end -->
+
+**运行命令（Bash）：**
+
+```bash
+# 从包含“案例工程”目录的上一级目录开始。
+cd 案例工程
+mkdir -p logs
+set -o pipefail
+vcf -f scripts/fpv_alu_demo.tcl -batch 2>&1 | tee logs/fpv_alu_demo.log
+```
+
+这些命令应在本机具备相应 VC Formal 版本和许可证时执行。日志中的属性状态才是证明结论；命令退出、脚本结束或没有打印错误都不能代替属性结果检查。
 
 ## 6. 证明与报告
 

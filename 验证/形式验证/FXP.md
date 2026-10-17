@@ -1,5 +1,7 @@
 # FXP：形式未知值传播验证完整指南
 
+> **源码内嵌版。** 本章的完整案例以“保存为”标明文件路径，并在下方直接列出全文。代码框不带显示行号，可直接复制；`案例工程/` 只表示目录结构，不要求另找源码附件。包含占位符或保护性 `error` 的专用流程另行明确标为模板。
+
 > **第 7 册 · 专用应用**　Formal X-Propagation Verification。依据 User Guide 第 12 章（第 444～457 页）、Quick Reference Guide 的 FXP 页面。原有笔记中有较多全设计信号扫描与调试命令，本版将其整理为有风险说明的进阶用法。
 
 ## 1. 为什么未知值传播值得单独验证
@@ -20,19 +22,19 @@ FXP 的核心目标是寻找：**指定的未知值来源是否可能影响不�
 
 UG §12.3（第 447～451 页）介绍了下列常见类型：
 
-| 类型名 | 来源或目标 | 意义 |
-|---|---|---|
-| `uninit` | 未初始化寄存器 | 未复位状态可能携带未知值 |
-| `xassign` | 显式 X 赋值 | 设计源代码主动产生不确定值 |
-| `undriven` | 未驱动信号 | 网络没有确定驱动 |
-| `undef` | 未定义运算 | 例如某些除零场景 |
-| `oba` | 越界访问 | 数组等操作超出合法范围 |
-| `bbout`（按该版本帮助核对） | 黑盒输出 | 未知结果可能进入下游 |
-| `bbin` | 黑盒输入 | 观察未知值是否送入模块 |
-| `in` / `out` | 顶层输入/输出 | 自定义源或观察目标 |
-| `snip` | 经过截断的网络 | 被抽象网络引入不确定性 |
-| `abs` | 抽象对象 | 抽象造成额外未知来源或观察点 |
-| `unresin` / `unresout` | 未解析模块输入/输出 | 未解析实例两侧的传播 |
+| 类型名                    | 来源或目标      | 意义             |
+| ---------------------- | ---------- | -------------- |
+| `uninit`               | 未初始化寄存器    | 未复位状态可能携带未知值   |
+| `xassign`              | 显式 X 赋值    | 设计源代码主动产生不确定值  |
+| `undriven`             | 未驱动信号      | 网络没有确定驱动       |
+| `undef`                | 未定义运算      | 例如某些除零场景       |
+| `oba`                  | 越界访问       | 数组等操作超出合法范围    |
+| `bbout`（按该版本帮助核对）      | 黑盒输出       | 未知结果可能进入下游     |
+| `bbin`                 | 黑盒输入       | 观察未知值是否送入模块    |
+| `in` / `out`           | 顶层输入/输出    | 自定义源或观察目标      |
+| `snip`                 | 经过截断的网络    | 被抽象网络引入不确定性    |
+| `abs`                  | 抽象对象       | 抽象造成额外未知来源或观察点 |
+| `unresin` / `unresout` | 未解析模块输入/输出 | 未解析实例两侧的传播     |
 
 **类型字符串以具体安装版本 `help fxp_generate` 和 UG 表 19 为准**。不同来源给出的缩写有差异，不能仅凭表格猜测选项。`fxp_generate` 无 `-type` 时已包含若干默认类别；明确选择不同类别后，自动生成的属性数可能发生变化。
 
@@ -119,6 +121,85 @@ assign out_data = initialized ? cache : 8'h00;
 ```
 
 当 `cache` 尚未被写入时，输出为确定值；写入后使用缓存数据。FXP 仍要检查选择条件以及其他传播分支是否可能携带未知值。
+
+### 6.2 本节完整工程文件
+
+上面的片段展示问题原理。以下是同一类未初始化缓存案例的完整文件，故意保留复位端口却不复位缓存，用来说明“端口存在”并不意味着缓存有已知初值。
+
+#### 6.2.1 被验证的完整 RTL
+
+
+
+**保存为 `案例工程/rtl/uninit_demo.sv`：**
+
+<!-- source-begin: 案例工程/rtl/uninit_demo.sv -->
+
+```systemverilog
+// Purposefully uninitialized cache to illustrate FXP, not recommended RTL.
+module uninit_demo (
+  input logic clk, rst_n, write,
+  input logic [7:0] in_data,
+  output logic [7:0] out_data
+);
+  logic [7:0] cache;
+  always_ff @(posedge clk)
+    if (write) cache <= in_data;
+  assign out_data = cache;
+endmodule
+```
+
+<!-- source-end -->
+
+#### 6.2.2 完整文件列表
+
+
+
+**保存为 `案例工程/filelist_fxp.f`：**
+
+<!-- source-begin: 案例工程/filelist_fxp.f -->
+
+```text
+./rtl/uninit_demo.sv
+```
+
+<!-- source-end -->
+
+#### 6.2.3 完整 FXP 脚本
+
+`fxp_generate` 选择未初始化对象，`fxp_assert` 将输出作为必须已知的观察位置。输入 `write` 没有被假设为始终有效，因此必须考虑尚未写入的路径。
+
+**保存为 `案例工程/scripts/fxp_uninit.tcl`：**
+
+<!-- source-begin: 案例工程/scripts/fxp_uninit.tcl -->
+
+```tcl
+set_fml_appmode FXP
+read_file -top uninit_demo -format sverilog -vcs {-f filelist_fxp.f}
+create_clock clk -period 100
+create_reset rst_n -sense low
+sim_run -stable
+sim_save_reset
+fxp_generate -name uninitialized_checks -type {uninit}
+fxp_assert -name output_must_be_known out_data
+check_fv -block
+report_fv -verbose
+```
+
+<!-- source-end -->
+
+**运行命令（Bash）：**
+
+```bash
+# 从包含“案例工程”目录的上一级目录开始。
+cd 案例工程
+mkdir -p logs
+set -o pipefail
+vcf -f scripts/fxp_uninit.tcl -batch 2>&1 | tee logs/fxp_uninit.log
+```
+
+这些命令应在本机具备相应 VC Formal 版本和许可证时执行。日志中的属性状态才是证明结论；命令退出、脚本结束或没有打印错误都不能代替属性结果检查。
+
+预期观察是：未发生有效写入时，缓存的不确定性可能到达输出。分析失败应查看工具实际选择的注入点和反例，不应通过把 `write` 固定为 1 来掩盖初始化缺陷。这里没有真实 FXP 运行报告。
 
 ## 7. 教学用例 B：显式 X 赋值与越界
 

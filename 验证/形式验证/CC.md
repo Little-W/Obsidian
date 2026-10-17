@@ -1,5 +1,7 @@
 # CC：形式连通性检查完整指南
 
+> **源码内嵌版。** 本章的完整案例以“保存为”标明文件路径，并在下方直接列出全文。代码框不带显示行号，可直接复制；`案例工程/` 只表示目录结构，不要求另找源码附件。包含占位符或保护性 `error` 的专用流程另行明确标为模板。
+
 > **第 8 册 · 专用应用**　Connectivity Checking。依据 User Guide 第 13 章（第 458～516 页）及 Quick Reference Guide CC 部分。
 
 ## 1. 这项应用解决的问题
@@ -30,20 +32,32 @@ User Guide §13.2 将一个基本连通性要求分解为：名称、源 `src`�
 
 ## 3. 最小实例：多路选择器
 
+
+### 3.1 完整多路选择器源码
+
+此处没有寄存器，输出完全由当前 `sel/a/b` 决定。
+
+**保存为 `案例工程/rtl/mux2.sv`：**
+
+<!-- source-begin: 案例工程/rtl/mux2.sv -->
+
 ```systemverilog
 module mux2 (
-  input  logic a, b, sel,
+  input logic a, b, sel,
   output logic y
 );
   assign y = sel ? b : a;
 endmodule
 ```
 
+<!-- source-end -->
+
+
 对应两条连接规格：当 `sel=0` 时 `a` 与 `y` 相同；当 `sel=1` 时 `b` 与 `y` 相同。可以在 Tcl 中创建：
 
 ```tcl
 set_fml_appmode CC
-read_file -top mux2 -format sverilog -vcs {mux2.sv}
+read_file -top mux2 -format sverilog -vcs {./rtl/mux2.sv}
 add_cc -src a -dest y -enable {!sel}
 add_cc -src b -dest y -enable {sel}
 check_fv -block
@@ -56,23 +70,60 @@ report_fv -list
 
 CSV 可以由规格表维护，从模块接口说明或端口表生成。依据 UG 第 461～464 页，默认字段顺序从属性名、源、目的、使能、路径延迟开始。一个简单 CSV 如下：
 
+
+### 4.1 完整 CSV 连接规格
+
+本例使用名称、源、目的、使能、路径延迟五列。第一行是说明性注释；是否接受这一注释形式仍需按安装版本核对。两条连接覆盖两个选择条件。
+
+**保存为 `案例工程/cc_connections.csv`：**
+
+<!-- source-begin: 案例工程/cc_connections.csv -->
+
 ```csv
-cc_a,a,y,!sel,0
-cc_b,b,y,sel,0
+// format: name,src,dest,enable,path_delay
+cc_mux_a,a,y,!sel,0
+cc_mux_b,b,y,sel,0
 ```
+
+<!-- source-end -->
+
+
+
+### 4.2 CSV 方式的完整运行脚本
+
+直接读入上节 RTL 和本节 CSV；不需要隐藏的 `filelist.f`。先查看 `report_load_cc`，确认两条连接均成功加载，再分析形式结果。
+
+**保存为 `案例工程/scripts/cc_mux.tcl`：**
+
+<!-- source-begin: 案例工程/scripts/cc_mux.tcl -->
 
 ```tcl
 set_fml_appmode CC
-read_file -top mux2 -format sverilog -vcs {mux2.sv}
-load_cc -format csv connections.csv
+read_file -top mux2 -format sverilog -vcs {./rtl/mux2.sv}
+load_cc -format csv cc_connections.csv
 report_load_cc
 check_fv -block
-report_fv -list
+report_fv -verbose
 ```
+
+<!-- source-end -->
+
+**运行命令（Bash）：**
+
+```bash
+# 从包含“案例工程”目录的上一级目录开始。
+cd 案例工程
+mkdir -p logs
+set -o pipefail
+vcf -f scripts/cc_mux.tcl -batch 2>&1 | tee logs/cc_mux.log
+```
+
+这些命令应在本机具备相应 VC Formal 版本和许可证时执行。日志中的属性状态才是证明结论；命令退出、脚本结束或没有打印错误都不能代替属性结果检查。
+
 
 对于跨组织的大规模规格，建议保留完整的九个核心字段并明确表头与默认值。`load_cc -default_param_order` 对应默认列顺序，`load_cc_set_param` 可定义自定义列对应关系，如 `load_cc_set_param csv_src "%2%"`；如果使用自定义格式必须随规格表一起提交，防止 CSV 列移动造成检查错位。
 
-### 4.1 延迟连接的限制
+### 4.3 延迟连接的限制
 
 CC 支持与时钟关联的连接延迟；路径中可能有寄存器，也可能由使能控制时序组合。验证之前需要指定准确时钟并检查 `path_delay` 的解释。不要把源和目的之间的**物理布线延迟**误认为 `path_delay=1`；这里描述的是形式模型中按采样时钟计算的功能延迟。多时钟跨域连接不能简单用一条普通单时钟延迟规格代替 CDC 分析。
 
