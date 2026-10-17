@@ -12,23 +12,167 @@ AEP **不等于自动证明全部功能规格**。它擅长发现通用的实现
 
 ## 2. AEP 的典型检查项目
 
-| AEP 类型 | `-aep` 选择值（按 User Guide） | 要检查的危险行为 | 例子 |
-|---|---|---|---|
-| 数组越界 | `bounds_check` | 索引超出声明范围 | 深度为 2 的数组访问索引 3 |
-| 算术溢出 | `arith_oflow` | 运算结果超过目标表达能力 | 较窄寄存器接收宽加法结果 |
-| 移位溢出 | `shift_oflow` | 移位导致有效位全部移出 | 1 位左操作数移位 2 位 |
-| 类型转换溢出 | `cast_oflow` | 转换后的有效位损失 | 带符号操作转换到窄寄存器 |
-| 悬空三态总线 | `floating_bus` | 所有三态驱动均未启用 | 所有 `oe` 均为 0 |
-| 多驱动三态总线 | `multi_driver` | 多个驱动同时有效 | `oe0` 与 `oe1` 同时为 1 |
-| 分支覆盖完整性 | `full_case` | case/if 组合未完整覆盖 | 没有 default 的分支遗漏 |
-| 并行分支互斥 | `parallel_case` | 多分支同时匹配 | 重叠编码引起优先级问题 |
-| 置位/复位问题 | `set_reset` | 相关控制状态及赋值组合危险 | 置位与复位同时发生 |
-| 未知值赋值 | `x_assign` | 显式 X 进入逻辑 | `assign out = 1'bx` |
-| FSM 死锁 | `fsm_deadlock` | 状态无法继续转移 | 没有离开等待状态的路径 |
-| FSM 活锁 | `fsm_livelock` | 在循环中反复转移却不完成 | 两状态无限循环 |
-| FSM 相关额外检查 | `fsm_unionlock` | 与 FSM 联合锁定相关的规则 | 详见版本帮助 |
+- **AEP 类型：** 数组越界
 
-表格中的实际生成条件、适用语言和局限需以 UG §10.1.1（第 363～375 页）为准，不是所有检查都支持全部 Verilog、SystemVerilog 与 VHDL 语法。例如 User Guide 对 `cast_oflow` 的 VHDL 支持有单独限制。
+  **`-aep` 选择值（按 User Guide）：**
+
+  ```text
+  bounds_check
+  ```
+
+  **要检查的危险行为：** 索引超出声明范围
+
+  **例子：** 深度为 2 的数组访问索引 3
+
+- **AEP 类型：** 算术溢出
+
+  **`-aep` 选择值（按 User Guide）：**
+
+  ```text
+  arith_oflow
+  ```
+
+  **要检查的危险行为：** 运算结果超过目标表达能力
+
+  **例子：** 较窄寄存器接收宽加法结果
+
+- **AEP 类型：** 移位溢出
+
+  **`-aep` 选择值（按 User Guide）：**
+
+  ```text
+  shift_oflow
+  ```
+
+  **要检查的危险行为：** 移位导致有效位全部移出
+
+  **例子：** 1 位左操作数移位 2 位
+
+- **AEP 类型：** 类型转换溢出
+
+  **`-aep` 选择值（按 User Guide）：**
+
+  ```text
+  cast_oflow
+  ```
+
+  **要检查的危险行为：** 转换后的有效位损失
+
+  **例子：** 带符号操作转换到窄寄存器
+
+- **AEP 类型：** 悬空三态总线
+
+  **`-aep` 选择值（按 User Guide）：**
+
+  ```text
+  floating_bus
+  ```
+
+  **要检查的危险行为：** 所有三态驱动均未启用
+
+  **例子：** 所有 `oe` 均为 0
+
+- **AEP 类型：** 多驱动三态总线
+
+  **`-aep` 选择值（按 User Guide）：**
+
+  ```text
+  multi_driver
+  ```
+
+  **要检查的危险行为：** 多个驱动同时有效
+
+  **例子：** `oe0` 与 `oe1` 同时为 1
+
+- **AEP 类型：** 分支覆盖完整性
+
+  **`-aep` 选择值（按 User Guide）：**
+
+  ```text
+  full_case
+  ```
+
+  **要检查的危险行为：** case/if 组合未完整覆盖
+
+  **例子：** 没有 default 的分支遗漏
+
+- **AEP 类型：** 并行分支互斥
+
+  **`-aep` 选择值（按 User Guide）：**
+
+  ```text
+  parallel_case
+  ```
+
+  **要检查的危险行为：** 多分支同时匹配
+
+  **例子：** 重叠编码引起优先级问题
+
+- **AEP 类型：** 置位/复位问题
+
+  **`-aep` 选择值（按 User Guide）：**
+
+  ```text
+  set_reset
+  ```
+
+  **要检查的危险行为：** 相关控制状态及赋值组合危险
+
+  **例子：** 置位与复位同时发生
+
+- **AEP 类型：** 未知值赋值
+
+  **`-aep` 选择值（按 User Guide）：**
+
+  ```text
+  x_assign
+  ```
+
+  **要检查的危险行为：** 显式 X 进入逻辑
+
+  **例子：**
+
+  ```text
+  assign out = 1'bx
+  ```
+
+- **AEP 类型：** FSM 死锁
+
+  **`-aep` 选择值（按 User Guide）：**
+
+  ```text
+  fsm_deadlock
+  ```
+
+  **要检查的危险行为：** 状态无法继续转移
+
+  **例子：** 没有离开等待状态的路径
+
+- **AEP 类型：** FSM 活锁
+
+  **`-aep` 选择值（按 User Guide）：**
+
+  ```text
+  fsm_livelock
+  ```
+
+  **要检查的危险行为：** 在循环中反复转移却不完成
+
+  **例子：** 两状态无限循环
+
+- **AEP 类型：** FSM 相关额外检查
+
+  **`-aep` 选择值（按 User Guide）：**
+
+  ```text
+  fsm_unionlock
+  ```
+
+  **要检查的危险行为：** 与 FSM 联合锁定相关的规则
+
+  **例子：** 详见版本帮助
+
+上述各项检查的实际生成条件、适用语言和局限需以 UG §10.1.1（第 363～375 页）为准，不是所有检查都支持全部 Verilog、SystemVerilog 与 VHDL 语法。例如 User Guide 对 `cast_oflow` 的 VHDL 支持有单独限制。
 
 ## 3. 初学者第一个 AEP 案例：数组越界
 
@@ -152,19 +296,117 @@ aep_config -dont_generate -type fsm_livelock {state_reg::state_name}
 
 ## 6. AEP 的命令作用与注意事项
 
-| 指令 | 功能 | 注意 |
-|---|---|---|
-| `set_fml_appmode AEP` | 进入自动属性应用 | 编译前设置 |
-| `read_file ... -aep ...` | 指定要从设计抽取的检查类型 | 类型和语言需要对应 |
-| `elaborate top -aep ...` | 分步编译流程中生成 AEP | 与 `analyze` 配对 |
-| `aep_generate -type fsm_fairness` | 为 FSM 相关检查生成候选公平性设置 | 必须人工审查合理性 |
-| `aep_config -dont_generate ...` | 对指定状态或检查关闭自动生成 | 需保存关闭理由 |
-| `fvdisable` / `fvenable` | 调整已生成属性是否参加求解 | 不等同于修改 RTL |
-| `fvwaive` / `fvunwaive` | 将属性纳入/移出豁免 | 保留变更依据 |
-| `check_fv` | 求解启用的自动属性 | 按 `-block` 或报告确认运行完成 |
-| `report_fv -verbose` | 检查详细结果 | 分析反例与真正危险性 |
-| `save_waiver_file -file aep.el` | 保存豁免清单 | 提交审查版本 |
-| `read_waiver_file -elfiles aep.el` | 导入豁免 | 注意 RTL 或属性名变化 |
+- **指令：**
+
+  ```tcl
+  set_fml_appmode AEP
+  ```
+
+  **功能：** 进入自动属性应用
+
+  **注意：** 编译前设置
+
+- **指令：**
+
+  ```tcl
+  read_file ... -aep ...
+  ```
+
+  **功能：** 指定要从设计抽取的检查类型
+
+  **注意：** 类型和语言需要对应
+
+- **指令：**
+
+  ```tcl
+  elaborate top -aep ...
+  ```
+
+  **功能：** 分步编译流程中生成 AEP
+
+  **注意：** 与 `analyze` 配对
+
+- **指令：**
+
+  ```tcl
+  aep_generate -type fsm_fairness
+  ```
+
+  **功能：** 为 FSM 相关检查生成候选公平性设置
+
+  **注意：** 必须人工审查合理性
+
+- **指令：**
+
+  ```tcl
+  aep_config -dont_generate ...
+  ```
+
+  **功能：** 对指定状态或检查关闭自动生成
+
+  **注意：** 需保存关闭理由
+
+- **指令（分别列出）：**
+
+  ```tcl
+  fvdisable
+  fvenable
+  ```
+
+  **功能：** 调整已生成属性是否参加求解
+
+  **注意：** 不等同于修改 RTL
+
+- **指令（分别列出）：**
+
+  ```tcl
+  fvwaive
+  fvunwaive
+  ```
+
+  **功能：** 将属性纳入/移出豁免
+
+  **注意：** 保留变更依据
+
+- **指令：**
+
+  ```tcl
+  check_fv
+  ```
+
+  **功能：** 求解启用的自动属性
+
+  **注意：** 按 `-block` 或报告确认运行完成
+
+- **指令：**
+
+  ```tcl
+  report_fv -verbose
+  ```
+
+  **功能：** 检查详细结果
+
+  **注意：** 分析反例与真正危险性
+
+- **指令：**
+
+  ```tcl
+  save_waiver_file -file aep.el
+  ```
+
+  **功能：** 保存豁免清单
+
+  **注意：** 提交审查版本
+
+- **指令：**
+
+  ```tcl
+  read_waiver_file -elfiles aep.el
+  ```
+
+  **功能：** 导入豁免
+
+  **注意：** 注意 RTL 或属性名变化
 
 ## 7. 常见问题与处理方案
 

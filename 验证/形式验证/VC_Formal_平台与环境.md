@@ -14,20 +14,141 @@ VC Formal 是 Synopsys 的形式验证平台，以共同的编译、展开、属
 
 ## 2. 应用名称与 Tcl 模式的区别
 
-| 中文用途 | 文档中的应用名称 | Tcl 模式（优先以 User Guide 为准） | 专用资料 |
-|---|---|---|---|
-| 功能属性证明 | FPV | `FPV` | [FPV.md](FPV.md) |
-| 自动提取设计检查 | AEP | `AEP` | [AEP.md](AEP.md) |
-| 连通性 | CC | `CC` | [CC.md](CC.md) |
-| 形式覆盖率分析 | FCA | **`COV`** | [FCA.md](FCA.md) |
-| 未知值传播 | FXP | `FXP` | [FXP.md](FXP.md) |
-| 顺序等价 | SEQ | `SEQ` | [SEQ.md](SEQ.md) |
-| 寄存器验证 | FRV | `FRV` | [FRV.md](FRV.md) |
-| 测试平台分析 | FTA | `FTA`（通常由 FPV 会话切换） | [FTA.md](FTA.md) |
-| 功能安全 | FuSa | `FUSA` | [FuSa.md](FuSa.md) |
-| 信息流安全 | FSV | `FSV` | [FSV.md](FSV.md) |
-| 数据路径对照 | DPV | `DPV` | [DPV.md](DPV.md) |
-| 低功耗连通性 | FLP/LPC | `CC` + 低功耗命令（该使用流程） | [FLP_LPC.md](FLP_LPC.md) |
+- **中文用途：** 功能属性证明
+
+  **文档中的应用名称：** FPV
+
+  **Tcl 模式（优先以 User Guide 为准）：**
+
+  ```text
+  FPV
+  ```
+
+  **专用资料：** [FPV.md](FPV.md)
+
+- **中文用途：** 自动提取设计检查
+
+  **文档中的应用名称：** AEP
+
+  **Tcl 模式（优先以 User Guide 为准）：**
+
+  ```text
+  AEP
+  ```
+
+  **专用资料：** [AEP.md](AEP.md)
+
+- **中文用途：** 连通性
+
+  **文档中的应用名称：** CC
+
+  **Tcl 模式（优先以 User Guide 为准）：**
+
+  ```text
+  CC
+  ```
+
+  **专用资料：** [CC.md](CC.md)
+
+- **中文用途：** 形式覆盖率分析
+
+  **文档中的应用名称：** FCA
+
+  **Tcl 模式（优先以 User Guide 为准）：**
+
+  ```text
+  COV
+  ```
+
+  **专用资料：** [FCA.md](FCA.md)
+
+- **中文用途：** 未知值传播
+
+  **文档中的应用名称：** FXP
+
+  **Tcl 模式（优先以 User Guide 为准）：**
+
+  ```text
+  FXP
+  ```
+
+  **专用资料：** [FXP.md](FXP.md)
+
+- **中文用途：** 顺序等价
+
+  **文档中的应用名称：** SEQ
+
+  **Tcl 模式（优先以 User Guide 为准）：**
+
+  ```text
+  SEQ
+  ```
+
+  **专用资料：** [SEQ.md](SEQ.md)
+
+- **中文用途：** 寄存器验证
+
+  **文档中的应用名称：** FRV
+
+  **Tcl 模式（优先以 User Guide 为准）：**
+
+  ```text
+  FRV
+  ```
+
+  **专用资料：** [FRV.md](FRV.md)
+
+- **中文用途：** 测试平台分析
+
+  **文档中的应用名称：** FTA
+
+  **Tcl 模式（优先以 User Guide 为准）：** `FTA`（通常由 FPV 会话切换）
+
+  **专用资料：** [FTA.md](FTA.md)
+
+- **中文用途：** 功能安全
+
+  **文档中的应用名称：** FuSa
+
+  **Tcl 模式（优先以 User Guide 为准）：**
+
+  ```text
+  FUSA
+  ```
+
+  **专用资料：** [FuSa.md](FuSa.md)
+
+- **中文用途：** 信息流安全
+
+  **文档中的应用名称：** FSV
+
+  **Tcl 模式（优先以 User Guide 为准）：**
+
+  ```text
+  FSV
+  ```
+
+  **专用资料：** [FSV.md](FSV.md)
+
+- **中文用途：** 数据路径对照
+
+  **文档中的应用名称：** DPV
+
+  **Tcl 模式（优先以 User Guide 为准）：**
+
+  ```text
+  DPV
+  ```
+
+  **专用资料：** [DPV.md](DPV.md)
+
+- **中文用途：** 低功耗连通性
+
+  **文档中的应用名称：** FLP/LPC
+
+  **Tcl 模式（优先以 User Guide 为准）：** `CC` + 低功耗命令（该使用流程）
+
+  **专用资料：** [FLP_LPC.md](FLP_LPC.md)
 
 **经过源文件对照的重要更正：**2025 年 9 月快速指南的 FCA 命令行示例使用 `set_fml_appmode FCA`，但同版本 1,168 页 User Guide 在第 65、395、430 页明确展示 `COV`。本教程的 FCA 脚本以 `COV` 为首选，启动后通过 `get_fml_appmode` 确认。FTA 模式在 User Guide 第 65 页明确指出不应直接使用 `vcf -fmode FTA` 启动，而应在 VC Formal 会话内用 `set_fml_appmode FTA`。这两处必须与实际安装版本核对。
 

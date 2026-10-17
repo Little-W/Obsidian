@@ -1,5 +1,7 @@
 # SVA 语法合集笔记
 
+> 历史笔记：仅将版式改为分点说明与代码块，不代表本次重新审核了技术内容。当前教程请使用上一级目录中的对应分册。
+
 这份笔记整理 SystemVerilog Assertions，也就是 SVA 的常用语法、写法和示例。重点放在日常验证里最常用的 concurrent assertion、sequence、property、采样函数和绑定方式，目标是做到可以直接对照着写。
 
 ## 1. SVA 的基本骨架

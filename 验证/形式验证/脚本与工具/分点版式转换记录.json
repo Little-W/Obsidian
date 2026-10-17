@@ -1,0 +1,129 @@
+{
+  "manual_revision": "1.2",
+  "tables_converted": 54,
+  "items_preserved": 466,
+  "details": [
+    {
+      "file": "00_阅读指南.md",
+      "tables_converted": 2,
+      "items": 25
+    },
+    {
+      "file": "AEP.md",
+      "tables_converted": 2,
+      "items": 24
+    },
+    {
+      "file": "CC.md",
+      "tables_converted": 2,
+      "items": 20
+    },
+    {
+      "file": "DPV.md",
+      "tables_converted": 1,
+      "items": 11
+    },
+    {
+      "file": "FCA.md",
+      "tables_converted": 3,
+      "items": 22
+    },
+    {
+      "file": "FLP_LPC.md",
+      "tables_converted": 2,
+      "items": 17
+    },
+    {
+      "file": "FPV.md",
+      "tables_converted": 3,
+      "items": 31
+    },
+    {
+      "file": "FRV.md",
+      "tables_converted": 2,
+      "items": 13
+    },
+    {
+      "file": "FSV.md",
+      "tables_converted": 1,
+      "items": 8
+    },
+    {
+      "file": "FTA.md",
+      "tables_converted": 2,
+      "items": 16
+    },
+    {
+      "file": "FXP.md",
+      "tables_converted": 3,
+      "items": 23
+    },
+    {
+      "file": "FuSa.md",
+      "tables_converted": 2,
+      "items": 14
+    },
+    {
+      "file": "SEQ.md",
+      "tables_converted": 2,
+      "items": 18
+    },
+    {
+      "file": "SVA语法合集.md",
+      "tables_converted": 4,
+      "items": 41
+    },
+    {
+      "file": "VC_Formal_平台与环境.md",
+      "tables_converted": 1,
+      "items": 12
+    },
+    {
+      "file": "形式验证.md",
+      "tables_converted": 3,
+      "items": 17
+    },
+    {
+      "file": "术语表与资料索引.md",
+      "tables_converted": 3,
+      "items": 61
+    },
+    {
+      "file": "案例工程/README.md",
+      "tables_converted": 2,
+      "items": 15
+    },
+    {
+      "file": "案例工程/templates/README.md",
+      "tables_converted": 1,
+      "items": 6
+    },
+    {
+      "file": "覆盖与验证验收.md",
+      "tables_converted": 3,
+      "items": 12
+    },
+    {
+      "file": "调试与证明性能.md",
+      "tables_converted": 3,
+      "items": 17
+    },
+    {
+      "file": "质量检查与版本说明.md",
+      "tables_converted": 1,
+      "items": 5
+    },
+    {
+      "file": "附录_修订前笔记/形式验证.md",
+      "tables_converted": 5,
+      "items": 31
+    },
+    {
+      "file": "验证工程与结果判读.md",
+      "tables_converted": 1,
+      "items": 7
+    }
+  ],
+  "vc_formal_executed": false,
+  "example_source_files_changed": 0
+}

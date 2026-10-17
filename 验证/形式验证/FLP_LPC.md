@@ -14,14 +14,45 @@ FLP CC 将 RTL 与 UPF（Unified Power Format，IEEE 1801）电源意图结合�
 
 ## 2. 重要对象
 
-| 对象 | 解释 | 例子 |
-|---|---|---|
-| Power domain | 电源控制范围 | 可关断图像处理域 |
-| Supply net / set | 电源网络与电压状态 | `VDD_CORE` |
-| Isolation | 电源关断时对跨域输出进行限制 | 下游锁定为 0 |
-| Retention | 保存关断前需要恢复的状态 | 睡眠前的配置位 |
-| Power state table | 组合描述电源合法状态 | 工作、待机、关断 |
-| Power controller | 控制电源和隔离时序 | 关断前先使能隔离 |
+- **对象：** Power domain
+
+  **解释：** 电源控制范围
+
+  **例子：** 可关断图像处理域
+
+- **对象：** Supply net / set
+
+  **解释：** 电源网络与电压状态
+
+  **例子：**
+
+  ```text
+  VDD_CORE
+  ```
+
+- **对象：** Isolation
+
+  **解释：** 电源关断时对跨域输出进行限制
+
+  **例子：** 下游锁定为 0
+
+- **对象：** Retention
+
+  **解释：** 保存关断前需要恢复的状态
+
+  **例子：** 睡眠前的配置位
+
+- **对象：** Power state table
+
+  **解释：** 组合描述电源合法状态
+
+  **例子：** 工作、待机、关断
+
+- **对象：** Power controller
+
+  **解释：** 控制电源和隔离时序
+
+  **例子：** 关断前先使能隔离
 
 要求明确：何时隔离、生效电平是什么、钳位值为何、是否需要恢复保存状态。普通 CC 的组合连接模型不足以单独表达所有电源关闭的效果。
 
@@ -205,19 +236,93 @@ UPF 应由电源架构负责人确认电源域划分、电源状态、隔离和�
 
 ## 7. 主要命令与用途
 
-| 命令 | 用途 |
-|---|---|
-| `set_fml_appmode CC` | 在 CC 模式启动低功耗检查 |
-| `fvlp_instrument -type ...` | 启用隔离/电源网络/保持等插桩 |
-| `read_upf` | 读入电源意图并建立相关模型 |
-| `get_fvlp_free_supply_nets` | 查询没有充分控制的电源网络 |
-| `fvlp_set_supply_aon` | 将指定电源声明为始终打开 |
-| `fvlp_set_supply_onoff_net` | 连接电源控制信号与供电网络 |
-| `add_cc ... -lpa_type ...` | 定义带低功耗类型的连接规则 |
-| `flp_check_clamp_value` | 检查预期隔离钳位 |
-| `flp_cc_vacuity_gen_split` | 辅助分析条件不可满足造成的空洞结果 |
-| `flp_cc_vacuity_report` | 查看有关空洞报告 |
-| `fvlp_cc_print_path` | 输出低功耗连接的追踪路径 |
+- **命令：**
+
+  ```tcl
+  set_fml_appmode CC
+  ```
+
+  **用途：** 在 CC 模式启动低功耗检查
+
+- **命令：**
+
+  ```tcl
+  fvlp_instrument -type ...
+  ```
+
+  **用途：** 启用隔离/电源网络/保持等插桩
+
+- **命令：**
+
+  ```tcl
+  read_upf
+  ```
+
+  **用途：** 读入电源意图并建立相关模型
+
+- **命令：**
+
+  ```tcl
+  get_fvlp_free_supply_nets
+  ```
+
+  **用途：** 查询没有充分控制的电源网络
+
+- **命令：**
+
+  ```tcl
+  fvlp_set_supply_aon
+  ```
+
+  **用途：** 将指定电源声明为始终打开
+
+- **命令：**
+
+  ```tcl
+  fvlp_set_supply_onoff_net
+  ```
+
+  **用途：** 连接电源控制信号与供电网络
+
+- **命令：**
+
+  ```tcl
+  add_cc ... -lpa_type ...
+  ```
+
+  **用途：** 定义带低功耗类型的连接规则
+
+- **命令：**
+
+  ```tcl
+  flp_check_clamp_value
+  ```
+
+  **用途：** 检查预期隔离钳位
+
+- **命令：**
+
+  ```tcl
+  flp_cc_vacuity_gen_split
+  ```
+
+  **用途：** 辅助分析条件不可满足造成的空洞结果
+
+- **命令：**
+
+  ```tcl
+  flp_cc_vacuity_report
+  ```
+
+  **用途：** 查看有关空洞报告
+
+- **命令：**
+
+  ```tcl
+  fvlp_cc_print_path
+  ```
+
+  **用途：** 输出低功耗连接的追踪路径
 
 ## 8. 三个需要分别检查的场景
 

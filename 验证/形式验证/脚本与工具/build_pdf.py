@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build inline-source Markdown, offline HTML, and typeset PDF editions.
+"""Build the list-and-code edition as Markdown, offline HTML, and PDF.
 
 Requirements: Python 3.10+, Pandoc, XeLaTeX, Noto CJK fonts. The HTML embeds
 all images and CSS; it needs neither an Internet connection nor example files.
@@ -37,14 +37,14 @@ FLP_LPC.md
 VC_Formal_Quick_Reference_Guide_中文整理版.md'''.splitlines()
 HEADER = '''---
 title: "VC Formal 中文形式验证手册"
-subtitle: "源码内嵌修订版 · 原理、SVA、工具命令与完整案例"
+subtitle: "分点说明与代码块版 · 原理、SVA、工具命令与完整案例"
 author: "独立中文技术教程（非官方译本）"
-date: "工具文档基线 X-2025.06-SP1 · 手册修订 1.1 · 2026-10-17"
+date: "工具文档基线 X-2025.06-SP1 · 手册修订 1.2 · 2026-10-17"
 lang: zh-CN
 ---
 
 '''
-READ_FORMAT = 'markdown+tex_math_dollars+tex_math_single_backslash'
+READ_FORMAT = 'markdown+tex_math_dollars+tex_math_single_backslash-pipe_tables-simple_tables-multiline_tables-grid_tables'
 
 def combined_text() -> str:
     sections = []
@@ -63,8 +63,8 @@ def html_build(text: str, out: Path) -> None:
     result = subprocess.run([
         'pandoc','--from',READ_FORMAT,'--to','html5','--standalone',
         '--toc','--toc-depth=2','--mathml',
-        '--lua-filter',str(ROOT/'脚本与工具/table_render.lua'),
-        '--metadata','pagetitle=VC Formal 中文形式验证手册｜源码内嵌修订版',
+        '--lua-filter',str(ROOT/'脚本与工具/doc_links.lua'),
+        '--metadata','pagetitle=VC Formal 中文形式验证手册｜分点说明与代码块版',
     ], input=text, text=True, capture_output=True, check=True, cwd=ROOT).stdout
     css = (ROOT/'脚本与工具/handbook.css').read_text(encoding='utf-8')
     result = result.replace('</head>', '<style>\n'+css+'\n</style>\n</head>')
@@ -100,7 +100,7 @@ def pdf_build(text: str, out: Path) -> None:
         args = [
             'pandoc', str(source), '--from', READ_FORMAT,
             '--standalone','--toc','--toc-depth=2','--top-level-division=chapter',
-            '--lua-filter',str(ROOT/'脚本与工具/table_render.lua'),
+            '--lua-filter',str(ROOT/'脚本与工具/doc_links.lua'),
             '--pdf-engine=xelatex', '-V','documentclass=ctexbook', '-V','classoption=openany',
             '-V','papersize=a4','-V','geometry:margin=22mm','-V','fontsize=11pt',
             '-V','linestretch=1.20','-V','mainfont=Noto Serif CJK SC',
@@ -120,6 +120,7 @@ def main() -> None:
         if not shutil.which(exe):
             raise SystemExit(f'Missing executable: {exe}')
     subprocess.run(['python3', str(ROOT/'脚本与工具/sync_inline_sources.py')],check=True)
+    subprocess.run(['python3', str(ROOT/'脚本与工具/validate_no_tables.py'), '--source-only'], check=True)
     text = combined_text()
     args.md.parent.mkdir(parents=True, exist_ok=True)
     args.md.write_text(text, encoding='utf-8')

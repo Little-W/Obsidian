@@ -221,16 +221,69 @@ FPV 可证明 `debug_enable==0` 时 `debug_out==0`，但这不一定足以证明
 
 ## 8. 重要命令
 
-| 命令 | 作用 |
-|---|---|
-| `set_fml_appmode FSV` | 选择安全信息流应用 |
-| `fsv_generate -src ... -dest ...` | 生成保护指定路径的属性 |
-| `fsv_generate ... -src_condition ...` | 限定源侧条件 |
-| `fsv_generate ... -dest_condition ...` | 限定目的侧条件 |
-| `fsv_blackbox` | 为安全分析提供特殊黑盒配置 |
-| `fsv_report` | 专门输出安全分析结果 |
-| `report_fv` | 查询底层形式检查状态 |
-| `view_trace -property ...` | 查看不应出现传播的反例 |
+- **命令：**
+
+  ```tcl
+  set_fml_appmode FSV
+  ```
+
+  **作用：** 选择安全信息流应用
+
+- **命令：**
+
+  ```tcl
+  fsv_generate -src ... -dest ...
+  ```
+
+  **作用：** 生成保护指定路径的属性
+
+- **命令：**
+
+  ```tcl
+  fsv_generate ... -src_condition ...
+  ```
+
+  **作用：** 限定源侧条件
+
+- **命令：**
+
+  ```tcl
+  fsv_generate ... -dest_condition ...
+  ```
+
+  **作用：** 限定目的侧条件
+
+- **命令：**
+
+  ```tcl
+  fsv_blackbox
+  ```
+
+  **作用：** 为安全分析提供特殊黑盒配置
+
+- **命令：**
+
+  ```tcl
+  fsv_report
+  ```
+
+  **作用：** 专门输出安全分析结果
+
+- **命令：**
+
+  ```tcl
+  report_fv
+  ```
+
+  **作用：** 查询底层形式检查状态
+
+- **命令：**
+
+  ```tcl
+  view_trace -property ...
+  ```
+
+  **作用：** 查看不应出现传播的反例
 
 ## 9. 常见错误及处理
 

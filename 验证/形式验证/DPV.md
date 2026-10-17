@@ -349,19 +349,98 @@ listcovers
 
 ## 8. 常用命令及作用
 
-| 指令 | 作用 |
-|---|---|
-| `create_design` | 建立 spec 或 impl 设计以及顶层接口信息 |
-| `cppan` / `scdtan` | 分析高层语言模型（具体支持参照安装文档） |
-| `vcs` / `vlogan` / `vhdlan` | 分析 RTL |
-| `compile_design` | 将设计编译为可比较的内部模型 |
-| `set_user_assumes_lemmas_procedure` | 指定生成输入关系与输出比较规则的 Tcl 过程 |
-| `map_by_name -inputs/-outputs` | 按命名对应自动创建比较关系 |
-| `report_dpv_mappings` | 查看输入输出对应关系 |
-| `set_hector_case_splitting_procedure` | 为困难数据路径选择分情况策略 |
-| `solveNB` / `proofwait` | 启动与等待证明任务 |
-| `listproofs` / `listlemmas` | 查询当前证明对象和结论 |
-| `simcex` | 复现及分析比较失败的事务输入 |
+- **指令：**
+
+  ```tcl
+  create_design
+  ```
+
+  **作用：** 建立 spec 或 impl 设计以及顶层接口信息
+
+- **指令（分别列出）：**
+
+  ```tcl
+  cppan
+  scdtan
+  ```
+
+  **作用：** 分析高层语言模型（具体支持参照安装文档）
+
+- **指令（分别列出）：**
+
+  ```tcl
+  vcs
+  vlogan
+  vhdlan
+  ```
+
+  **作用：** 分析 RTL
+
+- **指令：**
+
+  ```tcl
+  compile_design
+  ```
+
+  **作用：** 将设计编译为可比较的内部模型
+
+- **指令：**
+
+  ```tcl
+  set_user_assumes_lemmas_procedure
+  ```
+
+  **作用：** 指定生成输入关系与输出比较规则的 Tcl 过程
+
+- **指令：**
+
+  ```tcl
+  map_by_name -inputs/-outputs
+  ```
+
+  **作用：** 按命名对应自动创建比较关系
+
+- **指令：**
+
+  ```tcl
+  report_dpv_mappings
+  ```
+
+  **作用：** 查看输入输出对应关系
+
+- **指令：**
+
+  ```tcl
+  set_hector_case_splitting_procedure
+  ```
+
+  **作用：** 为困难数据路径选择分情况策略
+
+- **指令（分别列出）：**
+
+  ```tcl
+  solveNB
+  proofwait
+  ```
+
+  **作用：** 启动与等待证明任务
+
+- **指令（分别列出）：**
+
+  ```tcl
+  listproofs
+  listlemmas
+  ```
+
+  **作用：** 查询当前证明对象和结论
+
+- **指令：**
+
+  ```tcl
+  simcex
+  ```
+
+  **作用：** 复现及分析比较失败的事务输入
 
 ## 9. 数据路径证明困难时的策略
 
