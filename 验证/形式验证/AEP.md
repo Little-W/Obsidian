@@ -1,291 +1,140 @@
-# VC Formal 手册中的 AEP 用法整理
+# AEP：自动提取属性应用完整指南
 
-本文根据《VC Formal User Guide》里与 AEP 相关的章节整理而成，重点覆盖属性分类、快速配置、VHDL 场景、设计检查与 trace check 的用法。对应内容主要分布在手册第 107-108、116-119、165-169 页附近。
+> **第 6 册 · 专用应用**　Automatically Extracted Properties。依据 User Guide 第 10 章（第 362～385 页）与 Quick Reference Guide 的 AEP 部分。
 
-## 1. AEP 是什么
+## 1. AEP 的角色与应用价值
 
-从手册上下文看，AEP 是 VC Formal 中的一类属性和检查分类。它既可以出现在属性管理命令里，也可以出现在 quick start、设计检查和 trace check 相关配置中。
+AEP 不需要用户先手工写出每一条 SVA，就能从 RTL 结构和编码方式中自动推导一批易引发功能问题的条件，并将其交给形式引擎检查。适用于新接入 IP、第三方 RTL、复杂状态机、溢出与数组访问风险排查，以及验证项目启动阶段的快速质量筛查。
 
-手册里最直接的信号是：
+AEP **不等于自动证明全部功能规格**。它擅长发现通用的实现错误（越界、算术溢出、状态机问题、三态冲突、一些不完整分支等），但不会知道客户要求某个控制寄存器在第几个周期复位，也不会自动理解外部协议的最终响应期限。经 AEP 筛查后仍需补充 FPV 业务属性。
 
-- `get_props` 的 `-class` 选项支持 `aep`
-- `fvassert -class aep *` 可以只启用 AEP class 的属性
-- `fv_quickstart` 里包含若干 AEP 相关默认项
-- `check_fv_setup` 会检查 AEP 类结构问题
-- `fvtrace_config` 支持 `aepnode` 这类 trace check
+## 2. AEP 的典型检查项目
 
-## 2. 属性层面的 AEP 用法
+| AEP 类型 | `-aep` 选择值（按 User Guide） | 要检查的危险行为 | 例子 |
+|---|---|---|---|
+| 数组越界 | `bounds_check` | 索引超出声明范围 | 深度为 2 的数组访问索引 3 |
+| 算术溢出 | `arith_oflow` | 运算结果超过目标表达能力 | 较窄寄存器接收宽加法结果 |
+| 移位溢出 | `shift_oflow` | 移位导致有效位全部移出 | 1 位左操作数移位 2 位 |
+| 类型转换溢出 | `cast_oflow` | 转换后的有效位损失 | 带符号操作转换到窄寄存器 |
+| 悬空三态总线 | `floating_bus` | 所有三态驱动均未启用 | 所有 `oe` 均为 0 |
+| 多驱动三态总线 | `multi_driver` | 多个驱动同时有效 | `oe0` 与 `oe1` 同时为 1 |
+| 分支覆盖完整性 | `full_case` | case/if 组合未完整覆盖 | 没有 default 的分支遗漏 |
+| 并行分支互斥 | `parallel_case` | 多分支同时匹配 | 重叠编码引起优先级问题 |
+| 置位/复位问题 | `set_reset` | 相关控制状态及赋值组合危险 | 置位与复位同时发生 |
+| 未知值赋值 | `x_assign` | 显式 X 进入逻辑 | `assign out = 1'bx` |
+| FSM 死锁 | `fsm_deadlock` | 状态无法继续转移 | 没有离开等待状态的路径 |
+| FSM 活锁 | `fsm_livelock` | 在循环中反复转移却不完成 | 两状态无限循环 |
+| FSM 相关额外检查 | `fsm_unionlock` | 与 FSM 联合锁定相关的规则 | 详见版本帮助 |
 
-手册在“Managing Constraints and Properties”这一章里强调：
+表格中的实际生成条件、适用语言和局限需以 UG §10.1.1（第 363～375 页）为准，不是所有检查都支持全部 Verilog、SystemVerilog 与 VHDL 语法。例如 User Guide 对 `cast_oflow` 的 VHDL 支持有单独限制。
 
-- `usage` 属性只取 `cover`、`assert`、`assume` 三种值
-- `check_fv` 系列命令只作用于 enabled 的属性
-- 被禁用的属性仍会保留状态信息，并出现在 `report_fv` 的 Unused 类别中
+## 3. 初学者第一个 AEP 案例：数组越界
 
-与 AEP 相关的典型操作是：先关掉不需要的检查，再只保留 AEP class 属性。
-
-```tcl
-fvdisable -usage {assert cover}
-fvassert -class aep *
+```systemverilog
+module array_demo (
+  input logic clk,
+  input logic [1:0] index,
+  output logic [7:0] data_out
+);
+  logic [7:0] mem [0:1];
+  always_ff @(posedge clk)
+    data_out <= mem[index];
+endmodule
 ```
 
-这组命令的含义是：
+数组合法索引只有 0 和 1，但 `index` 可以为 2 或 3。若没有真实协议前提禁止非法索引，`bounds_check` 应能够为这样的访问生成检查并可能给出反例。若该端口来自外部用户，设计究竟要“拒绝非法索引”还是“输入协议禁止非法索引”，必须首先由规格明确，然后决定是修 RTL 还是增加**有出处的**环境约束。
 
-- 先禁用普通 assert / cover 检查
-- 再把 AEP class 的属性重新打开
-- 适用于只想聚焦 AEP 相关约束或属性的场景
-
-如果你只是想查看当前设计里有哪些 AEP 属性，可以用：
-
-```tcl
-get_props -class aep
-```
-
-## 3. Quick Start 里的 AEP 选项
-
-手册在 `fv_quickstart` 章节列出了几个 AEP 相关的默认配置项：
-
-- `aep_unique_name`
-- `aep_vhdl`
-- `aep_vhdl_bus_check`
-
-其中，`fv_quickstart -enable default` 默认就会打开一组推荐配置，AEP 相关项也包含在内。
-
-### 3.1 什么时候用
-
-建议在新设计初次接入 VC Formal 时先开 quick start，再根据结果决定是否保留默认设置或手工关闭部分项。手册也说明了：
-
-- quick start 会自动处理 inferencing、black box、abstraction、clock edge、compile option 等设置
-- 它适合初次导入设计，或者收敛变差时用来缩小剩余问题范围
-
-### 3.2 一个要注意的点
-
-手册特别提醒：`fv_quickstart` 和 `set_fml_appmode` 的调用顺序会影响实际应用的设置。
-
-简化理解就是：
-
-- 先调用 `fv_quickstart`，再切 application mode，会应用 FPV 侧设置
-- 先切 `set_fml_appmode SEQ`，再调用 `fv_quickstart`，会应用 SEQ 侧设置
-
-## 4. VHDL 场景下的 AEP 运行方式
-
-手册给出的结论很直接：AEP 支持 VHDL。
-
-推荐流程是：
-
-1. 将 application mode 切到 AEP
-2. 通过 `set_app_var` 打开 AEP checks
-3. 使用 `-aep all` 跑完整的 AEP 检查
-
-手册原意是：在 VHDL 场景中，AEP 检查可以和普通的 `read_file` / `analyze` / `elaborate` 流程结合使用。
-
-如果你在做单步编译，手册同时提到：
-
-- Verilog / SVA 可以用 `read_file -format sverilog -sva ...`
-- VHDL 也可以用 `read_file -format vhdl ...`
-- AEP、FPV、COV 都可以挂在这条流程上
-
-## 5. 设计检查里的 AEP
-
-在 `check_fv_setup` 相关章节里，手册说明了 VC Formal 会检查一些结构类问题，其中就包括 AEPs。
-
-这里最值得关注的是“Feedback Loop AEPs”：
-
-- 工具会自动切断反馈环并赋予符号值
-- 然后将组合环展开若干次
-- 如果环路真正收敛，切点的符号值不会影响环内网表值
-- 如果环路不收敛，通常会在 counter-example 里看到切点与输入值发散
-
-这类 AEP 更像是设计建模阶段的结构告警，不是业务属性本身。
-
-### 5.1 这类问题怎么理解
-
-一个典型例子是组合环路：
-
-- 如果展开后输入已经收敛，但输出仍然异常，就说明这个环路可能不稳定
-- 这类结果通常值得回到 RTL 或约束里进一步检查
-
-## 6. Trace check 里的 AEP
-
-手册在 trace check 章节里列出了若干 trace 类型，其中有 `aepnode`。
-
-`aepnode` 的含义是：
-
-- 数组边界越界导致的未定义
-- 工具可以把这类问题作为 trace check 来追踪
-
-配置示例：
-
-```tcl
-fvtrace_config -check aepnode -autorun viewtrace -severity high
-```
-
-再配合：
-
-```tcl
-fvtrace_check <property_name>
-```
-
-你就可以在 Debug mode 里看到 property trace、波形和状态图标，定位具体问题。
-
-## 7. 一个实用的 AEP 工作流
-
-如果目标是“只看 AEP 相关内容”，可以按下面的顺序做：
-
-1. 读入设计并完成 `read_file`、`analyze` 或 `elaborate`
-2. 用 `fv_quickstart` 保留 AEP 相关默认配置
-3. 用 `fvdisable -usage {assert cover}` 清掉不相关检查
-4. 用 `fvassert -class aep *` 只保留 AEP class
-5. 用 `get_props -class aep` 检查当前属性集合
-6. 跑 `check_fv_setup` 看结构类 AEP
-7. 必要时用 `fvtrace_config -check aepnode ...` 做 trace 定位
-
-## 8. AEP 使用用例
-
-下面这些用例更贴近实际使用场景，适合把 AEP 当成一套工作流来用，而不是只记单条命令。
-
-### 用例 1：只筛选 AEP class 属性
-
-适用场景：你想暂时屏蔽普通 assert / cover，只看 AEP 相关属性是否存在、是否启用。
-
-```tcl
-fvdisable -usage {assert cover}
-fvassert -class aep *
-get_props -class aep
-```
-
-这个用例的目的很明确：把关注点收缩到 AEP class，便于排查约束是否加载正确，或者验证 AEP 相关属性是否被误关。
-
-### 用例 2：VHDL 设计的 AEP 快速检查
-
-适用场景：你的设计是 VHDL，希望快速确认 AEP 相关检查是否能正常跑通。
-
-```tcl
-fv_quickstart -enable default
-set_fml_appmode AEP
-read_file -format vhdl -top <top> -vcs "<files>"
-```
-
-这个用例的关键不是某一条命令，而是把 AEP 相关默认配置、VHDL 读入和 application mode 对齐。实际工程里，AEP checks 通常由项目脚本或现有环境变量开启，手册明确说明 AEP 支持 VHDL。
-
-### 用例 3：检查反馈环类 AEP 问题
-
-适用场景：`check_fv_setup` 报了反馈环或类似结构问题，你需要判断这是可接受的收敛环，还是不收敛的设计缺陷。
-
-```tcl
-check_fv_setup
-```
-
-观察重点：
-
-- 如果反馈环收敛，切点符号值一般不会污染环内网表值
-- 如果不收敛，counter-example 往往能看到切点与输入值发散
-
-这个用例更适合在接入新 RTL、修改组合逻辑、或者做结构健康检查时使用。
-
-### 用例 4：追踪 aepnode 类型问题
-
-适用场景：你怀疑存在数组越界、边界非法访问或者相关的 undefined 问题，需要进一步定位到 property trace。
-
-```tcl
-fvtrace_config -check aepnode -autorun viewtrace -severity high
-fvtrace_check <property_name>
-```
-
-这个用例的价值在于把问题从“报错”推进到“定位”：先让 trace check 自动运行，再在 Debug mode 里看波形和状态信息。
-
-### 用例 5：把 AEP 用作一条最小验证链路
-
-适用场景：你只想快速搭出一条最小闭环，确认 AEP 相关能力是否可用。
-
-```tcl
-fv_quickstart -enable default
-fvdisable -usage {assert cover}
-fvassert -class aep *
-get_props -class aep
-check_fv_setup
-fvtrace_config -check aepnode -autorun viewtrace -severity high
-```
-
-这条链路的顺序是有意义的：先收窄属性，再做结构检查，最后用 trace 定位。
-
-## 9. AEP 示例脚本
-
-下面给出 3 个常用的 AEP 脚本模板，分别对应属性筛选、VHDL 场景和 trace 定位。
-
-### 脚本 1：最小 AEP 属性筛选脚本
-
-适用场景：你想先确认当前设计里是否已经正确加载 AEP class 属性，并且只看 AEP 相关目标。
+## 4. 标准运行步骤
 
 ```tcl
 set_fml_appmode AEP
-
-read_file -top top -format sverilog -sva -vcs {-f filelist}
-
-fvdisable -usage {assert cover}
-fvassert -class aep *
-get_props -class aep
-
+read_file -top array_demo -aep bounds_check -format sverilog \
+  -vcs {-f filelist_aep.f}
+create_clock clk -period 100
 check_fv_setup
 report_fv -list
-```
-
-这个脚本的重点是先把普通 assert / cover 收窄掉，只保留 AEP class，然后用 `get_props` 和 `check_fv_setup` 看结果。
-
-### 脚本 2：VHDL AEP 初始化脚本
-
-适用场景：你的 DUT 是 VHDL，希望快速把 AEP 的运行链路跑通。
-
-```tcl
-set_fml_appmode AEP
-
-analyze -format vhdl -vcs {-f filelist}
-elaborate top
-
-fvdisable -usage {assert cover}
-fvassert -class aep *
-
-check_fv_setup
+check_fv -block
 report_fv -verbose
 ```
 
-这个脚本适合先验证 VHDL 读入、展开和 AEP class 是否能正常工作。实际工程里，AEP 的额外开关通常由项目脚本统一配置。
+真实工程有复位的，应加上 `create_reset` 和必要的初始化序列；上述 `array_demo` 刻意只有时钟，突出数组检查的概念。若工具对该语言、数组形式或优化方式没有生成相应属性，先检查 `-aep` 语法与对象是否符合其抽取前提。
 
-### 脚本 3：AEP trace 定位脚本
-
-适用场景：`check_fv_setup` 或 AEP 相关检查报出了 `aepnode` 一类问题，你希望进一步定位到具体 trace。
+### 4.1 多种 AEP 组合
 
 ```tcl
-set_fml_appmode AEP
-
-read_file -top top -format sverilog -sva -vcs {-f filelist}
-
-fvtrace_config -check aepnode -autorun viewtrace -severity high
-check_fv_setup
-fvtrace_check <property_name>
-view_trace -property <property_name>
+read_file -top my_top -aep fsm_deadlock+fsm_livelock \
+  -format sverilog -vcs {-f filelist.f}
 ```
 
-这个脚本把 `aepnode` 的 trace 检查、property trace 和波形查看串在一起，适合做问题定位。
+这里的 `+` 表示组合多个检查选择值，是指南中提供的一种常见写法；`-aep all` 并不意味着对每个设计都推荐一开始就开启所有检查。建议先对高优先级逻辑运行小集合，再逐步扩展，以便降低误报排查成本。
 
-## 10. 命令速查
+### 4.2 VHDL 的相关配置
 
 ```tcl
-get_props -class aep
-fvdisable -usage {assert cover}
-fvassert -class aep *
-fv_quickstart -enable default
-fvtrace_config -check aepnode -autorun viewtrace -severity high
-fvtrace_check <property_name>
+set_app_var fml_enable_vhdl_aep true
+set_app_var fml_enable_vhdl_bus_check true
+set_app_var fml_enable_vhdl_cov true
 ```
 
-## 11. 结论
+这些应用变量来自该版本的快速参考，启用前确认当前分析模式确实为 VHDL 且变量在安装版本可用。VHDL 的语言结构与 SystemVerilog 不同，不能假定每一种 AEP 的覆盖条件完全相同。
 
-AEP 在 VC Formal 里不是单一命令，而是一组围绕属性、编译配置、设计检查和 trace 定位展开的能力集合。真正落地时，最常用的切入点是：
+## 5. 状态机检查：死锁、活锁与公平性
 
-- 用 `get_props` / `fvassert -class aep *` 管属性
-- 用 `fv_quickstart` 管默认编译和 AEP 相关开关
-- 用 `check_fv_setup` 看结构类 AEP
-- 用 `fvtrace_config` / `fvtrace_check` 定位问题
+FSM 死锁一般指在给定约束下进入无法合理继续的状态；活锁指能够不停转移却始终不进入完成或期望状态。是否一定算设计缺陷，取决于环境前提：一个等待读取外设的状态如果允许外设永远不响应，可能是系统规格缺失，而非状态机 RTL 必然有错。
 
-如果后面你希望，我可以继续把这份笔记扩展成“VC Formal 常用命令速查版”，或者把 AEP 相关章节再整理成更偏“中文翻译”的逐段对照版。
+```tcl
+read_file -top controller -aep fsm_deadlock+fsm_livelock \
+  -format sverilog -vcs {-f controller.f}
+aep_generate -type fsm_fairness
+# 可把候选公平性配置保存为脚本后审查
+aep_generate -type fsm_fairness -tcl fairness.tcl
+```
+
+生成公平性相关条件时应由系统工程师审查其物理可实现性。例如“不停请求外部总线”并不能保证对方必然授权，除非系统规格明确了调度公平性。
+
+### 5.1 控制某种状态的自动生成
+
+```tcl
+aep_config -dont_generate -type fsm_livelock {state_reg::state_name}
+```
+
+该指令适用于已确认特定状态的自动生成规则不适当的情况；必须给出关闭原因和关联设计评审。示例 `state_reg::state_name` 只是占位对象，实际名称应从生成属性和设计状态列表取得。不要以大量关闭属性的方式解决真问题。
+
+## 6. AEP 的命令作用与注意事项
+
+| 指令 | 功能 | 注意 |
+|---|---|---|
+| `set_fml_appmode AEP` | 进入自动属性应用 | 编译前设置 |
+| `read_file ... -aep ...` | 指定要从设计抽取的检查类型 | 类型和语言需要对应 |
+| `elaborate top -aep ...` | 分步编译流程中生成 AEP | 与 `analyze` 配对 |
+| `aep_generate -type fsm_fairness` | 为 FSM 相关检查生成候选公平性设置 | 必须人工审查合理性 |
+| `aep_config -dont_generate ...` | 对指定状态或检查关闭自动生成 | 需保存关闭理由 |
+| `fvdisable` / `fvenable` | 调整已生成属性是否参加求解 | 不等同于修改 RTL |
+| `fvwaive` / `fvunwaive` | 将属性纳入/移出豁免 | 保留变更依据 |
+| `check_fv` | 求解启用的自动属性 | 按 `-block` 或报告确认运行完成 |
+| `report_fv -verbose` | 检查详细结果 | 分析反例与真正危险性 |
+| `save_waiver_file -file aep.el` | 保存豁免清单 | 提交审查版本 |
+| `read_waiver_file -elfiles aep.el` | 导入豁免 | 注意 RTL 或属性名变化 |
+
+## 7. 常见问题与处理方案
+
+**问题 A：数组越界属性失败。** 查索引值、数组实际维度、索引来源、是否为非法但允许输入；若设计应该防御非法访问，则修复输入检查和返回行为。**问题 B：`full_case` 告警。** 检查组合分支是否覆盖所有合法编码；若某些编码应视为非法，先明确可达性，不能仅靠注释 `full_case` 掩盖。**问题 C：状态机活锁告警。** 查看反例循环，确认是否需要外设公平假设。**问题 D：属性数为零。** 检查 AEP 开关、RTL 类型和提取范围，不应推断“RTL 不存在问题”。
+
+### 用例：审查豁免
+
+```tcl
+fvwaive <property_name>
+save_waiver_file -file reviewed_aep.el
+```
+
+建议豁免记录独立写明编号、原始现象、为何不是设计缺陷、所依据的系统规格、最后审查日期与责任人。`fvwaive` 只是结果管理，不会使设计行为变正确。
+
+## 8. 推荐的 AEP + FPV 双阶段工作方法
+
+先在整段 RTL 范围运行 AEP 发现基础实现风险；其次针对关键模块编写 FPV 属性以覆盖具体的时序与功能规格。AEP 发现的真缺陷，应补充成可长期回归的手工断言（如果合适）。AEP 发现的假阳性，应检查真实前提并保留说明；不可简单添加 `assume` 让它消失。
+
+对于大型 SoC，可以先针对地址解码、寄存器文件索引、FIFO 状态机、宽窄运算及三态总线使用 AEP。对于自动生成属性无法证明的情况，可单独分组并提升资源，而不是影响所有检查的分析时间。
+
+## 9. 官方参考
+
+User Guide §10：第 362～385 页；§3.5 属性 class 与 type；§7 反例与状态；Quick Reference Guide 的 AEP 章节。本文检查类型的简述为独立归纳，并非逐页复制官方表格。

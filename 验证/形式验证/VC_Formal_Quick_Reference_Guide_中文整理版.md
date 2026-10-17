@@ -1,5 +1,8 @@
 # VC Formal 快速参考指南（中文整理版）
 
+> **版本核对提示（2026-10-17 修订）**：本文是便于检索的速查资料；更完整解释见 [总目录](00_阅读指南.md)及各应用专章。上传的 *User Guide* 与 *Quick Reference Guide* 在 FCA 应用模式（`COV`/`FCA`）及 DPV 新流程参数上有不一致之处，本版优先参考 User Guide 的完整流程，并已在相应位置标注。凡是以尖括号、`[...]`、`spec|impl` 表示的占位写法，均不能直接当作 Tcl 运行。本文命令未经授权环境真实运行验证。
+
+
 - 来源：VC_Formal_Quick_Reference_Guide.pdf
 - 版本：X-2025.06-SP1，2025-09
 - 说明：本文保留命令名与参数格式，中文部分为整理和翻译，方便直接对照 Tcl 使用。
@@ -537,7 +540,7 @@ FCA 主要用于把仿真覆盖与形式证明结合起来，帮助判断哪些�
 #### 设置应用模式
 
 ```tcl
-set_fml_appmode FCA
+set_fml_appmode COV   ;# UG 此版本的 FCA/COV 示例；如工具提示不支持，检查本地帮助
 ```
 
 #### 覆盖相关配置
@@ -839,7 +842,8 @@ set_blackbox -designs module
 set_blackbox -cells hier_instance
 report_blackbox
 frv_load -ipxact axi4lite_dmac.xml -auto_load
-frv_load -ral axi4lite_dmac.ralf -auto_load
+frv_load -ral axi4lite_dmac.ralf -top block:REG_BLOCK -auto_load
+# -top 名称来自 RALF 规格；Quick Reference Guide 省略此推荐参数
 read_file -top top -sva -format verilog -vcs {-f filelist} bind_frv.sv
 analyze -format verilog -vcs {-f filelist} bind_frv.sv
 elaborate top -sva
@@ -1216,7 +1220,9 @@ DPV 使用 HECTOR 技术验证数据变换块，适合在 untimed C/C++ 与 RTL 
 ```tcl
 set_fml_appmode DPV
 get_fml_appmode
-set_hector_comp_use_new_flow true
+# Quick Reference Guide 原有写法：set_hector_comp_use_new_flow true
+# User Guide §DPV 的示例：set _hector_comp_use_new_flow true
+# 两种写法不一致；必须依本机帮助确认，不能两者无条件同时使用。
 set_aep_selection default
 list_aep_selection
 set_blackbox module

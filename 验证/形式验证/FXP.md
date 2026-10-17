@@ -1,575 +1,190 @@
-# VC Formal FXP 使用手册与脚本用例
+# FXP：形式未知值传播验证完整指南
 
-本文整理 VC Formal 中 FXP 的常用用法。重点放在 X 传播验证的基本流程、常用命令、根因分析，以及可以直接参考的 Tcl 脚本用例。
+> **第 7 册 · 专用应用**　Formal X-Propagation Verification。依据 User Guide 第 12 章（第 444～457 页）、Quick Reference Guide 的 FXP 页面。原有笔记中有较多全设计信号扫描与调试命令，本版将其整理为有风险说明的进阶用法。
 
-说明：下文里的 `<name>`、`<type>`、`<signal_name>`、`<scope_name>`、`<options*>` 是模板占位符，具体参数名请以你当前版本的 VC Formal 文档和项目脚本约定为准。`-nox` 里的 `condition` 是关键字写法，不要写成 `-condition`。
+## 1. 为什么未知值传播值得单独验证
 
-## 1. FXP 是什么
+RTL 仿真中的 `X` 可能表示：寄存器尚未复位、未驱动、赋值了 X、模块未定义、数组越界、选择条件不确定等。真实电路并不存在一种独立的“X 电压值”；它表示形式或仿真层面对确定性的缺失。在安全控制、启动流程、电源域切换、复位释放和错误路径中，一个无法确定的控制值可能在时序上被传播或放大。
 
-FXP 是 X-Propagation Verification，也就是形式 X 传播验证。它的目标不是证明协议或功能本身，而是检查未知值 X 是否会沿着设计传播到危险位置，从而暴露隐藏的功能风险。
+FXP 的核心目标是寻找：**指定的未知值来源是否可能影响不应该出现未知值的观察信号**。它通过生成 X 注入点与观察点、建立检查并使用形式引擎寻找违反条件的轨迹。普通 FPV 的二值断言不能自动等同于这种 X 传播分析。
 
-FXP 通常关注这些问题：
+![FXP 注入源和观察点](插图/07_FXP传播.svg)
 
-- 复位后是否仍存在未初始化信号。
-- 某些控制路径是否会把 X 传播到关键寄存器或输出。
-- 组合逻辑、选择器、mux、状态编码是否会放大 X。
-- 设计在 X 输入下是否有足够的保护、屏蔽或隔离。
+## 2. 注入点与观察点的概念
 
-如果你的问题是“这个 X 会不会最终影响到功能输出”，优先考虑 FXP。
+**注入点**是允许引入未知值的位置，例如未初始化寄存器、显式 `X` 赋值、未驱动信号、黑盒输出或人为指定的关键节点。**观察点**是要求未知值不应到达的位置，例如顶层功能输出、关键状态机控制端、黑盒输入和被指定为需要稳定可判定值的寄存器。
 
-## 2. FXP 的核心思路
+形式检查回答的是：在当前复位和输入条件下，能否找到一条路径，让注入的不确定性传播到观察点？它不是统计 X 出现概率，也不等于电路可靠性故障率分析。
 
-FXP 的基本思路是：先把设计和环境搭起来，再通过 X 注入、X 去除和属性检查来观察未知值的传播路径。最后再用根因分析定位到底是哪里把 X 放进来的、哪里没有挡住、哪里是可接受传播，哪里是实际缺陷。
+## 3. FXP 自动生成检查的类型
 
-这和 FPV 不同。FPV 更关注“功能规则是否成立”，FXP 更关注“未知值是否会污染关键路径”。
+UG §12.3（第 447～451 页）介绍了下列常见类型：
 
-## 3. 什么时候用 FXP
+| 类型名 | 来源或目标 | 意义 |
+|---|---|---|
+| `uninit` | 未初始化寄存器 | 未复位状态可能携带未知值 |
+| `xassign` | 显式 X 赋值 | 设计源代码主动产生不确定值 |
+| `undriven` | 未驱动信号 | 网络没有确定驱动 |
+| `undef` | 未定义运算 | 例如某些除零场景 |
+| `oba` | 越界访问 | 数组等操作超出合法范围 |
+| `bbout`（按该版本帮助核对） | 黑盒输出 | 未知结果可能进入下游 |
+| `bbin` | 黑盒输入 | 观察未知值是否送入模块 |
+| `in` / `out` | 顶层输入/输出 | 自定义源或观察目标 |
+| `snip` | 经过截断的网络 | 被抽象网络引入不确定性 |
+| `abs` | 抽象对象 | 抽象造成额外未知来源或观察点 |
+| `unresin` / `unresout` | 未解析模块输入/输出 | 未解析实例两侧的传播 |
 
-FXP 适合这些场景：
+**类型字符串以具体安装版本 `help fxp_generate` 和 UG 表 19 为准**。不同来源给出的缩写有差异，不能仅凭表格猜测选项。`fxp_generate` 无 `-type` 时已包含若干默认类别；明确选择不同类别后，自动生成的属性数可能发生变化。
 
-- 复位后设计里存在潜在未初始化状态。
-- 总线、mux、状态机或数据通路对 X 很敏感。
-- 你想确认 X 是否会传播到输出、寄存器、控制信号或安全关键路径。
-- 你怀疑某些断言失败其实是由 X 传播引起，而不是功能逻辑本身有错。
-- 你想在正式验证前先做 X 风险扫描。
-
-## 4. 标准工作流
-
-FXP 的典型流程可以拆成以下几步：
-
-1. 设置 application mode 为 FXP。
-2. 读入 RTL 和必要的断言/约束。
-3. 定义时钟、复位和初始化方式。
-4. 使用 `fxp_generate` 生成需要的 X 传播对象。
-5. 使用 `fxp_assume -injectx` 或 `fxp_assume -nox` 建立 X 注入与 X 抑制条件。
-6. 使用 `fxp_assert` 检查 X 传播目标。
-7. 执行 `check_fv`。
-8. 使用 `report_fv`、`view_trace`、`fxp_compute_rootcause` 做调试和根因定位。
-
-## 5. 常用命令说明
-
-### 5.1 设置模式
+## 4. 标准脚本与运行顺序
 
 ```tcl
 set_fml_appmode FXP
-```
-
-把 VC Formal 切到 FXP 模式。这样后面的 X 传播相关命令、变量和分析流程才会按 FXP 语义工作。
-
-### 5.2 读入设计
-
-```tcl
-read_file -top top -sva -format sverilog -vcs {-f filelist}
-analyze -format sverilog -vcs {-f filelist}
-elaborate top -sva
-```
-
-读取设计和断言的方式和 FPV 类似。你也可以按项目需要先编译，再展开，再进入 FXP。
-
-如果你想先从当前 `filelist` 里找某个模块的顶层名称，可以用下面这类命令：
-
-```powershell
-Get-Content .\filelist | ForEach-Object { rg -n "^\s*module\s+TOP_NAME\b" $_ }
-```
-
-如果你还不知道顶层模块名，可以先把 `filelist` 里的源文件展开，再批量看每个文件里的 `module` 声明：
-
-```powershell
-Get-Content .\filelist | ForEach-Object { rg -n "^\s*module\s+" $_ }
-```
-
-把 `TOP_NAME` 换成你要找的模块名即可。这个做法适合先确认 `elaborate` 里应该用哪个 top 名字，再回填到 `read_file -top` 或 `elaborate` 里。
-
-如果你已经在 Verdi 里把设计加载好了，那就直接在 Verdi 的 Tcl Console 里查数据库，不用再回到 filelist 里搜。常见写法是先列出顶层实例，再按名字过滤：
-
-```tcl
-get_db insts -if {.is_top == true}
-get_db insts -if {.name =~ *TOP_NAME*}
-get_db nets  -if {.name =~ *SIG_NAME*}
-```
-
-如果你想先看当前已经加载了哪些设计，也可以先查设计列表：
-
-```tcl
-get_db designs
-```
-
-这里的 `TOP_NAME` 和 `SIG_NAME` 换成你要找的模块名或信号名即可。不同 Verdi 版本的对象字段可能略有差异，如果 `-if` 报错，先在 Tcl Console 里执行 `help get_db` 看当前版本支持的参数。
-
-### 5.3 时钟、复位和初始化
-
-```tcl
+read_file -top soc_top -format sverilog -vcs {-f filelist.f}
 create_clock clk -period 100
-create_reset rst -sense high
-set_constant testmode -value 1'b0
+create_reset rst_n -sense low
+set_constant test_mode -value 1'b0
 sim_run -stable
 sim_save_reset
-```
-
-FXP 也需要稳定、可重复的起始状态。复位、时钟和初始状态定义得越清晰，X 传播分析越可靠。
-
-如果你看到类似 `FML_RESET_SNIP` 或 `SIM_FORCE_RESET` 的警告，通常说明你现在绑定的复位网本身还有上游驱动，或者你把 `sim_force` 直接打在了复位信号上。修复思路有两个：
-
-- 如果这个复位网本来就应该由更上游的信号生成，先在 `create_reset` 之前打开 `fv_config -enable_reset_find_driver`，让工具去找真实的上游驱动，再把 `create_reset` 绑定到那个更合适的复位源上。
-- 如果你只是想在仿真里制造复位状态，不要直接对复位网本身 `sim_force`，而是驱动它的上游输入，或者用 `sim_set_state` / `sim_save_reset` 这类方式保存稳定状态。
-
-简化说就是：复位网最好是“输入型”而不是“内部逻辑型”。如果它已经是内部逻辑生成的，就先找源头，再做 `create_reset`。
-
-如果你说的“内部逻辑的复位和时钟”是指层次内部的中间网，那要分开处理：
-
-- 复位：可以在确认层次路径正确后，用层次名去驱动真正的复位源，或者在调试时对内部复位网做 `sim_force`，但这会剪掉原始驱动，容易引入 `SIM_FORCE_RESET` 一类警告。更稳妥的做法还是先找上游驱动，再让 `create_reset` 绑定到上游源。
-- 时钟：不要把内部时钟当成普通静态信号去 force 成 0 或 1。时钟应该通过 `create_clock <clock_name> -period <...>` 来定义，或者让它的上游分频/门控源正常运行。只有在你明确知道自己在做什么时，才对层次内部的 clock net 做临时强制。
-
-一个实用原则是：
-
-```tcl
-# 推荐：定义时钟对象，而不是 force 时钟网
-create_clock clk -period 100
-
-# 调试时如果必须看内部复位，优先找上游驱动
-fv_config -enable_reset_find_driver
-```
-
-如果你只是想让内部寄存器进入某个固定状态，通常比起 force 复位/时钟，更适合用 `sim_set_state`、`sim_save_reset`，或者直接 force 控制数据和使能信号。
-
-如果你想把仿真波形拉长一点，可以在稳定之后继续跑固定拍数，例如：
-
-```tcl
-sim_run 3 -clk clk
-```
-
-这里的 `3` 表示再按 `clk` 跑 3 个时钟周期，适合用来观察更长时间窗内的 X 传播。
-
-这种写法通常不需要再额外配一个 reset 命令；如果你的目的只是延长波形，直接继续 `sim_run` 就可以。真正常见的配套动作是 `sim_save_reset`，它负责把当前稳定的 reset 状态保存下来，供后续验证反复复用。
-
-这里的 `clk` 是时钟对象名，必须和前面 `create_clock clk -period 100` 里定义的名字一致；`sim_run` 不是自己去猜时钟，而是按你指定的 clock 对象推进周期。若设计里有多个时钟，就用你想观察的那个 clock 名称。
-
-如果你在执行 `sim_run` 时看到 `SIM_MODEL_OUTDATED`，说明当前 reset 仿真模型已经过期，通常是因为前面改过 reset 相关设置、重新展开过设计，或者当前模型还没有同步到最新状态。这时不要直接重复 `sim_run`，而是先执行 `sim_reset` 清掉当前模型，再重新 `sim_run`。
-
-如果你的设计复位信号叫 `presetn` 这类名字，要把命令里的复位对象名写成设计里真实存在的那个信号，并且 `-sense` 要和它的极性一致。例如，低有效复位通常写成 `create_reset presetn -sense low`。如果报 `TCL_OBJECT_NOT_FOUND`，优先检查 `analyze` / `elaborate` 的 top 和 filelist 是否把这个复位网包含进来了。
-
-### 5.4 X 传播对象生成
-
-```tcl
-fxp_generate [<list-of-scopes>] -name <my_name> -type {<list-of-types>}
-```
-
-这个命令用于生成 FXP 相关的检查对象。`<list-of-scopes>` 写实例层次名，不写模块名；`-name` 是生成属性的前缀；`-type` 用来选择要生成的注入/观测类型。当前脚本模板里不要把属性名直接写成第一个位置参数，否则它会被当成 scope 去匹配。
-
-另外，`create_reset` 使用的复位信号名必须是设计中真实存在、并且已经被正确展开到当前 top 的对象。如果报 `TCL_OBJECT_NOT_FOUND`，通常要先检查 top、filelist 和复位信号名是否一致。
-
-### 5.5 X 注入和 X 屏蔽
-
-```tcl
-fxp_assume -injectx [-name <name>] [-reset] [-oba] [-xassign] [-undef] [-condition <expr>] [-scope <scope_name>] <signal_name>
-fxp_assume -nox [-name <name>] [-reset] [condition <condition> [<signal_name>]]
-```
-
-- `-injectx`：告诉工具在指定信号上注入 X。
-- `-nox`：告诉工具在指定信号上抑制 X。
-- `signal_name`：这里是最后一个位置参数，不要写成 `-signal`，也不要用通配符代替真实信号名。
-
-### 5.6 X 传播检查
-
-```tcl
-fxp_assert [-name <name>] [-condition <expr>] <signal_name>
-```
-
-这个命令用于把 X 传播检查真正挂到验证流程里。`signal_name` 是最后一个位置参数，表示要观察 X 不能传播到的点。
-
-### 5.7 根因分析
-
-```tcl
-fxp_compute_rootcause property
-fxp_report_rootcause
-```
-
-当某个 FXP 属性失败时，根因分析可以帮助你找出最小的可疑路径和最关键的传播点。
-
-如果属性状态是 `pass` / `proven`，而 `rootcause_type` 显示 `not_computed`，这通常是正常现象。根因分析主要是给 `falsified` 的 FXP 属性用的；对于已经证明没有 X 传播的属性，工具不会再计算根因。
-
-如果你想看失败路径的根因，可以先确认该属性确实是 `falsified`，再对该 property 执行 `fxp_compute_rootcause` 和 `fxp_report_rootcause`。如果现在是 `pass`，一般不需要处理 `not_computed`，只要把它当成“无需根因”的结果即可。
-
-在脚本里要特别注意执行顺序：`fxp_compute_rootcause` 只能在 `check_fv` 已经结束之后调用，不能放在一个仍在运行的 `check_fv` 过程中，也不要嵌套在会再次触发 `check_fv` 的流程里。否则就会看到类似 `check_fv[0] is already running, you can not nest the command` 的报错。
-
-推荐写法是先跑完检查，再单独算根因：
-
-```tcl
-check_fv
-fxp_compute_rootcause rootcause_probe
-fxp_report_rootcause
-```
-
-如果你用的是自动根因模式，也仍然要把它放在 `check_fv` 完成之后：
-
-```tcl
-set_fml_var fxp_compute_rootcause_auto true
-check_fv
+check_fv_setup
+fxp_generate
 report_fv -list
-```
-
-简单说就是：`check_fv` 先结束，`fxp_compute_rootcause` 再执行；不要反过来，也不要并行嵌套。
-
-### 5.8 自动检测所有顶层模块中的信号
-
-如果你的目标是先对整个设计或多个顶层模块做一轮 X 风险扫描，通常不需要把每个信号都手写出来。更常见的做法是让 `fxp_generate` 按默认类型直接覆盖整个设计，或者把多个顶层实例一次性传给它，让工具自动生成对应的 X 注入和观测点。
-
-最简写法通常是：
-
-```tcl
-fxp_generate -name all_x_scan -type {auto}
-```
-
-如果你只想扫某几个顶层实例，就把 scope 一次性传进去：
-
-```tcl
-fxp_generate {top0 top1 top2} -name top_scan -type {auto}
-```
-
-这里的要点是：
-
-- `fxp_generate` 负责批量生成检查点。
-- `-type {auto}` 会使用默认的 X 注入和观测类型。
-- 如果你不传 scope，工具会按默认类型扫当前设计上下文；如果你传多个 scope，就可以一次覆盖多个顶层实例。
-- `fxp_assume` 和 `fxp_assert` 仍然更适合显式信号名；如果你确实要批量加规则，建议再用 Tcl 的 `foreach` 去循环信号列表。
-
-一个更实用的批量脚本范例如下：
-
-```tcl
-set_fml_appmode FXP
-
-analyze -format sverilog -vcs {-f filelist}
-elaborate top -sva
-create_clock clk -period 100
-create_reset rst -sense high
-sim_run -stable
-sim_save_reset
-
-fxp_generate -name all_x_scan -type {auto}
-
-set critical_signals {top.u_core.req top.u_core.ack top.u_periph.valid top.u_periph.ready}
-foreach sig $critical_signals {
-	fxp_assert $sig
-}
-
-check_fv
-fxp_compute_rootcause
-fxp_report_rootcause -list
-```
-
-这个写法适合“先一口气扫全局，再对少量关键点补精确检查”的场景。
-
-### 顶层全信号扫描脚本示例
-
-如果你只想先把顶层实例中的所有信号扫一遍，可以直接把顶层实例名作为 scope 传给 `fxp_generate`，然后让工具自动生成默认的 X 注入和观测点。
-
-```tcl
-set_fml_appmode FXP
-
-analyze -format sverilog -vcs {-f filelist}
-elaborate top -sva
-create_clock clk -period 100
-create_reset rst -sense high
-sim_run -stable
-sim_save_reset
-
-fxp_generate {top} -name top_all_scan -type {auto}
-
-check_fv
-fxp_compute_rootcause
-fxp_report_rootcause -list
-```
-
-这个脚本的特点是：
-
-- `top` 必须是你实际展开后的顶层实例名，不是模块名。
-- `-type {auto}` 会使用默认的 FXP 类型集合，适合先做全局扫描。
-- 如果你有多个顶层实例，可以把它们一次写进 scope 列表里。
-
-### 公司常用完整脚本模板
-
-下面是一版更完整的 FXP 测试脚本，适合做成项目里的标准入口。它把设计读入、顶层扫描、关键点检查、自动根因收集和结果报告串成一条完整链路。
-
-```tcl
-set_fml_appmode FXP
-set_fml_var fxp_compute_rootcause_auto true
-
-set top_scope top
-set top_scopes [list $top_scope]
-set critical_signals [list \
-	$top_scope.u_core.req \
-	$top_scope.u_core.ack \
-	$top_scope.u_periph.valid \
-	$top_scope.u_periph.ready]
-
-analyze -format sverilog -vcs {-f filelist}
-elaborate $top_scope -sva
-
-create_clock clk -period 100
-create_reset rst -sense high
-
-sim_run -stable
-sim_save_reset
-
-fxp_generate $top_scopes -name company_fxp -type {auto}
-
-foreach sig $critical_signals {
-	fxp_assert $sig
-}
-
-check_fv
-report_fv -list
-fxp_report_rootcause -list
-```
-
-这份模板的特点是：
-
-- `top_scope` 集中管理顶层实例名，换工程时只改一处。
-- `fxp_generate $top_scopes -name company_fxp -type {auto}` 会一次覆盖当前顶层实例。
-- `critical_signals` 只放少量真正关心的控制点，便于后续做精确检查。
-- `set_fml_var fxp_compute_rootcause_auto true` 会在失败时自动准备根因信息，适合回归脚本。
-
-如果你要扫多个顶层实例，把 `top_scopes` 改成多个实例名即可，例如：
-
-```tcl
-set top_scopes [list top0 top1 top2]
-```
-
-## 6. 从终端启动
-
-如果你想直接从终端启动 FXP，最常见的方式是先准备一个 Tcl 脚本，然后用 `vcf` 读取脚本运行。
-
-### 6.1 PowerShell 启动命令
-
-```powershell
-vcf -f .\fxp_run.tcl
-```
-
-如果当前目录下已经有 `fxp_run.tcl`，这条命令会直接启动 VC Formal 并按脚本执行 FXP 流程。
-
-### 6.2 带 Verdi 的启动命令
-
-```powershell
-vcf -f .\fxp_run.tcl -verdi
-```
-
-这个写法适合你希望在启动后直接联动波形或调试界面。
-
-### 6.3 批处理启动命令
-
-```powershell
-vcf -f .\fxp_run.tcl -batch
-```
-
-这个写法适合回归或自动化执行，不依赖交互界面。
-
-### 6.4 最小 FXP 启动脚本模板
-
-```tcl
-set_fml_appmode FXP
-
-analyze -format sverilog -vcs {-f filelist}
-elaborate top -sva
-create_clock clk -period 100
-create_reset rst -sense high
-sim_run -stable
-sim_save_reset
-
-fxp_generate -name xprop_root -type {uninit out}
-fxp_assert -name xprop_root_check <signal_name>
-
-check_fv
-report_fv -list
-```
-
-你可以把这个内容保存为 `fxp_run.tcl`，再用上面的 `vcf -f .\fxp_run.tcl` 直接启动。
-
-### 6.5 网格调度配置：`set_grid_usage`
-
-如果你的 VC Formal 运行环境接了 LSF 这类作业调度系统，可以用 `set_grid_usage` 指定工具如何提交网格作业。它通常放在脚本开头、正式跑 `check_fv` 之前，用来告诉工具“把哪些阶段交给集群执行，以及用什么提交命令”。
-
-你的写法：
-
-```tcl
-set_grid_usage -type lsf=5 -control {bsub -Is -q merm -R "rusage[mem=8000]"}
-```
-
-可以拆开理解成：
-
-- `-type lsf=5`：使用 LSF 网格类型，并按当前环境约定启用对应的并行/作业级别配置。
-- `-control { ... }`：指定实际提交命令模板。
-- `bsub`：LSF 的提交命令。
-- `-Is`：以交互方式启动作业。
-- `-q merm`：提交到 `merm` 队列。
-- `-R "rusage[mem=8000]"`：向调度器申请 8000 MB 内存资源。
-
-一个常见用法是把它和主脚本放在一起：
-
-```tcl
-set_fml_appmode FXP
-set_grid_usage -type lsf=5 -control {bsub -Is -q merm -R "rusage[mem=8000]"}
-
-analyze -format sverilog -vcs {-f filelist}
-elaborate top -sva
-create_clock clk -period 100
-create_reset rst -sense high
-sim_run -stable
-sim_save_reset
-
-fxp_generate -name grid_x_scan -type {auto}
-check_fv
-report_fv -list
-```
-
-几点经验：
-
-- 如果你的环境已经由平台统一封装了提交模板，`-control` 里一般只需要保留调度器必需参数。
-- 如果作业提交失败，优先检查队列名、内存申请和是否允许交互作业。
-- 如果你们内部对 `lsf=5` 的含义有固定约定，就以你们的项目模板为准；不同版本或封装层可能会把这个值解释成不同的运行级别。
-
-## 7. FXP 常见脚本用例
-
-### 用例 1：最小 FXP 初始化脚本
-
-适用场景：你第一次把一个 RTL 放进 FXP，想先确认环境、复位和基本流程是否能跑通。
-
-```tcl
-set_fml_appmode FXP
-
-analyze -format sverilog -vcs {-f filelist}
-elaborate top -sva
-
-create_clock clk -period 100
-create_reset rst -sense high
-
-sim_run -stable
-sim_save_reset
-
-fxp_generate -name xprop_root -type {uninit out}
-fxp_assert -name xprop_root_check {top.out*}
-
-check_fv
-report_fv -list
-```
-
-这个脚本的目的不是一次性把问题找完，而是先把 FXP 工作链路跑起来。
-
-### 用例 2：从复位后 X 传播开始检查
-
-适用场景：你担心复位解除后某些寄存器仍然带着未知值，并且会进一步污染输出。
-
-```tcl
-set_fml_appmode FXP
-
-analyze -format sverilog -vcs {-f filelist}
-elaborate top -sva
-create_clock clk -period 100
-create_reset rst -sense high
-
-sim_run -stable
-fxp_generate -name reset_x_check -type {uninit}
-fxp_assume -injectx -name reset_x_check <signal_name>
-fxp_assert -name reset_x_check <signal_name>
-
-check_fv
-fxp_compute_rootcause reset_x_check
-fxp_report_rootcause
-```
-
-这个用例适合定位复位域里最容易出现的 X 残留问题。
-
-### 用例 3：对关键输出做 no-X 约束
-
-适用场景：你只关心关键输出是否绝对不能带 X，例如控制输出、协议有效位、关键使能信号。
-
-```tcl
-set_fml_appmode FXP
-
-analyze -format sverilog -vcs {-f filelist}
-elaborate top -sva
-create_clock clk -period 100
-create_reset rst -sense high
-sim_run -stable
-sim_save_reset
-
-fxp_generate -name nox_control_out -type {out}
-fxp_assume -nox -name nox_control_out <signal_name>
-fxp_assert -name nox_control_out <signal_name>
-
-check_fv
+check_fv -block
 report_fv -verbose
 ```
 
-这个用例的重点是把“不能出现 X”的区域显式标出来，适合关键控制面检查。
+`fxp_generate` 使用默认类型自动提取检查。若没有复位的原型模块，应删除不适用的 `create_reset`，不能输入一个不存在的复位信号。任何被 `set_constant` 固定的控制输入都应有真实工程依据，否则可能人为切断未知值传播路径。
 
-### 用例 4：X 根因定位流程
-
-适用场景：某条 FXP 属性失败了，你已经知道有 X 传播，但还不知道是哪一级逻辑放大的。
+### 4.1 显式选择未初始化寄存器类型
 
 ```tcl
-set_fml_appmode FXP
-
-analyze -format sverilog -vcs {-f filelist}
-elaborate top -sva
-create_clock clk -period 100
-create_reset rst -sense high
-sim_run -stable
-sim_save_reset
-
-fxp_generate -name rootcause_probe -type {out}
-fxp_assert -name rootcause_probe <signal_name>
-
-check_fv
-fxp_compute_rootcause rootcause_probe
-fxp_report_rootcause
-view_trace -property rootcause_probe
+fxp_generate -name uninitialized_checks -type {uninit}
 ```
 
-这个流程适合在你已经拿到失败结果后做深入分析。
+只关注某类来源有利于快速建立第一批可解释的结果。UG 中还给出了将某个范围及若干类型一起配置的方式；例如只针对某个子模块，可传入对应的 scope 列表（需要真实实例路径）。
 
-## 8. 一个实用的 FXP 工作流
+## 5. 自定义 X 注入、去除与断言
 
-如果目标是快速做一次 X 风险扫描，可以按下面的顺序做：
-
-1. 读入设计并完成 `analyze` 和 `elaborate`。
-2. 定义时钟、复位和稳定的 reset state。
-3. 用 `fxp_generate` 定义检查目标。
-4. 用 `fxp_assume -injectx` 选择 X 注入口。
-5. 用 `fxp_assume -nox` 定义不允许传播 X 的关键区域。
-6. 用 `fxp_assert` 绑定检查。
-7. 跑 `check_fv`。
-8. 失败后用 `fxp_compute_rootcause` 和 `fxp_report_rootcause` 收敛根因。
-
-## 9. 调试建议
-
-- 如果 FXP 结果太多，先缩小 X 注入口，再扩范围。
-- 如果你不确定 X 是不是设计缺陷，先看复位路径和初始化路径。
-- 如果输出只在极少路径上出现 X，优先确认该路径是否真的可达。
-- 如果多个检查都失败，先看根因分析，而不是先改断言。
-
-## 10. 常用命令速查
+| 命令 | 作用 | 工程注意 |
+|---|---|---|
+| `fxp_generate ...` | 自动生成 X 检查 | 分类范围与默认类型需确认 |
+| `fxp_assume -injectx <signal>` | 指定信号作为 X 注入来源 | 时钟与复位不允许当作该命令的注入源 |
+| `fxp_assume -nox <signal>` | 在指定条件下认为目标不携带未知值 | 必须有硬件/协议依据 |
+| `fxp_assert <signal>` | 指定目标信号不允许发生 X 传播 | 首先明确哪些运行状态必须已知 |
+| `fxp_compute_rootcause <property>` | 尝试计算属性的未知来源原因 | 需要存在可用的分析结果 |
+| `fxp_report_rootcause` | 报告来源与传播信息 | 按报告定位 RTL/层级 |
 
 ```tcl
-set_fml_appmode FXP
-analyze -format sverilog -vcs {-f filelist}
-elaborate top -sva
-create_clock clk -period 100
-create_reset rst -sense high
-sim_run -stable
-sim_save_reset
-fxp_generate [<list-of-scopes>] -name <my_name> -type {<list-of-types>}
-fxp_assume -injectx [-name <name>] [-reset] [-oba] [-xassign] [-undef] [-condition <expr>] [-scope <scope_name>] <signal_name>
-fxp_assume -nox [-name <name>] [-reset] [condition <condition> [<signal_name>]]
-fxp_assert [-name <name>] [-condition <expr>] <signal_name>
-check_fv
+# 假设 input_data 确实是不受控外部输入，调试时人为注入 X
+fxp_assume -injectx input_data
+
+# 关键控制输出不允许成为未知
+fxp_assert -name no_x_on_commit commit_valid
+```
+
+`fxp_assume -injectx` 的 `-reset`、`-oba`、`-xassign`、`-undef`、`-condition`、`-scope` 有类型与范围限制。例如 UG §12.3.2 提到 `-oba`、`-xassign` 和 `-undef` 需要相应 scope，并且对时钟/复位注入有限制。`fxp_assume -nox` 的条件参数在 PDF 的语法行存在排印不严谨之处，实际脚本应在本机通过 `fxp_assume -help` 校验，不能机械复制不完整的占位语法。
+
+### 5.1 什么时候允许 `-nox`
+
+只有当硬件结构、外部协议或正式初始化流程**保证该信号在指定阶段已知**时，才允许消除其 X 来源。例如某寄存器由上电复位明确赋值，且复位时序确实执行；或者某输入在完成训练后才被采样，且存在可证明的有效标志。如果将所有未知数据都用 `-nox` 约束掉，FXP 就失去实际作用。
+
+## 6. 教学用例 A：未复位的数据寄存器
+
+```systemverilog
+module uninit_demo (
+  input  logic clk, rst_n, write,
+  input  logic [7:0] in_data,
+  output logic [7:0] out_data
+);
+  logic [7:0] cache;
+  always_ff @(posedge clk) begin
+    if (write)
+      cache <= in_data;
+  end
+  always_comb out_data = cache;
+endmodule
+```
+
+`cache` 不受 `rst_n` 复位，且复位后在第一次写入之前可以作为任意初值输出。若 `out_data` 必须始终有效，FXP 应提示风险。修复方式有两类：一是复位 `cache`，二是在 `cache` 内容有效前通过 `valid` 等硬件逻辑阻止下游采样，或输出一个确定值。**仅添加形式假设让 `write` 在第一拍发生，不一定等同于真实硬件有此保证。**
+
+### 6.1 更合理的有效性控制
+
+```systemverilog
+logic initialized;
+always_ff @(posedge clk or negedge rst_n) begin
+  if (!rst_n) initialized <= 1'b0;
+  else if (write) initialized <= 1'b1;
+end
+assign out_data = initialized ? cache : 8'h00;
+```
+
+当 `cache` 尚未被写入时，输出为确定值；写入后使用缓存数据。FXP 仍要检查选择条件以及其他传播分支是否可能携带未知值。
+
+## 7. 教学用例 B：显式 X 赋值与越界
+
+```systemverilog
+always_comb begin
+  unique case (opcode)
+    2'b00: result = a + b;
+    2'b01: result = a ^ b;
+    default: result = 'x;
+  endcase
+end
+```
+
+对未定义操作码，显式 X 可能被后级直接使用；`-type {xassign}` 可以帮助定位。若协议规定未支持操作码必须返回错误码或忽略写入，则直接赋 X 不是完整实现，应修改 RTL 和相应 SVA。如果设计规则明确规定非法操作码永远不会输入，则需要有可审查的上游保证，不能只对当前检查添加无限制输入假设。
+
+对数组 `mem[index]` 的非法访问则属于 `oba` 等相关检查。在一些 RTL 里，越界索引导致的 X 传播既可被 AEP 发现，也可通过 FXP 分析其实际影响的观察点，两者结论不同、相互补充。
+
+## 8. 教学用例 C：有意屏蔽不确定数据
+
+```systemverilog
+assign packet_out = valid ? raw_packet : '0;
+```
+
+如果 `valid` 的生成完全可靠且只有 `valid=1` 时 `raw_packet` 才被使用，则未初始化的 `raw_packet` 未必造成危险输出。FXP 应在考虑 `valid` 的实际来源和复位行为后判断其是否能够影响 `packet_out`；不要只凭 `raw_packet` 未复位就断定必须增加复位网络。对于大面积数据寄存器，**有效位优先**的方案往往比强行复位所有触发器更合理，但前提是证明有效位本身可靠，且其控制可完全屏蔽未知数据。
+
+## 9. 调试：由下游症状回溯到上游来源
+
+```tcl
+check_fv -block
 report_fv -list
-fxp_compute_rootcause property
+view_trace -property <failed_property>
+fxp_compute_rootcause <failed_property>
 fxp_report_rootcause
-view_trace -property property
 ```
 
-## 11. 小结
+定位时先找观察点在何时受影响，然后从该周期往前追踪经过的条件选择、多路复用器、寄存器和复位逻辑。重点确认是否存在：复位未覆盖、输出在有效位之前被采样、黑盒建模不当、未知模式输入未处理、未驱动网络或隐含时钟门控。必须把“真正产生不确定性”和“最终使不确定性可见”分开分析。
 
-FXP 的核心是把未知值 X 的传播路径显式化，然后通过注入、抑制、检查和根因分析，把“可能有风险”变成“哪里有风险、为什么有风险”。它特别适合复位、控制面、选择器、状态机和关键输出路径。
+![FXP 调试排查流程](插图/08_FXP排查.svg)
 
-如果你愿意，我可以下一步继续把这份 FXP 手册补成“中文翻译版速查”，或者再单独给你写一版和 FPV 联合使用的 FXP 启动脚本。
+## 10. 设计规模很大时怎么做
+
+先针对关键输出与重要控制节点建立一批观察点；其次根据报告只针对相关模块开启额外的注入类型；最后扩大到全模块或全芯片。全信号扫描往往生成大量属性，可能包含没有工程意义的中间节点和普通数据寄存器，因此不推荐把 `get_signals` 的全部对象直接无差别传给 `fxp_assert`，尤其不推荐在没有容量预算和报告分类时执行。若需批量生成对象列表，应该过滤时钟、复位、扫描测试、非功能占位和已知允许变化的信号，并在最终报告中清晰列出排除规则。
+
+### 10.1 与复位覆盖工作的关系
+
+FXP 可帮助识别“实际运行时需要已知，但没有完整初始化”的重要状态，但**不能单独替代复位规格验证**。建议同时使用 FPV 证明复位之后关键控制寄存器为规定的常量。这样发现的 X 传播问题可以分成：状态未初始化、控制路径泄漏、协议保护失效、或仿真 X 语义不同。
+
+## 11. 常见问题
+
+| 现象 | 可能原因 | 改进方向 |
+|---|---|---|
+| 复位后一拍输出为 X | 数据寄存器未复位或有效位错误 | 修改 RTL 或协议保护 |
+| 某黑盒输出引起所有下游失败 | 模型过于自由 | 提供正确的黑盒约束或可综合模型 |
+| 所有属性都通过但已知存在 X 问题 | 未将关键输出列为观察点或注入范围不足 | 核对 `fxp_generate` 类型及属性数量 |
+| 生成属性太多，内存不足 | 扫描范围过宽 | 按重要模块、输出和原因分批 |
+| `-injectx` 报错 | 选中时钟/复位或不支持对象 | 查该命令对象与 scope 限制 |
+| 人工 `-nox` 后全部通过 | 可能屏蔽真实传播 | 审查硬件依据，保留原始对照结果 |
+
+## 12. FXP 与 AEP、FPV 的分工
+
+- AEP 可自动检查“数组是否越界、表达式是否存在潜在不安全结构”；
+- FXP 检查“潜在未知值是否影响重要观察点”；
+- FPV 检查“满足输入规范时，关键输出值或控制状态是否符合功能规格”。
+
+例如越界读导致数据可能不确定，三个应用依次能够定位越界原因、传播风险、以及实际功能规则失败。联合使用更全面，但三者仍依赖正确的模型和约束。
+
+## 13. 官方依据与版本提醒
+
+User Guide 第 12 章（444～457 页），Quick Reference Guide FXP 部分。`set_blackbox` 的开关应以安装版本帮助为准，部分旧笔记中存在 `-design` 与 `-designs` 混用；不要把未核对的选项直接写入生产脚本。源码形式验证与真实芯片的亚稳态、模拟电压和物理故障不是同一个模型。

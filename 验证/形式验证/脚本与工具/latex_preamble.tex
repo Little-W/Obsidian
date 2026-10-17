@@ -1,0 +1,39 @@
+\usepackage{fancyhdr}
+\usepackage{float}
+\usepackage{etoolbox}
+\usepackage{graphicx}
+\usepackage{fvextra}
+\fvset{breaklines=true,breakanywhere=true}
+\setlength{\headheight}{17pt}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[LE,RO]{\small VC Formal 中文形式验证手册}
+\fancyhead[LO,RE]{\small X-2025.06-SP1}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.25pt}
+\setcounter{tocdepth}{1}
+\emergencystretch=3em
+\sloppy
+\renewcommand{\maketitle}{%
+  \begin{titlepage}
+  \begin{center}
+  \vspace*{17mm}
+  {\LARGE\bfseries VC Formal 中文形式验证手册\par}
+  \vspace{8mm}
+  {\large 形式验证原理 · SystemVerilog Assertions · 12 类应用 · 工程案例\par}
+  \vspace{12mm}
+  \rule{.87\textwidth}{1pt}
+  \vspace{13mm}
+  \includegraphics[width=.86\textwidth]{{{COVER_IMAGE}}}
+  \vspace{11mm}
+  \rule{.87\textwidth}{.6pt}
+  \vfill
+  {\large 文档基线：X-2025.06-SP1\par}
+  \vspace{4mm}
+  {\large 2026 年 10 月 | 独立中文技术教程\par}
+  \vspace{4mm}
+  {\small 非 Synopsys 官方译本；命令与行为以安装版本为准\par}
+  \vspace*{8mm}
+  \end{center}
+  \end{titlepage}%
+}

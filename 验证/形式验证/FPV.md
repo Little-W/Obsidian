@@ -1,271 +1,177 @@
-# VC Formal FPV 使用手册与例子
+# FPV：功能属性验证应用完整指南
 
-本文整理 VC Formal 中 FPV 的常用用法。重点不是单条命令，而是把一个可复用的 FPV 工作流串起来：读设计、加断言、定时钟复位、生成 reset state、运行 check_fv、看报告和调试反例。
+> **第 5 册 · 专用应用**　Functional Property Verification。依据 User Guide 第 17 章（第 686～713 页），并结合第 3～8、18～20 章及 Quick Reference Guide 的 FPV 部分。提供带设计、断言和 Tcl 的可复现教学工程，见 [案例工程](案例工程/README.md)。
 
-## 1. FPV 是什么
+## 1. 定位、能力与不适用范围
 
-FPV 是功能属性验证，主要用于证明用户定义的属性、SVA 断言以及和设计行为相关的关键约束。它适合验证接口协议、状态机跳转、异常响应、复位行为和控制逻辑正确性。
+FPV 通过数学证明验证 RTL 和 SVA 所描述的设计规则。输入包括：待验证 RTL、用户断言、Assertion IP（AIP）断言、环境假设、时钟复位和初始化状态；输出为证明状态、反例、覆盖轨迹和分析报告。它适合局部协议、状态机、控制面、缓冲区、寄存器副作用、异常控制等，可在传统 testbench 完成前投入使用。
 
-从使用方式上看，FPV 是 VC Formal 的基础应用模式。很多其它分析能力都以它为起点，因此通常先把 FPV 环境搭好，再往上叠加 AEP、COV、FXP、CC 之类的检查。
+FPV 不会自动理解芯片规格，也不自动生成所有应该证明的规则。只有对**已经编写并启用**的属性进行了证明才有相应结论，且环境约束必须可信。若设计缺少软件配置顺序或外部协议模型，可能出现不实际的反例；若过度约束，则可能出现空洞证明。
 
-## 2. 什么时候用 FPV
+## 2. 标准流程与输入输出
 
-FPV 适合下面这些场景：
+![FPV 工作流程](插图/06_FPV工作流程.svg)
 
-- 证明某条协议规则是否永远成立。
-- 验证状态机不会进入非法状态。
-- 检查复位后关键寄存器和控制信号是否满足预期。
-- 对异常路径、边界条件和罕见时序组合做证明。
-- 在修改 RTL 后确认行为没有被破坏。
+| 阶段 | 任务 | 命令或文件 | 核查点 |
+|---|---|---|---|
+| 选择应用 | 设置 FPV | `set_fml_appmode FPV` | 模式是否正确 |
+| 编译 | 读入 RTL、属性和 bind 文件 | `read_file` 或 `analyze/elaborate` | 顶层、参数、属性数量 |
+| 初始化 | 时钟、复位、常量、初始状态 | `create_clock`、`create_reset`、`sim_save_reset` | 与真实启动一致 |
+| 环境审查 | 检查黑盒和模型问题 | `report_blackbox`、`check_fv_setup` | 不存在关键环境缺陷 |
+| 运行 | 执行验证 | `check_fv -block` | 任务真正结束 |
+| 分析 | 输出证明状态和反例 | `report_fv`、`view_trace` | 性质与前提一致 |
+| 回归 | 保存可复现结果 | `save_session`、日志/manifest | 版本与运行资源可追踪 |
 
-如果你的问题是“这个设计是否满足某条明确的功能规则”，优先考虑 FPV。
+## 3. 最小脚本：单时钟计数器
 
-## 3. 标准工作流
-
-FPV 的典型流程可以拆成以下几步：
-
-1. 设置 application mode 为 FPV。
-2. 读入 RTL 和 SVA。
-3. 定义时钟、复位和必要常量。
-4. 如果需要，设定 blackbox 或 Assertion IP。
-5. 通过仿真或初始化流程生成 reset state。
-6. 执行 check_fv 运行验证。
-7. 使用 report_fv、view_trace、fvtrace 进行结果分析。
-
-这条链路的关键不是“先跑起来”，而是“先把验证起点定义对”。时钟、复位和初始状态不对，后面得到的证明结果通常也不可靠。
-
-## 4. 最小可用脚本
-
-下面是一段常见的 FPV 起步脚本，适合新设计第一次接入 VC Formal 时使用。
+以下示例以 `案例工程/` 为根目录运行；复位序列需按你的 DUT 实际建立，脚本重点展示 FPV 的正确调用顺序。教学 RTL 参见 `案例工程/rtl/counter.sv`，属性参见 `案例工程/formal/counter_props.sv`。
 
 ```tcl
+# 文件：案例工程/scripts/fpv_counter.tcl
 set_fml_appmode FPV
-
-set design traffic
-
-read_file -top $design -format sverilog -sva \
-    -vcs {-f ../design/filelist +define+INLINE_SVA ../sva/traffic.sva}
-
+read_file -top counter -sva -format sverilog -vcs {-f filelist_counter.f}
 create_clock clk -period 100
-create_reset rst -sense high
-
+create_reset rst_n -sense low
 sim_run -stable
 sim_save_reset
-
-check_fv
+check_fv_setup
 report_fv -list
-```
-
-这段脚本的作用是：
-
-- 把工具切到 FPV 模式。
-- 读入设计和断言。
-- 明确时钟和复位。
-- 保存 reset state。
-- 直接开始正式验证。
-
-## 5. 常用命令说明
-
-### 5.1 设置模式
-
-```tcl
-set_fml_appmode FPV
-```
-
-把 VC Formal 切到功能属性验证模式。FPV 的很多默认行为、变量和流程都以此为前提。
-
-### 5.2 读入设计
-
-```tcl
-read_file -top top -sva -format verilog -vcs {-f filelist}
-analyze -format verilog -vcs {-f filelist}
-elaborate top -sva
-```
-
-这三种方式里，`read_file` 是最常用的一站式入口，`analyze` 和 `elaborate` 更适合你想把编译和展开步骤拆开控制的场景。
-
-### 5.3 定义时钟和复位
-
-```tcl
-create_clock clk -period 100
-create_reset rst -sense high
-set_constant testmode -value 1'b0
-```
-
-时钟和复位是 FPV 的基础。没有定义清楚它们，很多属性会因为初始状态不完整而出现误判。
-
-### 5.4 生成 reset state
-
-```tcl
-sim_run -stable
-sim_force SCAN_EN -apply 1'b1
-sim_run 3 -clk clk
-sim_set_state -uninitialized -user_only -apply 0
-sim_save_reset
-```
-
-这一步的目的，是让设计进入一个稳定且可重复的起始状态，方便后续证明和反例复现。
-
-### 5.5 运行和报告
-
-```tcl
-check_fv
-check_fv -stop
+set_fml_var fml_max_time 1H
+set_fml_var fml_max_memory 8GB
 check_fv -block
-report_fv
 report_fv -list
 report_fv -verbose
 ```
 
-`check_fv` 是实际跑验证的入口，`report_fv` 用来查看属性结果、失败原因和状态分类。
+这是面向具有明确复位模型的教学模板。工程中应先检查 `sim_save_reset` 所保存的状态是否符合真实上电要求；**不能仅仅因为脚本中有 `create_reset` 就认定初始状态已正确设置**。可使用 `sim_force`、`sim_run N -clk clk`、`view_trace -reset` 辅助构造、检查启动过程。文件路径按照脚本执行的工作目录解析。
 
-### 5.6 调试
+## 4. 如何组织断言
 
-```tcl
-view_trace -property property
-fvtrace -property property
+建议把每条属性归入四个类别：初始化（复位值和复位后输出）；协议（有效应答、授权、稳定性）；内部安全性（计数范围、状态合法、资源互斥）；进展性（最大等待时间、错误响应）。每个类别不仅包含断言，还要有能触发关键规则的覆盖目标。可将大型属性拆成“输入合法 → 请求被接受 → 内部状态变化 → 输出响应”的小性质，降低定位和求解难度。
+
+### 4.1 它真正验证了什么
+
+```systemverilog
+ap_range: assert property (@(posedge clk) disable iff(!rst_n)
+  count <= 4'd9);
+
+cp_wrap: cover property (@(posedge clk) disable iff(!rst_n)
+  count == 4'd9 ##1 count == 4'd0);
 ```
 
-反例出来后，优先看触发路径、约束是否过弱、属性是否过强，以及设计是否存在真实 bug。
+`ap_range` 证明占用值不超过上界；`cp_wrap` 搜索一次从 9 到 0 的回绕。两者不能互相替代。若设计从未能到达 9，`ap_range` 仍可能通过，但回绕规则并未真正被验证。对错误 RTL，前者应给出反例，后者是否能够覆盖取决于更新条件。
 
-## 6. 使用例子
+### 4.2 使用 `bind` 与外部属性模块
 
-### 例子 1：Verilog + SVA 的最小 FPV
+推荐把待验证 RTL 与检查器分离，方便调试和提交代码：
 
-适用场景：你已经有 RTL 和 SVA，想快速验证某个模块。
-
-```tcl
-set_fml_appmode FPV
-
-read_file -top arb -sva -format sverilog -vcs {
-    arb.v
-    arb.sva
-    arb_bind.v
-}
-
-create_clock clk -period 10
-create_reset rst -sense high
-
-sim_run -stable
-sim_save_reset
-
-check_fv
-report_fv -list
+```systemverilog
+module interface_checker (
+  input logic clk, rst_n,
+  input logic valid, ready,
+  input logic [7:0] data
+);
+  ap_stable: assert property (@(posedge clk) disable iff(!rst_n)
+     valid && !ready |=> valid && $stable(data));
+  cp_transfer: cover property (@(posedge clk) disable iff(!rst_n)
+     valid && ready);
+endmodule
 ```
 
-这个例子的重点是把设计、断言、时钟和复位一次性接起来，然后直接看属性结果。
+在 `formal/bind.sv` 内写 `bind <DUT_type> interface_checker ...`，然后使绑定文件编译进入 `-sva` 的设计。必须确认属性端口与 DUT 的实际时序一致，不要仅凭属性能被编译就认为建模正确。
 
-### 例子 2：只验证一条关键属性
+## 5. 常用 Tcl 命令逐项讲解
 
-适用场景：你不想先跑整个属性集，只想确认某条属性是否可证。
+| 命令 | 作用 | 使用时机及注意事项 |
+|---|---|---|
+| `set_fml_appmode FPV` | 选择 FPV | 在编译前执行；可用 `get_fml_appmode` 核对 |
+| `read_file -top ... -sva ...` | 编译并展开含断言设计 | 源文件列表和模块顶层必须正确 |
+| `analyze ...; elaborate ... -sva` | 将编译与展开拆开 | 不与 `read_file` 任意重复 |
+| `aip_load -protocol "AHB AXI5"` | 加载受支持的协议断言 IP | 需要协议适配及正确的 AIP 连接配置 |
+| `create_clock` | 定义逻辑时钟 | 多域设计要分别核查 |
+| `create_reset` | 定义复位极性 | 必须与实际 RTL 相符 |
+| `set_constant` | 将稳定控制输入限制为给定值 | 确保该假设对目标应用合理 |
+| `sim_run` / `sim_save_reset` | 建立并保存初始状态 | 应审查复位波形和寄存器值 |
+| `check_fv_setup` | 检查形式模型和环境 | 在长时间证明前运行 |
+| `fvassert` | 在 Tcl 创建或设定断言属性 | 复杂时序属性推荐 SVA 源文件 |
+| `fvassume` | 添加或调整形式假设 | 必须给出规格来源 |
+| `fvcover` | 添加覆盖目标 | 应覆盖关键协议触发条件 |
+| `fvdisable` / `fvenable` | 关闭 / 启用属性 | 禁用不能隐瞒，需报告 |
+| `set_fml_var fml_vacuity_on true` | 配置空洞性分析 | 仍需结合触发覆盖审查 |
+| `check_fv -block` | 阻塞执行求解 | 适合批处理脚本 |
+| `report_fv -list/-verbose` | 列表和详细报告 | 根据状态区分已证明、失败和未完成 |
+| `view_trace -property ...` | 打开特定属性反例 | 对照 SVA 触发周期观察 |
+| `save_session -session ...` | 保存工具工作会话 | 保留关联数据库以便恢复 |
 
-```tcl
-set_fml_appmode FPV
+`fvassert <name> -expr {<expression>}`、`fvassume <name> -expr {...}` 和 `fvcover <name> -expr {...}` 适合短属性或自动生成规则。Tcl 的 `{}`、`""` 会影响转义与 `$` 替换，例如使用 `$past` 时推荐外层花括号包围语句或直接写到 SV 中。
 
-read_file -top top -sva -format sverilog -vcs {-f filelist}
-create_clock clk -period 100
-create_reset rst -sense high
-sim_run -stable
-sim_save_reset
+## 6. 四个逐步进阶的用例
 
-fvdisable -usage {assert cover}
-fvenable my_protocol_property
-check_fv
-report_fv -list
+### 用例 A：复位后状态正确
+
+规格：复位退出后，状态机应进入空闲状态。首先明确同步或异步复位和断言采样时刻：
+
+```systemverilog
+ap_reset_release: assert property (
+  @(posedge clk) $rose(rst_n) |-> state == IDLE);
 ```
 
-这个例子适合单属性调试。先把范围缩小，再排查属性本身和约束是否正确。
+这段规则只适用于状态在第一次采样到复位高电平的时刻应该已经是 `IDLE` 的实现。若模块采用同步释放后的一个周期才进入有效状态，则必须调整响应周期。为复位前提单独建立初始化流程，不能只靠 `disable iff` 回避复位检查。
 
-### 例子 3：检查复位后行为
+### 用例 B：握手停止期间数据不变
 
-适用场景：你关心的不是运行中路径，而是复位后关键寄存器和状态是否满足要求。
-
-```tcl
-set_fml_appmode FPV
-
-read_file -top top -sva -format verilog -vcs {-f filelist}
-create_clock clk -period 100
-create_reset rst -sense high
-
-sim_run -stable
-sim_save_reset
-
-check_fv -run_finish {report_fv -verbose}
+```systemverilog
+ap_stall_hold: assert property (@(posedge clk) disable iff(!rst_n)
+  valid && !ready |=> valid && $stable(data));
+cp_backpressure: cover property (@(posedge clk) disable iff(!rst_n)
+  valid && !ready ##1 ready);
 ```
 
-这个例子常用于启动流程、复位释放流程和初始化行为检查。
+如 `ready` 为外部驱动，禁止假设 `ready` 始终为 1；否则背压规则可能很容易被证明，却没有真正触发的测试场景。
 
-### 例子 4：失败属性的调试流程
+### 用例 C：深层计数器溢出
 
-适用场景：`check_fv` 失败了，你想快速判断是设计 bug、环境假设缺失还是属性写法不合适。
+使用参数化深度为 10 的计数器，故意把最大值条件写错。预期安全性 `count <= 9` 会失败；反例提供每拍 `enable`，可从逐周期变化找到第一次非法值。修复后重新运行，与更早的报告比较应以 RTL 的校验值为前提。
 
-```tcl
-report_fv -list
-view_trace -property my_failed_property
-fvtrace -property my_failed_property
+### 用例 D：多端口仲裁
+
+```systemverilog
+ap_mutex: assert property (@(posedge clk) disable iff(!rst_n)
+  $onehot0(grant));
+cp_contend: cover property (@(posedge clk) disable iff(!rst_n)
+  req == 2'b11);
 ```
 
-看反例时优先问三个问题：
+这是最基础的安全性和触发覆盖。若想证明“等待不超过 8 拍”，必须明确持续请求和仲裁器能否接收新请求，并对每一个端口分别写属性。状态空间复杂时，可先证明互斥与请求合法，再证明有界公平性。
 
-- 属性前提是否写全了。
-- 约束是否太弱，导致工具走到了不该走的路径。
-- 设计本身是否真的违背了规格。
+## 7. 如何分析结果
 
-### 例子 5：结合 Assertion IP
+`Proven`：属性在该模型和假设下成立。需要查触发是否可达与约束是否合理。`Falsified`：工具给出违反路径，首先检查输入是否符合环境规格与时钟复位是否正确。`Inconclusive`：目前未完成，不能当作通过。`Covered`：存在一条满足覆盖目标的路径。`Uncoverable`：该目标在当前模型不可达，需要区分真实死逻辑与过度约束。详见 [验证工程与结果判读](验证工程与结果判读.md)。
 
-适用场景：项目里已经有现成协议包或 Assertion IP，可以直接复用。
+## 8. 优化证明效率而不损害结论
 
-```tcl
-set_fml_appmode FPV
+1. 缩小模块验证范围，必要时划分不同 `fvtask`；不要先大面积假设内部值。
+2. 将复杂的一条断言拆成可解释的若干不变量与阶段性结果。
+3. 分析影响锥，确认算术、RAM、时钟域和不必要的外围逻辑是否进入证明。
+4. 再考虑 `set_fml_var fml_effort high`、资源限制、`set_abstractions`、`snip_driver` 等进阶优化；新抽象可能引入虚假反例。
+5. 对长期回归使用符合条件的 `fvlearn_config -local_dir ...`，并区分继承的缓存与新运行获得的真实结果。
+6. 使用 `report_fml_engines`、`report_fml_jobs`、`report_fml_hosts` 定位瓶颈。
 
-aip_load -protocol "AHB AXI5"
-read_file -top top -sva -format verilog -vcs {-f filelist}
-create_clock clk -period 100
-create_reset rst -sense high
-sim_run -stable
-sim_save_reset
-check_fv
-```
+## 9. 常见故障与排查
 
-这个例子适合总线协议、标准接口和可复用断言库的场景。
+| 现象 | 优先检查 | 不应做的事 |
+|---|---|---|
+| 所有断言都轻松通过 | 触发覆盖、空洞性和假设 | 直接宣布完整验证通过 |
+| 许多断言在第 0 拍失败 | 初始化状态与 `$past` | 假设所有寄存器为预期值 |
+| 证明几乎没有进展 | 影响锥、参数和 RAM | 无审查地增加内部假设 |
+| 只有有界深度结论 | 是否真正 `Proven` | 把展开深度当作无限证明 |
+| Verdi 中找不到信号 | 优化、层级、会话版本 | 在不知影响的情况下关掉全部优化 |
+| 频繁得到非法请求反例 | 环境模型与协议规范 | 把所有 DUT 失败行为都排除 |
 
-## 7. 常见问题
+## 10. 进阶主题
 
-### 7.1 证明结果不稳定
+FPV 可以与 AIP、覆盖质量评估（FCA）、FTA 的形式测试平台突变分析、Proof Architect 的组合式证明方法等配合。有关无法快速证明的属性，阅读 [调试与证明性能](调试与证明性能.md)；有关交付报告，阅读 [覆盖与验证验收](覆盖与验证验收.md)。FPV 的物理规模限制随属性影响锥、状态空间及引擎而变化，没有一个对所有设计都有效的固定门数门槛。
 
-优先检查时钟、复位、初始状态和约束。很多“不稳定”的结果，其实是初始化条件没有定义完整。
+## 11. 参考定位
 
-### 7.2 一直出现反例
-
-先区分三种情况：设计 bug、约束缺失、属性过强。如果不先分清，修错方向会偏掉。
-
-### 7.3 属性太多，跑得慢
-
-先从关键属性开始，再逐步扩大范围。必要时用更精确的属性管理命令把验证范围收窄。
-
-### 7.4 只想看流程是否搭对
-
-先确认 `set_fml_appmode FPV`、`read_file`、`create_clock`、`create_reset` 和 `sim_save_reset` 这五步是否完整。
-
-## 8. 命令速查
-
-```tcl
-set_fml_appmode FPV
-read_file -top top -sva -format verilog -vcs {-f filelist}
-analyze -format verilog -vcs {-f filelist}
-elaborate top -sva
-create_clock clk -period 100
-create_reset rst -sense high
-sim_run -stable
-sim_save_reset
-check_fv
-report_fv -list
-view_trace -property property
-fvtrace -property property
-```
-
-## 9. 小结
-
-FPV 的核心不是某一个命令，而是一条固定的验证链路：把设计和断言读进来，把时钟和复位定义清楚，把 reset state 建好，再运行 check_fv 并用 report_fv 和 trace 工具调试结果。
-
-如果你已经有 AEP、COV 或其它应用的笔记，这份 FPV 笔记可以作为基础入口，后续所有应用都能沿着这条初始化链路扩展。
+User Guide §17（FPV，686 页起），§3（SVA/属性，66 页起），§4（初始化，115 页起），§6～7（运行与调试，183～312 页），§18～20（性能、组合式证明与验收）。Quick Reference Guide 的 FPV 页面提供命令速览，但不是全部参数说明。
