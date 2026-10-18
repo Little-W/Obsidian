@@ -1,0 +1,274 @@
+[
+  {
+    "pattern": "0000",
+    "outputs": "00",
+    "detects": [
+      "c/sa1",
+      "d/sa1",
+      "n1/sa1",
+      "n2/sa1",
+      "y/sa1",
+      "z/sa1",
+      "n2/pin0/sa1",
+      "n2/pin1/sa1",
+      "y/pin0/sa1",
+      "y/pin1/sa1"
+    ]
+  },
+  {
+    "pattern": "0001",
+    "outputs": "10",
+    "detects": [
+      "c/sa1",
+      "d/sa0",
+      "n1/sa1",
+      "n2/sa1",
+      "y/sa0",
+      "z/sa1",
+      "n2/pin0/sa1",
+      "n2/pin1/sa1",
+      "y/pin0/sa1",
+      "y/pin1/sa0",
+      "z/pin0/sa1"
+    ]
+  },
+  {
+    "pattern": "0010",
+    "outputs": "10",
+    "detects": [
+      "c/sa0",
+      "d/sa1",
+      "n2/sa0",
+      "y/sa0",
+      "z/sa1",
+      "n2/pin1/sa0",
+      "y/pin0/sa0",
+      "y/pin1/sa1"
+    ]
+  },
+  {
+    "pattern": "0011",
+    "outputs": "00",
+    "detects": [
+      "c/sa0",
+      "d/sa0",
+      "n1/sa1",
+      "n2/sa0",
+      "y/sa1",
+      "z/sa1",
+      "n2/pin1/sa0",
+      "y/pin0/sa0",
+      "y/pin1/sa0",
+      "z/pin0/sa1"
+    ]
+  },
+  {
+    "pattern": "0100",
+    "outputs": "00",
+    "detects": [
+      "a/sa1",
+      "c/sa1",
+      "d/sa1",
+      "n1/sa1",
+      "n2/sa1",
+      "y/sa1",
+      "z/sa1",
+      "n1/pin0/sa1",
+      "n2/pin0/sa1",
+      "n2/pin1/sa1",
+      "y/pin0/sa1",
+      "y/pin1/sa1"
+    ]
+  },
+  {
+    "pattern": "0101",
+    "outputs": "10",
+    "detects": [
+      "a/sa1",
+      "c/sa1",
+      "d/sa0",
+      "n1/sa1",
+      "n2/sa1",
+      "y/sa0",
+      "z/sa1",
+      "n1/pin0/sa1",
+      "n2/pin0/sa1",
+      "n2/pin1/sa1",
+      "y/pin0/sa1",
+      "y/pin1/sa0",
+      "z/pin0/sa1"
+    ]
+  },
+  {
+    "pattern": "0110",
+    "outputs": "10",
+    "detects": [
+      "c/sa0",
+      "d/sa1",
+      "n2/sa0",
+      "y/sa0",
+      "z/sa1",
+      "n2/pin1/sa0",
+      "y/pin0/sa0",
+      "y/pin1/sa1"
+    ]
+  },
+  {
+    "pattern": "0111",
+    "outputs": "00",
+    "detects": [
+      "a/sa1",
+      "c/sa0",
+      "d/sa0",
+      "n1/sa1",
+      "n2/sa0",
+      "y/sa1",
+      "z/sa1",
+      "n1/pin0/sa1",
+      "n2/pin1/sa0",
+      "y/pin0/sa0",
+      "y/pin1/sa0",
+      "z/pin0/sa1"
+    ]
+  },
+  {
+    "pattern": "1000",
+    "outputs": "00",
+    "detects": [
+      "b/sa1",
+      "c/sa1",
+      "d/sa1",
+      "n1/sa1",
+      "n2/sa1",
+      "y/sa1",
+      "z/sa1",
+      "n1/pin1/sa1",
+      "n2/pin0/sa1",
+      "n2/pin1/sa1",
+      "y/pin0/sa1",
+      "y/pin1/sa1"
+    ]
+  },
+  {
+    "pattern": "1001",
+    "outputs": "10",
+    "detects": [
+      "b/sa1",
+      "c/sa1",
+      "d/sa0",
+      "n1/sa1",
+      "n2/sa1",
+      "y/sa0",
+      "z/sa1",
+      "n1/pin1/sa1",
+      "n2/pin0/sa1",
+      "n2/pin1/sa1",
+      "y/pin0/sa1",
+      "y/pin1/sa0",
+      "z/pin0/sa1"
+    ]
+  },
+  {
+    "pattern": "1010",
+    "outputs": "10",
+    "detects": [
+      "c/sa0",
+      "d/sa1",
+      "n2/sa0",
+      "y/sa0",
+      "z/sa1",
+      "n2/pin1/sa0",
+      "y/pin0/sa0",
+      "y/pin1/sa1"
+    ]
+  },
+  {
+    "pattern": "1011",
+    "outputs": "00",
+    "detects": [
+      "b/sa1",
+      "c/sa0",
+      "d/sa0",
+      "n1/sa1",
+      "n2/sa0",
+      "y/sa1",
+      "z/sa1",
+      "n1/pin1/sa1",
+      "n2/pin1/sa0",
+      "y/pin0/sa0",
+      "y/pin1/sa0",
+      "z/pin0/sa1"
+    ]
+  },
+  {
+    "pattern": "1100",
+    "outputs": "10",
+    "detects": [
+      "a/sa0",
+      "b/sa0",
+      "d/sa1",
+      "n1/sa0",
+      "n2/sa0",
+      "y/sa0",
+      "z/sa1",
+      "n1/pin0/sa0",
+      "n1/pin1/sa0",
+      "n2/pin0/sa0",
+      "y/pin0/sa0",
+      "y/pin1/sa1",
+      "z/pin1/sa1"
+    ]
+  },
+  {
+    "pattern": "1101",
+    "outputs": "01",
+    "detects": [
+      "a/sa0",
+      "b/sa0",
+      "d/sa0",
+      "n1/sa0",
+      "n2/sa0",
+      "y/sa1",
+      "z/sa0",
+      "n1/pin0/sa0",
+      "n1/pin1/sa0",
+      "n2/pin0/sa0",
+      "y/pin0/sa0",
+      "y/pin1/sa0",
+      "z/pin0/sa0",
+      "z/pin1/sa0"
+    ]
+  },
+  {
+    "pattern": "1110",
+    "outputs": "10",
+    "detects": [
+      "d/sa1",
+      "n2/sa0",
+      "y/sa0",
+      "z/sa1",
+      "y/pin0/sa0",
+      "y/pin1/sa1",
+      "z/pin1/sa1"
+    ]
+  },
+  {
+    "pattern": "1111",
+    "outputs": "01",
+    "detects": [
+      "a/sa0",
+      "b/sa0",
+      "d/sa0",
+      "n1/sa0",
+      "n2/sa0",
+      "y/sa1",
+      "z/sa0",
+      "n1/pin0/sa0",
+      "n1/pin1/sa0",
+      "y/pin0/sa0",
+      "y/pin1/sa0",
+      "z/pin0/sa0",
+      "z/pin1/sa0"
+    ]
+  }
+]

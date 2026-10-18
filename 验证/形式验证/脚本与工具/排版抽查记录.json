@@ -1,0 +1,54 @@
+{
+  "pdf_pages": 186,
+  "text_blocks_outside_page": [],
+  "rendered_pdf_pages": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    9,
+    18,
+    26,
+    29,
+    34,
+    43,
+    56,
+    71,
+    91,
+    93,
+    108,
+    111,
+    136,
+    158,
+    159,
+    161,
+    186
+  ],
+  "individual_pdf_pages_visually_reviewed": [
+    29,
+    93,
+    108,
+    159
+  ],
+  "contact_sheet_reviewed": true,
+  "browser": "Chromium",
+  "browser_viewport": [
+    1280,
+    1050
+  ],
+  "html_sections_rendered": [
+    "SVA：重叠蕴含与非重叠蕴含",
+    "FCA：覆盖对象与每种结果的含义",
+    "FRV：覆盖目标按访问顺序编排"
+  ],
+  "html_sections_visually_reviewed": [
+    "SVA：重叠蕴含与非重叠蕴含",
+    "FCA：覆盖对象与每种结果的含义"
+  ],
+  "html_table_count": 60,
+  "html_visible_escaped_pipe_count": 0,
+  "html_horizontal_page_overflow": false,
+  "vc_formal_executed": false,
+  "note": "页面图像为抽样审核；全文几何检查不等同于逐页视觉审核。HTML 汇集教程章节；其他文档的表格计入全包统计。"
+}

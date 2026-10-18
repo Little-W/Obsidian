@@ -1,0 +1,98 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1418" viewBox="0 0 1200 1418" role="img" aria-labelledby="fig-title fig-description" version="1.1" data-layout-version="precise-ports-v2">
+  <title id="fig-title">图 08  经典 March 算法的操作长度</title>
+  <desc id="fig-description">只比较代表版本的读写操作次数，不把操作长度当作故障覆盖率。</desc>
+  <metadata>{"layout": "named ports + orthogonal routes", "font_policy": "editable text; no embedded fonts", "version": 2}</metadata>
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#1967A4" />
+    </marker>
+    <marker id="arrow-teal" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#118575" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#D97A16" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#B84051" />
+    </marker>
+    <marker id="arrow-muted" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#4F6278" />
+    </marker>
+    <marker id="arrow-slate" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#738A9F" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#92517C" />
+    </marker>
+  </defs>
+  <g id="layer-background">
+    <rect width="1200" height="1418" fill="#FFFFFF" />
+  </g>
+  <g id="layer-shapes">
+    <rect id="bar0" x="320" y="254" width="92.0" height="40" rx="3" fill="#1967A4" stroke="none" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <rect id="bar1" x="320" y="321" width="115.0" height="40" rx="3" fill="#1967A4" stroke="none" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <rect id="bar2" x="320" y="388" width="138.0" height="40" rx="3" fill="#1967A4" stroke="none" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <rect id="bar3" x="320" y="455" width="138.0" height="40" rx="3" fill="#1967A4" stroke="none" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <rect id="bar4" x="320" y="522" width="184.0" height="40" rx="3" fill="#1967A4" stroke="none" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <rect id="bar5" x="320" y="589" width="230.0" height="40" rx="3" fill="#1967A4" stroke="none" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <rect id="bar6" x="320" y="656" width="253.0" height="40" rx="3" fill="#1967A4" stroke="none" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <rect id="bar7" x="320" y="723" width="299.0" height="40" rx="3" fill="#118575" stroke="none" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <rect id="bar8" x="320" y="790" width="322.0" height="40" rx="3" fill="#118575" stroke="none" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <rect id="bar9" x="320" y="857" width="414.0" height="40" rx="3" fill="#118575" stroke="none" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <rect id="bar10" x="320" y="924" width="506.0" height="40" rx="3" fill="#D97A16" stroke="none" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <rect id="bar11" x="320" y="991" width="506.0" height="40" rx="3" fill="#D97A16" stroke="none" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <rect id="bar12" x="320" y="1058" width="598.0" height="40" rx="3" fill="#D97A16" stroke="none" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <polyline id="axis" points="320,1131 1010,1131" fill="none" stroke="#4F6278" stroke-width="2" data-kind="rule" />
+    <polyline id="tick0" points="320,1131 320,1141" fill="none" stroke="#4F6278" stroke-width="2" data-kind="rule" />
+    <polyline id="tick5" points="435,1131 435,1141" fill="none" stroke="#4F6278" stroke-width="2" data-kind="rule" />
+    <polyline id="tick10" points="550,1131 550,1141" fill="none" stroke="#4F6278" stroke-width="2" data-kind="rule" />
+    <polyline id="tick15" points="665,1131 665,1141" fill="none" stroke="#4F6278" stroke-width="2" data-kind="rule" />
+    <polyline id="tick20" points="780,1131 780,1141" fill="none" stroke="#4F6278" stroke-width="2" data-kind="rule" />
+    <polyline id="tick25" points="895,1131 895,1141" fill="none" stroke="#4F6278" stroke-width="2" data-kind="rule" />
+    <polyline id="tick30" points="1010,1131 1010,1141" fill="none" stroke="#4F6278" stroke-width="2" data-kind="rule" />
+  </g>
+  <g id="layer-connectors" />
+  <g id="layer-text">
+    <text id="text-0001" x="64" y="80" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="48" font-weight="700" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">图 08  经典 March 算法的操作长度</text>
+    <text id="text-0002" x="64" y="145" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">只比较代表版本的读写操作次数，不把操作长度当作故障覆盖率。</text>
+    <text id="text-0003" x="1110" y="210" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="28" font-weight="400" fill="#4F6278" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">次数</text>
+    <text id="text-0004" x="292" y="274" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="end" dominant-baseline="central" data-kind="text" data-padding="12">MATS</text>
+    <text id="text-0005" x="1110" y="274" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">4N</text>
+    <text id="text-0006" x="292" y="341" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="end" dominant-baseline="central" data-kind="text" data-padding="12">MATS+</text>
+    <text id="text-0007" x="1110" y="341" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">5N</text>
+    <text id="text-0008" x="292" y="408" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="end" dominant-baseline="central" data-kind="text" data-padding="12">MATS++</text>
+    <text id="text-0009" x="1110" y="408" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">6N</text>
+    <text id="text-0010" x="292" y="475" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="end" dominant-baseline="central" data-kind="text" data-padding="12">March X</text>
+    <text id="text-0011" x="1110" y="475" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">6N</text>
+    <text id="text-0012" x="292" y="542" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="end" dominant-baseline="central" data-kind="text" data-padding="12">March Y</text>
+    <text id="text-0013" x="1110" y="542" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">8N</text>
+    <text id="text-0014" x="292" y="609" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="end" dominant-baseline="central" data-kind="text" data-padding="12">March C−</text>
+    <text id="text-0015" x="1110" y="609" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">10N</text>
+    <text id="text-0016" x="292" y="676" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="end" dominant-baseline="central" data-kind="text" data-padding="12">March C</text>
+    <text id="text-0017" x="1110" y="676" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">11N</text>
+    <text id="text-0018" x="292" y="743" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="end" dominant-baseline="central" data-kind="text" data-padding="12">March AZ</text>
+    <text id="text-0019" x="1110" y="743" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="700" fill="#118575" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">13N</text>
+    <text id="text-0020" x="292" y="810" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="end" dominant-baseline="central" data-kind="text" data-padding="12">March LR</text>
+    <text id="text-0021" x="1110" y="810" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="700" fill="#118575" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">14N</text>
+    <text id="text-0022" x="292" y="877" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="end" dominant-baseline="central" data-kind="text" data-padding="12">March MSS</text>
+    <text id="text-0023" x="1110" y="877" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="700" fill="#118575" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">18N</text>
+    <text id="text-0024" x="292" y="944" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="end" dominant-baseline="central" data-kind="text" data-padding="12">March SS</text>
+    <text id="text-0025" x="1110" y="944" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="700" fill="#D97A16" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">22N</text>
+    <text id="text-0026" x="292" y="1011" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="end" dominant-baseline="central" data-kind="text" data-padding="12">March AB</text>
+    <text id="text-0027" x="1110" y="1011" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="700" fill="#D97A16" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">22N</text>
+    <text id="text-0028" x="292" y="1078" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="end" dominant-baseline="central" data-kind="text" data-padding="12">March RAW</text>
+    <text id="text-0029" x="1110" y="1078" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="700" fill="#D97A16" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">26N</text>
+    <text id="text-0030" x="320.0" y="1172" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="28" font-weight="400" fill="#4F6278" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">0</text>
+    <text id="text-0031" x="435.0" y="1172" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="28" font-weight="400" fill="#4F6278" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">5</text>
+    <text id="text-0032" x="550.0" y="1172" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="28" font-weight="400" fill="#4F6278" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">10</text>
+    <text id="text-0033" x="665.0" y="1172" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="28" font-weight="400" fill="#4F6278" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">15</text>
+    <text id="text-0034" x="780.0" y="1172" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="28" font-weight="400" fill="#4F6278" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">20</text>
+    <text id="text-0035" x="895.0" y="1172" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="28" font-weight="400" fill="#4F6278" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">25</text>
+    <text id="text-0036" x="1010.0" y="1172" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="28" font-weight="400" fill="#4F6278" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">30</text>
+    <text id="text-0037" x="665.0" y="1229" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">操作次数系数</text>
+    <text id="text-0038" x="64" y="1292" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">实际操作次数 = 系数 × N；图中不包含保持等待及额外接口开销。</text>
+    <text id="text-0039" x="64" y="1338" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">比较故障覆盖能力时，必须同时核对故障集合与具体操作序列。</text>
+  </g>
+  <g id="layer-junctions" />
+</svg>

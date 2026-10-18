@@ -1,0 +1,18 @@
+{
+  "scope": "Review-page interaction using set_content and inlined local SVGs only. Native file navigation and Obsidian UI were not tested.",
+  "passed": true,
+  "checks": [
+    {
+      "test": "normal_images_loaded",
+      "passed": true
+    },
+    {
+      "test": "19_debug_overlays_loaded",
+      "passed": true
+    },
+    {
+      "test": "return_to_normal_images",
+      "passed": true
+    }
+  ]
+}

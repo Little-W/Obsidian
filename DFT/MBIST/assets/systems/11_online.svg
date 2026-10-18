@@ -1,0 +1,62 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1730" viewBox="0 0 1200 1730" role="img" aria-labelledby="fig-title fig-description" version="1.1" data-layout-version="precise-ports-v2">
+  <title id="fig-title">图 22  保留数据的短测试过程</title>
+  <desc id="fig-description">下图为正常完成路径；每一步满足条件后才能进入下一步。</desc>
+  <metadata>{"layout": "named ports + orthogonal routes", "font_policy": "editable text; no embedded fonts", "version": 2}</metadata>
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#1967A4" />
+    </marker>
+    <marker id="arrow-teal" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#118575" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#D97A16" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#B84051" />
+    </marker>
+    <marker id="arrow-muted" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#4F6278" />
+    </marker>
+    <marker id="arrow-slate" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#738A9F" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#92517C" />
+    </marker>
+  </defs>
+  <g id="layer-background">
+    <rect width="1200" height="1730" fill="#FFFFFF" />
+  </g>
+  <g id="layer-shapes">
+    <rect id="step0" x="100" y="220" width="1000" height="190" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="step1" x="100" y="490" width="1000" height="190" rx="12" fill="#FFFFFF" stroke="#118575" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="step2" x="100" y="760" width="1000" height="190" rx="12" fill="#FFFFFF" stroke="#D97A16" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="step3" x="100" y="1030" width="1000" height="190" rx="12" fill="#FFFFFF" stroke="#118575" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="step4" x="100" y="1300" width="1000" height="190" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+  </g>
+  <g id="layer-connectors">
+    <polyline id="sequence1" points="600,410 600,490" fill="none" stroke="#4F6278" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="上一阶段完成并满足条件后进入下一阶段" data-source-node="step0" data-source-side="S" data-source-fraction="0.5" data-target-node="step1" data-target-side="N" data-target-fraction="0.5" marker-end="url(#arrow-muted)" />
+    <polyline id="sequence2" points="600,680 600,760" fill="none" stroke="#4F6278" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="上一阶段完成并满足条件后进入下一阶段" data-source-node="step1" data-source-side="S" data-source-fraction="0.5" data-target-node="step2" data-target-side="N" data-target-fraction="0.5" marker-end="url(#arrow-muted)" />
+    <polyline id="sequence3" points="600,950 600,1030" fill="none" stroke="#4F6278" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="上一阶段完成并满足条件后进入下一阶段" data-source-node="step2" data-source-side="S" data-source-fraction="0.5" data-target-node="step3" data-target-side="N" data-target-fraction="0.5" marker-end="url(#arrow-muted)" />
+    <polyline id="sequence4" points="600,1220 600,1300" fill="none" stroke="#4F6278" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="上一阶段完成并满足条件后进入下一阶段" data-source-node="step3" data-source-side="S" data-source-fraction="0.5" data-target-node="step4" data-target-side="N" data-target-fraction="0.5" marker-end="url(#arrow-muted)" />
+  </g>
+  <g id="layer-text">
+    <text id="text-0001" x="64" y="80" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="48" font-weight="700" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">图 22  保留数据的短测试过程</text>
+    <text id="text-0002" x="64" y="145" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">下图为正常完成路径；每一步满足条件后才能进入下一步。</text>
+    <text id="text-0003" x="600.0" y="268" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="step0">获得许可并隔离正常访问</text>
+    <text id="text-0004" x="600.0" y="326" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="step0">等待已接受事务完成，阻止新的冲突访问。</text>
+    <text id="text-0005" x="600.0" y="538" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#118575" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="step1">保存并保护原数据</text>
+    <text id="text-0006" x="600.0" y="596" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="step1">暂存位置、地址和数据本身都必须可靠。</text>
+    <text id="text-0007" x="600.0" y="808" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#D97A16" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="step2">执行规定的测试片段</text>
+    <text id="text-0008" x="600.0" y="866" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="step2">保持必要的操作次序和时间关系。</text>
+    <text id="text-0009" x="600.0" y="1078" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#118575" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="step3">恢复数据并检查</text>
+    <text id="text-0010" x="600.0" y="1136" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="step3">不仅写回原数据，还需要处理恢复失败。</text>
+    <text id="text-0011" x="600.0" y="1348" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="step4">释放接口并更新测试进度</text>
+    <text id="text-0012" x="600.0" y="1406" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="step4">检查最长占用时间与最长未测试时间。</text>
+    <text id="text-0013" x="64" y="1580" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">发生异常时进入明确的处理状态，不能跳到最后一步报告成功。</text>
+    <text id="text-0014" x="64" y="1626" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">非破坏性测试仍会占用接口，也不能在任意位置中断。</text>
+  </g>
+  <g id="layer-junctions" />
+</svg>

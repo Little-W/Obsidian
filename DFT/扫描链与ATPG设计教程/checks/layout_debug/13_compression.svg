@@ -1,0 +1,94 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1640" viewBox="0 0 1200 1640" role="img" aria-labelledby="fig-title fig-description" version="1.1" data-layout-version="precise-ports-v2">
+  <title id="fig-title">图13  输入解压缩与响应压缩</title>
+  <desc id="fig-description">编码约束和错误混叠是两端不同的正确性问题。</desc>
+  <metadata>{"layout": "named ports + orthogonal routes", "font_policy": "editable text; no embedded fonts", "version": 2}</metadata>
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#1967A4" />
+    </marker>
+    <marker id="arrow-teal" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#118575" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#D97A16" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#B84051" />
+    </marker>
+    <marker id="arrow-muted" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#4F6278" />
+    </marker>
+    <marker id="arrow-slate" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#738A9F" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#92517C" />
+    </marker>
+  </defs>
+  <g id="layer-background">
+    <rect width="1200" height="1640" fill="#FFFFFF" />
+  </g>
+  <g id="layer-shapes">
+    <rect id="n0" x="120" y="240" width="960" height="160" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="n1" x="120" y="480" width="960" height="160" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="n2" x="120" y="720" width="960" height="160" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="n3" x="120" y="960" width="960" height="160" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="n4" x="120" y="1200" width="960" height="160" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+  </g>
+  <g id="layer-connectors">
+    <polyline id="e1" points="600,400 600,480" fill="none" stroke="#1967A4" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="从上一阶段进入下一阶段" data-source-node="n0" data-source-side="S" data-source-fraction="0.5" data-target-node="n1" data-target-side="N" data-target-fraction="0.5" marker-end="url(#arrow-blue)" />
+    <polyline id="e2" points="600,640 600,720" fill="none" stroke="#1967A4" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="从上一阶段进入下一阶段" data-source-node="n1" data-source-side="S" data-source-fraction="0.5" data-target-node="n2" data-target-side="N" data-target-fraction="0.5" marker-end="url(#arrow-blue)" />
+    <polyline id="e3" points="600,880 600,960" fill="none" stroke="#1967A4" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="从上一阶段进入下一阶段" data-source-node="n2" data-source-side="S" data-source-fraction="0.5" data-target-node="n3" data-target-side="N" data-target-fraction="0.5" marker-end="url(#arrow-blue)" />
+    <polyline id="e4" points="600,1120 600,1200" fill="none" stroke="#1967A4" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="从上一阶段进入下一阶段" data-source-node="n3" data-source-side="S" data-source-fraction="0.5" data-target-node="n4" data-target-side="N" data-target-fraction="0.5" marker-end="url(#arrow-blue)" />
+  </g>
+  <g id="layer-text">
+    <text id="text-0001" x="64" y="80" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="48" font-weight="700" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">图13  输入解压缩与响应压缩</text>
+    <text id="text-0002" x="64" y="145" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">编码约束和错误混叠是两端不同的正确性问题。</text>
+    <text id="text-0003" x="600.0" y="288" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="n0">外部输入变量或种子</text>
+    <text id="text-0004" x="600.0" y="346" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="n0">少量传输数据，不是任意大向量的无损压缩</text>
+    <text id="text-0005" x="600.0" y="528" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="n1">输入解压缩器</text>
+    <text id="text-0006" x="600.0" y="586" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="n1">根据连接关系生成多条链的输入位</text>
+    <text id="text-0007" x="600.0" y="768" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="n2">并行扫描链</text>
+    <text id="text-0008" x="600.0" y="826" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="n2">链内移位；按真实协议捕获响应</text>
+    <text id="text-0009" x="600.0" y="1008" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="n3">响应压缩器</text>
+    <text id="text-0010" x="600.0" y="1066" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="n3">减少输出数据，同时可能出现未知值与错误抵消</text>
+    <text id="text-0011" x="600.0" y="1248" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="n4">外部比较或片上签名检查</text>
+    <text id="text-0012" x="600.0" y="1306" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="n4">必须使用相同压缩状态、周期和屏蔽规则</text>
+  </g>
+  <g id="layer-junctions" />
+  <g id="review-only-overlay" pointer-events="none">
+    <rect x="54" y="35" width="615.546875" height="90" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="64" y="45" width="595.546875" height="70" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="54" y="113" width="650" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="64" y="123" width="630" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="427.9921875" y="252" width="344.015625" height="72" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="437.9921875" y="262" width="324.015625" height="52" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="285.9921875" y="313" width="628.015625" height="66" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="295.9921875" y="323" width="608.015625" height="46" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="481.9921875" y="492" width="236.015625" height="72" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="491.9921875" y="502" width="216.015625" height="52" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="349.9921875" y="553" width="500.015625" height="66" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="359.9921875" y="563" width="480.015625" height="46" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="499.9921875" y="732" width="200.015625" height="72" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="509.9921875" y="742" width="180.015625" height="52" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="365.9921875" y="793" width="468.015625" height="66" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="375.9921875" y="803" width="448.015625" height="46" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="499.9921875" y="972" width="200.015625" height="72" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="509.9921875" y="982" width="180.015625" height="52" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="253.9921875" y="1033" width="692.015625" height="66" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="263.9921875" y="1043" width="672.015625" height="46" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="391.9921875" y="1212" width="416.015625" height="72" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="401.9921875" y="1222" width="396.015625" height="52" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="301.9921875" y="1273" width="596.015625" height="66" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="311.9921875" y="1283" width="576.015625" height="46" fill="none" stroke="#E08617" stroke-width="1" />
+    <circle cx="600" cy="480" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="600" cy="1200" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="600" cy="640" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="600" cy="720" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="600" cy="1120" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="600" cy="880" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="600" cy="960" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="600" cy="400" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+  </g>
+</svg>

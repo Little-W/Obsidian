@@ -1,0 +1,32 @@
+{
+  "scope": "Rebuilt SVGs through both retained generator entry points.",
+  "figures": 25,
+  "byte_identical": true,
+  "sha256": {
+    "assets/march/06存储器数据图案.svg": "e456ac30a44eaf421138357e24cc20326e76251590499ba23a988cd20ede38a6",
+    "assets/march/05经典算法长度.svg": "8e892a62722ac050622d80e1eef2f535950104fc13cd3c6b008466cfb2cc84af",
+    "assets/march/01_mbist结构.svg": "8732c2a22bebe573c960ca5fb69ba04d33661ebdc3130eb1039aa224a87c28c6",
+    "assets/march/03_March_C负序列.svg": "21fd7709bff25f7145c4e06da4197cb215e2dc8e6695940c143d9ed30b8ef892",
+    "assets/march/02故障模型.svg": "06c9e7dd5bff953220950fd0f6f582303bc21ec70da057455dd94260e44d2bb4",
+    "assets/march/09动态故障时序.svg": "8a8632c036a585aee0501e838b09bf43560fb04cc095cf95a384738d63d4e2b4",
+    "assets/march/04耦合故障时序.svg": "e7f6e52d8a43684efb5fb71e45b5f97eaa17cf2b4ba80bf9c0aa2d9aa57fbd5e",
+    "assets/march/10复杂算法长度.svg": "e4dba6643c52f54dfa5dcf1c2d30436c3ec3724b232ecfa8e840444ad6a486a2",
+    "assets/march/08算法选择流程.svg": "4bee061e8b840db9e8ad5d437d202e99e0f6c0e71713c414e58198ece950fa5b",
+    "assets/march/07五单元邻近故障.svg": "1eaf043c3e32025b00f2b980d05eb036282cf70d5a1bb730844024a61ca15dcf",
+    "assets/systems/04_constraints.svg": "1ae05a9db1bd9fddc059a523cefe6d324a3042e252e027a0bbfc7f92ced93510",
+    "assets/systems/10_adaptive.svg": "f4b451a95f2bab63760064975c232a9198f1d209138de4c178fcc22dd78464e4",
+    "assets/systems/09_thermal.svg": "2fbe241ae94fd63761abdf90e9f861009a9d45e0709a583b57ff590e178cd7fc",
+    "assets/systems/11_online.svg": "1a57def2cfe35f31f7bfca3133a6df7dfee6f9664906a99b6c8f37a018bb35c7",
+    "assets/systems/13_repair.svg": "a63941d5d9bf4c7061ccd1d879f6cc826b5545d2938de28877a379164595a87a",
+    "assets/systems/14_fault_buffers.svg": "b239bca5b07dd99feb006f6bc65a7f8583d562f1849cff848fd43e82d8901e91",
+    "assets/systems/02_group_levels.svg": "2767e0949c0918fcc416f7069270acda65f7731a8d3689636a398f754020b36f",
+    "assets/systems/03_controller_modes.svg": "c245d849714b0c57d9d2fd95d5d5e73f5409e8e88cc57b7df20cdfd8788c6753",
+    "assets/systems/07_power_flow.svg": "fc43ebb6d51fbd13b1a3b3b97ebbd8241c35a2d95b005b6e30b35f8b4a7f8a3d",
+    "assets/systems/12_diagnosis.svg": "9b2f62ce485d8652b30382e0c9c1a48209cd5b9bc10f294cbe255402f996c724",
+    "assets/systems/01_system.svg": "5f7cde0fdbb6be3a9911b5b8fa02c702e25f874653f1b0f5cfd263bace7f519b",
+    "assets/systems/15_flow.svg": "144e25b2ba1d1d4d574bb120918f6630ae77bb4ca48af3c5bfb4833941884365",
+    "assets/systems/06_schedule.svg": "3418684d9a51eaa4af4b94a7776391b09f075c023e1f80192bf5a06577361f54",
+    "assets/systems/05_group_example.svg": "09dd5c5a1642e5e3eaf2703ff54c3827c50de056929de11cefa6f9341d30e3b3",
+    "assets/systems/08_phase_power.svg": "9638088eadb619b30a578ae124dff823ea0fd1ecae3280ccc4a8bd3f52a8bc8d"
+  }
+}

@@ -6,6 +6,6 @@ create_clock clk -period 100
 create_reset rst_n -sense low
 map_by_name
 report_seq_mappings
-check_fv_setup
+check_fv_setup -block
 check_fv -block
 report_fv -list

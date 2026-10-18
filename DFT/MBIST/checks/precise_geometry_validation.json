@@ -1,0 +1,193 @@
+{
+  "method": "Browser SVG getBBox + exact port and segment geometry; no OCR",
+  "font_environment": {
+    "noto": true,
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/144.0.0.0 Safari/537.36"
+  },
+  "minimum_connector_text_clearance_px": 10,
+  "minimum_frame_text_clearance_px": 6,
+  "small_grid_digit_frame_clearance_px": 4,
+  "note": "Checks concern geometry only. Semantic connections are manually reviewed against the illustrations.",
+  "figures": 25,
+  "text_objects": 792,
+  "connectors": 59,
+  "arrowheads": 53,
+  "issue_count": 0,
+  "results": [
+    {
+      "file": "assets/march/01_mbist结构.svg",
+      "text_objects": 30,
+      "connectors": 8,
+      "arrowheads": 8,
+      "issues": []
+    },
+    {
+      "file": "assets/march/02故障模型.svg",
+      "text_objects": 30,
+      "connectors": 0,
+      "arrowheads": 0,
+      "issues": []
+    },
+    {
+      "file": "assets/march/03_March_C负序列.svg",
+      "text_objects": 38,
+      "connectors": 0,
+      "arrowheads": 0,
+      "issues": []
+    },
+    {
+      "file": "assets/march/04耦合故障时序.svg",
+      "text_objects": 17,
+      "connectors": 4,
+      "arrowheads": 4,
+      "issues": []
+    },
+    {
+      "file": "assets/march/05经典算法长度.svg",
+      "text_objects": 39,
+      "connectors": 0,
+      "arrowheads": 0,
+      "issues": []
+    },
+    {
+      "file": "assets/march/06存储器数据图案.svg",
+      "text_objects": 267,
+      "connectors": 0,
+      "arrowheads": 0,
+      "issues": []
+    },
+    {
+      "file": "assets/march/07五单元邻近故障.svg",
+      "text_objects": 12,
+      "connectors": 4,
+      "arrowheads": 4,
+      "issues": []
+    },
+    {
+      "file": "assets/march/08算法选择流程.svg",
+      "text_objects": 16,
+      "connectors": 3,
+      "arrowheads": 3,
+      "issues": []
+    },
+    {
+      "file": "assets/march/09动态故障时序.svg",
+      "text_objects": 15,
+      "connectors": 3,
+      "arrowheads": 3,
+      "issues": []
+    },
+    {
+      "file": "assets/march/10复杂算法长度.svg",
+      "text_objects": 32,
+      "connectors": 0,
+      "arrowheads": 0,
+      "issues": []
+    },
+    {
+      "file": "assets/systems/01_system.svg",
+      "text_objects": 28,
+      "connectors": 9,
+      "arrowheads": 9,
+      "issues": []
+    },
+    {
+      "file": "assets/systems/02_group_levels.svg",
+      "text_objects": 12,
+      "connectors": 0,
+      "arrowheads": 0,
+      "issues": []
+    },
+    {
+      "file": "assets/systems/03_controller_modes.svg",
+      "text_objects": 18,
+      "connectors": 0,
+      "arrowheads": 0,
+      "issues": []
+    },
+    {
+      "file": "assets/systems/04_constraints.svg",
+      "text_objects": 18,
+      "connectors": 3,
+      "arrowheads": 0,
+      "issues": []
+    },
+    {
+      "file": "assets/systems/05_group_example.svg",
+      "text_objects": 20,
+      "connectors": 0,
+      "arrowheads": 0,
+      "issues": []
+    },
+    {
+      "file": "assets/systems/06_schedule.svg",
+      "text_objects": 22,
+      "connectors": 0,
+      "arrowheads": 0,
+      "issues": []
+    },
+    {
+      "file": "assets/systems/07_power_flow.svg",
+      "text_objects": 11,
+      "connectors": 3,
+      "arrowheads": 3,
+      "issues": []
+    },
+    {
+      "file": "assets/systems/08_phase_power.svg",
+      "text_objects": 35,
+      "connectors": 0,
+      "arrowheads": 0,
+      "issues": []
+    },
+    {
+      "file": "assets/systems/09_thermal.svg",
+      "text_objects": 20,
+      "connectors": 0,
+      "arrowheads": 0,
+      "issues": []
+    },
+    {
+      "file": "assets/systems/10_adaptive.svg",
+      "text_objects": 24,
+      "connectors": 6,
+      "arrowheads": 5,
+      "issues": []
+    },
+    {
+      "file": "assets/systems/11_online.svg",
+      "text_objects": 14,
+      "connectors": 4,
+      "arrowheads": 4,
+      "issues": []
+    },
+    {
+      "file": "assets/systems/12_diagnosis.svg",
+      "text_objects": 21,
+      "connectors": 1,
+      "arrowheads": 1,
+      "issues": []
+    },
+    {
+      "file": "assets/systems/13_repair.svg",
+      "text_objects": 21,
+      "connectors": 0,
+      "arrowheads": 0,
+      "issues": []
+    },
+    {
+      "file": "assets/systems/14_fault_buffers.svg",
+      "text_objects": 17,
+      "connectors": 6,
+      "arrowheads": 4,
+      "issues": []
+    },
+    {
+      "file": "assets/systems/15_flow.svg",
+      "text_objects": 15,
+      "connectors": 5,
+      "arrowheads": 5,
+      "issues": []
+    }
+  ]
+}

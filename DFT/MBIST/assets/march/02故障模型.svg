@@ -1,0 +1,74 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1395" viewBox="0 0 1200 1395" role="img" aria-labelledby="fig-title fig-description" version="1.1" data-layout-version="precise-ports-v2">
+  <title id="fig-title">图 05  常见存储器故障模型</title>
+  <desc id="fig-description">现象示例只帮助理解；正式测试还需要规定地址、时序与观察条件。</desc>
+  <metadata>{"layout": "named ports + orthogonal routes", "font_policy": "editable text; no embedded fonts", "version": 2}</metadata>
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#1967A4" />
+    </marker>
+    <marker id="arrow-teal" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#118575" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#D97A16" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#B84051" />
+    </marker>
+    <marker id="arrow-muted" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#4F6278" />
+    </marker>
+    <marker id="arrow-slate" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#738A9F" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#92517C" />
+    </marker>
+  </defs>
+  <g id="layer-background">
+    <rect width="1200" height="1395" fill="#FFFFFF" />
+  </g>
+  <g id="layer-shapes">
+    <rect id="fault-0" x="80" y="220" width="480" height="325" rx="12" fill="#FFFFFF" stroke="#B84051" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="fault-1" x="640" y="220" width="480" height="325" rx="12" fill="#FFFFFF" stroke="#D97A16" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="fault-2" x="80" y="570" width="480" height="325" rx="12" fill="#FFFFFF" stroke="#B84051" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="fault-3" x="640" y="570" width="480" height="325" rx="12" fill="#FFFFFF" stroke="#D97A16" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="fault-4" x="80" y="920" width="480" height="325" rx="12" fill="#FFFFFF" stroke="#118575" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="fault-5" x="640" y="920" width="480" height="325" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+  </g>
+  <g id="layer-connectors" />
+  <g id="layer-text">
+    <text id="text-0001" x="64" y="80" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="48" font-weight="700" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">图 05  常见存储器故障模型</text>
+    <text id="text-0002" x="64" y="145" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">现象示例只帮助理解；正式测试还需要规定地址、时序与观察条件。</text>
+    <text id="text-0003" x="320.0" y="268" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#B84051" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="fault-0">固定值故障</text>
+    <text id="text-0004" x="320.0" y="326" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="fault-0">单元只能保持为 0</text>
+    <text id="text-0005" x="320.0" y="376" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="fault-0">写入 1 也无法改变</text>
+    <text id="text-0006" x="320" y="451" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#B84051" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="fault-0">写 1 → 读取仍为 0</text>
+    <text id="text-0007" x="880.0" y="268" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#D97A16" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="fault-1">状态转换故障</text>
+    <text id="text-0008" x="880.0" y="326" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="fault-1">从 0 写成 1 的</text>
+    <text id="text-0009" x="880.0" y="376" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="fault-1">状态转换失败</text>
+    <text id="text-0010" x="880" y="451" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#D97A16" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="fault-1">0 → 写 1 → 仍为 0</text>
+    <text id="text-0011" x="320.0" y="618" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#B84051" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="fault-2">读出破坏故障</text>
+    <text id="text-0012" x="320.0" y="676" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="fault-2">读取操作改变了</text>
+    <text id="text-0013" x="320.0" y="726" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="fault-2">内部存储内容</text>
+    <text id="text-0014" x="320" y="801" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#B84051" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="fault-2">存储 1 → 读取</text>
+    <text id="text-0015" x="320" y="845" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#B84051" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="fault-2">内部内容变为 0</text>
+    <text id="text-0016" x="880.0" y="618" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#D97A16" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="fault-3">写入干扰故障</text>
+    <text id="text-0017" x="880.0" y="676" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="fault-3">再次写入相同数值</text>
+    <text id="text-0018" x="880.0" y="726" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="fault-3">却破坏了原有内容</text>
+    <text id="text-0019" x="880" y="801" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#D97A16" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="fault-3">0 → 再写 0 → 读出 1</text>
+    <text id="text-0020" x="320.0" y="968" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#118575" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="fault-4">耦合故障</text>
+    <text id="text-0021" x="320.0" y="1026" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="fault-4">一个单元的动作</text>
+    <text id="text-0022" x="320.0" y="1076" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="fault-4">影响另一个单元</text>
+    <text id="text-0023" x="320" y="1151" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#118575" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="fault-4">激励单元变化</text>
+    <text id="text-0024" x="320" y="1195" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#118575" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="fault-4">受害单元发生异常</text>
+    <text id="text-0025" x="880.0" y="968" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="fault-5">数据保持故障</text>
+    <text id="text-0026" x="880.0" y="1026" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="fault-5">保持一段时间后</text>
+    <text id="text-0027" x="880.0" y="1076" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="fault-5">存储内容发生丢失</text>
+    <text id="text-0028" x="880" y="1151" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="fault-5">写 1 → 等待 Δt</text>
+    <text id="text-0029" x="880" y="1195" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="fault-5">读取却得到 0</text>
+    <text id="text-0030" x="64" y="1315" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">这些例子不是完整的故障原型集合；不同故障可能需要不同测试算法。</text>
+  </g>
+  <g id="layer-junctions" />
+</svg>

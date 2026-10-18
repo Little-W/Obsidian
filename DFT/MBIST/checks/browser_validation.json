@@ -1,0 +1,410 @@
+{
+  "scope": "Chromium set_content with inlined local CSS and images; links checked statically. File navigation, external URLs, and Obsidian UI not tested.",
+  "pages": 20,
+  "local_links": 1322,
+  "viewport_checks": 40,
+  "passed": true,
+  "errors": [],
+  "browser_results": [
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 0,
+      "file": "插图索引.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 0,
+      "file": "精确绘图检查.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 0,
+      "file": "阅读入口.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 1,
+      "file": "html/00_MBIST总体架构与阅读导航.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 17,
+      "file": "html/01_存储器接口与测试控制器.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 2,
+      "file": "html/02_故障模型与检测原理.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 20,
+      "file": "html/03_March基础与经典算法.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 41,
+      "file": "html/04_增强March与复杂故障测试.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 18,
+      "file": "html/05_测试算法生成与选择.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 48,
+      "file": "html/06_存储器分组与功耗分析.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 20,
+      "file": "html/07_并发调度与联合优化.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 18,
+      "file": "html/08_自适应与运行期间测试.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 14,
+      "file": "html/09_故障诊断与结果记录.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 18,
+      "file": "html/10_冗余分析自修复与纠错码.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 3,
+      "file": "html/11_多端口与新型存储器扩展.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 4,
+      "file": "html/12_设计验证与工具接入.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 0,
+      "file": "html/13_教学算例与源码说明.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 0,
+      "file": "html/90_参考文献与研究进展索引.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 2,
+      "file": "html/99_编排说明与原文内容对照.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 0,
+      "file": "html/README.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 0,
+      "file": "插图索引.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 0,
+      "file": "精确绘图检查.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 0,
+      "file": "阅读入口.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 1,
+      "file": "html/00_MBIST总体架构与阅读导航.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 17,
+      "file": "html/01_存储器接口与测试控制器.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 2,
+      "file": "html/02_故障模型与检测原理.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 20,
+      "file": "html/03_March基础与经典算法.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 41,
+      "file": "html/04_增强March与复杂故障测试.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 18,
+      "file": "html/05_测试算法生成与选择.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 48,
+      "file": "html/06_存储器分组与功耗分析.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 20,
+      "file": "html/07_并发调度与联合优化.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 18,
+      "file": "html/08_自适应与运行期间测试.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 14,
+      "file": "html/09_故障诊断与结果记录.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 18,
+      "file": "html/10_冗余分析自修复与纠错码.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 3,
+      "file": "html/11_多端口与新型存储器扩展.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 4,
+      "file": "html/12_设计验证与工具接入.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 0,
+      "file": "html/13_教学算例与源码说明.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 0,
+      "file": "html/90_参考文献与研究进展索引.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 2,
+      "file": "html/99_编排说明与原文内容对照.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 0,
+      "file": "html/README.html",
+      "tested_width": 390
+    }
+  ]
+}

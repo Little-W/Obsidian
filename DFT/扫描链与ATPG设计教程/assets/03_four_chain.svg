@@ -1,0 +1,62 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1170" viewBox="0 0 1200 1170" role="img" aria-labelledby="fig-title fig-description" version="1.1" data-layout-version="precise-ports-v2">
+  <title id="fig-title">图3  四级扫描链与位序</title>
+  <desc id="fig-description">Q0 靠近串行输入；每个有效沿同时读取所有旧状态。</desc>
+  <metadata>{"layout": "named ports + orthogonal routes", "font_policy": "editable text; no embedded fonts", "version": 2}</metadata>
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#1967A4" />
+    </marker>
+    <marker id="arrow-teal" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#118575" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#D97A16" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#B84051" />
+    </marker>
+    <marker id="arrow-muted" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#4F6278" />
+    </marker>
+    <marker id="arrow-slate" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#738A9F" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#92517C" />
+    </marker>
+  </defs>
+  <g id="layer-background">
+    <rect width="1200" height="1170" fill="#FFFFFF" />
+  </g>
+  <g id="layer-shapes">
+    <rect id="si" x="80" y="240" width="200" height="110" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="q0" x="80" y="500" width="200" height="120" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="q1" x="360" y="500" width="200" height="120" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="q2" x="640" y="500" width="200" height="120" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="q3" x="920" y="500" width="200" height="120" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="so" x="920" y="780" width="200" height="110" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+  </g>
+  <g id="layer-connectors">
+    <polyline id="input" points="180,350 180,500" fill="none" stroke="#1967A4" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="最先接收串行输入的扫描触发器是 Q0" data-source-node="si" data-source-side="S" data-source-fraction="0.5" data-target-node="q0" data-target-side="N" data-target-fraction="0.5" marker-end="url(#arrow-blue)" />
+    <polyline id="shift0" points="280,560 360,560" fill="none" stroke="#1967A4" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="Q0 的旧值移入 Q1" data-source-node="q0" data-source-side="E" data-source-fraction="0.5" data-target-node="q1" data-target-side="W" data-target-fraction="0.5" marker-end="url(#arrow-blue)" />
+    <polyline id="shift1" points="560,560 640,560" fill="none" stroke="#1967A4" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="Q1 的旧值移入 Q2" data-source-node="q1" data-source-side="E" data-source-fraction="0.5" data-target-node="q2" data-target-side="W" data-target-fraction="0.5" marker-end="url(#arrow-blue)" />
+    <polyline id="shift2" points="840,560 920,560" fill="none" stroke="#1967A4" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="Q2 的旧值移入 Q3" data-source-node="q2" data-source-side="E" data-source-fraction="0.5" data-target-node="q3" data-target-side="W" data-target-fraction="0.5" marker-end="url(#arrow-blue)" />
+    <polyline id="output" points="1020,620 1020,780" fill="none" stroke="#1967A4" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="沿前读取旧 Q3 作为串行输出" data-source-node="q3" data-source-side="S" data-source-fraction="0.5" data-target-node="so" data-target-side="N" data-target-fraction="0.5" marker-end="url(#arrow-blue)" />
+  </g>
+  <g id="layer-text">
+    <text id="text-0001" x="64" y="80" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="48" font-weight="700" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">图3  四级扫描链与位序</text>
+    <text id="text-0002" x="64" y="145" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">Q0 靠近串行输入；每个有效沿同时读取所有旧状态。</text>
+    <text id="text-0003" x="180.0" y="295.0" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="si">SI</text>
+    <text id="text-0004" x="180.0" y="560.0" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="q0">Q0</text>
+    <text id="text-0005" x="460.0" y="560.0" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="q1">Q1</text>
+    <text id="text-0006" x="740.0" y="560.0" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="q2">Q2</text>
+    <text id="text-0007" x="1020.0" y="560.0" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="q3">Q3</text>
+    <text id="text-0008" x="1020.0" y="835.0" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="so">SO</text>
+    <text id="text-0009" x="80" y="805" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="34" font-weight="400" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">最终目标：[1,1,0,1]</text>
+    <text id="text-0010" x="80" y="869" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="34" font-weight="400" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">输入次序： 1 → 0 → 1 → 1</text>
+    <text id="text-0011" x="64" y="1010" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">不能依次用刚更新的 Q0、Q1 更新后面的触发器。</text>
+    <text id="text-0012" x="64" y="1056" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">实际芯片由同一有效沿使各级同时取样。</text>
+  </g>
+  <g id="layer-junctions" />
+</svg>

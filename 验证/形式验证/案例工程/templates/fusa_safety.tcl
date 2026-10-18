@@ -7,8 +7,8 @@ error "此文件是 FuSa 教学模板：请先提供 SFF/FDB、观察点、检�
 # create_reset rst_n -sense low
 # sim_run -stable
 # sim_save_reset
-# fusa_observation -add ...     ;# 参照 help/UG §23
-# fusa_detection -add ...       ;# 参照 help/UG §23
+# fusa_observation -add {safety_top.data_out safety_top.done}
+# fusa_detection -add {safety_top.error_alarm}
 # fusa_generate
 # set_fml_var fusa_run_mode structural
 # check_fv -block

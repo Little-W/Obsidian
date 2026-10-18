@@ -1,0 +1,858 @@
+{
+  "scope": "Synthetic Boolean combinational and scan-register examples; no delay/power/industrial ATPG validation.",
+  "circuit_checks": {
+    "faults": 32,
+    "detectable": 32,
+    "untestable": 0,
+    "fixed_input_miter_checks": 512
+  },
+  "cover": {
+    "faults": 32,
+    "detectable_faults": 32,
+    "greedy_count": 4,
+    "greedy_patterns": [
+      "1101",
+      "0100",
+      "1011",
+      "1100"
+    ],
+    "minimum_count": 4,
+    "minimum_patterns": [
+      "0100",
+      "1011",
+      "1100",
+      "1101"
+    ],
+    "matrix": [
+      {
+        "pattern": "0000",
+        "outputs": "00",
+        "detects": [
+          "c/sa1",
+          "d/sa1",
+          "n1/sa1",
+          "n2/sa1",
+          "y/sa1",
+          "z/sa1",
+          "n2/pin0/sa1",
+          "n2/pin1/sa1",
+          "y/pin0/sa1",
+          "y/pin1/sa1"
+        ]
+      },
+      {
+        "pattern": "0001",
+        "outputs": "10",
+        "detects": [
+          "c/sa1",
+          "d/sa0",
+          "n1/sa1",
+          "n2/sa1",
+          "y/sa0",
+          "z/sa1",
+          "n2/pin0/sa1",
+          "n2/pin1/sa1",
+          "y/pin0/sa1",
+          "y/pin1/sa0",
+          "z/pin0/sa1"
+        ]
+      },
+      {
+        "pattern": "0010",
+        "outputs": "10",
+        "detects": [
+          "c/sa0",
+          "d/sa1",
+          "n2/sa0",
+          "y/sa0",
+          "z/sa1",
+          "n2/pin1/sa0",
+          "y/pin0/sa0",
+          "y/pin1/sa1"
+        ]
+      },
+      {
+        "pattern": "0011",
+        "outputs": "00",
+        "detects": [
+          "c/sa0",
+          "d/sa0",
+          "n1/sa1",
+          "n2/sa0",
+          "y/sa1",
+          "z/sa1",
+          "n2/pin1/sa0",
+          "y/pin0/sa0",
+          "y/pin1/sa0",
+          "z/pin0/sa1"
+        ]
+      },
+      {
+        "pattern": "0100",
+        "outputs": "00",
+        "detects": [
+          "a/sa1",
+          "c/sa1",
+          "d/sa1",
+          "n1/sa1",
+          "n2/sa1",
+          "y/sa1",
+          "z/sa1",
+          "n1/pin0/sa1",
+          "n2/pin0/sa1",
+          "n2/pin1/sa1",
+          "y/pin0/sa1",
+          "y/pin1/sa1"
+        ]
+      },
+      {
+        "pattern": "0101",
+        "outputs": "10",
+        "detects": [
+          "a/sa1",
+          "c/sa1",
+          "d/sa0",
+          "n1/sa1",
+          "n2/sa1",
+          "y/sa0",
+          "z/sa1",
+          "n1/pin0/sa1",
+          "n2/pin0/sa1",
+          "n2/pin1/sa1",
+          "y/pin0/sa1",
+          "y/pin1/sa0",
+          "z/pin0/sa1"
+        ]
+      },
+      {
+        "pattern": "0110",
+        "outputs": "10",
+        "detects": [
+          "c/sa0",
+          "d/sa1",
+          "n2/sa0",
+          "y/sa0",
+          "z/sa1",
+          "n2/pin1/sa0",
+          "y/pin0/sa0",
+          "y/pin1/sa1"
+        ]
+      },
+      {
+        "pattern": "0111",
+        "outputs": "00",
+        "detects": [
+          "a/sa1",
+          "c/sa0",
+          "d/sa0",
+          "n1/sa1",
+          "n2/sa0",
+          "y/sa1",
+          "z/sa1",
+          "n1/pin0/sa1",
+          "n2/pin1/sa0",
+          "y/pin0/sa0",
+          "y/pin1/sa0",
+          "z/pin0/sa1"
+        ]
+      },
+      {
+        "pattern": "1000",
+        "outputs": "00",
+        "detects": [
+          "b/sa1",
+          "c/sa1",
+          "d/sa1",
+          "n1/sa1",
+          "n2/sa1",
+          "y/sa1",
+          "z/sa1",
+          "n1/pin1/sa1",
+          "n2/pin0/sa1",
+          "n2/pin1/sa1",
+          "y/pin0/sa1",
+          "y/pin1/sa1"
+        ]
+      },
+      {
+        "pattern": "1001",
+        "outputs": "10",
+        "detects": [
+          "b/sa1",
+          "c/sa1",
+          "d/sa0",
+          "n1/sa1",
+          "n2/sa1",
+          "y/sa0",
+          "z/sa1",
+          "n1/pin1/sa1",
+          "n2/pin0/sa1",
+          "n2/pin1/sa1",
+          "y/pin0/sa1",
+          "y/pin1/sa0",
+          "z/pin0/sa1"
+        ]
+      },
+      {
+        "pattern": "1010",
+        "outputs": "10",
+        "detects": [
+          "c/sa0",
+          "d/sa1",
+          "n2/sa0",
+          "y/sa0",
+          "z/sa1",
+          "n2/pin1/sa0",
+          "y/pin0/sa0",
+          "y/pin1/sa1"
+        ]
+      },
+      {
+        "pattern": "1011",
+        "outputs": "00",
+        "detects": [
+          "b/sa1",
+          "c/sa0",
+          "d/sa0",
+          "n1/sa1",
+          "n2/sa0",
+          "y/sa1",
+          "z/sa1",
+          "n1/pin1/sa1",
+          "n2/pin1/sa0",
+          "y/pin0/sa0",
+          "y/pin1/sa0",
+          "z/pin0/sa1"
+        ]
+      },
+      {
+        "pattern": "1100",
+        "outputs": "10",
+        "detects": [
+          "a/sa0",
+          "b/sa0",
+          "d/sa1",
+          "n1/sa0",
+          "n2/sa0",
+          "y/sa0",
+          "z/sa1",
+          "n1/pin0/sa0",
+          "n1/pin1/sa0",
+          "n2/pin0/sa0",
+          "y/pin0/sa0",
+          "y/pin1/sa1",
+          "z/pin1/sa1"
+        ]
+      },
+      {
+        "pattern": "1101",
+        "outputs": "01",
+        "detects": [
+          "a/sa0",
+          "b/sa0",
+          "d/sa0",
+          "n1/sa0",
+          "n2/sa0",
+          "y/sa1",
+          "z/sa0",
+          "n1/pin0/sa0",
+          "n1/pin1/sa0",
+          "n2/pin0/sa0",
+          "y/pin0/sa0",
+          "y/pin1/sa0",
+          "z/pin0/sa0",
+          "z/pin1/sa0"
+        ]
+      },
+      {
+        "pattern": "1110",
+        "outputs": "10",
+        "detects": [
+          "d/sa1",
+          "n2/sa0",
+          "y/sa0",
+          "z/sa1",
+          "y/pin0/sa0",
+          "y/pin1/sa1",
+          "z/pin1/sa1"
+        ]
+      },
+      {
+        "pattern": "1111",
+        "outputs": "01",
+        "detects": [
+          "a/sa0",
+          "b/sa0",
+          "d/sa0",
+          "n1/sa0",
+          "n2/sa0",
+          "y/sa1",
+          "z/sa0",
+          "n1/pin0/sa0",
+          "n1/pin1/sa0",
+          "y/pin0/sa0",
+          "y/pin1/sa0",
+          "z/pin0/sa0",
+          "z/pin1/sa0"
+        ]
+      }
+    ]
+  },
+  "redundancy": {
+    "fault": "n/sa0",
+    "result": "UNSAT (complete tiny DPLL + exhaustive check)"
+  },
+  "cube": {
+    "target": "n1/sa0",
+    "pattern": "110X",
+    "completions": [
+      "1100",
+      "1101"
+    ]
+  },
+  "scan": {
+    "initial": [
+      0,
+      1,
+      1,
+      0
+    ],
+    "desired": [
+      1,
+      1,
+      0,
+      1
+    ],
+    "serial_in": [
+      1,
+      0,
+      1,
+      1
+    ],
+    "q": [
+      1,
+      1,
+      0,
+      1
+    ],
+    "serial_out": [
+      0,
+      1,
+      1,
+      0
+    ],
+    "states": [
+      [
+        0,
+        1,
+        1,
+        0
+      ],
+      [
+        1,
+        0,
+        1,
+        1
+      ],
+      [
+        0,
+        1,
+        0,
+        1
+      ],
+      [
+        1,
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        1,
+        0,
+        1
+      ]
+    ],
+    "register_flips": 13
+  },
+  "x_fill": {
+    "initial": [
+      0,
+      1,
+      1,
+      0
+    ],
+    "cube": [
+      1,
+      null,
+      0,
+      null
+    ],
+    "options": [
+      {
+        "filled": [
+          1,
+          0,
+          0,
+          0
+        ],
+        "flips": 5
+      },
+      {
+        "filled": [
+          1,
+          0,
+          0,
+          1
+        ],
+        "flips": 12
+      },
+      {
+        "filled": [
+          1,
+          1,
+          0,
+          0
+        ],
+        "flips": 6
+      },
+      {
+        "filled": [
+          1,
+          1,
+          0,
+          1
+        ],
+        "flips": 13
+      }
+    ],
+    "best": {
+      "filled": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "flips": 5
+    }
+  },
+  "compression": {
+    "matrix": [
+      [
+        1,
+        0
+      ],
+      [
+        0,
+        1
+      ],
+      [
+        1,
+        1
+      ]
+    ],
+    "reachable": {
+      "000": "00",
+      "011": "01",
+      "101": "10",
+      "110": "11"
+    },
+    "unencodable_cube": "111",
+    "encodable_cube": "1X1",
+    "seed": "10",
+    "xor_error_110_alias": 0,
+    "two_bit_compactor_111_alias": [
+      0,
+      0
+    ]
+  },
+  "diagnosis": {
+    "full_response_classes": 18,
+    "pass_fail_classes": 16,
+    "largest_full_class": 5,
+    "full_equivalence_classes": [
+      [
+        "a/sa0",
+        "b/sa0",
+        "n1/sa0",
+        "n1/pin0/sa0",
+        "n1/pin1/sa0"
+      ],
+      [
+        "a/sa1",
+        "n1/pin0/sa1"
+      ],
+      [
+        "b/sa1",
+        "n1/pin1/sa1"
+      ],
+      [
+        "c/sa0",
+        "n2/pin1/sa0"
+      ],
+      [
+        "c/sa1",
+        "n2/sa1",
+        "n2/pin0/sa1",
+        "n2/pin1/sa1",
+        "y/pin0/sa1"
+      ],
+      [
+        "d/sa0"
+      ],
+      [
+        "d/sa1"
+      ],
+      [
+        "n1/sa1"
+      ],
+      [
+        "n2/sa0",
+        "y/pin0/sa0"
+      ],
+      [
+        "y/sa0"
+      ],
+      [
+        "y/sa1"
+      ],
+      [
+        "z/sa0",
+        "z/pin0/sa0",
+        "z/pin1/sa0"
+      ],
+      [
+        "z/sa1"
+      ],
+      [
+        "n2/pin0/sa0"
+      ],
+      [
+        "y/pin1/sa0"
+      ],
+      [
+        "y/pin1/sa1"
+      ],
+      [
+        "z/pin0/sa1"
+      ],
+      [
+        "z/pin1/sa1"
+      ]
+    ],
+    "pass_fail_equivalence_classes": [
+      [
+        "a/sa0",
+        "b/sa0",
+        "n1/sa0",
+        "n1/pin0/sa0",
+        "n1/pin1/sa0"
+      ],
+      [
+        "a/sa1",
+        "n1/pin0/sa1"
+      ],
+      [
+        "b/sa1",
+        "n1/pin1/sa1"
+      ],
+      [
+        "c/sa0",
+        "n2/pin1/sa0"
+      ],
+      [
+        "c/sa1",
+        "n2/sa1",
+        "n2/pin0/sa1",
+        "n2/pin1/sa1",
+        "y/pin0/sa1"
+      ],
+      [
+        "d/sa0",
+        "y/pin1/sa0"
+      ],
+      [
+        "d/sa1",
+        "y/pin1/sa1"
+      ],
+      [
+        "n1/sa1"
+      ],
+      [
+        "n2/sa0",
+        "y/pin0/sa0"
+      ],
+      [
+        "y/sa0"
+      ],
+      [
+        "y/sa1"
+      ],
+      [
+        "z/sa0",
+        "z/pin0/sa0",
+        "z/pin1/sa0"
+      ],
+      [
+        "z/sa1"
+      ],
+      [
+        "n2/pin0/sa0"
+      ],
+      [
+        "z/pin0/sa1"
+      ],
+      [
+        "z/pin1/sa1"
+      ]
+    ]
+  },
+  "random_validation": {
+    "seed": 20261017,
+    "circuits": 40,
+    "faults": 1374,
+    "satisfiability_comparisons": 1374,
+    "details": [
+      {
+        "faults": 34,
+        "detectable": 18,
+        "untestable": 16,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 32,
+        "detectable": 32,
+        "untestable": 0,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 24,
+        "detectable": 15,
+        "untestable": 9,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 30,
+        "detectable": 16,
+        "untestable": 14,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 46,
+        "detectable": 40,
+        "untestable": 6,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 40,
+        "detectable": 16,
+        "untestable": 24,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 22,
+        "detectable": 20,
+        "untestable": 2,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 26,
+        "detectable": 10,
+        "untestable": 16,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 46,
+        "detectable": 25,
+        "untestable": 21,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 42,
+        "detectable": 23,
+        "untestable": 19,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 26,
+        "detectable": 23,
+        "untestable": 3,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 22,
+        "detectable": 18,
+        "untestable": 4,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 38,
+        "detectable": 20,
+        "untestable": 18,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 38,
+        "detectable": 24,
+        "untestable": 14,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 34,
+        "detectable": 26,
+        "untestable": 8,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 40,
+        "detectable": 32,
+        "untestable": 8,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 26,
+        "detectable": 14,
+        "untestable": 12,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 42,
+        "detectable": 13,
+        "untestable": 29,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 34,
+        "detectable": 16,
+        "untestable": 18,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 42,
+        "detectable": 34,
+        "untestable": 8,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 44,
+        "detectable": 20,
+        "untestable": 24,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 48,
+        "detectable": 18,
+        "untestable": 30,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 46,
+        "detectable": 24,
+        "untestable": 22,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 24,
+        "detectable": 20,
+        "untestable": 4,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 26,
+        "detectable": 18,
+        "untestable": 8,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 38,
+        "detectable": 23,
+        "untestable": 15,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 42,
+        "detectable": 20,
+        "untestable": 22,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 26,
+        "detectable": 26,
+        "untestable": 0,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 40,
+        "detectable": 22,
+        "untestable": 18,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 24,
+        "detectable": 15,
+        "untestable": 9,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 30,
+        "detectable": 18,
+        "untestable": 12,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 30,
+        "detectable": 20,
+        "untestable": 10,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 40,
+        "detectable": 22,
+        "untestable": 18,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 32,
+        "detectable": 18,
+        "untestable": 14,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 30,
+        "detectable": 28,
+        "untestable": 2,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 46,
+        "detectable": 41,
+        "untestable": 5,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 28,
+        "detectable": 14,
+        "untestable": 14,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 42,
+        "detectable": 24,
+        "untestable": 18,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 30,
+        "detectable": 14,
+        "untestable": 16,
+        "fixed_input_miter_checks": 0
+      },
+      {
+        "faults": 24,
+        "detectable": 11,
+        "untestable": 13,
+        "fixed_input_miter_checks": 0
+      }
+    ]
+  }
+}

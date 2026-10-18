@@ -1,0 +1,7 @@
+# SVG generation and the teaching models only need Python >= 3.10.
+# Exact font measurement, geometry checks and PNG export:
+playwright>=1.40,<2
+# Install Chromium separately, or run: python -m playwright install chromium
+# Offline HTML regeneration:
+mistune>=3,<4
+# Node.js dependency (install separately): npm install mathjax-full@3

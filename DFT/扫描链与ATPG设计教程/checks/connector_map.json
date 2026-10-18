@@ -1,0 +1,1458 @@
+[
+  {
+    "figure": "图1  扫描测试的完整架构",
+    "file": "assets/01_architecture.svg",
+    "id": "e1",
+    "source": "n0",
+    "target": "n1",
+    "meaning": "从上一阶段进入下一阶段",
+    "points": [
+      [
+        600.0,
+        400
+      ],
+      [
+        600.0,
+        490
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图1  扫描测试的完整架构",
+    "file": "assets/01_architecture.svg",
+    "id": "e2",
+    "source": "n1",
+    "target": "n2",
+    "meaning": "从上一阶段进入下一阶段",
+    "points": [
+      [
+        600.0,
+        650
+      ],
+      [
+        600.0,
+        740
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图1  扫描测试的完整架构",
+    "file": "assets/01_architecture.svg",
+    "id": "e3",
+    "source": "n2",
+    "target": "n3",
+    "meaning": "从上一阶段进入下一阶段",
+    "points": [
+      [
+        600.0,
+        900
+      ],
+      [
+        600.0,
+        990
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图1  扫描测试的完整架构",
+    "file": "assets/01_architecture.svg",
+    "id": "e4",
+    "source": "n3",
+    "target": "n4",
+    "meaning": "从上一阶段进入下一阶段",
+    "points": [
+      [
+        600.0,
+        1150
+      ],
+      [
+        600.0,
+        1240
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图2  多路选择式扫描触发器",
+    "file": "assets/02_scan_cell.svg",
+    "id": "functional",
+    "source": "func",
+    "target": "mux",
+    "meaning": "功能数据进入选择器的功能输入",
+    "points": [
+      [
+        370,
+        315.0
+      ],
+      [
+        440,
+        315
+      ],
+      [
+        440,
+        442.5
+      ],
+      [
+        510,
+        442.5
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图2  多路选择式扫描触发器",
+    "file": "assets/02_scan_cell.svg",
+    "id": "scan_data",
+    "source": "si",
+    "target": "mux",
+    "meaning": "串行数据进入选择器的扫描输入",
+    "points": [
+      [
+        370,
+        565.0
+      ],
+      [
+        440,
+        565
+      ],
+      [
+        440,
+        577.5
+      ],
+      [
+        510,
+        577.5
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图2  多路选择式扫描触发器",
+    "file": "assets/02_scan_cell.svg",
+    "id": "selected_data",
+    "source": "mux",
+    "target": "ff",
+    "meaning": "选择后的数据接入触发器 D 端",
+    "points": [
+      [
+        790,
+        510.0
+      ],
+      [
+        910,
+        510.0
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图2  多路选择式扫描触发器",
+    "file": "assets/02_scan_cell.svg",
+    "id": "mode",
+    "source": "se",
+    "target": "mux",
+    "meaning": "SE 为选择控制，不是数据",
+    "points": [
+      [
+        650.0,
+        850
+      ],
+      [
+        650.0,
+        645
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图2  多路选择式扫描触发器",
+    "file": "assets/02_scan_cell.svg",
+    "id": "clock",
+    "source": "clk",
+    "target": "ff",
+    "meaning": "触发器由有效时钟沿保存所选数据",
+    "points": [
+      [
+        1020.0,
+        850
+      ],
+      [
+        1020.0,
+        610
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图3  四级扫描链与位序",
+    "file": "assets/03_four_chain.svg",
+    "id": "input",
+    "source": "si",
+    "target": "q0",
+    "meaning": "最先接收串行输入的扫描触发器是 Q0",
+    "points": [
+      [
+        180.0,
+        350
+      ],
+      [
+        180.0,
+        500
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图3  四级扫描链与位序",
+    "file": "assets/03_four_chain.svg",
+    "id": "shift0",
+    "source": "q0",
+    "target": "q1",
+    "meaning": "Q0 的旧值移入 Q1",
+    "points": [
+      [
+        280,
+        560.0
+      ],
+      [
+        360,
+        560.0
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图3  四级扫描链与位序",
+    "file": "assets/03_four_chain.svg",
+    "id": "shift1",
+    "source": "q1",
+    "target": "q2",
+    "meaning": "Q1 的旧值移入 Q2",
+    "points": [
+      [
+        560,
+        560.0
+      ],
+      [
+        640,
+        560.0
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图3  四级扫描链与位序",
+    "file": "assets/03_four_chain.svg",
+    "id": "shift2",
+    "source": "q2",
+    "target": "q3",
+    "meaning": "Q2 的旧值移入 Q3",
+    "points": [
+      [
+        840,
+        560.0
+      ],
+      [
+        920,
+        560.0
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图3  四级扫描链与位序",
+    "file": "assets/03_four_chain.svg",
+    "id": "output",
+    "source": "q3",
+    "target": "so",
+    "meaning": "沿前读取旧 Q3 作为串行输出",
+    "points": [
+      [
+        1020.0,
+        620
+      ],
+      [
+        1020.0,
+        780
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图4  装入、捕获与重叠卸出",
+    "file": "assets/04_shift_capture.svg",
+    "id": "e1",
+    "source": "n0",
+    "target": "n1",
+    "meaning": "从上一阶段进入下一阶段",
+    "points": [
+      [
+        600.0,
+        400
+      ],
+      [
+        600.0,
+        485
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图4  装入、捕获与重叠卸出",
+    "file": "assets/04_shift_capture.svg",
+    "id": "e2",
+    "source": "n1",
+    "target": "n2",
+    "meaning": "从上一阶段进入下一阶段",
+    "points": [
+      [
+        600.0,
+        645
+      ],
+      [
+        600.0,
+        730
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图4  装入、捕获与重叠卸出",
+    "file": "assets/04_shift_capture.svg",
+    "id": "e3",
+    "source": "n2",
+    "target": "n3",
+    "meaning": "从上一阶段进入下一阶段",
+    "points": [
+      [
+        600.0,
+        890
+      ],
+      [
+        600.0,
+        975
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图4  装入、捕获与重叠卸出",
+    "file": "assets/04_shift_capture.svg",
+    "id": "e4",
+    "source": "n3",
+    "target": "n4",
+    "meaning": "从上一阶段进入下一阶段",
+    "points": [
+      [
+        600.0,
+        1135
+      ],
+      [
+        600.0,
+        1220
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图6  LOC 与 LOS 的关键区别",
+    "file": "assets/06_launch_capture.svg",
+    "id": "LOC-step0",
+    "source": "LOC0",
+    "target": "LOC1",
+    "meaning": "装入初始状态之后才执行功能脉冲：发起",
+    "points": [
+      [
+        370,
+        390.0
+      ],
+      [
+        450,
+        390.0
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图6  LOC 与 LOS 的关键区别",
+    "file": "assets/06_launch_capture.svg",
+    "id": "LOC-step1",
+    "source": "LOC1",
+    "target": "LOC2",
+    "meaning": "功能脉冲：发起之后才执行功能脉冲：捕获",
+    "points": [
+      [
+        750,
+        390.0
+      ],
+      [
+        830,
+        390.0
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图6  LOC 与 LOS 的关键区别",
+    "file": "assets/06_launch_capture.svg",
+    "id": "LOS-step0",
+    "source": "LOS0",
+    "target": "LOS1",
+    "meaning": "最后移位：发起之后才执行切换扫描使能",
+    "points": [
+      [
+        370,
+        1220.0
+      ],
+      [
+        450,
+        1220.0
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图6  LOC 与 LOS 的关键区别",
+    "file": "assets/06_launch_capture.svg",
+    "id": "LOS-step1",
+    "source": "LOS1",
+    "target": "LOS2",
+    "meaning": "切换扫描使能之后才执行功能脉冲：捕获",
+    "points": [
+      [
+        750,
+        1220.0
+      ],
+      [
+        830,
+        1220.0
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图7  扫描保持时间与锁存器",
+    "file": "assets/07_hold_lockup.svg",
+    "id": "source-data",
+    "source": "src",
+    "target": "lat",
+    "meaning": "源触发器的新数据先进入锁存器",
+    "points": [
+      [
+        490,
+        360.0
+      ],
+      [
+        710,
+        360.0
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图7  扫描保持时间与锁存器",
+    "file": "assets/07_hold_lockup.svg",
+    "id": "latch-output",
+    "source": "lat",
+    "target": "dst",
+    "meaning": "锁存器隔离过早到达的数据",
+    "points": [
+      [
+        910.0,
+        510
+      ],
+      [
+        910.0,
+        730
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图8  控制配置与扫描数据分开",
+    "file": "assets/08_access.svg",
+    "id": "ctrl0",
+    "source": "l0",
+    "target": "l1",
+    "meaning": "向下配置核级测试控制",
+    "points": [
+      [
+        300.0,
+        540
+      ],
+      [
+        300.0,
+        670
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图8  控制配置与扫描数据分开",
+    "file": "assets/08_access.svg",
+    "id": "ctrl1",
+    "source": "l1",
+    "target": "l2",
+    "meaning": "向下配置核级测试控制",
+    "points": [
+      [
+        300.0,
+        880
+      ],
+      [
+        300.0,
+        1010
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图8  控制配置与扫描数据分开",
+    "file": "assets/08_access.svg",
+    "id": "data0",
+    "source": "r0",
+    "target": "r1",
+    "meaning": "扫描数据按规定处理并传输",
+    "points": [
+      [
+        900.0,
+        540
+      ],
+      [
+        900.0,
+        670
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图8  控制配置与扫描数据分开",
+    "file": "assets/08_access.svg",
+    "id": "data1",
+    "source": "r1",
+    "target": "r2",
+    "meaning": "扫描数据按规定处理并传输",
+    "points": [
+      [
+        900.0,
+        880
+      ],
+      [
+        900.0,
+        1010
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图8  控制配置与扫描数据分开",
+    "file": "assets/08_access.svg",
+    "id": "data2",
+    "source": "r2",
+    "target": "r3",
+    "meaning": "扫描数据按规定处理并传输",
+    "points": [
+      [
+        900.0,
+        1220
+      ],
+      [
+        900.0,
+        1350
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图8  控制配置与扫描数据分开",
+    "file": "assets/08_access.svg",
+    "id": "clock-control",
+    "source": "l2",
+    "target": "r2",
+    "meaning": "控制器向核内扫描逻辑提供模式和受控时钟，非数据直连",
+    "points": [
+      [
+        530,
+        1115.0
+      ],
+      [
+        670,
+        1115.0
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图10  激活 n1 固定零并观察差异",
+    "file": "assets/10_fault_propagation.svg",
+    "id": "a-input",
+    "source": "a",
+    "target": "n1",
+    "meaning": "a=1 是激活 n1/sa0 的必要条件",
+    "points": [
+      [
+        330,
+        330.0
+      ],
+      [
+        525,
+        330
+      ],
+      [
+        525.0,
+        450
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图10  激活 n1 固定零并观察差异",
+    "file": "assets/10_fault_propagation.svg",
+    "id": "b-input",
+    "source": "b",
+    "target": "n1",
+    "meaning": "b=1 是激活 n1/sa0 的必要条件",
+    "points": [
+      [
+        870,
+        330.0
+      ],
+      [
+        675,
+        330
+      ],
+      [
+        675.0,
+        450
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图10  激活 n1 固定零并观察差异",
+    "file": "assets/10_fault_propagation.svg",
+    "id": "n1-stem",
+    "source": "n1",
+    "target": "n1-fanout",
+    "meaning": "n1 同时驱动 n2 与 z",
+    "points": [
+      [
+        600.0,
+        660
+      ],
+      [
+        600,
+        710
+      ]
+    ],
+    "arrow": false
+  },
+  {
+    "figure": "图10  激活 n1 固定零并观察差异",
+    "file": "assets/10_fault_propagation.svg",
+    "id": "to-or",
+    "source": "n1-fanout",
+    "target": "n2",
+    "meaning": "差异进入 OR 的一个输入",
+    "points": [
+      [
+        600,
+        710
+      ],
+      [
+        600.0,
+        800
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图10  激活 n1 固定零并观察差异",
+    "file": "assets/10_fault_propagation.svg",
+    "id": "to-z",
+    "source": "n1-fanout",
+    "target": "z",
+    "meaning": "同一个 n1 干线也驱动 z 的一个输入",
+    "points": [
+      [
+        600,
+        710
+      ],
+      [
+        1015,
+        710
+      ],
+      [
+        1015.0,
+        775
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图10  激活 n1 固定零并观察差异",
+    "file": "assets/10_fault_propagation.svg",
+    "id": "c-input",
+    "source": "c",
+    "target": "n2",
+    "meaning": "c=0 避免 OR 门遮蔽 n1 的差异",
+    "points": [
+      [
+        330,
+        880.0
+      ],
+      [
+        450,
+        880.0
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图10  激活 n1 固定零并观察差异",
+    "file": "assets/10_fault_propagation.svg",
+    "id": "or-to-y",
+    "source": "n2",
+    "target": "y",
+    "meaning": "OR 的差异继续进入 XOR",
+    "points": [
+      [
+        600.0,
+        960
+      ],
+      [
+        600.0,
+        1150
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图10  激活 n1 固定零并观察差异",
+    "file": "assets/10_fault_propagation.svg",
+    "id": "d-stem",
+    "source": "d",
+    "target": "d-fanout",
+    "meaning": "d 是两个门共用的输入，不是独立变量",
+    "points": [
+      [
+        330,
+        1230.0
+      ],
+      [
+        390,
+        1230
+      ]
+    ],
+    "arrow": false
+  },
+  {
+    "figure": "图10  激活 n1 固定零并观察差异",
+    "file": "assets/10_fault_propagation.svg",
+    "id": "d-to-y",
+    "source": "d-fanout",
+    "target": "y",
+    "meaning": "XOR 的确定输入不会遮蔽差异",
+    "points": [
+      [
+        390,
+        1230
+      ],
+      [
+        450,
+        1230.0
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图10  激活 n1 固定零并观察差异",
+    "file": "assets/10_fault_propagation.svg",
+    "id": "d-to-z",
+    "source": "d-fanout",
+    "target": "z",
+    "meaning": "d 同时接 z 的第二输入；d=1 时 z 也能观察",
+    "points": [
+      [
+        390,
+        1230
+      ],
+      [
+        390,
+        1460
+      ],
+      [
+        1160,
+        1460
+      ],
+      [
+        1160,
+        880
+      ],
+      [
+        1130,
+        880.0
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图11  ATPG 搜索与结果判定",
+    "file": "assets/11_search.svg",
+    "id": "fault-goal",
+    "source": "fault",
+    "target": "goal",
+    "meaning": "按目标逐步约束并检验电路",
+    "points": [
+      [
+        600.0,
+        450
+      ],
+      [
+        600.0,
+        590
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图11  ATPG 搜索与结果判定",
+    "file": "assets/11_search.svg",
+    "id": "goal-decide",
+    "source": "goal",
+    "target": "decide",
+    "meaning": "按目标逐步约束并检验电路",
+    "points": [
+      [
+        600.0,
+        800
+      ],
+      [
+        600.0,
+        940
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图11  ATPG 搜索与结果判定",
+    "file": "assets/11_search.svg",
+    "id": "decide-check",
+    "source": "decide",
+    "target": "check",
+    "meaning": "按目标逐步约束并检验电路",
+    "points": [
+      [
+        600.0,
+        1150
+      ],
+      [
+        600.0,
+        1290
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图11  ATPG 搜索与结果判定",
+    "file": "assets/11_search.svg",
+    "id": "retry",
+    "source": "check",
+    "target": "backtrack",
+    "meaning": "未发现有效检测时继续搜索或回溯",
+    "points": [
+      [
+        425.0,
+        1500
+      ],
+      [
+        425,
+        1590
+      ],
+      [
+        420,
+        1590
+      ],
+      [
+        420.0,
+        1680
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图11  ATPG 搜索与结果判定",
+    "file": "assets/11_search.svg",
+    "id": "success",
+    "source": "check",
+    "target": "detected",
+    "meaning": "观察到正常与故障差异后保存并验证",
+    "points": [
+      [
+        775.0,
+        1500
+      ],
+      [
+        775,
+        1590
+      ],
+      [
+        780,
+        1590
+      ],
+      [
+        780.0,
+        1680
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图11  ATPG 搜索与结果判定",
+    "file": "assets/11_search.svg",
+    "id": "loop",
+    "source": "backtrack",
+    "target": "decide",
+    "meaning": "还有合法分支时尝试另一项输入决定",
+    "points": [
+      [
+        250,
+        1770.0
+      ],
+      [
+        130,
+        1770
+      ],
+      [
+        130,
+        1045
+      ],
+      [
+        250,
+        1045.0
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图12  SAT 的正常与故障双电路",
+    "file": "assets/12_sat_miter.svg",
+    "id": "shared",
+    "source": "input",
+    "target": "split",
+    "meaning": "正常与故障模型共享相同输入变量",
+    "points": [
+      [
+        600.0,
+        430
+      ],
+      [
+        600,
+        510
+      ]
+    ],
+    "arrow": false
+  },
+  {
+    "figure": "图12  SAT 的正常与故障双电路",
+    "file": "assets/12_sat_miter.svg",
+    "id": "good-input",
+    "source": "split",
+    "target": "good",
+    "meaning": "共同输入进入正常模型",
+    "points": [
+      [
+        600,
+        510
+      ],
+      [
+        300,
+        510
+      ],
+      [
+        300.0,
+        650
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图12  SAT 的正常与故障双电路",
+    "file": "assets/12_sat_miter.svg",
+    "id": "bad-input",
+    "source": "split",
+    "target": "bad",
+    "meaning": "共同输入进入故障模型",
+    "points": [
+      [
+        600,
+        510
+      ],
+      [
+        900,
+        510
+      ],
+      [
+        900.0,
+        650
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图12  SAT 的正常与故障双电路",
+    "file": "assets/12_sat_miter.svg",
+    "id": "good-output",
+    "source": "good",
+    "target": "compare",
+    "meaning": "正常输出参与逐位比较",
+    "points": [
+      [
+        300.0,
+        860
+      ],
+      [
+        300,
+        1010
+      ],
+      [
+        500,
+        1010
+      ],
+      [
+        500.0,
+        1120
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图12  SAT 的正常与故障双电路",
+    "file": "assets/12_sat_miter.svg",
+    "id": "bad-output",
+    "source": "bad",
+    "target": "compare",
+    "meaning": "故障输出参与逐位比较",
+    "points": [
+      [
+        900.0,
+        860
+      ],
+      [
+        900,
+        1010
+      ],
+      [
+        700,
+        1010
+      ],
+      [
+        700.0,
+        1120
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图12  SAT 的正常与故障双电路",
+    "file": "assets/12_sat_miter.svg",
+    "id": "detection",
+    "source": "compare",
+    "target": "require",
+    "meaning": "差异条件为真就是一个故障检测向量",
+    "points": [
+      [
+        600.0,
+        1310
+      ],
+      [
+        600.0,
+        1450
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图13  输入解压缩与响应压缩",
+    "file": "assets/13_compression.svg",
+    "id": "e1",
+    "source": "n0",
+    "target": "n1",
+    "meaning": "从上一阶段进入下一阶段",
+    "points": [
+      [
+        600.0,
+        400
+      ],
+      [
+        600.0,
+        480
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图13  输入解压缩与响应压缩",
+    "file": "assets/13_compression.svg",
+    "id": "e2",
+    "source": "n1",
+    "target": "n2",
+    "meaning": "从上一阶段进入下一阶段",
+    "points": [
+      [
+        600.0,
+        640
+      ],
+      [
+        600.0,
+        720
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图13  输入解压缩与响应压缩",
+    "file": "assets/13_compression.svg",
+    "id": "e3",
+    "source": "n2",
+    "target": "n3",
+    "meaning": "从上一阶段进入下一阶段",
+    "points": [
+      [
+        600.0,
+        880
+      ],
+      [
+        600.0,
+        960
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图13  输入解压缩与响应压缩",
+    "file": "assets/13_compression.svg",
+    "id": "e4",
+    "source": "n3",
+    "target": "n4",
+    "meaning": "从上一阶段进入下一阶段",
+    "points": [
+      [
+        600.0,
+        1120
+      ],
+      [
+        600.0,
+        1200
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图15  移位与捕获的不同电气风险",
+    "file": "assets/15_power.svg",
+    "id": "e1",
+    "source": "n0",
+    "target": "n1",
+    "meaning": "从上一阶段进入下一阶段",
+    "points": [
+      [
+        600.0,
+        450
+      ],
+      [
+        600.0,
+        550
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图15  移位与捕获的不同电气风险",
+    "file": "assets/15_power.svg",
+    "id": "e2",
+    "source": "n1",
+    "target": "n2",
+    "meaning": "从上一阶段进入下一阶段",
+    "points": [
+      [
+        600.0,
+        760
+      ],
+      [
+        600.0,
+        860
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图16  控制点与观察点",
+    "file": "assets/16_testpoints.svg",
+    "id": "functional",
+    "source": "function",
+    "target": "control",
+    "meaning": "正常信号进入控制点",
+    "points": [
+      [
+        370,
+        405.0
+      ],
+      [
+        450,
+        405.0
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图16  控制点与观察点",
+    "file": "assets/16_testpoints.svg",
+    "id": "controlled",
+    "source": "control",
+    "target": "downstream",
+    "meaning": "功能模式透明传递，测试模式按设计控制",
+    "points": [
+      [
+        750,
+        405.0
+      ],
+      [
+        830,
+        405.0
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图16  控制点与观察点",
+    "file": "assets/16_testpoints.svg",
+    "id": "test-select",
+    "source": "test",
+    "target": "control",
+    "meaning": "测试控制决定是否强制或选择内部节点",
+    "points": [
+      [
+        600.0,
+        640
+      ],
+      [
+        600.0,
+        470
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图16  控制点与观察点",
+    "file": "assets/16_testpoints.svg",
+    "id": "original",
+    "source": "internal",
+    "target": "observe",
+    "meaning": "原功能连接产生观察分支",
+    "points": [
+      [
+        470,
+        1085.0
+      ],
+      [
+        600,
+        1085
+      ]
+    ],
+    "arrow": false
+  },
+  {
+    "figure": "图16  控制点与观察点",
+    "file": "assets/16_testpoints.svg",
+    "id": "normal-flow",
+    "source": "observe",
+    "target": "normal",
+    "meaning": "原来的功能数据继续传递",
+    "points": [
+      [
+        600,
+        1085
+      ],
+      [
+        730,
+        1085.0
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图16  控制点与观察点",
+    "file": "assets/16_testpoints.svg",
+    "id": "capture-observe",
+    "source": "observe",
+    "target": "observer",
+    "meaning": "分支提供额外观察，需检查新增扇出与捕获规则",
+    "points": [
+      [
+        600,
+        1085
+      ],
+      [
+        600.0,
+        1380
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图17  检测与唯一定位并不相同",
+    "file": "assets/17_diagnosis.svg",
+    "id": "e1",
+    "source": "n0",
+    "target": "n1",
+    "meaning": "从上一阶段进入下一阶段",
+    "points": [
+      [
+        600.0,
+        400
+      ],
+      [
+        600.0,
+        485
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图17  检测与唯一定位并不相同",
+    "file": "assets/17_diagnosis.svg",
+    "id": "e2",
+    "source": "n1",
+    "target": "n2",
+    "meaning": "从上一阶段进入下一阶段",
+    "points": [
+      [
+        600.0,
+        645
+      ],
+      [
+        600.0,
+        730
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图17  检测与唯一定位并不相同",
+    "file": "assets/17_diagnosis.svg",
+    "id": "e3",
+    "source": "n2",
+    "target": "n3",
+    "meaning": "从上一阶段进入下一阶段",
+    "points": [
+      [
+        600.0,
+        890
+      ],
+      [
+        600.0,
+        975
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图18  从设计到制造的检查顺序",
+    "file": "assets/18_validation.svg",
+    "id": "e1",
+    "source": "n0",
+    "target": "n1",
+    "meaning": "从上一阶段进入下一阶段",
+    "points": [
+      [
+        600.0,
+        400
+      ],
+      [
+        600.0,
+        480
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图18  从设计到制造的检查顺序",
+    "file": "assets/18_validation.svg",
+    "id": "e2",
+    "source": "n1",
+    "target": "n2",
+    "meaning": "从上一阶段进入下一阶段",
+    "points": [
+      [
+        600.0,
+        640
+      ],
+      [
+        600.0,
+        720
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图18  从设计到制造的检查顺序",
+    "file": "assets/18_validation.svg",
+    "id": "e3",
+    "source": "n2",
+    "target": "n3",
+    "meaning": "从上一阶段进入下一阶段",
+    "points": [
+      [
+        600.0,
+        880
+      ],
+      [
+        600.0,
+        960
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图18  从设计到制造的检查顺序",
+    "file": "assets/18_validation.svg",
+    "id": "e4",
+    "source": "n3",
+    "target": "n4",
+    "meaning": "从上一阶段进入下一阶段",
+    "points": [
+      [
+        600.0,
+        1120
+      ],
+      [
+        600.0,
+        1200
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图18  从设计到制造的检查顺序",
+    "file": "assets/18_validation.svg",
+    "id": "e5",
+    "source": "n4",
+    "target": "n5",
+    "meaning": "从上一阶段进入下一阶段",
+    "points": [
+      [
+        600.0,
+        1360
+      ],
+      [
+        600.0,
+        1440
+      ]
+    ],
+    "arrow": true
+  }
+]

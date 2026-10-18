@@ -13,6 +13,10 @@ module counter_props (
   ap_hold: assert property (@(posedge clk) disable iff (!rst_n)
       history_valid && $past(!enable) |-> count == $past(count));
 
+  ap_increment: assert property (@(posedge clk) disable iff (!rst_n)
+      history_valid && $past(enable && count < 4'd9)
+      |-> count == $past(count) + 4'd1);
+
   ap_wrap: assert property (@(posedge clk) disable iff (!rst_n)
       history_valid && $past(enable && count == 4'd9)
       |-> count == 4'd0);

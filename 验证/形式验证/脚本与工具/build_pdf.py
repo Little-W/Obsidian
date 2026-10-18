@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the list-and-code edition as Markdown, offline HTML, and PDF.
+"""Build the compact tutorial and detailed command reference as Markdown, offline HTML, and PDF.
 
 Requirements: Python 3.10+, Pandoc, XeLaTeX, Noto CJK fonts. The HTML embeds
 all images and CSS; it needs neither an Internet connection nor example files.
@@ -19,6 +19,7 @@ CHAPTERS = '''00_阅读指南.md
 VC_Formal_平台与环境.md
 验证工程与结果判读.md
 SVA语法合集.md
+VC_Formal_Quick_Reference_Guide_中文整理版.md
 FPV.md
 AEP.md
 FXP.md
@@ -31,20 +32,21 @@ FuSa.md
 FSV.md
 DPV.md
 FLP_LPC.md
+设计查询与集合.md
+AIP与分解证明.md
 调试与证明性能.md
 覆盖与验证验收.md
-术语表与资料索引.md
-VC_Formal_Quick_Reference_Guide_中文整理版.md'''.splitlines()
+术语表与资料索引.md'''.splitlines()
 HEADER = '''---
 title: "VC Formal 中文形式验证手册"
-subtitle: "分点说明与代码块版 · 原理、SVA、工具命令与完整案例"
+subtitle: "原理、SVA、命令详解与完整案例"
 author: "独立中文技术教程（非官方译本）"
-date: "工具文档基线 X-2025.06-SP1 · 手册修订 1.2 · 2026-10-17"
+date: "工具文档基线 X-2025.06-SP1 · 手册修订 1.3 · 2026-10-17"
 lang: zh-CN
 ---
 
 '''
-READ_FORMAT = 'markdown+tex_math_dollars+tex_math_single_backslash-pipe_tables-simple_tables-multiline_tables-grid_tables'
+READ_FORMAT = 'markdown+tex_math_dollars+tex_math_single_backslash+pipe_tables-simple_tables-multiline_tables-grid_tables'
 
 def combined_text() -> str:
     sections = []
@@ -64,7 +66,7 @@ def html_build(text: str, out: Path) -> None:
         'pandoc','--from',READ_FORMAT,'--to','html5','--standalone',
         '--toc','--toc-depth=2','--mathml',
         '--lua-filter',str(ROOT/'脚本与工具/doc_links.lua'),
-        '--metadata','pagetitle=VC Formal 中文形式验证手册｜分点说明与代码块版',
+        '--metadata','pagetitle=VC Formal 中文形式验证手册｜命令详解与工程教程',
     ], input=text, text=True, capture_output=True, check=True, cwd=ROOT).stdout
     css = (ROOT/'脚本与工具/handbook.css').read_text(encoding='utf-8')
     result = result.replace('</head>', '<style>\n'+css+'\n</style>\n</head>')
@@ -102,8 +104,8 @@ def pdf_build(text: str, out: Path) -> None:
             '--standalone','--toc','--toc-depth=2','--top-level-division=chapter',
             '--lua-filter',str(ROOT/'脚本与工具/doc_links.lua'),
             '--pdf-engine=xelatex', '-V','documentclass=ctexbook', '-V','classoption=openany',
-            '-V','papersize=a4','-V','geometry:margin=22mm','-V','fontsize=11pt',
-            '-V','linestretch=1.20','-V','mainfont=Noto Serif CJK SC',
+            '-V','papersize=a4','-V','geometry:margin=20mm','-V','fontsize=11pt',
+            '-V','linestretch=1.12','-V','mainfont=Noto Serif CJK SC',
             '-V','sansfont=Noto Sans CJK SC','-V','monofont=DejaVu Sans Mono',
             '-V','colorlinks=true','-V','linkcolor=blue','-H',str(preamble),'-o',str(out),
         ]
@@ -120,7 +122,7 @@ def main() -> None:
         if not shutil.which(exe):
             raise SystemExit(f'Missing executable: {exe}')
     subprocess.run(['python3', str(ROOT/'脚本与工具/sync_inline_sources.py')],check=True)
-    subprocess.run(['python3', str(ROOT/'脚本与工具/validate_no_tables.py'), '--source-only'], check=True)
+    subprocess.run(['python3', str(ROOT/'脚本与工具/validate_publication.py'), '--source-only'], check=True)
     text = combined_text()
     args.md.parent.mkdir(parents=True, exist_ok=True)
     args.md.write_text(text, encoding='utf-8')

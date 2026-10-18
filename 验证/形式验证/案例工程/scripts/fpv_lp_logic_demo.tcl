@@ -6,7 +6,7 @@ create_reset rst_n -sense low
 # 先核验实际复位状态，再保存初始状态。
 sim_run -stable
 sim_save_reset
-check_fv_setup
+check_fv_setup -block
 report_fv -list
 check_fv -block
 report_fv -verbose

@@ -1,0 +1,974 @@
+{
+  "font_family": "\"Noto Sans CJK SC\", \"Microsoft YaHei\", \"PingFang SC\", \"Source Han Sans SC\", sans-serif",
+  "font_sizes_px": {
+    "title": 48,
+    "node": 36,
+    "body": 32,
+    "note": 30,
+    "minimum": 28
+  },
+  "figures": [
+    {
+      "file": "01_system.svg",
+      "title": "图 01  MBIST 系统的完整功能",
+      "width": 1200,
+      "height": 1750,
+      "editable_text": true,
+      "embedded_raster_images": 0,
+      "font_sizes_px": {
+        "title": 48,
+        "node": 36,
+        "body": 32,
+        "note": 30,
+        "minimum": 28
+      },
+      "nodes": 8,
+      "text_objects": 28,
+      "connections": 9,
+      "connection_map": [
+        {
+          "id": "manager-execute",
+          "source": "manager",
+          "target": "execute",
+          "meaning": "启动、模式与执行控制",
+          "points": [
+            [
+              600.0,
+              380
+            ],
+            [
+              600.0,
+              480
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "execute-interface",
+          "source": "execute",
+          "target": "interface",
+          "meaning": "地址、读写命令与写入数据",
+          "points": [
+            [
+              340.0,
+              640
+            ],
+            [
+              340.0,
+              760
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "execute-expect",
+          "source": "execute",
+          "target": "expect",
+          "meaning": "本次读请求的期望信息",
+          "points": [
+            [
+              905.0,
+              640
+            ],
+            [
+              905.0,
+              760
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "interface-array",
+          "source": "interface",
+          "target": "array",
+          "meaning": "实际存储器接口信号",
+          "points": [
+            [
+              340.0,
+              920
+            ],
+            [
+              340.0,
+              1040
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "expect-compare",
+          "source": "expect",
+          "target": "compare",
+          "meaning": "按读延迟对应的期望值",
+          "points": [
+            [
+              905.0,
+              920
+            ],
+            [
+              905.0,
+              1040
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "array-compare",
+          "source": "array",
+          "target": "compare",
+          "meaning": "存储器的实际读出数据",
+          "points": [
+            [
+              580,
+              1120.0
+            ],
+            [
+              710,
+              1120.0
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "compare-record",
+          "source": "compare",
+          "target": "record",
+          "meaning": "比较失败时记录故障信息",
+          "points": [
+            [
+              905.0,
+              1200
+            ],
+            [
+              905.0,
+              1320
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "record-repair",
+          "source": "record",
+          "target": "repair",
+          "meaning": "故障位置及错误位供冗余分析",
+          "points": [
+            [
+              710,
+              1425.0
+            ],
+            [
+              580,
+              1425.0
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "repair-array",
+          "source": "repair",
+          "target": "array",
+          "meaning": "合法修复配置控制备用资源替换",
+          "points": [
+            [
+              340.0,
+              1320
+            ],
+            [
+              340.0,
+              1200
+            ]
+          ],
+          "arrow": true
+        }
+      ]
+    },
+    {
+      "file": "02_group_levels.svg",
+      "title": "图 14  四种“组”回答不同问题",
+      "width": 1200,
+      "height": 1360,
+      "editable_text": true,
+      "embedded_raster_images": 0,
+      "font_sizes_px": {
+        "title": 48,
+        "node": 36,
+        "body": 32,
+        "note": 30,
+        "minimum": 28
+      },
+      "nodes": 4,
+      "text_objects": 12,
+      "connections": 0,
+      "connection_map": []
+    },
+    {
+      "file": "03_controller_modes.svg",
+      "title": "图 03  控制器的三种执行方式",
+      "width": 1200,
+      "height": 1580,
+      "editable_text": true,
+      "embedded_raster_images": 0,
+      "font_sizes_px": {
+        "title": 48,
+        "node": 36,
+        "body": 32,
+        "note": 30,
+        "minimum": 28
+      },
+      "nodes": 0,
+      "text_objects": 18,
+      "connections": 0,
+      "connection_map": []
+    },
+    {
+      "file": "04_constraints.svg",
+      "title": "图 16  两两关系与整个集合的约束",
+      "width": 1200,
+      "height": 1260,
+      "editable_text": true,
+      "embedded_raster_images": 0,
+      "font_sizes_px": {
+        "title": 48,
+        "node": 36,
+        "body": 32,
+        "note": 30,
+        "minimum": 28
+      },
+      "nodes": 5,
+      "text_objects": 18,
+      "connections": 3,
+      "connection_map": [
+        {
+          "id": "A-B",
+          "source": "A",
+          "target": "B",
+          "meaning": "A 与 B 的距离为 4，满足限制",
+          "points": [
+            [
+              260,
+              460.0
+            ],
+            [
+              520,
+              460.0
+            ]
+          ],
+          "arrow": false
+        },
+        {
+          "id": "B-C",
+          "source": "B",
+          "target": "C",
+          "meaning": "B 与 C 的距离为 4，满足限制",
+          "points": [
+            [
+              680,
+              460.0
+            ],
+            [
+              940,
+              460.0
+            ]
+          ],
+          "arrow": false
+        },
+        {
+          "id": "A-C",
+          "source": "A",
+          "target": "C",
+          "meaning": "A 与 C 的距离为 8，违反两两距离限制",
+          "points": [
+            [
+              180.0,
+              540
+            ],
+            [
+              180,
+              640
+            ],
+            [
+              1020,
+              640
+            ],
+            [
+              1020.0,
+              540
+            ]
+          ],
+          "arrow": false
+        }
+      ]
+    },
+    {
+      "file": "05_group_example.svg",
+      "title": "图 19  六个存储器的分组算例",
+      "width": 1200,
+      "height": 1346,
+      "editable_text": true,
+      "embedded_raster_images": 0,
+      "font_sizes_px": {
+        "title": 48,
+        "node": 36,
+        "body": 32,
+        "note": 30,
+        "minimum": 28
+      },
+      "nodes": 8,
+      "text_objects": 20,
+      "connections": 0,
+      "connection_map": []
+    },
+    {
+      "file": "06_schedule.svg",
+      "title": "图 20  同样三个组，测试时间可以不同",
+      "width": 1200,
+      "height": 1341,
+      "editable_text": true,
+      "embedded_raster_images": 0,
+      "font_sizes_px": {
+        "title": 48,
+        "node": 36,
+        "body": 32,
+        "note": 30,
+        "minimum": 28
+      },
+      "nodes": 1,
+      "text_objects": 22,
+      "connections": 0,
+      "connection_map": []
+    },
+    {
+      "file": "07_power_flow.svg",
+      "title": "图 15  从粗略指标到电气验证",
+      "width": 1200,
+      "height": 1460,
+      "editable_text": true,
+      "embedded_raster_images": 0,
+      "font_sizes_px": {
+        "title": 48,
+        "node": 36,
+        "body": 32,
+        "note": 30,
+        "minimum": 28
+      },
+      "nodes": 4,
+      "text_objects": 11,
+      "connections": 3,
+      "connection_map": [
+        {
+          "id": "sequence1",
+          "source": "step0",
+          "target": "step1",
+          "meaning": "上一阶段完成并满足条件后进入下一阶段",
+          "points": [
+            [
+              600.0,
+              410
+            ],
+            [
+              600.0,
+              490
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "sequence2",
+          "source": "step1",
+          "target": "step2",
+          "meaning": "上一阶段完成并满足条件后进入下一阶段",
+          "points": [
+            [
+              600.0,
+              680
+            ],
+            [
+              600.0,
+              760
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "sequence3",
+          "source": "step2",
+          "target": "step3",
+          "meaning": "上一阶段完成并满足条件后进入下一阶段",
+          "points": [
+            [
+              600.0,
+              950
+            ],
+            [
+              600.0,
+              1030
+            ]
+          ],
+          "arrow": true
+        }
+      ]
+    },
+    {
+      "file": "08_phase_power.svg",
+      "title": "图 18  利用互补的阶段功率",
+      "width": 1200,
+      "height": 1831,
+      "editable_text": true,
+      "embedded_raster_images": 0,
+      "font_sizes_px": {
+        "title": 48,
+        "node": 36,
+        "body": 32,
+        "note": 30,
+        "minimum": 28
+      },
+      "nodes": 1,
+      "text_objects": 35,
+      "connections": 0,
+      "connection_map": []
+    },
+    {
+      "file": "09_thermal.svg",
+      "title": "图 17  三维芯片的局部温度约束",
+      "width": 1200,
+      "height": 1360,
+      "editable_text": true,
+      "embedded_raster_images": 0,
+      "font_sizes_px": {
+        "title": 48,
+        "node": 36,
+        "body": 32,
+        "note": 30,
+        "minimum": 28
+      },
+      "nodes": 1,
+      "text_objects": 20,
+      "connections": 0,
+      "connection_map": []
+    },
+    {
+      "file": "10_adaptive.svg",
+      "title": "图 21  自适应测试的条件与返回路径",
+      "width": 1200,
+      "height": 1850,
+      "editable_text": true,
+      "embedded_raster_images": 0,
+      "font_sizes_px": {
+        "title": 48,
+        "node": 36,
+        "body": 32,
+        "note": 30,
+        "minimum": 28
+      },
+      "nodes": 6,
+      "text_objects": 24,
+      "connections": 6,
+      "connection_map": [
+        {
+          "id": "execute-observe",
+          "source": "execute",
+          "target": "observe",
+          "meaning": "完成该项测试后评估结果",
+          "points": [
+            [
+              600.0,
+              380
+            ],
+            [
+              600.0,
+              480
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "observe-branch",
+          "source": "observe",
+          "target": "branch",
+          "meaning": "结果分支的公共连接点",
+          "points": [
+            [
+              600.0,
+              640
+            ],
+            [
+              600,
+              710
+            ]
+          ],
+          "arrow": false
+        },
+        {
+          "id": "branch-failure",
+          "source": "branch",
+          "target": "failure",
+          "meaning": "已观察到测试失败",
+          "points": [
+            [
+              600,
+              710
+            ],
+            [
+              320,
+              710
+            ],
+            [
+              320.0,
+              830
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "branch-complete",
+          "source": "branch",
+          "target": "complete",
+          "meaning": "尚未发现失败，仍需检查完成条件",
+          "points": [
+            [
+              600,
+              710
+            ],
+            [
+              900,
+              710
+            ],
+            [
+              900.0,
+              830
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "continue",
+          "source": "complete",
+          "target": "execute",
+          "meaning": "必要测试未完成时返回，禁止提前宣布通过",
+          "points": [
+            [
+              1120,
+              960.0
+            ],
+            [
+              1160,
+              960
+            ],
+            [
+              1160,
+              300
+            ],
+            [
+              1080,
+              300.0
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "complete-decision",
+          "source": "complete",
+          "target": "decision",
+          "meaning": "仅在全部必要测试完成后判定",
+          "points": [
+            [
+              900.0,
+              1090
+            ],
+            [
+              900.0,
+              1210
+            ]
+          ],
+          "arrow": true
+        }
+      ]
+    },
+    {
+      "file": "11_online.svg",
+      "title": "图 22  保留数据的短测试过程",
+      "width": 1200,
+      "height": 1730,
+      "editable_text": true,
+      "embedded_raster_images": 0,
+      "font_sizes_px": {
+        "title": 48,
+        "node": 36,
+        "body": 32,
+        "note": 30,
+        "minimum": 28
+      },
+      "nodes": 5,
+      "text_objects": 14,
+      "connections": 4,
+      "connection_map": [
+        {
+          "id": "sequence1",
+          "source": "step0",
+          "target": "step1",
+          "meaning": "上一阶段完成并满足条件后进入下一阶段",
+          "points": [
+            [
+              600.0,
+              410
+            ],
+            [
+              600.0,
+              490
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "sequence2",
+          "source": "step1",
+          "target": "step2",
+          "meaning": "上一阶段完成并满足条件后进入下一阶段",
+          "points": [
+            [
+              600.0,
+              680
+            ],
+            [
+              600.0,
+              760
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "sequence3",
+          "source": "step2",
+          "target": "step3",
+          "meaning": "上一阶段完成并满足条件后进入下一阶段",
+          "points": [
+            [
+              600.0,
+              950
+            ],
+            [
+              600.0,
+              1030
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "sequence4",
+          "source": "step3",
+          "target": "step4",
+          "meaning": "上一阶段完成并满足条件后进入下一阶段",
+          "points": [
+            [
+              600.0,
+              1220
+            ],
+            [
+              600.0,
+              1300
+            ]
+          ],
+          "arrow": true
+        }
+      ]
+    },
+    {
+      "file": "12_diagnosis.svg",
+      "title": "图 04  正确定位需要响应时间对应",
+      "width": 1200,
+      "height": 1470,
+      "editable_text": true,
+      "embedded_raster_images": 0,
+      "font_sizes_px": {
+        "title": 48,
+        "node": 36,
+        "body": 32,
+        "note": 30,
+        "minimum": 28
+      },
+      "nodes": 2,
+      "text_objects": 21,
+      "connections": 1,
+      "connection_map": [
+        {
+          "id": "expected-record",
+          "source": "expected",
+          "target": "record",
+          "meaning": "用返回请求的地址而非当前请求地址生成故障记录",
+          "points": [
+            [
+              600.0,
+              995
+            ],
+            [
+              600.0,
+              1110
+            ]
+          ],
+          "arrow": true
+        }
+      ]
+    },
+    {
+      "file": "13_repair.svg",
+      "title": "图 24  备用行列的选择反例",
+      "width": 1200,
+      "height": 1416,
+      "editable_text": true,
+      "embedded_raster_images": 0,
+      "font_sizes_px": {
+        "title": 48,
+        "node": 36,
+        "body": 32,
+        "note": 30,
+        "minimum": 28
+      },
+      "nodes": 3,
+      "text_objects": 21,
+      "connections": 0,
+      "connection_map": []
+    },
+    {
+      "file": "14_fault_buffers.svg",
+      "title": "图 23  故障信息也会限制并发",
+      "width": 1200,
+      "height": 1545,
+      "editable_text": true,
+      "embedded_raster_images": 0,
+      "font_sizes_px": {
+        "title": 48,
+        "node": 36,
+        "body": 32,
+        "note": 30,
+        "minimum": 28
+      },
+      "nodes": 6,
+      "text_objects": 17,
+      "connections": 6,
+      "connection_map": [
+        {
+          "id": "local0",
+          "source": "memory0",
+          "target": "buffer0",
+          "meaning": "该存储体的故障记录进入其局部缓冲",
+          "points": [
+            [
+              320.0,
+              380
+            ],
+            [
+              320.0,
+              500
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "local1",
+          "source": "memory1",
+          "target": "buffer1",
+          "meaning": "该存储体的故障记录进入其局部缓冲",
+          "points": [
+            [
+              880.0,
+              380
+            ],
+            [
+              880.0,
+              500
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "buffer0-merge",
+          "source": "buffer0",
+          "target": "merge",
+          "meaning": "局部缓冲 A 交给共享分析",
+          "points": [
+            [
+              320.0,
+              660
+            ],
+            [
+              320,
+              760
+            ],
+            [
+              600,
+              760
+            ]
+          ],
+          "arrow": false
+        },
+        {
+          "id": "buffer1-merge",
+          "source": "buffer1",
+          "target": "merge",
+          "meaning": "局部缓冲 B 交给共享分析",
+          "points": [
+            [
+              880.0,
+              660
+            ],
+            [
+              880,
+              760
+            ],
+            [
+              600,
+              760
+            ]
+          ],
+          "arrow": false
+        },
+        {
+          "id": "merge-analysis",
+          "source": "merge",
+          "target": "analysis",
+          "meaning": "明确合并后的故障信息流",
+          "points": [
+            [
+              600,
+              760
+            ],
+            [
+              600.0,
+              860
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "analysis-capacity",
+          "source": "analysis",
+          "target": "capacity",
+          "meaning": "检查关系：不是额外的数据处理硬件级",
+          "points": [
+            [
+              600.0,
+              1040
+            ],
+            [
+              600.0,
+              1170
+            ]
+          ],
+          "arrow": true
+        }
+      ]
+    },
+    {
+      "file": "15_flow.svg",
+      "title": "图 25  优化方案怎样进入实际工具",
+      "width": 1200,
+      "height": 1730,
+      "editable_text": true,
+      "embedded_raster_images": 0,
+      "font_sizes_px": {
+        "title": 48,
+        "node": 36,
+        "body": 32,
+        "note": 30,
+        "minimum": 28
+      },
+      "nodes": 5,
+      "text_objects": 15,
+      "connections": 5,
+      "connection_map": [
+        {
+          "id": "sequence1",
+          "source": "step0",
+          "target": "step1",
+          "meaning": "上一阶段完成并满足条件后进入下一阶段",
+          "points": [
+            [
+              580.0,
+              410
+            ],
+            [
+              580.0,
+              490
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "sequence2",
+          "source": "step1",
+          "target": "step2",
+          "meaning": "上一阶段完成并满足条件后进入下一阶段",
+          "points": [
+            [
+              580.0,
+              680
+            ],
+            [
+              580.0,
+              760
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "sequence3",
+          "source": "step2",
+          "target": "step3",
+          "meaning": "上一阶段完成并满足条件后进入下一阶段",
+          "points": [
+            [
+              580.0,
+              950
+            ],
+            [
+              580.0,
+              1030
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "sequence4",
+          "source": "step3",
+          "target": "step4",
+          "meaning": "上一阶段完成并满足条件后进入下一阶段",
+          "points": [
+            [
+              580.0,
+              1220
+            ],
+            [
+              580.0,
+              1300
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "revise",
+          "source": "step4",
+          "target": "step1",
+          "meaning": "物理、电气结果不满足要求时返回分组与调度优化",
+          "points": [
+            [
+              1060,
+              1395.0
+            ],
+            [
+              1160,
+              1395
+            ],
+            [
+              1160,
+              585
+            ],
+            [
+              1060,
+              585.0
+            ]
+          ],
+          "arrow": true
+        }
+      ]
+    }
+  ]
+}

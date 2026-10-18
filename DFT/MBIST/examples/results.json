@@ -1,0 +1,746 @@
+{
+  "notice": "Synthetic teaching examples; not EDA or silicon measurements.",
+  "units": {
+    "time": "us",
+    "power": "mW",
+    "energy": "nJ",
+    "distance": "arbitrary layout units"
+  },
+  "memories": [
+    {
+      "name": "A",
+      "compatibility": "S1",
+      "x": 0,
+      "y": 0,
+      "duration": 8,
+      "power": 5
+    },
+    {
+      "name": "B",
+      "compatibility": "S1",
+      "x": 2,
+      "y": 0,
+      "duration": 5,
+      "power": 3
+    },
+    {
+      "name": "C",
+      "compatibility": "S1",
+      "x": 4,
+      "y": 0,
+      "duration": 6,
+      "power": 4
+    },
+    {
+      "name": "D",
+      "compatibility": "S1",
+      "x": 6,
+      "y": 0,
+      "duration": 3,
+      "power": 2
+    },
+    {
+      "name": "E",
+      "compatibility": "S2",
+      "x": 14,
+      "y": 0,
+      "duration": 7,
+      "power": 4
+    },
+    {
+      "name": "F",
+      "compatibility": "S2",
+      "x": 16,
+      "y": 0,
+      "duration": 4,
+      "power": 2
+    }
+  ],
+  "grouping": {
+    "max_count": 3,
+    "max_pairwise_manhattan_distance": 6,
+    "feasible_partition_count": 28,
+    "minimum_group_count": 3,
+    "minimum_count_partition_count": 7
+  },
+  "serial_controller_scheduling": {
+    "global_power_cap_mW": 8,
+    "max_active_controllers": 2,
+    "best_among_minimum_count_partitions": {
+      "groups": [
+        [
+          "A",
+          "C",
+          "D"
+        ],
+        [
+          "B"
+        ],
+        [
+          "E",
+          "F"
+        ]
+      ],
+      "makespan_us": 17,
+      "runs": [
+        {
+          "memory": "A",
+          "controller": 0,
+          "start": 0,
+          "end": 8,
+          "power_mW": 5
+        },
+        {
+          "memory": "B",
+          "controller": 1,
+          "start": 0,
+          "end": 5,
+          "power_mW": 3
+        },
+        {
+          "memory": "F",
+          "controller": 2,
+          "start": 5,
+          "end": 9,
+          "power_mW": 2
+        },
+        {
+          "memory": "C",
+          "controller": 0,
+          "start": 8,
+          "end": 14,
+          "power_mW": 4
+        },
+        {
+          "memory": "E",
+          "controller": 2,
+          "start": 9,
+          "end": 16,
+          "power_mW": 4
+        },
+        {
+          "memory": "D",
+          "controller": 0,
+          "start": 14,
+          "end": 17,
+          "power_mW": 2
+        }
+      ],
+      "dp_states": 3744
+    },
+    "all_minimum_count_partitions": [
+      {
+        "groups": [
+          [
+            "A",
+            "B",
+            "C"
+          ],
+          [
+            "D"
+          ],
+          [
+            "E",
+            "F"
+          ]
+        ],
+        "makespan_us": 19,
+        "runs": [
+          {
+            "memory": "A",
+            "controller": 0,
+            "start": 0,
+            "end": 8,
+            "power_mW": 5
+          },
+          {
+            "memory": "D",
+            "controller": 1,
+            "start": 0,
+            "end": 3,
+            "power_mW": 2
+          },
+          {
+            "memory": "F",
+            "controller": 2,
+            "start": 3,
+            "end": 7,
+            "power_mW": 2
+          },
+          {
+            "memory": "B",
+            "controller": 0,
+            "start": 8,
+            "end": 13,
+            "power_mW": 3
+          },
+          {
+            "memory": "E",
+            "controller": 2,
+            "start": 8,
+            "end": 15,
+            "power_mW": 4
+          },
+          {
+            "memory": "C",
+            "controller": 0,
+            "start": 13,
+            "end": 19,
+            "power_mW": 4
+          }
+        ],
+        "dp_states": 3360
+      },
+      {
+        "groups": [
+          [
+            "A",
+            "B",
+            "D"
+          ],
+          [
+            "C"
+          ],
+          [
+            "E",
+            "F"
+          ]
+        ],
+        "makespan_us": 19,
+        "runs": [
+          {
+            "memory": "A",
+            "controller": 0,
+            "start": 0,
+            "end": 8,
+            "power_mW": 5
+          },
+          {
+            "memory": "F",
+            "controller": 2,
+            "start": 0,
+            "end": 4,
+            "power_mW": 2
+          },
+          {
+            "memory": "B",
+            "controller": 0,
+            "start": 8,
+            "end": 13,
+            "power_mW": 3
+          },
+          {
+            "memory": "E",
+            "controller": 2,
+            "start": 8,
+            "end": 15,
+            "power_mW": 4
+          },
+          {
+            "memory": "C",
+            "controller": 1,
+            "start": 13,
+            "end": 19,
+            "power_mW": 4
+          },
+          {
+            "memory": "D",
+            "controller": 0,
+            "start": 15,
+            "end": 18,
+            "power_mW": 2
+          }
+        ],
+        "dp_states": 3328
+      },
+      {
+        "groups": [
+          [
+            "A",
+            "B"
+          ],
+          [
+            "C",
+            "D"
+          ],
+          [
+            "E",
+            "F"
+          ]
+        ],
+        "makespan_us": 19,
+        "runs": [
+          {
+            "memory": "A",
+            "controller": 0,
+            "start": 0,
+            "end": 8,
+            "power_mW": 5
+          },
+          {
+            "memory": "D",
+            "controller": 1,
+            "start": 0,
+            "end": 3,
+            "power_mW": 2
+          },
+          {
+            "memory": "F",
+            "controller": 2,
+            "start": 3,
+            "end": 7,
+            "power_mW": 2
+          },
+          {
+            "memory": "B",
+            "controller": 0,
+            "start": 8,
+            "end": 13,
+            "power_mW": 3
+          },
+          {
+            "memory": "E",
+            "controller": 2,
+            "start": 8,
+            "end": 15,
+            "power_mW": 4
+          },
+          {
+            "memory": "C",
+            "controller": 1,
+            "start": 13,
+            "end": 19,
+            "power_mW": 4
+          }
+        ],
+        "dp_states": 3520
+      },
+      {
+        "groups": [
+          [
+            "A",
+            "C",
+            "D"
+          ],
+          [
+            "B"
+          ],
+          [
+            "E",
+            "F"
+          ]
+        ],
+        "makespan_us": 17,
+        "runs": [
+          {
+            "memory": "A",
+            "controller": 0,
+            "start": 0,
+            "end": 8,
+            "power_mW": 5
+          },
+          {
+            "memory": "B",
+            "controller": 1,
+            "start": 0,
+            "end": 5,
+            "power_mW": 3
+          },
+          {
+            "memory": "F",
+            "controller": 2,
+            "start": 5,
+            "end": 9,
+            "power_mW": 2
+          },
+          {
+            "memory": "C",
+            "controller": 0,
+            "start": 8,
+            "end": 14,
+            "power_mW": 4
+          },
+          {
+            "memory": "E",
+            "controller": 2,
+            "start": 9,
+            "end": 16,
+            "power_mW": 4
+          },
+          {
+            "memory": "D",
+            "controller": 0,
+            "start": 14,
+            "end": 17,
+            "power_mW": 2
+          }
+        ],
+        "dp_states": 3744
+      },
+      {
+        "groups": [
+          [
+            "A",
+            "C"
+          ],
+          [
+            "B",
+            "D"
+          ],
+          [
+            "E",
+            "F"
+          ]
+        ],
+        "makespan_us": 17,
+        "runs": [
+          {
+            "memory": "A",
+            "controller": 0,
+            "start": 0,
+            "end": 8,
+            "power_mW": 5
+          },
+          {
+            "memory": "B",
+            "controller": 1,
+            "start": 0,
+            "end": 5,
+            "power_mW": 3
+          },
+          {
+            "memory": "F",
+            "controller": 2,
+            "start": 5,
+            "end": 9,
+            "power_mW": 2
+          },
+          {
+            "memory": "C",
+            "controller": 0,
+            "start": 8,
+            "end": 14,
+            "power_mW": 4
+          },
+          {
+            "memory": "E",
+            "controller": 2,
+            "start": 9,
+            "end": 16,
+            "power_mW": 4
+          },
+          {
+            "memory": "D",
+            "controller": 1,
+            "start": 14,
+            "end": 17,
+            "power_mW": 2
+          }
+        ],
+        "dp_states": 4000
+      },
+      {
+        "groups": [
+          [
+            "A",
+            "D"
+          ],
+          [
+            "B",
+            "C"
+          ],
+          [
+            "E",
+            "F"
+          ]
+        ],
+        "makespan_us": 17,
+        "runs": [
+          {
+            "memory": "A",
+            "controller": 0,
+            "start": 0,
+            "end": 8,
+            "power_mW": 5
+          },
+          {
+            "memory": "B",
+            "controller": 1,
+            "start": 0,
+            "end": 5,
+            "power_mW": 3
+          },
+          {
+            "memory": "F",
+            "controller": 2,
+            "start": 5,
+            "end": 9,
+            "power_mW": 2
+          },
+          {
+            "memory": "C",
+            "controller": 1,
+            "start": 8,
+            "end": 14,
+            "power_mW": 4
+          },
+          {
+            "memory": "E",
+            "controller": 2,
+            "start": 9,
+            "end": 16,
+            "power_mW": 4
+          },
+          {
+            "memory": "D",
+            "controller": 0,
+            "start": 14,
+            "end": 17,
+            "power_mW": 2
+          }
+        ],
+        "dp_states": 3584
+      },
+      {
+        "groups": [
+          [
+            "A"
+          ],
+          [
+            "B",
+            "C",
+            "D"
+          ],
+          [
+            "E",
+            "F"
+          ]
+        ],
+        "makespan_us": 17,
+        "runs": [
+          {
+            "memory": "A",
+            "controller": 0,
+            "start": 0,
+            "end": 8,
+            "power_mW": 5
+          },
+          {
+            "memory": "B",
+            "controller": 1,
+            "start": 0,
+            "end": 5,
+            "power_mW": 3
+          },
+          {
+            "memory": "F",
+            "controller": 2,
+            "start": 5,
+            "end": 9,
+            "power_mW": 2
+          },
+          {
+            "memory": "C",
+            "controller": 1,
+            "start": 8,
+            "end": 14,
+            "power_mW": 4
+          },
+          {
+            "memory": "E",
+            "controller": 2,
+            "start": 9,
+            "end": 16,
+            "power_mW": 4
+          },
+          {
+            "memory": "D",
+            "controller": 1,
+            "start": 14,
+            "end": 17,
+            "power_mW": 2
+          }
+        ],
+        "dp_states": 3520
+      }
+    ]
+  },
+  "phase_profiles": {
+    "profiles": [
+      [
+        [
+          2,
+          6
+        ],
+        [
+          4,
+          2
+        ]
+      ],
+      [
+        [
+          4,
+          2
+        ],
+        [
+          2,
+          6
+        ]
+      ]
+    ],
+    "overlap": {
+      "valid": true,
+      "peak_mW": 8,
+      "intervals": [
+        {
+          "start_us": 0.0,
+          "end_us": 2,
+          "power_mW": 8
+        },
+        {
+          "start_us": 2,
+          "end_us": 4,
+          "power_mW": 4
+        },
+        {
+          "start_us": 4,
+          "end_us": 6,
+          "power_mW": 8
+        }
+      ],
+      "energy_nJ": 40.0
+    },
+    "serial": {
+      "valid": true,
+      "peak_mW": 6.0,
+      "intervals": [
+        {
+          "start_us": 0.0,
+          "end_us": 2,
+          "power_mW": 6.0
+        },
+        {
+          "start_us": 2,
+          "end_us": 6,
+          "power_mW": 2.0
+        },
+        {
+          "start_us": 6,
+          "end_us": 10,
+          "power_mW": 2.0
+        },
+        {
+          "start_us": 10,
+          "end_us": 12,
+          "power_mW": 6.0
+        }
+      ],
+      "energy_nJ": 40.0
+    },
+    "unsafe_start_only_check": {
+      "valid": false,
+      "peak_mW": 14,
+      "intervals": [
+        {
+          "start_us": 0.0,
+          "end_us": 2,
+          "power_mW": 4
+        },
+        {
+          "start_us": 2,
+          "end_us": 4,
+          "power_mW": 14
+        }
+      ],
+      "energy_nJ": 36.0
+    }
+  },
+  "repair": {
+    "faults": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        1
+      ],
+      [
+        1,
+        0
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        2,
+        2
+      ]
+    ],
+    "row_spares": 1,
+    "column_spares": 2,
+    "exact": {
+      "rows": [
+        2
+      ],
+      "columns": [
+        0,
+        1
+      ]
+    },
+    "greedy": {
+      "repairable": false,
+      "rows": [
+        0
+      ],
+      "columns": [
+        0,
+        1
+      ],
+      "remaining": [
+        [
+          2,
+          2
+        ]
+      ],
+      "trace": [
+        {
+          "kind": "row",
+          "index": 0,
+          "covered": 2
+        },
+        {
+          "kind": "column",
+          "index": 0,
+          "covered": 1
+        },
+        {
+          "kind": "column",
+          "index": 1,
+          "covered": 1
+        }
+      ]
+    }
+  },
+  "address_padding": {
+    "memory_1": {
+      "rows": 128,
+      "column_addresses": 4
+    },
+    "memory_2": {
+      "rows": 32,
+      "column_addresses": 16
+    },
+    "separate_address_steps": 1024,
+    "shared_nested_loop_steps": 2048
+  },
+  "statistical_example": {
+    "zero_escape_samples": 3000,
+    "upper_probability_95": 0.0009980790119965555
+  },
+  "tests": {
+    "assertions": "passed",
+    "scope": "six fixed deterministic examples and schedule interval checks"
+  }
+}

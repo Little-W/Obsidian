@@ -1,0 +1,589 @@
+{
+  "font_family": "\"Noto Sans CJK SC\", \"Microsoft YaHei\", \"PingFang SC\", \"Source Han Sans SC\", sans-serif",
+  "font_sizes_px": {
+    "title": 48,
+    "node": 36,
+    "body": 32,
+    "note": 30,
+    "minimum": 28
+  },
+  "figures": [
+    {
+      "file": "01_mbist结构.svg",
+      "title": "图 02  March 算法在 MBIST 中的执行位置",
+      "width": 1200,
+      "height": 1785,
+      "editable_text": true,
+      "embedded_raster_images": 0,
+      "font_sizes_px": {
+        "title": 48,
+        "node": 36,
+        "body": 32,
+        "note": 30,
+        "minimum": 28
+      },
+      "nodes": 7,
+      "text_objects": 30,
+      "connections": 8,
+      "connection_map": [
+        {
+          "id": "control-address",
+          "source": "controller",
+          "target": "address",
+          "meaning": "地址方向及读写步骤",
+          "points": [
+            [
+              310.0,
+              380
+            ],
+            [
+              310.0,
+              510
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "control-data",
+          "source": "controller",
+          "target": "data",
+          "meaning": "数据图案与期望值规则",
+          "points": [
+            [
+              910.0,
+              380
+            ],
+            [
+              910.0,
+              510
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "address-memory",
+          "source": "address",
+          "target": "memory",
+          "meaning": "地址、读使能、写使能",
+          "points": [
+            [
+              310.0,
+              720
+            ],
+            [
+              310.0,
+              870
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "data-expected",
+          "source": "data",
+          "target": "expected",
+          "meaning": "期望值及其对应的有效信息",
+          "points": [
+            [
+              910.0,
+              720
+            ],
+            [
+              910.0,
+              870
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "data-memory",
+          "source": "data",
+          "target": "memory",
+          "meaning": "实际写入数据",
+          "points": [
+            [
+              700,
+              615.0
+            ],
+            [
+              620,
+              615
+            ],
+            [
+              620,
+              975
+            ],
+            [
+              540,
+              975.0
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "memory-compare",
+          "source": "memory",
+          "target": "compare",
+          "meaning": "实际读出数据",
+          "points": [
+            [
+              310.0,
+              1080
+            ],
+            [
+              310.0,
+              1220
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "expected-compare",
+          "source": "expected",
+          "target": "compare",
+          "meaning": "经过延迟对齐的期望信息",
+          "points": [
+            [
+              910.0,
+              1080
+            ],
+            [
+              910.0,
+              1220
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "compare-failure",
+          "source": "compare",
+          "target": "failure",
+          "meaning": "比较不一致时写入故障记录",
+          "points": [
+            [
+              600.0,
+              1380
+            ],
+            [
+              600.0,
+              1480
+            ]
+          ],
+          "arrow": true
+        }
+      ]
+    },
+    {
+      "file": "02故障模型.svg",
+      "title": "图 05  常见存储器故障模型",
+      "width": 1200,
+      "height": 1395,
+      "editable_text": true,
+      "embedded_raster_images": 0,
+      "font_sizes_px": {
+        "title": 48,
+        "node": 36,
+        "body": 32,
+        "note": 30,
+        "minimum": 28
+      },
+      "nodes": 6,
+      "text_objects": 30,
+      "connections": 0,
+      "connection_map": []
+    },
+    {
+      "file": "03_March_C负序列.svg",
+      "title": "图 07  March C− 的六次完整地址遍历",
+      "width": 1200,
+      "height": 1443,
+      "editable_text": true,
+      "embedded_raster_images": 0,
+      "font_sizes_px": {
+        "title": 48,
+        "node": 36,
+        "body": 32,
+        "note": 30,
+        "minimum": 28
+      },
+      "nodes": 6,
+      "text_objects": 38,
+      "connections": 0,
+      "connection_map": []
+    },
+    {
+      "file": "04耦合故障时序.svg",
+      "title": "图 06  耦合故障：先激励，再观察",
+      "width": 1200,
+      "height": 1640,
+      "editable_text": true,
+      "embedded_raster_images": 0,
+      "font_sizes_px": {
+        "title": 48,
+        "node": 36,
+        "body": 32,
+        "note": 30,
+        "minimum": 28
+      },
+      "nodes": 6,
+      "text_objects": 17,
+      "connections": 4,
+      "connection_map": [
+        {
+          "id": "coupling",
+          "source": "aggressor",
+          "target": "victim",
+          "meaning": "故障导致的异常影响，不是正常数据连线",
+          "points": [
+            [
+              490,
+              310.0
+            ],
+            [
+              710,
+              310.0
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "order1",
+          "source": "step0",
+          "target": "step1",
+          "meaning": "同一测试示例中的操作先后次序",
+          "points": [
+            [
+              600.0,
+              668
+            ],
+            [
+              600.0,
+              745
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "order2",
+          "source": "step1",
+          "target": "step2",
+          "meaning": "同一测试示例中的操作先后次序",
+          "points": [
+            [
+              600.0,
+              903
+            ],
+            [
+              600.0,
+              980
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "order3",
+          "source": "step2",
+          "target": "step3",
+          "meaning": "同一测试示例中的操作先后次序",
+          "points": [
+            [
+              600.0,
+              1138
+            ],
+            [
+              600.0,
+              1215
+            ]
+          ],
+          "arrow": true
+        }
+      ]
+    },
+    {
+      "file": "05经典算法长度.svg",
+      "title": "图 08  经典 March 算法的操作长度",
+      "width": 1200,
+      "height": 1418,
+      "editable_text": true,
+      "embedded_raster_images": 0,
+      "font_sizes_px": {
+        "title": 48,
+        "node": 36,
+        "body": 32,
+        "note": 30,
+        "minimum": 28
+      },
+      "nodes": 0,
+      "text_objects": 39,
+      "connections": 0,
+      "connection_map": []
+    },
+    {
+      "file": "06存储器数据图案.svg",
+      "title": "图 11  数据图案与相邻单元状态",
+      "width": 1200,
+      "height": 1650,
+      "editable_text": true,
+      "embedded_raster_images": 0,
+      "font_sizes_px": {
+        "title": 48,
+        "node": 36,
+        "body": 32,
+        "note": 30,
+        "minimum": 28
+      },
+      "nodes": 0,
+      "text_objects": 267,
+      "connections": 0,
+      "connection_map": []
+    },
+    {
+      "file": "07五单元邻近故障.svg",
+      "title": "图 10  五单元邻近图案敏感故障",
+      "width": 1200,
+      "height": 1540,
+      "editable_text": true,
+      "embedded_raster_images": 0,
+      "font_sizes_px": {
+        "title": 48,
+        "node": 36,
+        "body": 32,
+        "note": 30,
+        "minimum": 28
+      },
+      "nodes": 6,
+      "text_objects": 12,
+      "connections": 4,
+      "connection_map": [
+        {
+          "id": "top-influence",
+          "source": "top",
+          "target": "center",
+          "meaning": "相邻单元状态对中心单元行为的影响",
+          "points": [
+            [
+              600.0,
+              390
+            ],
+            [
+              600.0,
+              520
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "left-influence",
+          "source": "left",
+          "target": "center",
+          "meaning": "相邻单元状态对中心单元行为的影响",
+          "points": [
+            [
+              380,
+              590.0
+            ],
+            [
+              450,
+              590.0
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "right-influence",
+          "source": "right",
+          "target": "center",
+          "meaning": "相邻单元状态对中心单元行为的影响",
+          "points": [
+            [
+              820,
+              590.0
+            ],
+            [
+              750,
+              590.0
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "bottom-influence",
+          "source": "bottom",
+          "target": "center",
+          "meaning": "相邻单元状态对中心单元行为的影响",
+          "points": [
+            [
+              600.0,
+              790
+            ],
+            [
+              600.0,
+              660
+            ]
+          ],
+          "arrow": true
+        }
+      ]
+    },
+    {
+      "file": "08算法选择流程.svg",
+      "title": "图 13  March 算法的选择与验证",
+      "width": 1200,
+      "height": 1690,
+      "editable_text": true,
+      "embedded_raster_images": 0,
+      "font_sizes_px": {
+        "title": 48,
+        "node": 36,
+        "body": 32,
+        "note": 30,
+        "minimum": 28
+      },
+      "nodes": 4,
+      "text_objects": 16,
+      "connections": 3,
+      "connection_map": [
+        {
+          "id": "structure-faults",
+          "source": "structure",
+          "target": "faults",
+          "meaning": "根据电路结构确定故障建模条件",
+          "points": [
+            [
+              600.0,
+              380
+            ],
+            [
+              600.0,
+              480
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "faults-candidates",
+          "source": "faults",
+          "target": "candidates",
+          "meaning": "按故障目标形成候选算法集合",
+          "points": [
+            [
+              600.0,
+              640
+            ],
+            [
+              600.0,
+              740
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "candidates-verify",
+          "source": "candidates",
+          "target": "verify",
+          "meaning": "验证候选算法，不把候选项误画为串行测试步骤",
+          "points": [
+            [
+              600.0,
+              1260
+            ],
+            [
+              600.0,
+              1380
+            ]
+          ],
+          "arrow": true
+        }
+      ]
+    },
+    {
+      "file": "09动态故障时序.svg",
+      "title": "图 09  动态故障与连续读取历史",
+      "width": 1200,
+      "height": 1410,
+      "editable_text": true,
+      "embedded_raster_images": 0,
+      "font_sizes_px": {
+        "title": 48,
+        "node": 36,
+        "body": 32,
+        "note": 30,
+        "minimum": 28
+      },
+      "nodes": 4,
+      "text_objects": 15,
+      "connections": 3,
+      "connection_map": [
+        {
+          "id": "history1",
+          "source": "step0",
+          "target": "step1",
+          "meaning": "在规定时间条件下连续执行",
+          "points": [
+            [
+              600.0,
+              430
+            ],
+            [
+              600.0,
+              485
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "history2",
+          "source": "step1",
+          "target": "step2",
+          "meaning": "在规定时间条件下连续执行",
+          "points": [
+            [
+              600.0,
+              695
+            ],
+            [
+              600.0,
+              750
+            ]
+          ],
+          "arrow": true
+        },
+        {
+          "id": "history3",
+          "source": "step2",
+          "target": "step3",
+          "meaning": "在规定时间条件下连续执行",
+          "points": [
+            [
+              600.0,
+              960
+            ],
+            [
+              600.0,
+              1015
+            ]
+          ],
+          "arrow": true
+        }
+      ]
+    },
+    {
+      "file": "10复杂算法长度.svg",
+      "title": "图 12  从通用测试到复杂故障：长度比较",
+      "width": 1200,
+      "height": 1285,
+      "editable_text": true,
+      "embedded_raster_images": 0,
+      "font_sizes_px": {
+        "title": 48,
+        "node": 36,
+        "body": 32,
+        "note": 30,
+        "minimum": 28
+      },
+      "nodes": 0,
+      "text_objects": 32,
+      "connections": 0,
+      "connection_map": []
+    }
+  ]
+}

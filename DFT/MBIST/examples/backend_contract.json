@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0-teaching",
+  "units": {
+    "time": "us",
+    "power": "mW"
+  },
+  "controller_contract": {
+    "member_execution": "serial",
+    "independent_member_progress": false,
+    "maximum_active_controllers": 2,
+    "global_active_power_limit": 8
+  },
+  "groups": [
+    {
+      "id": "g0",
+      "members": [
+        "A",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "id": "g1",
+      "members": [
+        "B"
+      ]
+    },
+    {
+      "id": "g2",
+      "members": [
+        "E",
+        "F"
+      ]
+    }
+  ],
+  "policy": {
+    "pause_allowed": false,
+    "diagnostic_overflow": "explicit_error",
+    "permanent_repair_programming": "not_authorized"
+  }
+}

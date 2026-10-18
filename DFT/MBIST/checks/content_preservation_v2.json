@@ -1,0 +1,113 @@
+{
+  "scope": "Markdown bytes compared against the uploaded previous complete package.",
+  "identical_documents": 14,
+  "changed_documents": [
+    "13_教学算例与源码说明.md",
+    "99_编排说明与原文内容对照.md",
+    "README.md"
+  ],
+  "files": [
+    {
+      "file": "00_MBIST总体架构与阅读导航.md",
+      "identical": true,
+      "old_sha256": "26666749362ce8f50cb30cc10668398c16cf44deaaf5f20fc3955d100094e428",
+      "new_sha256": "26666749362ce8f50cb30cc10668398c16cf44deaaf5f20fc3955d100094e428"
+    },
+    {
+      "file": "01_存储器接口与测试控制器.md",
+      "identical": true,
+      "old_sha256": "fc9f16c6d38fe0439ec447ee7fd18526486d3bb2ed37ccf19cfba5e95e8e3c0f",
+      "new_sha256": "fc9f16c6d38fe0439ec447ee7fd18526486d3bb2ed37ccf19cfba5e95e8e3c0f"
+    },
+    {
+      "file": "02_故障模型与检测原理.md",
+      "identical": true,
+      "old_sha256": "49e79d853e8f6b9040d99e2017ca82f41fe4f5517dca71e94aedfef0baf7882d",
+      "new_sha256": "49e79d853e8f6b9040d99e2017ca82f41fe4f5517dca71e94aedfef0baf7882d"
+    },
+    {
+      "file": "03_March基础与经典算法.md",
+      "identical": true,
+      "old_sha256": "d434671551f4fcfef9f3828c0e851d06c77125130e10b5fa8eee311830099528",
+      "new_sha256": "d434671551f4fcfef9f3828c0e851d06c77125130e10b5fa8eee311830099528"
+    },
+    {
+      "file": "04_增强March与复杂故障测试.md",
+      "identical": true,
+      "old_sha256": "899963d43f142bafbd6460cc253b23cd6ee740f6d364c7a2f2799edd783b4661",
+      "new_sha256": "899963d43f142bafbd6460cc253b23cd6ee740f6d364c7a2f2799edd783b4661"
+    },
+    {
+      "file": "05_测试算法生成与选择.md",
+      "identical": true,
+      "old_sha256": "12bc8a0b66fa430ca57390b633667ddfb91f6ff59181ee1f1a1a2100f614ebb9",
+      "new_sha256": "12bc8a0b66fa430ca57390b633667ddfb91f6ff59181ee1f1a1a2100f614ebb9"
+    },
+    {
+      "file": "06_存储器分组与功耗分析.md",
+      "identical": true,
+      "old_sha256": "4f2491879341eed268253418ab8653410407a403bac077ed21fb6a2915b125fc",
+      "new_sha256": "4f2491879341eed268253418ab8653410407a403bac077ed21fb6a2915b125fc"
+    },
+    {
+      "file": "07_并发调度与联合优化.md",
+      "identical": true,
+      "old_sha256": "e0a894f3f067263428a935442bc91dae17537dc3b1859e8e960bc8cd9bd1c3a4",
+      "new_sha256": "e0a894f3f067263428a935442bc91dae17537dc3b1859e8e960bc8cd9bd1c3a4"
+    },
+    {
+      "file": "08_自适应与运行期间测试.md",
+      "identical": true,
+      "old_sha256": "45403a904667548f997bb294ef3a823121e5d5a2c09ba9f64bb9ba24c44ad760",
+      "new_sha256": "45403a904667548f997bb294ef3a823121e5d5a2c09ba9f64bb9ba24c44ad760"
+    },
+    {
+      "file": "09_故障诊断与结果记录.md",
+      "identical": true,
+      "old_sha256": "06ed54b2c6c4461c2e745938bc4cb23a70f34d047408f38f032854e6aea50618",
+      "new_sha256": "06ed54b2c6c4461c2e745938bc4cb23a70f34d047408f38f032854e6aea50618"
+    },
+    {
+      "file": "10_冗余分析自修复与纠错码.md",
+      "identical": true,
+      "old_sha256": "6f88240b3e2331f5d935a7bf1e7cf906e62780b8ae002a582096aefd5ea61fa5",
+      "new_sha256": "6f88240b3e2331f5d935a7bf1e7cf906e62780b8ae002a582096aefd5ea61fa5"
+    },
+    {
+      "file": "11_多端口与新型存储器扩展.md",
+      "identical": true,
+      "old_sha256": "6ab14660c3e25b187e201ebab0cbbee2dc60d4fef2bf86668c43bb91a99df313",
+      "new_sha256": "6ab14660c3e25b187e201ebab0cbbee2dc60d4fef2bf86668c43bb91a99df313"
+    },
+    {
+      "file": "12_设计验证与工具接入.md",
+      "identical": true,
+      "old_sha256": "105263e172f494287a4f8e865f0c566fbe932c6679ba82338483df3224c35fd5",
+      "new_sha256": "105263e172f494287a4f8e865f0c566fbe932c6679ba82338483df3224c35fd5"
+    },
+    {
+      "file": "13_教学算例与源码说明.md",
+      "identical": false,
+      "old_sha256": "6abf4678fef1f609e0383b29d35f0399b16621ede509b7dd2bd91d3410d4813b",
+      "new_sha256": "96e6046cc048f4ccd4ff5efb8435ef22fdf30b26f24922a3ed3cbbe0abeda19a"
+    },
+    {
+      "file": "90_参考文献与研究进展索引.md",
+      "identical": true,
+      "old_sha256": "bd4284214f3cd0b1289da036d61a6eeeda57baf07c9ffb6709ce8f2e0cce1d70",
+      "new_sha256": "bd4284214f3cd0b1289da036d61a6eeeda57baf07c9ffb6709ce8f2e0cce1d70"
+    },
+    {
+      "file": "99_编排说明与原文内容对照.md",
+      "identical": false,
+      "old_sha256": "40058a0769ba91da7a74e0f75e5dff01280ff73d987bba9023ddf9deb158d59d",
+      "new_sha256": "c2b79ba6d2009f2a1a54ef7921fcd4e4878b54a54c6e6eb56ad2af4929106ba9"
+    },
+    {
+      "file": "README.md",
+      "identical": false,
+      "old_sha256": "2e63efee56db0e0d667998d7aec3b8b3a5c0226e447ec6f586f3362fc06842ae",
+      "new_sha256": "e1b1638539ec3dff52b636e49b93a5daae99e0dd1bb50bb5b9a2b5a0f0e05746"
+    }
+  ]
+}

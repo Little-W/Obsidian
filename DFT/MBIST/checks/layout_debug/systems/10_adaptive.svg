@@ -1,0 +1,137 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1850" viewBox="0 0 1200 1850" role="img" aria-labelledby="fig-title fig-description" version="1.1" data-layout-version="precise-ports-v2">
+  <title id="fig-title">图 21  自适应测试的条件与返回路径</title>
+  <desc id="fig-description">根据观测选择动作，但不能把“暂未发现失败”当作“全部通过”。</desc>
+  <metadata>{"layout": "named ports + orthogonal routes", "font_policy": "editable text; no embedded fonts", "version": 2}</metadata>
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#1967A4" />
+    </marker>
+    <marker id="arrow-teal" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#118575" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#D97A16" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#B84051" />
+    </marker>
+    <marker id="arrow-muted" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#4F6278" />
+    </marker>
+    <marker id="arrow-slate" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#738A9F" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#92517C" />
+    </marker>
+  </defs>
+  <g id="layer-background">
+    <rect width="1200" height="1850" fill="#FFFFFF" />
+  </g>
+  <g id="layer-shapes">
+    <rect id="execute" x="120" y="220" width="960" height="160" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="observe" x="120" y="480" width="960" height="160" rx="12" fill="#FFFFFF" stroke="#118575" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="failure" x="80" y="830" width="480" height="260" rx="12" fill="#FFFFFF" stroke="#B84051" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="complete" x="680" y="830" width="440" height="260" rx="12" fill="#FFFFFF" stroke="#118575" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="decision" x="680" y="1210" width="440" height="104" rx="12" fill="#FFFFFF" stroke="#118575" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="allowed" x="80" y="1390" width="1040" height="260" rx="12" fill="#FFFFFF" stroke="#D97A16" stroke-width="2" data-kind="node" data-obstacle="true" />
+  </g>
+  <g id="layer-connectors">
+    <polyline id="execute-observe" points="600,380 600,480" fill="none" stroke="#1967A4" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="完成该项测试后评估结果" data-source-node="execute" data-source-side="S" data-source-fraction="0.5" data-target-node="observe" data-target-side="N" data-target-fraction="0.5" marker-end="url(#arrow-blue)" />
+    <polyline id="observe-branch" points="600,640 600,710" fill="none" stroke="#1967A4" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="结果分支的公共连接点" data-source-node="observe" data-source-side="S" data-source-fraction="0.5" data-target-junction="branch" />
+    <polyline id="branch-failure" points="600,710 320,710 320,830" fill="none" stroke="#B84051" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="已观察到测试失败" data-source-junction="branch" data-target-node="failure" data-target-side="N" data-target-fraction="0.5" marker-end="url(#arrow-red)" />
+    <polyline id="branch-complete" points="600,710 900,710 900,830" fill="none" stroke="#118575" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="尚未发现失败，仍需检查完成条件" data-source-junction="branch" data-target-node="complete" data-target-side="N" data-target-fraction="0.5" marker-end="url(#arrow-teal)" />
+    <polyline id="continue" points="1120,960 1160,960 1160,300 1080,300" fill="none" stroke="#D97A16" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="必要测试未完成时返回，禁止提前宣布通过" data-source-node="complete" data-source-side="E" data-source-fraction="0.5" data-target-node="execute" data-target-side="E" data-target-fraction="0.5" marker-end="url(#arrow-orange)" />
+    <polyline id="complete-decision" points="900,1090 900,1210" fill="none" stroke="#118575" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="仅在全部必要测试完成后判定" data-source-node="complete" data-source-side="S" data-source-fraction="0.5" data-target-node="decision" data-target-side="N" data-target-fraction="0.5" marker-end="url(#arrow-teal)" />
+  </g>
+  <g id="layer-text">
+    <text id="text-0001" x="64" y="80" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="48" font-weight="700" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">图 21  自适应测试的条件与返回路径</text>
+    <text id="text-0002" x="64" y="145" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">根据观测选择动作，但不能把“暂未发现失败”当作“全部通过”。</text>
+    <text id="text-0003" x="600.0" y="268" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="execute">执行下一项已验证测试</text>
+    <text id="text-0004" x="600.0" y="326" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="execute">保持规定的操作次序、时钟与观察条件</text>
+    <text id="text-0005" x="600.0" y="528" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#118575" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="observe">检查结果与完成进度</text>
+    <text id="text-0006" x="600.0" y="586" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="observe">已经失败，或尚未发现失败</text>
+    <text id="text-0007" x="320.0" y="878" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#B84051" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="failure">失败处理</text>
+    <text id="text-0008" x="320.0" y="936" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="failure">需要诊断：继续收集信息</text>
+    <text id="text-0009" x="320.0" y="986" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="failure">允许修复：分析后复测</text>
+    <text id="text-0010" x="320.0" y="1036" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="failure">无需诊断：可结束筛选</text>
+    <text id="text-0011" x="900.0" y="878" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#118575" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="complete">检查完成条件</text>
+    <text id="text-0012" x="900.0" y="936" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="complete">必要测试是否全部完成？</text>
+    <text id="text-0013" x="900.0" y="986" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="complete">未完成：继续执行测试</text>
+    <text id="text-0014" x="900.0" y="1036" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="complete">已完成：进入结果判定</text>
+    <text id="text-0015" x="285" y="773" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#B84051" text-anchor="end" dominant-baseline="central" data-kind="text" data-padding="12">已发现失败</text>
+    <text id="text-0016" x="935" y="773" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#118575" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">未发现失败</text>
+    <text id="text-0017" x="1115" y="428" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#D97A16" text-anchor="end" dominant-baseline="central" data-kind="text" data-padding="12">未完成：返回</text>
+    <text id="text-0018" x="900.0" y="1262.0" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="34" font-weight="700" fill="#118575" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="decision">按既定规则判定</text>
+    <text id="text-0019" x="935" y="1150" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#118575" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">已完成</text>
+    <text id="text-0020" x="600.0" y="1438" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#D97A16" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="allowed">可以自适应调整的动作</text>
+    <text id="text-0021" x="600.0" y="1496" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="allowed">调整已验证测试块的次序和合法启动时刻。</text>
+    <text id="text-0022" x="600.0" y="1546" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="allowed">选择附加诊断，或者使用可用的空闲时间。</text>
+    <text id="text-0023" x="600.0" y="1596" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="allowed">提前停止筛选、提前结束分析、提前宣布通过是不同决策。</text>
+    <text id="text-0024" x="64" y="1735" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">失败处理不是“直接通过”的路径；修复之后仍需要规定的复测。</text>
+  </g>
+  <g id="layer-junctions">
+    <circle id="branch" cx="600" cy="710" r="4.5" fill="#1967A4" data-kind="junction" />
+  </g>
+  <g id="review-only-overlay" pointer-events="none">
+    <rect x="54" y="35" width="770.4375" height="90" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="64" y="45" width="750.4375" height="70" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="54" y="113" width="905" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="64" y="123" width="885" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="409.9921875" y="232" width="380.015625" height="72" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="419.9921875" y="242" width="360.015625" height="52" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="317.9921875" y="293" width="564.015625" height="66" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="327.9921875" y="303" width="544.015625" height="46" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="427.9921875" y="492" width="344.015625" height="72" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="437.9921875" y="502" width="324.015625" height="52" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="397.9921875" y="553" width="404.015625" height="66" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="407.9921875" y="563" width="384.015625" height="46" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="237.9921875" y="842" width="164.015625" height="72" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="247.9921875" y="852" width="144.015625" height="52" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="145" y="904" width="350" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="155" y="914" width="330" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="160" y="954" width="320" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="170" y="964" width="300" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="160" y="1004" width="320" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="170" y="1014" width="300" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="781.9921875" y="842" width="236.015625" height="72" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="791.9921875" y="852" width="216.015625" height="52" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="725" y="904" width="350" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="735" y="914" width="330" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="740" y="954" width="320" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="750" y="964" width="300" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="740" y="1004" width="320" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="750" y="1014" width="300" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="125" y="741" width="170" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="135" y="751" width="150" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="925" y="741" width="170" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="935" y="751" width="150" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="925" y="396" width="200" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="935" y="406" width="180" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="771" y="1227.5" width="258" height="69" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="781" y="1237.5" width="238" height="49" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="925" y="1118" width="110" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="935" y="1128" width="90" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="409.9921875" y="1402" width="380.015625" height="72" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="419.9921875" y="1412" width="360.015625" height="52" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="305" y="1464" width="590" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="315" y="1474" width="570" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="305" y="1514" width="590" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="315" y="1524" width="570" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="200" y="1564" width="800" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="210" y="1574" width="780" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="54" y="1703" width="890" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="64" y="1713" width="870" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <circle cx="600" cy="480" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="1080" cy="300" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="900" cy="1090" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="320" cy="830" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="600" cy="380" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="600" cy="640" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="600" cy="710" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="1120" cy="960" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="900" cy="1210" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="900" cy="830" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+  </g>
+</svg>

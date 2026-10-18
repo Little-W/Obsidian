@@ -1,0 +1,97 @@
+{
+  "offline": true,
+  "pages": [
+    {
+      "source": "00_扫描链与ATPG总体架构与阅读导航.md",
+      "html": "html/00_扫描链与ATPG总体架构与阅读导航.html",
+      "math_count": 0
+    },
+    {
+      "source": "01_扫描触发器与移位捕获原理.md",
+      "html": "html/01_扫描触发器与移位捕获原理.html",
+      "math_count": 24
+    },
+    {
+      "source": "02_扫描架构与物理实现.md",
+      "html": "html/02_扫描架构与物理实现.html",
+      "math_count": 3
+    },
+    {
+      "source": "03_测试时钟复位与高速捕获.md",
+      "html": "html/03_测试时钟复位与高速捕获.html",
+      "math_count": 4
+    },
+    {
+      "source": "04_JTAG测试访问与芯片级数据传输.md",
+      "html": "html/04_JTAG测试访问与芯片级数据传输.html",
+      "math_count": 0
+    },
+    {
+      "source": "05_故障模型覆盖率与测试质量.md",
+      "html": "html/05_故障模型覆盖率与测试质量.html",
+      "math_count": 4
+    },
+    {
+      "source": "06_ATPG激活传播与结构搜索算法.md",
+      "html": "html/06_ATPG激活传播与结构搜索算法.html",
+      "math_count": 35
+    },
+    {
+      "source": "07_SAT求解故障模拟与测试集合优化.md",
+      "html": "html/07_SAT求解故障模拟与测试集合优化.html",
+      "math_count": 18
+    },
+    {
+      "source": "08_测试压缩未知值与可编码性.md",
+      "html": "html/08_测试压缩未知值与可编码性.html",
+      "math_count": 16
+    },
+    {
+      "source": "09_测试功耗并发与运行期间测试.md",
+      "html": "html/09_测试功耗并发与运行期间测试.html",
+      "math_count": 10
+    },
+    {
+      "source": "10_测试点插入与可测试性设计优化.md",
+      "html": "html/10_测试点插入与可测试性设计优化.html",
+      "math_count": 10
+    },
+    {
+      "source": "11_扫描故障诊断与失败分析.md",
+      "html": "html/11_扫描故障诊断与失败分析.html",
+      "math_count": 6
+    },
+    {
+      "source": "12_设计验证工具接入与制造执行.md",
+      "html": "html/12_设计验证工具接入与制造执行.html",
+      "math_count": 0
+    },
+    {
+      "source": "13_2024至2026年学术成果分析与研究路线.md",
+      "html": "html/13_2024至2026年学术成果分析与研究路线.html",
+      "math_count": 10
+    },
+    {
+      "source": "14_教学算例源码与学习练习.md",
+      "html": "html/14_教学算例源码与学习练习.html",
+      "math_count": 2
+    },
+    {
+      "source": "90_参考文献与材料证据索引.md",
+      "html": "html/90_参考文献与材料证据索引.html",
+      "math_count": 0
+    },
+    {
+      "source": "99_证据范围版本与使用说明.md",
+      "html": "html/99_证据范围版本与使用说明.html",
+      "math_count": 0
+    },
+    {
+      "source": "README.md",
+      "html": "html/README.html",
+      "math_count": 0
+    }
+  ],
+  "unique_rendered_math": 123,
+  "total_math": 142
+}

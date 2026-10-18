@@ -1,8 +1,8 @@
 # VC Formal 中文教程：案例工程
 
-> **教学案例，不提供虚构的工具运行结果。** 本工程源代码以小模块说明证明、反例与专用应用的输入形式。该容器环境没有已安装、可授权执行的 VC Formal，因此本次未能执行实际形式证明。脚本依据随教程上传的 X-2025.06-SP1 参考文档撰写，执行时仍需核对本地安装版本、许可证及初始化状态。
+> **教学案例，不提供虚构的工具运行结果。** 本工程源代码以小模块说明证明、反例与专用应用的输入形式。本次未在授权 VC Formal 环境中执行编译或形式证明。脚本依据随教程上传的 X-2025.06-SP1 参考文档撰写，执行时仍需核对本地安装版本、许可证及初始化状态。
 
-所有源码已全文内嵌到对应教程；本目录仅提供相同内容的可编辑副本，不是阅读教程时必须来回查找的附件。
+各篇正文给出完整源码；本目录保存相同内容的可编辑副本。
 
 ## 1. 如何开始
 
@@ -18,153 +18,17 @@ vcf -f scripts/fpv_counter.tcl -batch 2>&1 | tee logs/fpv_counter.log
 
 ## 2. 示例选择表
 
-- **应用：** FPV 正确计数器
-
-  **Tcl：**
-
-  ```tcl
-  scripts/fpv_counter.tcl
-  ```
-
-  **输入（分别列出）：**
-
-  ```text
-  counter.sv
-  counter_props.sv
-  ```
-
-  **预期观察（不是实际运行结果）：** 范围、保持、回绕应可证明；覆盖应可达
-
-- **应用：** FPV 故障计数器
-
-  **Tcl：**
-
-  ```tcl
-  scripts/fpv_counter_bad.tcl
-  ```
-
-  **输入：**
-
-  ```text
-  counter_bad.sv
-  ```
-
-  **预期观察（不是实际运行结果）：** `ap_range` 在计数超过 9 时应失败
-
-- **应用：** FPV FIFO
-
-  **Tcl：**
-
-  ```tcl
-  scripts/fpv_fifo.tcl
-  ```
-
-  **输入（分别列出）：**
-
-  ```text
-  fifo_ctrl.sv
-  fifo_ctrl_props.sv
-  ```
-
-  **预期观察（不是实际运行结果）：** 占用范围、安全接受、标志一致性
-
-- **应用：** AEP 数组越界
-
-  **Tcl：**
-
-  ```tcl
-  scripts/aep_bounds.tcl
-  ```
-
-  **输入：**
-
-  ```text
-  array_demo.sv
-  ```
-
-  **预期观察（不是实际运行结果）：** 生成数组访问边界检查；允许索引 2/3 时可能失败
-
-- **应用：** CC 多路选择
-
-  **Tcl：**
-
-  ```tcl
-  scripts/cc_mux.tcl
-  ```
-
-  **输入（分别列出）：**
-
-  ```text
-  mux2.sv
-  cc_connections.csv
-  ```
-
-  **预期观察（不是实际运行结果）：** 两条条件连接应符合 mux 选择
-
-- **应用：** FXP 未初始化缓存
-
-  **Tcl：**
-
-  ```tcl
-  scripts/fxp_uninit.tcl
-  ```
-
-  **输入：**
-
-  ```text
-  uninit_demo.sv
-  ```
-
-  **预期观察（不是实际运行结果）：** 未写入之前缓存的 X 可影响输出
-
-- **应用：** FCA 覆盖可达性
-
-  **Tcl：**
-
-  ```tcl
-  scripts/fca_coverage.tcl
-  ```
-
-  **输入：**
-
-  ```text
-  coverage_demo.sv
-  ```
-
-  **预期观察（不是实际运行结果）：** 在无额外约束时讨论四条条件路径；逐个审查目标生成情况
-
-- **应用：** SEQ 正确版本
-
-  **Tcl：**
-
-  ```tcl
-  scripts/seq_counter.tcl
-  ```
-
-  **输入（分别列出）：**
-
-  ```text
-  counter_spec.sv
-  counter_impl.sv
-  ```
-
-  **预期观察（不是实际运行结果）：** 两种 RTL 描述功能等价
-
-- **应用：** SEQ 故障版本
-
-  **Tcl：**
-
-  ```tcl
-  scripts/seq_counter_bad.tcl
-  ```
-
-  **输入：**
-
-  ```text
-  counter_impl_bad.sv
-  ```
-
-  **预期观察（不是实际运行结果）：** en=1 后可以构造输出不一致
+| 应用 | Tcl | 输入 | 预期观察（不是实际运行结果） |
+| --- | --- | --- | --- |
+| FPV 正确计数器 | `scripts/fpv_counter.tcl` | `counter.sv`、`counter_props.sv` | 范围、保持、普通递增、回绕应可证明；覆盖应可达 |
+| FPV 故障计数器 | `scripts/fpv_counter_bad.tcl` | `counter_bad.sv` | `ap_range` 在计数超过 9 时应失败 |
+| FPV FIFO | `scripts/fpv_fifo.tcl` | `fifo_ctrl.sv`、`fifo_ctrl_props.sv` | 占用范围、安全接受、标志一致性 |
+| AEP 数组越界 | `scripts/aep_bounds.tcl` | `array_demo.sv` | 生成数组访问边界检查；允许索引 2/3 时可能失败 |
+| CC 多路选择 | `scripts/cc_mux.tcl` | `mux2.sv`、`cc_connections.csv` | 两条条件连接应符合 mux 选择 |
+| FXP 未初始化缓存 | `scripts/fxp_uninit.tcl` | `uninit_demo.sv` | 未写入之前缓存的 X 可影响输出 |
+| FCA 覆盖可达性 | `scripts/fca_coverage.tcl` | `coverage_demo.sv` | 在无额外约束时讨论四条条件路径；逐个审查目标生成情况 |
+| SEQ 正确版本 | `scripts/seq_counter.tcl` | `counter_spec.sv`、`counter_impl.sv` | 两种 RTL 描述功能等价 |
+| SEQ 故障版本 | `scripts/seq_counter_bad.tcl` | `counter_impl_bad.sv` | en=1 后可以构造输出不一致 |
 
 ## 3. 为什么提供故意错误的版本
 
@@ -182,68 +46,15 @@ FRV、FTA、FuSa、FSV、DPV、FLP 需要额外的 IP-XACT/RALF、故障数据�
 
 工具输出是权威结果；本工程 `expected/` 目录存放教学性的“预期现象说明”，不会伪造 `report_fv` 输出。需要提交项目报告时，保留真实 `vcf` 日志、工具版本、任务时限和属性状态，参考 [覆盖与验证验收](../覆盖与验证验收.md)。
 
-## 7. 源码内嵌修订版补充案例
+## 7. 扩展案例
 
-- **所在章节：** FRV
+| 所在章节 | 脚本或源码 | 实际用途 |
+| --- | --- | --- |
+| FRV | `scripts/fpv_register_demo.tcl` | 手写属性检查简化 RW/W1C 寄存器；不是 FRV 自动生成检查 |
+| FuSa | `scripts/fpv_safety_demo.tcl` | 教学异或故障模型与奇偶校验；不是 SFF/FDB 故障分析 |
+| FSV | `scripts/fsv_debug_good.tcl`、`scripts/fsv_debug_bad.tcl` | 小型安全信息流正确/泄漏对照；仍须本机工具核实 |
+| DPV | `cpp/add_mod256.cc`、`cpp/add_mod256_selftest.cc` | 普通 C++ 参考函数及穷举自测；不是 HECTOR 包装 |
+| DPV | `scripts/fpv_alu_demo.tcl` | 流水线结果与有效标志的 SVA；不是 C++—RTL DPV 证明 |
+| FLP | `scripts/fpv_lp_logic_demo.tcl` | 理想逻辑隔离的 FPV 练习；不替代 UPF 低功耗检查 |
 
-  **脚本或源码：**
-
-  ```text
-  scripts/fpv_register_demo.tcl
-  ```
-
-  **实际用途：** 手写属性检查简化 RW/W1C 寄存器；不是 FRV 自动生成检查
-
-- **所在章节：** FuSa
-
-  **脚本或源码：**
-
-  ```text
-  scripts/fpv_safety_demo.tcl
-  ```
-
-  **实际用途：** 教学异或故障模型与奇偶校验；不是 SFF/FDB 故障分析
-
-- **所在章节：** FSV
-
-  **脚本或源码（分别列出）：**
-
-  ```text
-  scripts/fsv_debug_good.tcl
-  scripts/fsv_debug_bad.tcl
-  ```
-
-  **实际用途：** 小型安全信息流正确/泄漏对照；仍须本机工具核实
-
-- **所在章节：** DPV
-
-  **脚本或源码（分别列出）：**
-
-  ```text
-  cpp/add_mod256.cc
-  cpp/add_mod256_selftest.cc
-  ```
-
-  **实际用途：** 普通 C++ 参考函数及穷举自测；不是 HECTOR 包装
-
-- **所在章节：** DPV
-
-  **脚本或源码：**
-
-  ```text
-  scripts/fpv_alu_demo.tcl
-  ```
-
-  **实际用途：** 流水线结果与有效标志的 SVA；不是 C++—RTL DPV 证明
-
-- **所在章节：** FLP
-
-  **脚本或源码：**
-
-  ```text
-  scripts/fpv_lp_logic_demo.tcl
-  ```
-
-  **实际用途：** 理想逻辑隔离的 FPV 练习；不替代 UPF 低功耗检查
-
-新增代码均在对应文章中完整列出。运行每个案例前，应确认它属于原生专用应用、配套 FPV 练习还是普通 C++ 自测，不能混用报告含义。
+代码均在对应文章中完整列出。运行每个案例前，应确认它属于原生专用应用、配套 FPV 练习还是普通 C++ 自测，不能混用报告含义。

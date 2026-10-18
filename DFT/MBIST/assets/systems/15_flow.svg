@@ -1,0 +1,64 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1730" viewBox="0 0 1200 1730" role="img" aria-labelledby="fig-title fig-description" version="1.1" data-layout-version="precise-ports-v2">
+  <title id="fig-title">图 25  优化方案怎样进入实际工具</title>
+  <desc id="fig-description">优化器提出结构，工具生成硬件，独立检查确认结果。</desc>
+  <metadata>{"layout": "named ports + orthogonal routes", "font_policy": "editable text; no embedded fonts", "version": 2}</metadata>
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#1967A4" />
+    </marker>
+    <marker id="arrow-teal" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#118575" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#D97A16" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#B84051" />
+    </marker>
+    <marker id="arrow-muted" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#4F6278" />
+    </marker>
+    <marker id="arrow-slate" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#738A9F" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#92517C" />
+    </marker>
+  </defs>
+  <g id="layer-background">
+    <rect width="1200" height="1730" fill="#FFFFFF" />
+  </g>
+  <g id="layer-shapes">
+    <rect id="step0" x="100" y="220" width="960" height="190" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="step1" x="100" y="490" width="960" height="190" rx="12" fill="#FFFFFF" stroke="#118575" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="step2" x="100" y="760" width="960" height="190" rx="12" fill="#FFFFFF" stroke="#D97A16" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="step3" x="100" y="1030" width="960" height="190" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="step4" x="100" y="1300" width="960" height="190" rx="12" fill="#FFFFFF" stroke="#92517C" stroke-width="2" data-kind="node" data-obstacle="true" />
+  </g>
+  <g id="layer-connectors">
+    <polyline id="sequence1" points="580,410 580,490" fill="none" stroke="#4F6278" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="上一阶段完成并满足条件后进入下一阶段" data-source-node="step0" data-source-side="S" data-source-fraction="0.5" data-target-node="step1" data-target-side="N" data-target-fraction="0.5" marker-end="url(#arrow-muted)" />
+    <polyline id="sequence2" points="580,680 580,760" fill="none" stroke="#4F6278" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="上一阶段完成并满足条件后进入下一阶段" data-source-node="step1" data-source-side="S" data-source-fraction="0.5" data-target-node="step2" data-target-side="N" data-target-fraction="0.5" marker-end="url(#arrow-muted)" />
+    <polyline id="sequence3" points="580,950 580,1030" fill="none" stroke="#4F6278" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="上一阶段完成并满足条件后进入下一阶段" data-source-node="step2" data-source-side="S" data-source-fraction="0.5" data-target-node="step3" data-target-side="N" data-target-fraction="0.5" marker-end="url(#arrow-muted)" />
+    <polyline id="sequence4" points="580,1220 580,1300" fill="none" stroke="#4F6278" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="上一阶段完成并满足条件后进入下一阶段" data-source-node="step3" data-source-side="S" data-source-fraction="0.5" data-target-node="step4" data-target-side="N" data-target-fraction="0.5" marker-end="url(#arrow-muted)" />
+    <polyline id="revise" points="1060,1395 1160,1395 1160,585 1060,585" fill="none" stroke="#D97A16" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="物理、电气结果不满足要求时返回分组与调度优化" data-source-node="step4" data-source-side="E" data-source-fraction="0.5" data-target-node="step1" data-target-side="E" data-target-fraction="0.5" marker-end="url(#arrow-orange)" />
+  </g>
+  <g id="layer-text">
+    <text id="text-0001" x="64" y="80" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="48" font-weight="700" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">图 25  优化方案怎样进入实际工具</text>
+    <text id="text-0002" x="64" y="145" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">优化器提出结构，工具生成硬件，独立检查确认结果。</text>
+    <text id="text-0003" x="580.0" y="268" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="step0">输入核查与实例清单</text>
+    <text id="text-0004" x="580.0" y="326" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="step0">宏描述、时钟电源、接口、修复资源与物理位置</text>
+    <text id="text-0005" x="580.0" y="538" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#118575" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="step1">分组与调度优化</text>
+    <text id="text-0006" x="580.0" y="596" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="step1">明确硬件能力，保留满足约束的候选方案</text>
+    <text id="text-0007" x="580.0" y="808" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#D97A16" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="step2">厂商工具适配与实际插入</text>
+    <text id="text-0008" x="580.0" y="866" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="step2">按已安装工具版本，生成受支持的配置</text>
+    <text id="text-0009" x="580.0" y="1078" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="step3">功能、故障与时间检查</text>
+    <text id="text-0010" x="580.0" y="1136" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="step3">比较实际结构、地址覆盖与故障定位结果</text>
+    <text id="text-0011" x="580.0" y="1348" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#92517C" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="step4">物理、功率与温度验证</text>
+    <text id="text-0012" x="580.0" y="1406" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="step4">不满足要求时，修正模型并重新求解</text>
+    <text id="text-0013" x="64" y="1580" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">教学 JSON 不是厂商原生命令；未实际运行工具，就不能声称工具通过。</text>
+    <text id="text-0014" x="1105" y="975" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="28" font-weight="400" fill="#D97A16" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">修正</text>
+    <text id="text-0015" x="1105" y="1025" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="28" font-weight="400" fill="#D97A16" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">重算</text>
+  </g>
+  <g id="layer-junctions" />
+</svg>

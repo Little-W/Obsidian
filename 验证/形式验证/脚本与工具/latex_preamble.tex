@@ -3,52 +3,50 @@
 \usepackage{etoolbox}
 \usepackage{graphicx}
 \usepackage{fvextra}
-\fvset{breaklines=true,breakanywhere=true,fontsize=\small}
-\setlength{\headheight}{17pt}
+\usepackage{enumitem}
+\usepackage{needspace}
+\fvset{breaklines=true,breakanywhere=true,fontsize=\small,baselinestretch=1.05}
+\setCJKmonofont{Noto Sans Mono CJK SC}
+\setlength{\headheight}{16pt}
 \pagestyle{fancy}
 \fancyhf{}
 \fancyhead[LE,RO]{\small VC Formal 中文形式验证手册}
 \fancyhead[LO,RE]{\small X-2025.06-SP1}
 \fancyfoot[C]{\thepage}
 \renewcommand{\headrulewidth}{0.25pt}
+\setlength{\parskip}{.36em}
+\setlength{\parindent}{0pt}
+\setlength{\LTpre}{.65em}
+\setlength{\LTpost}{.45em}
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.15}
+\AtBeginEnvironment{longtable}{\small}
+\setlist[itemize]{leftmargin=1.65em,itemsep=.12em,parsep=.08em,topsep=.35em}
+\setlist[enumerate]{leftmargin=1.8em,itemsep=.15em,parsep=.08em,topsep=.35em}
 \setcounter{tocdepth}{1}
 \emergencystretch=3em
 \sloppy
-\renewcommand{\maketitle}{%
-  \begin{titlepage}
-  \begin{center}
-  \vspace*{12mm}
-  {\LARGE\bfseries VC Formal 中文形式验证手册\par}
-  \vspace{6mm}
-  {\large 分点说明与代码块版\par}\vspace{3mm}
-{\large 形式验证原理 · SystemVerilog Assertions · 12 类应用\par}
-  \vspace{10mm}
-  \rule{.87\textwidth}{1pt}
-  \vspace{10mm}
-  \includegraphics[width=.80\textwidth]{{{COVER_IMAGE}}}
-  \vspace{8mm}
-  \rule{.87\textwidth}{.6pt}
-  \vfill
-  {\large 文档基线：X-2025.06-SP1\par}
-  \vspace{4mm}
-  {\large 2026 年 10 月 · 手册修订 1.2\par}
-  \vspace{4mm}
-  {\small 非 Synopsys 官方译本；命令与行为以安装版本为准\par}
-  \vspace*{8mm}
-  \end{center}
-  \end{titlepage}%
+\ctexset{
+  chapter={format=\huge\bfseries\raggedright,beforeskip=0pt,afterskip=1.2em},
+  section={format=\Large\bfseries\raggedright,beforeskip=1em,afterskip=.5em},
+  subsection={format=\large\bfseries\raggedright,beforeskip=.85em,afterskip=.4em},
+  subsubsection={beforeskip=.65em,afterskip=.3em}
 }
-
-\ctexset{section={format=\Large\bfseries\raggedright,beforeskip=1.25em,afterskip=.7em},subsection={beforeskip=1.0em,afterskip=.5em},subsubsection={beforeskip=.9em,afterskip=.4em}}
-
-\setCJKmonofont{Noto Sans Mono CJK SC}
-
-\usepackage{enumitem}
-\setlist[itemize]{leftmargin=1.8em,itemsep=.75em,parsep=.30em,topsep=.6em}
-\setlist[enumerate]{leftmargin=2.0em,itemsep=.4em,parsep=.2em,topsep=.5em}
-
-\usepackage{needspace}
-\pretocmd{\item}{\Needspace{4\baselineskip}}{}{}
-
-% Avoid blank verso pages in the digital reading edition.
 \let\cleardoublepage\clearpage
+\renewcommand{\maketitle}{%
+  \begin{titlepage}\begin{center}
+  \vspace*{14mm}
+  {\Huge\bfseries VC Formal\par}
+  \vspace{5mm}
+  {\LARGE\bfseries 中文形式验证手册\par}
+  \vspace{7mm}
+  {\large 原理 · SVA · 命令详解 · 完整案例\par}
+  \vspace{9mm}\rule{.88\textwidth}{1pt}\vspace{9mm}
+  \includegraphics[width=.82\textwidth]{{{COVER_IMAGE}}}
+  \vspace{9mm}\rule{.88\textwidth}{.6pt}\vfill
+  {\large 文档基线 X-2025.06-SP1\par}
+  \vspace{4mm}{\normalsize 手册修订 1.3 · 2026 年 10 月\par}
+  \vspace{5mm}{\small 非官方中文教程；工具执行结果须在授权环境中取得\par}
+  \vspace*{7mm}
+  \end{center}\end{titlepage}%
+}

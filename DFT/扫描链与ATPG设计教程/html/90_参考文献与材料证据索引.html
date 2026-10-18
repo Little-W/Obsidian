@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>参考文献与材料证据索引 · 扫描链与 ATPG 设计教程</title><link rel="stylesheet" href="book.css"></head>
+<body><aside class="sidebar"><div class="brand">扫描链与 ATPG</div><div class="subtitle">从内部状态访问到制造测试<br>硬件 · 算法 · 质量 · 验证</div><a class="home" href="../阅读入口.html">← 资料库首页</a><details class="mobile-index"><summary>展开文档目录</summary></details><nav><a class="" href="00_%E6%89%AB%E6%8F%8F%E9%93%BE%E4%B8%8EATPG%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E9%98%85%E8%AF%BB%E5%AF%BC%E8%88%AA.html">00 · 扫描链与ATPG总体架构与阅读导航</a><a class="" href="01_%E6%89%AB%E6%8F%8F%E8%A7%A6%E5%8F%91%E5%99%A8%E4%B8%8E%E7%A7%BB%E4%BD%8D%E6%8D%95%E8%8E%B7%E5%8E%9F%E7%90%86.html">01 · 扫描触发器与移位捕获原理</a><a class="" href="02_%E6%89%AB%E6%8F%8F%E6%9E%B6%E6%9E%84%E4%B8%8E%E7%89%A9%E7%90%86%E5%AE%9E%E7%8E%B0.html">02 · 扫描架构与物理实现</a><a class="" href="03_%E6%B5%8B%E8%AF%95%E6%97%B6%E9%92%9F%E5%A4%8D%E4%BD%8D%E4%B8%8E%E9%AB%98%E9%80%9F%E6%8D%95%E8%8E%B7.html">03 · 测试时钟复位与高速捕获</a><a class="" href="04_JTAG%E6%B5%8B%E8%AF%95%E8%AE%BF%E9%97%AE%E4%B8%8E%E8%8A%AF%E7%89%87%E7%BA%A7%E6%95%B0%E6%8D%AE%E4%BC%A0%E8%BE%93.html">04 · JTAG测试访问与芯片级数据传输</a><a class="" href="05_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E8%A6%86%E7%9B%96%E7%8E%87%E4%B8%8E%E6%B5%8B%E8%AF%95%E8%B4%A8%E9%87%8F.html">05 · 故障模型覆盖率与测试质量</a><a class="" href="06_ATPG%E6%BF%80%E6%B4%BB%E4%BC%A0%E6%92%AD%E4%B8%8E%E7%BB%93%E6%9E%84%E6%90%9C%E7%B4%A2%E7%AE%97%E6%B3%95.html">06 · ATPG激活传播与结构搜索算法</a><a class="" href="07_SAT%E6%B1%82%E8%A7%A3%E6%95%85%E9%9A%9C%E6%A8%A1%E6%8B%9F%E4%B8%8E%E6%B5%8B%E8%AF%95%E9%9B%86%E5%90%88%E4%BC%98%E5%8C%96.html">07 · SAT求解故障模拟与测试集合优化</a><a class="" href="08_%E6%B5%8B%E8%AF%95%E5%8E%8B%E7%BC%A9%E6%9C%AA%E7%9F%A5%E5%80%BC%E4%B8%8E%E5%8F%AF%E7%BC%96%E7%A0%81%E6%80%A7.html">08 · 测试压缩未知值与可编码性</a><a class="" href="09_%E6%B5%8B%E8%AF%95%E5%8A%9F%E8%80%97%E5%B9%B6%E5%8F%91%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%9C%9F%E9%97%B4%E6%B5%8B%E8%AF%95.html">09 · 测试功耗并发与运行期间测试</a><a class="" href="10_%E6%B5%8B%E8%AF%95%E7%82%B9%E6%8F%92%E5%85%A5%E4%B8%8E%E5%8F%AF%E6%B5%8B%E8%AF%95%E6%80%A7%E8%AE%BE%E8%AE%A1%E4%BC%98%E5%8C%96.html">10 · 测试点插入与可测试性设计优化</a><a class="" href="11_%E6%89%AB%E6%8F%8F%E6%95%85%E9%9A%9C%E8%AF%8A%E6%96%AD%E4%B8%8E%E5%A4%B1%E8%B4%A5%E5%88%86%E6%9E%90.html">11 · 扫描故障诊断与失败分析</a><a class="" href="12_%E8%AE%BE%E8%AE%A1%E9%AA%8C%E8%AF%81%E5%B7%A5%E5%85%B7%E6%8E%A5%E5%85%A5%E4%B8%8E%E5%88%B6%E9%80%A0%E6%89%A7%E8%A1%8C.html">12 · 设计验证工具接入与制造执行</a><a class="" href="13_2024%E8%87%B32026%E5%B9%B4%E5%AD%A6%E6%9C%AF%E6%88%90%E6%9E%9C%E5%88%86%E6%9E%90%E4%B8%8E%E7%A0%94%E7%A9%B6%E8%B7%AF%E7%BA%BF.html">13 · 2024至2026年学术成果分析与研究路线</a><a class="" href="14_%E6%95%99%E5%AD%A6%E7%AE%97%E4%BE%8B%E6%BA%90%E7%A0%81%E4%B8%8E%E5%AD%A6%E4%B9%A0%E7%BB%83%E4%B9%A0.html">14 · 教学算例源码与学习练习</a><a class="current" href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E6%9D%90%E6%96%99%E8%AF%81%E6%8D%AE%E7%B4%A2%E5%BC%95.html">90 · 参考文献与材料证据索引</a><a class="" href="99_%E8%AF%81%E6%8D%AE%E8%8C%83%E5%9B%B4%E7%89%88%E6%9C%AC%E4%B8%8E%E4%BD%BF%E7%94%A8%E8%AF%B4%E6%98%8E.html">99 · 证据范围版本与使用说明</a></nav></aside><div class="reading"><main class="paper"><div class="eyebrow">SCAN · ATPG · 设计原理</div><h1 id="90 · 参考文献与材料证据索引">90 · 参考文献与材料证据索引</h1>
+<p><a href="00_%E6%89%AB%E6%8F%8F%E9%93%BE%E4%B8%8EATPG%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E9%98%85%E8%AF%BB%E5%AF%BC%E8%88%AA.html">总览</a> · <a href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E6%9D%90%E6%96%99%E8%AF%81%E6%8D%AE%E7%B4%A2%E5%BC%95.html">参考文献</a> · <a href="14_%E6%95%99%E5%AD%A6%E7%AE%97%E4%BE%8B%E6%BA%90%E7%A0%81%E4%B8%8E%E5%AD%A6%E4%B9%A0%E7%BB%83%E4%B9%A0.html">教学与源码</a></p>
+<h2 id="1. 如何使用来源">1. 如何使用来源</h2>
+<p>每项记录的材料级别是本次取得的证据范围，不是研究质量评分。所有网址最后核查日期为 2026-10-17。正文的手算例子和程序结果见第 14 篇，不应归给论文作者。</p>
+<p><a id="s01"></a></p>
+<h2 id="S01 · Michael L. Bushnell 与 Vishwani D. Agrawal：VLSI Testing 课程资料">S01 · Michael L. Bushnell 与 Vishwani D. Agrawal：VLSI Testing 课程资料</h2>
+<p><strong>出处：</strong> Auburn University，课程原始材料。<strong>取得材料：</strong> 基础课程。
+<strong>原始入口：</strong> <a href="https://www.eng.auburn.edu/~vagrawal/COURSE/lectures.html">Michael L. Bushnell 与 Vishwani D. Agrawal：VLSI Testing 课程资料</a></p>
+<p>扫描设计、组合电路测试、故障模拟及逻辑内建自测试的教学来源。</p>
+<p><a id="s02"></a></p>
+<h2 id="S02 · Combinational ATPG：D algorithm、PODEM 与 FAN">S02 · Combinational ATPG：D algorithm、PODEM 与 FAN</h2>
+<p><strong>出处：</strong> University of New Mexico，课程原始材料。<strong>取得材料：</strong> 基础课程。
+<strong>原始入口：</strong> <a href="https://ece-research.unm.edu/jimp/vlsi_test/slides/html/combinational_atpg2.html">Combinational ATPG：D algorithm、PODEM 与 FAN</a></p>
+<p>用于历史算法与结构搜索原理；本书的例子和程序独立编写。</p>
+<p><a id="s03"></a></p>
+<h2 id="S03 · Module 6: Combinational Circuit Testing">S03 · Module 6: Combinational Circuit Testing</h2>
+<p><strong>出处：</strong> TU Delft OpenCourseWare，课程讲义。<strong>取得材料：</strong> 基础课程。
+<strong>原始入口：</strong> <a href="https://ocw.tudelft.nl/wp-content/uploads/Module_6_Combinational_Circuit_Testing.pdf">Module 6: Combinational Circuit Testing</a></p>
+<p>可控制性、可观察性及组合测试背景。</p>
+<p><a id="s04"></a></p>
+<h2 id="S04 · TestMAX ATPG">S04 · TestMAX ATPG</h2>
+<p><strong>出处：</strong> Synopsys，官方产品说明。<strong>取得材料：</strong> 厂商资料。
+<strong>原始入口：</strong> <a href="https://www.synopsys.com/implementation-and-signoff/test-automation/testmax-atpg.html">TestMAX ATPG</a></p>
+<p>用于核实工具功能范围；不把营销描述当作独立比较实验。</p>
+<p><a id="s05"></a></p>
+<h2 id="S05 · Tessent TestKompress">S05 · Tessent TestKompress</h2>
+<p><strong>出处：</strong> Siemens，官方产品说明。<strong>取得材料：</strong> 厂商资料。
+<strong>原始入口：</strong> <a href="https://www.siemens.com/en-us/products/ic/tessent/test/testkompress/">Tessent TestKompress</a></p>
+<p>嵌入式确定性测试压缩的功能背景；压缩率依具体设计而异。</p>
+<p><a id="s06"></a></p>
+<h2 id="S06 · Tessent Streaming Scan Network">S06 · Tessent Streaming Scan Network</h2>
+<p><strong>出处：</strong> Siemens，官方产品说明。<strong>取得材料：</strong> 厂商资料。
+<strong>原始入口：</strong> <a href="https://www.siemens.com/en-us/products/ic/tessent/test/streamingscan/">Tessent Streaming Scan Network</a></p>
+<p>芯片级扫描数据传输与核级测试架构解耦；不等同于 ATPG 算法。</p>
+<p><a id="s07"></a></p>
+<h2 id="S07 · Pinmux: Theory of Operation">S07 · Pinmux: Theory of Operation</h2>
+<p><strong>出处：</strong> OpenTitan，开放硬件官方文档。<strong>取得材料：</strong> 实现文档。
+<strong>原始入口：</strong> <a href="https://opentitan.org/book/hw/ip/pinmux/doc/theory_of_operation.html">Pinmux: Theory of Operation</a></p>
+<p>Strap Sampling and TAP Isolation、Generic Pad Wrapper；只使用公开内容。</p>
+<p><a id="s08"></a></p>
+<h2 id="S08 · RISC-V Debug Manager: Theory of Operation">S08 · RISC-V Debug Manager: Theory of Operation</h2>
+<p><strong>出处：</strong> OpenTitan，开放硬件官方文档。<strong>取得材料：</strong> 实现文档。
+<strong>原始入口：</strong> <a href="https://opentitan.org/book/hw/ip/rv_dm/doc/theory_of_operation.html">RISC-V Debug Manager: Theory of Operation</a></p>
+<p>调试访问和生命周期控制；不推断未公开的制造扫描连接。</p>
+<p><a id="s09"></a></p>
+<h2 id="S09 · DFT module README">S09 · DFT module README</h2>
+<p><strong>出处：</strong> OpenROAD，官方软件文档。<strong>取得材料：</strong> 实现文档。
+<strong>原始入口：</strong> <a href="https://openroad.readthedocs.io/en/latest/main/src/dft/README.html">DFT module README</a></p>
+<p>scan_replace、execute_dft_plan；当前文档注明 scan_opt 尚无实际操作。</p>
+<p><a id="s10"></a></p>
+<h2 id="S10 · FAN_ATPG">S10 · FAN_ATPG</h2>
+<p><strong>出处：</strong> NTU LaDS-II，作者实验室公开程序。<strong>取得材料：</strong> 公开代码记录。
+<strong>原始入口：</strong> <a href="https://github.com/NTU-LaDS-II/FAN_ATPG">FAN_ATPG</a></p>
+<p>开源算法教学入口。本次没有运行该项目，也没有将其代码复制到资料包。</p>
+<p><a id="s11"></a></p>
+<h2 id="S11 · SmartATPG: A Learning-based Automatic Test Pattern Generation with Graph Convolutional Network and Reinforcement Learning">S11 · SmartATPG: A Learning-based Automatic Test Pattern Generation with Graph Convolutional Network and Reinforcement Learning</h2>
+<p><strong>出处：</strong> DAC 2024，正式会议记录。<strong>取得材料：</strong> 正式记录／摘要。
+<strong>原始入口：</strong> <a href="https://61dac.conference-program.com/presentation/?id=RESEARCH1644&amp;sess=sess147">SmartATPG: A Learning-based Automatic Test Pattern Generation with Graph Convolutional Network and Reinforcement Learning</a></p>
+<p>未取得完整实验条件，因此不转述未核实的提速百分比。</p>
+<p><a id="s12"></a></p>
+<h2 id="S12 · PastATPG: A Hybrid ATPG Framework for Better Test Compaction with Partial Assignment SAT">S12 · PastATPG: A Hybrid ATPG Framework for Better Test Compaction with Partial Assignment SAT</h2>
+<p><strong>出处：</strong> DAC 2025，IEEE；DOI: 10.1109/DAC63849.2025.11132425。<strong>取得材料：</strong> 正式记录／摘要。
+<strong>原始入口：</strong> <a href="https://ieeexplore.ieee.org/document/11132425/">PastATPG: A Hybrid ATPG Framework for Better Test Compaction with Partial Assignment SAT</a></p>
+<p>部分赋值 SAT 与混合 ATPG；结合 S13 的作者程序目录核查可复现入口。</p>
+<p><a id="s13"></a></p>
+<h2 id="S13 · PastATPG 作者公开仓库">S13 · PastATPG 作者公开仓库</h2>
+<p><strong>出处：</strong> State Key Lab of Processors，作者程序。<strong>取得材料：</strong> 公开代码记录。
+<strong>原始入口：</strong> <a href="https://github.com/sklp-eda-lab/PastATPG">PastATPG 作者公开仓库</a></p>
+<p>具有求解器、基准和运行相关文件；可下载不等于已复现，原项目适用其许可证。</p>
+<p><a id="s14"></a></p>
+<h2 id="S14 · DEFT: Differentiable Automatic Test Pattern Generation">S14 · DEFT: Differentiable Automatic Test Pattern Generation</h2>
+<p><strong>出处：</strong> Wei Li 等，arXiv:2512.23746，v1；ITC 2026 正式议程另见 S19。<strong>取得材料：</strong> 全文。
+<strong>原始入口：</strong> <a href="https://arxiv.org/html/2512.23746v1">DEFT: Differentiable Automatic Test Pattern Generation</a></p>
+<p>方法与实验分析针对这个可核实的预印本版本；不使用其页首遗留会议模板信息作为出版依据。</p>
+<p><a id="s15"></a></p>
+<h2 id="S15 · InF-ATPG: Intelligent FFR-Driven ATPG with Advanced Circuit Representation Guided Reinforcement Learning">S15 · InF-ATPG: Intelligent FFR-Driven ATPG with Advanced Circuit Representation Guided Reinforcement Learning</h2>
+<p><strong>出处：</strong> Bin Sun 等，arXiv:2512.00079，v1。<strong>取得材料：</strong> 全文／预印本。
+<strong>原始入口：</strong> <a href="https://arxiv.org/html/2512.00079v1">InF-ATPG: Intelligent FFR-Driven ATPG with Advanced Circuit Representation Guided Reinforcement Learning</a></p>
+<p>结果是特定基准上的回溯次数，不等于端到端执行时间；不宣称未知设计泛化。</p>
+<p><a id="s16"></a></p>
+<h2 id="S16 · Enhancing Test Efficiency through Automated ATPG-Aware Lightweight Scan Instrumentation">S16 · Enhancing Test Efficiency through Automated ATPG-Aware Lightweight Scan Instrumentation</h2>
+<p><strong>出处：</strong> Sudipta Paria 等，arXiv:2505.19418，v1；会议 LITE 题目另见 S17。<strong>取得材料：</strong> 全文。
+<strong>原始入口：</strong> <a href="https://arxiv.org/html/2505.19418v1">Enhancing Test Efficiency through Automated ATPG-Aware Lightweight Scan Instrumentation</a></p>
+<p>已有扫描触发器复用和轻量测试插入；功能等价、时序和面积仍需检查。</p>
+<p><a id="s17"></a></p>
+<h2 id="S17 · ITC 2025：2025-09-24 正式技术议程及摘要">S17 · ITC 2025：2025-09-24 正式技术议程及摘要</h2>
+<p><strong>出处：</strong> IEEE International Test Conference，官方议程。<strong>取得材料：</strong> 正式议程／摘要。
+<strong>原始入口：</strong> <a href="https://easychair.org/smart-program/ITC2025/2025-09-24.html">ITC 2025：2025-09-24 正式技术议程及摘要</a></p>
+<p>包括 LITE、TESLA、EDT 输入配置、IJTAG 数据传输和测试基础设施验证。</p>
+<p><a id="s18"></a></p>
+<h2 id="S18 · VTS 2026 Technical Program">S18 · VTS 2026 Technical Program</h2>
+<p><strong>出处：</strong> IEEE VLSI Test Symposium，官方议程。<strong>取得材料：</strong> 正式议程。
+<strong>原始入口：</strong> <a href="https://tttc-vts.org/public_html/new/2026/program/index.html">VTS 2026 Technical Program</a></p>
+<p>核实扫描重排、C2C、单元感知模型、WARP-TPG 的题目与会议归属；不据题目编造方法细节。</p>
+<p><a id="s19"></a></p>
+<h2 id="S19 · ITC 2026：2026-10-15 正式技术议程及摘要">S19 · ITC 2026：2026-10-15 正式技术议程及摘要</h2>
+<p><strong>出处：</strong> IEEE International Test Conference，官方议程。<strong>取得材料：</strong> 正式议程／摘要。
+<strong>原始入口：</strong> <a href="https://easychair.org/smart-program/ITC2026/2026-10-15.html">ITC 2026：2026-10-15 正式技术议程及摘要</a></p>
+<p>Advanced ATPG Techniques：E-ATPG、DEFT、压缩感知 ATPG 仿真评估。</p>
+<p><a id="s20"></a></p>
+<h2 id="S20 · ITC 2026：2026-10-14 正式技术议程及摘要">S20 · ITC 2026：2026-10-14 正式技术议程及摘要</h2>
+<p><strong>出处：</strong> IEEE International Test Conference，官方议程。<strong>取得材料：</strong> 正式议程／摘要。
+<strong>原始入口：</strong> <a href="https://easychair.org/smart-program/ITC2026/2026-10-14.html">ITC 2026：2026-10-14 正式技术议程及摘要</a></p>
+<p>包括测试点插入位置、RTL 扫描选择；ATPG Coverage Debug 是海报，不能写成完整论文复现。</p>
+<p><a id="s21"></a></p>
+<h2 id="S21 · 计算所处理器重点实验室：ITC 2026 工作报道">S21 · 计算所处理器重点实验室：ITC 2026 工作报道</h2>
+<p><strong>出处：</strong> 中国科学院计算技术研究所，2026-09-22。<strong>取得材料：</strong> 作者机构记录。
+<strong>原始入口：</strong> <a href="https://sklp.ict.ac.cn/xwzx/202609/t20260922_858054.html">计算所处理器重点实验室：ITC 2026 工作报道</a></p>
+<p>辅助核实 E-ATPG 和 Finding the Sweet Spot for Test Point Insertion in the Design Flow。</p>
+<p><a id="s22"></a></p>
+<h2 id="S22 · 计算所处理器重点实验室：DAC 2025 工作报道">S22 · 计算所处理器重点实验室：DAC 2025 工作报道</h2>
+<p><strong>出处：</strong> 中国科学院计算技术研究所，作者机构记录。<strong>取得材料：</strong> 作者机构记录。
+<strong>原始入口：</strong> <a href="https://sklp.ict.ac.cn/xwzx/202510/t20251021_785122.html">计算所处理器重点实验室：DAC 2025 工作报道</a></p>
+<p>PastATPG 与 EPICS；使用页面内容，不根据网址中的日期推断会议时间。</p>
+<p><a id="s23"></a></p>
+<h2 id="S23 · Effortless Embedded TAP Controller Insertion: Tessent Platform">S23 · Effortless Embedded TAP Controller Insertion: Tessent Platform</h2>
+<p><strong>出处：</strong> Siemens 官方技术文章，2025-04-04。<strong>取得材料：</strong> 厂商资料。
+<strong>原始入口：</strong> <a href="https://blogs.sw.siemens.com/eda-support/2025/04/04/effortless-embedded-tap-controller-insertion-tessent-platform/">Effortless Embedded TAP Controller Insertion: Tessent Platform</a></p>
+<p>可自动插入 TAP 的工具能力示例；不能据此推断任意现有 TAP 都能无条件合并。</p>
+<p><a id="s24"></a></p>
+<h2 id="S24 · DeepTPI: Test Point Insertion with Deep Reinforcement Learning">S24 · DeepTPI: Test Point Insertion with Deep Reinforcement Learning</h2>
+<p><strong>出处：</strong> 作者预印本，arXiv:2206.06975。<strong>取得材料：</strong> 历史研究记录。
+<strong>原始入口：</strong> <a href="https://arxiv.org/abs/2206.06975">DeepTPI: Test Point Insertion with Deep Reinforcement Learning</a></p>
+<p>用于理解强化学习测试点插入的前期研究，不列为 2026 年新成果。</p>
+<hr />
+<p><a href="14_%E6%95%99%E5%AD%A6%E7%AE%97%E4%BE%8B%E6%BA%90%E7%A0%81%E4%B8%8E%E5%AD%A6%E4%B9%A0%E7%BB%83%E4%B9%A0.html">上一篇</a> · <a href="00_%E6%89%AB%E6%8F%8F%E9%93%BE%E4%B8%8EATPG%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E9%98%85%E8%AF%BB%E5%AF%BC%E8%88%AA.html">总览</a> · <a href="99_%E8%AF%81%E6%8D%AE%E8%8C%83%E5%9B%B4%E7%89%88%E6%9C%AC%E4%B8%8E%E4%BD%BF%E7%94%A8%E8%AF%B4%E6%98%8E.html">下一篇</a></p>
+<div class="footer">资料检索截止：2026-10-17。此页为 Markdown 的离线阅读副本；编辑后需重新生成。图示、教学模型与论文证据范围分别说明。</div></main></div></body></html>

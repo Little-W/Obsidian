@@ -1,0 +1,84 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1750" viewBox="0 0 1200 1750" role="img" aria-labelledby="fig-title fig-description" version="1.1" data-layout-version="precise-ports-v2">
+  <title id="fig-title">图 01  MBIST 系统的完整功能</title>
+  <desc id="fig-description">命令、期望信息、实际读值、故障信息和修复配置分别连接。</desc>
+  <metadata>{"layout": "named ports + orthogonal routes", "font_policy": "editable text; no embedded fonts", "version": 2}</metadata>
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#1967A4" />
+    </marker>
+    <marker id="arrow-teal" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#118575" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#D97A16" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#B84051" />
+    </marker>
+    <marker id="arrow-muted" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#4F6278" />
+    </marker>
+    <marker id="arrow-slate" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#738A9F" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#92517C" />
+    </marker>
+  </defs>
+  <g id="layer-background">
+    <rect width="1200" height="1750" fill="#FFFFFF" />
+  </g>
+  <g id="layer-shapes">
+    <rect id="manager" x="160" y="220" width="880" height="160" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="execute" x="160" y="480" width="880" height="160" rx="12" fill="#FFFFFF" stroke="#118575" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="interface" x="100" y="760" width="480" height="160" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="expect" x="710" y="760" width="390" height="160" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="array" x="100" y="1040" width="480" height="160" rx="12" fill="#FFFFFF" stroke="#118575" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="compare" x="710" y="1040" width="390" height="160" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="record" x="710" y="1320" width="390" height="210" rx="12" fill="#FFFFFF" stroke="#B84051" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="repair" x="100" y="1320" width="480" height="210" rx="12" fill="#FFFFFF" stroke="#D97A16" stroke-width="2" data-kind="node" data-obstacle="true" />
+  </g>
+  <g id="layer-connectors">
+    <polyline id="manager-execute" points="600,380 600,480" fill="none" stroke="#1967A4" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="启动、模式与执行控制" data-source-node="manager" data-source-side="S" data-source-fraction="0.5" data-target-node="execute" data-target-side="N" data-target-fraction="0.5" marker-end="url(#arrow-blue)" />
+    <polyline id="execute-interface" points="340,640 340,760" fill="none" stroke="#1967A4" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="地址、读写命令与写入数据" data-source-node="execute" data-source-side="S" data-source-fraction="0.20454545454545456" data-target-node="interface" data-target-side="N" data-target-fraction="0.5" marker-end="url(#arrow-blue)" />
+    <polyline id="execute-expect" points="905,640 905,760" fill="none" stroke="#1967A4" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="本次读请求的期望信息" data-source-node="execute" data-source-side="S" data-source-fraction="0.8465909090909091" data-target-node="expect" data-target-side="N" data-target-fraction="0.5" marker-end="url(#arrow-blue)" />
+    <polyline id="interface-array" points="340,920 340,1040" fill="none" stroke="#1967A4" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="实际存储器接口信号" data-source-node="interface" data-source-side="S" data-source-fraction="0.5" data-target-node="array" data-target-side="N" data-target-fraction="0.5" marker-end="url(#arrow-blue)" />
+    <polyline id="expect-compare" points="905,920 905,1040" fill="none" stroke="#1967A4" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="按读延迟对应的期望值" data-source-node="expect" data-source-side="S" data-source-fraction="0.5" data-target-node="compare" data-target-side="N" data-target-fraction="0.5" marker-end="url(#arrow-blue)" />
+    <polyline id="array-compare" points="580,1120 710,1120" fill="none" stroke="#1967A4" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="存储器的实际读出数据" data-source-node="array" data-source-side="E" data-source-fraction="0.5" data-target-node="compare" data-target-side="W" data-target-fraction="0.5" marker-end="url(#arrow-blue)" />
+    <polyline id="compare-record" points="905,1200 905,1320" fill="none" stroke="#B84051" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="比较失败时记录故障信息" data-source-node="compare" data-source-side="S" data-source-fraction="0.5" data-target-node="record" data-target-side="N" data-target-fraction="0.5" marker-end="url(#arrow-red)" />
+    <polyline id="record-repair" points="710,1425 580,1425" fill="none" stroke="#D97A16" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="故障位置及错误位供冗余分析" data-source-node="record" data-source-side="W" data-source-fraction="0.5" data-target-node="repair" data-target-side="E" data-target-fraction="0.5" marker-end="url(#arrow-orange)" />
+    <polyline id="repair-array" points="340,1320 340,1200" fill="none" stroke="#D97A16" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="合法修复配置控制备用资源替换" data-source-node="repair" data-source-side="N" data-source-fraction="0.5" data-target-node="array" data-target-side="S" data-target-fraction="0.5" marker-end="url(#arrow-orange)" />
+  </g>
+  <g id="layer-text">
+    <text id="text-0001" x="64" y="80" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="48" font-weight="700" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">图 01  MBIST 系统的完整功能</text>
+    <text id="text-0002" x="64" y="145" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">命令、期望信息、实际读值、故障信息和修复配置分别连接。</text>
+    <text id="text-0003" x="600.0" y="268" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="manager">顶层测试管理</text>
+    <text id="text-0004" x="600.0" y="326" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="manager">模式选择、启动与完成、正常访问协调</text>
+    <text id="text-0005" x="600.0" y="528" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#118575" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="execute">算法执行与并发安排</text>
+    <text id="text-0006" x="600.0" y="586" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="execute">产生地址、命令、数据图案和等待周期</text>
+    <text id="text-0007" x="340.0" y="808" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="interface">存储器接口</text>
+    <text id="text-0008" x="340.0" y="866" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="interface">端口切换与时序适配</text>
+    <text id="text-0009" x="905.0" y="808" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="expect">期望信息对应</text>
+    <text id="text-0010" x="905.0" y="866" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="expect">保存并延迟期望信息</text>
+    <text id="text-0011" x="372" y="700" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#1967A4" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">命令与数据</text>
+    <text id="text-0012" x="937" y="700" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#1967A4" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">期望信息</text>
+    <text id="text-0013" x="340.0" y="1088" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#118575" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="array">存储阵列</text>
+    <text id="text-0014" x="340.0" y="1146" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="array">实际执行读写</text>
+    <text id="text-0015" x="905.0" y="1088" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="compare">结果比较</text>
+    <text id="text-0016" x="905.0" y="1146" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="compare">逐位检查读数据</text>
+    <text id="text-0017" x="645" y="1080" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">读出</text>
+    <text id="text-0018" x="905.0" y="1368" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#B84051" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="record">故障记录</text>
+    <text id="text-0019" x="905.0" y="1426" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="record">实例、地址与错误位</text>
+    <text id="text-0020" x="905.0" y="1476" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="record">保存供诊断分析</text>
+    <text id="text-0021" x="340.0" y="1368" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#D97A16" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="repair">冗余分析与修复</text>
+    <text id="text-0022" x="340.0" y="1426" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="repair">选择备用资源并生成配置</text>
+    <text id="text-0023" x="340.0" y="1476" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="repair">配置生效后重新测试</text>
+    <text id="text-0024" x="937" y="1260" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#B84051" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">不一致</text>
+    <text id="text-0025" x="645" y="1385" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#D97A16" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">故障</text>
+    <text id="text-0026" x="372" y="1260" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#D97A16" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">修复配置</text>
+    <text id="text-0027" x="64" y="1620" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">时钟、电源、温度、故障记录容量与正常功能恢复需要共同检查。</text>
+    <text id="text-0028" x="64" y="1666" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">顶层状态汇总、实际修复配置接口及复测控制信号从略。</text>
+  </g>
+  <g id="layer-junctions" />
+</svg>

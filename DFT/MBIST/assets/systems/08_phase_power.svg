@@ -1,0 +1,96 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1831" viewBox="0 0 1200 1831" role="img" aria-labelledby="fig-title fig-description" version="1.1" data-layout-version="precise-ports-v2">
+  <title id="fig-title">图 18  利用互补的阶段功率</title>
+  <desc id="fig-description">教学例子：总功率上限为 8 mW；两个任务可同时在 6 μs 内结束。</desc>
+  <metadata>{"layout": "named ports + orthogonal routes", "font_policy": "editable text; no embedded fonts", "version": 2}</metadata>
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#1967A4" />
+    </marker>
+    <marker id="arrow-teal" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#118575" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#D97A16" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#B84051" />
+    </marker>
+    <marker id="arrow-muted" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#4F6278" />
+    </marker>
+    <marker id="arrow-slate" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#738A9F" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#92517C" />
+    </marker>
+  </defs>
+  <g id="layer-background">
+    <rect width="1200" height="1831" fill="#FFFFFF" />
+  </g>
+  <g id="layer-shapes">
+    <rect id="phase0-0" x="260" y="333" width="274" height="132" rx="0" fill="#EAF2FA" stroke="#1967A4" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <rect id="phase0-1" x="534" y="421" width="548" height="44" rx="0" fill="#EAF2FA" stroke="#1967A4" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <polyline id="axis0" points="260,465 1082,465" fill="none" stroke="#4F6278" stroke-width="2" data-kind="rule" />
+    <polyline id="tick0-0" points="260,465 260,475" fill="none" stroke="#4F6278" stroke-width="2" data-kind="rule" />
+    <polyline id="tick0-2" points="534,465 534,475" fill="none" stroke="#4F6278" stroke-width="2" data-kind="rule" />
+    <polyline id="tick0-4" points="808,465 808,475" fill="none" stroke="#4F6278" stroke-width="2" data-kind="rule" />
+    <polyline id="tick0-6" points="1082,465 1082,475" fill="none" stroke="#4F6278" stroke-width="2" data-kind="rule" />
+    <rect id="phase1-0" x="260" y="811" width="548" height="44" rx="0" fill="#F0F8F6" stroke="#118575" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <rect id="phase1-1" x="808" y="723" width="274" height="132" rx="0" fill="#F0F8F6" stroke="#118575" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <polyline id="axis1" points="260,855 1082,855" fill="none" stroke="#4F6278" stroke-width="2" data-kind="rule" />
+    <polyline id="tick1-0" points="260,855 260,865" fill="none" stroke="#4F6278" stroke-width="2" data-kind="rule" />
+    <polyline id="tick1-2" points="534,855 534,865" fill="none" stroke="#4F6278" stroke-width="2" data-kind="rule" />
+    <polyline id="tick1-4" points="808,855 808,865" fill="none" stroke="#4F6278" stroke-width="2" data-kind="rule" />
+    <polyline id="tick1-6" points="1082,855 1082,865" fill="none" stroke="#4F6278" stroke-width="2" data-kind="rule" />
+    <rect id="phase2-0" x="260" y="1069" width="274" height="176" rx="0" fill="#FFF6ED" stroke="#D97A16" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <rect id="phase2-1" x="534" y="1157" width="274" height="88" rx="0" fill="#FFF6ED" stroke="#D97A16" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <rect id="phase2-2" x="808" y="1069" width="274" height="176" rx="0" fill="#FFF6ED" stroke="#D97A16" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <polyline id="axis2" points="260,1245 1082,1245" fill="none" stroke="#4F6278" stroke-width="2" data-kind="rule" />
+    <polyline id="tick2-0" points="260,1245 260,1255" fill="none" stroke="#4F6278" stroke-width="2" data-kind="rule" />
+    <polyline id="tick2-2" points="534,1245 534,1255" fill="none" stroke="#4F6278" stroke-width="2" data-kind="rule" />
+    <polyline id="tick2-4" points="808,1245 808,1255" fill="none" stroke="#4F6278" stroke-width="2" data-kind="rule" />
+    <polyline id="tick2-6" points="1082,1245 1082,1255" fill="none" stroke="#4F6278" stroke-width="2" data-kind="rule" />
+    <rect id="summary" x="80" y="1420" width="1040" height="210" rx="12" fill="#FFFFFF" stroke="#D97A16" stroke-width="2" data-kind="node" data-obstacle="true" />
+  </g>
+  <g id="layer-connectors" />
+  <g id="layer-text">
+    <text id="text-0001" x="64" y="80" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="48" font-weight="700" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">图 18  利用互补的阶段功率</text>
+    <text id="text-0002" x="64" y="145" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">教学例子：总功率上限为 8 mW；两个任务可同时在 6 μs 内结束。</text>
+    <text id="text-0003" x="80" y="248" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="34" font-weight="700" fill="#1967A4" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">任务 A</text>
+    <text id="text-0004" x="80" y="302" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">单位：mW</text>
+    <text id="text-0005" x="397.0" y="301" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">6</text>
+    <text id="text-0006" x="808.0" y="389" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">2</text>
+    <text id="text-0007" x="260" y="510" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="28" font-weight="400" fill="#4F6278" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">0</text>
+    <text id="text-0008" x="534" y="510" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="28" font-weight="400" fill="#4F6278" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">2</text>
+    <text id="text-0009" x="808" y="510" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="28" font-weight="400" fill="#4F6278" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">4</text>
+    <text id="text-0010" x="1082" y="510" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="28" font-weight="400" fill="#4F6278" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">6</text>
+    <text id="text-0011" x="1082" y="565" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="end" dominant-baseline="central" data-kind="text" data-padding="12">时间 / μs</text>
+    <text id="text-0012" x="80" y="638" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="34" font-weight="700" fill="#118575" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">任务 B</text>
+    <text id="text-0013" x="80" y="692" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">单位：mW</text>
+    <text id="text-0014" x="534.0" y="779" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="700" fill="#118575" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">2</text>
+    <text id="text-0015" x="945.0" y="691" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="700" fill="#118575" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">6</text>
+    <text id="text-0016" x="260" y="900" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="28" font-weight="400" fill="#4F6278" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">0</text>
+    <text id="text-0017" x="534" y="900" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="28" font-weight="400" fill="#4F6278" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">2</text>
+    <text id="text-0018" x="808" y="900" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="28" font-weight="400" fill="#4F6278" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">4</text>
+    <text id="text-0019" x="1082" y="900" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="28" font-weight="400" fill="#4F6278" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">6</text>
+    <text id="text-0020" x="1082" y="955" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="end" dominant-baseline="central" data-kind="text" data-padding="12">时间 / μs</text>
+    <text id="text-0021" x="80" y="1028" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="34" font-weight="700" fill="#D97A16" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">功率之和</text>
+    <text id="text-0022" x="80" y="1082" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">单位：mW</text>
+    <text id="text-0023" x="397.0" y="1037" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="700" fill="#D97A16" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">8</text>
+    <text id="text-0024" x="671.0" y="1125" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="700" fill="#D97A16" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">4</text>
+    <text id="text-0025" x="945.0" y="1037" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="700" fill="#D97A16" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">8</text>
+    <text id="text-0026" x="260" y="1290" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="28" font-weight="400" fill="#4F6278" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">0</text>
+    <text id="text-0027" x="534" y="1290" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="28" font-weight="400" fill="#4F6278" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">2</text>
+    <text id="text-0028" x="808" y="1290" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="28" font-weight="400" fill="#4F6278" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">4</text>
+    <text id="text-0029" x="1082" y="1290" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="28" font-weight="400" fill="#4F6278" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">6</text>
+    <text id="text-0030" x="1082" y="1345" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="end" dominant-baseline="central" data-kind="text" data-padding="12">时间 / μs</text>
+    <text id="text-0031" x="600.0" y="1468" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#D97A16" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="summary">顺序执行 12 μs → 重叠执行 6 μs</text>
+    <text id="text-0032" x="600.0" y="1526" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="summary">两种安排的任务总能量均为 40 nJ。</text>
+    <text id="text-0033" x="600.0" y="1576" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="summary">节省的是测试时间，不是把任务能量减半。</text>
+    <text id="text-0034" x="64" y="1705" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">图中忽略背景功率和启动开销；条形高度与标注数值一致。</text>
+    <text id="text-0035" x="64" y="1751" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">启动瞬间合法仍不够，还需要检查所有后续阶段的总功率。</text>
+  </g>
+  <g id="layer-junctions" />
+</svg>

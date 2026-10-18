@@ -1,0 +1,5 @@
+{
+  "superseded_by": "precise_geometry_validation.json",
+  "reason": "Current validation includes arrows, all frames, exact ports and intersections, not text-only boxes.",
+  "historical_report": "previous_edition/layout_validation.json"
+}

@@ -1,0 +1,194 @@
+[
+  {
+    "id": "S01",
+    "title": "Michael L. Bushnell 与 Vishwani D. Agrawal：VLSI Testing 课程资料",
+    "publication": "Auburn University，课程原始材料",
+    "url": "https://www.eng.auburn.edu/~vagrawal/COURSE/lectures.html",
+    "evidence": "基础课程",
+    "note": "扫描设计、组合电路测试、故障模拟及逻辑内建自测试的教学来源。"
+  },
+  {
+    "id": "S02",
+    "title": "Combinational ATPG：D algorithm、PODEM 与 FAN",
+    "publication": "University of New Mexico，课程原始材料",
+    "url": "https://ece-research.unm.edu/jimp/vlsi_test/slides/html/combinational_atpg2.html",
+    "evidence": "基础课程",
+    "note": "用于历史算法与结构搜索原理；本书的例子和程序独立编写。"
+  },
+  {
+    "id": "S03",
+    "title": "Module 6: Combinational Circuit Testing",
+    "publication": "TU Delft OpenCourseWare，课程讲义",
+    "url": "https://ocw.tudelft.nl/wp-content/uploads/Module_6_Combinational_Circuit_Testing.pdf",
+    "evidence": "基础课程",
+    "note": "可控制性、可观察性及组合测试背景。"
+  },
+  {
+    "id": "S04",
+    "title": "TestMAX ATPG",
+    "publication": "Synopsys，官方产品说明",
+    "url": "https://www.synopsys.com/implementation-and-signoff/test-automation/testmax-atpg.html",
+    "evidence": "厂商资料",
+    "note": "用于核实工具功能范围；不把营销描述当作独立比较实验。"
+  },
+  {
+    "id": "S05",
+    "title": "Tessent TestKompress",
+    "publication": "Siemens，官方产品说明",
+    "url": "https://www.siemens.com/en-us/products/ic/tessent/test/testkompress/",
+    "evidence": "厂商资料",
+    "note": "嵌入式确定性测试压缩的功能背景；压缩率依具体设计而异。"
+  },
+  {
+    "id": "S06",
+    "title": "Tessent Streaming Scan Network",
+    "publication": "Siemens，官方产品说明",
+    "url": "https://www.siemens.com/en-us/products/ic/tessent/test/streamingscan/",
+    "evidence": "厂商资料",
+    "note": "芯片级扫描数据传输与核级测试架构解耦；不等同于 ATPG 算法。"
+  },
+  {
+    "id": "S07",
+    "title": "Pinmux: Theory of Operation",
+    "publication": "OpenTitan，开放硬件官方文档",
+    "url": "https://opentitan.org/book/hw/ip/pinmux/doc/theory_of_operation.html",
+    "evidence": "实现文档",
+    "note": "Strap Sampling and TAP Isolation、Generic Pad Wrapper；只使用公开内容。"
+  },
+  {
+    "id": "S08",
+    "title": "RISC-V Debug Manager: Theory of Operation",
+    "publication": "OpenTitan，开放硬件官方文档",
+    "url": "https://opentitan.org/book/hw/ip/rv_dm/doc/theory_of_operation.html",
+    "evidence": "实现文档",
+    "note": "调试访问和生命周期控制；不推断未公开的制造扫描连接。"
+  },
+  {
+    "id": "S09",
+    "title": "DFT module README",
+    "publication": "OpenROAD，官方软件文档",
+    "url": "https://openroad.readthedocs.io/en/latest/main/src/dft/README.html",
+    "evidence": "实现文档",
+    "note": "scan_replace、execute_dft_plan；当前文档注明 scan_opt 尚无实际操作。"
+  },
+  {
+    "id": "S10",
+    "title": "FAN_ATPG",
+    "publication": "NTU LaDS-II，作者实验室公开程序",
+    "url": "https://github.com/NTU-LaDS-II/FAN_ATPG",
+    "evidence": "公开代码记录",
+    "note": "开源算法教学入口。本次没有运行该项目，也没有将其代码复制到资料包。"
+  },
+  {
+    "id": "S11",
+    "title": "SmartATPG: A Learning-based Automatic Test Pattern Generation with Graph Convolutional Network and Reinforcement Learning",
+    "publication": "DAC 2024，正式会议记录",
+    "url": "https://61dac.conference-program.com/presentation/?id=RESEARCH1644&sess=sess147",
+    "evidence": "正式记录／摘要",
+    "note": "未取得完整实验条件，因此不转述未核实的提速百分比。"
+  },
+  {
+    "id": "S12",
+    "title": "PastATPG: A Hybrid ATPG Framework for Better Test Compaction with Partial Assignment SAT",
+    "publication": "DAC 2025，IEEE；DOI: 10.1109/DAC63849.2025.11132425",
+    "url": "https://ieeexplore.ieee.org/document/11132425/",
+    "evidence": "正式记录／摘要",
+    "note": "部分赋值 SAT 与混合 ATPG；结合 S13 的作者程序目录核查可复现入口。"
+  },
+  {
+    "id": "S13",
+    "title": "PastATPG 作者公开仓库",
+    "publication": "State Key Lab of Processors，作者程序",
+    "url": "https://github.com/sklp-eda-lab/PastATPG",
+    "evidence": "公开代码记录",
+    "note": "具有求解器、基准和运行相关文件；可下载不等于已复现，原项目适用其许可证。"
+  },
+  {
+    "id": "S14",
+    "title": "DEFT: Differentiable Automatic Test Pattern Generation",
+    "publication": "Wei Li 等，arXiv:2512.23746，v1；ITC 2026 正式议程另见 S19",
+    "url": "https://arxiv.org/html/2512.23746v1",
+    "evidence": "全文",
+    "note": "方法与实验分析针对这个可核实的预印本版本；不使用其页首遗留会议模板信息作为出版依据。"
+  },
+  {
+    "id": "S15",
+    "title": "InF-ATPG: Intelligent FFR-Driven ATPG with Advanced Circuit Representation Guided Reinforcement Learning",
+    "publication": "Bin Sun 等，arXiv:2512.00079，v1",
+    "url": "https://arxiv.org/html/2512.00079v1",
+    "evidence": "全文／预印本",
+    "note": "结果是特定基准上的回溯次数，不等于端到端执行时间；不宣称未知设计泛化。"
+  },
+  {
+    "id": "S16",
+    "title": "Enhancing Test Efficiency through Automated ATPG-Aware Lightweight Scan Instrumentation",
+    "publication": "Sudipta Paria 等，arXiv:2505.19418，v1；会议 LITE 题目另见 S17",
+    "url": "https://arxiv.org/html/2505.19418v1",
+    "evidence": "全文",
+    "note": "已有扫描触发器复用和轻量测试插入；功能等价、时序和面积仍需检查。"
+  },
+  {
+    "id": "S17",
+    "title": "ITC 2025：2025-09-24 正式技术议程及摘要",
+    "publication": "IEEE International Test Conference，官方议程",
+    "url": "https://easychair.org/smart-program/ITC2025/2025-09-24.html",
+    "evidence": "正式议程／摘要",
+    "note": "包括 LITE、TESLA、EDT 输入配置、IJTAG 数据传输和测试基础设施验证。"
+  },
+  {
+    "id": "S18",
+    "title": "VTS 2026 Technical Program",
+    "publication": "IEEE VLSI Test Symposium，官方议程",
+    "url": "https://tttc-vts.org/public_html/new/2026/program/index.html",
+    "evidence": "正式议程",
+    "note": "核实扫描重排、C2C、单元感知模型、WARP-TPG 的题目与会议归属；不据题目编造方法细节。"
+  },
+  {
+    "id": "S19",
+    "title": "ITC 2026：2026-10-15 正式技术议程及摘要",
+    "publication": "IEEE International Test Conference，官方议程",
+    "url": "https://easychair.org/smart-program/ITC2026/2026-10-15.html",
+    "evidence": "正式议程／摘要",
+    "note": "Advanced ATPG Techniques：E-ATPG、DEFT、压缩感知 ATPG 仿真评估。"
+  },
+  {
+    "id": "S20",
+    "title": "ITC 2026：2026-10-14 正式技术议程及摘要",
+    "publication": "IEEE International Test Conference，官方议程",
+    "url": "https://easychair.org/smart-program/ITC2026/2026-10-14.html",
+    "evidence": "正式议程／摘要",
+    "note": "包括测试点插入位置、RTL 扫描选择；ATPG Coverage Debug 是海报，不能写成完整论文复现。"
+  },
+  {
+    "id": "S21",
+    "title": "计算所处理器重点实验室：ITC 2026 工作报道",
+    "publication": "中国科学院计算技术研究所，2026-09-22",
+    "url": "https://sklp.ict.ac.cn/xwzx/202609/t20260922_858054.html",
+    "evidence": "作者机构记录",
+    "note": "辅助核实 E-ATPG 和 Finding the Sweet Spot for Test Point Insertion in the Design Flow。"
+  },
+  {
+    "id": "S22",
+    "title": "计算所处理器重点实验室：DAC 2025 工作报道",
+    "publication": "中国科学院计算技术研究所，作者机构记录",
+    "url": "https://sklp.ict.ac.cn/xwzx/202510/t20251021_785122.html",
+    "evidence": "作者机构记录",
+    "note": "PastATPG 与 EPICS；使用页面内容，不根据网址中的日期推断会议时间。"
+  },
+  {
+    "id": "S23",
+    "title": "Effortless Embedded TAP Controller Insertion: Tessent Platform",
+    "publication": "Siemens 官方技术文章，2025-04-04",
+    "url": "https://blogs.sw.siemens.com/eda-support/2025/04/04/effortless-embedded-tap-controller-insertion-tessent-platform/",
+    "evidence": "厂商资料",
+    "note": "可自动插入 TAP 的工具能力示例；不能据此推断任意现有 TAP 都能无条件合并。"
+  },
+  {
+    "id": "S24",
+    "title": "DeepTPI: Test Point Insertion with Deep Reinforcement Learning",
+    "publication": "作者预印本，arXiv:2206.06975",
+    "url": "https://arxiv.org/abs/2206.06975",
+    "evidence": "历史研究记录",
+    "note": "用于理解强化学习测试点插入的前期研究，不列为 2026 年新成果。"
+  }
+]

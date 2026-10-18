@@ -1,0 +1,81 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1416" viewBox="0 0 1200 1416" role="img" aria-labelledby="fig-title fig-description" version="1.1" data-layout-version="precise-ports-v2">
+  <title id="fig-title">图 24  备用行列的选择反例</title>
+  <desc id="fig-description">故障最多的一行，不一定应当优先消耗唯一的备用行。</desc>
+  <metadata>{"layout": "named ports + orthogonal routes", "font_policy": "editable text; no embedded fonts", "version": 2}</metadata>
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#1967A4" />
+    </marker>
+    <marker id="arrow-teal" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#118575" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#D97A16" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#B84051" />
+    </marker>
+    <marker id="arrow-muted" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#4F6278" />
+    </marker>
+    <marker id="arrow-slate" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#738A9F" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#92517C" />
+    </marker>
+  </defs>
+  <g id="layer-background">
+    <rect width="1200" height="1416" fill="#FFFFFF" />
+  </g>
+  <g id="layer-shapes">
+    <rect id="cell0-0" x="220" y="370" width="140" height="140" rx="0" fill="#F0F8F6" stroke="#DBE3EC" stroke-width="2" data-kind="cell" data-obstacle="false" />
+    <polyline id="x0-0-a" points="268,418 312,462" fill="none" stroke="#B84051" stroke-width="7" data-kind="symbol" />
+    <polyline id="x0-0-b" points="312,418 268,462" fill="none" stroke="#B84051" stroke-width="7" data-kind="symbol" />
+    <rect id="cell0-1" x="360" y="370" width="140" height="140" rx="0" fill="#F0F8F6" stroke="#DBE3EC" stroke-width="2" data-kind="cell" data-obstacle="false" />
+    <polyline id="x0-1-a" points="408,418 452,462" fill="none" stroke="#B84051" stroke-width="7" data-kind="symbol" />
+    <polyline id="x0-1-b" points="452,418 408,462" fill="none" stroke="#B84051" stroke-width="7" data-kind="symbol" />
+    <rect id="cell0-2" x="500" y="370" width="140" height="140" rx="0" fill="#FFFFFF" stroke="#DBE3EC" stroke-width="2" data-kind="cell" data-obstacle="false" />
+    <rect id="cell1-0" x="220" y="510" width="140" height="140" rx="0" fill="#F0F8F6" stroke="#DBE3EC" stroke-width="2" data-kind="cell" data-obstacle="false" />
+    <polyline id="x1-0-a" points="268,558 312,602" fill="none" stroke="#B84051" stroke-width="7" data-kind="symbol" />
+    <polyline id="x1-0-b" points="312,558 268,602" fill="none" stroke="#B84051" stroke-width="7" data-kind="symbol" />
+    <rect id="cell1-1" x="360" y="510" width="140" height="140" rx="0" fill="#F0F8F6" stroke="#DBE3EC" stroke-width="2" data-kind="cell" data-obstacle="false" />
+    <polyline id="x1-1-a" points="408,558 452,602" fill="none" stroke="#B84051" stroke-width="7" data-kind="symbol" />
+    <polyline id="x1-1-b" points="452,558 408,602" fill="none" stroke="#B84051" stroke-width="7" data-kind="symbol" />
+    <rect id="cell1-2" x="500" y="510" width="140" height="140" rx="0" fill="#FFFFFF" stroke="#DBE3EC" stroke-width="2" data-kind="cell" data-obstacle="false" />
+    <rect id="cell2-0" x="220" y="650" width="140" height="140" rx="0" fill="#FFF6ED" stroke="#DBE3EC" stroke-width="2" data-kind="cell" data-obstacle="false" />
+    <rect id="cell2-1" x="360" y="650" width="140" height="140" rx="0" fill="#FFF6ED" stroke="#DBE3EC" stroke-width="2" data-kind="cell" data-obstacle="false" />
+    <rect id="cell2-2" x="500" y="650" width="140" height="140" rx="0" fill="#FFF6ED" stroke="#DBE3EC" stroke-width="2" data-kind="cell" data-obstacle="false" />
+    <polyline id="x2-2-a" points="548,698 592,742" fill="none" stroke="#B84051" stroke-width="7" data-kind="symbol" />
+    <polyline id="x2-2-b" points="592,698 548,742" fill="none" stroke="#B84051" stroke-width="7" data-kind="symbol" />
+    <rect id="exact" x="760" y="370" width="360" height="210" rx="12" fill="#FFFFFF" stroke="#118575" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="greedy" x="760" y="630" width="360" height="210" rx="12" fill="#FFFFFF" stroke="#B84051" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="explain" x="80" y="950" width="1040" height="260" rx="12" fill="#FFFFFF" stroke="#D97A16" stroke-width="2" data-kind="node" data-obstacle="true" />
+  </g>
+  <g id="layer-connectors" />
+  <g id="layer-text">
+    <text id="text-0001" x="64" y="80" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="48" font-weight="700" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">图 24  备用行列的选择反例</text>
+    <text id="text-0002" x="64" y="145" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">故障最多的一行，不一定应当优先消耗唯一的备用行。</text>
+    <text id="text-0003" x="600" y="235" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">可用资源：1 条备用行 + 2 条备用列</text>
+    <text id="text-0004" x="290.0" y="313" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#118575" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">列 0</text>
+    <text id="text-0005" x="430.0" y="313" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#118575" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">列 1</text>
+    <text id="text-0006" x="570.0" y="313" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">列 2</text>
+    <text id="text-0007" x="170" y="440.0" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="end" dominant-baseline="central" data-kind="text" data-padding="12">行 0</text>
+    <text id="text-0008" x="170" y="580.0" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="end" dominant-baseline="central" data-kind="text" data-padding="12">行 1</text>
+    <text id="text-0009" x="170" y="720.0" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#D97A16" text-anchor="end" dominant-baseline="central" data-kind="text" data-padding="12">行 2</text>
+    <text id="text-0010" x="940.0" y="418" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#118575" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="exact">精确解</text>
+    <text id="text-0011" x="940.0" y="476" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="exact">替换行 2</text>
+    <text id="text-0012" x="940.0" y="526" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="exact">替换列 0、1</text>
+    <text id="text-0013" x="940.0" y="678" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#B84051" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="greedy">贪心反例</text>
+    <text id="text-0014" x="940.0" y="736" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="28" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="greedy">相同数量时优先选行</text>
+    <text id="text-0015" x="940.0" y="786" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="28" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="greedy">先耗尽唯一备用行</text>
+    <text id="text-0016" x="600.0" y="998" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#D97A16" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="explain">先选行 0，会发生什么？</text>
+    <text id="text-0017" x="600.0" y="1056" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="explain">剩下故障位置 (1,0)、(1,1)、(2,2)。</text>
+    <text id="text-0018" x="600.0" y="1106" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="explain">这时需要 3 条备用列，但实际只剩 2 条。</text>
+    <text id="text-0019" x="600.0" y="1156" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="explain">不是阵列不可修复，而是这次选择方法失败。</text>
+    <text id="text-0020" x="64" y="1290" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">红叉表示已知故障；着色行列表示一种可行替换方案。</text>
+    <text id="text-0021" x="64" y="1336" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">行与列的备用资源数量必须分别限制。</text>
+  </g>
+  <g id="layer-junctions" />
+</svg>

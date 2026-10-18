@@ -5,7 +5,7 @@ create_clock clk -period 100
 create_reset rst_n -sense low
 sim_run -stable
 sim_save_reset
-check_fv_setup
+check_fv_setup -block
 fsv_generate -src secret_key -dest debug_out
 report_fv -list
 check_fv -block

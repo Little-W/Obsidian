@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JTAG测试访问与芯片级数据传输 · 扫描链与 ATPG 设计教程</title><link rel="stylesheet" href="book.css"></head>
+<body><aside class="sidebar"><div class="brand">扫描链与 ATPG</div><div class="subtitle">从内部状态访问到制造测试<br>硬件 · 算法 · 质量 · 验证</div><a class="home" href="../阅读入口.html">← 资料库首页</a><details class="mobile-index"><summary>展开文档目录</summary></details><nav><a class="" href="00_%E6%89%AB%E6%8F%8F%E9%93%BE%E4%B8%8EATPG%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E9%98%85%E8%AF%BB%E5%AF%BC%E8%88%AA.html">00 · 扫描链与ATPG总体架构与阅读导航</a><a class="" href="01_%E6%89%AB%E6%8F%8F%E8%A7%A6%E5%8F%91%E5%99%A8%E4%B8%8E%E7%A7%BB%E4%BD%8D%E6%8D%95%E8%8E%B7%E5%8E%9F%E7%90%86.html">01 · 扫描触发器与移位捕获原理</a><a class="" href="02_%E6%89%AB%E6%8F%8F%E6%9E%B6%E6%9E%84%E4%B8%8E%E7%89%A9%E7%90%86%E5%AE%9E%E7%8E%B0.html">02 · 扫描架构与物理实现</a><a class="" href="03_%E6%B5%8B%E8%AF%95%E6%97%B6%E9%92%9F%E5%A4%8D%E4%BD%8D%E4%B8%8E%E9%AB%98%E9%80%9F%E6%8D%95%E8%8E%B7.html">03 · 测试时钟复位与高速捕获</a><a class="current" href="04_JTAG%E6%B5%8B%E8%AF%95%E8%AE%BF%E9%97%AE%E4%B8%8E%E8%8A%AF%E7%89%87%E7%BA%A7%E6%95%B0%E6%8D%AE%E4%BC%A0%E8%BE%93.html">04 · JTAG测试访问与芯片级数据传输</a><a class="" href="05_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E8%A6%86%E7%9B%96%E7%8E%87%E4%B8%8E%E6%B5%8B%E8%AF%95%E8%B4%A8%E9%87%8F.html">05 · 故障模型覆盖率与测试质量</a><a class="" href="06_ATPG%E6%BF%80%E6%B4%BB%E4%BC%A0%E6%92%AD%E4%B8%8E%E7%BB%93%E6%9E%84%E6%90%9C%E7%B4%A2%E7%AE%97%E6%B3%95.html">06 · ATPG激活传播与结构搜索算法</a><a class="" href="07_SAT%E6%B1%82%E8%A7%A3%E6%95%85%E9%9A%9C%E6%A8%A1%E6%8B%9F%E4%B8%8E%E6%B5%8B%E8%AF%95%E9%9B%86%E5%90%88%E4%BC%98%E5%8C%96.html">07 · SAT求解故障模拟与测试集合优化</a><a class="" href="08_%E6%B5%8B%E8%AF%95%E5%8E%8B%E7%BC%A9%E6%9C%AA%E7%9F%A5%E5%80%BC%E4%B8%8E%E5%8F%AF%E7%BC%96%E7%A0%81%E6%80%A7.html">08 · 测试压缩未知值与可编码性</a><a class="" href="09_%E6%B5%8B%E8%AF%95%E5%8A%9F%E8%80%97%E5%B9%B6%E5%8F%91%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%9C%9F%E9%97%B4%E6%B5%8B%E8%AF%95.html">09 · 测试功耗并发与运行期间测试</a><a class="" href="10_%E6%B5%8B%E8%AF%95%E7%82%B9%E6%8F%92%E5%85%A5%E4%B8%8E%E5%8F%AF%E6%B5%8B%E8%AF%95%E6%80%A7%E8%AE%BE%E8%AE%A1%E4%BC%98%E5%8C%96.html">10 · 测试点插入与可测试性设计优化</a><a class="" href="11_%E6%89%AB%E6%8F%8F%E6%95%85%E9%9A%9C%E8%AF%8A%E6%96%AD%E4%B8%8E%E5%A4%B1%E8%B4%A5%E5%88%86%E6%9E%90.html">11 · 扫描故障诊断与失败分析</a><a class="" href="12_%E8%AE%BE%E8%AE%A1%E9%AA%8C%E8%AF%81%E5%B7%A5%E5%85%B7%E6%8E%A5%E5%85%A5%E4%B8%8E%E5%88%B6%E9%80%A0%E6%89%A7%E8%A1%8C.html">12 · 设计验证工具接入与制造执行</a><a class="" href="13_2024%E8%87%B32026%E5%B9%B4%E5%AD%A6%E6%9C%AF%E6%88%90%E6%9E%9C%E5%88%86%E6%9E%90%E4%B8%8E%E7%A0%94%E7%A9%B6%E8%B7%AF%E7%BA%BF.html">13 · 2024至2026年学术成果分析与研究路线</a><a class="" href="14_%E6%95%99%E5%AD%A6%E7%AE%97%E4%BE%8B%E6%BA%90%E7%A0%81%E4%B8%8E%E5%AD%A6%E4%B9%A0%E7%BB%83%E4%B9%A0.html">14 · 教学算例源码与学习练习</a><a class="" href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E6%9D%90%E6%96%99%E8%AF%81%E6%8D%AE%E7%B4%A2%E5%BC%95.html">90 · 参考文献与材料证据索引</a><a class="" href="99_%E8%AF%81%E6%8D%AE%E8%8C%83%E5%9B%B4%E7%89%88%E6%9C%AC%E4%B8%8E%E4%BD%BF%E7%94%A8%E8%AF%B4%E6%98%8E.html">99 · 证据范围版本与使用说明</a></nav></aside><div class="reading"><main class="paper"><div class="eyebrow">SCAN · ATPG · 设计原理</div><h1 id="04 · JTAG测试访问与芯片级数据传输">04 · JTAG测试访问与芯片级数据传输</h1>
+<p><a href="00_%E6%89%AB%E6%8F%8F%E9%93%BE%E4%B8%8EATPG%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E9%98%85%E8%AF%BB%E5%AF%BC%E8%88%AA.html">总览</a> · <a href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E6%9D%90%E6%96%99%E8%AF%81%E6%8D%AE%E7%B4%A2%E5%BC%95.html">参考文献</a> · <a href="14_%E6%95%99%E5%AD%A6%E7%AE%97%E4%BE%8B%E6%BA%90%E7%A0%81%E4%B8%8E%E5%AD%A6%E4%B9%A0%E7%BB%83%E4%B9%A0.html">教学与源码</a></p>
+<h2 id="1. 四个经常被混用的概念">1. 四个经常被混用的概念</h2>
+<p>扫描链是内部状态串行传输结构。测试访问端口（Test Access Port，TAP）是一个访问控制与寄存器选择接口。IEEE 1149.1 通常与 JTAG TAP 和边界扫描联系在一起；边界扫描主要在芯片输入输出附近提供测试单元，不等于把全部内部逻辑寄存器都接成了制造扫描链。ATPG 则是在这些可用结构之上生成故障检测激励的软件过程。<a href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E6%9D%90%E6%96%99%E8%AF%81%E6%8D%AE%E7%B4%A2%E5%BC%95.html#s01">S01</a><a href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E6%9D%90%E6%96%99%E8%AF%81%E6%8D%AE%E7%B4%A2%E5%BC%95.html#s07">S07</a></p>
+<p>IEEE 1500 常用于嵌入核测试包装；IEEE 1687 关注片内仪器访问；IEEE 1838 关注三维堆叠器件测试访问。这些标准处于不同设计层次，不应被理解为四种互相替代的故障模型。本卷只说明用途，不将正在讨论的标准扩展或某个厂商实现写成所有芯片已采用的标准版本。</p>
+<h2 id="2. 哪些信号需要到封装引脚">2. 哪些信号需要到封装引脚</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>信号或功能</th>
+  <th>芯片内部用途</th>
+  <th>外部访问可能方式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>串行数据输入／输出</td>
+  <td>装入状态、卸出响应</td>
+  <td>独立通道、功能引脚复用、压缩接口或数据总线</td>
+</tr>
+<tr>
+  <td>扫描使能</td>
+  <td>选择移位与功能数据</td>
+  <td>专用信号、片上控制器产生或寄存器配置后控制</td>
+</tr>
+<tr>
+  <td>测试时钟</td>
+  <td>移位、启动捕获协议</td>
+  <td>外部测试时钟加片上高速时钟控制</td>
+</tr>
+<tr>
+  <td>测试模式</td>
+  <td>门控、复位、隔离和压缩模式选择</td>
+  <td>启动配置、TAP 指令、测试控制寄存器等</td>
+</tr>
+<tr>
+  <td>JTAG 信号</td>
+  <td>TAP 状态与寄存器传输</td>
+  <td>常见 TCK、TMS、TDI、TDO，复位配置依实现</td>
+</tr>
+</tbody>
+</table></div>
+<p>逻辑端口不应直接按数量换算为封装引脚。数据和控制也未必走同一接口：JTAG 可以负责配置某个高速扫描数据通路，而大量向量数据通过并行引脚或片上总线传输。<a href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E6%9D%90%E6%96%99%E8%AF%81%E6%8D%AE%E7%B4%A2%E5%BC%95.html#s06">S06</a><a href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E6%9D%90%E6%96%99%E8%AF%81%E6%8D%AE%E7%B4%A2%E5%BC%95.html#s07">S07</a></p>
+<p><a href="../assets/08_access.svg" target="_blank" rel="noopener" title="打开原生插图"><img src="../assets/08_access.svg" alt="图8 测试配置与扫描数据分开" /></a></p>
+<h2 id="3. 已有 JTAG 和调试模块，怎样增加制造测试">3. 已有 JTAG 和调试模块，怎样增加制造测试</h2>
+<p><strong>复用一个 TAP。</strong> 在允许修改 TAP 的条件下，增加独立指令与数据寄存器选择，接到测试控制器；需要避免指令冲突并验证复位、旁路和访问权限。不能把内部扫描链直接替换调试数据寄存器而不修改协议。</p>
+<p><strong>多个 TAP 串接。</strong> 让外部 TDI/TDO 依次经过多个 TAP；非目标 TAP 可以按协议进入旁路。串行长度、复位与指令装入都必须正确计算。多个 TAP 串接不等于各自可以在同一组时钟下无条件独立调试。</p>
+<p><strong>按模式选择 TAP。</strong> 外部 JTAG 引脚通过受控选择连接到调试 TAP 或制造测试 TAP；结构更独立，但不被选中的 TAP 不同时取得那组引脚。选择控制必须可靠，不能在传输途中意外切换。</p>
+<p>这些方案都可能实现，但哪一个适合已有系统，要看 TAP 是否可修改、生命周期状态、调试授权和测试数据带宽。厂商工具能够自动加入 TAP，并不代表它有权任意改写既有调试模块的协议。<a href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E6%9D%90%E6%96%99%E8%AF%81%E6%8D%AE%E7%B4%A2%E5%BC%95.html#s23">S23</a></p>
+<h2 id="4. 一个能够公开核实的例子：OpenTitan">4. 一个能够公开核实的例子：OpenTitan</h2>
+<p>OpenTitan 的 pinmux 文档明确描述了 DFT 模式配置脚和 TAP 选择脚；根据生命周期状态，外部 JTAG 接口可以选择生命周期控制、RISC-V 或 DFT TAP。文档还说明 DFT 控制器可由工具插入，以及 pad 的 <code>ScanRole</code> 可以标记扫描输入或输出。<a href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E6%9D%90%E6%96%99%E8%AF%81%E6%8D%AE%E7%B4%A2%E5%BC%95.html#s07">S07</a><a href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E6%9D%90%E6%96%99%E8%AF%81%E6%8D%AE%E7%B4%A2%E5%BC%95.html#s08">S08</a></p>
+<p>这证明“测试信号可以复用引脚、调试与制造访问需要选择及权限控制”是公开设计中实际出现的机制。但公开内容不足以完整重建生产版本所有内部扫描链和每个制造引脚连接，本卷不补写未公开的链号、并发能力和精确引脚表。</p>
+<h2 id="5. 压缩网络与传输网络不是同一个东西">5. 压缩网络与传输网络不是同一个东西</h2>
+<p>解压缩器把较少输入变量转换成较多扫描位，解决编码与数据量问题。扫描数据传输网络把比特送到不同核，解决带宽共享、目的核选择和核之间的调度问题。两者可以同时存在。Tessent Streaming Scan Network 是厂商提供的芯片级扫描数据传输方案示例，其说明强调核级测试与芯片级数据传输之间的解耦。<a href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E6%9D%90%E6%96%99%E8%AF%81%E6%8D%AE%E7%B4%A2%E5%BC%95.html#s05">S05</a><a href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E6%9D%90%E6%96%99%E8%AF%81%E6%8D%AE%E7%B4%A2%E5%BC%95.html#s06">S06</a></p>
+<p><strong>本卷分析。</strong> 如果核 A 要 10000 条模式而核 B 只要 500 条，把它们固定绑成相同完成进度可能浪费 B 的通道；数据分发与局部链组织分开后，可以按阶段调整资源。但重新配置也有开销，响应比较与未知值屏蔽仍必须保持核和周期的准确对应。</p>
+<h2 id="6. 2025—2026 年相关工作怎样阅读">6. 2025—2026 年相关工作怎样阅读</h2>
+<p>ITC 2025 有 Persistent High-Bandwidth IJTAG Data Delivery 和 Holistic Validation Pattern Generation for IEEE 1687 and Streaming Scan Networks。前者讨论访问数据传输，后者讨论测试基础设施本身的验证。它们不能只根据题目被归为“新的逻辑 ATPG 求解器”。本卷取得正式摘要，未复现完整实现。<a href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E6%9D%90%E6%96%99%E8%AF%81%E6%8D%AE%E7%B4%A2%E5%BC%95.html#s17">S17</a></p>
+<p>对于多芯片和三维集成，先测试裸片、再测试装配连接、最后测试完整系统是不同阶段。已知健康裸片不能保证封装连接无缺陷；裸片扫描覆盖也不能代替微凸点和高速接口的专项测试。生命周期安全同样需要考虑：制造访问能够读写大量内部状态，功能密钥与正常软件数据不能无保护地暴露。</p>
+<hr />
+<p><a href="03_%E6%B5%8B%E8%AF%95%E6%97%B6%E9%92%9F%E5%A4%8D%E4%BD%8D%E4%B8%8E%E9%AB%98%E9%80%9F%E6%8D%95%E8%8E%B7.html">上一篇</a> · <a href="00_%E6%89%AB%E6%8F%8F%E9%93%BE%E4%B8%8EATPG%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E9%98%85%E8%AF%BB%E5%AF%BC%E8%88%AA.html">总览</a> · <a href="05_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E8%A6%86%E7%9B%96%E7%8E%87%E4%B8%8E%E6%B5%8B%E8%AF%95%E8%B4%A8%E9%87%8F.html">下一篇</a></p>
+<div class="footer">资料检索截止：2026-10-17。此页为 Markdown 的离线阅读副本；编辑后需重新生成。图示、教学模型与论文证据范围分别说明。</div></main></div></body></html>

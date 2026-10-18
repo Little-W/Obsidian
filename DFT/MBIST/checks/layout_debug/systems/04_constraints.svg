@@ -1,0 +1,109 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1260" viewBox="0 0 1200 1260" role="img" aria-labelledby="fig-title fig-description" version="1.1" data-layout-version="precise-ports-v2">
+  <title id="fig-title">图 16  两两关系与整个集合的约束</title>
+  <desc id="fig-description">局部相容或相邻成员合法，不能代替对整个分组的检查。</desc>
+  <metadata>{"layout": "named ports + orthogonal routes", "font_policy": "editable text; no embedded fonts", "version": 2}</metadata>
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#1967A4" />
+    </marker>
+    <marker id="arrow-teal" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#118575" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#D97A16" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#B84051" />
+    </marker>
+    <marker id="arrow-muted" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#4F6278" />
+    </marker>
+    <marker id="arrow-slate" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#738A9F" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#92517C" />
+    </marker>
+  </defs>
+  <g id="layer-background">
+    <rect width="1200" height="1260" fill="#FFFFFF" />
+  </g>
+  <g id="layer-shapes">
+    <rect id="limit" x="80" y="220" width="1040" height="104" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="A" x="100" y="380" width="160" height="160" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="B" x="520" y="380" width="160" height="160" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="C" x="940" y="380" width="160" height="160" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="power" x="80" y="790" width="1040" height="260" rx="12" fill="#FFFFFF" stroke="#D97A16" stroke-width="2" data-kind="node" data-obstacle="true" />
+  </g>
+  <g id="layer-connectors">
+    <polyline id="A-B" points="260,460 520,460" fill="none" stroke="#118575" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="A 与 B 的距离为 4，满足限制" data-source-node="A" data-source-side="E" data-source-fraction="0.5" data-target-node="B" data-target-side="W" data-target-fraction="0.5" />
+    <polyline id="B-C" points="680,460 940,460" fill="none" stroke="#118575" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="B 与 C 的距离为 4，满足限制" data-source-node="B" data-source-side="E" data-source-fraction="0.5" data-target-node="C" data-target-side="W" data-target-fraction="0.5" />
+    <polyline id="A-C" points="180,540 180,640 1020,640 1020,540" fill="none" stroke="#B84051" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="A 与 C 的距离为 8，违反两两距离限制" data-source-node="A" data-source-side="S" data-source-fraction="0.5" data-target-node="C" data-target-side="S" data-target-fraction="0.5" />
+  </g>
+  <g id="layer-text">
+    <text id="text-0001" x="64" y="80" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="48" font-weight="700" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">图 16  两两关系与整个集合的约束</text>
+    <text id="text-0002" x="64" y="145" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">局部相容或相邻成员合法，不能代替对整个分组的检查。</text>
+    <text id="text-0003" x="600.0" y="272.0" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="limit">两两距离上限为 5</text>
+    <text id="text-0004" x="180.0" y="428" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="A">A</text>
+    <text id="text-0005" x="180.0" y="486" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="A">x = 0</text>
+    <text id="text-0006" x="600.0" y="428" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="B">B</text>
+    <text id="text-0007" x="600.0" y="486" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="B">x = 4</text>
+    <text id="text-0008" x="1020.0" y="428" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="C">C</text>
+    <text id="text-0009" x="1020.0" y="486" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="C">x = 8</text>
+    <text id="text-0010" x="390" y="414" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#118575" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">距离 4</text>
+    <text id="text-0011" x="810" y="414" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#118575" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">距离 4</text>
+    <text id="text-0012" x="600" y="696" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#B84051" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">A 与 C 距离为 8，不能同组</text>
+    <text id="text-0013" x="600.0" y="838" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#D97A16" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="power">功率还需要检查整个集合</text>
+    <text id="text-0014" x="600.0" y="896" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="power">3 个任务各需 4 mW，总功率上限为 10 mW。</text>
+    <text id="text-0015" x="600.0" y="946" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="power">任意两个同时运行：8 mW，合法。</text>
+    <text id="text-0016" x="600.0" y="996" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="power">全部同时运行：12 mW，不合法。</text>
+    <text id="text-0017" x="64" y="1130" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">聚类之后仍要检查所有硬性限制。</text>
+    <text id="text-0018" x="64" y="1176" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">冲突图能够表达两两关系，但不能单独表达所有资源总量约束。</text>
+  </g>
+  <g id="layer-junctions" />
+  <g id="review-only-overlay" pointer-events="none">
+    <rect x="54" y="35" width="722.4375" height="90" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="64" y="45" width="702.4375" height="70" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="54" y="113" width="770" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="64" y="123" width="750" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="449.2890625" y="236" width="301.421875" height="72" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="459.2890625" y="246" width="281.421875" height="52" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="157.4609375" y="392" width="45" height="72" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="167.4609375" y="402" width="25" height="52" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="139.15625" y="454" width="81.6875" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="149.15625" y="464" width="61.6875" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="577.734375" y="392" width="44.53125" height="72" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="587.734375" y="402" width="24.53125" height="52" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="559.15625" y="454" width="81.6875" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="569.15625" y="464" width="61.6875" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="998.1875" y="392" width="43.625" height="72" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="1008.1875" y="402" width="23.625" height="52" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="979.15625" y="454" width="81.6875" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="989.15625" y="464" width="61.6875" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="338.3125" y="382" width="103.375" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="348.3125" y="392" width="83.375" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="758.3125" y="382" width="103.375" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="768.3125" y="392" width="83.375" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="376.6875" y="660" width="445.625" height="72" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="386.6875" y="670" width="425.625" height="52" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="391.9921875" y="802" width="416.015625" height="72" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="401.9921875" y="812" width="396.015625" height="52" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="270.828125" y="863" width="658.34375" height="66" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="280.828125" y="873" width="638.34375" height="46" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="340.6640625" y="913" width="518.671875" height="66" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="350.6640625" y="923" width="498.671875" height="46" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="347.7890625" y="963" width="504.421875" height="66" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="357.7890625" y="973" width="484.421875" height="46" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="54" y="1098" width="470" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="64" y="1108" width="450" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="54" y="1144" width="860" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="64" y="1154" width="840" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <circle cx="520" cy="460" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="680" cy="460" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="180" cy="540" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="260" cy="460" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="1020" cy="540" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="940" cy="460" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+  </g>
+</svg>

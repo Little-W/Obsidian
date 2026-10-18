@@ -5,7 +5,7 @@ create_clock clk -period 100
 create_reset rst_n -sense low
 sim_run -stable
 sim_save_reset
-check_fv_setup
+check_fv_setup -block
 report_fv_setup -list
 report_fv -list
 set_fml_var fml_max_time 1H

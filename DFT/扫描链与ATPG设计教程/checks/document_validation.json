@@ -1,0 +1,14 @@
+{
+  "scope": "Document syntax, packaging and local cross references; not content or physical-design verification.",
+  "documents": 17,
+  "readme_files": 1,
+  "chinese_characters_in_documents": 27433,
+  "references": 24,
+  "local_links_checked": 210,
+  "figures": 19,
+  "math_expressions": 142,
+  "inline_math": 117,
+  "display_math": 25,
+  "issues": [],
+  "passed": true
+}

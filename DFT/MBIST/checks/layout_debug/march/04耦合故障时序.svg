@@ -1,0 +1,110 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1640" viewBox="0 0 1200 1640" role="img" aria-labelledby="fig-title fig-description" version="1.1" data-layout-version="precise-ports-v2">
+  <title id="fig-title">图 06  耦合故障：先激励，再观察</title>
+  <desc id="fig-description">示例：A 从 0 写成 1 时，错误地把 B 从 0 改成 1。</desc>
+  <metadata>{"layout": "named ports + orthogonal routes", "font_policy": "editable text; no embedded fonts", "version": 2}</metadata>
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#1967A4" />
+    </marker>
+    <marker id="arrow-teal" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#118575" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#D97A16" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#B84051" />
+    </marker>
+    <marker id="arrow-muted" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#4F6278" />
+    </marker>
+    <marker id="arrow-slate" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#738A9F" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#92517C" />
+    </marker>
+  </defs>
+  <g id="layer-background">
+    <rect width="1200" height="1640" fill="#FFFFFF" />
+  </g>
+  <g id="layer-shapes">
+    <rect id="aggressor" x="80" y="230" width="410" height="160" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="victim" x="710" y="230" width="410" height="160" rx="12" fill="#FFFFFF" stroke="#118575" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="step0" x="140" y="510" width="920" height="158" rx="12" fill="#FFFFFF" stroke="#D97A16" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="step1" x="140" y="745" width="920" height="158" rx="12" fill="#FFFFFF" stroke="#D97A16" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="step2" x="140" y="980" width="920" height="158" rx="12" fill="#FFFFFF" stroke="#D97A16" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="step3" x="140" y="1215" width="920" height="158" rx="12" fill="#FFFFFF" stroke="#B84051" stroke-width="2" data-kind="node" data-obstacle="true" />
+  </g>
+  <g id="layer-connectors">
+    <polyline id="coupling" points="490,310 710,310" fill="none" stroke="#B84051" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="故障导致的异常影响，不是正常数据连线" data-source-node="aggressor" data-source-side="E" data-source-fraction="0.5" data-target-node="victim" data-target-side="W" data-target-fraction="0.5" marker-end="url(#arrow-red)" />
+    <polyline id="order1" points="600,668 600,745" fill="none" stroke="#4F6278" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="同一测试示例中的操作先后次序" data-source-node="step0" data-source-side="S" data-source-fraction="0.5" data-target-node="step1" data-target-side="N" data-target-fraction="0.5" marker-end="url(#arrow-muted)" />
+    <polyline id="order2" points="600,903 600,980" fill="none" stroke="#4F6278" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="同一测试示例中的操作先后次序" data-source-node="step1" data-source-side="S" data-source-fraction="0.5" data-target-node="step2" data-target-side="N" data-target-fraction="0.5" marker-end="url(#arrow-muted)" />
+    <polyline id="order3" points="600,1138 600,1215" fill="none" stroke="#4F6278" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="同一测试示例中的操作先后次序" data-source-node="step2" data-source-side="S" data-source-fraction="0.5" data-target-node="step3" data-target-side="N" data-target-fraction="0.5" marker-end="url(#arrow-muted)" />
+  </g>
+  <g id="layer-text">
+    <text id="text-0001" x="64" y="80" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="48" font-weight="700" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">图 06  耦合故障：先激励，再观察</text>
+    <text id="text-0002" x="64" y="145" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">示例：A 从 0 写成 1 时，错误地把 B 从 0 改成 1。</text>
+    <text id="text-0003" x="285.0" y="278" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="aggressor">激励单元 A</text>
+    <text id="text-0004" x="285.0" y="336" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="aggressor">0 → 写 1 → 1</text>
+    <text id="text-0005" x="915.0" y="278" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#118575" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="victim">受害单元 B</text>
+    <text id="text-0006" x="915.0" y="336" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="victim">期望 0，实际变为 1</text>
+    <text id="text-0007" x="600" y="270" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#B84051" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">错误耦合</text>
+    <text id="text-0008" x="600.0" y="558" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#D97A16" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="step0">1  将 B 写为 0</text>
+    <text id="text-0009" x="600.0" y="616" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="step0">准备受害单元的初始状态。</text>
+    <text id="text-0010" x="600.0" y="793" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#D97A16" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="step1">2  将 A 写为 0</text>
+    <text id="text-0011" x="600.0" y="851" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="step1">准备激励单元的初始状态。</text>
+    <text id="text-0012" x="600.0" y="1028" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#D97A16" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="step2">3  将 A 从 0 写成 1</text>
+    <text id="text-0013" x="600.0" y="1086" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="step2">执行可能触发耦合故障的操作。</text>
+    <text id="text-0014" x="600.0" y="1263" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#B84051" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="step3">4  读取 B，并与 0 比较</text>
+    <text id="text-0015" x="600.0" y="1321" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="step3">若实际读到 1，本次比较就能够发现异常。</text>
+    <text id="text-0016" x="64" y="1480" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">读取 B 之前，不应先向 B 写入正确值，否则错误可能被消除。</text>
+    <text id="text-0017" x="64" y="1526" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">其他耦合故障需要不同的初始状态、操作以及地址先后次序。</text>
+  </g>
+  <g id="layer-junctions" />
+  <g id="review-only-overlay" pointer-events="none">
+    <rect x="54" y="35" width="722.4375" height="90" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="64" y="45" width="702.4375" height="70" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="54" y="113" width="671.75" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="64" y="123" width="651.75" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="187.375" y="242" width="196.17205810546875" height="72" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="197.375" y="252" width="176.17205810546875" height="52" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="182.4375" y="303" width="205.125" height="66" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="192.4375" y="313" width="185.125" height="46" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="816.6484375" y="242" width="196.703125" height="72" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="826.6484375" y="252" width="176.703125" height="52" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="776.625" y="304" width="276.75" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="786.625" y="314" width="256.75" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="530" y="238" width="140" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="540" y="248" width="120" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="486.15625" y="522" width="227.6875" height="72" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="496.15625" y="532" width="207.6875" height="52" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="410" y="584" width="380" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="420" y="594" width="360" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="486.875" y="757" width="226.25" height="72" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="496.875" y="767" width="206.25" height="52" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="410" y="819" width="380" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="420" y="829" width="360" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="450.0859375" y="992" width="299.828125" height="72" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="460.0859375" y="1002" width="279.828125" height="52" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="380" y="1054" width="440" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="390" y="1064" width="420" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="414.15625" y="1227" width="371.6875" height="72" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="424.15625" y="1237" width="351.6875" height="52" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="308.3125" y="1289" width="583.375" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="318.3125" y="1299" width="563.375" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="54" y="1448" width="836.3125" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="64" y="1458" width="816.3125" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="54" y="1494" width="830" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="64" y="1504" width="810" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <circle cx="600" cy="1138" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="600" cy="1215" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="600" cy="980" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="600" cy="745" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="600" cy="903" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="710" cy="310" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="600" cy="668" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="490" cy="310" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+  </g>
+</svg>

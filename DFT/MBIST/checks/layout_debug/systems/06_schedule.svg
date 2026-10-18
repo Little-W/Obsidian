@@ -1,0 +1,122 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1341" viewBox="0 0 1200 1341" role="img" aria-labelledby="fig-title fig-description" version="1.1" data-layout-version="precise-ports-v2">
+  <title id="fig-title">图 20  同样三个组，测试时间可以不同</title>
+  <desc id="fig-description">整数时间教学模型：一种在 17 μs 内完成的最优安排。</desc>
+  <metadata>{"layout": "named ports + orthogonal routes", "font_policy": "editable text; no embedded fonts", "version": 2}</metadata>
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#1967A4" />
+    </marker>
+    <marker id="arrow-teal" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#118575" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#D97A16" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#B84051" />
+    </marker>
+    <marker id="arrow-muted" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#4F6278" />
+    </marker>
+    <marker id="arrow-slate" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#738A9F" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#92517C" />
+    </marker>
+  </defs>
+  <g id="layer-background">
+    <rect width="1200" height="1341" fill="#FFFFFF" />
+  </g>
+  <g id="layer-shapes">
+    <rect id="lane0" x="280" y="285" width="799" height="86" rx="0" fill="#F3F7FB" stroke="#DBE3EC" stroke-width="2" data-kind="group" data-obstacle="false" />
+    <rect id="lane1" x="280" y="435" width="799" height="86" rx="0" fill="#F3F7FB" stroke="#DBE3EC" stroke-width="2" data-kind="group" data-obstacle="false" />
+    <rect id="lane2" x="280" y="585" width="799" height="86" rx="0" fill="#F3F7FB" stroke="#DBE3EC" stroke-width="2" data-kind="group" data-obstacle="false" />
+    <rect id="run0" x="280" y="285" width="376" height="86" rx="0" fill="#EAF2FA" stroke="#1967A4" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <rect id="run1" x="280" y="435" width="235" height="86" rx="0" fill="#F0F8F6" stroke="#118575" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <rect id="run2" x="515" y="585" width="188" height="86" rx="0" fill="#FFF6ED" stroke="#D97A16" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <rect id="run3" x="656" y="285" width="282" height="86" rx="0" fill="#EAF2FA" stroke="#1967A4" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <rect id="run4" x="703" y="585" width="329" height="86" rx="0" fill="#FFF6ED" stroke="#D97A16" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <rect id="run5" x="938" y="285" width="141" height="86" rx="0" fill="#EAF2FA" stroke="#1967A4" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <polyline id="time-axis" points="280,745 1079,745" fill="none" stroke="#4F6278" stroke-width="2" data-kind="rule" />
+    <polyline id="tick0" points="280,745 280,756" fill="none" stroke="#4F6278" stroke-width="2" data-kind="rule" />
+    <polyline id="tick4" points="468,745 468,756" fill="none" stroke="#4F6278" stroke-width="2" data-kind="rule" />
+    <polyline id="tick8" points="656,745 656,756" fill="none" stroke="#4F6278" stroke-width="2" data-kind="rule" />
+    <polyline id="tick12" points="844,745 844,756" fill="none" stroke="#4F6278" stroke-width="2" data-kind="rule" />
+    <polyline id="tick17" points="1079,745 1079,756" fill="none" stroke="#4F6278" stroke-width="2" data-kind="rule" />
+    <rect id="constraints" x="80" y="925" width="1040" height="210" rx="12" fill="#FFFFFF" stroke="#118575" stroke-width="2" data-kind="node" data-obstacle="true" />
+  </g>
+  <g id="layer-connectors" />
+  <g id="layer-text">
+    <text id="text-0001" x="64" y="80" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="48" font-weight="700" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">图 20  同样三个组，测试时间可以不同</text>
+    <text id="text-0002" x="64" y="145" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">整数时间教学模型：一种在 17 μs 内完成的最优安排。</text>
+    <text id="text-0003" x="80" y="328" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="700" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">控制器 0</text>
+    <text id="text-0004" x="80" y="478" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="700" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">控制器 1</text>
+    <text id="text-0005" x="80" y="628" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="700" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">控制器 2</text>
+    <text id="text-0006" x="468.0" y="328" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="38" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="14" data-owner="run0">A</text>
+    <text id="text-0007" x="397.5" y="478" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="38" font-weight="700" fill="#118575" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="14" data-owner="run1">B</text>
+    <text id="text-0008" x="609.0" y="628" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="38" font-weight="700" fill="#D97A16" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="14" data-owner="run2">F</text>
+    <text id="text-0009" x="797.0" y="328" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="38" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="14" data-owner="run3">C</text>
+    <text id="text-0010" x="867.5" y="628" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="38" font-weight="700" fill="#D97A16" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="14" data-owner="run4">E</text>
+    <text id="text-0011" x="1008.5" y="328" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="38" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="14" data-owner="run5">D</text>
+    <text id="text-0012" x="280" y="793" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">0</text>
+    <text id="text-0013" x="468" y="793" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">4</text>
+    <text id="text-0014" x="656" y="793" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">8</text>
+    <text id="text-0015" x="844" y="793" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">12</text>
+    <text id="text-0016" x="1079" y="793" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">17</text>
+    <text id="text-0017" x="1079" y="850" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="end" dominant-baseline="central" data-kind="text" data-padding="12">时间 / μs</text>
+    <text id="text-0018" x="600.0" y="973" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#118575" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="constraints">每个时间区间都满足约束</text>
+    <text id="text-0019" x="600.0" y="1031" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="constraints">同时最多 2 个活动控制器。</text>
+    <text id="text-0020" x="600.0" y="1081" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="constraints">活动功率最高为 8 mW；同组任务不重叠。</text>
+    <text id="text-0021" x="64" y="1215" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">另一种三组方案 {A,B,C}、{D}、{E,F} 至少需要 19 μs。</text>
+    <text id="text-0022" x="64" y="1261" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">控制器数量相同，不代表测试完成时间相同。</text>
+  </g>
+  <g id="layer-junctions" />
+  <g id="review-only-overlay" pointer-events="none">
+    <rect x="54" y="35" width="818.4375" height="90" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="64" y="45" width="798.4375" height="70" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="54" y="113" width="736.34375" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="64" y="123" width="716.34375" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="70" y="295" width="142.15625" height="66" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="80" y="305" width="122.15625" height="46" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="70" y="445" width="142.15625" height="66" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="80" y="455" width="122.15625" height="46" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="70" y="595" width="142.15625" height="66" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="80" y="605" width="122.15625" height="46" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="444.8203125" y="290.5" width="46" height="75" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="454.8203125" y="300.5" width="26" height="55" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="374.5546875" y="440.5" width="45.890625" height="75" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="384.5546875" y="450.5" width="25.890625" height="55" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="587.8828125" y="590.5" width="42.234375" height="75" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="597.8828125" y="600.5" width="22.234375" height="55" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="774.53125" y="290.5" width="44.9375" height="75" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="784.53125" y="300.5" width="24.9375" height="55" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="845.8125" y="590.5" width="43.375" height="75" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="855.8125" y="600.5" width="23.375" height="55" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="984.9296875" y="290.5" width="47.140625" height="75" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="994.9296875" y="300.5" width="27.140625" height="55" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="261.671875" y="761" width="36.65625" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="271.671875" y="771" width="16.65625" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="449.671875" y="761" width="36.65625" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="459.671875" y="771" width="16.65625" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="637.671875" y="761" width="36.65625" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="647.671875" y="771" width="16.65625" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="817.34375" y="761" width="53.3125" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="827.34375" y="771" width="33.3125" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="1052.34375" y="761" width="53.3125" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="1062.34375" y="771" width="33.3125" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="950.90625" y="818" width="138.09375" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="960.90625" y="828" width="118.09375" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="391.9921875" y="937" width="416.015625" height="72" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="401.9921875" y="947" width="396.015625" height="52" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="397.9453125" y="998" width="404.109375" height="66" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="407.9453125" y="1008" width="384.109375" height="46" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="289.0859375" y="1048" width="621.828125" height="66" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="299.0859375" y="1058" width="601.828125" height="46" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="54" y="1183" width="730.890625" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="64" y="1193" width="710.890625" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="54" y="1229" width="620" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="64" y="1239" width="600" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+  </g>
+</svg>

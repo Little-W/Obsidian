@@ -1,0 +1,15 @@
+{
+  "march": {
+    "source_code_blocks": 24,
+    "byte_identical_preserved": 24,
+    "rewritten_or_merged_blocks": []
+  },
+  "systems": {
+    "source_code_blocks": 3,
+    "byte_identical_preserved": 1,
+    "rewritten_or_merged_blocks": [
+      "python src/teaching_examples.py\npython src/generate_figures.py\n",
+      "python src/generate_figures.py --png\n"
+    ]
+  }
+}

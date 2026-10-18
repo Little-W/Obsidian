@@ -1,0 +1,168 @@
+{
+  "scope": "Local file links, headings, references, math delimiters, native SVGs; no hardware or physical validation.",
+  "markdown_documents": 17,
+  "local_links": 490,
+  "image_links": 25,
+  "heading_links": 98,
+  "footnote_uses": 130,
+  "code_blocks": 31,
+  "reference_count": 50,
+  "svg_count": 25,
+  "math_expressions": 224,
+  "display_math": 38,
+  "inline_math": 186,
+  "errors": [],
+  "passed": true,
+  "figures": [
+    {
+      "file": "assets/march/01_mbist结构.svg",
+      "text_objects": 30,
+      "raster_images": 0,
+      "minimum_text_size": 28.0
+    },
+    {
+      "file": "assets/march/02故障模型.svg",
+      "text_objects": 30,
+      "raster_images": 0,
+      "minimum_text_size": 30.0
+    },
+    {
+      "file": "assets/march/03_March_C负序列.svg",
+      "text_objects": 38,
+      "raster_images": 0,
+      "minimum_text_size": 28.0
+    },
+    {
+      "file": "assets/march/04耦合故障时序.svg",
+      "text_objects": 17,
+      "raster_images": 0,
+      "minimum_text_size": 30.0
+    },
+    {
+      "file": "assets/march/05经典算法长度.svg",
+      "text_objects": 39,
+      "raster_images": 0,
+      "minimum_text_size": 28.0
+    },
+    {
+      "file": "assets/march/06存储器数据图案.svg",
+      "text_objects": 267,
+      "raster_images": 0,
+      "minimum_text_size": 30.0
+    },
+    {
+      "file": "assets/march/07五单元邻近故障.svg",
+      "text_objects": 12,
+      "raster_images": 0,
+      "minimum_text_size": 30.0
+    },
+    {
+      "file": "assets/march/08算法选择流程.svg",
+      "text_objects": 16,
+      "raster_images": 0,
+      "minimum_text_size": 28.0
+    },
+    {
+      "file": "assets/march/09动态故障时序.svg",
+      "text_objects": 15,
+      "raster_images": 0,
+      "minimum_text_size": 30.0
+    },
+    {
+      "file": "assets/march/10复杂算法长度.svg",
+      "text_objects": 32,
+      "raster_images": 0,
+      "minimum_text_size": 28.0
+    },
+    {
+      "file": "assets/systems/01_system.svg",
+      "text_objects": 28,
+      "raster_images": 0,
+      "minimum_text_size": 30.0
+    },
+    {
+      "file": "assets/systems/02_group_levels.svg",
+      "text_objects": 12,
+      "raster_images": 0,
+      "minimum_text_size": 30.0
+    },
+    {
+      "file": "assets/systems/03_controller_modes.svg",
+      "text_objects": 18,
+      "raster_images": 0,
+      "minimum_text_size": 30.0
+    },
+    {
+      "file": "assets/systems/04_constraints.svg",
+      "text_objects": 18,
+      "raster_images": 0,
+      "minimum_text_size": 30.0
+    },
+    {
+      "file": "assets/systems/05_group_example.svg",
+      "text_objects": 20,
+      "raster_images": 0,
+      "minimum_text_size": 30.0
+    },
+    {
+      "file": "assets/systems/06_schedule.svg",
+      "text_objects": 22,
+      "raster_images": 0,
+      "minimum_text_size": 30.0
+    },
+    {
+      "file": "assets/systems/07_power_flow.svg",
+      "text_objects": 11,
+      "raster_images": 0,
+      "minimum_text_size": 30.0
+    },
+    {
+      "file": "assets/systems/08_phase_power.svg",
+      "text_objects": 35,
+      "raster_images": 0,
+      "minimum_text_size": 28.0
+    },
+    {
+      "file": "assets/systems/09_thermal.svg",
+      "text_objects": 20,
+      "raster_images": 0,
+      "minimum_text_size": 30.0
+    },
+    {
+      "file": "assets/systems/10_adaptive.svg",
+      "text_objects": 24,
+      "raster_images": 0,
+      "minimum_text_size": 30.0
+    },
+    {
+      "file": "assets/systems/11_online.svg",
+      "text_objects": 14,
+      "raster_images": 0,
+      "minimum_text_size": 30.0
+    },
+    {
+      "file": "assets/systems/12_diagnosis.svg",
+      "text_objects": 21,
+      "raster_images": 0,
+      "minimum_text_size": 28.0
+    },
+    {
+      "file": "assets/systems/13_repair.svg",
+      "text_objects": 21,
+      "raster_images": 0,
+      "minimum_text_size": 28.0
+    },
+    {
+      "file": "assets/systems/14_fault_buffers.svg",
+      "text_objects": 17,
+      "raster_images": 0,
+      "minimum_text_size": 30.0
+    },
+    {
+      "file": "assets/systems/15_flow.svg",
+      "text_objects": 15,
+      "raster_images": 0,
+      "minimum_text_size": 28.0
+    }
+  ]
+}

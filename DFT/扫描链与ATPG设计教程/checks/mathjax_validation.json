@@ -1,0 +1,10 @@
+{
+  "engine": "MathJax full",
+  "version": "3.2.1",
+  "total": 142,
+  "display": 25,
+  "inline": 117,
+  "errors": [],
+  "passed": true,
+  "scope": "Offline TeX-to-SVG conversion; not an Obsidian UI test."
+}

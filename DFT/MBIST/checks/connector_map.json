@@ -1,0 +1,1171 @@
+[
+  {
+    "figure": "图 02  March 算法在 MBIST 中的执行位置",
+    "file": "assets/march/01_mbist结构.svg",
+    "id": "control-address",
+    "source": "controller",
+    "target": "address",
+    "meaning": "地址方向及读写步骤",
+    "points": [
+      [
+        310.0,
+        380
+      ],
+      [
+        310.0,
+        510
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 02  March 算法在 MBIST 中的执行位置",
+    "file": "assets/march/01_mbist结构.svg",
+    "id": "control-data",
+    "source": "controller",
+    "target": "data",
+    "meaning": "数据图案与期望值规则",
+    "points": [
+      [
+        910.0,
+        380
+      ],
+      [
+        910.0,
+        510
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 02  March 算法在 MBIST 中的执行位置",
+    "file": "assets/march/01_mbist结构.svg",
+    "id": "address-memory",
+    "source": "address",
+    "target": "memory",
+    "meaning": "地址、读使能、写使能",
+    "points": [
+      [
+        310.0,
+        720
+      ],
+      [
+        310.0,
+        870
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 02  March 算法在 MBIST 中的执行位置",
+    "file": "assets/march/01_mbist结构.svg",
+    "id": "data-expected",
+    "source": "data",
+    "target": "expected",
+    "meaning": "期望值及其对应的有效信息",
+    "points": [
+      [
+        910.0,
+        720
+      ],
+      [
+        910.0,
+        870
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 02  March 算法在 MBIST 中的执行位置",
+    "file": "assets/march/01_mbist结构.svg",
+    "id": "data-memory",
+    "source": "data",
+    "target": "memory",
+    "meaning": "实际写入数据",
+    "points": [
+      [
+        700,
+        615.0
+      ],
+      [
+        620,
+        615
+      ],
+      [
+        620,
+        975
+      ],
+      [
+        540,
+        975.0
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 02  March 算法在 MBIST 中的执行位置",
+    "file": "assets/march/01_mbist结构.svg",
+    "id": "memory-compare",
+    "source": "memory",
+    "target": "compare",
+    "meaning": "实际读出数据",
+    "points": [
+      [
+        310.0,
+        1080
+      ],
+      [
+        310.0,
+        1220
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 02  March 算法在 MBIST 中的执行位置",
+    "file": "assets/march/01_mbist结构.svg",
+    "id": "expected-compare",
+    "source": "expected",
+    "target": "compare",
+    "meaning": "经过延迟对齐的期望信息",
+    "points": [
+      [
+        910.0,
+        1080
+      ],
+      [
+        910.0,
+        1220
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 02  March 算法在 MBIST 中的执行位置",
+    "file": "assets/march/01_mbist结构.svg",
+    "id": "compare-failure",
+    "source": "compare",
+    "target": "failure",
+    "meaning": "比较不一致时写入故障记录",
+    "points": [
+      [
+        600.0,
+        1380
+      ],
+      [
+        600.0,
+        1480
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 06  耦合故障：先激励，再观察",
+    "file": "assets/march/04耦合故障时序.svg",
+    "id": "coupling",
+    "source": "aggressor",
+    "target": "victim",
+    "meaning": "故障导致的异常影响，不是正常数据连线",
+    "points": [
+      [
+        490,
+        310.0
+      ],
+      [
+        710,
+        310.0
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 06  耦合故障：先激励，再观察",
+    "file": "assets/march/04耦合故障时序.svg",
+    "id": "order1",
+    "source": "step0",
+    "target": "step1",
+    "meaning": "同一测试示例中的操作先后次序",
+    "points": [
+      [
+        600.0,
+        668
+      ],
+      [
+        600.0,
+        745
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 06  耦合故障：先激励，再观察",
+    "file": "assets/march/04耦合故障时序.svg",
+    "id": "order2",
+    "source": "step1",
+    "target": "step2",
+    "meaning": "同一测试示例中的操作先后次序",
+    "points": [
+      [
+        600.0,
+        903
+      ],
+      [
+        600.0,
+        980
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 06  耦合故障：先激励，再观察",
+    "file": "assets/march/04耦合故障时序.svg",
+    "id": "order3",
+    "source": "step2",
+    "target": "step3",
+    "meaning": "同一测试示例中的操作先后次序",
+    "points": [
+      [
+        600.0,
+        1138
+      ],
+      [
+        600.0,
+        1215
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 10  五单元邻近图案敏感故障",
+    "file": "assets/march/07五单元邻近故障.svg",
+    "id": "top-influence",
+    "source": "top",
+    "target": "center",
+    "meaning": "相邻单元状态对中心单元行为的影响",
+    "points": [
+      [
+        600.0,
+        390
+      ],
+      [
+        600.0,
+        520
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 10  五单元邻近图案敏感故障",
+    "file": "assets/march/07五单元邻近故障.svg",
+    "id": "left-influence",
+    "source": "left",
+    "target": "center",
+    "meaning": "相邻单元状态对中心单元行为的影响",
+    "points": [
+      [
+        380,
+        590.0
+      ],
+      [
+        450,
+        590.0
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 10  五单元邻近图案敏感故障",
+    "file": "assets/march/07五单元邻近故障.svg",
+    "id": "right-influence",
+    "source": "right",
+    "target": "center",
+    "meaning": "相邻单元状态对中心单元行为的影响",
+    "points": [
+      [
+        820,
+        590.0
+      ],
+      [
+        750,
+        590.0
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 10  五单元邻近图案敏感故障",
+    "file": "assets/march/07五单元邻近故障.svg",
+    "id": "bottom-influence",
+    "source": "bottom",
+    "target": "center",
+    "meaning": "相邻单元状态对中心单元行为的影响",
+    "points": [
+      [
+        600.0,
+        790
+      ],
+      [
+        600.0,
+        660
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 13  March 算法的选择与验证",
+    "file": "assets/march/08算法选择流程.svg",
+    "id": "structure-faults",
+    "source": "structure",
+    "target": "faults",
+    "meaning": "根据电路结构确定故障建模条件",
+    "points": [
+      [
+        600.0,
+        380
+      ],
+      [
+        600.0,
+        480
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 13  March 算法的选择与验证",
+    "file": "assets/march/08算法选择流程.svg",
+    "id": "faults-candidates",
+    "source": "faults",
+    "target": "candidates",
+    "meaning": "按故障目标形成候选算法集合",
+    "points": [
+      [
+        600.0,
+        640
+      ],
+      [
+        600.0,
+        740
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 13  March 算法的选择与验证",
+    "file": "assets/march/08算法选择流程.svg",
+    "id": "candidates-verify",
+    "source": "candidates",
+    "target": "verify",
+    "meaning": "验证候选算法，不把候选项误画为串行测试步骤",
+    "points": [
+      [
+        600.0,
+        1260
+      ],
+      [
+        600.0,
+        1380
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 09  动态故障与连续读取历史",
+    "file": "assets/march/09动态故障时序.svg",
+    "id": "history1",
+    "source": "step0",
+    "target": "step1",
+    "meaning": "在规定时间条件下连续执行",
+    "points": [
+      [
+        600.0,
+        430
+      ],
+      [
+        600.0,
+        485
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 09  动态故障与连续读取历史",
+    "file": "assets/march/09动态故障时序.svg",
+    "id": "history2",
+    "source": "step1",
+    "target": "step2",
+    "meaning": "在规定时间条件下连续执行",
+    "points": [
+      [
+        600.0,
+        695
+      ],
+      [
+        600.0,
+        750
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 09  动态故障与连续读取历史",
+    "file": "assets/march/09动态故障时序.svg",
+    "id": "history3",
+    "source": "step2",
+    "target": "step3",
+    "meaning": "在规定时间条件下连续执行",
+    "points": [
+      [
+        600.0,
+        960
+      ],
+      [
+        600.0,
+        1015
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 01  MBIST 系统的完整功能",
+    "file": "assets/systems/01_system.svg",
+    "id": "manager-execute",
+    "source": "manager",
+    "target": "execute",
+    "meaning": "启动、模式与执行控制",
+    "points": [
+      [
+        600.0,
+        380
+      ],
+      [
+        600.0,
+        480
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 01  MBIST 系统的完整功能",
+    "file": "assets/systems/01_system.svg",
+    "id": "execute-interface",
+    "source": "execute",
+    "target": "interface",
+    "meaning": "地址、读写命令与写入数据",
+    "points": [
+      [
+        340.0,
+        640
+      ],
+      [
+        340.0,
+        760
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 01  MBIST 系统的完整功能",
+    "file": "assets/systems/01_system.svg",
+    "id": "execute-expect",
+    "source": "execute",
+    "target": "expect",
+    "meaning": "本次读请求的期望信息",
+    "points": [
+      [
+        905.0,
+        640
+      ],
+      [
+        905.0,
+        760
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 01  MBIST 系统的完整功能",
+    "file": "assets/systems/01_system.svg",
+    "id": "interface-array",
+    "source": "interface",
+    "target": "array",
+    "meaning": "实际存储器接口信号",
+    "points": [
+      [
+        340.0,
+        920
+      ],
+      [
+        340.0,
+        1040
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 01  MBIST 系统的完整功能",
+    "file": "assets/systems/01_system.svg",
+    "id": "expect-compare",
+    "source": "expect",
+    "target": "compare",
+    "meaning": "按读延迟对应的期望值",
+    "points": [
+      [
+        905.0,
+        920
+      ],
+      [
+        905.0,
+        1040
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 01  MBIST 系统的完整功能",
+    "file": "assets/systems/01_system.svg",
+    "id": "array-compare",
+    "source": "array",
+    "target": "compare",
+    "meaning": "存储器的实际读出数据",
+    "points": [
+      [
+        580,
+        1120.0
+      ],
+      [
+        710,
+        1120.0
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 01  MBIST 系统的完整功能",
+    "file": "assets/systems/01_system.svg",
+    "id": "compare-record",
+    "source": "compare",
+    "target": "record",
+    "meaning": "比较失败时记录故障信息",
+    "points": [
+      [
+        905.0,
+        1200
+      ],
+      [
+        905.0,
+        1320
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 01  MBIST 系统的完整功能",
+    "file": "assets/systems/01_system.svg",
+    "id": "record-repair",
+    "source": "record",
+    "target": "repair",
+    "meaning": "故障位置及错误位供冗余分析",
+    "points": [
+      [
+        710,
+        1425.0
+      ],
+      [
+        580,
+        1425.0
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 01  MBIST 系统的完整功能",
+    "file": "assets/systems/01_system.svg",
+    "id": "repair-array",
+    "source": "repair",
+    "target": "array",
+    "meaning": "合法修复配置控制备用资源替换",
+    "points": [
+      [
+        340.0,
+        1320
+      ],
+      [
+        340.0,
+        1200
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 16  两两关系与整个集合的约束",
+    "file": "assets/systems/04_constraints.svg",
+    "id": "A-B",
+    "source": "A",
+    "target": "B",
+    "meaning": "A 与 B 的距离为 4，满足限制",
+    "points": [
+      [
+        260,
+        460.0
+      ],
+      [
+        520,
+        460.0
+      ]
+    ],
+    "arrow": false
+  },
+  {
+    "figure": "图 16  两两关系与整个集合的约束",
+    "file": "assets/systems/04_constraints.svg",
+    "id": "B-C",
+    "source": "B",
+    "target": "C",
+    "meaning": "B 与 C 的距离为 4，满足限制",
+    "points": [
+      [
+        680,
+        460.0
+      ],
+      [
+        940,
+        460.0
+      ]
+    ],
+    "arrow": false
+  },
+  {
+    "figure": "图 16  两两关系与整个集合的约束",
+    "file": "assets/systems/04_constraints.svg",
+    "id": "A-C",
+    "source": "A",
+    "target": "C",
+    "meaning": "A 与 C 的距离为 8，违反两两距离限制",
+    "points": [
+      [
+        180.0,
+        540
+      ],
+      [
+        180,
+        640
+      ],
+      [
+        1020,
+        640
+      ],
+      [
+        1020.0,
+        540
+      ]
+    ],
+    "arrow": false
+  },
+  {
+    "figure": "图 15  从粗略指标到电气验证",
+    "file": "assets/systems/07_power_flow.svg",
+    "id": "sequence1",
+    "source": "step0",
+    "target": "step1",
+    "meaning": "上一阶段完成并满足条件后进入下一阶段",
+    "points": [
+      [
+        600.0,
+        410
+      ],
+      [
+        600.0,
+        490
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 15  从粗略指标到电气验证",
+    "file": "assets/systems/07_power_flow.svg",
+    "id": "sequence2",
+    "source": "step1",
+    "target": "step2",
+    "meaning": "上一阶段完成并满足条件后进入下一阶段",
+    "points": [
+      [
+        600.0,
+        680
+      ],
+      [
+        600.0,
+        760
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 15  从粗略指标到电气验证",
+    "file": "assets/systems/07_power_flow.svg",
+    "id": "sequence3",
+    "source": "step2",
+    "target": "step3",
+    "meaning": "上一阶段完成并满足条件后进入下一阶段",
+    "points": [
+      [
+        600.0,
+        950
+      ],
+      [
+        600.0,
+        1030
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 21  自适应测试的条件与返回路径",
+    "file": "assets/systems/10_adaptive.svg",
+    "id": "execute-observe",
+    "source": "execute",
+    "target": "observe",
+    "meaning": "完成该项测试后评估结果",
+    "points": [
+      [
+        600.0,
+        380
+      ],
+      [
+        600.0,
+        480
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 21  自适应测试的条件与返回路径",
+    "file": "assets/systems/10_adaptive.svg",
+    "id": "observe-branch",
+    "source": "observe",
+    "target": "branch",
+    "meaning": "结果分支的公共连接点",
+    "points": [
+      [
+        600.0,
+        640
+      ],
+      [
+        600,
+        710
+      ]
+    ],
+    "arrow": false
+  },
+  {
+    "figure": "图 21  自适应测试的条件与返回路径",
+    "file": "assets/systems/10_adaptive.svg",
+    "id": "branch-failure",
+    "source": "branch",
+    "target": "failure",
+    "meaning": "已观察到测试失败",
+    "points": [
+      [
+        600,
+        710
+      ],
+      [
+        320,
+        710
+      ],
+      [
+        320.0,
+        830
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 21  自适应测试的条件与返回路径",
+    "file": "assets/systems/10_adaptive.svg",
+    "id": "branch-complete",
+    "source": "branch",
+    "target": "complete",
+    "meaning": "尚未发现失败，仍需检查完成条件",
+    "points": [
+      [
+        600,
+        710
+      ],
+      [
+        900,
+        710
+      ],
+      [
+        900.0,
+        830
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 21  自适应测试的条件与返回路径",
+    "file": "assets/systems/10_adaptive.svg",
+    "id": "continue",
+    "source": "complete",
+    "target": "execute",
+    "meaning": "必要测试未完成时返回，禁止提前宣布通过",
+    "points": [
+      [
+        1120,
+        960.0
+      ],
+      [
+        1160,
+        960
+      ],
+      [
+        1160,
+        300
+      ],
+      [
+        1080,
+        300.0
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 21  自适应测试的条件与返回路径",
+    "file": "assets/systems/10_adaptive.svg",
+    "id": "complete-decision",
+    "source": "complete",
+    "target": "decision",
+    "meaning": "仅在全部必要测试完成后判定",
+    "points": [
+      [
+        900.0,
+        1090
+      ],
+      [
+        900.0,
+        1210
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 22  保留数据的短测试过程",
+    "file": "assets/systems/11_online.svg",
+    "id": "sequence1",
+    "source": "step0",
+    "target": "step1",
+    "meaning": "上一阶段完成并满足条件后进入下一阶段",
+    "points": [
+      [
+        600.0,
+        410
+      ],
+      [
+        600.0,
+        490
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 22  保留数据的短测试过程",
+    "file": "assets/systems/11_online.svg",
+    "id": "sequence2",
+    "source": "step1",
+    "target": "step2",
+    "meaning": "上一阶段完成并满足条件后进入下一阶段",
+    "points": [
+      [
+        600.0,
+        680
+      ],
+      [
+        600.0,
+        760
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 22  保留数据的短测试过程",
+    "file": "assets/systems/11_online.svg",
+    "id": "sequence3",
+    "source": "step2",
+    "target": "step3",
+    "meaning": "上一阶段完成并满足条件后进入下一阶段",
+    "points": [
+      [
+        600.0,
+        950
+      ],
+      [
+        600.0,
+        1030
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 22  保留数据的短测试过程",
+    "file": "assets/systems/11_online.svg",
+    "id": "sequence4",
+    "source": "step3",
+    "target": "step4",
+    "meaning": "上一阶段完成并满足条件后进入下一阶段",
+    "points": [
+      [
+        600.0,
+        1220
+      ],
+      [
+        600.0,
+        1300
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 04  正确定位需要响应时间对应",
+    "file": "assets/systems/12_diagnosis.svg",
+    "id": "expected-record",
+    "source": "expected",
+    "target": "record",
+    "meaning": "用返回请求的地址而非当前请求地址生成故障记录",
+    "points": [
+      [
+        600.0,
+        995
+      ],
+      [
+        600.0,
+        1110
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 23  故障信息也会限制并发",
+    "file": "assets/systems/14_fault_buffers.svg",
+    "id": "local0",
+    "source": "memory0",
+    "target": "buffer0",
+    "meaning": "该存储体的故障记录进入其局部缓冲",
+    "points": [
+      [
+        320.0,
+        380
+      ],
+      [
+        320.0,
+        500
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 23  故障信息也会限制并发",
+    "file": "assets/systems/14_fault_buffers.svg",
+    "id": "local1",
+    "source": "memory1",
+    "target": "buffer1",
+    "meaning": "该存储体的故障记录进入其局部缓冲",
+    "points": [
+      [
+        880.0,
+        380
+      ],
+      [
+        880.0,
+        500
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 23  故障信息也会限制并发",
+    "file": "assets/systems/14_fault_buffers.svg",
+    "id": "buffer0-merge",
+    "source": "buffer0",
+    "target": "merge",
+    "meaning": "局部缓冲 A 交给共享分析",
+    "points": [
+      [
+        320.0,
+        660
+      ],
+      [
+        320,
+        760
+      ],
+      [
+        600,
+        760
+      ]
+    ],
+    "arrow": false
+  },
+  {
+    "figure": "图 23  故障信息也会限制并发",
+    "file": "assets/systems/14_fault_buffers.svg",
+    "id": "buffer1-merge",
+    "source": "buffer1",
+    "target": "merge",
+    "meaning": "局部缓冲 B 交给共享分析",
+    "points": [
+      [
+        880.0,
+        660
+      ],
+      [
+        880,
+        760
+      ],
+      [
+        600,
+        760
+      ]
+    ],
+    "arrow": false
+  },
+  {
+    "figure": "图 23  故障信息也会限制并发",
+    "file": "assets/systems/14_fault_buffers.svg",
+    "id": "merge-analysis",
+    "source": "merge",
+    "target": "analysis",
+    "meaning": "明确合并后的故障信息流",
+    "points": [
+      [
+        600,
+        760
+      ],
+      [
+        600.0,
+        860
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 23  故障信息也会限制并发",
+    "file": "assets/systems/14_fault_buffers.svg",
+    "id": "analysis-capacity",
+    "source": "analysis",
+    "target": "capacity",
+    "meaning": "检查关系：不是额外的数据处理硬件级",
+    "points": [
+      [
+        600.0,
+        1040
+      ],
+      [
+        600.0,
+        1170
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 25  优化方案怎样进入实际工具",
+    "file": "assets/systems/15_flow.svg",
+    "id": "sequence1",
+    "source": "step0",
+    "target": "step1",
+    "meaning": "上一阶段完成并满足条件后进入下一阶段",
+    "points": [
+      [
+        580.0,
+        410
+      ],
+      [
+        580.0,
+        490
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 25  优化方案怎样进入实际工具",
+    "file": "assets/systems/15_flow.svg",
+    "id": "sequence2",
+    "source": "step1",
+    "target": "step2",
+    "meaning": "上一阶段完成并满足条件后进入下一阶段",
+    "points": [
+      [
+        580.0,
+        680
+      ],
+      [
+        580.0,
+        760
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 25  优化方案怎样进入实际工具",
+    "file": "assets/systems/15_flow.svg",
+    "id": "sequence3",
+    "source": "step2",
+    "target": "step3",
+    "meaning": "上一阶段完成并满足条件后进入下一阶段",
+    "points": [
+      [
+        580.0,
+        950
+      ],
+      [
+        580.0,
+        1030
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 25  优化方案怎样进入实际工具",
+    "file": "assets/systems/15_flow.svg",
+    "id": "sequence4",
+    "source": "step3",
+    "target": "step4",
+    "meaning": "上一阶段完成并满足条件后进入下一阶段",
+    "points": [
+      [
+        580.0,
+        1220
+      ],
+      [
+        580.0,
+        1300
+      ]
+    ],
+    "arrow": true
+  },
+  {
+    "figure": "图 25  优化方案怎样进入实际工具",
+    "file": "assets/systems/15_flow.svg",
+    "id": "revise",
+    "source": "step4",
+    "target": "step1",
+    "meaning": "物理、电气结果不满足要求时返回分组与调度优化",
+    "points": [
+      [
+        1060,
+        1395.0
+      ],
+      [
+        1160,
+        1395
+      ],
+      [
+        1160,
+        585
+      ],
+      [
+        1060,
+        585.0
+      ]
+    ],
+    "arrow": true
+  }
+]

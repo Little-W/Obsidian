@@ -1,0 +1,430 @@
+{
+  "scope": "Chromium set_content with inlined local CSS and images; links checked statically. File navigation, external URLs, and Obsidian UI not tested.",
+  "pages": 21,
+  "local_links": 731,
+  "viewport_checks": 42,
+  "passed": true,
+  "errors": [],
+  "browser_results": [
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 0,
+      "file": "插图索引.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 0,
+      "file": "精确绘图检查.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 0,
+      "file": "阅读入口.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 0,
+      "file": "html/00_扫描链与ATPG总体架构与阅读导航.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 24,
+      "file": "html/01_扫描触发器与移位捕获原理.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 3,
+      "file": "html/02_扫描架构与物理实现.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 4,
+      "file": "html/03_测试时钟复位与高速捕获.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 0,
+      "file": "html/04_JTAG测试访问与芯片级数据传输.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 4,
+      "file": "html/05_故障模型覆盖率与测试质量.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 35,
+      "file": "html/06_ATPG激活传播与结构搜索算法.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 18,
+      "file": "html/07_SAT求解故障模拟与测试集合优化.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 16,
+      "file": "html/08_测试压缩未知值与可编码性.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 10,
+      "file": "html/09_测试功耗并发与运行期间测试.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 10,
+      "file": "html/10_测试点插入与可测试性设计优化.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 6,
+      "file": "html/11_扫描故障诊断与失败分析.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 0,
+      "file": "html/12_设计验证工具接入与制造执行.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 10,
+      "file": "html/13_2024至2026年学术成果分析与研究路线.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 2,
+      "file": "html/14_教学算例源码与学习练习.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 0,
+      "file": "html/90_参考文献与材料证据索引.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 0,
+      "file": "html/99_证据范围版本与使用说明.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 0,
+      "file": "html/README.html",
+      "tested_width": 1440
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 0,
+      "file": "插图索引.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 0,
+      "file": "精确绘图检查.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 0,
+      "file": "阅读入口.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 0,
+      "file": "html/00_扫描链与ATPG总体架构与阅读导航.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 24,
+      "file": "html/01_扫描触发器与移位捕获原理.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 3,
+      "file": "html/02_扫描架构与物理实现.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 4,
+      "file": "html/03_测试时钟复位与高速捕获.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 0,
+      "file": "html/04_JTAG测试访问与芯片级数据传输.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 4,
+      "file": "html/05_故障模型覆盖率与测试质量.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 35,
+      "file": "html/06_ATPG激活传播与结构搜索算法.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 18,
+      "file": "html/07_SAT求解故障模拟与测试集合优化.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 16,
+      "file": "html/08_测试压缩未知值与可编码性.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 10,
+      "file": "html/09_测试功耗并发与运行期间测试.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 10,
+      "file": "html/10_测试点插入与可测试性设计优化.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 6,
+      "file": "html/11_扫描故障诊断与失败分析.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 0,
+      "file": "html/12_设计验证工具接入与制造执行.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 10,
+      "file": "html/13_2024至2026年学术成果分析与研究路线.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 2,
+      "file": "html/14_教学算例源码与学习练习.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 0,
+      "file": "html/90_参考文献与材料证据索引.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 0,
+      "file": "html/99_证据范围版本与使用说明.html",
+      "tested_width": 390
+    },
+    {
+      "bodyWidth": 390,
+      "viewport": 390,
+      "brokenImages": [],
+      "placeholder": false,
+      "mathErrors": 0,
+      "svgMath": 0,
+      "file": "html/README.html",
+      "tested_width": 390
+    }
+  ]
+}

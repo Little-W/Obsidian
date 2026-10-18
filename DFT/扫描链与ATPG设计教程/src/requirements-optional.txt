@@ -1,0 +1,6 @@
+# Python >= 3.10. Not required for reading or standard-library teaching examples.
+# Needed only for HTML export and browser geometry / layout checks.
+mistune>=3,<4
+playwright>=1.50,<2
+# Also install a Chromium browser, and Node.js with mathjax-full 3.x.
+# No font files are included; use an installed CJK font and rerun geometry checks.

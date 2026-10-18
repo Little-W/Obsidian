@@ -1,0 +1,304 @@
+{
+  "R01": {
+    "original_ids": [
+      "M01"
+    ],
+    "reference": "**Microchip Technology.** *March C− Test for SRAM*, Microchip Online Documentation. [官方技术说明](https://onlinedocs.microchip.com/oxy/GUID-CA566412-3E3C-467B-98AF-9F1D156615B7-en-US-3/GUID-8D7156E0-ECFE-4055-B0DE-AC9C32162163.html)。用于核实经典六阶段算法和工程语境。"
+  },
+  "R02": {
+    "original_ids": [
+      "M02",
+      "S03"
+    ],
+    "reference": "**ASP-DAC 2025 Tutorial T3-1.** 存储器测试、功能故障模型与 March 方法教程。[官方教程 PDF](https://www.aspdac.com/aspdac2025/archive/pdf/T3-1.pdf)。用于经典测试表达、故障模型与测试控制器背景。 原系统教程补充：官方教程共 57 页；原整理阶段阅读了相关内容并检查物理地址循环示例。"
+  },
+  "R03": {
+    "original_ids": [
+      "M03"
+    ],
+    "reference": "**Mrozek, I.; Yarmolik, V.（2021）.** *Transparent Memory Testing with a Double Address Sequence.* **Entropy**, 23(7), 894. [DOI: 10.3390/e23070894](https://doi.org/10.3390/e23070894)。透明测试、`8N` 和 `14N` 地址重复序列。"
+  },
+  "R04": {
+    "original_ids": [
+      "M04"
+    ],
+    "reference": "**Liu 等（2023）.** 《一种基于存储器内建自测试的新型动态 March 算法设计》，《电子与信息学报》。[DOI: 10.11999/JEIT221032](https://doi.org/10.11999/JEIT221032)。Dynamic-RAWC、282 个动态故障原型与覆盖率对照。**注意其比较表中 March AB 的操作次数标注问题。**"
+  },
+  "R05": {
+    "original_ids": [
+      "M05"
+    ],
+    "reference": "**Hamdioui, S.; van de Goor, A. J.; Rodgers, M.（2002）.** *March SS: a Test for All Static Simple RAM Faults.* IEEE International Workshop on Memory Technology, Design and Testing. [DOI: 10.1109/MTDT.2002.1029769](https://doi.org/10.1109/MTDT.2002.1029769)。`22N` 静态故障检测。"
+  },
+  "R06": {
+    "original_ids": [
+      "M06"
+    ],
+    "reference": "**Benso, A.; Bosio, A.; Di Carlo, S.; Di Natale, G.; Prinetto, P.（2006）.** *A 22n March Test for Realistic Static Linked Faults in SRAMs.* IEEE European Test Symposium. [DOI: 10.1109/ETS.2006.2](https://doi.org/10.1109/ETS.2006.2)。March AB `22N` 的原始依据。"
+  },
+  "R07": {
+    "original_ids": [
+      "M07"
+    ],
+    "reference": "**Jidin, A. Z.; Hussin, R.; Mispan, M. S.; Lee, W. F.（2025）.** *A new 13N-complexity memory built-in self-test algorithm to balance static random access memory static fault coverage and test time.* **International Journal of Electrical and Computer Engineering**, 15(1), 163–173. [DOI: 10.11591/ijece.v15i1.pp163-173](https://doi.org/10.11591/ijece.v15i1.pp163-173)；[大学机构论文库](https://eprints.utem.edu.my/id/eprint/28949/)。March AZ 及 83.3% 指定静态故障原型覆盖。"
+  },
+  "R08": {
+    "original_ids": [
+      "M08"
+    ],
+    "reference": "**Jidin, A. Z. 等（2026）.** *FSM-Based MBIST Controller Implementation using the March AZ2 Test Algorithm.* **IIUM Engineering Journal**, 27(1), 292–303. [DOI: 10.31436/iiumej.v27i1.3749](https://doi.org/10.31436/iiumej.v27i1.3749)。`14N` 的 March AZ2、有限状态机与 EDA 自动生成对照。"
+  },
+  "R09": {
+    "original_ids": [
+      "M09"
+    ],
+    "reference": "**Cașcaval, P.; Cașcaval, E.（2024）.** *Near-optimal March Tests for Three-Cell and Four-Cell Coupling Fault Models in Random-Access Memories.* **Romanian Journal of Information Science and Technology**. [论文全文 PDF](https://www.romjist.ro/full-texts/paper782.pdf)；[DOI: 10.59277/ROMJIST.2024.3-4.06](https://doi.org/10.59277/ROMJIST.2024.3-4.06)。`21N / 37N / 73N` 的特定三单元和四单元邻近故障算法。"
+  },
+  "R10": {
+    "original_ids": [
+      "M10"
+    ],
+    "reference": "**Cașcaval, P.; Cașcaval, E.（2025）.** *Near-Optimal Multirun March Memory Test Algorithms for Neighborhood Pattern-Sensitive Faults in Random-Access Memories.* **Mathematics**, 13(16), 2594. [DOI: 10.3390/math13162594](https://doi.org/10.3390/math13162594)；[开放获取全文](https://www.mdpi.com/2227-7390/13/16/2594)。五单元邻近图案敏感故障的 `81N / 177N` 两种多次运行算法。"
+  },
+  "R11": {
+    "original_ids": [
+      "M11"
+    ],
+    "reference": "**Hsu, H. J. 等（2026）.** *Defect-based Testing for SRAM Address Decoders.* **2026 IEEE 44th VLSI Test Symposium**. [DOI: 10.1109/VTS69484.2026.11563364](https://doi.org/10.1109/VTS69484.2026.11563364)；[国立阳明交通大学论文信息](https://scholar.nycu.edu.tw/zh/publications/defect-based-testing-for-sram-address-decoders/)。SPICE 缺陷仿真驱动的地址译码器 March 生成。"
+  },
+  "R12": {
+    "original_ids": [
+      "M12"
+    ],
+    "reference": "**Ronga, D.; Faehn, E.; Girard, P.; Virazel, A.（2026）.** *A hardware context monitoring for testing complex dynamic SRAM faults in digital test environment.* **Microprocessors and Microsystems**, 124（Part B）, 105305. [DOI: 10.1016/j.micpro.2026.105305](https://doi.org/10.1016/j.micpro.2026.105305)；[期刊页面](https://www.sciencedirect.com/science/article/pii/S0141933126000621)。动态故障数字仿真的操作历史建模。"
+  },
+  "R13": {
+    "original_ids": [
+      "M13"
+    ],
+    "reference": "**van de Goor 等早期地址测试与关联故障研究（1996 年起）.** *March LR: a Test for Realistic Linked Faults.* [DOI: 10.1109/VTEST.1996.510868](https://doi.org/10.1109/VTEST.1996.510868)；[Delft 相关研究材料](https://repository.tudelft.nl/file/File_1b7c1fe4-459e-4d45-b50e-528eebc1f76b)。March LR、地址译码器变体以及不同长度表达的背景。"
+  },
+  "R14": {
+    "original_ids": [
+      "M14"
+    ],
+    "reference": "**Jidin 等（2026）.** *A comprehensive review of memory BIST algorithms for SRAM static fault detection.* **Indonesian Journal of Electrical Engineering and Computer Science**, 43(2), 400–412. [DOI: 10.11591/ijeecs.v43.i2.pp400-412](https://doi.org/10.11591/ijeecs.v43.i2.pp400-412)。2026 年静态故障算法综述、March MSS 和短序列的覆盖权衡。"
+  },
+  "R15": {
+    "original_ids": [
+      "M15"
+    ],
+    "reference": "**Dilillo 等（2004）.** *March iC−: an Improved Version of March C− for ADOFs Detection.* IEEE VLSI Test Symposium 相关论文. [DOI: 10.1109/VTEST.2004.1299236](https://doi.org/10.1109/VTEST.2004.1299236)。地址译码器专用算法。"
+  },
+  "R16": {
+    "original_ids": [
+      "M16"
+    ],
+    "reference": "**Microchip Technology.** *Periodic SRAM Test: Diagnostic Coverage and Address Range Considerations.* [官方说明](https://onlinedocs.microchip.com/oxy/GUID-1BC922B5-0BDE-4D42-AC92-68359BB22BEC-en-US-1/GUID-DF313197-EBE8-4890-9306-7D638E485E61.html)。在线部分区域测试与整个存储器耦合故障覆盖的限制。"
+  },
+  "R17": {
+    "original_ids": [
+      "M17"
+    ],
+    "reference": "**多端口存储器经典研究.** *New March Tests for Multiport RAM Devices.* [论文 PDF](https://web.eecs.umich.edu/~mazum/PAPERS-MAZUM/30_MarchTests.pdf)。多端口同周期读写、跨端口故障检查。"
+  },
+  "R18": {
+    "original_ids": [
+      "M18"
+    ],
+    "reference": "**（2021）.** *Testing of in-memory-computing memories with 8T SRAMs.* [出版方页面](https://www.sciencedirect.com/science/article/pii/S0026271421001815)。八晶体管 SRAM 存内计算模式与 March C−8（`12N`）。"
+  },
+  "R19": {
+    "original_ids": [
+      "M19"
+    ],
+    "reference": "**（2024）.** *A Novel March Test Algorithm for Testing 8T SRAM-Based IMC Architectures.* **Design, Automation and Test in Europe（DATE）**. [DOI: 10.23919/DATE58400.2024.10546583](https://doi.org/10.23919/DATE58400.2024.10546583)。存内计算故障测试。"
+  },
+  "R20": {
+    "original_ids": [
+      "M20"
+    ],
+    "reference": "**Lin, Z.-T. 等（2025 年在线发表、2026 年期刊卷期）.** *Analysis and Design of Memory Testing Algorithm for Computing-in-Memory Using MBIST.* **ACM Journal on Emerging Technologies in Computing Systems**. [DOI: 10.1145/3766540](https://doi.org/10.1145/3766540)。March CC（`10N`）和计算模式与存储模式联合覆盖。"
+  },
+  "R21": {
+    "original_ids": [
+      "M21"
+    ],
+    "reference": "**Yuan, S. 等（2026）.** *Impact of Magnetic Coupling on Testing Contact and Interconnect Defects in STT-MRAMs.* **IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems**. [DOI: 10.1109/TCAD.2026.3700944](https://doi.org/10.1109/TCAD.2026.3700944)；[代尔夫特理工大学研究信息](https://research.tudelft.nl/en/publications/impact-of-magnetic-coupling-on-testing-contact-and-interconnect-d/)。面向磁性存储器的缺陷驱动优化。"
+  },
+  "R22": {
+    "original_ids": [
+      "M22",
+      "S19"
+    ],
+    "reference": "**Teoh 等（2026 年 8 月）.** *Automated Estimation of MBIST Area and Test Time in Heterogeneous Memory IPs via Stacked Ensemble Framework.* [arXiv:2608.19705](https://arxiv.org/abs/2608.19705)。使用机器学习估计 MBIST 面积与测试时间，**不是 March 操作序列的直接改进**。 原系统教程补充：版本为 arXiv:2608.19705v1；保留预印本身份与原阶段可读全文的证据说明。"
+  },
+  "R23": {
+    "original_ids": [
+      "M23"
+    ],
+    "reference": "**Harutyunyan, G.; Vardanian, V.; Zorian, Y.（2005）.** *Minimal March Tests for Unlinked Static Faults in Random Access Memories.* IEEE VLSI Test Symposium. [DOI: 10.1109/VTS.2005.56](https://doi.org/10.1109/VTS.2005.56)。较低操作数检测静态故障的早期工作及 March MSS 研究背景。"
+  },
+  "R24": {
+    "original_ids": [
+      "M24"
+    ],
+    "reference": "**（2025）.** *Power, delay Optimized MBIST Controller Architecture using March Algorithms.* IEEE 会议论文. [DOI: 10.1109/ICRTEECT67512.2025.11448959](https://doi.org/10.1109/ICRTEECT67512.2025.11448959)。硬件实现的功耗和时序代价，而不是增加故障覆盖的另一固定 March 序列。"
+  },
+  "R25": {
+    "original_ids": [
+      "S01"
+    ],
+    "reference": "Synopsys，**Synopsys IP for Embedded Memory Test and Repair（SMS）** 官方数据表。资料文件：`star-bist-ds.pdf`。用于核实测试、诊断、修复、可编程算法及不同存储技术支持的功能类别；不将数据表年份视为当前最新软件版本。<https://www.synopsys.com/content/dam/synopsys/implementation%26signoff/datasheets/star-bist-ds.pdf>"
+  },
+  "R26": {
+    "original_ids": [
+      "S02"
+    ],
+    "reference": "Siemens，**Tessent MemoryBIST** 官方产品页。用于核实产品功能类别，不推断当前用户许可证或具体脚本接口。<https://www.siemens.com/en-us/products/ic/tessent/test/memorybist/>"
+  },
+  "R27": {
+    "original_ids": [
+      "S04"
+    ],
+    "reference": "Andrew B. Kahng, Ilgweon Kang. **Co-Optimization of Memory BIST Grouping, Test Scheduling, and Logic Placement**. DATE, 2014. DOI: 10.7873/DATE.2014.209。会议官方全文：<https://past.date-conference.com/proceedings-archive/2014/PDFFILES/07.7_4.PDF>"
+  },
+  "R28": {
+    "original_ids": [
+      "S05"
+    ],
+    "reference": "Koki Asahina, Yasuhiko Nakashima. **Integrated Memory Grouping and Power-Aware MBIST Scheduling for MPSoCs**. NG-RES 2026, OASIcs 140, Article 3。出版日期 2026-03-10，DOI: 10.4230/OASIcs.NG-RES.2026.3。开放全文：<https://drops.dagstuhl.de/entities/document/10.4230/OASIcs.NG-RES.2026.3>"
+  },
+  "R29": {
+    "original_ids": [
+      "S06"
+    ],
+    "reference": "Olivier Romain, Wojciech Gierszal, Luc Romain, Artur Pogiel. **Holistic Memory DFT Partitioning Using a Convolution-Based Algorithm**. IEEE ETS, 2025, pp. 1–4. DOI: 10.1109/ETS63895.2025.11049595。核实材料为正式论文记录，未取得完整实现与原始输入。作者机构：<https://publications.polymtl.ca/66490/> ；出版商：<https://ieeexplore.ieee.org/document/11049595/>"
+  },
+  "R30": {
+    "original_ids": [
+      "S07"
+    ],
+    "reference": "Albert Au, Michał Kępiński, Makary Orczyk, Artur Pogiel. **Power-Aware Test Scheduling for Memory BIST**. IEEE ITC, 2024, pp. 384–390. DOI: 10.1109/ITC51657.2024.00060。已核实官方会议摘要；原报告整理阶段未取得完整论文算法正文。<https://ieeexplore.ieee.org/document/10766691/> ；会议摘要：<https://easychair.org/smart-program/ITC2024/2024-11-07.html>"
+  },
+  "R31": {
+    "original_ids": [
+      "S08"
+    ],
+    "reference": "Shou-Yi Huang, Shih-Hsu Huang. **Memory Grouping for the Built-In Self-Test of Three-Dimensional Integrated Circuits**. Electronics, 13(18), 3759, 2024. DOI: 10.3390/electronics13183759。原报告整理阶段可核实出版商索引与摘要，完整页面抓取受限。<https://www.mdpi.com/2079-9292/13/18/3759>"
+  },
+  "R32": {
+    "original_ids": [
+      "S09"
+    ],
+    "reference": "Hsiu-Wei Chen, Sz-Chi Ting, Liang-Ying Su, Shih-Hsu Huang. **Temperature-Conscious Test Scheduling Strategies for 3D Integrated Circuits**. Electronics, 15(14), 3050, 2026。出版日期 2026-07-11，DOI: 10.3390/electronics15143050。原报告整理阶段依据出版商索引摘要，未以完整表格进行数值重算。<https://www.mdpi.com/2079-9292/15/14/3050>"
+  },
+  "R33": {
+    "original_ids": [
+      "S10"
+    ],
+    "reference": "Paolo Bernardi 等. **Built-In Self-Test Architecture Enabling Diagnosis for Massive Embedded Memory Banks in Large SoCs**. Electronics, 13(2), 303, 2024. DOI: 10.3390/electronics13020303。出版商摘要与论文信息。<https://www.mdpi.com/2079-9292/13/2/303>"
+  },
+  "R34": {
+    "original_ids": [
+      "S11"
+    ],
+    "reference": "Wei Zou, Artur Pogiel, Albert Au, Martin Keim. **Periodic Non-Destructive Memory BIST for Automotive Applications**. IEEE VTS, 2025, pp. 1–7. DOI: 10.1109/VTS65138.2025.11022822。出版商摘要及正式会议程序。<https://ieeexplore.ieee.org/document/11022822/> ；<https://tttc-vts.org/public_html/new/2025/program-3/index.html>"
+  },
+  "R35": {
+    "original_ids": [
+      "S12"
+    ],
+    "reference": "Texas Instruments，**PBIST: Memory Built-In Self-Test**，Jacinto 7 Safety Diagnostic Library 官方文档。具体设备有其电源、复位和执行条件，不推广为全部芯片的统一调用方式。<https://software-dl.ti.com/jacinto7/esd/processor-sdk-rtos-jacinto7/latest/exports/docs/sdl/sdl_docs/userguide/j721e/modules/pbist.html>"
+  },
+  "R36": {
+    "original_ids": [
+      "S13"
+    ],
+    "reference": "Donghyun Han, Sunghoon Kim, Dayoung Kim, Sungho Kang. **SPOT: Fast and Optimal Built-In Redundancy Analysis Using Smart Potential Case Collection**. IEEE Transactions on Very Large Scale Integration Systems, 33(3), 780–792, 2025；先行在线 2024。DOI: 10.1109/TVLSI.2024.3499955。已核实作者机构摘要。<https://ieeexplore.ieee.org/document/10767428/> ；<https://yonsei.elsevierpure.com/en/publications/spot-fast-and-optimal-built-in-redundancy-analysis-using-smart-po/>"
+  },
+  "R37": {
+    "original_ids": [
+      "S14"
+    ],
+    "reference": "**PETRA: Powerful Early Termination-Based Redundancy Analysis**. IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems，2025 卷期，先行在线 2024。DOI: 10.1109/TCAD.2024.3424730。依据出版商摘要与正式记录，未复现全部终止条件。<https://ieeexplore.ieee.org/document/10587206/>"
+  },
+  "R38": {
+    "original_ids": [
+      "S15"
+    ],
+    "reference": "Byungsoo Kim, Seung Ho Shin, Youngki Moon, Eugene Jeong, Sungho Kang. **A Low Area Built-In Self-Repair Using Hybrid Fault Address Memory for HBM**. IEEE Transactions on Very Large Scale Integration Systems, 34(3), 991–1003, 2026；先行在线 2025。DOI: 10.1109/TVLSI.2025.3646232。作者机构摘要与期刊记录。<https://ieeexplore.ieee.org/document/11316804/> ；<https://yonsei.elsevierpure.com/en/publications/a-low-area-built-in-self-repair-using-hybrid-fault-address-memory/>"
+  },
+  "R39": {
+    "original_ids": [
+      "S16"
+    ],
+    "reference": "Joonsik Yoon, Hayoung Lee, Youngki Moon, Seung Ho Shin, Sungho Kang. **A Built-In Self-Repair With Maximum Fault Collection and Fast Analysis Method for HBM**. IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems, 44(5), 2014–2025, 2025；先行在线 2024。DOI: 10.1109/TCAD.2024.3499903。出版商论文记录与摘要。<https://ieeexplore.ieee.org/document/10753471/>"
+  },
+  "R40": {
+    "original_ids": [
+      "S17"
+    ],
+    "reference": "Younwoo Yoo, Seung Ho Shin, Dahoon Kim, Sungho Kang. **PRAISE: Parallel Redundancy Analysis Using Isomorphism-Based Solution Encoding**. IEEE Transactions on Very Large Scale Integration Systems, 2026。DOI: 10.1109/TVLSI.2026.3704618。作者机构记录显示已接受／待编定；本文按 2026 年在线工作处理，不指定未经统一核实的印刷月份。<https://www.computer.org/csdl/journal/si/2026/09/11575242/2hyA4tjhA1G> ；<https://yonsei.elsevierpure.com/en/publications/praise-parallel-redundancy-analysis-using-isomorphism-based-solut/>"
+  },
+  "R41": {
+    "original_ids": [
+      "S18"
+    ],
+    "reference": "Donghyun Han 等. **A Dual-Mode Online BISR Architecture for Interconnect and Memory Repair in Chiplet-Based Systems**. IEEE Transactions on Reliability, 75, 1525–1539, 2026。DOI: 10.1109/TR.2026.3679968。已核实作者机构摘要与期刊记录。<https://ieeexplore.ieee.org/document/11466463/> ；<https://yonsei.elsevierpure.com/en/publications/a-dual-mode-online-bisr-architecture-for-interconnect-and-memory-/>"
+  },
+  "R42": {
+    "original_ids": [
+      "S20"
+    ],
+    "reference": "Yunkun Lin, Mingye Li, Sandeep K. Gupta. **Predictive Testing for Aging in SRAMs and Mitigation**. IEEE ITC, 2024。DOI: 10.1109/ITC51657.2024.00050。出版商摘要。<https://ieeexplore.ieee.org/document/10766681/>"
+  },
+  "R43": {
+    "original_ids": [
+      "S21"
+    ],
+    "reference": "Yunkun Lin, Mingye Li, Sandeep K. Gupta. **Asymmetric Predictive Testing for Aging in SRAMs**. DAC, 2025。DOI: 10.1109/DAC63849.2025.11132451。出版商摘要；部分聚合页面存在年份显示差异，本文依据论文 DOI 与会议年份记为 2025。<https://ieeexplore.ieee.org/abstract/document/11132451/> ；<https://dl.acm.org/doi/10.1109/DAC63849.2025.11132451>"
+  },
+  "R44": {
+    "original_ids": [
+      "S22"
+    ],
+    "reference": "Zhe Zhang 等. **Testing for Aging in Advanced SRAM: From Front End of the Line Transistors to Back End of the Line Interconnects**. IEEE ITC, 2024。出版商摘要与正式题名。<https://ieeexplore.ieee.org/document/10766717/>"
+  },
+  "R45": {
+    "original_ids": [
+      "S23"
+    ],
+    "reference": "Ashish Reddy Bommana, Farshad Firouzi, Chukwufumnanya Ogbogu, Krishnendu Chakrabarty. **SEC-CiM+: Selective and Reconfigurable Error Compensation for ReRAM-based Compute-in-Memory**. ACM Transactions on Design Automation of Electronic Systems, 2026。DOI: 10.1145/3812655。出版商摘要；本文作为相邻可靠性研究介绍。<https://dl.acm.org/doi/10.1145/3812655>"
+  },
+  "R46": {
+    "original_ids": [
+      "S24"
+    ],
+    "reference": "Siemens，**Automation of Shared-Bus Memory Test With Tessent MemoryBIST**，官方白皮书页面。用于讨论共享功能总线的测试组织，不推断任意设计具有相同并发能力。<https://resources.sw.siemens.com/en-US/white-paper-automation-of-shared-bus-memory-test-with-tessent-memorybist/>"
+  },
+  "R47": {
+    "original_ids": [
+      "S25"
+    ],
+    "reference": "OpenTitan，**SRAM Controller — Theory of Operation**，官方设计文档。用于举例说明存储数据、完整性位和数据变换路径，不把它描述成通用 MBIST 产品。<https://opentitan.org/book/hw/ip/sram_ctrl/doc/theory_of_operation.html>"
+  },
+  "R48": {
+    "original_ids": [
+      "S26"
+    ],
+    "reference": "IEEE，**IEEE Std 1687-2014: Access and Control of Instrumentation Embedded within a Semiconductor Device**。官方范围说明；本文引用该版的用途，不断言它涵盖所有后续扩展。<https://standards.ieee.org/standard/1687-2014.html>"
+  },
+  "R49": {
+    "original_ids": [
+      "S27"
+    ],
+    "reference": "IEEE，**IEEE Std 1838-2019: Test Access Architecture for Three-Dimensional Stacked Integrated Circuits**，2020-03-13 出版。官方范围说明。<https://standards.ieee.org/ieee/1838/5073/> ；<https://ieeexplore.ieee.org/document/9036129>"
+  },
+  "R50": {
+    "original_ids": [
+      "S30"
+    ],
+    "reference": "Kevin Skadron 等，**Temperature-Aware Microarchitecture**，ISCA 2003，及作者发布的 HotSpot 热模型资料。用于热阻—热容模型的基础背景，不是 MBIST 专用论文。<https://ieeexplore.ieee.org/document/1206984/> ；<https://www.cs.virginia.edu/~skadron/Papers/hotspot_tr2003_08.abstract.html> ；<https://lava.cs.virginia.edu/HotSpot/>"
+  }
+}

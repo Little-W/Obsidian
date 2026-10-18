@@ -1,0 +1,74 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1876" viewBox="0 0 1200 1876" role="img" aria-labelledby="fig-title fig-description" version="1.1" data-layout-version="precise-ports-v2">
+  <title id="fig-title">图6  LOC 与 LOS 的关键区别</title>
+  <desc id="fig-description">示意图不按真实时间比例；脉冲间隔需符合实际测试协议。</desc>
+  <metadata>{"layout": "named ports + orthogonal routes", "font_policy": "editable text; no embedded fonts", "version": 2}</metadata>
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#1967A4" />
+    </marker>
+    <marker id="arrow-teal" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#118575" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#D97A16" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#B84051" />
+    </marker>
+    <marker id="arrow-muted" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#4F6278" />
+    </marker>
+    <marker id="arrow-slate" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#738A9F" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#92517C" />
+    </marker>
+  </defs>
+  <g id="layer-background">
+    <rect width="1200" height="1876" fill="#FFFFFF" />
+  </g>
+  <g id="layer-shapes">
+    <rect id="LOC0" x="70" y="325" width="300" height="130" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="LOC1" x="450" y="325" width="300" height="130" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="LOC2" x="830" y="325" width="300" height="130" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <polyline id="LOC-se" points="300,560 560,560 560,605 1120,605" fill="none" stroke="#D97A16" stroke-width="4" data-kind="rule" />
+    <polyline id="LOC-clk" points="300,740 400,740 400,685 430,685 430,740 700,740 700,685 730,685 730,740 1000,740 1000,685 1030,685 1030,740 1120,740" fill="none" stroke="#118575" stroke-width="4" data-kind="rule" />
+    <rect id="LOS0" x="70" y="1155" width="300" height="130" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="LOS1" x="450" y="1155" width="300" height="130" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="LOS2" x="830" y="1155" width="300" height="130" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <polyline id="LOS-se" points="300,1390 700,1390 700,1435 1120,1435" fill="none" stroke="#D97A16" stroke-width="4" data-kind="rule" />
+    <polyline id="LOS-clk" points="300,1570 400,1570 400,1515 430,1515 430,1570 1000,1570 1000,1515 1030,1515 1030,1570 1120,1570" fill="none" stroke="#118575" stroke-width="4" data-kind="rule" />
+  </g>
+  <g id="layer-connectors">
+    <polyline id="LOC-step0" points="370,390 450,390" fill="none" stroke="#1967A4" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="装入初始状态之后才执行功能脉冲：发起" data-source-node="LOC0" data-source-side="E" data-source-fraction="0.5" data-target-node="LOC1" data-target-side="W" data-target-fraction="0.5" marker-end="url(#arrow-blue)" />
+    <polyline id="LOC-step1" points="750,390 830,390" fill="none" stroke="#1967A4" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="功能脉冲：发起之后才执行功能脉冲：捕获" data-source-node="LOC1" data-source-side="E" data-source-fraction="0.5" data-target-node="LOC2" data-target-side="W" data-target-fraction="0.5" marker-end="url(#arrow-blue)" />
+    <polyline id="LOS-step0" points="370,1220 450,1220" fill="none" stroke="#1967A4" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="最后移位：发起之后才执行切换扫描使能" data-source-node="LOS0" data-source-side="E" data-source-fraction="0.5" data-target-node="LOS1" data-target-side="W" data-target-fraction="0.5" marker-end="url(#arrow-blue)" />
+    <polyline id="LOS-step1" points="750,1220 830,1220" fill="none" stroke="#1967A4" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="切换扫描使能之后才执行功能脉冲：捕获" data-source-node="LOS1" data-source-side="E" data-source-fraction="0.5" data-target-node="LOS2" data-target-side="W" data-target-fraction="0.5" marker-end="url(#arrow-blue)" />
+  </g>
+  <g id="layer-text">
+    <text id="text-0001" x="64" y="80" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="48" font-weight="700" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">图6  LOC 与 LOS 的关键区别</text>
+    <text id="text-0002" x="64" y="145" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">示意图不按真实时间比例；脉冲间隔需符合实际测试协议。</text>
+    <text id="text-0003" x="64" y="240" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="700" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">LOC：最后移位不是发起；第一个功能脉冲发起</text>
+    <text id="text-0004" x="220.0" y="390.0" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="LOC0">装入初始状态</text>
+    <text id="text-0005" x="600.0" y="390.0" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="LOC1">功能脉冲：发起</text>
+    <text id="text-0006" x="980.0" y="390.0" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="LOC2">功能脉冲：捕获</text>
+    <text id="text-0007" x="85" y="580" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">SE</text>
+    <text id="text-0008" x="85" y="715" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">CLK</text>
+    <text id="text-0009" x="415" y="795" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">末次移位</text>
+    <text id="text-0010" x="715" y="795" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">发起</text>
+    <text id="text-0011" x="1015" y="795" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">捕获</text>
+    <text id="text-0012" x="64" y="1070" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="700" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">LOS：最后移位发起；随后切换 SE，再捕获</text>
+    <text id="text-0013" x="220.0" y="1220.0" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="LOS0">最后移位：发起</text>
+    <text id="text-0014" x="600.0" y="1220.0" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="LOS1">切换扫描使能</text>
+    <text id="text-0015" x="980.0" y="1220.0" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="LOS2">功能脉冲：捕获</text>
+    <text id="text-0016" x="85" y="1410" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">SE</text>
+    <text id="text-0017" x="85" y="1545" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">CLK</text>
+    <text id="text-0018" x="415" y="1625" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">移位发起</text>
+    <text id="text-0019" x="1015" y="1625" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">捕获</text>
+    <text id="text-0020" x="64" y="1750" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">LOC 的第二状态由正常状态转移产生，不可任意独立赋值。</text>
+    <text id="text-0021" x="64" y="1796" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">LOS 对扫描使能切换与相邻脉冲的控制提出不同要求。</text>
+  </g>
+  <g id="layer-junctions" />
+</svg>

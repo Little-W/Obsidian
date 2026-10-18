@@ -1,0 +1,142 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1576" viewBox="0 0 1200 1576" role="img" aria-labelledby="fig-title fig-description" version="1.1" data-layout-version="precise-ports-v2">
+  <title id="fig-title">图5  最长链决定理想移位长度</title>
+  <desc id="fig-description">六条链合计 1200 个触发器；固定向量数和时钟比较。</desc>
+  <metadata>{"layout": "named ports + orthogonal routes", "font_policy": "editable text; no embedded fonts", "version": 2}</metadata>
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#1967A4" />
+    </marker>
+    <marker id="arrow-teal" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#118575" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#D97A16" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#B84051" />
+    </marker>
+    <marker id="arrow-muted" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#4F6278" />
+    </marker>
+    <marker id="arrow-slate" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#738A9F" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#92517C" />
+    </marker>
+  </defs>
+  <g id="layer-background">
+    <rect width="1200" height="1576" fill="#FFFFFF" />
+  </g>
+  <g id="layer-shapes">
+    <rect id="unbal0" x="230" y="302" width="700" height="46" rx="4" fill="#EAF2FA" stroke="none" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <rect id="unbal1" x="230" y="382" width="500" height="46" rx="4" fill="#EAF2FA" stroke="none" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <rect id="unbal2" x="230" y="462" width="400" height="46" rx="4" fill="#EAF2FA" stroke="none" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <rect id="unbal3" x="230" y="542" width="300" height="46" rx="4" fill="#EAF2FA" stroke="none" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <rect id="unbal4" x="230" y="622" width="300" height="46" rx="4" fill="#EAF2FA" stroke="none" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <rect id="unbal5" x="230" y="702" width="200" height="46" rx="4" fill="#EAF2FA" stroke="none" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <rect id="bal0" x="230" y="912" width="400" height="46" rx="4" fill="#F0F8F6" stroke="none" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <rect id="bal1" x="230" y="992" width="400" height="46" rx="4" fill="#F0F8F6" stroke="none" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <rect id="bal2" x="230" y="1072" width="400" height="46" rx="4" fill="#F0F8F6" stroke="none" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <rect id="bal3" x="230" y="1152" width="400" height="46" rx="4" fill="#F0F8F6" stroke="none" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <rect id="bal4" x="230" y="1232" width="400" height="46" rx="4" fill="#F0F8F6" stroke="none" stroke-width="2" data-kind="bar" data-obstacle="false" />
+    <rect id="bal5" x="230" y="1312" width="400" height="46" rx="4" fill="#F0F8F6" stroke="none" stroke-width="2" data-kind="bar" data-obstacle="false" />
+  </g>
+  <g id="layer-connectors" />
+  <g id="layer-text">
+    <text id="text-0001" x="64" y="80" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="48" font-weight="700" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">图5  最长链决定理想移位长度</text>
+    <text id="text-0002" x="64" y="145" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">六条链合计 1200 个触发器；固定向量数和时钟比较。</text>
+    <text id="text-0003" x="64" y="240" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">未平衡：最长链 350</text>
+    <text id="text-0004" x="80" y="325" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">链 0</text>
+    <text id="text-0005" x="950" y="325" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">350</text>
+    <text id="text-0006" x="80" y="405" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">链 1</text>
+    <text id="text-0007" x="750" y="405" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">250</text>
+    <text id="text-0008" x="80" y="485" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">链 2</text>
+    <text id="text-0009" x="650" y="485" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">200</text>
+    <text id="text-0010" x="80" y="565" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">链 3</text>
+    <text id="text-0011" x="550" y="565" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">150</text>
+    <text id="text-0012" x="80" y="645" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">链 4</text>
+    <text id="text-0013" x="550" y="645" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">150</text>
+    <text id="text-0014" x="80" y="725" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">链 5</text>
+    <text id="text-0015" x="450" y="725" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">100</text>
+    <text id="text-0016" x="64" y="850" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">平衡后：最长链 200</text>
+    <text id="text-0017" x="80" y="935" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">链 0</text>
+    <text id="text-0018" x="650" y="935" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">200</text>
+    <text id="text-0019" x="80" y="1015" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">链 1</text>
+    <text id="text-0020" x="650" y="1015" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">200</text>
+    <text id="text-0021" x="80" y="1095" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">链 2</text>
+    <text id="text-0022" x="650" y="1095" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">200</text>
+    <text id="text-0023" x="80" y="1175" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">链 3</text>
+    <text id="text-0024" x="650" y="1175" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">200</text>
+    <text id="text-0025" x="80" y="1255" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">链 4</text>
+    <text id="text-0026" x="650" y="1255" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">200</text>
+    <text id="text-0027" x="80" y="1335" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">链 5</text>
+    <text id="text-0028" x="650" y="1335" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">200</text>
+    <text id="text-0029" x="64" y="1450" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">未平衡时，理想移位周期比平衡方案多 75%。</text>
+    <text id="text-0030" x="64" y="1496" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">这个例子未计入布线、压缩、捕获与功率限制。</text>
+  </g>
+  <g id="layer-junctions" />
+  <g id="review-only-overlay" pointer-events="none">
+    <rect x="54" y="35" width="635.21875" height="90" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="64" y="45" width="615.21875" height="70" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="54" y="113" width="730.046875" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="64" y="123" width="710.046875" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="54" y="204" width="343.90625" height="72" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="64" y="214" width="323.90625" height="52" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="70" y="293" width="73.375" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="80" y="303" width="53.375" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="940" y="293" width="69.953125" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="950" y="303" width="49.953125" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="70" y="373" width="73.375" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="80" y="383" width="53.375" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="740" y="373" width="69.953125" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="750" y="383" width="49.953125" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="70" y="453" width="73.375" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="80" y="463" width="53.375" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="640" y="453" width="69.953125" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="650" y="463" width="49.953125" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="70" y="533" width="73.375" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="80" y="543" width="53.375" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="540" y="533" width="69.953125" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="550" y="543" width="49.953125" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="70" y="613" width="73.375" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="80" y="623" width="53.375" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="540" y="613" width="69.953125" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="550" y="623" width="49.953125" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="70" y="693" width="73.375" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="80" y="703" width="53.375" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="440" y="693" width="69.953125" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="450" y="703" width="49.953125" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="54" y="814" width="343.90625" height="72" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="64" y="824" width="323.90625" height="52" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="70" y="903" width="73.375" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="80" y="913" width="53.375" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="640" y="903" width="69.953125" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="650" y="913" width="49.953125" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="70" y="983" width="73.375" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="80" y="993" width="53.375" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="640" y="983" width="69.953125" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="650" y="993" width="49.953125" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="70" y="1063" width="73.375" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="80" y="1073" width="53.375" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="640" y="1063" width="69.953125" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="650" y="1073" width="49.953125" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="70" y="1143" width="73.375" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="80" y="1153" width="53.375" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="640" y="1143" width="69.953125" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="650" y="1153" width="49.953125" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="70" y="1223" width="73.375" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="80" y="1233" width="53.375" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="640" y="1223" width="69.953125" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="650" y="1233" width="49.953125" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="70" y="1303" width="73.375" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="80" y="1313" width="53.375" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="640" y="1303" width="69.953125" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="650" y="1313" width="49.953125" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="54" y="1418" width="627.65625" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="64" y="1428" width="607.65625" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="54" y="1464" width="650" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="64" y="1474" width="630" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+  </g>
+</svg>

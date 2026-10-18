@@ -1,0 +1,62 @@
+{
+  "scope": "Negative tests on copied measured geometry, not edited deliverable figures.",
+  "tests": 11,
+  "passed": true,
+  "results": [
+    {
+      "test": "箭头终点偏离连接点",
+      "expected_detection": "port_miss",
+      "passed": true
+    },
+    {
+      "test": "文字进入连接线区域",
+      "expected_detection": "edge_text_clearance",
+      "passed": true
+    },
+    {
+      "test": "文字骑在外框上",
+      "expected_detection": "text_frame_clearance",
+      "passed": true
+    },
+    {
+      "test": "文字没有足够内边距",
+      "expected_detection": "owner_padding",
+      "passed": true
+    },
+    {
+      "test": "连接线穿过无关模块",
+      "expected_detection": "edge_through_node",
+      "passed": true
+    },
+    {
+      "test": "未标明的连接线重叠",
+      "expected_detection": "unmarked_connector_intersection",
+      "passed": true
+    },
+    {
+      "test": "连接线方向与指定端口相反",
+      "expected_detection": "wrong_approach",
+      "passed": true
+    },
+    {
+      "test": "连接线失去目标模块",
+      "expected_detection": "unbound_endpoint",
+      "passed": true
+    },
+    {
+      "test": "两个文字对象相交",
+      "expected_detection": "text_overlap",
+      "passed": true
+    },
+    {
+      "test": "文字越过画布安全区",
+      "expected_detection": "canvas_margin",
+      "passed": true
+    },
+    {
+      "test": "字号低于要求",
+      "expected_detection": "small_text",
+      "passed": true
+    }
+  ]
+}

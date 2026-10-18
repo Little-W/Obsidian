@@ -1,0 +1,123 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1740" viewBox="0 0 1200 1740" role="img" aria-labelledby="fig-title fig-description" version="1.1" data-layout-version="precise-ports-v2">
+  <title id="fig-title">图8  控制配置与扫描数据分开</title>
+  <desc id="fig-description">图中是可选的概念架构，不代表某个厂商产品逐门实现。</desc>
+  <metadata>{"layout": "named ports + orthogonal routes", "font_policy": "editable text; no embedded fonts", "version": 2}</metadata>
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#1967A4" />
+    </marker>
+    <marker id="arrow-teal" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#118575" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#D97A16" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#B84051" />
+    </marker>
+    <marker id="arrow-muted" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#4F6278" />
+    </marker>
+    <marker id="arrow-slate" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#738A9F" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#92517C" />
+    </marker>
+  </defs>
+  <g id="layer-background">
+    <rect width="1200" height="1740" fill="#FFFFFF" />
+  </g>
+  <g id="layer-shapes">
+    <rect id="l0" x="70" y="330" width="460" height="210" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="l1" x="70" y="670" width="460" height="210" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="l2" x="70" y="1010" width="460" height="210" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="r0" x="670" y="330" width="460" height="210" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="r1" x="670" y="670" width="460" height="210" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="r2" x="670" y="1010" width="460" height="210" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="r3" x="670" y="1350" width="460" height="210" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+  </g>
+  <g id="layer-connectors">
+    <polyline id="ctrl0" points="300,540 300,670" fill="none" stroke="#D97A16" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="向下配置核级测试控制" data-source-node="l0" data-source-side="S" data-source-fraction="0.5" data-target-node="l1" data-target-side="N" data-target-fraction="0.5" marker-end="url(#arrow-orange)" />
+    <polyline id="ctrl1" points="300,880 300,1010" fill="none" stroke="#D97A16" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="向下配置核级测试控制" data-source-node="l1" data-source-side="S" data-source-fraction="0.5" data-target-node="l2" data-target-side="N" data-target-fraction="0.5" marker-end="url(#arrow-orange)" />
+    <polyline id="data0" points="900,540 900,670" fill="none" stroke="#1967A4" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="扫描数据按规定处理并传输" data-source-node="r0" data-source-side="S" data-source-fraction="0.5" data-target-node="r1" data-target-side="N" data-target-fraction="0.5" marker-end="url(#arrow-blue)" />
+    <polyline id="data1" points="900,880 900,1010" fill="none" stroke="#1967A4" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="扫描数据按规定处理并传输" data-source-node="r1" data-source-side="S" data-source-fraction="0.5" data-target-node="r2" data-target-side="N" data-target-fraction="0.5" marker-end="url(#arrow-blue)" />
+    <polyline id="data2" points="900,1220 900,1350" fill="none" stroke="#1967A4" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="扫描数据按规定处理并传输" data-source-node="r2" data-source-side="S" data-source-fraction="0.5" data-target-node="r3" data-target-side="N" data-target-fraction="0.5" marker-end="url(#arrow-blue)" />
+    <polyline id="clock-control" points="530,1115 670,1115" fill="none" stroke="#D97A16" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="控制器向核内扫描逻辑提供模式和受控时钟，非数据直连" data-source-node="l2" data-source-side="E" data-source-fraction="0.5" data-target-node="r2" data-target-side="W" data-target-fraction="0.5" marker-end="url(#arrow-orange)" stroke-dasharray="10 8" />
+  </g>
+  <g id="layer-text">
+    <text id="text-0001" x="64" y="80" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="48" font-weight="700" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">图8  控制配置与扫描数据分开</text>
+    <text id="text-0002" x="64" y="145" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">图中是可选的概念架构，不代表某个厂商产品逐门实现。</text>
+    <text id="text-0003" x="300" y="245" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">配置与时钟控制</text>
+    <text id="text-0004" x="900" y="245" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">大量扫描数据</text>
+    <text id="text-0005" x="300.0" y="378" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="l0">TAP / 授权选择</text>
+    <text id="text-0006" x="300.0" y="436" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="l0">选择制造或调试访问</text>
+    <text id="text-0007" x="300.0" y="718" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="l1">模式寄存器</text>
+    <text id="text-0008" x="300.0" y="776" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="l1">模式、复位与屏蔽配置</text>
+    <text id="text-0009" x="300.0" y="1058" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="l2">核级控制与 OCC</text>
+    <text id="text-0010" x="300.0" y="1116" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="l2">生成受控捕获时钟</text>
+    <text id="text-0011" x="900.0" y="378" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="r0">数据通道</text>
+    <text id="text-0012" x="900.0" y="436" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="r0">独立引脚或数据网络</text>
+    <text id="text-0013" x="900.0" y="718" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="r1">输入解压缩器</text>
+    <text id="text-0014" x="900.0" y="776" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="r1">种子转成扫描激励</text>
+    <text id="text-0015" x="900.0" y="1058" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="r2">内部扫描链</text>
+    <text id="text-0016" x="900.0" y="1116" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="r2">移位并按协议捕获</text>
+    <text id="text-0017" x="900.0" y="1398" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="r3">响应压缩与卸出</text>
+    <text id="text-0018" x="900.0" y="1456" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="r3">保留周期与核的对应</text>
+    <text id="text-0019" x="64" y="1660" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">JTAG 可以只负责配置，不必传送全部高带宽扫描数据。</text>
+  </g>
+  <g id="layer-junctions" />
+  <g id="review-only-overlay" pointer-events="none">
+    <rect x="54" y="35" width="635.21875" height="90" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="64" y="45" width="615.21875" height="70" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="54" y="113" width="770" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="64" y="123" width="750" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="163.9921875" y="209" width="272.015625" height="72" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="173.9921875" y="219" width="252.015625" height="52" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="781.9921875" y="209" width="236.015625" height="72" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="791.9921875" y="219" width="216.015625" height="52" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="168.875" y="342" width="262.25" height="72" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="178.875" y="352" width="242.25" height="52" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="145.9921875" y="403" width="308.015625" height="66" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="155.9921875" y="413" width="288.015625" height="46" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="199.9921875" y="682" width="200.015625" height="72" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="209.9921875" y="692" width="180.015625" height="52" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="129.9921875" y="743" width="340.015625" height="66" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="139.9921875" y="753" width="320.015625" height="46" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="159.1328125" y="1022" width="281.734375" height="72" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="169.1328125" y="1032" width="261.734375" height="52" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="161.9921875" y="1083" width="276.015625" height="66" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="171.9921875" y="1093" width="256.015625" height="46" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="817.9921875" y="342" width="164.015625" height="72" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="827.9921875" y="352" width="144.015625" height="52" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="745.9921875" y="403" width="308.015625" height="66" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="755.9921875" y="413" width="288.015625" height="46" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="781.9921875" y="682" width="236.015625" height="72" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="791.9921875" y="692" width="216.015625" height="52" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="761.9921875" y="743" width="276.015625" height="66" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="771.9921875" y="753" width="256.015625" height="46" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="799.9921875" y="1022" width="200.015625" height="72" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="809.9921875" y="1032" width="180.015625" height="52" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="761.9921875" y="1083" width="276.015625" height="66" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="771.9921875" y="1093" width="256.015625" height="46" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="763.9921875" y="1362" width="272.015625" height="72" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="773.9921875" y="1372" width="252.015625" height="52" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="745.9921875" y="1423" width="308.015625" height="66" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="755.9921875" y="1433" width="288.015625" height="46" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="54" y="1628" width="757.984375" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="64" y="1638" width="737.984375" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <circle cx="300" cy="540" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="900" cy="1010" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="900" cy="540" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="900" cy="1350" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="530" cy="1115" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="300" cy="880" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="900" cy="880" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="670" cy="1115" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="300" cy="670" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="900" cy="1220" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="900" cy="670" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+    <circle cx="300" cy="1010" r="7" fill="none" stroke="#079CAE" stroke-width="2" />
+  </g>
+</svg>

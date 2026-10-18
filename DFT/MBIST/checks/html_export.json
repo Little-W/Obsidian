@@ -1,0 +1,92 @@
+{
+  "offline": true,
+  "pages": [
+    {
+      "source": "00_MBIST总体架构与阅读导航.md",
+      "html": "html/00_MBIST总体架构与阅读导航.html",
+      "math_count": 1
+    },
+    {
+      "source": "01_存储器接口与测试控制器.md",
+      "html": "html/01_存储器接口与测试控制器.html",
+      "math_count": 15
+    },
+    {
+      "source": "02_故障模型与检测原理.md",
+      "html": "html/02_故障模型与检测原理.html",
+      "math_count": 2
+    },
+    {
+      "source": "03_March基础与经典算法.md",
+      "html": "html/03_March基础与经典算法.html",
+      "math_count": 20
+    },
+    {
+      "source": "04_增强March与复杂故障测试.md",
+      "html": "html/04_增强March与复杂故障测试.html",
+      "math_count": 41
+    },
+    {
+      "source": "05_测试算法生成与选择.md",
+      "html": "html/05_测试算法生成与选择.html",
+      "math_count": 18
+    },
+    {
+      "source": "06_存储器分组与功耗分析.md",
+      "html": "html/06_存储器分组与功耗分析.html",
+      "math_count": 48
+    },
+    {
+      "source": "07_并发调度与联合优化.md",
+      "html": "html/07_并发调度与联合优化.html",
+      "math_count": 20
+    },
+    {
+      "source": "08_自适应与运行期间测试.md",
+      "html": "html/08_自适应与运行期间测试.html",
+      "math_count": 18
+    },
+    {
+      "source": "09_故障诊断与结果记录.md",
+      "html": "html/09_故障诊断与结果记录.html",
+      "math_count": 14
+    },
+    {
+      "source": "10_冗余分析自修复与纠错码.md",
+      "html": "html/10_冗余分析自修复与纠错码.html",
+      "math_count": 18
+    },
+    {
+      "source": "11_多端口与新型存储器扩展.md",
+      "html": "html/11_多端口与新型存储器扩展.html",
+      "math_count": 3
+    },
+    {
+      "source": "12_设计验证与工具接入.md",
+      "html": "html/12_设计验证与工具接入.html",
+      "math_count": 4
+    },
+    {
+      "source": "13_教学算例与源码说明.md",
+      "html": "html/13_教学算例与源码说明.html",
+      "math_count": 0
+    },
+    {
+      "source": "90_参考文献与研究进展索引.md",
+      "html": "html/90_参考文献与研究进展索引.html",
+      "math_count": 0
+    },
+    {
+      "source": "99_编排说明与原文内容对照.md",
+      "html": "html/99_编排说明与原文内容对照.html",
+      "math_count": 2
+    },
+    {
+      "source": "README.md",
+      "html": "html/README.html",
+      "math_count": 0
+    }
+  ],
+  "unique_rendered_math": 155,
+  "total_math": 224
+}

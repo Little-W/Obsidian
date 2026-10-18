@@ -1,0 +1,231 @@
+{
+  "scope": "Chromium text bounding rectangles with installed fonts; overlap tolerance 2px.",
+  "passed": true,
+  "figures": [
+    {
+      "width": 1040,
+      "height": 1238,
+      "texts": 23,
+      "min_font": 28,
+      "outside": [],
+      "overlaps": [],
+      "file": "assets/march/01_mbist结构.svg"
+    },
+    {
+      "width": 1040,
+      "height": 1280,
+      "texts": 31,
+      "min_font": 28,
+      "outside": [],
+      "overlaps": [],
+      "file": "assets/march/02故障模型.svg"
+    },
+    {
+      "width": 1040,
+      "height": 1260,
+      "texts": 38,
+      "min_font": 28,
+      "outside": [],
+      "overlaps": [],
+      "file": "assets/march/03_March_C负序列.svg"
+    },
+    {
+      "width": 1040,
+      "height": 1285,
+      "texts": 17,
+      "min_font": 28,
+      "outside": [],
+      "overlaps": [],
+      "file": "assets/march/04耦合故障时序.svg"
+    },
+    {
+      "width": 1040,
+      "height": 1210,
+      "texts": 37,
+      "min_font": 28,
+      "outside": [],
+      "overlaps": [],
+      "file": "assets/march/05经典算法长度.svg"
+    },
+    {
+      "width": 1040,
+      "height": 1245,
+      "texts": 267,
+      "min_font": 28,
+      "outside": [],
+      "overlaps": [],
+      "file": "assets/march/06存储器数据图案.svg"
+    },
+    {
+      "width": 1040,
+      "height": 1248,
+      "texts": 15,
+      "min_font": 28,
+      "outside": [],
+      "overlaps": [],
+      "file": "assets/march/07五单元邻近故障.svg"
+    },
+    {
+      "width": 1040,
+      "height": 1500,
+      "texts": 16,
+      "min_font": 28,
+      "outside": [],
+      "overlaps": [],
+      "file": "assets/march/08算法选择流程.svg"
+    },
+    {
+      "width": 1040,
+      "height": 1208,
+      "texts": 16,
+      "min_font": 28,
+      "outside": [],
+      "overlaps": [],
+      "file": "assets/march/09动态故障时序.svg"
+    },
+    {
+      "width": 1040,
+      "height": 1180,
+      "texts": 30,
+      "min_font": 28,
+      "outside": [],
+      "overlaps": [],
+      "file": "assets/march/10复杂算法长度.svg"
+    },
+    {
+      "width": 1040,
+      "height": 1335,
+      "texts": 19,
+      "min_font": 28,
+      "outside": [],
+      "overlaps": [],
+      "file": "assets/systems/01_system.svg"
+    },
+    {
+      "width": 1040,
+      "height": 1195,
+      "texts": 12,
+      "min_font": 28,
+      "outside": [],
+      "overlaps": [],
+      "file": "assets/systems/02_group_levels.svg"
+    },
+    {
+      "width": 1040,
+      "height": 1350,
+      "texts": 19,
+      "min_font": 28,
+      "outside": [],
+      "overlaps": [],
+      "file": "assets/systems/03_controller_modes.svg"
+    },
+    {
+      "width": 1040,
+      "height": 1150,
+      "texts": 18,
+      "min_font": 28,
+      "outside": [],
+      "overlaps": [],
+      "file": "assets/systems/04_constraints.svg"
+    },
+    {
+      "width": 1040,
+      "height": 1120,
+      "texts": 20,
+      "min_font": 28,
+      "outside": [],
+      "overlaps": [],
+      "file": "assets/systems/05_group_example.svg"
+    },
+    {
+      "width": 1040,
+      "height": 1130,
+      "texts": 22,
+      "min_font": 28,
+      "outside": [],
+      "overlaps": [],
+      "file": "assets/systems/06_schedule.svg"
+    },
+    {
+      "width": 1040,
+      "height": 1195,
+      "texts": 11,
+      "min_font": 28,
+      "outside": [],
+      "overlaps": [],
+      "file": "assets/systems/07_power_flow.svg"
+    },
+    {
+      "width": 1040,
+      "height": 1510,
+      "texts": 32,
+      "min_font": 28,
+      "outside": [],
+      "overlaps": [],
+      "file": "assets/systems/08_phase_power.svg"
+    },
+    {
+      "width": 1040,
+      "height": 1180,
+      "texts": 20,
+      "min_font": 28,
+      "outside": [],
+      "overlaps": [],
+      "file": "assets/systems/09_thermal.svg"
+    },
+    {
+      "width": 1040,
+      "height": 1450,
+      "texts": 22,
+      "min_font": 28,
+      "outside": [],
+      "overlaps": [],
+      "file": "assets/systems/10_adaptive.svg"
+    },
+    {
+      "width": 1040,
+      "height": 1425,
+      "texts": 13,
+      "min_font": 28,
+      "outside": [],
+      "overlaps": [],
+      "file": "assets/systems/11_online.svg"
+    },
+    {
+      "width": 1040,
+      "height": 1300,
+      "texts": 21,
+      "min_font": 28,
+      "outside": [],
+      "overlaps": [],
+      "file": "assets/systems/12_diagnosis.svg"
+    },
+    {
+      "width": 1040,
+      "height": 1250,
+      "texts": 21,
+      "min_font": 28,
+      "outside": [],
+      "overlaps": [],
+      "file": "assets/systems/13_repair.svg"
+    },
+    {
+      "width": 1040,
+      "height": 1290,
+      "texts": 15,
+      "min_font": 28,
+      "outside": [],
+      "overlaps": [],
+      "file": "assets/systems/14_fault_buffers.svg"
+    },
+    {
+      "width": 1040,
+      "height": 1425,
+      "texts": 13,
+      "min_font": 28,
+      "outside": [],
+      "overlaps": [],
+      "file": "assets/systems/15_flow.svg"
+    }
+  ]
+}
