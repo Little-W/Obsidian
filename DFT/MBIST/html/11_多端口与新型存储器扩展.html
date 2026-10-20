@@ -1,17 +1,17 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>多端口与新型存储器扩展 · MBIST 设计架构与方法</title><link rel="stylesheet" href="book.css"></head>
-<body><aside class="sidebar"><div class="brand">MBIST 设计架构</div><div class="subtitle">从算法操作到系统实现<br>原理 · 约束 · 结果 · 验证</div><a class="home" href="../阅读入口.html">← 资料库首页</a><details class="mobile-index"><summary>展开文档目录</summary></details><nav><a class="" href="00_MBIST%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E9%98%85%E8%AF%BB%E5%AF%BC%E8%88%AA.html">00 · MBIST总体架构与阅读导航</a><a class="" href="01_%E5%AD%98%E5%82%A8%E5%99%A8%E6%8E%A5%E5%8F%A3%E4%B8%8E%E6%B5%8B%E8%AF%95%E6%8E%A7%E5%88%B6%E5%99%A8.html">01 · 存储器接口与测试控制器</a><a class="" href="02_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%A3%80%E6%B5%8B%E5%8E%9F%E7%90%86.html">02 · 故障模型与检测原理</a><a class="" href="03_March%E5%9F%BA%E7%A1%80%E4%B8%8E%E7%BB%8F%E5%85%B8%E7%AE%97%E6%B3%95.html">03 · March基础与经典算法</a><a class="" href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 · 增强March与复杂故障测试</a><a class="" href="05_%E6%B5%8B%E8%AF%95%E7%AE%97%E6%B3%95%E7%94%9F%E6%88%90%E4%B8%8E%E9%80%89%E6%8B%A9.html">05 · 测试算法生成与选择</a><a class="" href="06_%E5%AD%98%E5%82%A8%E5%99%A8%E5%88%86%E7%BB%84%E4%B8%8E%E5%8A%9F%E8%80%97%E5%88%86%E6%9E%90.html">06 · 存储器分组与功耗分析</a><a class="" href="07_%E5%B9%B6%E5%8F%91%E8%B0%83%E5%BA%A6%E4%B8%8E%E8%81%94%E5%90%88%E4%BC%98%E5%8C%96.html">07 · 并发调度与联合优化</a><a class="" href="08_%E8%87%AA%E9%80%82%E5%BA%94%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%9C%9F%E9%97%B4%E6%B5%8B%E8%AF%95.html">08 · 自适应与运行期间测试</a><a class="" href="09_%E6%95%85%E9%9A%9C%E8%AF%8A%E6%96%AD%E4%B8%8E%E7%BB%93%E6%9E%9C%E8%AE%B0%E5%BD%95.html">09 · 故障诊断与结果记录</a><a class="" href="10_%E5%86%97%E4%BD%99%E5%88%86%E6%9E%90%E8%87%AA%E4%BF%AE%E5%A4%8D%E4%B8%8E%E7%BA%A0%E9%94%99%E7%A0%81.html">10 · 冗余分析自修复与纠错码</a><a class="current" href="11_%E5%A4%9A%E7%AB%AF%E5%8F%A3%E4%B8%8E%E6%96%B0%E5%9E%8B%E5%AD%98%E5%82%A8%E5%99%A8%E6%89%A9%E5%B1%95.html">11 · 多端口与新型存储器扩展</a><a class="" href="12_%E8%AE%BE%E8%AE%A1%E9%AA%8C%E8%AF%81%E4%B8%8E%E5%B7%A5%E5%85%B7%E6%8E%A5%E5%85%A5.html">12 · 设计验证与工具接入</a><a class="" href="13_%E6%95%99%E5%AD%A6%E7%AE%97%E4%BE%8B%E4%B8%8E%E6%BA%90%E7%A0%81%E8%AF%B4%E6%98%8E.html">13 · 教学算例与源码说明</a><a class="" href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E7%A0%94%E7%A9%B6%E8%BF%9B%E5%B1%95%E7%B4%A2%E5%BC%95.html">90 · 参考文献与研究进展索引</a><a class="" href="99_%E7%BC%96%E6%8E%92%E8%AF%B4%E6%98%8E%E4%B8%8E%E5%8E%9F%E6%96%87%E5%86%85%E5%AE%B9%E5%AF%B9%E7%85%A7.html">99 · 编排说明与原文内容对照</a></nav></aside><div class="reading"><main class="paper"><div class="eyebrow">MBIST · 设计架构与方法</div><h1 id="11 · 多端口与新型存储器扩展">11 · 多端口与新型存储器扩展</h1>
+<body><aside class="sidebar"><div class="brand">MBIST 设计架构</div><div class="subtitle">从算法操作到系统实现<br>原理 · 约束 · 结果 · 验证</div><a class="home" href="../阅读入口.html">← 文档首页</a><details class="mobile-index"><summary>展开文档目录</summary></details><nav><a class="" href="00_MBIST%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E9%98%85%E8%AF%BB%E5%AF%BC%E8%88%AA.html">00 · MBIST总体架构与阅读导航</a><a class="" href="01_%E5%AD%98%E5%82%A8%E5%99%A8%E6%8E%A5%E5%8F%A3%E4%B8%8E%E6%B5%8B%E8%AF%95%E6%8E%A7%E5%88%B6%E5%99%A8.html">01 · 存储器接口与测试控制器</a><a class="" href="02_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%A3%80%E6%B5%8B%E5%8E%9F%E7%90%86.html">02 · 故障模型与检测原理</a><a class="" href="03_March%E5%9F%BA%E7%A1%80%E4%B8%8E%E7%BB%8F%E5%85%B8%E7%AE%97%E6%B3%95.html">03 · March基础与经典算法</a><a class="" href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 · 增强March与复杂故障测试</a><a class="" href="05_%E6%B5%8B%E8%AF%95%E7%AE%97%E6%B3%95%E7%94%9F%E6%88%90%E4%B8%8E%E9%80%89%E6%8B%A9.html">05 · 测试算法生成与选择</a><a class="" href="06_%E5%AD%98%E5%82%A8%E5%99%A8%E5%88%86%E7%BB%84%E4%B8%8E%E5%8A%9F%E8%80%97%E5%88%86%E6%9E%90.html">06 · 存储器分组与功耗分析</a><a class="" href="07_%E5%B9%B6%E5%8F%91%E8%B0%83%E5%BA%A6%E4%B8%8E%E8%81%94%E5%90%88%E4%BC%98%E5%8C%96.html">07 · 并发调度与联合优化</a><a class="" href="08_%E8%87%AA%E9%80%82%E5%BA%94%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%9C%9F%E9%97%B4%E6%B5%8B%E8%AF%95.html">08 · 自适应与运行期间测试</a><a class="" href="09_%E6%95%85%E9%9A%9C%E8%AF%8A%E6%96%AD%E4%B8%8E%E7%BB%93%E6%9E%9C%E8%AE%B0%E5%BD%95.html">09 · 故障诊断与结果记录</a><a class="" href="10_%E5%86%97%E4%BD%99%E5%88%86%E6%9E%90%E8%87%AA%E4%BF%AE%E5%A4%8D%E4%B8%8E%E7%BA%A0%E9%94%99%E7%A0%81.html">10 · 冗余分析自修复与纠错码</a><a class="current" href="11_%E5%A4%9A%E7%AB%AF%E5%8F%A3%E4%B8%8E%E6%96%B0%E5%9E%8B%E5%AD%98%E5%82%A8%E5%99%A8%E6%89%A9%E5%B1%95.html">11 · 多端口与新型存储器扩展</a><a class="" href="12_%E8%AE%BE%E8%AE%A1%E9%AA%8C%E8%AF%81%E4%B8%8E%E5%B7%A5%E5%85%B7%E6%8E%A5%E5%85%A5.html">12 · 设计验证与工具接入</a><a class="" href="13_%E7%AE%97%E4%BE%8B%E4%B8%8E%E6%BA%90%E7%A0%81%E8%AF%B4%E6%98%8E.html">13 · 算例与源码说明</a><a class="" href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E7%A0%94%E7%A9%B6%E8%BF%9B%E5%B1%95%E7%B4%A2%E5%BC%95.html">90 · 参考文献与研究进展索引</a></nav></aside><div class="reading"><main class="paper"><div class="eyebrow">MBIST · 设计架构与方法</div><h1 id="11 · 多端口与新型存储器扩展">11 · 多端口与新型存储器扩展</h1>
 <p><a href="00_MBIST%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E9%98%85%E8%AF%BB%E5%AF%BC%E8%88%AA.html">总览</a> · <a href="10_%E5%86%97%E4%BD%99%E5%88%86%E6%9E%90%E8%87%AA%E4%BF%AE%E5%A4%8D%E4%B8%8E%E7%BA%A0%E9%94%99%E7%A0%81.html">上一篇：冗余分析自修复与纠错码</a> · <a href="12_%E8%AE%BE%E8%AE%A1%E9%AA%8C%E8%AF%81%E4%B8%8E%E5%B7%A5%E5%85%B7%E6%8E%A5%E5%85%A5.html">下一篇：设计验证与工具接入</a></p>
 <hr />
 <blockquote>
-<p><strong>架构位置：目标存储技术扩展层。</strong> 说明多端口、堆叠、磁性与存储器内部计算结构为什么不能只换容量参数。</p>
+<p><strong>架构位置：目标存储技术扩展层。</strong> 多端口、堆叠、磁性与存储器内部计算结构不能仅通过更换容量参数处理的原因。</p>
 </blockquote>
 <div class="table-wrap"><table>
 <thead>
 <tr>
-  <th>设计入口</th>
-  <th>本专题的约定</th>
+  <th>专题定位</th>
+  <th>范围约定</th>
 </tr>
 </thead>
 <tbody>
@@ -24,24 +24,24 @@
   <td>需要扩展的算法、接口、诊断、修复与评估条件。</td>
 </tr>
 <tr>
-  <td>建议先读</td>
+  <td>前置专题</td>
   <td><a href="01_%E5%AD%98%E5%82%A8%E5%99%A8%E6%8E%A5%E5%8F%A3%E4%B8%8E%E6%B5%8B%E8%AF%95%E6%8E%A7%E5%88%B6%E5%99%A8.html">存储器接口与测试控制器</a>、<a href="02_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%A3%80%E6%B5%8B%E5%8E%9F%E7%90%86.html">故障模型与检测原理</a>、<a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">增强March与复杂故障测试</a></td>
 </tr>
 </tbody>
 </table></div>
-<h2 id="本篇目录">本篇目录</h2>
+<h2 id="目录">目录</h2>
 <ul>
 <li><a href="#1.%20%E5%A0%86%E5%8F%A0%E5%AD%98%E5%82%A8%E5%99%A8%E7%9A%84%E6%B5%8B%E8%AF%95%E5%AF%B9%E8%B1%A1%E4%B8%8E%E8%AE%BF%E9%97%AE%E5%B1%82%E6%AC%A1">1. 堆叠存储器的测试对象与访问层次</a></li>
 <li><a href="#2.%20%E5%A4%9A%E7%AB%AF%E5%8F%A3%20SRAM%20%E7%9A%84%E5%B9%B6%E5%8F%91%E6%95%85%E9%9A%9C%E6%9D%A1%E4%BB%B6">2. 多端口 SRAM 的并发故障条件</a></li>
 <li><a href="#3.%20%E9%9D%9E%E6%98%93%E5%A4%B1%E6%80%A7%E5%AD%98%E5%82%A8%E5%99%A8%E7%9A%84%E7%89%A9%E7%90%86%E6%9C%BA%E5%88%B6">3. 非易失性存储器的物理机制</a></li>
 <li><a href="#4.%20%E5%AD%98%E5%82%A8%E5%99%A8%E5%86%85%E9%83%A8%E8%AE%A1%E7%AE%97%E7%9A%84%E5%AD%98%E5%82%A8%E6%B5%8B%E8%AF%95%E4%B8%8E%E8%AE%A1%E7%AE%97%E6%B5%8B%E8%AF%95">4. 存储器内部计算的存储测试与计算测试</a></li>
-<li><a href="#5.%20%E7%9B%B8%E5%85%B3%E5%AD%A6%E6%9C%AF%E8%BF%9B%E5%B1%95%E4%B8%8E%E8%AF%81%E6%8D%AE%E8%8C%83%E5%9B%B4">5. 相关学术进展与证据范围</a></li>
+<li><a href="#5.%20%E7%A0%94%E7%A9%B6%E8%BF%9B%E5%B1%95%E4%B8%8E%E8%AF%81%E6%8D%AE%E8%8C%83%E5%9B%B4">5. 研究进展与证据范围</a></li>
 <li><a href="#%E4%B8%8E%E5%85%B6%E4%BB%96%E8%AE%BE%E8%AE%A1%E5%B1%82%E7%9A%84%E8%A1%94%E6%8E%A5">与其他设计层的衔接</a></li>
 </ul>
 <h2 id="1. 堆叠存储器的测试对象与访问层次">1. 堆叠存储器的测试对象与访问层次</h2>
-<h3 id="1.1 HBM 测试至少包含两个层面">1.1 HBM 测试至少包含两个层面</h3>
+<h3 id="1.1 HBM 测试的两个层面">1.1 HBM 测试的两个层面</h3>
 <p>一个层面是存储阵列、外围电路及其修复；另一个层面是堆叠接口、硅通孔和数据传输通路。存储器正常读写测试能够经过某些接口，但并不意味着自动覆盖全部互连故障条件。</p>
-<p>在堆叠之前和堆叠之后，可访问的接口、时钟、供电条件和允许测试模式可能不同。早期发现坏裸片可以避免继续投入封装成本，但某些故障只有装配以后才出现。因此需要分阶段测试策略，而不是把所有测试简单放到最后。</p>
+<p>在堆叠之前和堆叠之后，可访问的接口、时钟、供电条件和允许测试模式可能不同。早期发现坏裸片可以避免继续投入封装成本，但某些故障只有装配以后才出现。因此需要分阶段的测试策略，而不是把所有测试简单地放到最后。</p>
 <p>IEEE 1838 面向三维堆叠芯片的测试访问组织；IEEE 1687 面向嵌入式仪器的访问。它们解决访问和组织问题，不直接规定每个存储器必须使用哪一种 March 算法。本专题引用的是可核实的标准版本与官方范围说明，不声称它们是所有相关标准的完整清单。<sup class="footnote-ref" id="fnref-1"><a href="#fn-1">1</a></sup><sup class="footnote-ref" id="fnref-2"><a href="#fn-2">2</a></sup></p>
 <h2 id="2. 多端口 SRAM 的并发故障条件">2. 多端口 SRAM 的并发故障条件</h2>
 <h3 id="2.1 双端口和多端口 SRAM">2.1 双端口和多端口 SRAM</h3>
@@ -55,10 +55,10 @@
 <p>经典多端口 March 研究提出 M1、M2、M3 等测试，强调在同一时刻通过多个端口执行精心安排的操作，并为某些写入安排预先读取，以减少错误被隐藏的机会。<sup class="footnote-ref" id="fnref-3"><a href="#fn-3">3</a></sup></p>
 <p>不能简单地把 March C− 在每个端口上分别执行一遍，就声称覆盖全部端口之间的耦合故障。尤其是对于<strong>两个端口同周期操作</strong>才能激活的故障，应在故障模型里明确并发动作与允许的地址组合。</p>
 <h2 id="3. 非易失性存储器的物理机制">3. 非易失性存储器的物理机制</h2>
-<h3 id="3.1 非易失性存储器不能只更换容量参数">3.1 非易失性存储器不能只更换容量参数</h3>
+<h3 id="3.1 非易失性存储器的物理机制差异">3.1 非易失性存储器的物理机制差异</h3>
 <p>磁阻式随机存取存储器、阻变式随机存取存储器和闪存具有不同写入机制、耐久性、读扰动、保持和状态分布。写入次数本身可能是需要限制的成本；写入时间和能量也可能与目标状态相关。</p>
-<p>因此，对这类存储器优化测试，应至少把测试脉冲条件、数据状态、写入次数、读判定条件以及恢复过程加入模型。其控制器、比较规则和故障模型需要针对技术定义，不宜直接复制 SRAM 的周期模型。商业存储器测试系统提供不同存储技术支持这一事实，并不表示这些技术使用完全相同的算法和验证条件。<sup class="footnote-ref" id="fnref-4"><a href="#fn-4">4</a></sup></p>
-<h3 id="3.2 磁性随机存取存储器：需要重新建立故障模型">3.2 磁性随机存取存储器：需要重新建立故障模型</h3>
+<p>因此，对这类存储器优化测试，应至少把测试脉冲条件、数据状态、写入次数、读判定条件以及恢复过程加入模型。其控制器、比较规则和故障模型需要针对具体技术来定义，不适合直接复制 SRAM 的周期模型。商业存储器测试系统提供不同存储技术支持这一事实，并不表示这些技术使用完全相同的算法和验证条件。<sup class="footnote-ref" id="fnref-4"><a href="#fn-4">4</a></sup></p>
+<h3 id="3.2 磁性随机存取存储器的故障模型重建">3.2 磁性随机存取存储器的故障模型重建</h3>
 <p>自旋转移力矩磁性随机存取存储器（STT-MRAM）通过磁性隧道结表示数据。它和普通 SRAM 的物理存储机制完全不同，存在随机磁化翻转、磁耦合和写入脉冲宽度依赖等问题。对 SRAM 有效的读写序列并不必然适用于磁性存储器。</p>
 <p>2026 年发表于 <em>IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems</em> 的研究使用 Verilog-A 与 SPICE 建立磁耦合缺陷模型，并使用<strong>整数线性规划</strong>自动合成 March 测试。论文报告在其研究的设计中，通过调整写入脉冲宽度降低测试时间约 <strong>45%</strong>，但需要增加相应测试电路。这项工作展示了从晶体管或器件物理缺陷出发，反向设计 March 序列的价值。<sup class="footnote-ref" id="fnref-5"><a href="#fn-5">5</a></sup></p>
 <h2 id="4. 存储器内部计算的存储测试与计算测试">4. 存储器内部计算的存储测试与计算测试</h2>
@@ -74,8 +74,7 @@
 <p>一个阵列作为普通存储器能够正确读写，不代表其内部乘加、逻辑运算、模拟电流求和、模数转换或者数字累加路径正确。应当区分存储功能故障与计算功能误差。</p>
 <p>模拟计算还涉及输入范围、量化方法、量化误差、器件变化和电压下降。某些补偿方法允许应用模型在存在物理缺陷时维持推理准确率，但这不是“存储器没有故障”的证明。</p>
 <p>2026 年 SEC-CiM+ 研究了阻变存储器内部计算的选择性、可重配置误差补偿。它属于与存储器可靠性相关的扩展方向，而不是可直接替代通用 MBIST 的新 March 变体。比较这类工作时，应分别报告物理故障处理能力、计算误差、应用准确率和硬件代价。<sup class="footnote-ref" id="fnref-9"><a href="#fn-9">9</a></sup></p>
-<h2 id="5. 相关学术进展与证据范围">5. 相关学术进展与证据范围</h2>
-<p>以下保留两份原报告截至 2026 年 10 月 17 日整理的研究记录；本轮是编排合并，没有新增检索或论文复现实验。</p>
+<h2 id="5. 研究进展与证据范围">5. 研究进展与证据范围</h2>
 <div class="table-wrap"><table>
 <thead>
 <tr>
@@ -115,7 +114,7 @@
 <tr>
   <th>年份与工作</th>
   <th>核心方向</th>
-  <th>应当怎样解读</th>
+  <th>引用范围</th>
 </tr>
 </thead>
 <tbody>
@@ -128,8 +127,8 @@
 </table></div>
 <h2 id="与其他设计层的衔接">与其他设计层的衔接</h2>
 <p>本专题输出需要继续交给<a href="06_%E5%AD%98%E5%82%A8%E5%99%A8%E5%88%86%E7%BB%84%E4%B8%8E%E5%8A%9F%E8%80%97%E5%88%86%E6%9E%90.html">存储器分组与功耗分析</a>、<a href="09_%E6%95%85%E9%9A%9C%E8%AF%8A%E6%96%AD%E4%B8%8E%E7%BB%93%E6%9E%9C%E8%AE%B0%E5%BD%95.html">故障诊断与结果记录</a>、<a href="10_%E5%86%97%E4%BD%99%E5%88%86%E6%9E%90%E8%87%AA%E4%BF%AE%E5%A4%8D%E4%B8%8E%E7%BA%A0%E9%94%99%E7%A0%81.html">冗余分析自修复与纠错码</a>、<a href="12_%E8%AE%BE%E8%AE%A1%E9%AA%8C%E8%AF%81%E4%B8%8E%E5%B7%A5%E5%85%B7%E6%8E%A5%E5%85%A5.html">设计验证与工具接入</a>。改变某一层的条件以后，应重新检查受到影响的接口和验证要求。</p>
-<h2 id="本篇参考资料">本篇参考资料</h2>
-<p>完整去重文献与原编号见<a href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E7%A0%94%E7%A9%B6%E8%BF%9B%E5%B1%95%E7%B4%A2%E5%BC%95.html">参考文献与研究进展索引</a>。本篇脚注保留所用来源，便于独立阅读。</p>
+<h2 id="参考文献">参考文献</h2>
+<p>文献编号与完整条目见<a href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E7%A0%94%E7%A9%B6%E8%BF%9B%E5%B1%95%E7%B4%A2%E5%BC%95.html">参考文献与研究进展索引</a>。</p>
 <hr />
 <p><a href="00_MBIST%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E9%98%85%E8%AF%BB%E5%AF%BC%E8%88%AA.html">总览</a> · <a href="10_%E5%86%97%E4%BD%99%E5%88%86%E6%9E%90%E8%87%AA%E4%BF%AE%E5%A4%8D%E4%B8%8E%E7%BA%A0%E9%94%99%E7%A0%81.html">上一篇：冗余分析自修复与纠错码</a> · <a href="12_%E8%AE%BE%E8%AE%A1%E9%AA%8C%E8%AF%81%E4%B8%8E%E5%B7%A5%E5%85%B7%E6%8E%A5%E5%85%A5.html">下一篇：设计验证与工具接入</a></p>
 <section class="footnotes">
@@ -145,4 +144,4 @@
 <li id="fn-9"><p><strong>R45</strong> — Ashish Reddy Bommana, Farshad Firouzi, Chukwufumnanya Ogbogu, Krishnendu Chakrabarty. <strong>SEC-CiM+: Selective and Reconfigurable Error Compensation for ReRAM-based Compute-in-Memory</strong>. ACM Transactions on Design Automation of Electronic Systems, 2026。DOI: 10.1145/3812655。出版商摘要；本文作为相邻可靠性研究介绍。<a href="https://dl.acm.org/doi/10.1145/3812655">https://dl.acm.org/doi/10.1145/3812655</a><a href="#fnref-9" class="footnote">&#8617;</a></p></li>
 </ol>
 </section>
-<div class="footer">资料检索截止沿用原报告：2026-10-17。此页为 Markdown 的离线阅读副本；编辑后需重新生成。图示、教学模型与论文证据范围分别说明。</div></main></div></body></html>
+<div class="footer">文献检索截止 2026-10-17。此页为 Markdown 的离线阅读副本；编辑后需重新生成。图示、算例与论文证据范围分别说明。</div></main></div></body></html>

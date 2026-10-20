@@ -64,7 +64,7 @@ def page(title: str, content: str, sidebar: str, stylesheet: str = 'book.css') -
     return f'''<!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{html.escape(title)} · MBIST 设计架构与方法</title><link rel="stylesheet" href="{stylesheet}"></head>
-<body>{sidebar}<div class="reading"><main class="paper"><div class="eyebrow">MBIST · 设计架构与方法</div>{content}<div class="footer">资料检索截止沿用原报告：2026-10-17。此页为 Markdown 的离线阅读副本；编辑后需重新生成。图示、教学模型与论文证据范围分别说明。</div></main></div></body></html>'''
+<body>{sidebar}<div class="reading"><main class="paper"><div class="eyebrow">MBIST · 设计架构与方法</div>{content}<div class="footer">文献检索截止 2026-10-17。此页为 Markdown 的离线阅读副本；编辑后需重新生成。图示、算例与论文证据范围分别说明。</div></main></div></body></html>'''
 
 
 def main() -> None:
@@ -123,31 +123,31 @@ def main() -> None:
         content = re.sub(r'id="(fnref-\d+)"', unique_footnote_ref, content)
         current = name.split('_')[0]
         nav = ''.join(f'<a class="{"current" if key == current else ""}" href="{quote(Path(value).with_suffix(".html").name)}">{key} · {html.escape(manifest["titles"][key])}</a>' for key, value in manifest['files'].items())
-        sidebar = '<aside class="sidebar"><div class="brand">MBIST 设计架构</div><div class="subtitle">从算法操作到系统实现<br>原理 · 约束 · 结果 · 验证</div><a class="home" href="../阅读入口.html">← 资料库首页</a><details class="mobile-index"><summary>展开文档目录</summary></details><nav>' + nav + '</nav></aside>'
+        sidebar = '<aside class="sidebar"><div class="brand">MBIST 设计架构</div><div class="subtitle">从算法操作到系统实现<br>原理 · 约束 · 结果 · 验证</div><a class="home" href="../阅读入口.html">← 文档首页</a><details class="mobile-index"><summary>展开文档目录</summary></details><nav>' + nav + '</nav></aside>'
         title = manifest['titles'].get(current, '使用说明')
         out = html_dir / Path(name).with_suffix('.html').name
         out.write_text(page(title, content, sidebar), encoding='utf-8')
         report.append({'source': name, 'html': str(out.relative_to(ROOT)), 'math_count': len(fragments)})
     descriptions = {
-        '00': '先理解模块职责、测试过程和设计层次，再选择阅读路线。',
+        '00': '模块职责、测试过程与设计层次，以及阅读路线的组织。',
         '01': '存储器清单、端口时序、控制器共享与期望结果对应。',
-        '02': '故障怎样被触发、怎样被观察，覆盖率的条件是什么。',
+        '02': '故障的触发与观测条件，以及覆盖率的适用范围。',
         '03': 'March 表达、C− 六阶段推导与经典算法比较。',
         '04': '静态与动态故障、关联故障、地址和邻近图案测试。',
         '05': '算法选择、集合覆盖、约束搜索与缺陷驱动生成。',
-        '06': '分组方法与功率模型合并分析，延伸到电压下降和温度。',
-        '07': '活动任务、阶段功率和完成时间；六存储器联合优化。',
-        '08': '调整测试策略、透明测试、数据保存与恢复及风险。',
+        '06': '分组方法与功率模型的统一分析，延伸至电压下降和温度。',
+        '07': '活动任务、阶段功率与完成时间；六存储器联合优化。',
+        '08': '测试策略调整、透明测试、数据保存恢复与风险。',
         '09': '故障记录、定位、队列、压缩与诊断信息带宽。',
         '10': '备用行列选择、贪心反例、精确分析与修复后复测。',
         '11': '多端口、堆叠、非易失性存储器与存储器内部计算。',
         '12': '接口验证、工具配置、故障实验和公平比较。',
-        '13': '运行教学程序、重新生成 SVG 和检查数学表达。',
+        '13': '运行算例程序、重新生成 SVG 并检查文档。',
         '90': '50 条统一参考资料及近期研究按主题归属索引。',
-        '99': '原报告各节的新位置、合并决策和本轮检查范围。'}
+        }
     def cards(keys):
         return '<div class="cards">' + ''.join(f'<a class="card" href="html/{quote(Path(manifest["files"][k]).with_suffix(".html").name)}"><div class="number">{k} / MBIST</div><h3>{manifest["titles"][k]}</h3><p>{descriptions[k]}</p></a>' for k in keys) + '</div>'
-    landing = f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MBIST 设计架构与方法 · 阅读入口</title><link rel="stylesheet" href="html/book.css"></head><body><main class="landing"><section class="hero"><div class="eyebrow">Architecture-oriented handbook</div><h1>MBIST 设计架构与方法</h1><p>把 March 算法与系统设计放在同一套架构中学习：理解执行电路、故障条件、功率限制和结果处理之间的关系，而不是分别记忆孤立算法。</p><div class="actions"><a class="button" href="html/{quote(Path(manifest['files']['00']).with_suffix('.html').name)}">从总体架构开始</a><a class="button secondary" href="插图索引.html">查看全部插图</a><a class="button secondary" href="html/README.html">文件与源码说明</a><a class="button secondary" href="精确绘图检查.html">连接点与避让检查</a></div><div class="stats">1 份总览 · 12 个专题 · 3 份附录 · 25 张可编辑插图 · 50 条参考资料</div></section><h2 class="section-label">总览与设计专题</h2>{cards([k for k in manifest['order'] if int(k) <= 12])}<h2 class="section-label">教学、文献与编排附录</h2>{cards(['13','90','99'])}<div class="footer">此阅读入口、所有专题页面、公式和插图均可离线打开。Markdown 为编辑版本，HTML 为阅读副本。原文献检索截止日期为 2026-10-17，本版已重新绘制全部技术图，使用固定连接点和精确几何检查。不要单独移动某一篇文件而删除其相对目录。</div></main></body></html>'''
+    landing = f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MBIST 设计架构与方法 · 阅读入口</title><link rel="stylesheet" href="html/book.css"></head><body><main class="landing"><section class="hero"><div class="eyebrow">Architecture-oriented handbook</div><h1>MBIST 设计架构与方法</h1><p>把 March 算法与系统设计放在同一套架构中组织：说明执行电路、故障条件、功率限制与结果处理之间的关系。</p><div class="actions"><a class="button" href="html/{quote(Path(manifest['files']['00']).with_suffix('.html').name)}">从总体架构开始</a><a class="button secondary" href="插图索引.html">查看全部插图</a><a class="button secondary" href="html/README.html">文件与源码说明</a><a class="button secondary" href="精确绘图检查.html">连接点与避让检查</a></div><div class="stats">1 份总览 · 12 个专题 · 2 份附录 · 25 张可编辑插图 · 50 条参考资料</div></section><h2 class="section-label">总览与设计专题</h2>{cards([k for k in manifest['order'] if int(k) <= 12])}<h2 class="section-label">算例与文献附录</h2>{cards(['13','90'])}<div class="footer">此阅读入口、所有专题页面、公式和插图均可离线打开。Markdown 为编辑版本，HTML 为阅读副本。文献检索截止日期为 2026-10-17；全部技术图采用固定连接点与精确几何检查。请勿单独移动文件而破坏相对目录。</div></main></body></html>'''
     (ROOT / '阅读入口.html').write_text(landing, encoding='utf-8')
     figures = []
     for group in ('march', 'systems'):

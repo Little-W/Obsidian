@@ -9,7 +9,7 @@
     {
       "source": "01_存储器接口与测试控制器.md",
       "html": "html/01_存储器接口与测试控制器.html",
-      "math_count": 15
+      "math_count": 13
     },
     {
       "source": "02_故障模型与检测原理.md",
@@ -67,8 +67,8 @@
       "math_count": 4
     },
     {
-      "source": "13_教学算例与源码说明.md",
-      "html": "html/13_教学算例与源码说明.html",
+      "source": "13_算例与源码说明.md",
+      "html": "html/13_算例与源码说明.html",
       "math_count": 0
     },
     {
@@ -77,16 +77,11 @@
       "math_count": 0
     },
     {
-      "source": "99_编排说明与原文内容对照.md",
-      "html": "html/99_编排说明与原文内容对照.html",
-      "math_count": 2
-    },
-    {
       "source": "README.md",
       "html": "html/README.html",
       "math_count": 0
     }
   ],
   "unique_rendered_math": 155,
-  "total_math": 224
+  "total_math": 220
 }

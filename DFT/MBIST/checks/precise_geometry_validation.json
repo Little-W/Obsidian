@@ -2,7 +2,7 @@
   "method": "Browser SVG getBBox + exact port and segment geometry; no OCR",
   "font_environment": {
     "noto": true,
-    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/144.0.0.0 Safari/537.36"
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36"
   },
   "minimum_connector_text_clearance_px": 10,
   "minimum_frame_text_clearance_px": 6,

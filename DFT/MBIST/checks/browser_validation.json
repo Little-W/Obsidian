@@ -1,8 +1,8 @@
 {
   "scope": "Chromium set_content with inlined local CSS and images; links checked statically. File navigation, external URLs, and Obsidian UI not tested.",
-  "pages": 20,
-  "local_links": 1322,
-  "viewport_checks": 40,
+  "pages": 19,
+  "local_links": 1093,
+  "viewport_checks": 38,
   "passed": true,
   "errors": [],
   "browser_results": [
@@ -52,7 +52,7 @@
       "brokenImages": [],
       "placeholder": false,
       "mathErrors": 0,
-      "svgMath": 17,
+      "svgMath": 13,
       "file": "html/01_存储器接口与测试控制器.html",
       "tested_width": 1440
     },
@@ -173,7 +173,7 @@
       "placeholder": false,
       "mathErrors": 0,
       "svgMath": 0,
-      "file": "html/13_教学算例与源码说明.html",
+      "file": "html/13_算例与源码说明.html",
       "tested_width": 1440
     },
     {
@@ -184,16 +184,6 @@
       "mathErrors": 0,
       "svgMath": 0,
       "file": "html/90_参考文献与研究进展索引.html",
-      "tested_width": 1440
-    },
-    {
-      "bodyWidth": 1440,
-      "viewport": 1440,
-      "brokenImages": [],
-      "placeholder": false,
-      "mathErrors": 0,
-      "svgMath": 2,
-      "file": "html/99_编排说明与原文内容对照.html",
       "tested_width": 1440
     },
     {
@@ -252,7 +242,7 @@
       "brokenImages": [],
       "placeholder": false,
       "mathErrors": 0,
-      "svgMath": 17,
+      "svgMath": 13,
       "file": "html/01_存储器接口与测试控制器.html",
       "tested_width": 390
     },
@@ -373,7 +363,7 @@
       "placeholder": false,
       "mathErrors": 0,
       "svgMath": 0,
-      "file": "html/13_教学算例与源码说明.html",
+      "file": "html/13_算例与源码说明.html",
       "tested_width": 390
     },
     {
@@ -384,16 +374,6 @@
       "mathErrors": 0,
       "svgMath": 0,
       "file": "html/90_参考文献与研究进展索引.html",
-      "tested_width": 390
-    },
-    {
-      "bodyWidth": 390,
-      "viewport": 390,
-      "brokenImages": [],
-      "placeholder": false,
-      "mathErrors": 0,
-      "svgMath": 2,
-      "file": "html/99_编排说明与原文内容对照.html",
       "tested_width": 390
     },
     {

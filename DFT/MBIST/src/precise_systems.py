@@ -96,7 +96,7 @@ def s04(data):
 
 def s05(data):
     d=Figure('05_group_example','图 19  六个存储器的分组算例',
-             '坐标与功率均为教学设定，不代表实际芯片测量。',1320)
+             '坐标与功率为算例设定，不代表实际芯片测量。',1320)
     d.node('rules',80,220,1040,'明确硬件能力和资源规则',['组内依次执行；每组最多 3 个实例。',
                 '两两距离不超过 6；不同属性类别不能同组。'],h=210)
     d.rect('S1',80,490,500,370,fill='pale',stroke='blue',kind='group')
@@ -114,7 +114,7 @@ def s05(data):
 
 def s06(data):
     d=Figure('06_schedule','图 20  同样三个组，测试时间可以不同',
-             '整数时间教学模型：一种在 17 μs 内完成的最优安排。',1330)
+             '整数时间模型：一种在 17 μs 内完成的最优安排。',1330)
     runs=data['serial_controller_scheduling']['best_among_minimum_count_partitions']['runs']
     x0=280;scale=47
     for k in range(3):
@@ -145,7 +145,7 @@ def s07(data):
 
 def s08(data):
     d=Figure('08_phase_power','图 18  利用互补的阶段功率',
-             '教学例子：总功率上限为 8 mW；两个任务可同时在 6 μs 内结束。',1830)
+             '算例：总功率上限为 8 mW；两个任务可同时在 6 μs 内结束。',1830)
     x0=260;sx=137;sy=22
     profiles=[('任务 A',[(0,2,6),(2,6,2)],'blue','zero'),
               ('任务 B',[(0,4,2),(4,6,6)],'teal','pale_teal'),
@@ -284,8 +284,8 @@ def s15(data):
            ('厂商工具适配与实际插入',['按已安装工具版本，生成受支持的配置'],'orange'),
            ('功能、故障与时间检查',['比较实际结构、地址覆盖与故障定位结果'],'blue'),
            ('物理、功率与温度验证',['不满足要求时，修正模型并重新求解'],'purple')]
-    d=flow('15_flow','图 25  优化方案怎样进入实际工具','优化器提出结构，工具生成硬件，独立检查确认结果。',cards,
-           ['教学 JSON 不是厂商原生命令；未实际运行工具，就不能声称工具通过。'],x=100,w=960,pitch=270)
+    d=flow('15_flow','图 25  优化方案到实际工具的路径','优化器提出结构，工具生成硬件，独立检查确认结果。',cards,
+           ['示例 JSON 不是厂商原生命令；工具结果以实际运行为准。'],x=100,w=960,pitch=270)
     d.edge('revise',d.port('step4','E'),d.port('step1','E'),via=[(1160,1395),(1160,585)],color='orange',meaning='物理、电气结果不满足要求时返回分组与调度优化')
     d.t(1105,975,'修正',size=28,color='orange',anchor='middle')
     d.t(1105,1025,'重算',size=28,color='orange',anchor='middle')

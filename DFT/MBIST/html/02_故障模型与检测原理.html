@@ -1,17 +1,17 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>故障模型与检测原理 · MBIST 设计架构与方法</title><link rel="stylesheet" href="book.css"></head>
-<body><aside class="sidebar"><div class="brand">MBIST 设计架构</div><div class="subtitle">从算法操作到系统实现<br>原理 · 约束 · 结果 · 验证</div><a class="home" href="../阅读入口.html">← 资料库首页</a><details class="mobile-index"><summary>展开文档目录</summary></details><nav><a class="" href="00_MBIST%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E9%98%85%E8%AF%BB%E5%AF%BC%E8%88%AA.html">00 · MBIST总体架构与阅读导航</a><a class="" href="01_%E5%AD%98%E5%82%A8%E5%99%A8%E6%8E%A5%E5%8F%A3%E4%B8%8E%E6%B5%8B%E8%AF%95%E6%8E%A7%E5%88%B6%E5%99%A8.html">01 · 存储器接口与测试控制器</a><a class="current" href="02_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%A3%80%E6%B5%8B%E5%8E%9F%E7%90%86.html">02 · 故障模型与检测原理</a><a class="" href="03_March%E5%9F%BA%E7%A1%80%E4%B8%8E%E7%BB%8F%E5%85%B8%E7%AE%97%E6%B3%95.html">03 · March基础与经典算法</a><a class="" href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 · 增强March与复杂故障测试</a><a class="" href="05_%E6%B5%8B%E8%AF%95%E7%AE%97%E6%B3%95%E7%94%9F%E6%88%90%E4%B8%8E%E9%80%89%E6%8B%A9.html">05 · 测试算法生成与选择</a><a class="" href="06_%E5%AD%98%E5%82%A8%E5%99%A8%E5%88%86%E7%BB%84%E4%B8%8E%E5%8A%9F%E8%80%97%E5%88%86%E6%9E%90.html">06 · 存储器分组与功耗分析</a><a class="" href="07_%E5%B9%B6%E5%8F%91%E8%B0%83%E5%BA%A6%E4%B8%8E%E8%81%94%E5%90%88%E4%BC%98%E5%8C%96.html">07 · 并发调度与联合优化</a><a class="" href="08_%E8%87%AA%E9%80%82%E5%BA%94%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%9C%9F%E9%97%B4%E6%B5%8B%E8%AF%95.html">08 · 自适应与运行期间测试</a><a class="" href="09_%E6%95%85%E9%9A%9C%E8%AF%8A%E6%96%AD%E4%B8%8E%E7%BB%93%E6%9E%9C%E8%AE%B0%E5%BD%95.html">09 · 故障诊断与结果记录</a><a class="" href="10_%E5%86%97%E4%BD%99%E5%88%86%E6%9E%90%E8%87%AA%E4%BF%AE%E5%A4%8D%E4%B8%8E%E7%BA%A0%E9%94%99%E7%A0%81.html">10 · 冗余分析自修复与纠错码</a><a class="" href="11_%E5%A4%9A%E7%AB%AF%E5%8F%A3%E4%B8%8E%E6%96%B0%E5%9E%8B%E5%AD%98%E5%82%A8%E5%99%A8%E6%89%A9%E5%B1%95.html">11 · 多端口与新型存储器扩展</a><a class="" href="12_%E8%AE%BE%E8%AE%A1%E9%AA%8C%E8%AF%81%E4%B8%8E%E5%B7%A5%E5%85%B7%E6%8E%A5%E5%85%A5.html">12 · 设计验证与工具接入</a><a class="" href="13_%E6%95%99%E5%AD%A6%E7%AE%97%E4%BE%8B%E4%B8%8E%E6%BA%90%E7%A0%81%E8%AF%B4%E6%98%8E.html">13 · 教学算例与源码说明</a><a class="" href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E7%A0%94%E7%A9%B6%E8%BF%9B%E5%B1%95%E7%B4%A2%E5%BC%95.html">90 · 参考文献与研究进展索引</a><a class="" href="99_%E7%BC%96%E6%8E%92%E8%AF%B4%E6%98%8E%E4%B8%8E%E5%8E%9F%E6%96%87%E5%86%85%E5%AE%B9%E5%AF%B9%E7%85%A7.html">99 · 编排说明与原文内容对照</a></nav></aside><div class="reading"><main class="paper"><div class="eyebrow">MBIST · 设计架构与方法</div><h1 id="02 · 故障模型与检测原理">02 · 故障模型与检测原理</h1>
+<body><aside class="sidebar"><div class="brand">MBIST 设计架构</div><div class="subtitle">从算法操作到系统实现<br>原理 · 约束 · 结果 · 验证</div><a class="home" href="../阅读入口.html">← 文档首页</a><details class="mobile-index"><summary>展开文档目录</summary></details><nav><a class="" href="00_MBIST%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E9%98%85%E8%AF%BB%E5%AF%BC%E8%88%AA.html">00 · MBIST总体架构与阅读导航</a><a class="" href="01_%E5%AD%98%E5%82%A8%E5%99%A8%E6%8E%A5%E5%8F%A3%E4%B8%8E%E6%B5%8B%E8%AF%95%E6%8E%A7%E5%88%B6%E5%99%A8.html">01 · 存储器接口与测试控制器</a><a class="current" href="02_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%A3%80%E6%B5%8B%E5%8E%9F%E7%90%86.html">02 · 故障模型与检测原理</a><a class="" href="03_March%E5%9F%BA%E7%A1%80%E4%B8%8E%E7%BB%8F%E5%85%B8%E7%AE%97%E6%B3%95.html">03 · March基础与经典算法</a><a class="" href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 · 增强March与复杂故障测试</a><a class="" href="05_%E6%B5%8B%E8%AF%95%E7%AE%97%E6%B3%95%E7%94%9F%E6%88%90%E4%B8%8E%E9%80%89%E6%8B%A9.html">05 · 测试算法生成与选择</a><a class="" href="06_%E5%AD%98%E5%82%A8%E5%99%A8%E5%88%86%E7%BB%84%E4%B8%8E%E5%8A%9F%E8%80%97%E5%88%86%E6%9E%90.html">06 · 存储器分组与功耗分析</a><a class="" href="07_%E5%B9%B6%E5%8F%91%E8%B0%83%E5%BA%A6%E4%B8%8E%E8%81%94%E5%90%88%E4%BC%98%E5%8C%96.html">07 · 并发调度与联合优化</a><a class="" href="08_%E8%87%AA%E9%80%82%E5%BA%94%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%9C%9F%E9%97%B4%E6%B5%8B%E8%AF%95.html">08 · 自适应与运行期间测试</a><a class="" href="09_%E6%95%85%E9%9A%9C%E8%AF%8A%E6%96%AD%E4%B8%8E%E7%BB%93%E6%9E%9C%E8%AE%B0%E5%BD%95.html">09 · 故障诊断与结果记录</a><a class="" href="10_%E5%86%97%E4%BD%99%E5%88%86%E6%9E%90%E8%87%AA%E4%BF%AE%E5%A4%8D%E4%B8%8E%E7%BA%A0%E9%94%99%E7%A0%81.html">10 · 冗余分析自修复与纠错码</a><a class="" href="11_%E5%A4%9A%E7%AB%AF%E5%8F%A3%E4%B8%8E%E6%96%B0%E5%9E%8B%E5%AD%98%E5%82%A8%E5%99%A8%E6%89%A9%E5%B1%95.html">11 · 多端口与新型存储器扩展</a><a class="" href="12_%E8%AE%BE%E8%AE%A1%E9%AA%8C%E8%AF%81%E4%B8%8E%E5%B7%A5%E5%85%B7%E6%8E%A5%E5%85%A5.html">12 · 设计验证与工具接入</a><a class="" href="13_%E7%AE%97%E4%BE%8B%E4%B8%8E%E6%BA%90%E7%A0%81%E8%AF%B4%E6%98%8E.html">13 · 算例与源码说明</a><a class="" href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E7%A0%94%E7%A9%B6%E8%BF%9B%E5%B1%95%E7%B4%A2%E5%BC%95.html">90 · 参考文献与研究进展索引</a></nav></aside><div class="reading"><main class="paper"><div class="eyebrow">MBIST · 设计架构与方法</div><h1 id="02 · 故障模型与检测原理">02 · 故障模型与检测原理</h1>
 <p><a href="00_MBIST%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E9%98%85%E8%AF%BB%E5%AF%BC%E8%88%AA.html">总览</a> · <a href="01_%E5%AD%98%E5%82%A8%E5%99%A8%E6%8E%A5%E5%8F%A3%E4%B8%8E%E6%B5%8B%E8%AF%95%E6%8E%A7%E5%88%B6%E5%99%A8.html">上一篇：存储器接口与测试控制器</a> · <a href="03_March%E5%9F%BA%E7%A1%80%E4%B8%8E%E7%BB%8F%E5%85%B8%E7%AE%97%E6%B3%95.html">下一篇：March基础与经典算法</a></p>
 <hr />
 <blockquote>
-<p><strong>架构位置：测试目标与故障模型层。</strong> 说明一个故障为什么被触发、怎样被观察，以及“覆盖”究竟覆盖了什么。</p>
+<p><strong>架构位置：测试目标与故障模型层。</strong> 故障的触发、传播与观测条件，以及覆盖率的统计范围。</p>
 </blockquote>
 <div class="table-wrap"><table>
 <thead>
 <tr>
-  <th>设计入口</th>
-  <th>本专题的约定</th>
+  <th>专题定位</th>
+  <th>范围约定</th>
 </tr>
 </thead>
 <tbody>
@@ -24,25 +24,25 @@
   <td>可检验的故障原型、激励与观测条件、覆盖率统计范围。</td>
 </tr>
 <tr>
-  <td>建议先读</td>
+  <td>前置专题</td>
   <td><a href="00_MBIST%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E9%98%85%E8%AF%BB%E5%AF%BC%E8%88%AA.html">MBIST总体架构与阅读导航</a></td>
 </tr>
 </tbody>
 </table></div>
-<h2 id="本篇目录">本篇目录</h2>
+<h2 id="目录">目录</h2>
 <ul>
-<li><a href="#1.%20%E4%B8%BA%E4%BB%80%E4%B9%88%E5%BF%85%E9%A1%BB%E5%85%88%E5%88%86%E6%9E%90%E6%A3%80%E6%B5%8B%E6%9D%A1%E4%BB%B6">1. 为什么必须先分析检测条件</a></li>
+<li><a href="#1.%20%E6%A3%80%E6%B5%8B%E6%9D%A1%E4%BB%B6%E5%88%86%E6%9E%90%E7%9A%84%E5%89%8D%E6%8F%90%E4%BD%9C%E7%94%A8">1. 检测条件分析的前提作用</a></li>
 <li><a href="#2.%20%E5%8D%95%E5%AD%98%E5%82%A8%E5%8D%95%E5%85%83%E4%B8%8E%E8%80%A6%E5%90%88%E6%95%85%E9%9A%9C">2. 单存储单元与耦合故障</a></li>
 <li><a href="#3.%20%E7%89%A9%E7%90%86%E4%BD%8D%E7%BD%AE%E4%B8%8E%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E7%B2%BE%E5%BA%A6">3. 物理位置与故障模型精度</a></li>
 <li><a href="#4.%20%E6%93%8D%E4%BD%9C%E5%8E%86%E5%8F%B2%E7%9B%B8%E5%85%B3%E6%95%85%E9%9A%9C%E7%9A%84%E5%BB%BA%E6%A8%A1">4. 操作历史相关故障的建模</a></li>
 <li><a href="#5.%20%E8%A6%86%E7%9B%96%E7%8E%87%E7%9A%84%E5%88%86%E6%AF%8D%E4%B8%8E%E9%80%82%E7%94%A8%E6%9D%A1%E4%BB%B6">5. 覆盖率的分母与适用条件</a></li>
-<li><a href="#6.%20%E7%9B%B8%E5%85%B3%E5%AD%A6%E6%9C%AF%E8%BF%9B%E5%B1%95%E4%B8%8E%E8%AF%81%E6%8D%AE%E8%8C%83%E5%9B%B4">6. 相关学术进展与证据范围</a></li>
+<li><a href="#6.%20%E7%A0%94%E7%A9%B6%E8%BF%9B%E5%B1%95%E4%B8%8E%E8%AF%81%E6%8D%AE%E8%8C%83%E5%9B%B4">6. 研究进展与证据范围</a></li>
 <li><a href="#%E4%B8%8E%E5%85%B6%E4%BB%96%E8%AE%BE%E8%AE%A1%E5%B1%82%E7%9A%84%E8%A1%94%E6%8E%A5">与其他设计层的衔接</a></li>
 </ul>
-<h2 id="1. 为什么必须先分析检测条件">1. 为什么必须先分析检测条件</h2>
-<h3 id="1.1 为什么仅写入并读回所有数据还不够">1.1 为什么仅写入并读回所有数据还不够</h3>
-<p>假设一个存储单元总是读出 0。依次写入全零、读回全零时不会发现异常；必须写入 1 并尝试读回 1 才可能发现。</p>
-<p>再假设两个存储单元 A、B 存在异常电气耦合：A 从 0 写成 1 时，B 的内容可能由 0 意外翻转成 1。如果仅测试 A，而没有在这一动作后读取 B，故障也可能被遗漏。因此，检测效果取决于：</p>
+<h2 id="1. 检测条件分析的前提作用">1. 检测条件分析的前提作用</h2>
+<h3 id="1.1 写回读检的局限性">1.1 写回读检的局限性</h3>
+<p>假设一个存储单元总是读出 0。依次写入全零、再读回全零时，不会发现异常；必须写入 1 并尝试读回 1，才有可能发现。</p>
+<p>再假设两个存储单元 A、B 存在异常电气耦合：A 从 0 写成 1 时，B 的内容可能由 0 意外翻转成 1。如果只测试 A，而没有在这一动作之后读取 B，故障也可能被遗漏。因此，检测效果取决于：</p>
 <ol>
 <li>是否安排了能够<strong>触发</strong>该故障的初始化状态与操作；</li>
 <li>是否在错误被后续操作覆盖之前<strong>观察</strong>到错误；</li>
@@ -53,9 +53,9 @@
 <h3 id="1.2 故障的激活、传播和观测">1.2 故障的激活、传播和观测</h3>
 <p>对某个故障 <span class="math-inline"><mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.464ex;" xmlns="http://www.w3.org/2000/svg" width="1.244ex" height="2.059ex" role="img" focusable="false" viewBox="0 -705 550 910"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mi"><path data-c="1D453" d="M118 -162Q120 -162 124 -164T135 -167T147 -168Q160 -168 171 -155T187 -126Q197 -99 221 27T267 267T289 382V385H242Q195 385 192 387Q188 390 188 397L195 425Q197 430 203 430T250 431Q298 431 298 432Q298 434 307 482T319 540Q356 705 465 705Q502 703 526 683T550 630Q550 594 529 578T487 561Q443 561 443 603Q443 622 454 636T478 657L487 662Q471 668 457 668Q445 668 434 658T419 630Q412 601 403 552T387 469T380 433Q380 431 435 431Q480 431 487 430T498 424Q499 420 496 407T491 391Q489 386 482 386T428 385H372L349 263Q301 15 282 -47Q255 -132 212 -173Q175 -205 139 -205Q107 -205 81 -186T55 -132Q55 -95 76 -78T118 -61Q162 -61 162 -103Q162 -122 151 -136T127 -157L118 -162Z"></path></g></g></g></svg></mjx-container></span>，可以把它的检测要求抽象为三个部分：</p>
 <ol>
-<li><strong>激活条件：</strong>哪些地址、初始数据、操作序列会造成物理异常。</li>
-<li><strong>传播条件：</strong>异常能否影响到某个可读取的存储值，或者读出路径。</li>
-<li><strong>观测条件：</strong>在后续写入、读取修复或其他故障掩盖该异常前，能否读取并发现差异。</li>
+<li>**激活条件：**哪些地址、初始数据、操作序列会造成物理异常。</li>
+<li>**传播条件：**异常能否影响到某个可读取的存储值，或者读出路径。</li>
+<li>**观测条件：**在后续写入、读取修复或其他故障掩盖该异常前，能否读取并发现差异。</li>
 </ol>
 <p>用故障原型（Fault Primitive）描述上述条件时，测试序列的优化便可以转化为“用尽量短的合法读写序列覆盖要求的故障原型集合”。这正是近年自动生成 March 算法研究的主要理论基础。</p>
 <h2 id="2. 单存储单元与耦合故障">2. 单存储单元与耦合故障</h2>
@@ -121,17 +121,17 @@
 </tbody>
 </table></div>
 <p><a href="../assets/march/02%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B.svg" target="_blank" rel="noopener" title="打开原生插图"><img src="../assets/march/02%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B.svg" alt="图 05：常见故障模型举例" /></a></p>
-<p><strong>静态故障与动态故障的区分：</strong>在经典存储器功能故障分类中，静态故障通常指最多一个存储器操作即可触发的故障；动态故障指必须按顺序执行至少两个相关操作才能触发的故障。<strong>状态转换故障虽然包含数据变化，依然可以属于静态故障模型。</strong>“静态”和“动态”不是简单地按数据是否发生变化区分。<sup class="footnote-ref" id="fnref-1"><a href="#fn-1">1</a></sup><sup class="footnote-ref" id="fnref-2"><a href="#fn-2">2</a></sup></p>
+<p>**静态故障与动态故障的区分：**在经典存储器功能故障分类中，静态故障通常指最多一个存储器操作即可触发的故障；动态故障指必须按顺序执行至少两个相关操作才能触发的故障。<strong>状态转换故障虽然包含数据变化，依然可以属于静态故障模型。</strong>“静态”和“动态”不是简单地按数据是否发生变化区分。<sup class="footnote-ref" id="fnref-1"><a href="#fn-1">1</a></sup><sup class="footnote-ref" id="fnref-2"><a href="#fn-2">2</a></sup></p>
 <h3 id="2.2 多个存储单元之间的耦合故障">2.2 多个存储单元之间的耦合故障</h3>
 <p>发生耦合故障时，一个存储单元的操作会影响另一个存储单元。为了描述这种故障，通常称前者为<strong>激励单元</strong>（aggressor），后者为<strong>受害单元</strong>（victim）。主要类别包括：</p>
 <ul>
-<li><strong>状态耦合故障（State Coupling Fault）：</strong>激励单元保持特定 0/1 状态时，受害单元操作表现异常。</li>
-<li><strong>反转耦合故障（Inversion Coupling Fault）：</strong>激励单元发生指定状态转换时，受害单元错误翻转。</li>
-<li><strong>幂等耦合故障（Idempotent Coupling Fault）：</strong>激励动作把受害单元强制设置成某一个确定数值。</li>
-<li><strong>状态转换耦合故障（Transition Coupling Fault）：</strong>激励单元处于某状态或执行某操作时，受害单元不能完成某方向的转换。</li>
-<li><strong>读出破坏耦合故障、写入干扰耦合故障：</strong>某单元的读取或非状态转换写入会破坏其他单元。</li>
-<li><strong>关联故障（Linked Fault）：</strong>一个故障造成的效果可能影响或掩盖另一个故障，两个故障不能视为相互独立。</li>
-<li><strong>三单元、四单元及五单元邻近图案敏感故障：</strong>某单元的错误取决于它周围多个物理单元共同形成的状态组合。</li>
+<li>**状态耦合故障（State Coupling Fault）：**激励单元保持特定 0/1 状态时，受害单元操作表现异常。</li>
+<li>**反转耦合故障（Inversion Coupling Fault）：**激励单元发生指定状态转换时，受害单元错误翻转。</li>
+<li>**幂等耦合故障（Idempotent Coupling Fault）：**激励动作把受害单元强制设置成某一个确定数值。</li>
+<li>**状态转换耦合故障（Transition Coupling Fault）：**激励单元处于某状态或执行某操作时，受害单元不能完成某方向的转换。</li>
+<li>**读出破坏耦合故障、写入干扰耦合故障：**某单元的读取或非状态转换写入会破坏其他单元。</li>
+<li>**关联故障（Linked Fault）：**一个故障造成的效果可能影响或掩盖另一个故障，两个故障不能视为相互独立。</li>
+<li>**三单元、四单元及五单元邻近图案敏感故障：**某单元的错误取决于它周围多个物理单元共同形成的状态组合。</li>
 </ul>
 <p><a href="../assets/march/04%E8%80%A6%E5%90%88%E6%95%85%E9%9A%9C%E6%97%B6%E5%BA%8F.svg" target="_blank" rel="noopener" title="打开原生插图"><img src="../assets/march/04%E8%80%A6%E5%90%88%E6%95%85%E9%9A%9C%E6%97%B6%E5%BA%8F.svg" alt="图 06：耦合故障的激励和观察" /></a></p>
 <p>检测一类耦合故障通常需要同时满足两个条件：<strong>先让激励单元和受害单元处于合适的数据状态，再执行激励操作；必须在异常被后续写入消除之前读取受害单元。</strong> 这比测试单个固定值故障困难，因为还要覆盖两种地址先后次序与不同初始状态。</p>
@@ -140,13 +140,13 @@
 <p>March 测试默认的地址排列可能是逻辑地址排列。真正的存储器宏内部可能有：行列地址重新编码、位交织、列复用、数据位交错排列、冗余行列和地址扰乱。某些邻近单元故障测试必须知道<strong>逻辑地址对应的物理行列位置</strong>，否则按逻辑地址产生的棋盘图案可能无法让真正相邻的晶体管处于预期状态。</p>
 <h3 id="3.2 故障模型的精度层次">3.2 故障模型的精度层次</h3>
 <p>行为级模型适合快速验证算法、地址行为与系统响应。带有历史状态的故障模型可以表示特定读写序列触发条件。晶体管级或缺陷注入模型更接近实际电路，但计算成本高，也受参数、工艺和缺陷集合影响。</p>
-<p>门级逻辑故障覆盖报告经常把存储器宏视为黑盒。因此，扫描测试达到高覆盖，并不直接意味着宏内部位单元已经被测试；反过来，MBIST 阵列测试通过，也不能取代控制逻辑、测试接口和其他电路的结构测试。</p>
+<p>门级逻辑故障覆盖报告常常把存储器宏当作黑盒。因此，扫描测试达到高覆盖，并不直接意味着宏内部位单元已经被测试；反过来，MBIST 阵列测试通过，也不能取代控制逻辑、测试接口和其他电路的结构测试。</p>
 <h2 id="4. 操作历史相关故障的建模">4. 操作历史相关故障的建模</h2>
-<h3 id="4.1 方向三：把操作历史纳入故障模型与测试工具">4.1 方向三：把操作历史纳入故障模型与测试工具</h3>
+<h3 id="4.1 操作历史建模的研究方向">4.1 操作历史建模的研究方向</h3>
 <p>2026 年的硬件上下文监测（Hardware Context Monitoring，HCM）工作并不要求每个动态故障必须被简化成“前后两次操作”的模型。它用数字硬件描述模块记录测试过程中相关信号随时间的变化，根据完整的事件历史检查故障是否被激励、是否传播到可观察位置、是否被其他操作掩盖。<sup class="footnote-ref" id="fnref-3"><a href="#fn-3">3</a></sup></p>
 <p>其意义在于：当测试优化器只看简单故障原型时，很难知道某些动态故障为何没有被检测；加入上下文监测后，优化器可以获得更准确的“这段读写序列是否真正满足故障条件”的反馈。这将支持未来使用自动测试生成器寻找更复杂但更短的动态故障测试序列。</p>
 <h2 id="5. 覆盖率的分母与适用条件">5. 覆盖率的分母与适用条件</h2>
-<h3 id="5.1 如何阅读论文中的覆盖率数字">5.1 如何阅读论文中的覆盖率数字</h3>
+<h3 id="5.1 覆盖率数字的解读">5.1 覆盖率数字的解读</h3>
 <p>以下几个数字<strong>不允许直接相互排序</strong>：</p>
 <div class="table-wrap"><table>
 <thead>
@@ -187,12 +187,11 @@
 <p>故障覆盖率通常计算为：</p>
 <div class="math-display"><mjx-container class="MathJax" jax="SVG" display="true"><svg style="vertical-align: -2.059ex;" xmlns="http://www.w3.org/2000/svg" width="36.384ex" height="5.285ex" role="img" focusable="false" viewBox="0 -1426 16081.6 2336"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="TeXAtom" data-mjx-texclass="ORD"><g data-mml-node="mi"><path data-c="43" d="M56 342Q56 428 89 500T174 615T283 681T391 705Q394 705 400 705T408 704Q499 704 569 636L582 624L612 663Q639 700 643 704Q644 704 647 704T653 705H657Q660 705 666 699V419L660 413H626Q620 419 619 430Q610 512 571 572T476 651Q457 658 426 658Q322 658 252 588Q173 509 173 342Q173 221 211 151Q232 111 263 84T328 45T384 29T428 24Q517 24 571 93T626 244Q626 251 632 257H660L666 251V236Q661 133 590 56T403 -21Q262 -21 159 83T56 342Z"></path><path data-c="6F" d="M28 214Q28 309 93 378T250 448Q340 448 405 380T471 215Q471 120 407 55T250 -10Q153 -10 91 57T28 214ZM250 30Q372 30 372 193V225V250Q372 272 371 288T364 326T348 362T317 390T268 410Q263 411 252 411Q222 411 195 399Q152 377 139 338T126 246V226Q126 130 145 91Q177 30 250 30Z" transform="translate(722,0)"></path><path data-c="76" d="M338 431Q344 429 422 429Q479 429 503 431H508V385H497Q439 381 423 345Q421 341 356 172T288 -2Q283 -11 263 -11Q244 -11 239 -2Q99 359 98 364Q93 378 82 381T43 385H19V431H25L33 430Q41 430 53 430T79 430T104 429T122 428Q217 428 232 431H240V385H226Q187 384 184 370Q184 366 235 234L286 102L377 341V349Q377 363 367 372T349 383T335 385H331V431H338Z" transform="translate(1222,0)"></path><path data-c="65" d="M28 218Q28 273 48 318T98 391T163 433T229 448Q282 448 320 430T378 380T406 316T415 245Q415 238 408 231H126V216Q126 68 226 36Q246 30 270 30Q312 30 342 62Q359 79 369 104L379 128Q382 131 395 131H398Q415 131 415 121Q415 117 412 108Q393 53 349 21T250 -11Q155 -11 92 58T28 218ZM333 275Q322 403 238 411H236Q228 411 220 410T195 402T166 381T143 340T127 274V267H333V275Z" transform="translate(1750,0)"></path><path data-c="72" d="M36 46H50Q89 46 97 60V68Q97 77 97 91T98 122T98 161T98 203Q98 234 98 269T98 328L97 351Q94 370 83 376T38 385H20V408Q20 431 22 431L32 432Q42 433 60 434T96 436Q112 437 131 438T160 441T171 442H174V373Q213 441 271 441H277Q322 441 343 419T364 373Q364 352 351 337T313 322Q288 322 276 338T263 372Q263 381 265 388T270 400T273 405Q271 407 250 401Q234 393 226 386Q179 341 179 207V154Q179 141 179 127T179 101T180 81T180 66V61Q181 59 183 57T188 54T193 51T200 49T207 48T216 47T225 47T235 46T245 46H276V0H267Q249 3 140 3Q37 3 28 0H20V46H36Z" transform="translate(2194,0)"></path><path data-c="61" d="M137 305T115 305T78 320T63 359Q63 394 97 421T218 448Q291 448 336 416T396 340Q401 326 401 309T402 194V124Q402 76 407 58T428 40Q443 40 448 56T453 109V145H493V106Q492 66 490 59Q481 29 455 12T400 -6T353 12T329 54V58L327 55Q325 52 322 49T314 40T302 29T287 17T269 6T247 -2T221 -8T190 -11Q130 -11 82 20T34 107Q34 128 41 147T68 188T116 225T194 253T304 268H318V290Q318 324 312 340Q290 411 215 411Q197 411 181 410T156 406T148 403Q170 388 170 359Q170 334 154 320ZM126 106Q126 75 150 51T209 26Q247 26 276 49T315 109Q317 116 318 175Q318 233 317 233Q309 233 296 232T251 223T193 203T147 166T126 106Z" transform="translate(2586,0)"></path><path data-c="67" d="M329 409Q373 453 429 453Q459 453 472 434T485 396Q485 382 476 371T449 360Q416 360 412 390Q410 404 415 411Q415 412 416 414V415Q388 412 363 393Q355 388 355 386Q355 385 359 381T368 369T379 351T388 325T392 292Q392 230 343 187T222 143Q172 143 123 171Q112 153 112 133Q112 98 138 81Q147 75 155 75T227 73Q311 72 335 67Q396 58 431 26Q470 -13 470 -72Q470 -139 392 -175Q332 -206 250 -206Q167 -206 107 -175Q29 -140 29 -75Q29 -39 50 -15T92 18L103 24Q67 55 67 108Q67 155 96 193Q52 237 52 292Q52 355 102 398T223 442Q274 442 318 416L329 409ZM299 343Q294 371 273 387T221 404Q192 404 171 388T145 343Q142 326 142 292Q142 248 149 227T179 192Q196 182 222 182Q244 182 260 189T283 207T294 227T299 242Q302 258 302 292T299 343ZM403 -75Q403 -50 389 -34T348 -11T299 -2T245 0H218Q151 0 138 -6Q118 -15 107 -34T95 -74Q95 -84 101 -97T122 -127T170 -155T250 -167Q319 -167 361 -139T403 -75Z" transform="translate(3086,0)"></path><path data-c="65" d="M28 218Q28 273 48 318T98 391T163 433T229 448Q282 448 320 430T378 380T406 316T415 245Q415 238 408 231H126V216Q126 68 226 36Q246 30 270 30Q312 30 342 62Q359 79 369 104L379 128Q382 131 395 131H398Q415 131 415 121Q415 117 412 108Q393 53 349 21T250 -11Q155 -11 92 58T28 218ZM333 275Q322 403 238 411H236Q228 411 220 410T195 402T166 381T143 340T127 274V267H333V275Z" transform="translate(3586,0)"></path></g></g><g data-mml-node="mo" transform="translate(4307.8,0)"><path data-c="3D" d="M56 347Q56 360 70 367H707Q722 359 722 347Q722 336 708 328L390 327H72Q56 332 56 347ZM56 153Q56 168 72 173H708Q722 163 722 153Q722 140 707 133H70Q56 140 56 153Z"></path></g><g data-mml-node="mfrac" transform="translate(5363.6,0)"><g data-mml-node="mtext" transform="translate(220,676)"><text data-variant="normal" transform="scale(1,-1)" font-size="884px" font-family="serif">检</text><text data-variant="normal" transform="translate(1000,0) scale(1,-1)" font-size="884px" font-family="serif">测</text><text data-variant="normal" transform="translate(2000,0) scale(1,-1)" font-size="884px" font-family="serif">到</text><text data-variant="normal" transform="translate(3000,0) scale(1,-1)" font-size="884px" font-family="serif">的</text><text data-variant="normal" transform="translate(4000,0) scale(1,-1)" font-size="884px" font-family="serif">指</text><text data-variant="normal" transform="translate(5000,0) scale(1,-1)" font-size="884px" font-family="serif">定</text><text data-variant="normal" transform="translate(6000,0) scale(1,-1)" font-size="884px" font-family="serif">故</text><text data-variant="normal" transform="translate(7000,0) scale(1,-1)" font-size="884px" font-family="serif">障</text><text data-variant="normal" transform="translate(8000,0) scale(1,-1)" font-size="884px" font-family="serif">数</text><text data-variant="normal" transform="translate(9000,0) scale(1,-1)" font-size="884px" font-family="serif">量</text></g><g data-mml-node="mtext" transform="translate(220,-710)"><text data-variant="normal" transform="scale(1,-1)" font-size="884px" font-family="serif">评</text><text data-variant="normal" transform="translate(1000,0) scale(1,-1)" font-size="884px" font-family="serif">估</text><text data-variant="normal" transform="translate(2000,0) scale(1,-1)" font-size="884px" font-family="serif">的</text><text data-variant="normal" transform="translate(3000,0) scale(1,-1)" font-size="884px" font-family="serif">指</text><text data-variant="normal" transform="translate(4000,0) scale(1,-1)" font-size="884px" font-family="serif">定</text><text data-variant="normal" transform="translate(5000,0) scale(1,-1)" font-size="884px" font-family="serif">故</text><text data-variant="normal" transform="translate(6000,0) scale(1,-1)" font-size="884px" font-family="serif">障</text><text data-variant="normal" transform="translate(7000,0) scale(1,-1)" font-size="884px" font-family="serif">总</text><text data-variant="normal" transform="translate(8000,0) scale(1,-1)" font-size="884px" font-family="serif">数</text><text data-variant="normal" transform="translate(9000,0) scale(1,-1)" font-size="884px" font-family="serif">量</text></g><rect width="10200" height="60" x="120" y="220"></rect></g><g data-mml-node="mo" transform="translate(15803.6,0)"><path data-c="2E" d="M78 60Q78 84 95 102T138 120Q162 120 180 104T199 61Q199 36 182 18T139 0T96 17T78 60Z"></path></g></g></g></svg></mjx-container></div>
 <p>实际项目还需要明确每种故障是否按发生概率、面积、制造缺陷统计或安全影响程度赋予不同权重。未经统一故障集合、仿真条件和统计方法，<strong>不同论文的百分比不能构成公平排名</strong>。</p>
-<h3 id="5.2 把“指定故障模型完全覆盖”当成“全部缺陷完全覆盖”">5.2 把“指定故障模型完全覆盖”当成“全部缺陷完全覆盖”</h3>
-<p>这是 March 研究中最严重的误解。某论文检测了全部 36 个指定静态故障原型，其结论也只适用于这 36 个模型。制造缺陷可能涉及开路电阻值分布、温度、供电条件、内部晶体管结构、读出放大器、地址译码器及存储器外围电路。<strong>功能故障模型覆盖率与真实制造缺陷覆盖率不能自动画等号。</strong></p>
-<h3 id="5.3 把逻辑地址相邻看成物理单元相邻">5.3 把逻辑地址相邻看成物理单元相邻</h3>
-<p>对于五单元邻近故障，一旦地址经过位交织、行列复用或重新编码，逻辑上的行列图案就可能不再对应实际的物理棋盘图案。这会让所谓“完整遍历全部邻近状态”失去依据。建议从存储器编译器提供的接口、版图信息或厂商测试说明确定行列地址的实际排列。</p>
-<h2 id="6. 相关学术进展与证据范围">6. 相关学术进展与证据范围</h2>
-<p>以下保留两份原报告截至 2026 年 10 月 17 日整理的研究记录；本轮是编排合并，没有新增检索或论文复现实验。</p>
+<h3 id="5.2 指定故障模型覆盖与全部缺陷覆盖的界限">5.2 指定故障模型覆盖与全部缺陷覆盖的界限</h3>
+<p>这是 March 研究中的主要误解。某论文检测了全部 36 个指定静态故障原型，其结论也只适用于这 36 个模型。制造缺陷可能涉及开路电阻值分布、温度、供电条件、内部晶体管结构、读出放大器、地址译码器及存储器外围电路。<strong>功能故障模型覆盖率与真实制造缺陷覆盖率不能自动画等号。</strong></p>
+<h3 id="5.3 逻辑地址相邻与物理单元相邻的区别">5.3 逻辑地址相邻与物理单元相邻的区别</h3>
+<p>对于五单元邻近故障，一旦地址经过位交织、行列复用或重新编码，逻辑上的行列图案就可能不再对应实际的物理棋盘图案。这会让所谓“完整遍历全部邻近状态”失去依据。行列地址的实际排列应从存储器编译器接口、版图信息或厂商测试说明中确定。</p>
+<h2 id="6. 研究进展与证据范围">6. 研究进展与证据范围</h2>
 <div class="table-wrap"><table>
 <thead>
 <tr>
@@ -215,8 +214,8 @@
 </table></div>
 <h2 id="与其他设计层的衔接">与其他设计层的衔接</h2>
 <p>本专题输出需要继续交给<a href="03_March%E5%9F%BA%E7%A1%80%E4%B8%8E%E7%BB%8F%E5%85%B8%E7%AE%97%E6%B3%95.html">March基础与经典算法</a>、<a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">增强March与复杂故障测试</a>、<a href="05_%E6%B5%8B%E8%AF%95%E7%AE%97%E6%B3%95%E7%94%9F%E6%88%90%E4%B8%8E%E9%80%89%E6%8B%A9.html">测试算法生成与选择</a>、<a href="12_%E8%AE%BE%E8%AE%A1%E9%AA%8C%E8%AF%81%E4%B8%8E%E5%B7%A5%E5%85%B7%E6%8E%A5%E5%85%A5.html">设计验证与工具接入</a>。改变某一层的条件以后，应重新检查受到影响的接口和验证要求。</p>
-<h2 id="本篇参考资料">本篇参考资料</h2>
-<p>完整去重文献与原编号见<a href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E7%A0%94%E7%A9%B6%E8%BF%9B%E5%B1%95%E7%B4%A2%E5%BC%95.html">参考文献与研究进展索引</a>。本篇脚注保留所用来源，便于独立阅读。</p>
+<h2 id="参考文献">参考文献</h2>
+<p>文献编号与完整条目见<a href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E7%A0%94%E7%A9%B6%E8%BF%9B%E5%B1%95%E7%B4%A2%E5%BC%95.html">参考文献与研究进展索引</a>。</p>
 <hr />
 <p><a href="00_MBIST%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E9%98%85%E8%AF%BB%E5%AF%BC%E8%88%AA.html">总览</a> · <a href="01_%E5%AD%98%E5%82%A8%E5%99%A8%E6%8E%A5%E5%8F%A3%E4%B8%8E%E6%B5%8B%E8%AF%95%E6%8E%A7%E5%88%B6%E5%99%A8.html">上一篇：存储器接口与测试控制器</a> · <a href="03_March%E5%9F%BA%E7%A1%80%E4%B8%8E%E7%BB%8F%E5%85%B8%E7%AE%97%E6%B3%95.html">下一篇：March基础与经典算法</a></p>
 <section class="footnotes">
@@ -226,4 +225,4 @@
 <li id="fn-3"><p><strong>R12</strong> — <strong>Ronga, D.; Faehn, E.; Girard, P.; Virazel, A.（2026）.</strong> <em>A hardware context monitoring for testing complex dynamic SRAM faults in digital test environment.</em> <strong>Microprocessors and Microsystems</strong>, 124（Part B）, 105305. <a href="https://doi.org/10.1016/j.micpro.2026.105305">DOI: 10.1016/j.micpro.2026.105305</a>；<a href="https://www.sciencedirect.com/science/article/pii/S0141933126000621">期刊页面</a>。动态故障数字仿真的操作历史建模。<a href="#fnref-3" class="footnote">&#8617;</a></p></li>
 </ol>
 </section>
-<div class="footer">资料检索截止沿用原报告：2026-10-17。此页为 Markdown 的离线阅读副本；编辑后需重新生成。图示、教学模型与论文证据范围分别说明。</div></main></div></body></html>
+<div class="footer">文献检索截止 2026-10-17。此页为 Markdown 的离线阅读副本；编辑后需重新生成。图示、算例与论文证据范围分别说明。</div></main></div></body></html>

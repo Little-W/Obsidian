@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1346" viewBox="0 0 1200 1346" role="img" aria-labelledby="fig-title fig-description" version="1.1" data-layout-version="precise-ports-v2">
   <title id="fig-title">图 19  六个存储器的分组算例</title>
-  <desc id="fig-description">坐标与功率均为教学设定，不代表实际芯片测量。</desc>
+  <desc id="fig-description">坐标与功率为算例设定，不代表实际芯片测量。</desc>
   <metadata>{"layout": "named ports + orthogonal routes", "font_policy": "editable text; no embedded fonts", "version": 2}</metadata>
   <defs>
     <marker id="arrow-blue" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
@@ -44,7 +44,7 @@
   <g id="layer-connectors" />
   <g id="layer-text">
     <text id="text-0001" x="64" y="80" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="48" font-weight="700" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">图 19  六个存储器的分组算例</text>
-    <text id="text-0002" x="64" y="145" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">坐标与功率均为教学设定，不代表实际芯片测量。</text>
+    <text id="text-0002" x="64" y="145" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">坐标与功率为算例设定，不代表实际芯片测量。</text>
     <text id="text-0003" x="600.0" y="268" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="rules">明确硬件能力和资源规则</text>
     <text id="text-0004" x="600.0" y="326" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="rules">组内依次执行；每组最多 3 个实例。</text>
     <text id="text-0005" x="600.0" y="376" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="rules">两两距离不超过 6；不同属性类别不能同组。</text>
@@ -68,8 +68,8 @@
   <g id="review-only-overlay" pointer-events="none">
     <rect x="54" y="35" width="626.4375" height="90" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
     <rect x="64" y="45" width="606.4375" height="70" fill="none" stroke="#E08617" stroke-width="1" />
-    <rect x="54" y="113" width="680" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
-    <rect x="64" y="123" width="660" height="44" fill="none" stroke="#E08617" stroke-width="1" />
+    <rect x="54" y="113" width="650" height="64" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
+    <rect x="64" y="123" width="630" height="44" fill="none" stroke="#E08617" stroke-width="1" />
     <rect x="391.9921875" y="232" width="416.015625" height="72" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
     <rect x="401.9921875" y="242" width="396.015625" height="52" fill="none" stroke="#E08617" stroke-width="1" />
     <rect x="333.9453125" y="293" width="532.109375" height="66" fill="#E8951C" fill-opacity="0.035" stroke="#D47B10" stroke-opacity="0.5" stroke-width="0.8" stroke-dasharray="4 4" />
