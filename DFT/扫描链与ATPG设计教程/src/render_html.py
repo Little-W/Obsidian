@@ -63,8 +63,8 @@ class Renderer(mistune.HTMLRenderer):
 def page(title: str, content: str, sidebar: str, stylesheet: str = 'book.css') -> str:
     return f'''<!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{html.escape(title)} · 扫描链与 ATPG 设计教程</title><link rel="stylesheet" href="{stylesheet}"></head>
-<body>{sidebar}<div class="reading"><main class="paper"><div class="eyebrow">SCAN · ATPG · 设计原理</div>{content}<div class="footer">资料检索截止：2026-10-17。此页为 Markdown 的离线阅读副本；编辑后需重新生成。图示、教学模型与论文证据范围分别说明。</div></main></div></body></html>'''
+<title>{html.escape(title)} · 扫描链与 ATPG 设计</title><link rel="stylesheet" href="{stylesheet}"></head>
+<body>{sidebar}<div class="reading"><main class="paper"><div class="eyebrow">SCAN · ATPG · 设计原理</div>{content}<div class="footer">资料检索截止：2026-10-17。此页为 Markdown 的离线阅读副本；编辑后需重新生成。图示、算例模型与论文证据范围分别说明。</div></main></div></body></html>'''
 
 
 def main() -> None:
@@ -107,7 +107,7 @@ def main() -> None:
         out.write_text(page(title,content,sidebar),encoding='utf-8')
         report.append({'source':name,'html':str(out.relative_to(ROOT)),'math_count':len(fragments)})
     descriptions={
-      '00':'先看一条完整测试路径，再选择硬件、算法或诊断阅读路线。',
+      '00':'测试路径、职责边界与硬件、算法、诊断的阅读组织。',
       '01':'扫描触发器、四位串行移位、加载与捕获，以及严格的位序约定。',
       '02':'全扫描和部分扫描、链平衡、跨时钟连接及物理重排。',
       '03':'片上时钟控制、LOC 与 LOS、复位和高速测试中的保持要求。',
@@ -119,15 +119,14 @@ def main() -> None:
       '09':'移位与捕获活动、填充选择、峰值约束和运行期间测试。',
       '10':'控制点和观察点原理，硬件、可编码性与覆盖率的联合代价。',
       '11':'失败记录、扫描结构故障、逻辑候选和诊断信息丢失。',
-      '12':'工具输入、规则检查、仿真与制造转换，不虚构商业命令。',
+      '12':'工具输入、规则检查、仿真与制造转换。',
       '13':'按改变的设计层分析 2024—2026 年工作，逐项区分证据范围。',
-      '14':'32 故障、SAT 回归、扫描位序、线性压缩与可修改教学程序。',
-      '90':'24 项原始来源，列出全文、摘要、议程和厂商资料的用途。',
-      '99':'与 MBIST 卷的关系，检查范围、资料版本及编辑说明。'}
+      '14':'32 故障、SAT 回归、扫描位序、线性压缩与可修改算例程序。',
+      '90':'24 项原始来源，列出全文、摘要、议程和厂商资料的用途。'}
     def cards(keys):
         return '<div class="cards">'+''.join(f'<a class="card" href="html/{quote(Path(manifest["files"][k]).with_suffix(".html").name)}"><div class="number">{k} / SCAN &amp; ATPG</div><h3>{html.escape(manifest["titles"][k])}</h3><p>{descriptions[k]}</p></a>' for k in keys)+'</div>'
     overview=quote(Path(manifest['files']['00']).with_suffix('.html').name)
-    landing=f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>扫描链与 ATPG 设计教程 · 阅读入口</title><link rel="stylesheet" href="html/book.css"></head><body><main class="landing"><section class="hero"><div class="eyebrow">Architecture-oriented handbook · Companion to MBIST</div><h1>扫描链与 ATPG 设计教程</h1><p>从内部状态如何装入与读出开始，理解故障激活、逻辑传播、测试压缩和实际芯片执行之间的关系。用可运行的小电路验证原理，再分析近期研究改变了哪一层、在什么条件下有效。</p><div class="actions"><a class="button" href="html/{overview}">从总体架构开始</a><a class="button secondary" href="插图索引.html">查看全部插图</a><a class="button secondary" href="精确绘图检查.html">连接点与避让检查</a><a class="button secondary" href="html/README.html">文件与源码说明</a></div><div class="stats">17 份文档 · 19 张可编辑插图 · 24 项参考资料 · 教学源码与执行记录</div></section><h2 class="section-label">总体架构与设计专题</h2>{cards([k for k in manifest['order'] if int(k)<=12])}<h2 class="section-label">研究分析、教学与参考资料</h2>{cards(['13','14','90','99'])}<div class="footer">检索截止 2026-10-17。此入口、全部专题页、公式和插图均可离线打开。Markdown 是编辑版本，HTML 是阅读副本。教学数值不是商业工具或硅测量结果；论文证据范围见正文。保留完整目录以保持文档链接有效。</div></main></body></html>'''
+    landing=f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>扫描链与 ATPG 设计 · 阅读入口</title><link rel="stylesheet" href="html/book.css"></head><body><main class="landing"><section class="hero"><div class="eyebrow">Architecture-oriented handbook · Companion to MBIST</div><h1>扫描链与 ATPG 设计</h1><p>从内部状态的装入与读出出发，说明故障激活、逻辑传播、测试压缩和制造执行之间的关系，并以可运行算例核对原理。</p><div class="actions"><a class="button" href="html/{overview}">从总体架构开始</a><a class="button secondary" href="插图索引.html">查看全部插图</a><a class="button secondary" href="精确绘图检查.html">连接点与避让检查</a><a class="button secondary" href="html/README.html">文件与源码说明</a></div><div class="stats">16 份文档 · 19 张可编辑插图 · 24 项参考资料 · 算例源码与执行记录</div></section><h2 class="section-label">总体架构与设计专题</h2>{cards([k for k in manifest['order'] if int(k)<=12])}<h2 class="section-label">研究分析、算例与参考资料</h2>{cards(['13','14','90'])}<div class="footer">检索截止 2026-10-17。此入口、全部专题页、公式和插图均可离线打开。Markdown 是编辑版本，HTML 是阅读副本。算例数值不是商业工具或硅测量结果；论文证据范围见正文。保留完整目录以保持文档链接有效。</div></main></body></html>'''
     (ROOT/'阅读入口.html').write_text(landing,encoding='utf-8')
     figures=json.loads((ROOT/'assets/figures_manifest.json').read_text(encoding='utf-8'))['figures']
     gallery='<h1>19 张可编辑技术插图</h1><p><a href="阅读入口.html">← 返回阅读入口</a> · <a href="精确绘图检查.html">查看连接点与文字避让</a> · 原生文字、方框与连接线，源码位于 src。</p>'

@@ -1,4 +1,4 @@
-# VC Formal 平台、环境与命令执行
+# VC Formal 平台与环境
 
 ## 1. 平台定位与基本结构
 
@@ -192,7 +192,7 @@ get_fml_appmode
 
 `help` 和 `-help` 用来核对命令接受的选项；`man`、`view_help` 调出更长的帮助；`report_fml_var` 用来查询形式变量，`report_app_var` 用来查询应用变量。变量的归属不能随便互换：有的需要用 `set_fml_var`，有的需要用 `set_app_var`。**应优先查看安装版本的帮助，而不是直接照抄网上的脚本**。
 
-## 5. 读入、编译与展开 RTL
+## 5. 设计读入与展开
 
 下列两种做法是供学习的可选路径，通常只需选其中一种，不要在同一个工程里无条件地把 `read_file` 和 `analyze/elaborate` 都做一遍：
 

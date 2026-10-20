@@ -1,1138 +1,1122 @@
 [
   {
     "file": "01_扫描触发器与移位捕获原理.md",
-    "line": 15,
+    "line": 14,
     "tex": "D",
     "display": false,
-    "start": 401,
-    "end": 404
+    "start": 389,
+    "end": 392
   },
   {
     "file": "01_扫描触发器与移位捕获原理.md",
-    "line": 15,
+    "line": 14,
     "tex": "SI",
     "display": false,
-    "start": 411,
-    "end": 415
+    "start": 399,
+    "end": 403
   },
   {
     "file": "01_扫描触发器与移位捕获原理.md",
-    "line": 17,
+    "line": 16,
     "tex": "\nQ^{+}=\\begin{cases}SI,&SE=1,\\\\D,&SE=0.\\end{cases}\n",
     "display": true,
-    "start": 432,
-    "end": 487
+    "start": 420,
+    "end": 475
   },
   {
     "file": "01_扫描触发器与移位捕获原理.md",
-    "line": 21,
+    "line": 20,
     "tex": "SE",
     "display": false,
-    "start": 489,
-    "end": 493
+    "start": 477,
+    "end": 481
   },
   {
     "file": "01_扫描触发器与移位捕获原理.md",
-    "line": 27,
+    "line": 25,
     "tex": "Q_0",
     "display": false,
-    "start": 665,
-    "end": 670
+    "start": 643,
+    "end": 648
+  },
+  {
+    "file": "01_扫描触发器与移位捕获原理.md",
+    "line": 25,
+    "tex": "Q_3",
+    "display": false,
+    "start": 656,
+    "end": 661
   },
   {
     "file": "01_扫描触发器与移位捕获原理.md",
     "line": 27,
-    "tex": "Q_3",
-    "display": false,
-    "start": 678,
-    "end": 683
-  },
-  {
-    "file": "01_扫描触发器与移位捕获原理.md",
-    "line": 29,
     "tex": "\n(Q_0^+,Q_1^+,Q_2^+,Q_3^+)=(SI,Q_0,Q_1,Q_2).\n",
     "display": true,
-    "start": 697,
-    "end": 746
+    "start": 675,
+    "end": 724
   },
   {
     "file": "01_扫描触发器与移位捕获原理.md",
-    "line": 33,
+    "line": 31,
     "tex": "Q_3",
     "display": false,
-    "start": 779,
+    "start": 757,
+    "end": 762
+  },
+  {
+    "file": "01_扫描触发器与移位捕获原理.md",
+    "line": 31,
+    "tex": "[1,1,0,1]",
+    "display": false,
+    "start": 773,
     "end": 784
   },
   {
     "file": "01_扫描触发器与移位捕获原理.md",
     "line": 33,
-    "tex": "[1,1,0,1]",
-    "display": false,
-    "start": 795,
-    "end": 806
-  },
-  {
-    "file": "01_扫描触发器与移位捕获原理.md",
-    "line": 35,
     "tex": "[0,1,1,0]",
     "display": false,
-    "start": 886,
-    "end": 897
+    "start": 864,
+    "end": 875
   },
   {
     "file": "01_扫描触发器与移位捕获原理.md",
-    "line": 37,
+    "line": 35,
     "tex": "[Q_0,Q_1,Q_2,Q_3]",
     "display": false,
-    "start": 938,
-    "end": 957
+    "start": 916,
+    "end": 935
   },
   {
     "file": "01_扫描触发器与移位捕获原理.md",
-    "line": 46,
+    "line": 44,
     "tex": "Q_0",
     "display": false,
-    "start": 1153,
-    "end": 1158
+    "start": 1131,
+    "end": 1136
   },
   {
     "file": "01_扫描触发器与移位捕获原理.md",
-    "line": 46,
+    "line": 44,
     "tex": "Q_0",
     "display": false,
-    "start": 1163,
-    "end": 1168
+    "start": 1141,
+    "end": 1146
   },
   {
     "file": "01_扫描触发器与移位捕获原理.md",
-    "line": 46,
+    "line": 44,
     "tex": "Q_1",
     "display": false,
-    "start": 1172,
-    "end": 1177
+    "start": 1150,
+    "end": 1155
   },
   {
     "file": "01_扫描触发器与移位捕获原理.md",
-    "line": 50,
+    "line": 47,
     "tex": "SE=1",
     "display": false,
-    "start": 1251,
-    "end": 1257
+    "start": 1220,
+    "end": 1226
   },
   {
     "file": "01_扫描触发器与移位捕获原理.md",
-    "line": 50,
+    "line": 47,
     "tex": "SE=0",
     "display": false,
-    "start": 1276,
-    "end": 1282
+    "start": 1245,
+    "end": 1251
   },
   {
     "file": "01_扫描触发器与移位捕获原理.md",
-    "line": 56,
+    "line": 53,
     "tex": "P",
     "display": false,
-    "start": 1528,
-    "end": 1531
+    "start": 1497,
+    "end": 1500
   },
   {
     "file": "01_扫描触发器与移位捕获原理.md",
-    "line": 56,
+    "line": 53,
     "tex": "L",
     "display": false,
-    "start": 1541,
-    "end": 1544
+    "start": 1510,
+    "end": 1513
   },
   {
     "file": "01_扫描触发器与移位捕获原理.md",
-    "line": 56,
+    "line": 53,
     "tex": "c",
     "display": false,
-    "start": 1548,
-    "end": 1551
+    "start": 1517,
+    "end": 1520
   },
   {
     "file": "01_扫描触发器与移位捕获原理.md",
-    "line": 58,
+    "line": 55,
     "tex": "\nT\\approx\\frac{(P+1)L}{f_{\\mathrm{shift}}}+\\frac{Pc}{f_{\\mathrm{capture}}}+T_{\\mathrm{config}}.\n",
     "display": true,
-    "start": 1585,
-    "end": 1685
+    "start": 1554,
+    "end": 1654
   },
   {
     "file": "01_扫描触发器与移位捕获原理.md",
-    "line": 66,
+    "line": 62,
     "tex": "F",
     "display": false,
-    "start": 1787,
-    "end": 1790
+    "start": 1747,
+    "end": 1750
   },
   {
     "file": "01_扫描触发器与移位捕获原理.md",
-    "line": 66,
+    "line": 62,
     "tex": "K",
     "display": false,
-    "start": 1800,
-    "end": 1803
+    "start": 1760,
+    "end": 1763
   },
   {
     "file": "01_扫描触发器与移位捕获原理.md",
-    "line": 66,
+    "line": 62,
     "tex": "\\lceil F/K\\rceil",
     "display": false,
-    "start": 1818,
-    "end": 1836
+    "start": 1778,
+    "end": 1796
   },
   {
     "file": "01_扫描触发器与移位捕获原理.md",
-    "line": 66,
+    "line": 62,
     "tex": "K",
     "display": false,
-    "start": 1846,
-    "end": 1849
+    "start": 1806,
+    "end": 1809
   },
   {
     "file": "02_扫描架构与物理实现.md",
-    "line": 35,
+    "line": 32,
     "tex": "\n\\min\\ \\alpha\\max_k L_k+\\beta\\sum_{(i,j)\\in E_{\\mathrm{scan}}}d_{ij}+\\gamma A_{\\mathrm{extra}},\n",
     "display": true,
-    "start": 1073,
-    "end": 1173
+    "start": 1046,
+    "end": 1146
   },
   {
     "file": "02_扫描架构与物理实现.md",
-    "line": 39,
+    "line": 36,
     "tex": "d_{ij}",
     "display": false,
-    "start": 1202,
-    "end": 1210
+    "start": 1175,
+    "end": 1183
   },
   {
     "file": "02_扫描架构与物理实现.md",
-    "line": 39,
+    "line": 36,
     "tex": "A_{\\mathrm{extra}}",
     "display": false,
-    "start": 1249,
-    "end": 1269
+    "start": 1222,
+    "end": 1242
   },
   {
     "file": "03_测试时钟复位与高速捕获.md",
-    "line": 31,
+    "line": 28,
     "tex": "\nt_{\\mathrm{cq,max}}+t_{\\mathrm{logic,max}}+t_{\\mathrm{setup}}+u_{\\mathrm{setup}}\n\\le T_{\\mathrm{launch\\to capture}}+s,\n",
     "display": true,
-    "start": 986,
-    "end": 1110
+    "start": 963,
+    "end": 1087
   },
   {
     "file": "03_测试时钟复位与高速捕获.md",
-    "line": 36,
+    "line": 33,
     "tex": "s=t_{\\mathrm{clk,dst}}-t_{\\mathrm{clk,src}}",
     "display": false,
-    "start": 1115,
-    "end": 1160
+    "start": 1092,
+    "end": 1137
   },
   {
     "file": "03_测试时钟复位与高速捕获.md",
-    "line": 36,
+    "line": 33,
     "tex": "u",
     "display": false,
-    "start": 1173,
-    "end": 1176
+    "start": 1150,
+    "end": 1153
   },
   {
     "file": "03_测试时钟复位与高速捕获.md",
-    "line": 40,
+    "line": 37,
     "tex": "\nt_{\\mathrm{cq,min}}+t_{\\mathrm{scan,min}}\\ge s+t_{\\mathrm{hold}}+u_{\\mathrm{hold}}.\n",
     "display": true,
-    "start": 1245,
-    "end": 1334
+    "start": 1222,
+    "end": 1311
   },
   {
     "file": "05_故障模型覆盖率与测试质量.md",
-    "line": 41,
+    "line": 36,
     "tex": "F",
     "display": false,
-    "start": 1452,
-    "end": 1455
+    "start": 1407,
+    "end": 1410
   },
   {
     "file": "05_故障模型覆盖率与测试质量.md",
-    "line": 41,
+    "line": 36,
     "tex": "U",
     "display": false,
-    "start": 1481,
-    "end": 1484
+    "start": 1436,
+    "end": 1439
   },
   {
     "file": "05_故障模型覆盖率与测试质量.md",
-    "line": 41,
+    "line": 36,
     "tex": "D",
     "display": false,
-    "start": 1492,
-    "end": 1495
+    "start": 1447,
+    "end": 1450
   },
   {
     "file": "05_故障模型覆盖率与测试质量.md",
-    "line": 43,
+    "line": 38,
     "tex": "\nC_{\\mathrm{all}}=\\frac{|D|}{|F|},\\qquad\nC_{\\mathrm{testable}}=\\frac{|D|}{|F|-|U|}.\n",
     "display": true,
-    "start": 1506,
-    "end": 1594
+    "start": 1461,
+    "end": 1549
   },
   {
     "file": "06_ATPG激活传播与结构搜索算法.md",
-    "line": 13,
+    "line": 12,
     "tex": "C(x)",
     "display": false,
-    "start": 219,
-    "end": 225
+    "start": 205,
+    "end": 211
   },
   {
     "file": "06_ATPG激活传播与结构搜索算法.md",
-    "line": 13,
+    "line": 12,
     "tex": "C_f(x)",
     "display": false,
-    "start": 234,
-    "end": 242
+    "start": 220,
+    "end": 228
   },
   {
     "file": "06_ATPG激活传播与结构搜索算法.md",
-    "line": 13,
+    "line": 12,
     "tex": "A(x)",
     "display": false,
-    "start": 251,
-    "end": 257
+    "start": 237,
+    "end": 243
   },
   {
     "file": "06_ATPG激活传播与结构搜索算法.md",
-    "line": 15,
+    "line": 14,
     "tex": "\n\\exists x:\\quad A(x)\\land\\bigl(C(x)\\ne C_f(x)\\bigr).\n",
     "display": true,
-    "start": 263,
-    "end": 321
+    "start": 249,
+    "end": 307
   },
   {
     "file": "06_ATPG激活传播与结构搜索算法.md",
-    "line": 19,
+    "line": 18,
     "tex": "A",
     "display": false,
-    "start": 371,
-    "end": 374
+    "start": 357,
+    "end": 360
   },
   {
     "file": "06_ATPG激活传播与结构搜索算法.md",
-    "line": 25,
+    "line": 23,
     "tex": "\n\\begin{aligned}\nn_1&=a\\land b, & n_2&=n_1\\lor c,\\\\\ny&=n_2\\oplus d, & z&=n_1\\land d.\n\\end{aligned}\n",
     "display": true,
-    "start": 460,
-    "end": 563
+    "start": 440,
+    "end": 543
   },
   {
     "file": "06_ATPG激活传播与结构搜索算法.md",
-    "line": 32,
+    "line": 30,
     "tex": "n_1",
     "display": false,
-    "start": 569,
+    "start": 549,
+    "end": 554
+  },
+  {
+    "file": "06_ATPG激活传播与结构搜索算法.md",
+    "line": 30,
+    "tex": "n_1=1",
+    "display": false,
+    "start": 567,
     "end": 574
   },
   {
     "file": "06_ATPG激活传播与结构搜索算法.md",
-    "line": 32,
-    "tex": "n_1=1",
-    "display": false,
-    "start": 587,
-    "end": 594
-  },
-  {
-    "file": "06_ATPG激活传播与结构搜索算法.md",
-    "line": 32,
+    "line": 30,
     "tex": "a=b=1",
     "display": false,
-    "start": 598,
-    "end": 605
+    "start": 578,
+    "end": 585
   },
   {
     "file": "06_ATPG激活传播与结构搜索算法.md",
-    "line": 32,
+    "line": 30,
     "tex": "n_2",
     "display": false,
-    "start": 612,
-    "end": 617
+    "start": 592,
+    "end": 597
   },
   {
     "file": "06_ATPG激活传播与结构搜索算法.md",
-    "line": 32,
+    "line": 30,
     "tex": "y",
     "display": false,
-    "start": 620,
-    "end": 623
+    "start": 600,
+    "end": 603
   },
   {
     "file": "06_ATPG激活传播与结构搜索算法.md",
-    "line": 32,
+    "line": 30,
     "tex": "c=0",
     "display": false,
-    "start": 650,
-    "end": 655
+    "start": 630,
+    "end": 635
   },
   {
     "file": "06_ATPG激活传播与结构搜索算法.md",
-    "line": 32,
+    "line": 30,
     "tex": "n_2=1",
     "display": false,
-    "start": 661,
+    "start": 641,
+    "end": 648
+  },
+  {
+    "file": "06_ATPG激活传播与结构搜索算法.md",
+    "line": 30,
+    "tex": "n_2=0",
+    "display": false,
+    "start": 652,
+    "end": 659
+  },
+  {
+    "file": "06_ATPG激活传播与结构搜索算法.md",
+    "line": 30,
+    "tex": "d=0",
+    "display": false,
+    "start": 663,
     "end": 668
   },
   {
     "file": "06_ATPG激活传播与结构搜索算法.md",
-    "line": 32,
-    "tex": "n_2=0",
-    "display": false,
-    "start": 672,
-    "end": 679
-  },
-  {
-    "file": "06_ATPG激活传播与结构搜索算法.md",
-    "line": 32,
-    "tex": "d=0",
-    "display": false,
-    "start": 683,
-    "end": 688
-  },
-  {
-    "file": "06_ATPG激活传播与结构搜索算法.md",
-    "line": 36,
+    "line": 34,
     "tex": "c=1",
     "display": false,
-    "start": 811,
-    "end": 816
+    "start": 791,
+    "end": 796
   },
   {
     "file": "06_ATPG激活传播与结构搜索算法.md",
-    "line": 36,
+    "line": 34,
     "tex": "y",
+    "display": false,
+    "start": 805,
+    "end": 808
+  },
+  {
+    "file": "06_ATPG激活传播与结构搜索算法.md",
+    "line": 34,
+    "tex": "z",
     "display": false,
     "start": 825,
     "end": 828
   },
   {
     "file": "06_ATPG激活传播与结构搜索算法.md",
-    "line": 36,
-    "tex": "z",
-    "display": false,
-    "start": 845,
-    "end": 848
-  },
-  {
-    "file": "06_ATPG激活传播与结构搜索算法.md",
-    "line": 36,
+    "line": 34,
     "tex": "d=1",
     "display": false,
-    "start": 852,
-    "end": 857
+    "start": 832,
+    "end": 837
   },
   {
     "file": "06_ATPG激活传播与结构搜索算法.md",
-    "line": 36,
+    "line": 34,
     "tex": "n_1",
     "display": false,
-    "start": 864,
-    "end": 869
+    "start": 844,
+    "end": 849
   },
   {
     "file": "06_ATPG激活传播与结构搜索算法.md",
-    "line": 40,
+    "line": 37,
     "tex": "(v_{\\mathrm{good}},v_{\\mathrm{faulty}})",
     "display": false,
-    "start": 937,
-    "end": 978
+    "start": 911,
+    "end": 952
   },
   {
     "file": "06_ATPG激活传播与结构搜索算法.md",
-    "line": 40,
+    "line": 37,
     "tex": "D=(1,0)",
     "display": false,
-    "start": 989,
-    "end": 998
+    "start": 963,
+    "end": 972
   },
   {
     "file": "06_ATPG激活传播与结构搜索算法.md",
-    "line": 40,
+    "line": 37,
     "tex": "\\overline D=(0,1)",
     "display": false,
-    "start": 999,
-    "end": 1018
+    "start": 973,
+    "end": 992
   },
   {
     "file": "06_ATPG激活传播与结构搜索算法.md",
-    "line": 42,
+    "line": 39,
     "tex": "D\\land1=D",
     "display": false,
-    "start": 1103,
-    "end": 1114
+    "start": 1077,
+    "end": 1088
   },
   {
     "file": "06_ATPG激活传播与结构搜索算法.md",
-    "line": 42,
+    "line": 39,
     "tex": "D\\land0=0",
     "display": false,
-    "start": 1115,
+    "start": 1089,
+    "end": 1100
+  },
+  {
+    "file": "06_ATPG激活传播与结构搜索算法.md",
+    "line": 39,
+    "tex": "D\\lor0=D",
+    "display": false,
+    "start": 1101,
+    "end": 1111
+  },
+  {
+    "file": "06_ATPG激活传播与结构搜索算法.md",
+    "line": 39,
+    "tex": "D\\lor1=1",
+    "display": false,
+    "start": 1112,
+    "end": 1122
+  },
+  {
+    "file": "06_ATPG激活传播与结构搜索算法.md",
+    "line": 56,
+    "tex": "CC_0",
+    "display": false,
+    "start": 1796,
+    "end": 1802
+  },
+  {
+    "file": "06_ATPG激活传播与结构搜索算法.md",
+    "line": 56,
+    "tex": "CC_1",
+    "display": false,
+    "start": 1810,
+    "end": 1816
+  },
+  {
+    "file": "06_ATPG激活传播与结构搜索算法.md",
+    "line": 58,
+    "tex": "\nCC_0(y)=1+\\min(CC_0(a),CC_0(b)),\n",
+    "display": true,
+    "start": 1866,
+    "end": 1904
+  },
+  {
+    "file": "06_ATPG激活传播与结构搜索算法.md",
+    "line": 62,
+    "tex": "\nCC_1(y)=1+CC_1(a)+CC_1(b).\n",
+    "display": true,
+    "start": 1906,
+    "end": 1938
+  },
+  {
+    "file": "06_ATPG激活传播与结构搜索算法.md",
+    "line": 66,
+    "tex": "CO(y)",
+    "display": false,
+    "start": 1977,
+    "end": 1984
+  },
+  {
+    "file": "06_ATPG激活传播与结构搜索算法.md",
+    "line": 66,
+    "tex": "a",
+    "display": false,
+    "start": 1996,
+    "end": 1999
+  },
+  {
+    "file": "06_ATPG激活传播与结构搜索算法.md",
+    "line": 68,
+    "tex": "\nCO(a)=1+CO(y)+CC_1(b).\n",
+    "display": true,
+    "start": 2007,
+    "end": 2035
+  },
+  {
+    "file": "06_ATPG激活传播与结构搜索算法.md",
+    "line": 75,
+    "tex": "n_1/sa0",
+    "display": false,
+    "start": 2170,
+    "end": 2179
+  },
+  {
+    "file": "07_SAT求解故障模拟与测试集合优化.md",
+    "line": 16,
+    "tex": "y=a\\land b",
+    "display": false,
+    "start": 450,
+    "end": 462
+  },
+  {
+    "file": "07_SAT求解故障模拟与测试集合优化.md",
+    "line": 18,
+    "tex": "\n(\\neg a\\lor\\neg b\\lor y)\\land(a\\lor\\neg y)\\land(b\\lor\\neg y).\n",
+    "display": true,
+    "start": 476,
+    "end": 543
+  },
+  {
+    "file": "07_SAT求解故障模拟与测试集合优化.md",
+    "line": 22,
+    "tex": "y,z",
+    "display": false,
+    "start": 602,
+    "end": 607
+  },
+  {
+    "file": "07_SAT求解故障模拟与测试集合优化.md",
+    "line": 24,
+    "tex": "\n(y_g\\oplus y_f)\\lor(z_g\\oplus z_f)=1.\n",
+    "display": true,
+    "start": 619,
+    "end": 662
+  },
+  {
+    "file": "07_SAT求解故障模拟与测试集合优化.md",
+    "line": 36,
+    "tex": "n=a\\land b",
+    "display": false,
+    "start": 1027,
+    "end": 1039
+  },
+  {
+    "file": "07_SAT求解故障模拟与测试集合优化.md",
+    "line": 36,
+    "tex": "y=a\\lor n",
+    "display": false,
+    "start": 1040,
+    "end": 1051
+  },
+  {
+    "file": "07_SAT求解故障模拟与测试集合优化.md",
+    "line": 36,
+    "tex": "y=a",
+    "display": false,
+    "start": 1057,
+    "end": 1062
+  },
+  {
+    "file": "07_SAT求解故障模拟与测试集合优化.md",
+    "line": 36,
+    "tex": "n",
+    "display": false,
+    "start": 1070,
+    "end": 1073
+  },
+  {
+    "file": "07_SAT求解故障模拟与测试集合优化.md",
+    "line": 38,
+    "tex": "n",
+    "display": false,
+    "start": 1123,
     "end": 1126
   },
   {
-    "file": "06_ATPG激活传播与结构搜索算法.md",
-    "line": 42,
-    "tex": "D\\lor0=D",
-    "display": false,
-    "start": 1127,
-    "end": 1137
-  },
-  {
-    "file": "06_ATPG激活传播与结构搜索算法.md",
-    "line": 42,
-    "tex": "D\\lor1=1",
-    "display": false,
-    "start": 1138,
-    "end": 1148
-  },
-  {
-    "file": "06_ATPG激活传播与结构搜索算法.md",
-    "line": 61,
-    "tex": "CC_0",
-    "display": false,
-    "start": 1841,
-    "end": 1847
-  },
-  {
-    "file": "06_ATPG激活传播与结构搜索算法.md",
-    "line": 61,
-    "tex": "CC_1",
-    "display": false,
-    "start": 1855,
-    "end": 1861
-  },
-  {
-    "file": "06_ATPG激活传播与结构搜索算法.md",
-    "line": 63,
-    "tex": "\nCC_0(y)=1+\\min(CC_0(a),CC_0(b)),\n",
-    "display": true,
-    "start": 1911,
-    "end": 1949
-  },
-  {
-    "file": "06_ATPG激活传播与结构搜索算法.md",
-    "line": 67,
-    "tex": "\nCC_1(y)=1+CC_1(a)+CC_1(b).\n",
-    "display": true,
-    "start": 1951,
-    "end": 1983
-  },
-  {
-    "file": "06_ATPG激活传播与结构搜索算法.md",
-    "line": 71,
-    "tex": "CO(y)",
-    "display": false,
-    "start": 2022,
-    "end": 2029
-  },
-  {
-    "file": "06_ATPG激活传播与结构搜索算法.md",
-    "line": 71,
-    "tex": "a",
-    "display": false,
-    "start": 2041,
-    "end": 2044
-  },
-  {
-    "file": "06_ATPG激活传播与结构搜索算法.md",
-    "line": 73,
-    "tex": "\nCO(a)=1+CO(y)+CC_1(b).\n",
-    "display": true,
-    "start": 2052,
-    "end": 2080
-  },
-  {
-    "file": "06_ATPG激活传播与结构搜索算法.md",
-    "line": 81,
-    "tex": "n_1/sa0",
-    "display": false,
-    "start": 2228,
-    "end": 2237
-  },
-  {
     "file": "07_SAT求解故障模拟与测试集合优化.md",
-    "line": 17,
-    "tex": "y=a\\land b",
-    "display": false,
-    "start": 470,
-    "end": 482
-  },
-  {
-    "file": "07_SAT求解故障模拟与测试集合优化.md",
-    "line": 19,
-    "tex": "\n(\\neg a\\lor\\neg b\\lor y)\\land(a\\lor\\neg y)\\land(b\\lor\\neg y).\n",
-    "display": true,
-    "start": 496,
-    "end": 563
-  },
-  {
-    "file": "07_SAT求解故障模拟与测试集合优化.md",
-    "line": 23,
-    "tex": "y,z",
-    "display": false,
-    "start": 622,
-    "end": 627
-  },
-  {
-    "file": "07_SAT求解故障模拟与测试集合优化.md",
-    "line": 25,
-    "tex": "\n(y_g\\oplus y_f)\\lor(z_g\\oplus z_f)=1.\n",
-    "display": true,
-    "start": 639,
-    "end": 682
-  },
-  {
-    "file": "07_SAT求解故障模拟与测试集合优化.md",
-    "line": 39,
-    "tex": "n=a\\land b",
-    "display": false,
-    "start": 1067,
-    "end": 1079
-  },
-  {
-    "file": "07_SAT求解故障模拟与测试集合优化.md",
-    "line": 39,
-    "tex": "y=a\\lor n",
-    "display": false,
-    "start": 1080,
-    "end": 1091
-  },
-  {
-    "file": "07_SAT求解故障模拟与测试集合优化.md",
-    "line": 39,
-    "tex": "y=a",
-    "display": false,
-    "start": 1097,
-    "end": 1102
-  },
-  {
-    "file": "07_SAT求解故障模拟与测试集合优化.md",
-    "line": 39,
-    "tex": "n",
-    "display": false,
-    "start": 1110,
-    "end": 1113
-  },
-  {
-    "file": "07_SAT求解故障模拟与测试集合优化.md",
-    "line": 41,
-    "tex": "n",
-    "display": false,
-    "start": 1161,
-    "end": 1164
-  },
-  {
-    "file": "07_SAT求解故障模拟与测试集合优化.md",
-    "line": 41,
+    "line": 38,
     "tex": "a=0",
     "display": false,
-    "start": 1173,
-    "end": 1178
+    "start": 1135,
+    "end": 1140
+  },
+  {
+    "file": "07_SAT求解故障模拟与测试集合优化.md",
+    "line": 43,
+    "tex": "\ns_{t+1}=F(s_t,x_t),\\qquad y_t=G(s_t,x_t).\n",
+    "display": true,
+    "start": 1254,
+    "end": 1301
   },
   {
     "file": "07_SAT求解故障模拟与测试集合优化.md",
     "line": 47,
-    "tex": "\ns_{t+1}=F(s_t,x_t),\\qquad y_t=G(s_t,x_t).\n",
-    "display": true,
-    "start": 1299,
-    "end": 1346
-  },
-  {
-    "file": "07_SAT求解故障模拟与测试集合优化.md",
-    "line": 51,
     "tex": "k",
     "display": false,
-    "start": 1351,
-    "end": 1354
+    "start": 1306,
+    "end": 1309
   },
   {
     "file": "07_SAT求解故障模拟与测试集合优化.md",
-    "line": 51,
+    "line": 47,
     "tex": "k",
     "display": false,
-    "start": 1385,
-    "end": 1388
+    "start": 1340,
+    "end": 1343
   },
   {
     "file": "07_SAT求解故障模拟与测试集合优化.md",
-    "line": 67,
+    "line": 60,
     "tex": "i",
     "display": false,
-    "start": 2026,
-    "end": 2029
+    "start": 1967,
+    "end": 1970
   },
   {
     "file": "07_SAT求解故障模拟与测试集合优化.md",
-    "line": 67,
+    "line": 60,
     "tex": "D_i",
     "display": false,
-    "start": 2037,
-    "end": 2042
+    "start": 1978,
+    "end": 1983
+  },
+  {
+    "file": "07_SAT求解故障模拟与测试集合优化.md",
+    "line": 60,
+    "tex": "z_i\\in\\{0,1\\}",
+    "display": false,
+    "start": 1989,
+    "end": 2004
+  },
+  {
+    "file": "07_SAT求解故障模拟与测试集合优化.md",
+    "line": 62,
+    "tex": "\n\\min\\sum_i z_i,\\qquad\n\\sum_{i:f\\in D_i}z_i\\ge1\\quad\\forall f\\in F_{\\mathrm{target}}.\n",
+    "display": true,
+    "start": 2016,
+    "end": 2106
   },
   {
     "file": "07_SAT求解故障模拟与测试集合优化.md",
     "line": 67,
-    "tex": "z_i\\in\\{0,1\\}",
-    "display": false,
-    "start": 2048,
-    "end": 2063
-  },
-  {
-    "file": "07_SAT求解故障模拟与测试集合优化.md",
-    "line": 69,
-    "tex": "\n\\min\\sum_i z_i,\\qquad\n\\sum_{i:f\\in D_i}z_i\\ge1\\quad\\forall f\\in F_{\\mathrm{target}}.\n",
-    "display": true,
-    "start": 2074,
-    "end": 2164
-  },
-  {
-    "file": "07_SAT求解故障模拟与测试集合优化.md",
-    "line": 74,
     "tex": "\\sum_i t_i z_i",
     "display": false,
-    "start": 2185,
-    "end": 2201
+    "start": 2127,
+    "end": 2143
+  },
+  {
+    "file": "08_测试压缩未知值与可编码性.md",
+    "line": 19,
+    "tex": "GF(2)",
+    "display": false,
+    "start": 525,
+    "end": 532
   },
   {
     "file": "08_测试压缩未知值与可编码性.md",
     "line": 21,
-    "tex": "GF(2)",
-    "display": false,
-    "start": 554,
-    "end": 561
-  },
-  {
-    "file": "08_测试压缩未知值与可编码性.md",
-    "line": 23,
     "tex": "\n\\begin{bmatrix}q_0\\\\q_1\\\\q_2\\end{bmatrix}\n=\n\\begin{bmatrix}1&0\\\\0&1\\\\1&1\\end{bmatrix}\n\\begin{bmatrix}s_0\\\\s_1\\end{bmatrix}.\n",
     "display": true,
-    "start": 574,
-    "end": 703
+    "start": 545,
+    "end": 674
   },
   {
     "file": "08_测试压缩未知值与可编码性.md",
-    "line": 30,
+    "line": 28,
     "tex": "s_0=1",
     "display": false,
-    "start": 759,
+    "start": 730,
+    "end": 737
+  },
+  {
+    "file": "08_测试压缩未知值与可编码性.md",
+    "line": 28,
+    "tex": "s_1=1",
+    "display": false,
+    "start": 738,
+    "end": 745
+  },
+  {
+    "file": "08_测试压缩未知值与可编码性.md",
+    "line": 28,
+    "tex": "s_0\\oplus s_1=1",
+    "display": false,
+    "start": 749,
     "end": 766
   },
   {
     "file": "08_测试压缩未知值与可编码性.md",
     "line": 30,
-    "tex": "s_1=1",
+    "tex": "s_0=1",
     "display": false,
-    "start": 767,
-    "end": 774
+    "start": 816,
+    "end": 823
   },
   {
     "file": "08_测试压缩未知值与可编码性.md",
     "line": 30,
-    "tex": "s_0\\oplus s_1=1",
-    "display": false,
-    "start": 778,
-    "end": 795
-  },
-  {
-    "file": "08_测试压缩未知值与可编码性.md",
-    "line": 32,
-    "tex": "s_0=1",
-    "display": false,
-    "start": 845,
-    "end": 852
-  },
-  {
-    "file": "08_测试压缩未知值与可编码性.md",
-    "line": 32,
     "tex": "s_1=0",
     "display": false,
-    "start": 855,
-    "end": 862
+    "start": 826,
+    "end": 833
+  },
+  {
+    "file": "08_测试压缩未知值与可编码性.md",
+    "line": 30,
+    "tex": "C",
+    "display": false,
+    "start": 870,
+    "end": 873
   },
   {
     "file": "08_测试压缩未知值与可编码性.md",
     "line": 32,
-    "tex": "C",
-    "display": false,
-    "start": 899,
-    "end": 902
-  },
-  {
-    "file": "08_测试压缩未知值与可编码性.md",
-    "line": 34,
     "tex": "\nA_Cs=b_C.\n",
     "display": true,
-    "start": 909,
-    "end": 924
+    "start": 880,
+    "end": 895
   },
   {
     "file": "08_测试压缩未知值与可编码性.md",
-    "line": 38,
+    "line": 36,
     "tex": "\\operatorname{rank}(A_C)=\\operatorname{rank}([A_C\\mid b_C])",
     "display": false,
-    "start": 937,
-    "end": 998
+    "start": 908,
+    "end": 969
   },
   {
     "file": "08_测试压缩未知值与可编码性.md",
-    "line": 42,
+    "line": 39,
     "tex": "r_0\\oplus r_1\\oplus r_2",
     "display": false,
-    "start": 1100,
-    "end": 1125
+    "start": 1064,
+    "end": 1089
   },
   {
     "file": "08_测试压缩未知值与可编码性.md",
-    "line": 42,
+    "line": 39,
     "tex": "[r_0\\oplus r_1,r_1\\oplus r_2]",
     "display": false,
-    "start": 1183,
-    "end": 1214
+    "start": 1147,
+    "end": 1178
   },
   {
     "file": "08_测试压缩未知值与可编码性.md",
-    "line": 56,
+    "line": 51,
     "tex": "F",
     "display": false,
-    "start": 1659,
-    "end": 1662
+    "start": 1611,
+    "end": 1614
   },
   {
     "file": "08_测试压缩未知值与可编码性.md",
-    "line": 56,
+    "line": 51,
     "tex": "B_{\\mathrm{in}}",
     "display": false,
-    "start": 1677,
-    "end": 1694
+    "start": 1629,
+    "end": 1646
   },
   {
     "file": "08_测试压缩未知值与可编码性.md",
-    "line": 56,
+    "line": 51,
     "tex": "F/B_{\\mathrm{in}}",
     "display": false,
-    "start": 1704,
-    "end": 1723
+    "start": 1656,
+    "end": 1675
   },
   {
     "file": "08_测试压缩未知值与可编码性.md",
-    "line": 58,
+    "line": 53,
     "tex": "\nV_{\\mathrm{total}}=\\sum_{p=1}^{P}(B_{\\mathrm{in},p}+B_{\\mathrm{out},p}+B_{\\mathrm{control},p}).\n",
     "display": true,
-    "start": 1783,
-    "end": 1884
+    "start": 1735,
+    "end": 1836
   },
   {
     "file": "09_测试功耗并发与运行期间测试.md",
-    "line": 17,
+    "line": 16,
     "tex": "\nP_{\\mathrm{dyn}}\\approx\\alpha C_{\\mathrm{eff}}V^2f.\n",
     "display": true,
-    "start": 346,
-    "end": 403
+    "start": 329,
+    "end": 386
   },
   {
     "file": "09_测试功耗并发与运行期间测试.md",
-    "line": 21,
+    "line": 20,
     "tex": "\\alpha",
     "display": false,
-    "start": 409,
+    "start": 392,
+    "end": 400
+  },
+  {
+    "file": "09_测试功耗并发与运行期间测试.md",
+    "line": 42,
+    "tex": "i",
+    "display": false,
+    "start": 1138,
+    "end": 1141
+  },
+  {
+    "file": "09_测试功耗并发与运行期间测试.md",
+    "line": 42,
+    "tex": "s_i",
+    "display": false,
+    "start": 1147,
+    "end": 1152
+  },
+  {
+    "file": "09_测试功耗并发与运行期间测试.md",
+    "line": 42,
+    "tex": "P_i(\\tau)",
+    "display": false,
+    "start": 1164,
+    "end": 1175
+  },
+  {
+    "file": "09_测试功耗并发与运行期间测试.md",
+    "line": 44,
+    "tex": "\n\\sum_i P_i(t-s_i)\\le P_{\\mathrm{budget}}\\quad\\forall t.\n",
+    "display": true,
+    "start": 1186,
+    "end": 1247
+  },
+  {
+    "file": "09_测试功耗并发与运行期间测试.md",
+    "line": 55,
+    "tex": "p",
+    "display": false,
+    "start": 1639,
+    "end": 1642
+  },
+  {
+    "file": "09_测试功耗并发与运行期间测试.md",
+    "line": 55,
+    "tex": "m",
+    "display": false,
+    "start": 1643,
+    "end": 1646
+  },
+  {
+    "file": "09_测试功耗并发与运行期间测试.md",
+    "line": 55,
+    "tex": "(1-p)^m",
+    "display": false,
+    "start": 1655,
+    "end": 1664
+  },
+  {
+    "file": "09_测试功耗并发与运行期间测试.md",
+    "line": 55,
+    "tex": "p",
+    "display": false,
+    "start": 1667,
+    "end": 1670
+  },
+  {
+    "file": "10_测试点插入与可测试性设计优化.md",
+    "line": 16,
+    "tex": "u=a\\land b\\land c\\land d",
+    "display": false,
+    "start": 391,
     "end": 417
   },
   {
-    "file": "09_测试功耗并发与运行期间测试.md",
-    "line": 46,
-    "tex": "i",
-    "display": false,
-    "start": 1177,
-    "end": 1180
-  },
-  {
-    "file": "09_测试功耗并发与运行期间测试.md",
-    "line": 46,
-    "tex": "s_i",
-    "display": false,
-    "start": 1186,
-    "end": 1191
-  },
-  {
-    "file": "09_测试功耗并发与运行期间测试.md",
-    "line": 46,
-    "tex": "P_i(\\tau)",
-    "display": false,
-    "start": 1203,
-    "end": 1214
-  },
-  {
-    "file": "09_测试功耗并发与运行期间测试.md",
-    "line": 48,
-    "tex": "\n\\sum_i P_i(t-s_i)\\le P_{\\mathrm{budget}}\\quad\\forall t.\n",
-    "display": true,
-    "start": 1225,
-    "end": 1286
-  },
-  {
-    "file": "09_测试功耗并发与运行期间测试.md",
-    "line": 60,
-    "tex": "p",
-    "display": false,
-    "start": 1683,
-    "end": 1686
-  },
-  {
-    "file": "09_测试功耗并发与运行期间测试.md",
-    "line": 60,
-    "tex": "m",
-    "display": false,
-    "start": 1687,
-    "end": 1690
-  },
-  {
-    "file": "09_测试功耗并发与运行期间测试.md",
-    "line": 60,
-    "tex": "(1-p)^m",
-    "display": false,
-    "start": 1699,
-    "end": 1708
-  },
-  {
-    "file": "09_测试功耗并发与运行期间测试.md",
-    "line": 60,
-    "tex": "p",
-    "display": false,
-    "start": 1711,
-    "end": 1714
-  },
-  {
     "file": "10_测试点插入与可测试性设计优化.md",
-    "line": 17,
-    "tex": "u=a\\land b\\land c\\land d",
-    "display": false,
-    "start": 404,
-    "end": 430
-  },
-  {
-    "file": "10_测试点插入与可测试性设计优化.md",
-    "line": 17,
+    "line": 16,
     "tex": "u=1",
     "display": false,
-    "start": 434,
-    "end": 439
+    "start": 421,
+    "end": 426
   },
   {
     "file": "10_测试点插入与可测试性设计优化.md",
-    "line": 33,
+    "line": 29,
     "tex": "j",
     "display": false,
-    "start": 1099,
-    "end": 1102
+    "start": 1059,
+    "end": 1062
   },
   {
     "file": "10_测试点插入与可测试性设计优化.md",
-    "line": 33,
+    "line": 29,
     "tex": "z_j",
     "display": false,
-    "start": 1110,
-    "end": 1115
+    "start": 1070,
+    "end": 1075
   },
   {
     "file": "10_测试点插入与可测试性设计优化.md",
-    "line": 33,
+    "line": 29,
     "tex": "a_j",
     "display": false,
-    "start": 1123,
-    "end": 1128
+    "start": 1083,
+    "end": 1088
   },
   {
     "file": "10_测试点插入与可测试性设计优化.md",
-    "line": 33,
+    "line": 29,
     "tex": "A",
     "display": false,
-    "start": 1133,
-    "end": 1136
+    "start": 1093,
+    "end": 1096
+  },
+  {
+    "file": "10_测试点插入与可测试性设计优化.md",
+    "line": 31,
+    "tex": "\n\\sum_j a_jz_j\\le A.\n",
+    "display": true,
+    "start": 1101,
+    "end": 1126
   },
   {
     "file": "10_测试点插入与可测试性设计优化.md",
     "line": 35,
-    "tex": "\n\\sum_j a_jz_j\\le A.\n",
-    "display": true,
-    "start": 1141,
-    "end": 1166
-  },
-  {
-    "file": "10_测试点插入与可测试性设计优化.md",
-    "line": 39,
     "tex": "\\sum_jg_jz_j",
     "display": false,
-    "start": 1178,
-    "end": 1192
+    "start": 1138,
+    "end": 1152
   },
   {
     "file": "10_测试点插入与可测试性设计优化.md",
-    "line": 39,
+    "line": 35,
     "tex": "G(S)",
     "display": false,
-    "start": 1231,
-    "end": 1237
+    "start": 1191,
+    "end": 1197
   },
   {
     "file": "10_测试点插入与可测试性设计优化.md",
-    "line": 39,
+    "line": 35,
     "tex": "S",
     "display": false,
-    "start": 1241,
-    "end": 1244
+    "start": 1201,
+    "end": 1204
   },
   {
     "file": "11_扫描故障诊断与失败分析.md",
-    "line": 27,
+    "line": 24,
     "tex": "f",
     "display": false,
-    "start": 766,
-    "end": 769
+    "start": 736,
+    "end": 739
   },
   {
     "file": "11_扫描故障诊断与失败分析.md",
-    "line": 27,
+    "line": 24,
     "tex": "T",
     "display": false,
-    "start": 776,
-    "end": 779
+    "start": 746,
+    "end": 749
   },
   {
     "file": "11_扫描故障诊断与失败分析.md",
-    "line": 29,
+    "line": 26,
     "tex": "\n\\sigma_T(f)=\\bigl(C(t)\\oplus C_f(t)\\bigr)_{t\\in T}.\n",
     "display": true,
-    "start": 790,
-    "end": 847
+    "start": 760,
+    "end": 817
   },
   {
     "file": "11_扫描故障诊断与失败分析.md",
-    "line": 33,
+    "line": 30,
     "tex": "\\sigma_T(f_1)=\\sigma_T(f_2)",
     "display": false,
-    "start": 851,
-    "end": 880
+    "start": 821,
+    "end": 850
   },
   {
     "file": "11_扫描故障诊断与失败分析.md",
-    "line": 39,
+    "line": 35,
     "tex": "H",
     "display": false,
-    "start": 1098,
-    "end": 1101
+    "start": 1063,
+    "end": 1066
   },
   {
     "file": "11_扫描故障诊断与失败分析.md",
-    "line": 41,
+    "line": 37,
     "tex": "\n\\operatorname{IG}(t)=H(F)-\\sum_rP(r\\mid t)H(F\\mid r,t).\n",
     "display": true,
-    "start": 1175,
-    "end": 1236
+    "start": 1140,
+    "end": 1201
   },
   {
     "file": "13_2024至2026年学术成果分析与研究路线.md",
-    "line": 71,
+    "line": 64,
     "tex": "y=a\\oplus a",
     "display": false,
-    "start": 3332,
-    "end": 3345
+    "start": 3242,
+    "end": 3255
   },
   {
     "file": "13_2024至2026年学术成果分析与研究路线.md",
-    "line": 71,
+    "line": 64,
     "tex": "p",
     "display": false,
-    "start": 3377,
-    "end": 3380
+    "start": 3287,
+    "end": 3290
   },
   {
     "file": "13_2024至2026年学术成果分析与研究路线.md",
-    "line": 71,
+    "line": 64,
     "tex": "2p(1-p)",
     "display": false,
-    "start": 3395,
-    "end": 3404
+    "start": 3305,
+    "end": 3314
   },
   {
     "file": "13_2024至2026年学术成果分析与研究路线.md",
-    "line": 71,
+    "line": 64,
     "tex": "p=1/2",
     "display": false,
-    "start": 3407,
-    "end": 3414
+    "start": 3317,
+    "end": 3324
   },
   {
     "file": "13_2024至2026年学术成果分析与研究路线.md",
-    "line": 71,
+    "line": 64,
     "tex": "1/2",
     "display": false,
-    "start": 3418,
-    "end": 3423
+    "start": 3328,
+    "end": 3333
   },
   {
     "file": "13_2024至2026年学术成果分析与研究路线.md",
-    "line": 75,
+    "line": 68,
     "tex": "\nI_f(x)=\\mathbf1[C(x)\\ne C_f(x)],\\qquad x\\in\\{0,1\\}^n.\n",
     "display": true,
-    "start": 3487,
-    "end": 3546
+    "start": 3397,
+    "end": 3456
   },
   {
     "file": "13_2024至2026年学术成果分析与研究路线.md",
-    "line": 79,
+    "line": 72,
     "tex": "S_f",
     "display": false,
-    "start": 3557,
-    "end": 3562
+    "start": 3467,
+    "end": 3472
   },
   {
     "file": "13_2024至2026年学术成果分析与研究路线.md",
-    "line": 79,
+    "line": 72,
     "tex": "p_i=\\sigma(\\ell_i)",
     "display": false,
-    "start": 3590,
-    "end": 3610
+    "start": 3500,
+    "end": 3520
   },
   {
     "file": "13_2024至2026年学术成果分析与研究路线.md",
-    "line": 107,
+    "line": 96,
     "tex": "a\\lor(a\\land b)",
     "display": false,
-    "start": 5020,
-    "end": 5037
+    "start": 4884,
+    "end": 4901
   },
   {
     "file": "13_2024至2026年学术成果分析与研究路线.md",
-    "line": 107,
+    "line": 96,
     "tex": "a",
     "display": false,
-    "start": 5041,
-    "end": 5044
-  },
-  {
-    "file": "14_教学算例源码与学习练习.md",
-    "line": 44,
-    "tex": "z",
-    "display": false,
-    "start": 1245,
-    "end": 1248
-  },
-  {
-    "file": "14_教学算例源码与学习练习.md",
-    "line": 46,
-    "tex": "a\\lor(a\\land b)",
-    "display": false,
-    "start": 1283,
-    "end": 1300
+    "start": 4905,
+    "end": 4908
   }
 ]

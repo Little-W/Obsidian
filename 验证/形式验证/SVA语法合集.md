@@ -1,12 +1,12 @@
-# SystemVerilog Assertions（SVA）完整中文教程
+# SVA 语法合集
 
-## 1. SVA 解决什么问题
+## 1. SVA 的作用
 
 SVA 是一组用 SystemVerilog 描述时间相关规则的语言结构。它不仅能检查单个信号是否为正确值，还能表达“请求以后数拍内必须应答”“在握手完成之前数据必须保持稳定”这类跨周期关系。SVA 既可以用于仿真，也可以在形式验证时由工具转化为逻辑属性。不过 SVA 本身并不会让环境自动合法，外部输入的要求仍然需要明确的假设和复位模型。
 
 ![SVA 触发与周期关系](插图/05_SVA时序.svg)
 
-## 2. 先理解三种角色
+## 2. 三种角色
 
 ```systemverilog
 ap_safety: assert property (@(posedge clk) disable iff (!rst_n)
@@ -19,7 +19,7 @@ cp_full:  cover  property (@(posedge clk) disable iff (!rst_n)
 
 `assert property` 定义需要被验证的设计责任；`assume property` 描述环境向设计提供的约束；`cover property` 则请求工具去寻找满足某条行为的输入轨迹。不要为了获得更多的 `Proven`，就把设计错误的结论改写成 `assume`。
 
-## 3. 并发断言的时钟、采样与失效条件
+## 3. 并发断言的时钟与采样
 
 ### 3.1 标准结构
 
@@ -40,7 +40,7 @@ ap_example: assert property (p_example);
 
 SVA 并发断言判断的是时钟事件采样到的值，通常看到的是 **NBA 非阻塞赋值更新之前**的值。因此，在 `always_ff @(posedge clk)` 中用非阻塞赋值更新的寄存器，其新值通常要到下一次采样沿才会被断言看到。检查“状态更新后”的规则时，往往需要 `|=>` 或 `$past`。
 
-### 3.2 复位并不会自动清零采样函数的历史
+### 3.2 复位与采样历史
 
 `disable iff` 是属性的失效条件，不能把它理解成 `$past` 会自动替换成复位值。比如首次进入正常工作状态时，上一拍可能仍处于复位。如果规则依赖上一拍已经处于有效工作状态，就应该增加 `past_valid` 寄存器，或适当加上 `$past(rst_n)` 作为前提。
 
@@ -56,7 +56,7 @@ ap_hold: assert property (@(posedge clk) disable iff (!rst_n)
 
 上例中的 `past_valid` 为工具提供了可信的前一采样点。在不同时间点立即释放或断言复位时，异步 `disable iff` 与时钟采样的交互仍应按照 DUT 的实际复位语义来审查。
 
-### 3.3 default clocking / default disable iff
+### 3.3 default clocking 与 default disable iff
 
 ```systemverilog
 default clocking cb @(posedge clk); endclocking
@@ -169,7 +169,7 @@ endsequence
 
 ## 7. 序列的组合
 
-### 7.1 `and` / `or` / `intersect`
+### 7.1 `and` `or` `intersect` 运算符
 
 ```systemverilog
 sequence s_both;
@@ -222,7 +222,7 @@ endsequence
 
 它用于从候选匹配中选取首次匹配，减少后续序列对不同匹配长度的歧义。并不是所有需要“最早应答”的规则都要用 `first_match`；如果只要求区间内任意一次应答，那么直接用范围延迟更清楚。
 
-## 8. 属性运算符：时间上的持续和终止
+## 8. 属性的持续与终止运算符
 
 ### 8.1 `until` 与 `until_with`
 
@@ -296,7 +296,7 @@ ap_grant: assert property (@(posedge clk) disable iff (!rst_n)
 
 立即断言在过程执行时检查瞬时条件，可能受组合逻辑调度次序、暂态变化和 X 值的影响；并发断言则按事件采样，便于表达时序关系。在形式验证中，要遵循该工具对即时/延迟断言支持的说明，不能把所有仿真调试语句都当成能被形式引擎直接证明的属性。
 
-## 11. 属性局部变量、`let` 和参数化
+## 11. 局部变量与参数化
 
 ### 11.1 `let`：抽象复杂布尔条件
 
@@ -309,7 +309,7 @@ ap_no_drop: assert property (@(posedge clk) disable iff (!rst_n)
 
 `let` 表达式可以复用，能减少同一接口条件在几十条属性中被不同工程师写出细微差异的情况。是否使用 `let`，取决于编译器的支持情况。
 
-### 11.2 sequence 局部变量：关联请求与响应数据
+### 11.2 序列局部变量与请求响应关联
 
 ```systemverilog
 property p_data_return;
@@ -444,7 +444,7 @@ ap_secure_write: assert property (@(posedge clk) disable iff(!rst_n)
 
 还需要检查非法请求是否被阻止、读路径是否泄漏，以及复位后的权限状态。单条写权限断言并不代表已经证明了不存在信息泄漏。
 
-## 14. 空洞性、覆盖目标与不恰当假设
+## 14. 空洞性与覆盖目标
 
 ```systemverilog
 ap_req_ack: assert property (@(posedge clk) disable iff(!rst_n)
@@ -520,13 +520,13 @@ ap_eventual_response: assert property (
     req |-> strong(##[0:$] ack));
 ```
 
-## 16. 多时钟属性、X 值与复杂语法的限制
+## 16. 多时钟与复杂语法的限制
 
 多时钟属性在 SystemVerilog 标准中有专门的采样与序列连接规则，不能简单地把两种时钟事件放进单时钟模板。不同的 EDA 引擎对多时钟交叉属性的支持可能有限；具体限制可参考 VC Formal User Guide §3.9。跨时钟同步器、握手和异步 FIFO 通常需要分别定义每个时钟域的责任，以及跨时钟的数据一致性。
 
 `$isunknown` 在四值仿真中很直观，但传统形式证明的二值布尔编码可能与仿真中的 X 传播语义不同；检查 RTL 中的 X 传播风险，更适合配合 VC Formal FXP 和明确的注入/观察模型。对于写有 `casex`、`casez`、`unique case` 的 RTL，还应结合综合与仿真对 X 的不同处理方式来审查。
 
-## 17. 完整示例：有界计数器及 VC Formal 工程
+## 17. 有界计数器完整工程
 
 前面的短代码块用于解释单个语法；本节则给出可以保存成文件的完整设计、检查器、编译列表和 Tcl。代码与 FPV 章的计数器案例保持一致。
 
@@ -654,7 +654,7 @@ vcf -f scripts/fpv_counter.tcl -batch 2>&1 | tee logs/fpv_counter.log
 
 **结果阅读：** 在初始状态正确的前提下，正确版预期满足这些断言，并存在到达 9 和回绕的覆盖轨迹。这不是本次 VC Formal 的实际运行结果。这些断言分别覆盖范围、保持、普通递增和回绕；复位值以及运行中的重新复位仍需结合初始化模型和专用复位检查，不能仅凭范围属性成立就认定全部功能正确。
 
-## 18. 工程练习（建议自行运行与审查）
+## 18. 工程练习
 
 1. 把计数器回绕阈值从 9 改为 10，观察 `ap_range` 的反例；再把阈值改回后重复证明。
 2. 删除 `history_valid`，分析首个有效采样点上 `$past` 规则的差异。

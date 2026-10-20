@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>算例与源码说明 · 扫描链与 ATPG 设计</title><link rel="stylesheet" href="book.css"></head>
+<body><aside class="sidebar"><div class="brand">扫描链与 ATPG</div><div class="subtitle">从内部状态访问到制造测试<br>硬件 · 算法 · 质量 · 验证</div><a class="home" href="../阅读入口.html">← 资料库首页</a><details class="mobile-index"><summary>展开文档目录</summary></details><nav><a class="" href="00_%E6%89%AB%E6%8F%8F%E9%93%BE%E4%B8%8EATPG%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E9%98%85%E8%AF%BB%E5%AF%BC%E8%88%AA.html">00 · 扫描链与 ATPG 总体架构与阅读导航</a><a class="" href="01_%E6%89%AB%E6%8F%8F%E8%A7%A6%E5%8F%91%E5%99%A8%E4%B8%8E%E7%A7%BB%E4%BD%8D%E6%8D%95%E8%8E%B7%E5%8E%9F%E7%90%86.html">01 · 扫描触发器与移位捕获原理</a><a class="" href="02_%E6%89%AB%E6%8F%8F%E6%9E%B6%E6%9E%84%E4%B8%8E%E7%89%A9%E7%90%86%E5%AE%9E%E7%8E%B0.html">02 · 扫描架构与物理实现</a><a class="" href="03_%E6%B5%8B%E8%AF%95%E6%97%B6%E9%92%9F%E5%A4%8D%E4%BD%8D%E4%B8%8E%E9%AB%98%E9%80%9F%E6%8D%95%E8%8E%B7.html">03 · 测试时钟复位与高速捕获</a><a class="" href="04_JTAG%E6%B5%8B%E8%AF%95%E8%AE%BF%E9%97%AE%E4%B8%8E%E8%8A%AF%E7%89%87%E7%BA%A7%E6%95%B0%E6%8D%AE%E4%BC%A0%E8%BE%93.html">04 · JTAG 测试访问与芯片级数据传输</a><a class="" href="05_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E8%A6%86%E7%9B%96%E7%8E%87%E4%B8%8E%E6%B5%8B%E8%AF%95%E8%B4%A8%E9%87%8F.html">05 · 故障模型覆盖率与测试质量</a><a class="" href="06_ATPG%E6%BF%80%E6%B4%BB%E4%BC%A0%E6%92%AD%E4%B8%8E%E7%BB%93%E6%9E%84%E6%90%9C%E7%B4%A2%E7%AE%97%E6%B3%95.html">06 · ATPG 激活传播与结构搜索算法</a><a class="" href="07_SAT%E6%B1%82%E8%A7%A3%E6%95%85%E9%9A%9C%E6%A8%A1%E6%8B%9F%E4%B8%8E%E6%B5%8B%E8%AF%95%E9%9B%86%E5%90%88%E4%BC%98%E5%8C%96.html">07 · SAT 求解故障模拟与测试集合优化</a><a class="" href="08_%E6%B5%8B%E8%AF%95%E5%8E%8B%E7%BC%A9%E6%9C%AA%E7%9F%A5%E5%80%BC%E4%B8%8E%E5%8F%AF%E7%BC%96%E7%A0%81%E6%80%A7.html">08 · 测试压缩未知值与可编码性</a><a class="" href="09_%E6%B5%8B%E8%AF%95%E5%8A%9F%E8%80%97%E5%B9%B6%E5%8F%91%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%9C%9F%E9%97%B4%E6%B5%8B%E8%AF%95.html">09 · 测试功耗并发与运行期间测试</a><a class="" href="10_%E6%B5%8B%E8%AF%95%E7%82%B9%E6%8F%92%E5%85%A5%E4%B8%8E%E5%8F%AF%E6%B5%8B%E8%AF%95%E6%80%A7%E8%AE%BE%E8%AE%A1%E4%BC%98%E5%8C%96.html">10 · 测试点插入与可测试性设计优化</a><a class="" href="11_%E6%89%AB%E6%8F%8F%E6%95%85%E9%9A%9C%E8%AF%8A%E6%96%AD%E4%B8%8E%E5%A4%B1%E8%B4%A5%E5%88%86%E6%9E%90.html">11 · 扫描故障诊断与失败分析</a><a class="" href="12_%E8%AE%BE%E8%AE%A1%E9%AA%8C%E8%AF%81%E5%B7%A5%E5%85%B7%E6%8E%A5%E5%85%A5%E4%B8%8E%E5%88%B6%E9%80%A0%E6%89%A7%E8%A1%8C.html">12 · 设计验证工具接入与制造执行</a><a class="" href="13_2024%E8%87%B32026%E5%B9%B4%E5%AD%A6%E6%9C%AF%E6%88%90%E6%9E%9C%E5%88%86%E6%9E%90%E4%B8%8E%E7%A0%94%E7%A9%B6%E8%B7%AF%E7%BA%BF.html">13 · 2024 至 2026 年学术成果分析与研究路线</a><a class="current" href="14_%E7%AE%97%E4%BE%8B%E4%B8%8E%E6%BA%90%E7%A0%81%E8%AF%B4%E6%98%8E.html">14 · 算例与源码说明</a><a class="" href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E6%9D%90%E6%96%99%E8%AF%81%E6%8D%AE%E7%B4%A2%E5%BC%95.html">90 · 参考文献与材料证据索引</a></nav></aside><div class="reading"><main class="paper"><div class="eyebrow">SCAN · ATPG · 设计原理</div><h1 id="14 算例与源码说明">14 算例与源码说明</h1>
+<p><a href="00_%E6%89%AB%E6%8F%8F%E9%93%BE%E4%B8%8EATPG%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E9%98%85%E8%AF%BB%E5%AF%BC%E8%88%AA.html">总览</a> · <a href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E6%9D%90%E6%96%99%E8%AF%81%E6%8D%AE%E7%B4%A2%E5%BC%95.html">参考文献</a> · <a href="14_%E7%AE%97%E4%BE%8B%E4%B8%8E%E6%BA%90%E7%A0%81%E8%AF%B4%E6%98%8E.html">算例与源码</a></p>
+<h2 id="1. 程序组成">1. 程序组成</h2>
+<p><code>src/teaching_examples.py</code> 使用 Python 标准库实现一个可审查的小型组合电路模型、干线与分支固定故障注入、穷举故障模拟、完整 DPLL SAT 求解、精确测试集合覆盖、扫描寄存器移位、未知位填充、线性压缩和诊断等价类分析。程序不调用商业工具。</p>
+<pre><code class="language-bash">python src/teaching_examples.py
+</code></pre>
+<p>输出保存在 <code>checks/teaching_results.json</code>，完整检测矩阵另存为 <code>examples/detection_matrix.json</code>。随机回归采用固定种子 <code>20261017</code>，可用参数修改电路数量：</p>
+<pre><code class="language-bash">python src/teaching_examples.py --random-circuits 40
+</code></pre>
+<h2 id="2. 程序输出">2. 程序输出</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>项目</th>
+  <th>结果</th>
+  <th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>算例电路目标故障</td>
+  <td>32 个，均可检测</td>
+  <td>16 个干线＋16 个门输入分支单固定故障</td>
+</tr>
+<tr>
+  <td>固定输入双电路验证</td>
+  <td>512 项一致</td>
+  <td>16 个输入 × 32 个故障，SAT 与直接模拟相符</td>
+</tr>
+<tr>
+  <td>小型随机电路回归</td>
+  <td>40 个电路，1374 个故障</td>
+  <td>每个故障的 SAT 可满足性与穷举检测存在性一致</td>
+</tr>
+<tr>
+  <td>最小向量集合</td>
+  <td>4 条</td>
+  <td>完整候选仅 16 条，使用精确枚举证明最小</td>
+</tr>
+<tr>
+  <td>立方体</td>
+  <td><code>110X</code> 检测 <code>n1/sa0</code></td>
+  <td>两种补全均单独故障模拟</td>
+</tr>
+<tr>
+  <td>扫描装入</td>
+  <td><code>1,0,1,1</code> 得到 <code>[1,1,0,1]</code></td>
+  <td>Q0 靠近输入，输出在有效沿前取样</td>
+</tr>
+<tr>
+  <td>编码反例</td>
+  <td><code>111</code> 不可编码，<code>1X1</code> 可编码</td>
+  <td>两变量三输出，关系矩阵明确给出</td>
+</tr>
+<tr>
+  <td>诊断</td>
+  <td>32 个故障形成 18 类完整响应</td>
+  <td>改用每条向量单个失败标志后为 16 类</td>
+</tr>
+</tbody>
+</table></div>
+<p>上述结果来自小型算例，不是 ISCAS、NVDLA 或商业芯片实验。随机电路规模较小，回归可发现实现错误，但不能证明工业性能。</p>
+<h2 id="3. 插图生成与检查">3. 插图生成与检查</h2>
+<p>全部图由 <code>src/generate_figures.py</code> 与 <code>src/svg_geometry.py</code> 生成，使用原生 SVG 文字和形状，不嵌入 PNG，不把文字转成轮廓。修改节点文案或连接后运行：</p>
+<pre><code class="language-bash">python src/generate_figures.py
+python src/validate_precise_figures.py --png
+python src/build_drawing_review.py
+</code></pre>
+<p>绘图只需要标准 Python；渲染和几何检查需要 Playwright 与 Chromium。图形检查采用浏览器实际文字矩形，检查文字、边框、箭头、连接点以及未标明的交叉。它只能验证几何布局，不能证明图中的电路连接具有电气正确性。</p>
+<h2 id="4. 离线页面生成">4. 离线页面生成</h2>
+<pre><code class="language-bash">python src/validate_book.py
+node src/check_mathjax.js
+python src/render_html.py
+</code></pre>
+<p>HTML 导出需要 Mistune 3、Node.js 与 <code>mathjax-full</code> 3。阅读已经导出的 HTML 不需要这些工具，也不需要联网加载公式。Markdown 为主编辑文件；改变公式后需重新导出 HTML。</p>
+<p>目录不包含字体文件。SVG 使用系统中文字体，换字体或改文字后应重新运行几何检查；PNG 为固定渲染副本。</p>
+<hr />
+<p><a href="13_2024%E8%87%B32026%E5%B9%B4%E5%AD%A6%E6%9C%AF%E6%88%90%E6%9E%9C%E5%88%86%E6%9E%90%E4%B8%8E%E7%A0%94%E7%A9%B6%E8%B7%AF%E7%BA%BF.html">上一篇</a> · <a href="00_%E6%89%AB%E6%8F%8F%E9%93%BE%E4%B8%8EATPG%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E9%98%85%E8%AF%BB%E5%AF%BC%E8%88%AA.html">总览</a> · <a href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E6%9D%90%E6%96%99%E8%AF%81%E6%8D%AE%E7%B4%A2%E5%BC%95.html">下一篇</a></p>
+<div class="footer">资料检索截止：2026-10-17。此页为 Markdown 的离线阅读副本；编辑后需重新生成。图示、算例模型与论文证据范围分别说明。</div></main></div></body></html>

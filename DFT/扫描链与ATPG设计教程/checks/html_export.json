@@ -72,18 +72,13 @@
       "math_count": 10
     },
     {
-      "source": "14_教学算例源码与学习练习.md",
-      "html": "html/14_教学算例源码与学习练习.html",
-      "math_count": 2
+      "source": "14_算例与源码说明.md",
+      "html": "html/14_算例与源码说明.html",
+      "math_count": 0
     },
     {
       "source": "90_参考文献与材料证据索引.md",
       "html": "html/90_参考文献与材料证据索引.html",
-      "math_count": 0
-    },
-    {
-      "source": "99_证据范围版本与使用说明.md",
-      "html": "html/99_证据范围版本与使用说明.html",
       "math_count": 0
     },
     {
@@ -93,5 +88,5 @@
     }
   ],
   "unique_rendered_math": 123,
-  "total_math": 142
+  "total_math": 140
 }
