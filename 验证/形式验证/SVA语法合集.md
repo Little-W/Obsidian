@@ -384,7 +384,7 @@ ap_one_grant_when_pending: assert property (@(posedge clk) disable iff(!rst_n)
 
 第二条只适用于协议要求“只要有请求就必须立刻授权”的情况，否则应改成有界的最终授权，并定义公平条件。
 
-### 13.3 请求—应答
+### 13.3 请求与应答
 
 ```systemverilog
 ap_ack: assert property (@(posedge clk) disable iff(!rst_n)
@@ -404,7 +404,7 @@ ap_hold: assert property (@(posedge clk) disable iff(!rst_n)
 
 对于标准的 ready/valid 流控制，后一拍 `ready` 可以变为 1，此时仍需要在握手时提供原来的 `payload`。
 
-### 13.5 FIFO 不上溢、不下溢与计数范围
+### 13.5 FIFO 计数范围检查
 
 ```systemverilog
 ap_depth: assert property (@(posedge clk) disable iff(!rst_n)
@@ -526,7 +526,7 @@ ap_eventual_response: assert property (
 
 `$isunknown` 在四值仿真中很直观，但传统形式证明的二值布尔编码可能与仿真中的 X 传播语义不同；检查 RTL 中的 X 传播风险，更适合配合 VC Formal FXP 和明确的注入/观察模型。对于写有 `casex`、`casez`、`unique case` 的 RTL，还应结合综合与仿真对 X 的不同处理方式来审查。
 
-## 17. 有界计数器完整工程
+## 17. 示例：有界计数器及 VC Formal 工程
 
 前面的短代码块用于解释单个语法；本节则给出可以保存成文件的完整设计、检查器、编译列表和 Tcl。代码与 FPV 章的计数器案例保持一致。
 

@@ -168,7 +168,7 @@ fxp_report_rootcause -list
 
 只有当硬件结构、外部协议或正式初始化流程**保证该信号在指定阶段已知**时，才允许消除它的 X 来源。例如某个寄存器由上电复位明确赋值，并且复位时序确实执行；或者某个输入在完成训练之后才被采样，并且存在可证明的有效标志。如果把所有未知数据都用 `-nox` 约束掉，FXP 就失去了实际作用。
 
-## 6. 未复位的数据寄存器
+## 6. 用例 A：未复位的数据寄存器
 
 ```systemverilog
 module uninit_demo (
@@ -273,7 +273,7 @@ vcf -f scripts/fxp_uninit.tcl -batch 2>&1 | tee logs/fxp_uninit.log
 
 预期的观察结果是：未发生有效写入时，缓存的不确定性可能到达输出。分析失败时，应当查看工具实际选择的注入点和反例，不应通过把 `write` 固定为 1 来掩盖初始化缺陷。这里没有真实的 FXP 运行报告。
 
-## 7. 显式 X 赋值与越界
+## 7. 用例 B：显式 X 赋值与越界
 
 ```systemverilog
 always_comb begin
@@ -289,7 +289,7 @@ end
 
 对数组 `mem[index]` 的非法访问则属于 `oba` 等相关检查。在一些 RTL 里，越界索引导致的 X 传播既可以由 AEP 发现，也可以通过 FXP 分析它实际影响的观察点，两者的结论不同、相互补充。
 
-## 8. 不确定数据的有意屏蔽
+## 8. 用例 C：有意屏蔽不确定数据
 
 ```systemverilog
 assign packet_out = valid ? raw_packet : '0;

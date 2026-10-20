@@ -4,8 +4,8 @@
   "files": [
     {
       "path": "00_扫描链与ATPG总体架构与阅读导航.md",
-      "bytes": 7303,
-      "sha256": "00e756653a8bfa5daeb00211bd634a80c55e8755a9f08529a67e1616b5a175a5"
+      "bytes": 7317,
+      "sha256": "7901d0518dc8bcd3ec1120da4c03f8d88eb394b2bb7dc0b2eb58e150fd3f7c80"
     },
     {
       "path": "01_扫描触发器与移位捕获原理.md",
@@ -14,13 +14,13 @@
     },
     {
       "path": "02_扫描架构与物理实现.md",
-      "bytes": 5373,
-      "sha256": "a44cb37d91455345162e34b0a181d6f90fa257875034abe56f2842531bdf276b"
+      "bytes": 5397,
+      "sha256": "26f8ae678984dc3bed5d58d71d45b0f8e7d3829a929eb0852a187203b1b90331"
     },
     {
       "path": "03_测试时钟复位与高速捕获.md",
-      "bytes": 4962,
-      "sha256": "f8ec644367ec25625a7a832e715e5e1015aa3a7d62784a5e76c8dcabbb2799bc"
+      "bytes": 4977,
+      "sha256": "b7eaea58a844462bfa1f5773218b38e2729eb10501622aa358f5be5779e1b053"
     },
     {
       "path": "04_JTAG测试访问与芯片级数据传输.md",
@@ -39,8 +39,8 @@
     },
     {
       "path": "07_SAT求解故障模拟与测试集合优化.md",
-      "bytes": 6205,
-      "sha256": "fea26506509882c372cbbfc3a30d4fdd5e3d13bf2cee82050b5bf28bf0bf9323"
+      "bytes": 6217,
+      "sha256": "20ab071a8006eff64c8fd10ae35d1ba690265f89ee51cc6cecc9810f0c67dacb"
     },
     {
       "path": "08_测试压缩未知值与可编码性.md",
@@ -49,33 +49,33 @@
     },
     {
       "path": "09_测试功耗并发与运行期间测试.md",
-      "bytes": 5205,
-      "sha256": "435f264ad62ccdd6262579ce386ff3d6d62e02ebf195fd0d955a93c77ae080b6"
+      "bytes": 5214,
+      "sha256": "faaedde8b548723ea0ec5b948b133038c0e419b845984458c5e53d75f9bded28"
     },
     {
       "path": "10_测试点插入与可测试性设计优化.md",
-      "bytes": 4911,
-      "sha256": "b17a6457e6d20ad579a1ba5654839560419e8010a772844e3bdab3b87a2d3cb8"
+      "bytes": 4929,
+      "sha256": "626ad5a96cf73aa5ffb5ff483eae9333f0085fb8433f7facbe89b926d2c1ca70"
     },
     {
       "path": "11_扫描故障诊断与失败分析.md",
-      "bytes": 4583,
-      "sha256": "a3a8a7f1f08ef8e51ccdd1b85c5ca68d2e3cc6882cee28458242bd1cb32254ba"
+      "bytes": 4595,
+      "sha256": "51ad36e8ed6f95e51117bb8406ec7f465975a152861c842fc48efecf880e9f01"
     },
     {
       "path": "12_设计验证工具接入与制造执行.md",
-      "bytes": 5614,
-      "sha256": "a5b199df133d02d7585a2fc36a8d08052431059245acd68253d47fbe85d16a1c"
+      "bytes": 5629,
+      "sha256": "1b1c228bd4f337ac2c22f805dba2715ecdb865e56b4bb441205ef347b504e564"
     },
     {
       "path": "13_2024至2026年学术成果分析与研究路线.md",
-      "bytes": 16622,
-      "sha256": "a7b65d510d6a1ea40d1e156b95692940c13c7ce61e5768016e8b4e7850370a65"
+      "bytes": 16657,
+      "sha256": "e714d76a676931cda6209a88bab9ce5fcb8d57abc5588ff16eabb9676102959a"
     },
     {
       "path": "14_算例与源码说明.md",
-      "bytes": 3272,
-      "sha256": "91d2648e466c499883597b77c05645526f2a781cdbe21c73fe10834aa451020d"
+      "bytes": 3271,
+      "sha256": "91d6a283fb2b85da6d8747553ba0e80b438339a28038f9ab3d2958a9b28d4fd3"
     },
     {
       "path": "90_参考文献与材料证据索引.md",
@@ -300,7 +300,7 @@
     {
       "path": "checks/document_validation.json",
       "bytes": 373,
-      "sha256": "dad2c51c73e0a5e0ad38dcd7f0eb7f92bf9017958729f0402dff8818551a136b"
+      "sha256": "751d66719914844c5c8e17c6ddf5124565607833ffc4e4a8db770d9efe27fa59"
     },
     {
       "path": "checks/geometry_checker_selftests.json",
@@ -410,7 +410,7 @@
     {
       "path": "checks/math_input.json",
       "bytes": 24420,
-      "sha256": "196adacabe9812fe8c1200f61801f39eb837e9fb526ab4e52bdd76bfe3d74f2e"
+      "sha256": "b2cb6eccc4879aa8ff7c20d26234e88f00cf528e34a0c8fd855fc078befd4220"
     },
     {
       "path": "checks/mathjax_validation.json",
@@ -459,8 +459,8 @@
     },
     {
       "path": "html/00_扫描链与ATPG总体架构与阅读导航.html",
-      "bytes": 14083,
-      "sha256": "da2b6295dd5ad13dc39b7fde9512efb851f22f7d68fdee752f14dbecf42f13ba"
+      "bytes": 14111,
+      "sha256": "383828fc0802e1650a2ead8e23a9a0199d76068b8128d6474bbc5ef69b9362fc"
     },
     {
       "path": "html/01_扫描触发器与移位捕获原理.html",
@@ -469,13 +469,13 @@
     },
     {
       "path": "html/02_扫描架构与物理实现.html",
-      "bytes": 39522,
-      "sha256": "3e232f6ccd455e1e3f584dd4b598349ac30ac6e391c9295913ec70e508868259"
+      "bytes": 39570,
+      "sha256": "dc439526cfdb19abaf0d5762dd0a9db0eac7871b4a39f6b6b3093f29a4bee8a7"
     },
     {
       "path": "html/03_测试时钟复位与高速捕获.html",
-      "bytes": 65264,
-      "sha256": "264ec13a7ece9d9c7dbb71a57d9eded619e84fc6e6981bd067fbbf1da3fceb06"
+      "bytes": 65294,
+      "sha256": "0826f8f2737069a5643bd410f97c654b9d75d0c18cf2a512400df1fb6e8750b9"
     },
     {
       "path": "html/04_JTAG测试访问与芯片级数据传输.html",
@@ -494,8 +494,8 @@
     },
     {
       "path": "html/07_SAT求解故障模拟与测试集合优化.html",
-      "bytes": 92102,
-      "sha256": "9301c977c7f98d577ad37d66a3fbb6edcb47b8b3a20115b6dcf02b89c912d195"
+      "bytes": 92126,
+      "sha256": "c88ce2910d7dc674680a5fda05300dd10452960939ac0472aa27d48d9a51bc81"
     },
     {
       "path": "html/08_测试压缩未知值与可编码性.html",
@@ -504,33 +504,33 @@
     },
     {
       "path": "html/09_测试功耗并发与运行期间测试.html",
-      "bytes": 43411,
-      "sha256": "02f4c84a4c7a134804a505d5861b9c3e7c186ae6db021493f78c17510ed7fee9"
+      "bytes": 43429,
+      "sha256": "552e8bc596ddb9fc07efa357cb92cb2dc955ae8a3f044c693cd505783c7638b1"
     },
     {
       "path": "html/10_测试点插入与可测试性设计优化.html",
-      "bytes": 35361,
-      "sha256": "fbe9e0264f77c620246ed06b755b1eeb83a24f1a8d77f7f1f71d3d11c2e54704"
+      "bytes": 35397,
+      "sha256": "becba6ef02b4375550db5769b9a7f9412a06fb1671d62d3707ee7d10ec6bb3ca"
     },
     {
       "path": "html/11_扫描故障诊断与失败分析.html",
-      "bytes": 44485,
-      "sha256": "9141fc1727760843a9a104b778330249b18954506fd1f326e887f446ccb992cc"
+      "bytes": 44509,
+      "sha256": "5b30201c73fbe4a30dec5694d477606c81bac7f3c19b7ca00cc127905fbc9337"
     },
     {
       "path": "html/12_设计验证工具接入与制造执行.html",
-      "bytes": 10665,
-      "sha256": "4e640098d0de91099130885bdded9c1eaa31907617e8a35ef8ba9154412dea0d"
+      "bytes": 10695,
+      "sha256": "ef8a68ce7aac9fd7c8a4f33809bfacdf16d7ec49d2d293dc1460d3cffb7c2a57"
     },
     {
       "path": "html/13_2024至2026年学术成果分析与研究路线.html",
-      "bytes": 61252,
-      "sha256": "f31deef22a21cd4854221298d311766bbbad697dbb1239f773d54ca946f48abb"
+      "bytes": 61322,
+      "sha256": "397773a6c7dedea1f34c8cc2859ad385d6df426bab39be07add08b5f445a27e5"
     },
     {
       "path": "html/14_算例与源码说明.html",
       "bytes": 8358,
-      "sha256": "fb8e9f4df69ee62b9bb5c09bdc53424d2a228f754306c498766d30886adefcb3"
+      "sha256": "4888837a41569d9b61ec067a26c1f59c6e1a8f3eaeb28729f38fa6302fab02a6"
     },
     {
       "path": "html/90_参考文献与材料证据索引.html",

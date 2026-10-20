@@ -679,181 +679,181 @@
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 121,
+    "line": 123,
     "tex": "4\\,\\mathrm{mW}",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 121,
+    "line": 123,
     "tex": "10\\,\\mathrm{mW}",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 121,
+    "line": 123,
     "tex": "8\\,\\mathrm{mW}",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 121,
+    "line": 123,
     "tex": "12\\,\\mathrm{mW}",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 125,
+    "line": 127,
     "tex": "\n\\sum_{i\\in G}P_i\\leq P_G^{\\max}.\n",
     "display": true
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 132,
+    "line": 134,
     "tex": "D",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 134,
+    "line": 136,
     "tex": "\n|x_i-x_j|+|y_i-y_j|\\leq D,\\qquad \\forall i,j\\in G.\n",
     "display": true
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 138,
+    "line": 140,
     "tex": "x=0,4,8",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 138,
+    "line": 140,
     "tex": "5",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 142,
+    "line": 144,
     "tex": "D",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 142,
+    "line": 144,
     "tex": "2D",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 142,
+    "line": 144,
     "tex": "D",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 145,
+    "line": 147,
     "tex": "x_{ig}=1",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 145,
+    "line": 147,
     "tex": "i",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 145,
+    "line": 147,
     "tex": "g",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 145,
+    "line": 147,
     "tex": "y_g=1",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 147,
+    "line": 149,
     "tex": "\n\\begin{aligned}\n\\min\\quad &\\sum_g y_g\\\\\n\\text{满足}\\quad\n&\\sum_g x_{ig}=1, &&\\forall i,\\\\\n&x_{ig}\\leq y_g, &&\\forall i,g,\\\\\n&x_{ig}+x_{jg}\\leq1, &&\\forall(i,j)\\in E,\\ \\forall g,\\\\\n&\\sum_i x_{ig}\\leq K_g y_g, &&\\forall g.\n\\end{aligned}\n",
     "display": true
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 158,
+    "line": 160,
     "tex": "K_g",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 162,
+    "line": 164,
     "tex": "\nA_{\\mathrm{test}}=\n\\sum_g A_{\\mathrm{controller},g}\n+\\sum_i A_{\\mathrm{interface},i}\n+A_{\\mathrm{compare}}+A_{\\mathrm{diagnosis}}\n+A_{\\mathrm{repair}}+A_{\\mathrm{buffer}}.\n",
     "display": true
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 188,
+    "line": 190,
     "tex": "K(u,v)",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 188,
+    "line": 190,
     "tex": "M(x,y)",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 190,
+    "line": 192,
     "tex": "\nS(x,y)=\\sum_u\\sum_v K(u,v)M(x-u,y-v).\n",
     "display": true
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 223,
+    "line": 225,
     "tex": "\n\\Delta V(t)\\approx R\\,I(t)+L\\frac{dI(t)}{dt}.\n",
     "display": true
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 236,
+    "line": 238,
     "tex": "\nC_{\\mathrm{th}}\\frac{dT}{dt}\n=P(t)-\\frac{T-T_{\\mathrm{ambient}}}{R_{\\mathrm{th}}}.\n",
     "display": true
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 241,
+    "line": 243,
     "tex": "R_{\\mathrm{th}}",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 241,
+    "line": 243,
     "tex": "C_{\\mathrm{th}}",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 245,
+    "line": 247,
     "tex": "\n\\mathbf C\\frac{d\\boldsymbol\\theta}{dt}\n=\\mathbf P(t)-\\mathbf G\\boldsymbol\\theta(t),\n\\qquad\n\\boldsymbol\\theta=\\mathbf T-T_{\\mathrm{ambient}}\\mathbf1.\n",
     "display": true
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 261,
+    "line": 263,
     "tex": "z",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 263,
+    "line": 265,
     "tex": "\n\\sum_{j\\in z}\\mathbf1[s_j\\leq t<s_j+d_j]\\leq K_z.\n",
     "display": true
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 267,
+    "line": 269,
     "tex": "T_z(t)\\leq T_z^{\\max}",
     "display": false
   },
