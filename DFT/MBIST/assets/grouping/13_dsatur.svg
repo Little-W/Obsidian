@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="680" viewBox="0 0 1400 680" role="img" aria-labelledby="title desc">
+<title id="title">图06-13 冲突图着色与存储器分组</title><desc id="desc">边表示不能同组；颜色表示组号。这个独立用例每个实例4 mW，组上限8 mW。</desc>
+<defs><marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M1,1 L11,6 L1,11 Z" fill="#53697C"/></marker></defs>
+<rect x="0" y="0" width="1400" height="680" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1.5"/>
+<rect x="40" y="35" width="7" height="42" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="65" y="68.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="33" fill="#18324A" text-anchor="start" font-weight="700">13  冲突图着色与存储器分组</text>
+<text x="65" y="110.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#53697C" text-anchor="start" font-weight="400">边表示不能同组；颜色表示组号。这个独立用例每个实例4 mW，组上限8 mW。</text>
+<line x1="40" y1="132" x2="1360" y2="132" stroke="#CAD6E0" stroke-width="1"/>
+<line x1="360.0" y1="180.0" x2="531.1901729331277" y2="304.37694101250946" stroke="#53697C" stroke-width="3"/>
+<line x1="531.1901729331277" y1="304.37694101250946" x2="465.80134541264516" y2="505.62305898749054" stroke="#53697C" stroke-width="3"/>
+<line x1="465.80134541264516" y1="505.62305898749054" x2="254.19865458735484" y2="505.62305898749054" stroke="#53697C" stroke-width="3"/>
+<line x1="254.19865458735484" y1="505.62305898749054" x2="188.80982706687234" y2="304.3769410125095" stroke="#53697C" stroke-width="3"/>
+<line x1="188.80982706687234" y1="304.3769410125095" x2="360.0" y2="180.0" stroke="#53697C" stroke-width="3"/>
+<circle cx="360.0" cy="180.0" r="35" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="360.0" y="189.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">A</text>
+<circle cx="531.1901729331277" cy="304.37694101250946" r="35" fill="#FFFFFF" stroke="#168679" stroke-width="2.5"/>
+<text x="531.1901729331277" y="313.37694101250946" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="middle" font-weight="700">B</text>
+<circle cx="465.80134541264516" cy="505.62305898749054" r="35" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="465.80134541264516" y="514.6230589874906" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">C</text>
+<circle cx="254.19865458735484" cy="505.62305898749054" r="35" fill="#FFFFFF" stroke="#168679" stroke-width="2.5"/>
+<text x="254.19865458735484" y="514.6230589874906" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="middle" font-weight="700">D</text>
+<circle cx="188.80982706687234" cy="304.3769410125095" r="35" fill="#FFFFFF" stroke="#C47921" stroke-width="2.5"/>
+<text x="188.80982706687234" y="313.3769410125095" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#C47921" text-anchor="middle" font-weight="700">E</text>
+<rect x="760" y="205" width="560" height="90" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="760" y="205" width="560" height="7" rx="0" fill="#245C91" stroke="#245C91" stroke-width="1.5"/>
+<text x="782" y="252.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="start" font-weight="700">颜色1  →  分组 {A、C}</text>
+<text x="1220" y="252.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#245C91" text-anchor="end" font-weight="400">8 mW</text>
+<rect x="760" y="315" width="560" height="90" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="760" y="315" width="560" height="7" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="782" y="362.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="start" font-weight="700">颜色2  →  分组 {B、D}</text>
+<text x="1220" y="362.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#168679" text-anchor="end" font-weight="400">8 mW</text>
+<rect x="760" y="425" width="560" height="90" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="760" y="425" width="560" height="7" rx="0" fill="#C47921" stroke="#C47921" stroke-width="1.5"/>
+<text x="782" y="472.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#C47921" text-anchor="start" font-weight="700">颜色3  →  分组 {E}</text>
+<text x="1220" y="472.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#C47921" text-anchor="end" font-weight="400">4 mW</text>
+<text x="1030" y="560.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#18324A" text-anchor="middle" font-weight="600">每次着色仍要检查整组资源</text>
+<line x1="40" y1="616" x2="1360" y2="616" stroke="#CAD6E0" stroke-width="1"/>
+<text x="55" y="653.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#53697C" text-anchor="start" font-weight="400">饱和度是已着色邻居使用的不同颜色数；纯图着色不自动处理三个以上实例的总功率。</text>
+</svg>

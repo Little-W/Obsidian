@@ -1,0 +1,23 @@
+{
+  "algorithm": "capacity_dsatur",
+  "groups": [
+    {"members": ["A", "B"], "power_mw": 8, "duration_us": 100, "hpwl_um": 100},
+    {"members": ["G", "H"], "power_mw": 8, "duration_us": 100, "hpwl_um": 100},
+    {"members": ["C", "D", "E"], "power_mw": 9, "duration_us": 60, "hpwl_um": 300},
+    {"members": ["I", "J", "K"], "power_mw": 9, "duration_us": 60, "hpwl_um": 300},
+    {"members": ["F"], "power_mw": 3, "duration_us": 60, "hpwl_um": 0},
+    {"members": ["L"], "power_mw": 3, "duration_us": 60, "hpwl_um": 0}
+  ],
+  "group_count": 6,
+  "sum_hpwl_um": 800,
+  "estimated_makespan_us": 220,
+  "reserved_peak_mw": 18,
+  "schedule": [
+    {"group": 0, "start_us": 0, "end_us": 100, "power_mw": 8},
+    {"group": 1, "start_us": 0, "end_us": 100, "power_mw": 8},
+    {"group": 2, "start_us": 100, "end_us": 160, "power_mw": 9},
+    {"group": 3, "start_us": 100, "end_us": 160, "power_mw": 9},
+    {"group": 4, "start_us": 160, "end_us": 220, "power_mw": 3},
+    {"group": 5, "start_us": 160, "end_us": 220, "power_mw": 3}
+  ]
+}

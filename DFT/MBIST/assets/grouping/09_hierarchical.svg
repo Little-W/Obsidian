@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="680" viewBox="0 0 1400 680" role="img" aria-labelledby="title desc">
+<title id="title">图06-09 层次合并必须检查整个新组</title><desc id="desc">直线上的三个实例相距100 μm；组内最大两两距离上限为120 μm。</desc>
+<defs><marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M1,1 L11,6 L1,11 Z" fill="#53697C"/></marker></defs>
+<rect x="0" y="0" width="1400" height="680" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1.5"/>
+<rect x="40" y="35" width="7" height="42" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="65" y="68.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="33" fill="#18324A" text-anchor="start" font-weight="700">09  层次合并必须检查整个新组</text>
+<text x="65" y="110.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#53697C" text-anchor="start" font-weight="400">直线上的三个实例相距100 μm；组内最大两两距离上限为120 μm。</text>
+<line x1="40" y1="132" x2="1360" y2="132" stroke="#CAD6E0" stroke-width="1"/>
+<text x="315" y="205.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="28" fill="#245C91" text-anchor="middle" font-weight="700">最近点规则</text>
+<rect x="60" y="250" width="510" height="175" rx="12" fill="#F8FAFC" stroke="#CAD6E0" stroke-width="1.5"/>
+<circle cx="125" cy="325" r="31" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="125" y="334.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">A</text>
+<text x="125" y="385.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">0 μm</text>
+<circle cx="315" cy="325" r="31" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="315" y="334.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">B</text>
+<text x="315" y="385.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">100 μm</text>
+<circle cx="505" cy="325" r="31" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="505" y="334.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">C</text>
+<text x="505" y="385.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">200 μm</text>
+<rect x="80" y="260" width="290" height="150" rx="10" fill="none" stroke="#168679" stroke-width="3"/>
+<line x1="352" y1="325" x2="472" y2="325" stroke="#C47921" stroke-width="2" stroke-dasharray="5 5"/>
+<text x="315" y="455.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#18324A" text-anchor="middle" font-weight="400">B-C最近距离 = 100 μm</text>
+<text x="315" y="505.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="27" fill="#B14A49" text-anchor="middle" font-weight="600">合并后A-C = 200 μm</text>
+<text x="315" y="555.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#B14A49" text-anchor="middle" font-weight="400">只看最近点会错误合并</text>
+<text x="1025" y="205.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="28" fill="#168679" text-anchor="middle" font-weight="700">完整组检查</text>
+<rect x="770" y="250" width="510" height="175" rx="12" fill="#F8FAFC" stroke="#CAD6E0" stroke-width="1.5"/>
+<circle cx="835" cy="325" r="31" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="835" y="334.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">A</text>
+<text x="835" y="385.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">0 μm</text>
+<circle cx="1025" cy="325" r="31" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="1025" y="334.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">B</text>
+<text x="1025" y="385.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">100 μm</text>
+<circle cx="1215" cy="325" r="31" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="1215" y="334.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">C</text>
+<text x="1215" y="385.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">200 μm</text>
+<rect x="790" y="260" width="290" height="150" rx="10" fill="none" stroke="#168679" stroke-width="3"/>
+<line x1="1062" y1="325" x2="1182" y2="325" stroke="#C47921" stroke-width="2" stroke-dasharray="5 5"/>
+<text x="1025" y="455.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#18324A" text-anchor="middle" font-weight="400">B-C最近距离 = 100 μm</text>
+<text x="1025" y="505.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="27" fill="#B14A49" text-anchor="middle" font-weight="600">合并后A-C = 200 μm</text>
+<text x="1025" y="555.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#168679" text-anchor="middle" font-weight="400">拒绝合并，保留两组</text>
+<line x1="40" y1="616" x2="1360" y2="616" stroke="#CAD6E0" stroke-width="1"/>
+<text x="55" y="653.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#53697C" text-anchor="start" font-weight="400">受约束的层次合并：每一次组对合并都调用完整合法性函数，而非只比较最近点。</text>
+</svg>

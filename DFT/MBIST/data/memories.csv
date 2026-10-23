@@ -1,0 +1,13 @@
+id,clock,interface,x_um,y_um,power_mw,duration_us
+A,clk0,SP1,0,0,4,100
+B,clk0,SP1,100,0,4,100
+C,clk0,SP1,200,0,3,60
+D,clk0,SP1,0,100,3,60
+E,clk0,SP1,100,100,3,60
+F,clk0,SP1,200,100,3,60
+G,clk0,SP1,1400,0,4,100
+H,clk0,SP1,1500,0,4,100
+I,clk0,SP1,1600,0,3,60
+J,clk0,SP1,1400,100,3,60
+K,clk0,SP1,1500,100,3,60
+L,clk0,SP1,1600,100,3,60

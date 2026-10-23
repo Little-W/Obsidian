@@ -1,0 +1,10 @@
+{
+  "steps": 2,
+  "controller_time_us": {
+    "c1": 200.0
+  },
+  "largest_step_power_mw": 60.0,
+  "sum_hpwl_um": 90.0,
+  "chip_time_us": null,
+  "note": "Chip-wide concurrency/power scheduling has NOT been solved."
+}

@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="690" viewBox="0 0 1400 690" role="img" aria-labelledby="title desc">
+<title id="title">图06-01 四种分组概念对应不同决策</title><desc id="desc">同一控制器管理的成员，不一定在同一时刻活动。</desc>
+<defs><marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M1,1 L11,6 L1,11 Z" fill="#53697C"/></marker></defs>
+<rect x="0" y="0" width="1400" height="690" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1.5"/>
+<rect x="40" y="35" width="7" height="42" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="65" y="68.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="33" fill="#18324A" text-anchor="start" font-weight="700">01  四种分组概念对应不同决策</text>
+<text x="65" y="110.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#53697C" text-anchor="start" font-weight="400">同一控制器管理的成员，不一定在同一时刻活动。</text>
+<line x1="40" y1="132" x2="1360" y2="132" stroke="#CAD6E0" stroke-width="1"/>
+<rect x="40" y="190" width="300" height="280" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="40" y="190" width="300" height="7" rx="0" fill="#245C91" stroke="#245C91" stroke-width="1.5"/>
+<text x="62" y="237.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="start" font-weight="700">属性相容类别</text>
+<text x="62" y="280.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">同一测试接口</text>
+<text x="62" y="311.9" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">允许的时钟关系</text>
+<text x="62" y="343.8" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">允许的算法组合</text>
+<rect x="380" y="190" width="300" height="280" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="380" y="190" width="300" height="7" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="402" y="237.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="start" font-weight="700">控制器共享组</text>
+<text x="402" y="280.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">Ctrl 0：A、B、C</text>
+<text x="402" y="311.9" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">Ctrl 1：D、E、F</text>
+<text x="402" y="343.8" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">确定硬件归属</text>
+<rect x="720" y="190" width="300" height="280" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="720" y="190" width="300" height="7" rx="0" fill="#C47921" stroke="#C47921" stroke-width="1.5"/>
+<text x="742" y="237.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#C47921" text-anchor="start" font-weight="700">同步测试步骤</text>
+<text x="742" y="280.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">Ctrl 0：先 A/B 后 C</text>
+<text x="742" y="311.9" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">Ctrl 1：先 D/E 后 F</text>
+<text x="742" y="343.8" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">确定组内执行方式</text>
+<rect x="1060" y="190" width="300" height="280" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="1060" y="190" width="300" height="7" rx="0" fill="#245C91" stroke="#245C91" stroke-width="1.5"/>
+<text x="1082" y="237.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="start" font-weight="700">芯片级活动集合</text>
+<text x="1082" y="280.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">当前：A、B、D、E</text>
+<text x="1082" y="311.9" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">下一阶段：C、F</text>
+<text x="1082" y="343.8" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">检查全局资源</text>
+<line x1="347" y1="330" x2="372" y2="330" stroke="#53697C" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="687" y1="330" x2="712" y2="330" stroke="#53697C" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="1027" y1="330" x2="1052" y2="330" stroke="#53697C" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="700" y="535.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="29" fill="#168679" text-anchor="middle" font-weight="700">属性相容  ≠  必须同组  ≠  必须同时测试</text>
+<line x1="40" y1="626" x2="1360" y2="626" stroke="#CAD6E0" stroke-width="1"/>
+<text x="55" y="663.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#53697C" text-anchor="start" font-weight="400">结构示意；图中成员和执行步骤不绑定后文十二实例用例。</text>
+</svg>

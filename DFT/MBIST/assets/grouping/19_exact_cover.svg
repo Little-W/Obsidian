@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="720" viewBox="0 0 1400 720" role="img" aria-labelledby="title desc">
+<title id="title">图06-19 候选组覆盖与组数最优性证书</title><desc id="desc">每个实例恰好被选中的一个候选组覆盖；必须说明候选集合是否完整。</desc>
+<defs><marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M1,1 L11,6 L1,11 Z" fill="#53697C"/></marker></defs>
+<rect x="0" y="0" width="1400" height="720" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1.5"/>
+<rect x="40" y="35" width="7" height="42" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="65" y="68.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="33" fill="#18324A" text-anchor="start" font-weight="700">19  候选组覆盖与组数最优性证书</text>
+<text x="65" y="110.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#53697C" text-anchor="start" font-weight="400">每个实例恰好被选中的一个候选组覆盖；必须说明候选集合是否完整。</text>
+<line x1="40" y1="132" x2="1360" y2="132" stroke="#CAD6E0" stroke-width="1"/>
+<text x="130" y="231.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#245C91" text-anchor="middle" font-weight="700">AB</text>
+<text x="220" y="231.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#245C91" text-anchor="middle" font-weight="700">CDE</text>
+<text x="310" y="231.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#245C91" text-anchor="middle" font-weight="700">F</text>
+<rect x="360" y="197" width="90" height="350" rx="0" fill="#ECF6F3" stroke="#168679" stroke-width="1.5"/>
+<text x="400" y="231.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#168679" text-anchor="middle" font-weight="700">ADE</text>
+<rect x="450" y="197" width="90" height="350" rx="0" fill="#ECF6F3" stroke="#168679" stroke-width="1.5"/>
+<text x="490" y="231.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#168679" text-anchor="middle" font-weight="700">BCF</text>
+<text x="60" y="263.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#18324A" text-anchor="start" font-weight="700">A</text>
+<circle cx="130" cy="255" r="8" fill="#245C91" stroke="#245C91" stroke-width="2.5"/>
+<text x="220" y="261.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#CAD6E0" text-anchor="middle" font-weight="400">·</text>
+<text x="310" y="261.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#CAD6E0" text-anchor="middle" font-weight="400">·</text>
+<circle cx="400" cy="255" r="8" fill="#168679" stroke="#168679" stroke-width="2.5"/>
+<text x="490" y="261.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#CAD6E0" text-anchor="middle" font-weight="400">·</text>
+<text x="60" y="308.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#18324A" text-anchor="start" font-weight="700">B</text>
+<circle cx="130" cy="300" r="8" fill="#245C91" stroke="#245C91" stroke-width="2.5"/>
+<text x="220" y="306.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#CAD6E0" text-anchor="middle" font-weight="400">·</text>
+<text x="310" y="306.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#CAD6E0" text-anchor="middle" font-weight="400">·</text>
+<text x="400" y="306.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#CAD6E0" text-anchor="middle" font-weight="400">·</text>
+<circle cx="490" cy="300" r="8" fill="#168679" stroke="#168679" stroke-width="2.5"/>
+<text x="60" y="353.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#18324A" text-anchor="start" font-weight="700">C</text>
+<text x="130" y="351.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#CAD6E0" text-anchor="middle" font-weight="400">·</text>
+<circle cx="220" cy="345" r="8" fill="#245C91" stroke="#245C91" stroke-width="2.5"/>
+<text x="310" y="351.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#CAD6E0" text-anchor="middle" font-weight="400">·</text>
+<text x="400" y="351.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#CAD6E0" text-anchor="middle" font-weight="400">·</text>
+<circle cx="490" cy="345" r="8" fill="#168679" stroke="#168679" stroke-width="2.5"/>
+<text x="60" y="398.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#18324A" text-anchor="start" font-weight="700">D</text>
+<text x="130" y="396.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#CAD6E0" text-anchor="middle" font-weight="400">·</text>
+<circle cx="220" cy="390" r="8" fill="#245C91" stroke="#245C91" stroke-width="2.5"/>
+<text x="310" y="396.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#CAD6E0" text-anchor="middle" font-weight="400">·</text>
+<circle cx="400" cy="390" r="8" fill="#168679" stroke="#168679" stroke-width="2.5"/>
+<text x="490" y="396.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#CAD6E0" text-anchor="middle" font-weight="400">·</text>
+<text x="60" y="443.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#18324A" text-anchor="start" font-weight="700">E</text>
+<text x="130" y="441.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#CAD6E0" text-anchor="middle" font-weight="400">·</text>
+<circle cx="220" cy="435" r="8" fill="#245C91" stroke="#245C91" stroke-width="2.5"/>
+<text x="310" y="441.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#CAD6E0" text-anchor="middle" font-weight="400">·</text>
+<circle cx="400" cy="435" r="8" fill="#168679" stroke="#168679" stroke-width="2.5"/>
+<text x="490" y="441.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#CAD6E0" text-anchor="middle" font-weight="400">·</text>
+<text x="60" y="488.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#18324A" text-anchor="start" font-weight="700">F</text>
+<text x="130" y="486.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#CAD6E0" text-anchor="middle" font-weight="400">·</text>
+<text x="220" y="486.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#CAD6E0" text-anchor="middle" font-weight="400">·</text>
+<circle cx="310" cy="480" r="8" fill="#245C91" stroke="#245C91" stroke-width="2.5"/>
+<text x="400" y="486.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#CAD6E0" text-anchor="middle" font-weight="400">·</text>
+<circle cx="490" cy="480" r="8" fill="#168679" stroke="#168679" stroke-width="2.5"/>
+<text x="350" y="580.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#168679" text-anchor="middle" font-weight="400">左区选择ADE与BCF，恰好覆盖A～F</text>
+<rect x="760" y="190" width="575" height="145" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="760" y="190" width="575" height="7" rx="0" fill="#245C91" stroke="#245C91" stroke-width="1.5"/>
+<text x="782" y="237.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="start" font-weight="700">十二实例的组数下界</text>
+<text x="782" y="280.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">人数：ceil(12/3)=4</text>
+<text x="782" y="311.9" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">功率：ceil(40/10)=4</text>
+<rect x="760" y="380" width="575" height="150" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="760" y="380" width="575" height="7" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="782" y="427.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="start" font-weight="700">找到合法的4组方案</text>
+<text x="782" y="470.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">可行值 = 下界 = 4</text>
+<text x="782" y="501.9" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">因此，该模型下组数最优</text>
+<text x="1047" y="585.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#53697C" text-anchor="middle" font-weight="400">HPWL次目标另由完整求解核验</text>
+<line x1="40" y1="656" x2="1360" y2="656" stroke="#CAD6E0" stroke-width="1"/>
+<text x="55" y="693.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#53697C" text-anchor="start" font-weight="400">只枚举部分候选时，求解器的“最优”只针对这部分候选；不能忽略候选生成范围。</text>
+</svg>

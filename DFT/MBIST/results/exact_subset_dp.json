@@ -1,0 +1,19 @@
+{
+  "algorithm": "exact_subset_dp",
+  "groups": [
+    {"members": ["A", "D", "E"], "power_mw": 10, "duration_us": 100, "hpwl_um": 200},
+    {"members": ["B", "C", "F"], "power_mw": 10, "duration_us": 100, "hpwl_um": 200},
+    {"members": ["G", "J", "K"], "power_mw": 10, "duration_us": 100, "hpwl_um": 200},
+    {"members": ["H", "I", "L"], "power_mw": 10, "duration_us": 100, "hpwl_um": 200}
+  ],
+  "group_count": 4,
+  "sum_hpwl_um": 800,
+  "estimated_makespan_us": 200,
+  "reserved_peak_mw": 20,
+  "schedule": [
+    {"group": 0, "start_us": 0, "end_us": 100, "power_mw": 10},
+    {"group": 1, "start_us": 0, "end_us": 100, "power_mw": 10},
+    {"group": 2, "start_us": 100, "end_us": 200, "power_mw": 10},
+    {"group": 3, "start_us": 100, "end_us": 200, "power_mw": 10}
+  ]
+}

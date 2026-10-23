@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="790" viewBox="0 0 1400 790" role="img" aria-labelledby="title desc">
+<title id="title">图06-23 组数、几何与时间的取舍</title><desc id="desc">同一数据与约束的实跑结果：HPWL几何贪心，对照完整子集动态规划。</desc>
+<defs><marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M1,1 L11,6 L1,11 Z" fill="#53697C"/></marker></defs>
+<rect x="0" y="0" width="1400" height="790" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1.5"/>
+<rect x="40" y="35" width="7" height="42" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="65" y="68.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="33" fill="#18324A" text-anchor="start" font-weight="700">23  组数、几何与时间的取舍</text>
+<text x="65" y="110.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#53697C" text-anchor="start" font-weight="400">同一数据与约束的实跑结果：HPWL几何贪心，对照完整子集动态规划。</text>
+<line x1="40" y1="132" x2="1360" y2="132" stroke="#CAD6E0" stroke-width="1"/>
+<rect x="50" y="180" width="380" height="135" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="50" y="180" width="380" height="7" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="72" y="227.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="start" font-weight="700">控制器数量</text>
+<text x="240" y="282.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="31" fill="#168679" text-anchor="middle" font-weight="700">6  →  4</text>
+<rect x="510" y="180" width="380" height="135" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="510" y="180" width="380" height="7" rx="0" fill="#C47921" stroke="#C47921" stroke-width="1.5"/>
+<text x="532" y="227.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#C47921" text-anchor="start" font-weight="700">HPWL总和</text>
+<text x="700" y="282.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="31" fill="#C47921" text-anchor="middle" font-weight="700">600  →  800 μm</text>
+<rect x="970" y="180" width="380" height="135" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="970" y="180" width="380" height="7" rx="0" fill="#245C91" stroke="#245C91" stroke-width="1.5"/>
+<text x="992" y="227.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="start" font-weight="700">估计完成时间</text>
+<text x="1160" y="282.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="31" fill="#245C91" text-anchor="middle" font-weight="700">220  →  200 μs</text>
+<text x="60" y="375.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="28" fill="#245C91" text-anchor="start" font-weight="700">几何贪心</text>
+<text x="75" y="420.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#245C91" text-anchor="start" font-weight="600">{A,B}</text>
+<text x="590" y="420.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#18324A" text-anchor="end" font-weight="400">8 mW / 100 μm</text>
+<text x="75" y="464.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#245C91" text-anchor="start" font-weight="600">{D,E,F}</text>
+<text x="590" y="464.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#18324A" text-anchor="end" font-weight="400">9 mW / 200 μm</text>
+<text x="75" y="508.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#245C91" text-anchor="start" font-weight="600">{C}</text>
+<text x="590" y="508.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#18324A" text-anchor="end" font-weight="400">3 mW / 0 μm</text>
+<text x="75" y="552.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#245C91" text-anchor="start" font-weight="600">{G,H}</text>
+<text x="590" y="552.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#18324A" text-anchor="end" font-weight="400">8 mW / 100 μm</text>
+<text x="75" y="596.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#245C91" text-anchor="start" font-weight="600">{J,K,L}</text>
+<text x="590" y="596.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#18324A" text-anchor="end" font-weight="400">9 mW / 200 μm</text>
+<text x="75" y="640.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#245C91" text-anchor="start" font-weight="600">{I}</text>
+<text x="590" y="640.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#18324A" text-anchor="end" font-weight="400">3 mW / 0 μm</text>
+<text x="770" y="375.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="28" fill="#168679" text-anchor="start" font-weight="700">完整子集DP</text>
+<text x="785" y="420.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#168679" text-anchor="start" font-weight="600">{A,D,E}</text>
+<text x="1300" y="420.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#18324A" text-anchor="end" font-weight="400">10 mW / 200 μm</text>
+<text x="785" y="464.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#168679" text-anchor="start" font-weight="600">{B,C,F}</text>
+<text x="1300" y="464.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#18324A" text-anchor="end" font-weight="400">10 mW / 200 μm</text>
+<text x="785" y="508.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#168679" text-anchor="start" font-weight="600">{G,J,K}</text>
+<text x="1300" y="508.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#18324A" text-anchor="end" font-weight="400">10 mW / 200 μm</text>
+<text x="785" y="552.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#168679" text-anchor="start" font-weight="600">{H,I,L}</text>
+<text x="1300" y="552.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#18324A" text-anchor="end" font-weight="400">10 mW / 200 μm</text>
+<line x1="40" y1="726" x2="1360" y2="726" stroke="#CAD6E0" stroke-width="1"/>
+<text x="55" y="763.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#53697C" text-anchor="start" font-weight="400">这里只验证自拟模型；更少组数不意味着HPWL总和更小，也没有实测面积或真实布线数据。</text>
+</svg>

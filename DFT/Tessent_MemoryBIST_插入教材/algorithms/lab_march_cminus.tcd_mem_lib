@@ -1,0 +1,111 @@
+// Teaching UDA: row-first traversal with nonempty x1/y1 segments, no banks.
+// Requires an already validated compatible SyncWR operation set and memory TCD.
+// Not a certified replacement for a foundry-recommended test algorithm.
+MemoryOperationsSpecification {
+  Algorithm(LabMarchCMinus) {
+    TestRegisterSetup {
+      operation_set_select : SyncWR;
+      AddressGenerator {
+        AddressRegisterA {
+          y1_carry_in : x1_carry_out;
+          x1_carry_in : none;
+        }
+      }
+      DataGenerator {
+        load_write_data : all_zero;
+        load_expect_data : all_zero;
+      }
+    }
+    MicroProgram {
+      Instruction(UP_INIT) {
+        operation_select : Write;
+        AddressCommands {
+          x1_address : increment;
+          y1_address : increment;
+        }
+        DataCommands {
+          write_data : data_reg;
+        }
+        NextConditions {
+          x1_end_count : on;
+          y1_end_count : on;
+        }
+      }
+      Instruction(UP_FLIP) {
+        operation_select : ReadModifyWrite;
+        AddressCommands {
+          x1_address : increment;
+          y1_address : increment;
+        }
+        DataCommands {
+          write_data : inverse_data_reg;
+          expect_data : data_reg;
+        }
+        NextConditions {
+          x1_end_count : on;
+          y1_end_count : on;
+        }
+      }
+      Instruction(UP_RESTORE) {
+        operation_select : ReadModifyWrite;
+        AddressCommands {
+          x1_address : increment;
+          y1_address : increment;
+          inhibit_last_address_count : on;
+        }
+        DataCommands {
+          write_data : data_reg;
+          expect_data : inverse_data_reg;
+        }
+        NextConditions {
+          x1_end_count : on;
+          y1_end_count : on;
+        }
+      }
+      Instruction(DOWN_FLIP) {
+        operation_select : ReadModifyWrite;
+        AddressCommands {
+          x1_address : decrement;
+          y1_address : decrement;
+        }
+        DataCommands {
+          write_data : inverse_data_reg;
+          expect_data : data_reg;
+        }
+        NextConditions {
+          x1_end_count : on;
+          y1_end_count : on;
+        }
+      }
+      Instruction(DOWN_RESTORE) {
+        operation_select : ReadModifyWrite;
+        AddressCommands {
+          x1_address : decrement;
+          y1_address : decrement;
+        }
+        DataCommands {
+          write_data : data_reg;
+          expect_data : inverse_data_reg;
+        }
+        NextConditions {
+          x1_end_count : on;
+          y1_end_count : on;
+        }
+      }
+      Instruction(DOWN_VERIFY) {
+        operation_select : Read;
+        AddressCommands {
+          x1_address : decrement;
+          y1_address : decrement;
+        }
+        DataCommands {
+          expect_data : data_reg;
+        }
+        NextConditions {
+          x1_end_count : on;
+          y1_end_count : on;
+        }
+      }
+    }
+  }
+}

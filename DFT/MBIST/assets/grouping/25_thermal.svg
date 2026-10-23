@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="710" viewBox="0 0 1400 710" role="img" aria-labelledby="title desc">
+<title id="title">图06-25 三维芯片的局部温度约束</title><desc id="desc">相同总功率下，垂直对齐的活动区域可能具有不同的热风险。</desc>
+<defs><marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M1,1 L11,6 L1,11 Z" fill="#53697C"/></marker></defs>
+<rect x="0" y="0" width="1400" height="710" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1.5"/>
+<rect x="40" y="35" width="7" height="42" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="65" y="68.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="33" fill="#18324A" text-anchor="start" font-weight="700">25  三维芯片的局部温度约束</text>
+<text x="65" y="110.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#53697C" text-anchor="start" font-weight="400">相同总功率下，垂直对齐的活动区域可能具有不同的热风险。</text>
+<line x1="40" y1="132" x2="1360" y2="132" stroke="#CAD6E0" stroke-width="1"/>
+<polygon points="95,210 520,210 650,160 225,160" fill="#EDF3F8" fill-opacity="1" stroke="#245C91" stroke-width="2"/>
+<polygon points="95,210 520,210 520,250 95,250" fill="#DFEAF3" fill-opacity="1" stroke="#245C91" stroke-width="2"/>
+<polygon points="520,210 650,160 650,200 520,250" fill="#D5E3EF" fill-opacity="1" stroke="#245C91" stroke-width="2"/>
+<polygon points="285,210 390,210 520,160 415,160" fill="#EDC996" fill-opacity="1" stroke="#C47921" stroke-width="2"/>
+<text x="65" y="235.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#245C91" text-anchor="end" font-weight="400">上层</text>
+<polygon points="95,355 520,355 650,305 225,305" fill="#EDF3F8" fill-opacity="1" stroke="#245C91" stroke-width="2"/>
+<polygon points="95,355 520,355 520,395 95,395" fill="#DFEAF3" fill-opacity="1" stroke="#245C91" stroke-width="2"/>
+<polygon points="520,355 650,305 650,345 520,395" fill="#D5E3EF" fill-opacity="1" stroke="#245C91" stroke-width="2"/>
+<polygon points="285,355 390,355 520,305 415,305" fill="#EDC996" fill-opacity="1" stroke="#C47921" stroke-width="2"/>
+<text x="65" y="380.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#245C91" text-anchor="end" font-weight="400">中层</text>
+<polygon points="95,500 520,500 650,450 225,450" fill="#EDF3F8" fill-opacity="1" stroke="#245C91" stroke-width="2"/>
+<polygon points="95,500 520,500 520,540 95,540" fill="#DFEAF3" fill-opacity="1" stroke="#245C91" stroke-width="2"/>
+<polygon points="520,500 650,450 650,490 520,540" fill="#D5E3EF" fill-opacity="1" stroke="#245C91" stroke-width="2"/>
+<polygon points="285,500 390,500 520,450 415,450" fill="#EDC996" fill-opacity="1" stroke="#C47921" stroke-width="2"/>
+<text x="65" y="525.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#245C91" text-anchor="end" font-weight="400">下层</text>
+<line x1="395" y1="235" x2="395" y2="310" stroke="#C47921" stroke-width="3" stroke-dasharray="6 6" marker-end="url(#arrow)"/>
+<line x1="395" y1="380" x2="395" y2="455" stroke="#C47921" stroke-width="3" stroke-dasharray="6 6" marker-end="url(#arrow)"/>
+<rect x="795" y="180" width="545" height="120" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="795" y="180" width="545" height="7" rx="0" fill="#245C91" stroke="#245C91" stroke-width="1.5"/>
+<text x="817" y="227.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="start" font-weight="700">局部区域</text>
+<text x="817" y="270.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">全局功率合法，不等于所有区域安全</text>
+<rect x="795" y="350" width="545" height="120" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="795" y="350" width="545" height="7" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="817" y="397.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="start" font-weight="700">温度历史</text>
+<text x="817" y="440.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">当前温度受到先前活动和散热影响</text>
+<rect x="795" y="520" width="545" height="100" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="795" y="520" width="545" height="7" rx="0" fill="#C47921" stroke="#C47921" stroke-width="1.5"/>
+<text x="817" y="567.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#C47921" text-anchor="start" font-weight="700">验证条件</text>
+<text x="815" y="592.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">层间耦合、持续时间、冷却与模型误差</text>
+<line x1="40" y1="646" x2="1360" y2="646" stroke="#CAD6E0" stroke-width="1"/>
+<text x="55" y="683.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#53697C" text-anchor="start" font-weight="400">橙色仅表示垂直对齐的示意活动区域；本图不是目标芯片的温度仿真或热安全证明。</text>
+</svg>

@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="680" viewBox="0 0 1400 680" role="img" aria-labelledby="title desc">
+<title id="title">图06-08 HPWL贪心的局部选择</title><desc id="desc">从A开始；每一步在合法候选中选择合并后HPWL最小者。</desc>
+<defs><marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M1,1 L11,6 L1,11 Z" fill="#53697C"/></marker></defs>
+<rect x="0" y="0" width="1400" height="680" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1.5"/>
+<rect x="40" y="35" width="7" height="42" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="65" y="68.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="33" fill="#18324A" text-anchor="start" font-weight="700">08  HPWL贪心的局部选择</text>
+<text x="65" y="110.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#53697C" text-anchor="start" font-weight="400">从A开始；每一步在合法候选中选择合并后HPWL最小者。</text>
+<line x1="40" y1="132" x2="1360" y2="132" stroke="#CAD6E0" stroke-width="1"/>
+<rect x="50" y="220" width="265" height="275" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="50" y="220" width="265" height="7" rx="0" fill="#245C91" stroke="#245C91" stroke-width="1.5"/>
+<text x="72" y="267.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="start" font-weight="700">1  初始种子</text>
+<text x="72" y="310.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">G={A}</text>
+<text x="72" y="341.9" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">功率 4 mW</text>
+<text x="72" y="373.8" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">HPWL 0 μm</text>
+<rect x="395" y="220" width="265" height="275" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="395" y="220" width="265" height="7" rx="0" fill="#245C91" stroke="#245C91" stroke-width="1.5"/>
+<text x="417" y="267.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="start" font-weight="700">2  并列候选</text>
+<text x="417" y="310.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">加入B或D：100 μm</text>
+<text x="417" y="341.9" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">按实例名选择B</text>
+<text x="417" y="373.8" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">G={A,B}，8 mW</text>
+<rect x="740" y="220" width="265" height="275" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="740" y="220" width="265" height="7" rx="0" fill="#C47921" stroke="#C47921" stroke-width="1.5"/>
+<text x="762" y="267.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#C47921" text-anchor="start" font-weight="700">3  停止本组</text>
+<text x="762" y="310.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">其余实例均为3 mW</text>
+<text x="762" y="341.9" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">8+3 &gt; 10</text>
+<text x="762" y="373.8" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">不存在合法候选</text>
+<rect x="1085" y="220" width="265" height="275" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="1085" y="220" width="265" height="7" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="1107" y="267.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="start" font-weight="700">4  继续分组</text>
+<text x="1107" y="310.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">{D,E,F}：9 mW</text>
+<text x="1107" y="341.9" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">{C}：3 mW</text>
+<text x="1107" y="373.8" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">左区共3组</text>
+<line x1="327" y1="355" x2="380" y2="355" stroke="#53697C" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="672" y1="355" x2="725" y2="355" stroke="#53697C" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="1017" y1="355" x2="1070" y2="355" stroke="#53697C" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="40" y1="616" x2="1360" y2="616" stroke="#CAD6E0" stroke-width="1"/>
+<text x="55" y="653.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#53697C" text-anchor="start" font-weight="400">几何更紧凑不代表控制器更少；单例组HPWL为0，使纯几何目标偏好过度拆分。</text>
+</svg>

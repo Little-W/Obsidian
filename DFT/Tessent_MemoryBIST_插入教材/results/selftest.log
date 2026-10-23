@@ -1,0 +1,26 @@
+test_bad_braces (__main__.EditorTests.test_bad_braces) ... ok
+test_detailed_interface_preserved (__main__.EditorTests.test_detailed_interface_preserved) ... ok
+test_duplicate_plan (__main__.EditorTests.test_duplicate_plan) ... ok
+test_interface_path (__main__.EditorTests.test_interface_path) ... ok
+test_missing_plan (__main__.EditorTests.test_missing_plan) ... ok
+test_no_empty_groups (__main__.EditorTests.test_no_empty_groups) ... ok
+test_rewrite (__main__.EditorTests.test_rewrite) ... ok
+test_step_property_guard (__main__.EditorTests.test_step_property_guard) ... ok
+test_unknown_controller (__main__.EditorTests.test_unknown_controller) ... ok
+test_demo (__main__.GroupTests.test_demo) ... ok
+test_duplicate_missing (__main__.GroupTests.test_duplicate_missing) ... ok
+test_incompatible (__main__.GroupTests.test_incompatible) ... ok
+test_infeasible_singleton (__main__.GroupTests.test_infeasible_singleton) ... ok
+test_overpower (__main__.GroupTests.test_overpower) ... ok
+test_small_random_against_independent_enumerator (__main__.GroupTests.test_small_random_against_independent_enumerator) ... ok
+test_all_single_bit_fault_sites (__main__.MarchTests.test_all_single_bit_fault_sites) ... ok
+test_bad_input (__main__.MarchTests.test_bad_input) ... ok
+test_count (__main__.MarchTests.test_count) ... ok
+test_directions (__main__.MarchTests.test_directions) ... ok
+test_faultfree (__main__.MarchTests.test_faultfree) ... ok
+test_uda_structure (__main__.MarchTests.test_uda_structure) ... ok
+
+----------------------------------------------------------------------
+Ran 21 tests in 0.055s
+
+OK

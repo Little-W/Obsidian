@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="700" viewBox="0 0 1400 700" role="img" aria-labelledby="title desc">
+<title id="title">图06-10 距离聚类之后仍需容量修复</title><desc id="desc">初始中心位于(0,50)和(200,50) μm；并列实例先分到左簇。</desc>
+<defs><marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M1,1 L11,6 L1,11 Z" fill="#53697C"/></marker></defs>
+<rect x="0" y="0" width="1400" height="700" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1.5"/>
+<rect x="40" y="35" width="7" height="42" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="65" y="68.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="33" fill="#18324A" text-anchor="start" font-weight="700">10  距离聚类之后仍需容量修复</text>
+<text x="65" y="110.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#53697C" text-anchor="start" font-weight="400">初始中心位于(0,50)和(200,50) μm；并列实例先分到左簇。</text>
+<line x1="40" y1="132" x2="1360" y2="132" stroke="#CAD6E0" stroke-width="1"/>
+<rect x="50" y="175" width="590" height="385" rx="12" fill="#F8FAFC" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="760" y="175" width="590" height="385" rx="12" fill="#F8FAFC" stroke="#CAD6E0" stroke-width="1.5"/>
+<text x="345" y="215.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="27" fill="#B14A49" text-anchor="middle" font-weight="600">候选分配：左簇超限</text>
+<text x="1055" y="215.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="27" fill="#168679" text-anchor="middle" font-weight="600">把B改分到右簇</text>
+<circle cx="175" cy="290" r="29" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="175" y="299.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">A</text>
+<circle cx="340" cy="290" r="29" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="340" y="299.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">B</text>
+<circle cx="505" cy="290" r="29" fill="#FFFFFF" stroke="#168679" stroke-width="2.5"/>
+<text x="505" y="299.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="middle" font-weight="700">C</text>
+<circle cx="175" cy="440" r="29" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="175" y="449.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">D</text>
+<circle cx="340" cy="440" r="29" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="340" y="449.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">E</text>
+<circle cx="505" cy="440" r="29" fill="#FFFFFF" stroke="#168679" stroke-width="2.5"/>
+<text x="505" y="449.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="middle" font-weight="700">F</text>
+<circle cx="885" cy="290" r="29" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="885" y="299.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">A</text>
+<circle cx="1050" cy="290" r="29" fill="#FFFFFF" stroke="#168679" stroke-width="2.5"/>
+<text x="1050" y="299.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="middle" font-weight="700">B</text>
+<circle cx="1215" cy="290" r="29" fill="#FFFFFF" stroke="#168679" stroke-width="2.5"/>
+<text x="1215" y="299.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="middle" font-weight="700">C</text>
+<circle cx="885" cy="440" r="29" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="885" y="449.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">D</text>
+<circle cx="1050" cy="440" r="29" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="1050" y="449.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">E</text>
+<circle cx="1215" cy="440" r="29" fill="#FFFFFF" stroke="#168679" stroke-width="2.5"/>
+<text x="1215" y="449.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="middle" font-weight="700">F</text>
+<line x1="660" y1="365" x2="735" y2="365" stroke="#53697C" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="345" y="520.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#B14A49" text-anchor="middle" font-weight="400">ABDE：4个 / 14 mW</text>
+<text x="1055" y="520.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#168679" text-anchor="middle" font-weight="400">ADE 与 BCF：各3个 / 10 mW</text>
+<line x1="40" y1="636" x2="1360" y2="636" stroke="#CAD6E0" stroke-width="1"/>
+<text x="55" y="673.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#53697C" text-anchor="start" font-weight="400">同色表示同一簇。修复后两组HPWL均为200 μm；簇中心并不自动是控制器合法位置。</text>
+</svg>

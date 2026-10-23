@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="700" viewBox="0 0 1400 700" role="img" aria-labelledby="title desc">
+<title id="title">图06-16 局部重新分配修正早期选择</title><desc id="desc">一次两换一，再把单例加入剩余容量，可以从三组变成两组。</desc>
+<defs><marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M1,1 L11,6 L1,11 Z" fill="#53697C"/></marker></defs>
+<rect x="0" y="0" width="1400" height="700" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1.5"/>
+<rect x="40" y="35" width="7" height="42" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="65" y="68.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="33" fill="#18324A" text-anchor="start" font-weight="700">16  局部重新分配修正早期选择</text>
+<text x="65" y="110.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#53697C" text-anchor="start" font-weight="400">一次两换一，再把单例加入剩余容量，可以从三组变成两组。</text>
+<line x1="40" y1="132" x2="1360" y2="132" stroke="#CAD6E0" stroke-width="1"/>
+<text x="225" y="210.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="28" fill="#245C91" text-anchor="middle" font-weight="700">初始分组</text>
+<rect x="50" y="250" width="350" height="70" rx="12" fill="#FFFFFF" stroke="#245C91" stroke-width="1.5"/>
+<text x="75" y="296.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="27" fill="#245C91" text-anchor="start" font-weight="600">{A,B}</text>
+<text x="375" y="296.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#245C91" text-anchor="end" font-weight="400">8 mW</text>
+<rect x="50" y="345" width="350" height="70" rx="12" fill="#FFFFFF" stroke="#245C91" stroke-width="1.5"/>
+<text x="75" y="391.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="27" fill="#245C91" text-anchor="start" font-weight="600">{C,D,E}</text>
+<text x="375" y="391.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#245C91" text-anchor="end" font-weight="400">9 mW</text>
+<rect x="50" y="440" width="350" height="70" rx="12" fill="#FFFFFF" stroke="#245C91" stroke-width="1.5"/>
+<text x="75" y="486.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="27" fill="#245C91" text-anchor="start" font-weight="600">{F}</text>
+<text x="375" y="486.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#245C91" text-anchor="end" font-weight="400">3 mW</text>
+<text x="225" y="570.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">3 个控制器组</text>
+<text x="695" y="210.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="28" fill="#C47921" text-anchor="middle" font-weight="700">B ↔ D/E</text>
+<rect x="520" y="250" width="350" height="70" rx="12" fill="#FFFFFF" stroke="#C47921" stroke-width="1.5"/>
+<text x="545" y="296.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="27" fill="#C47921" text-anchor="start" font-weight="600">{A,D,E}</text>
+<text x="845" y="296.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#C47921" text-anchor="end" font-weight="400">10 mW</text>
+<rect x="520" y="345" width="350" height="70" rx="12" fill="#FFFFFF" stroke="#C47921" stroke-width="1.5"/>
+<text x="545" y="391.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="27" fill="#C47921" text-anchor="start" font-weight="600">{B,C}</text>
+<text x="845" y="391.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#C47921" text-anchor="end" font-weight="400">7 mW</text>
+<rect x="520" y="440" width="350" height="70" rx="12" fill="#FFFFFF" stroke="#C47921" stroke-width="1.5"/>
+<text x="545" y="486.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="27" fill="#C47921" text-anchor="start" font-weight="600">{F}</text>
+<text x="845" y="486.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#C47921" text-anchor="end" font-weight="400">3 mW</text>
+<text x="695" y="570.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#C47921" text-anchor="middle" font-weight="700">3 个控制器组</text>
+<text x="1165" y="210.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="28" fill="#168679" text-anchor="middle" font-weight="700">再把F加入BC</text>
+<rect x="990" y="250" width="350" height="70" rx="12" fill="#FFFFFF" stroke="#168679" stroke-width="1.5"/>
+<text x="1015" y="296.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="27" fill="#168679" text-anchor="start" font-weight="600">{A,D,E}</text>
+<text x="1315" y="296.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#168679" text-anchor="end" font-weight="400">10 mW</text>
+<rect x="990" y="345" width="350" height="70" rx="12" fill="#FFFFFF" stroke="#168679" stroke-width="1.5"/>
+<text x="1015" y="391.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="27" fill="#168679" text-anchor="start" font-weight="600">{B,C,F}</text>
+<text x="1315" y="391.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#168679" text-anchor="end" font-weight="400">10 mW</text>
+<text x="1165" y="570.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="middle" font-weight="700">2 个控制器组</text>
+<line x1="425" y1="380" x2="495" y2="380" stroke="#53697C" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="895" y1="380" x2="965" y2="380" stroke="#53697C" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="40" y1="636" x2="1360" y2="636" stroke="#CAD6E0" stroke-width="1"/>
+<text x="55" y="673.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#53697C" text-anchor="start" font-weight="400">所有中间组均合法；只尝试把F直接塞入原有组，会错过这次改进。</text>
+</svg>

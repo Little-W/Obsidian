@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="710" viewBox="0 0 1400 710" role="img" aria-labelledby="title desc">
+<title id="title">图06-26 全局预算相同，局部压力可以不同</title><desc id="desc">全局预算20 mW；左、右区域各自上限12 mW；每个组10 mW。</desc>
+<defs><marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M1,1 L11,6 L1,11 Z" fill="#53697C"/></marker></defs>
+<rect x="0" y="0" width="1400" height="710" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1.5"/>
+<rect x="40" y="35" width="7" height="42" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="65" y="68.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="33" fill="#18324A" text-anchor="start" font-weight="700">26  全局预算相同，局部压力可以不同</text>
+<text x="65" y="110.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#53697C" text-anchor="start" font-weight="400">全局预算20 mW；左、右区域各自上限12 mW；每个组10 mW。</text>
+<line x1="40" y1="132" x2="1360" y2="132" stroke="#CAD6E0" stroke-width="1"/>
+<text x="345" y="200.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="27" fill="#B14A49" text-anchor="middle" font-weight="700">同一区域同时启动两组</text>
+<rect x="50" y="240" width="280" height="245" rx="12" fill="#F8FAFC" stroke="#CAD6E0" stroke-width="1.5"/>
+<text x="190" y="280.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#245C91" text-anchor="middle" font-weight="400">左侧区域</text>
+<rect x="120" y="315" width="140" height="48" rx="8" fill="#B14A49" stroke="#B14A49" stroke-width="1.5"/>
+<text x="190.0" y="348.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#FFFFFF" text-anchor="middle" font-weight="600">G1 10</text>
+<rect x="120" y="378" width="140" height="48" rx="8" fill="#B14A49" stroke="#B14A49" stroke-width="1.5"/>
+<text x="190.0" y="411.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#FFFFFF" text-anchor="middle" font-weight="600">G2 10</text>
+<text x="190" y="460.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#B14A49" text-anchor="middle" font-weight="700">20 mW &gt; 12</text>
+<rect x="355" y="240" width="280" height="245" rx="12" fill="#F8FAFC" stroke="#CAD6E0" stroke-width="1.5"/>
+<text x="495" y="280.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#245C91" text-anchor="middle" font-weight="400">右侧区域</text>
+<text x="495" y="460.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#168679" text-anchor="middle" font-weight="700">0 mW ≤ 12</text>
+<text x="345" y="540.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="27" fill="#18324A" text-anchor="middle" font-weight="700">全局都是20 mW</text>
+<text x="1055" y="200.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="27" fill="#168679" text-anchor="middle" font-weight="700">跨区域各启动一组</text>
+<rect x="760" y="240" width="280" height="245" rx="12" fill="#F8FAFC" stroke="#CAD6E0" stroke-width="1.5"/>
+<text x="900" y="280.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#245C91" text-anchor="middle" font-weight="400">左侧区域</text>
+<rect x="830" y="315" width="140" height="48" rx="8" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="900.0" y="348.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#FFFFFF" text-anchor="middle" font-weight="600">G1 10</text>
+<text x="900" y="460.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#168679" text-anchor="middle" font-weight="700">10 mW ≤ 12</text>
+<rect x="1065" y="240" width="280" height="245" rx="12" fill="#F8FAFC" stroke="#CAD6E0" stroke-width="1.5"/>
+<text x="1205" y="280.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#245C91" text-anchor="middle" font-weight="400">右侧区域</text>
+<rect x="1135" y="315" width="140" height="48" rx="8" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="1205.0" y="348.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#FFFFFF" text-anchor="middle" font-weight="600">G3 10</text>
+<text x="1205" y="460.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#168679" text-anchor="middle" font-weight="700">10 mW ≤ 12</text>
+<text x="1055" y="540.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="27" fill="#18324A" text-anchor="middle" font-weight="700">全局都是20 mW</text>
+<line x1="40" y1="646" x2="1360" y2="646" stroke="#CAD6E0" stroke-width="1"/>
+<text x="55" y="683.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#53697C" text-anchor="start" font-weight="400">右侧方案下一轮运行G2/G4，仍可在200 μs完成；仅改变调度组合就能满足此例的局部预算。</text>
+</svg>

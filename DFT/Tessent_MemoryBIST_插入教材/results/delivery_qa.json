@@ -1,0 +1,12 @@
+{
+  "book_characters": 52226,
+  "numbered_chapters": 18,
+  "editable_figures": 10,
+  "commercial_eda": "NOT RUN",
+  "unit_tests": 21,
+  "random_grouping_cases": 20,
+  "single_bit_fault_cases": 512,
+  "embedded_scripts_match": true,
+  "image_paths_exist": true,
+  "html_qa": "Images: 14, loaded: True\nDesktop dimensions: {'body': 1440, 'viewport': 1440, 'article': 975, 'articleClient': 975}\nMobile dimensions: {'body': 390, 'viewport': 390}\nBrowser errors: []\nExternal render resources: 0\nMissing anchors: []\n"
+}

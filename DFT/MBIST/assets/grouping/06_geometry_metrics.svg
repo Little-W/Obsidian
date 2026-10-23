@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="680" viewBox="0 0 1400 680" role="img" aria-labelledby="title desc">
+<title id="title">图06-06 三种几何指标并不相同</title><desc id="desc">四点示例：(0,100)、(100,0)、(200,100)、(100,200)，单位 μm。</desc>
+<defs><marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M1,1 L11,6 L1,11 Z" fill="#53697C"/></marker></defs>
+<rect x="0" y="0" width="1400" height="680" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1.5"/>
+<rect x="40" y="35" width="7" height="42" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="65" y="68.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="33" fill="#18324A" text-anchor="start" font-weight="700">06  三种几何指标并不相同</text>
+<text x="65" y="110.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#53697C" text-anchor="start" font-weight="400">四点示例：(0,100)、(100,0)、(200,100)、(100,200)，单位 μm。</text>
+<line x1="40" y1="132" x2="1360" y2="132" stroke="#CAD6E0" stroke-width="1"/>
+<rect x="45" y="180" width="390" height="365" rx="12" fill="#F8FAFC" stroke="#CAD6E0" stroke-width="1.5"/>
+<text x="240" y="225.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#18324A" text-anchor="middle" font-weight="600">最大曼哈顿距离</text>
+<path d="M 140,365 L 140,265 L 240,265" fill="none" stroke="#245C91" stroke-width="4" stroke-linejoin="round"/>
+<circle cx="140" cy="365" r="9" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<circle cx="240" cy="265" r="9" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<circle cx="340" cy="365" r="9" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<circle cx="240" cy="465" r="9" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="240" y="515.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">D1 = 200 μm</text>
+<rect x="505" y="180" width="390" height="365" rx="12" fill="#F8FAFC" stroke="#CAD6E0" stroke-width="1.5"/>
+<text x="700" y="225.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#18324A" text-anchor="middle" font-weight="600">外接矩形半周长</text>
+<rect x="600" y="265" width="200" height="200" rx="0" fill="none" stroke="#C47921" stroke-width="3" stroke-dasharray="8 6"/>
+<circle cx="600" cy="365" r="9" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<circle cx="700" cy="265" r="9" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<circle cx="800" cy="365" r="9" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<circle cx="700" cy="465" r="9" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="700" y="515.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="middle" font-weight="700">HPWL = 400 μm</text>
+<rect x="965" y="180" width="390" height="365" rx="12" fill="#F8FAFC" stroke="#CAD6E0" stroke-width="1.5"/>
+<text x="1160" y="225.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#18324A" text-anchor="middle" font-weight="600">到中心的距离</text>
+<polygon points="1060,365 1160,265 1260,365 1160,465" fill="#EEF4F8" fill-opacity="1" stroke="#168679" stroke-width="2"/>
+<circle cx="1160" cy="365" r="15" fill="#168679" stroke="#168679" stroke-width="2.5"/>
+<text x="1184" y="373.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#168679" text-anchor="start" font-weight="400">c</text>
+<line x1="1160" y1="365" x2="1060" y2="365" stroke="#168679" stroke-width="2" stroke-dasharray="5 5"/>
+<line x1="1160" y1="365" x2="1160" y2="265" stroke="#168679" stroke-width="2" stroke-dasharray="5 5"/>
+<line x1="1160" y1="365" x2="1260" y2="365" stroke="#168679" stroke-width="2" stroke-dasharray="5 5"/>
+<line x1="1160" y1="365" x2="1160" y2="465" stroke="#168679" stroke-width="2" stroke-dasharray="5 5"/>
+<circle cx="1060" cy="365" r="9" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<circle cx="1160" cy="265" r="9" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<circle cx="1260" cy="365" r="9" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<circle cx="1160" cy="465" r="9" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="1160" y="515.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#C47921" text-anchor="middle" font-weight="700">R = 100 μm</text>
+<line x1="40" y1="616" x2="1360" y2="616" stroke="#CAD6E0" stroke-width="1"/>
+<text x="55" y="653.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#53697C" text-anchor="start" font-weight="400">控制器中心还需满足实际可放置区域；HPWL只是几何近似，不是全部测试信号总线长。</text>
+</svg>

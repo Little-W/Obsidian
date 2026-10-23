@@ -1,0 +1,8 @@
+# Tutorial values, NOT recommendations for a specific process or chip.
+# This file is sourced before check_design_rules/create_dft_specification.
+set_defaults_value DftSpecification/MemoryBist/clock_partitioning per_clock_domain
+set_defaults_value DftSpecification/MemoryBist/max_steps_per_controller 4
+set_defaults_value DftSpecification/MemoryBist/max_memories_per_step 4
+set_defaults_value DftSpecification/MemoryBist/max_power_per_step 60
+set_defaults_value DftSpecification/MemoryBist/max_test_time_per_controller 10ms
+set_defaults_value DftSpecification/MemoryBist/single_memory_dimension_per_step on

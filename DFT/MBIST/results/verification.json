@@ -1,0 +1,17 @@
+{
+  "base_algorithms_validated": [
+    "best_fit_decreasing",
+    "capacity_dsatur",
+    "exact_subset_dp",
+    "first_fit",
+    "geometry_greedy",
+    "greedy_local_exact_repair"
+  ],
+  "independent_optimum_groups": 4,
+  "independent_optimum_sum_hpwl_um": 800,
+  "group_count_lower_bound": 4,
+  "random_cases_cross_checked": 24,
+  "invalid_input_cases_rejected": 3,
+  "commercial_eda_executed": false,
+  "scope": "synthetic example; exactness applies only to declared grouping model"
+}

@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="740" viewBox="0 0 1400 740" role="img" aria-labelledby="title desc">
+<title id="title">图06-18 排列编码与保序交叉</title><desc id="desc">保留甲中的C/D片段，其余位置按乙中剩余实例的相对顺序补齐。</desc>
+<defs><marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M1,1 L11,6 L1,11 Z" fill="#53697C"/></marker></defs>
+<rect x="0" y="0" width="1400" height="740" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1.5"/>
+<rect x="40" y="35" width="7" height="42" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="65" y="68.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="33" fill="#18324A" text-anchor="start" font-weight="700">18  排列编码与保序交叉</text>
+<text x="65" y="110.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#53697C" text-anchor="start" font-weight="400">保留甲中的C/D片段，其余位置按乙中剩余实例的相对顺序补齐。</text>
+<line x1="40" y1="132" x2="1360" y2="132" stroke="#CAD6E0" stroke-width="1"/>
+<text x="65" y="238.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="27" fill="#18324A" text-anchor="start" font-weight="600">父本甲</text>
+<rect x="230" y="205" width="95" height="48" rx="8" fill="#245C91" stroke="#245C91" stroke-width="1.5"/>
+<text x="277.5" y="238.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#FFFFFF" text-anchor="middle" font-weight="600">A</text>
+<rect x="345" y="205" width="95" height="48" rx="8" fill="#245C91" stroke="#245C91" stroke-width="1.5"/>
+<text x="392.5" y="238.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#FFFFFF" text-anchor="middle" font-weight="600">B</text>
+<rect x="460" y="205" width="95" height="48" rx="8" fill="#C47921" stroke="#C47921" stroke-width="1.5"/>
+<text x="507.5" y="238.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#FFFFFF" text-anchor="middle" font-weight="600">C</text>
+<rect x="575" y="205" width="95" height="48" rx="8" fill="#C47921" stroke="#C47921" stroke-width="1.5"/>
+<text x="622.5" y="238.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#FFFFFF" text-anchor="middle" font-weight="600">D</text>
+<rect x="690" y="205" width="95" height="48" rx="8" fill="#245C91" stroke="#245C91" stroke-width="1.5"/>
+<text x="737.5" y="238.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#FFFFFF" text-anchor="middle" font-weight="600">E</text>
+<rect x="805" y="205" width="95" height="48" rx="8" fill="#245C91" stroke="#245C91" stroke-width="1.5"/>
+<text x="852.5" y="238.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#FFFFFF" text-anchor="middle" font-weight="600">F</text>
+<text x="65" y="343.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="27" fill="#18324A" text-anchor="start" font-weight="600">父本乙</text>
+<rect x="230" y="310" width="95" height="48" rx="8" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="277.5" y="343.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#FFFFFF" text-anchor="middle" font-weight="600">A</text>
+<rect x="345" y="310" width="95" height="48" rx="8" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="392.5" y="343.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#FFFFFF" text-anchor="middle" font-weight="600">D</text>
+<rect x="460" y="310" width="95" height="48" rx="8" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="507.5" y="343.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#FFFFFF" text-anchor="middle" font-weight="600">E</text>
+<rect x="575" y="310" width="95" height="48" rx="8" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="622.5" y="343.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#FFFFFF" text-anchor="middle" font-weight="600">B</text>
+<rect x="690" y="310" width="95" height="48" rx="8" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="737.5" y="343.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#FFFFFF" text-anchor="middle" font-weight="600">C</text>
+<rect x="805" y="310" width="95" height="48" rx="8" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="852.5" y="343.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#FFFFFF" text-anchor="middle" font-weight="600">F</text>
+<text x="65" y="483.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="27" fill="#18324A" text-anchor="start" font-weight="600">子代</text>
+<rect x="230" y="450" width="95" height="48" rx="8" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="277.5" y="483.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#FFFFFF" text-anchor="middle" font-weight="600">A</text>
+<rect x="345" y="450" width="95" height="48" rx="8" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="392.5" y="483.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#FFFFFF" text-anchor="middle" font-weight="600">E</text>
+<rect x="460" y="450" width="95" height="48" rx="8" fill="#C47921" stroke="#C47921" stroke-width="1.5"/>
+<text x="507.5" y="483.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#FFFFFF" text-anchor="middle" font-weight="600">C</text>
+<rect x="575" y="450" width="95" height="48" rx="8" fill="#C47921" stroke="#C47921" stroke-width="1.5"/>
+<text x="622.5" y="483.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#FFFFFF" text-anchor="middle" font-weight="600">D</text>
+<rect x="690" y="450" width="95" height="48" rx="8" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="737.5" y="483.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#FFFFFF" text-anchor="middle" font-weight="600">B</text>
+<rect x="805" y="450" width="95" height="48" rx="8" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="852.5" y="483.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#FFFFFF" text-anchor="middle" font-weight="600">F</text>
+<path d="M 1030,230 L 1190,230 L 1190,474 L 965,474" fill="none" stroke="#53697C" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="1220" y="350.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#53697C" text-anchor="start" font-weight="400">保留片段</text>
+<text x="1220" y="384.8" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#53697C" text-anchor="start" font-weight="400">避免重复</text>
+<line x1="560" y1="514" x2="560" y2="550" stroke="#53697C" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="220" y="565" width="430" height="100" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="220" y="565" width="430" height="7" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="242" y="612.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="start" font-weight="700">解码组1：A/E/C = 10 mW</text>
+<rect x="730" y="565" width="430" height="100" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="730" y="565" width="430" height="7" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="752" y="612.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="start" font-weight="700">解码组2：D/B/F = 10 mW</text>
+<line x1="40" y1="676" x2="1360" y2="676" stroke="#CAD6E0" stroke-width="1"/>
+<text x="55" y="713.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#53697C" text-anchor="start" font-weight="400">解码时执行完整合法性检查；组数减少不意味着几何代价同时最小。</text>
+</svg>

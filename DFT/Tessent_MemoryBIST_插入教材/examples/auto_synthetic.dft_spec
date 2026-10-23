@@ -1,0 +1,49 @@
+// Synthetic configuration used ONLY to test the offline tree editor.
+// It is not a qualified chip-level insertion specification.
+DftSpecification(mbist_lab,rtl) {
+  IjtagNetwork {
+    HostScanInterface(ijtag) {
+      Sib(mbist) { }
+    }
+  }
+  MemoryBist {
+    ijtag_host_interface : Sib(mbist);
+    Controller(c1) {
+      clock_domain_label : clka;
+      AdvancedOptions {
+        algorithm : LabMarchCMinus;
+        operation_set : SyncWR;
+      }
+      Step {
+        MemoryInterface(m0) {
+          instance_name : u_mem0;
+        }
+      }
+      Step {
+        MemoryInterface(m1) {
+          instance_name : u_mem1;
+        }
+      }
+      Step {
+        MemoryInterface(m2) {
+          instance_name : u_mem2;
+        }
+      }
+      Step {
+        MemoryInterface(m3) {
+          instance_name : u_mem3;
+        }
+      }
+      Step {
+        MemoryInterface(m4) {
+          instance_name : u_mem4;
+        }
+      }
+      Step {
+        MemoryInterface(m5) {
+          instance_name : u_mem5;
+        }
+      }
+    }
+  }
+}

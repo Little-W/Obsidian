@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="700" viewBox="0 0 1400 700" role="img" aria-labelledby="title desc">
+<title id="title">图06-20 同一分组在不同全局功率预算下运行</title><desc id="desc">四个组均为10 mW、100 μs；硬件最多同时执行两个控制器。</desc>
+<defs><marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M1,1 L11,6 L1,11 Z" fill="#53697C"/></marker></defs>
+<rect x="0" y="0" width="1400" height="700" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1.5"/>
+<rect x="40" y="35" width="7" height="42" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="65" y="68.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="33" fill="#18324A" text-anchor="start" font-weight="700">20  同一分组在不同全局功率预算下运行</text>
+<text x="65" y="110.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#53697C" text-anchor="start" font-weight="400">四个组均为10 mW、100 μs；硬件最多同时执行两个控制器。</text>
+<line x1="40" y1="132" x2="1360" y2="132" stroke="#CAD6E0" stroke-width="1"/>
+<text x="55" y="225.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#168679" text-anchor="start" font-weight="700">预算20 mW</text>
+<rect x="255.0" y="195" width="225.0" height="52" rx="5" fill="#245C91" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="367.5" y="230.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#FFFFFF" text-anchor="middle" font-weight="700">G1</text>
+<rect x="480.0" y="195" width="225.0" height="52" rx="5" fill="#245C91" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="592.5" y="230.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#FFFFFF" text-anchor="middle" font-weight="700">G3</text>
+<rect x="255.0" y="263" width="225.0" height="52" rx="5" fill="#168679" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="367.5" y="298.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#FFFFFF" text-anchor="middle" font-weight="700">G2</text>
+<rect x="480.0" y="263" width="225.0" height="52" rx="5" fill="#168679" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="592.5" y="298.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#FFFFFF" text-anchor="middle" font-weight="700">G4</text>
+<line x1="255" y1="340" x2="1170.0" y2="340" stroke="#53697C" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="255.0" y1="340" x2="255.0" y2="347" stroke="#53697C" stroke-width="2"/>
+<text x="255.0" y="371.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">0</text>
+<line x1="480.0" y1="340" x2="480.0" y2="347" stroke="#53697C" stroke-width="2"/>
+<text x="480.0" y="371.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">100</text>
+<line x1="705.0" y1="340" x2="705.0" y2="347" stroke="#53697C" stroke-width="2"/>
+<text x="705.0" y="371.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">200</text>
+<line x1="930.0" y1="340" x2="930.0" y2="347" stroke="#53697C" stroke-width="2"/>
+<text x="930.0" y="371.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">300</text>
+<line x1="1155.0" y1="340" x2="1155.0" y2="347" stroke="#53697C" stroke-width="2"/>
+<text x="1155.0" y="371.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">400</text>
+<text x="1235" y="260.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="28" fill="#168679" text-anchor="middle" font-weight="700">200 μs</text>
+<text x="55" y="455.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#C47921" text-anchor="start" font-weight="700">预算15 mW</text>
+<rect x="255.0" y="425" width="225.0" height="65" rx="5" fill="#C47921" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="367.5" y="467.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#FFFFFF" text-anchor="middle" font-weight="700">G1</text>
+<rect x="480.0" y="425" width="225.0" height="65" rx="5" fill="#C47921" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="592.5" y="467.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#FFFFFF" text-anchor="middle" font-weight="700">G2</text>
+<rect x="705.0" y="425" width="225.0" height="65" rx="5" fill="#C47921" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="817.5" y="467.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#FFFFFF" text-anchor="middle" font-weight="700">G3</text>
+<rect x="930.0" y="425" width="225.0" height="65" rx="5" fill="#C47921" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="1042.5" y="467.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#FFFFFF" text-anchor="middle" font-weight="700">G4</text>
+<line x1="255" y1="525" x2="1170.0" y2="525" stroke="#53697C" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="255.0" y1="525" x2="255.0" y2="532" stroke="#53697C" stroke-width="2"/>
+<text x="255.0" y="556.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">0</text>
+<line x1="480.0" y1="525" x2="480.0" y2="532" stroke="#53697C" stroke-width="2"/>
+<text x="480.0" y="556.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">100</text>
+<line x1="705.0" y1="525" x2="705.0" y2="532" stroke="#53697C" stroke-width="2"/>
+<text x="705.0" y="556.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">200</text>
+<line x1="930.0" y1="525" x2="930.0" y2="532" stroke="#53697C" stroke-width="2"/>
+<text x="930.0" y="556.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">300</text>
+<line x1="1155.0" y1="525" x2="1155.0" y2="532" stroke="#53697C" stroke-width="2"/>
+<text x="1155.0" y="556.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">400</text>
+<text x="1235" y="465.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="28" fill="#C47921" text-anchor="middle" font-weight="700">400 μs</text>
+<line x1="40" y1="636" x2="1360" y2="636" stroke="#CAD6E0" stroke-width="1"/>
+<text x="55" y="673.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#53697C" text-anchor="start" font-weight="400">横轴为 μs；15 mW预算下任意两个10 mW的组都不能并发，硬件并发能力无法全部利用。</text>
+</svg>

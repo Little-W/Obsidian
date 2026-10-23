@@ -1,0 +1,8 @@
+Tcl text-completeness check only; vendor commands were NOT executed.
+Tcl version: 8.6.16
+PASS exact/controller_boundaries.tcl
+PASS greedy/controller_boundaries.tcl
+PASS scripts/grouping_defaults.tcl
+PASS scripts/inspect_environment.tcl
+PASS scripts/run_mbist.tcl
+PASS scripts/site_setup.tcl

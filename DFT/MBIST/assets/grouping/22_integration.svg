@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="760" viewBox="0 0 1400 760" role="img" aria-labelledby="title desc">
+<title id="title">图06-22 从算法结果到真实MBIST实现</title><desc id="desc">先生成与工具无关的成员及步骤清单，再使用经过核对的工具适配器。</desc>
+<defs><marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M1,1 L11,6 L1,11 Z" fill="#53697C"/></marker></defs>
+<rect x="0" y="0" width="1400" height="760" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1.5"/>
+<rect x="40" y="35" width="7" height="42" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="65" y="68.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="33" fill="#18324A" text-anchor="start" font-weight="700">22  从算法结果到真实MBIST实现</text>
+<text x="65" y="110.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#53697C" text-anchor="start" font-weight="400">先生成与工具无关的成员及步骤清单，再使用经过核对的工具适配器。</text>
+<line x1="40" y1="132" x2="1360" y2="132" stroke="#CAD6E0" stroke-width="1"/>
+<rect x="60" y="190" width="360" height="175" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="60" y="190" width="360" height="7" rx="0" fill="#245C91" stroke="#245C91" stroke-width="1.5"/>
+<text x="82" y="237.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="start" font-weight="700">实例与约束</text>
+<text x="82" y="280.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">网表／模型／时钟</text>
+<text x="82" y="311.9" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">初步宏坐标／功率预算</text>
+<rect x="520" y="190" width="360" height="175" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="520" y="190" width="360" height="7" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="542" y="237.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="start" font-weight="700">分组求解器</text>
+<text x="542" y="280.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">贪心／聚类／图方法</text>
+<text x="542" y="311.9" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">局部精确求解或全局模型</text>
+<rect x="980" y="190" width="360" height="175" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="980" y="190" width="360" height="7" rx="0" fill="#C47921" stroke="#C47921" stroke-width="1.5"/>
+<text x="1002" y="237.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#C47921" text-anchor="start" font-weight="700">独立合法性检查</text>
+<text x="1002" y="280.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">完整覆盖／相容／人数</text>
+<text x="1002" y="311.9" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">几何／功率／执行结构</text>
+<rect x="980" y="450" width="360" height="175" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="980" y="450" width="360" height="7" rx="0" fill="#245C91" stroke="#245C91" stroke-width="1.5"/>
+<text x="1002" y="497.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="start" font-weight="700">工具适配器</text>
+<text x="1002" y="540.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">Controller + Step + Instance</text>
+<text x="1002" y="571.9" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">转换成目标工具的配置</text>
+<rect x="520" y="450" width="360" height="175" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="520" y="450" width="360" height="7" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="542" y="497.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="start" font-weight="700">EDA规划与插入</text>
+<text x="542" y="540.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">核对实际成员及步骤</text>
+<text x="542" y="571.9" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">生成控制器和接口电路</text>
+<rect x="60" y="450" width="360" height="175" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="60" y="450" width="360" height="7" rx="0" fill="#C47921" stroke="#C47921" stroke-width="1.5"/>
+<text x="82" y="497.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#C47921" text-anchor="start" font-weight="700">实现结果评估</text>
+<text x="82" y="540.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">综合面积／测试模式时序</text>
+<text x="82" y="571.9" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">真实活动、供电和温度</text>
+<line x1="430" y1="280" x2="505" y2="280" stroke="#53697C" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="890" y1="280" x2="965" y2="280" stroke="#53697C" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="1160" y1="378" x2="1160" y2="435" stroke="#53697C" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="965" y1="535" x2="895" y2="535" stroke="#53697C" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="505" y1="535" x2="435" y2="535" stroke="#53697C" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="40" y1="696" x2="1360" y2="696" stroke="#CAD6E0" stroke-width="1"/>
+<text x="55" y="733.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#53697C" text-anchor="start" font-weight="400">外部分组数不等于工具最终生成的控制器数；必须核对工具计划，不能只检查脚本退出码。</text>
+</svg>

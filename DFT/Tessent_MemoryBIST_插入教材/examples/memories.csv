@@ -1,0 +1,7 @@
+name,controller,clock,macro,operation_set,algorithm,x_um,y_um,power_mw,time_us
+u_mem0,c1,clka,SRAM_16x8,SyncWR,LabMarchCMinus,0,0,36,100
+u_mem1,c1,clka,SRAM_16x8,SyncWR,LabMarchCMinus,20,0,30,100
+u_mem2,c1,clka,SRAM_16x8,SyncWR,LabMarchCMinus,10,0,18,100
+u_mem3,c1,clka,SRAM_16x8,SyncWR,LabMarchCMinus,0,20,12,100
+u_mem4,c1,clka,SRAM_16x8,SyncWR,LabMarchCMinus,20,20,12,100
+u_mem5,c1,clka,SRAM_16x8,SyncWR,LabMarchCMinus,40,20,12,100

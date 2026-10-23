@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="680" viewBox="0 0 1400 680" role="img" aria-labelledby="title desc">
+<title id="title">图06-03 功率评估的四个层次</title><desc id="desc">模型越接近实现，所需输入也越完整；早期相对指标不等于真实瞬时功率。</desc>
+<defs><marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M1,1 L11,6 L1,11 Z" fill="#53697C"/></marker></defs>
+<rect x="0" y="0" width="1400" height="680" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1.5"/>
+<rect x="40" y="35" width="7" height="42" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="65" y="68.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="33" fill="#18324A" text-anchor="start" font-weight="700">03  功率评估的四个层次</text>
+<text x="65" y="110.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#53697C" text-anchor="start" font-weight="400">模型越接近实现，所需输入也越完整；早期相对指标不等于真实瞬时功率。</text>
+<line x1="40" y1="132" x2="1360" y2="132" stroke="#CAD6E0" stroke-width="1"/>
+<rect x="40" y="210" width="300" height="255" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="40" y="210" width="300" height="7" rx="0" fill="#245C91" stroke="#245C91" stroke-width="1.5"/>
+<text x="62" y="257.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="start" font-weight="700">早期相对指标</text>
+<text x="62" y="300.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">容量、位宽、端口</text>
+<text x="62" y="331.9" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">库表摘要</text>
+<text x="60" y="430.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#53697C" text-anchor="start" font-weight="400">用途：快速筛选</text>
+<line x1="347" y1="335" x2="372" y2="335" stroke="#53697C" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="380" y="210" width="300" height="255" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="380" y="210" width="300" height="7" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="402" y="257.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="start" font-weight="700">命令能量模型</text>
+<text x="402" y="300.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">读写次数、图案</text>
+<text x="402" y="331.9" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">单次访问能量</text>
+<text x="400" y="430.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#53697C" text-anchor="start" font-weight="400">用途：能量与阶段预算</text>
+<line x1="687" y1="335" x2="712" y2="335" stroke="#53697C" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="720" y="210" width="300" height="255" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="720" y="210" width="300" height="7" rx="0" fill="#C47921" stroke="#C47921" stroke-width="1.5"/>
+<text x="742" y="257.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#C47921" text-anchor="start" font-weight="700">活动相关分析</text>
+<text x="742" y="300.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">VCD／SAIF</text>
+<text x="742" y="331.9" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">网表、宏功率模型</text>
+<text x="740" y="430.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#53697C" text-anchor="start" font-weight="400">用途：估计功率曲线</text>
+<line x1="1027" y1="335" x2="1052" y2="335" stroke="#53697C" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="1060" y="210" width="300" height="255" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="1060" y="210" width="300" height="7" rx="0" fill="#7B64A8" stroke="#7B64A8" stroke-width="1.5"/>
+<text x="1082" y="257.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#7B64A8" text-anchor="start" font-weight="700">电源与温度分析</text>
+<text x="1082" y="300.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">供电网络、封装</text>
+<text x="1082" y="331.9" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">位置、热模型</text>
+<text x="1080" y="430.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#53697C" text-anchor="start" font-weight="400">用途：检查局部风险</text>
+<text x="700" y="540.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="28" fill="#18324A" text-anchor="middle" font-weight="700">黑盒 SRAM 也需要正确的宏功率模型</text>
+<line x1="40" y1="616" x2="1360" y2="616" stroke="#CAD6E0" stroke-width="1"/>
+<text x="55" y="653.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#53697C" text-anchor="start" font-weight="400">平均活动率会丢失时间变化；检查窗口应与电压下降或温度现象的时间尺度相匹配。</text>
+</svg>

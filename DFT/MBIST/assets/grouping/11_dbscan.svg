@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="720" viewBox="0 0 1400 720" role="img" aria-labelledby="title desc">
+<title id="title">图06-11 DBSCAN候选区域可能形成长链</title><desc id="desc">ε=110 μm，minPts=2且邻域包含自身；最终组HPWL上限为200 μm。</desc>
+<defs><marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M1,1 L11,6 L1,11 Z" fill="#53697C"/></marker></defs>
+<rect x="0" y="0" width="1400" height="720" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1.5"/>
+<rect x="40" y="35" width="7" height="42" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="65" y="68.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="33" fill="#18324A" text-anchor="start" font-weight="700">11  DBSCAN候选区域可能形成长链</text>
+<text x="65" y="110.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#53697C" text-anchor="start" font-weight="400">ε=110 μm，minPts=2且邻域包含自身；最终组HPWL上限为200 μm。</text>
+<line x1="40" y1="132" x2="1360" y2="132" stroke="#CAD6E0" stroke-width="1"/>
+<rect x="75" y="205" width="1250" height="155" rx="12" fill="#EEF4F8" stroke="#245C91" stroke-width="1.5"/>
+<line x1="212" y1="280" x2="408" y2="280" stroke="#245C91" stroke-width="3"/>
+<line x1="472" y1="280" x2="668" y2="280" stroke="#245C91" stroke-width="3"/>
+<line x1="732" y1="280" x2="928" y2="280" stroke="#245C91" stroke-width="3"/>
+<line x1="992" y1="280" x2="1188" y2="280" stroke="#245C91" stroke-width="3"/>
+<circle cx="180" cy="280" r="31" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="180" y="289.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">A</text>
+<text x="180" y="340.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">0 μm</text>
+<circle cx="440" cy="280" r="31" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="440" y="289.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">B</text>
+<text x="440" y="340.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">100 μm</text>
+<circle cx="700" cy="280" r="31" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="700" y="289.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">C</text>
+<text x="700" y="340.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">200 μm</text>
+<circle cx="960" cy="280" r="31" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="960" y="289.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">D</text>
+<text x="960" y="340.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">300 μm</text>
+<circle cx="1220" cy="280" r="31" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="1220" y="289.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">E</text>
+<text x="1220" y="340.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">400 μm</text>
+<text x="700" y="185.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="600">密度连通：一个候选簇，跨度400 μm</text>
+<text x="700" y="410.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#53697C" text-anchor="middle" font-weight="400">递归拆分并核验</text>
+<line x1="700" y1="425" x2="700" y2="457" stroke="#53697C" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="75" y="470" width="755" height="125" rx="12" fill="#ECF6F3" stroke="#168679" stroke-width="1.5"/>
+<rect x="855" y="470" width="470" height="125" rx="12" fill="#FCF3E8" stroke="#C47921" stroke-width="1.5"/>
+<circle cx="180" cy="525" r="31" fill="#FFFFFF" stroke="#168679" stroke-width="2.5"/>
+<text x="180" y="534.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="middle" font-weight="700">A</text>
+<circle cx="440" cy="525" r="31" fill="#FFFFFF" stroke="#168679" stroke-width="2.5"/>
+<text x="440" y="534.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="middle" font-weight="700">B</text>
+<circle cx="700" cy="525" r="31" fill="#FFFFFF" stroke="#168679" stroke-width="2.5"/>
+<text x="700" y="534.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="middle" font-weight="700">C</text>
+<circle cx="960" cy="525" r="31" fill="#FFFFFF" stroke="#C47921" stroke-width="2.5"/>
+<text x="960" y="534.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#C47921" text-anchor="middle" font-weight="700">D</text>
+<circle cx="1220" cy="525" r="31" fill="#FFFFFF" stroke="#C47921" stroke-width="2.5"/>
+<text x="1220" y="534.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#C47921" text-anchor="middle" font-weight="700">E</text>
+<text x="450" y="575.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#168679" text-anchor="middle" font-weight="400">A/B/C：跨度200 μm</text>
+<text x="1090" y="575.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#C47921" text-anchor="middle" font-weight="400">D/E：跨度100 μm</text>
+<line x1="40" y1="656" x2="1360" y2="656" stroke="#CAD6E0" stroke-width="1"/>
+<text x="55" y="693.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#53697C" text-anchor="start" font-weight="400">密度聚类只生成候选区域。被标记为噪声的孤立宏也必须继续保留并完成测试。</text>
+</svg>

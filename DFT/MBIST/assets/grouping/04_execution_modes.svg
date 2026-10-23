@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="720" viewBox="0 0 1400 720" role="img" aria-labelledby="title desc">
+<title id="title">图06-04 相同成员，不同执行模型</title><desc id="desc">A：4 mW × 100 μs；C：3 mW × 60 μs。</desc>
+<defs><marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M1,1 L11,6 L1,11 Z" fill="#53697C"/></marker></defs>
+<rect x="0" y="0" width="1400" height="720" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1.5"/>
+<rect x="40" y="35" width="7" height="42" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="65" y="68.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="33" fill="#18324A" text-anchor="start" font-weight="700">04  相同成员，不同执行模型</text>
+<text x="65" y="110.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#53697C" text-anchor="start" font-weight="400">A：4 mW × 100 μs；C：3 mW × 60 μs。</text>
+<line x1="40" y1="132" x2="1360" y2="132" stroke="#CAD6E0" stroke-width="1"/>
+<text x="60" y="220.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#18324A" text-anchor="start" font-weight="600">逐块串行</text>
+<line x1="260" y1="275" x2="1076.0" y2="275" stroke="#CAD6E0" stroke-width="2"/>
+<rect x="260.0" y="227" width="509.99999999999994" height="48" rx="0" fill="#245C91" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="515.0" y="259.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#FFFFFF" text-anchor="middle" font-weight="700">A</text>
+<rect x="770.0" y="239" width="306.0" height="36" rx="0" fill="#168679" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="923.0" y="265.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#FFFFFF" text-anchor="middle" font-weight="700">C</text>
+<line x1="260.0" y1="275" x2="260.0" y2="283" stroke="#53697C" stroke-width="2"/>
+<text x="260.0" y="309.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">0</text>
+<line x1="566.0" y1="275" x2="566.0" y2="283" stroke="#53697C" stroke-width="2"/>
+<text x="566.0" y="309.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">60</text>
+<line x1="770.0" y1="275" x2="770.0" y2="283" stroke="#53697C" stroke-width="2"/>
+<text x="770.0" y="309.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">100</text>
+<line x1="1076.0" y1="275" x2="1076.0" y2="283" stroke="#53697C" stroke-width="2"/>
+<text x="1076.0" y="309.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">160</text>
+<text x="1125" y="220.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#245C91" text-anchor="start" font-weight="700">580 nJ</text>
+<text x="60" y="385.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#18324A" text-anchor="start" font-weight="600">同步且提前关停</text>
+<line x1="260" y1="440" x2="1076.0" y2="440" stroke="#CAD6E0" stroke-width="2"/>
+<rect x="260.0" y="356" width="306.0" height="84" rx="0" fill="#245C91" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="413.0" y="406.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#FFFFFF" text-anchor="middle" font-weight="700">A+C</text>
+<rect x="566.0" y="392" width="204.0" height="48" rx="0" fill="#168679" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="668.0" y="424.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#FFFFFF" text-anchor="middle" font-weight="700">A</text>
+<line x1="260.0" y1="440" x2="260.0" y2="448" stroke="#53697C" stroke-width="2"/>
+<text x="260.0" y="474.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">0</text>
+<line x1="566.0" y1="440" x2="566.0" y2="448" stroke="#53697C" stroke-width="2"/>
+<text x="566.0" y="474.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">60</text>
+<line x1="770.0" y1="440" x2="770.0" y2="448" stroke="#53697C" stroke-width="2"/>
+<text x="770.0" y="474.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">100</text>
+<line x1="1076.0" y1="440" x2="1076.0" y2="448" stroke="#53697C" stroke-width="2"/>
+<text x="1076.0" y="474.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">160</text>
+<text x="1125" y="385.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#245C91" text-anchor="start" font-weight="700">580 nJ</text>
+<text x="60" y="550.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#18324A" text-anchor="start" font-weight="600">整组最坏值预留</text>
+<line x1="260" y1="605" x2="1076.0" y2="605" stroke="#CAD6E0" stroke-width="2"/>
+<rect x="260.0" y="521" width="509.99999999999994" height="84" rx="0" fill="#C47921" stroke="#FFFFFF" stroke-width="1.5"/>
+<text x="515.0" y="571.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#FFFFFF" text-anchor="middle" font-weight="700">预留 7 mW</text>
+<line x1="260.0" y1="605" x2="260.0" y2="613" stroke="#53697C" stroke-width="2"/>
+<text x="260.0" y="639.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">0</text>
+<line x1="566.0" y1="605" x2="566.0" y2="613" stroke="#53697C" stroke-width="2"/>
+<text x="566.0" y="639.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">60</text>
+<line x1="770.0" y1="605" x2="770.0" y2="613" stroke="#53697C" stroke-width="2"/>
+<text x="770.0" y="639.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">100</text>
+<line x1="1076.0" y1="605" x2="1076.0" y2="613" stroke="#53697C" stroke-width="2"/>
+<text x="1076.0" y="639.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">160</text>
+<text x="1125" y="550.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#245C91" text-anchor="start" font-weight="700">700 nJ 上界</text>
+<line x1="40" y1="656" x2="1360" y2="656" stroke="#CAD6E0" stroke-width="1"/>
+<text x="55" y="693.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#53697C" text-anchor="start" font-weight="400">横轴为 μs；柱高表示 mW。固定预算乘整组时间，是保守能量上界，不是实测能量。</text>
+</svg>

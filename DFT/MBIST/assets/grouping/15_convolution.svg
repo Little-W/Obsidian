@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="700" viewBox="0 0 1400 700" role="img" aria-labelledby="title desc">
+<title id="title">图06-15 窗口卷积首先产生候选区域</title><desc id="desc">示例使用3×3全1窗口；窗口统计不是最终的合法存储器组。</desc>
+<defs><marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M1,1 L11,6 L1,11 Z" fill="#53697C"/></marker></defs>
+<rect x="0" y="0" width="1400" height="700" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1.5"/>
+<rect x="40" y="35" width="7" height="42" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="65" y="68.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="33" fill="#18324A" text-anchor="start" font-weight="700">15  窗口卷积首先产生候选区域</text>
+<text x="65" y="110.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#53697C" text-anchor="start" font-weight="400">示例使用3×3全1窗口；窗口统计不是最终的合法存储器组。</text>
+<line x1="40" y1="132" x2="1360" y2="132" stroke="#CAD6E0" stroke-width="1"/>
+<rect x="80" y="190" width="76" height="76" rx="0" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="156" y="190" width="76" height="76" rx="0" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="232" y="190" width="76" height="76" rx="0" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="308" y="190" width="76" height="76" rx="0" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="384" y="190" width="76" height="76" rx="0" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="460" y="190" width="76" height="76" rx="0" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="80" y="266" width="76" height="76" rx="0" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="156" y="266" width="76" height="76" rx="0" fill="#EEF4F8" stroke="#CAD6E0" stroke-width="1.5"/>
+<circle cx="194.0" cy="304.0" r="14" fill="#245C91" stroke="#245C91" stroke-width="2.5"/>
+<rect x="232" y="266" width="76" height="76" rx="0" fill="#EEF4F8" stroke="#CAD6E0" stroke-width="1.5"/>
+<circle cx="270.0" cy="304.0" r="14" fill="#245C91" stroke="#245C91" stroke-width="2.5"/>
+<rect x="308" y="266" width="76" height="76" rx="0" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="384" y="266" width="76" height="76" rx="0" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="460" y="266" width="76" height="76" rx="0" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="80" y="342" width="76" height="76" rx="0" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="156" y="342" width="76" height="76" rx="0" fill="#EEF4F8" stroke="#CAD6E0" stroke-width="1.5"/>
+<circle cx="194.0" cy="380.0" r="14" fill="#245C91" stroke="#245C91" stroke-width="2.5"/>
+<rect x="232" y="342" width="76" height="76" rx="0" fill="#EEF4F8" stroke="#CAD6E0" stroke-width="1.5"/>
+<circle cx="270.0" cy="380.0" r="14" fill="#245C91" stroke="#245C91" stroke-width="2.5"/>
+<rect x="308" y="342" width="76" height="76" rx="0" fill="#EEF4F8" stroke="#CAD6E0" stroke-width="1.5"/>
+<circle cx="346.0" cy="380.0" r="14" fill="#245C91" stroke="#245C91" stroke-width="2.5"/>
+<rect x="384" y="342" width="76" height="76" rx="0" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="460" y="342" width="76" height="76" rx="0" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="80" y="418" width="76" height="76" rx="0" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="156" y="418" width="76" height="76" rx="0" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="232" y="418" width="76" height="76" rx="0" fill="#EEF4F8" stroke="#CAD6E0" stroke-width="1.5"/>
+<circle cx="270.0" cy="456.0" r="14" fill="#245C91" stroke="#245C91" stroke-width="2.5"/>
+<rect x="308" y="418" width="76" height="76" rx="0" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="384" y="418" width="76" height="76" rx="0" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="460" y="418" width="76" height="76" rx="0" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="80" y="494" width="76" height="76" rx="0" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="156" y="494" width="76" height="76" rx="0" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="232" y="494" width="76" height="76" rx="0" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="308" y="494" width="76" height="76" rx="0" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="384" y="494" width="76" height="76" rx="0" fill="#EEF4F8" stroke="#CAD6E0" stroke-width="1.5"/>
+<circle cx="422.0" cy="532.0" r="14" fill="#245C91" stroke="#245C91" stroke-width="2.5"/>
+<rect x="460" y="494" width="76" height="76" rx="0" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="156" y="266" width="228" height="228" rx="0" fill="none" stroke="#C47921" stroke-width="5"/>
+<text x="305" y="605.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#C47921" text-anchor="middle" font-weight="700">橙色窗口包含6个实例</text>
+<rect x="720" y="180" width="620" height="117" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="720" y="180" width="620" height="7" rx="0" fill="#245C91" stroke="#245C91" stroke-width="1.5"/>
+<text x="742" y="227.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="start" font-weight="700">1  快速统计</text>
+<text x="742" y="270.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">数量得分=6；功率可另设一张网格</text>
+<line x1="1030" y1="303" x2="1030" y2="318" stroke="#53697C" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="720" y="325" width="620" height="117" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="720" y="325" width="620" height="7" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="742" y="372.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="start" font-weight="700">2  选择合法成员</text>
+<text x="742" y="415.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">每组最多3个；仍需检查功率和相容性</text>
+<line x1="1030" y1="448" x2="1030" y2="463" stroke="#53697C" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="720" y="470" width="620" height="117" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="720" y="470" width="620" height="7" rx="0" fill="#C47921" stroke="#C47921" stroke-width="1.5"/>
+<text x="742" y="517.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#C47921" text-anchor="start" font-weight="700">3  删除已分配实例</text>
+<text x="742" y="560.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">更新窗口得分；其他实例继续参与分组</text>
+<line x1="40" y1="636" x2="1360" y2="636" stroke="#CAD6E0" stroke-width="1"/>
+<text x="55" y="673.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#53697C" text-anchor="start" font-weight="400">矩形计数可由积分图加速；网格量化之后仍应使用原始坐标重新检查几何约束。</text>
+</svg>

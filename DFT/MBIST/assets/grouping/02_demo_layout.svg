@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="680" viewBox="0 0 1400 680" role="img" aria-labelledby="title desc">
+<title id="title">图06-02 十二实例统一用例</title><desc id="desc">每组最多3个实例；功率不超过10 mW；HPWL不超过300 μm。</desc>
+<defs><marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M1,1 L11,6 L1,11 Z" fill="#53697C"/></marker></defs>
+<rect x="0" y="0" width="1400" height="680" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1.5"/>
+<rect x="40" y="35" width="7" height="42" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="65" y="68.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="33" fill="#18324A" text-anchor="start" font-weight="700">02  十二实例统一用例</text>
+<text x="65" y="110.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#53697C" text-anchor="start" font-weight="400">每组最多3个实例；功率不超过10 mW；HPWL不超过300 μm。</text>
+<line x1="40" y1="132" x2="1360" y2="132" stroke="#CAD6E0" stroke-width="1"/>
+<rect x="50" y="165" width="610" height="385" rx="12" fill="#F8FAFC" stroke="#CAD6E0" stroke-width="1.5"/>
+<text x="75" y="205.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="start" font-weight="700">左侧区域</text>
+<circle cx="160" cy="285" r="31" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="160" y="294.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">A</text>
+<text x="160" y="349.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#18324A" text-anchor="middle" font-weight="400">4 mW · 100 μs</text>
+<text x="160" y="376.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">(0, 0)</text>
+<circle cx="355" cy="285" r="31" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="355" y="294.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">B</text>
+<text x="355" y="349.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#18324A" text-anchor="middle" font-weight="400">4 mW · 100 μs</text>
+<text x="355" y="376.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">(100, 0)</text>
+<circle cx="550" cy="285" r="31" fill="#FFFFFF" stroke="#168679" stroke-width="2.5"/>
+<text x="550" y="294.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="middle" font-weight="700">C</text>
+<text x="550" y="349.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#18324A" text-anchor="middle" font-weight="400">3 mW · 60 μs</text>
+<text x="550" y="376.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">(200, 0)</text>
+<circle cx="160" cy="435" r="31" fill="#FFFFFF" stroke="#168679" stroke-width="2.5"/>
+<text x="160" y="444.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="middle" font-weight="700">D</text>
+<text x="160" y="499.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#18324A" text-anchor="middle" font-weight="400">3 mW · 60 μs</text>
+<text x="160" y="526.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">(0, 100)</text>
+<circle cx="355" cy="435" r="31" fill="#FFFFFF" stroke="#168679" stroke-width="2.5"/>
+<text x="355" y="444.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="middle" font-weight="700">E</text>
+<text x="355" y="499.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#18324A" text-anchor="middle" font-weight="400">3 mW · 60 μs</text>
+<text x="355" y="526.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">(100, 100)</text>
+<circle cx="550" cy="435" r="31" fill="#FFFFFF" stroke="#168679" stroke-width="2.5"/>
+<text x="550" y="444.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="middle" font-weight="700">F</text>
+<text x="550" y="499.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#18324A" text-anchor="middle" font-weight="400">3 mW · 60 μs</text>
+<text x="550" y="526.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">(200, 100)</text>
+<rect x="740" y="165" width="610" height="385" rx="12" fill="#F8FAFC" stroke="#CAD6E0" stroke-width="1.5"/>
+<text x="765" y="205.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="start" font-weight="700">右侧区域</text>
+<circle cx="850" cy="285" r="31" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="850" y="294.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">G</text>
+<text x="850" y="349.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#18324A" text-anchor="middle" font-weight="400">4 mW · 100 μs</text>
+<text x="850" y="376.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">(1400, 0)</text>
+<circle cx="1045" cy="285" r="31" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="1045" y="294.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">H</text>
+<text x="1045" y="349.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#18324A" text-anchor="middle" font-weight="400">4 mW · 100 μs</text>
+<text x="1045" y="376.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">(1500, 0)</text>
+<circle cx="1240" cy="285" r="31" fill="#FFFFFF" stroke="#168679" stroke-width="2.5"/>
+<text x="1240" y="294.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="middle" font-weight="700">I</text>
+<text x="1240" y="349.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#18324A" text-anchor="middle" font-weight="400">3 mW · 60 μs</text>
+<text x="1240" y="376.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">(1600, 0)</text>
+<circle cx="850" cy="435" r="31" fill="#FFFFFF" stroke="#168679" stroke-width="2.5"/>
+<text x="850" y="444.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="middle" font-weight="700">J</text>
+<text x="850" y="499.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#18324A" text-anchor="middle" font-weight="400">3 mW · 60 μs</text>
+<text x="850" y="526.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">(1400, 100)</text>
+<circle cx="1045" cy="435" r="31" fill="#FFFFFF" stroke="#168679" stroke-width="2.5"/>
+<text x="1045" y="444.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="middle" font-weight="700">K</text>
+<text x="1045" y="499.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#18324A" text-anchor="middle" font-weight="400">3 mW · 60 μs</text>
+<text x="1045" y="526.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">(1500, 100)</text>
+<circle cx="1240" cy="435" r="31" fill="#FFFFFF" stroke="#168679" stroke-width="2.5"/>
+<text x="1240" y="444.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="middle" font-weight="700">L</text>
+<text x="1240" y="499.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#18324A" text-anchor="middle" font-weight="400">3 mW · 60 μs</text>
+<text x="1240" y="526.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="20" fill="#53697C" text-anchor="middle" font-weight="400">(1600, 100)</text>
+<line x1="40" y1="616" x2="1360" y2="616" stroke="#CAD6E0" stroke-width="1"/>
+<text x="55" y="653.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#53697C" text-anchor="start" font-weight="400">两个面板分别放大显示；坐标单位为 μm。全部数据均为自拟用例，不是芯片实测。</text>
+</svg>

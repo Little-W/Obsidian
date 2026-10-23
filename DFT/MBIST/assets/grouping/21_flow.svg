@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="720" viewBox="0 0 1400 720" role="img" aria-labelledby="title desc">
+<title id="title">图06-21 固定候选区域的整数最大流分配</title><desc id="desc">源点到实例容量为1；实例只连接允许进入的候选组；候选组具有整数名额。</desc>
+<defs><marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M1,1 L11,6 L1,11 Z" fill="#53697C"/></marker></defs>
+<rect x="0" y="0" width="1400" height="720" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1.5"/>
+<rect x="40" y="35" width="7" height="42" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="65" y="68.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="33" fill="#18324A" text-anchor="start" font-weight="700">21  固定候选区域的整数最大流分配</text>
+<text x="65" y="110.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#53697C" text-anchor="start" font-weight="400">源点到实例容量为1；实例只连接允许进入的候选组；候选组具有整数名额。</text>
+<line x1="40" y1="132" x2="1360" y2="132" stroke="#CAD6E0" stroke-width="1"/>
+<line x1="134" y1="350" x2="386" y2="220" stroke="#53697C" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="134" y1="350" x2="386" y2="350" stroke="#53697C" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="134" y1="350" x2="386" y2="480" stroke="#53697C" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="454" y1="220" x2="831" y2="265" stroke="#53697C" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="454" y1="220" x2="831" y2="445" stroke="#53697C" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="454" y1="350" x2="831" y2="265" stroke="#53697C" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="454" y1="480" x2="831" y2="445" stroke="#53697C" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="919" y1="265" x2="1236" y2="350" stroke="#53697C" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="919" y1="445" x2="1236" y2="350" stroke="#53697C" stroke-width="2" marker-end="url(#arrow)"/>
+<circle cx="100" cy="350" r="31" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="100" y="359.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">s</text>
+<circle cx="1270" cy="350" r="31" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="1270" y="359.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">t</text>
+<circle cx="420" cy="220" r="34" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="420" y="229.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">M1</text>
+<circle cx="420" cy="350" r="34" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="420" y="359.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">M2</text>
+<circle cx="420" cy="480" r="34" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="420" y="489.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">M3</text>
+<circle cx="875" cy="265" r="44" fill="#FFFFFF" stroke="#168679" stroke-width="2.5"/>
+<text x="875" y="274.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="middle" font-weight="700">C1</text>
+<circle cx="875" cy="445" r="44" fill="#FFFFFF" stroke="#168679" stroke-width="2.5"/>
+<text x="875" y="454.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="middle" font-weight="700">C2</text>
+<text x="1060" y="255.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#168679" text-anchor="middle" font-weight="400">容量1</text>
+<text x="1060" y="460.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#168679" text-anchor="middle" font-weight="400">容量2</text>
+<text x="700" y="580.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="middle" font-weight="600">M1→C2，M2→C1，M3→C2：总流量3，全部分配成功</text>
+<line x1="40" y1="656" x2="1360" y2="656" stroke="#CAD6E0" stroke-width="1"/>
+<text x="55" y="693.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#53697C" text-anchor="start" font-weight="400">贪心若先选M1→C1，会阻塞M2；增广路可改派M1。不同功率的不可拆分实例不能直接套此模型。</text>
+</svg>

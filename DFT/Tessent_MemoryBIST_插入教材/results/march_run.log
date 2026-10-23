@@ -1,0 +1,55 @@
+{
+  "model": "word-level, fixed single-bit faults; no timing",
+  "depth": 16,
+  "width": 8,
+  "accesses": 160,
+  "expected_accesses": 160,
+  "fault_address": 8,
+  "fault_bit": 0,
+  "faults": {
+    "none": {
+      "mismatches": 0,
+      "first_error": null
+    },
+    "sa0": {
+      "mismatches": 2,
+      "first_error": {
+        "access": 64,
+        "phase": "UP_RESTORE",
+        "address": 8,
+        "expected": 255,
+        "observed": 254
+      }
+    },
+    "sa1": {
+      "mismatches": 3,
+      "first_error": {
+        "access": 32,
+        "phase": "UP_FLIP",
+        "address": 8,
+        "expected": 0,
+        "observed": 1
+      }
+    },
+    "tf01": {
+      "mismatches": 2,
+      "first_error": {
+        "access": 64,
+        "phase": "UP_RESTORE",
+        "address": 8,
+        "expected": 255,
+        "observed": 254
+      }
+    },
+    "tf10": {
+      "mismatches": 2,
+      "first_error": {
+        "access": 94,
+        "phase": "DOWN_FLIP",
+        "address": 8,
+        "expected": 0,
+        "observed": 1
+      }
+    }
+  }
+}

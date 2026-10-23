@@ -1,0 +1,18 @@
+{
+  "desktop": {
+    "viewport_width": 1520,
+    "body_width": 1520,
+    "unloaded_images": 0
+  },
+  "broken_internal_links": [],
+  "mobile": {
+    "viewport_width": 420,
+    "body_width": 420
+  },
+  "svg_text_outside_viewbox": [],
+  "markdown_images": 26,
+  "missing_image_files": [],
+  "svg_files": 26,
+  "png_files": 26,
+  "notes": "Self-contained HTML loaded in Chromium; screenshots reviewed separately. Other-series Markdown links intentionally retained."
+}

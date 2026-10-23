@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="720" viewBox="0 0 1400 720" role="img" aria-labelledby="title desc">
+<title id="title">图06-12 区域切分与一般成员组合的区别</title><desc id="desc">同样的六个实例，横向切分会留下一个功率超限的子区域。</desc>
+<defs><marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M1,1 L11,6 L1,11 Z" fill="#53697C"/></marker></defs>
+<rect x="0" y="0" width="1400" height="720" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1.5"/>
+<rect x="40" y="35" width="7" height="42" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="65" y="68.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="33" fill="#18324A" text-anchor="start" font-weight="700">12  区域切分与一般成员组合的区别</text>
+<text x="65" y="110.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#53697C" text-anchor="start" font-weight="400">同样的六个实例，横向切分会留下一个功率超限的子区域。</text>
+<line x1="40" y1="132" x2="1360" y2="132" stroke="#CAD6E0" stroke-width="1"/>
+<rect x="55" y="180" width="580" height="390" rx="12" fill="#F8FAFC" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="765" y="180" width="580" height="390" rx="12" fill="#F8FAFC" stroke="#CAD6E0" stroke-width="1.5"/>
+<text x="345" y="220.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#C47921" text-anchor="middle" font-weight="700">横向切分：仍需继续拆分</text>
+<text x="1055" y="220.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#168679" text-anchor="middle" font-weight="700">一般组合：两组均合法</text>
+<circle cx="175" cy="300" r="29" fill="#FFFFFF" stroke="#B14A49" stroke-width="2.5"/>
+<text x="175" y="309.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#B14A49" text-anchor="middle" font-weight="700">A</text>
+<circle cx="340" cy="300" r="29" fill="#FFFFFF" stroke="#B14A49" stroke-width="2.5"/>
+<text x="340" y="309.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#B14A49" text-anchor="middle" font-weight="700">B</text>
+<circle cx="505" cy="300" r="29" fill="#FFFFFF" stroke="#B14A49" stroke-width="2.5"/>
+<text x="505" y="309.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#B14A49" text-anchor="middle" font-weight="700">C</text>
+<circle cx="175" cy="450" r="29" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="175" y="459.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">D</text>
+<circle cx="340" cy="450" r="29" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="340" y="459.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">E</text>
+<circle cx="505" cy="450" r="29" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="505" y="459.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">F</text>
+<line x1="80" y1="375" x2="610" y2="375" stroke="#C47921" stroke-width="3" stroke-dasharray="8 6"/>
+<circle cx="885" cy="300" r="29" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="885" y="309.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">A</text>
+<circle cx="1050" cy="300" r="29" fill="#FFFFFF" stroke="#168679" stroke-width="2.5"/>
+<text x="1050" y="309.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="middle" font-weight="700">B</text>
+<circle cx="1215" cy="300" r="29" fill="#FFFFFF" stroke="#168679" stroke-width="2.5"/>
+<text x="1215" y="309.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="middle" font-weight="700">C</text>
+<circle cx="885" cy="450" r="29" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="885" y="459.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">D</text>
+<circle cx="1050" cy="450" r="29" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="1050" y="459.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">E</text>
+<circle cx="1215" cy="450" r="29" fill="#FFFFFF" stroke="#168679" stroke-width="2.5"/>
+<text x="1215" y="459.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="middle" font-weight="700">F</text>
+<text x="345" y="535.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#B14A49" text-anchor="middle" font-weight="400">ABC=11 mW；DEF=9 mW</text>
+<text x="1055" y="535.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="24" fill="#168679" text-anchor="middle" font-weight="400">ADE=10 mW；BCF=10 mW</text>
+<line x1="40" y1="656" x2="1360" y2="656" stroke="#CAD6E0" stroke-width="1"/>
+<text x="55" y="693.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#53697C" text-anchor="start" font-weight="400">矩形划分便于空间组织，但限制了搜索范围；一般组合仍需检查实际HPWL与所有资源。</text>
+</svg>

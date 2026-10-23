@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="710" viewBox="0 0 1400 710" role="img" aria-labelledby="title desc">
+<title id="title">图06-07 容量碎片导致额外控制器</title><desc id="desc">同样的六个实例：4、4、3、3、3、3 mW；每组预算10 mW。</desc>
+<defs><marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M1,1 L11,6 L1,11 Z" fill="#53697C"/></marker></defs>
+<rect x="0" y="0" width="1400" height="710" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1.5"/>
+<rect x="40" y="35" width="7" height="42" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="65" y="68.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="33" fill="#18324A" text-anchor="start" font-weight="700">07  容量碎片导致额外控制器</text>
+<text x="65" y="110.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#53697C" text-anchor="start" font-weight="400">同样的六个实例：4、4、3、3、3、3 mW；每组预算10 mW。</text>
+<line x1="40" y1="132" x2="1360" y2="132" stroke="#CAD6E0" stroke-width="1"/>
+<text x="60" y="185.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="28" fill="#245C91" text-anchor="start" font-weight="700">首次适合：3组</text>
+<text x="60" y="220.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#245C91" text-anchor="start" font-weight="600">G1</text>
+<rect x="60" y="235" width="480" height="62" rx="6" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="60" y="235" width="192.0" height="62" rx="0" fill="#245C91" stroke="#FFFFFF" stroke-width="2"/>
+<text x="156.0" y="275.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#FFFFFF" text-anchor="middle" font-weight="600">A · 4</text>
+<rect x="252.0" y="235" width="192.0" height="62" rx="0" fill="#245C91" stroke="#FFFFFF" stroke-width="2"/>
+<text x="348.0" y="275.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#FFFFFF" text-anchor="middle" font-weight="600">B · 4</text>
+<text x="555" y="275.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#245C91" text-anchor="start" font-weight="700">8/10</text>
+<text x="60" y="335.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#245C91" text-anchor="start" font-weight="600">G2</text>
+<rect x="60" y="350" width="480" height="62" rx="6" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="60" y="350" width="144.0" height="62" rx="0" fill="#245C91" stroke="#FFFFFF" stroke-width="2"/>
+<text x="132.0" y="390.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#FFFFFF" text-anchor="middle" font-weight="600">C · 3</text>
+<rect x="204.0" y="350" width="144.0" height="62" rx="0" fill="#245C91" stroke="#FFFFFF" stroke-width="2"/>
+<text x="276.0" y="390.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#FFFFFF" text-anchor="middle" font-weight="600">D · 3</text>
+<rect x="348.0" y="350" width="144.0" height="62" rx="0" fill="#245C91" stroke="#FFFFFF" stroke-width="2"/>
+<text x="420.0" y="390.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#FFFFFF" text-anchor="middle" font-weight="600">E · 3</text>
+<text x="555" y="390.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#245C91" text-anchor="start" font-weight="700">9/10</text>
+<text x="60" y="450.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#245C91" text-anchor="start" font-weight="600">G3</text>
+<rect x="60" y="465" width="480" height="62" rx="6" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="60" y="465" width="144.0" height="62" rx="0" fill="#245C91" stroke="#FFFFFF" stroke-width="2"/>
+<text x="132.0" y="505.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#FFFFFF" text-anchor="middle" font-weight="600">F · 3</text>
+<text x="555" y="505.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#245C91" text-anchor="start" font-weight="700">3/10</text>
+<text x="760" y="185.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="28" fill="#168679" text-anchor="start" font-weight="700">重新组合：2组</text>
+<text x="760" y="220.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#168679" text-anchor="start" font-weight="600">G1</text>
+<rect x="760" y="235" width="480" height="62" rx="6" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="760" y="235" width="192.0" height="62" rx="0" fill="#168679" stroke="#FFFFFF" stroke-width="2"/>
+<text x="856.0" y="275.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#FFFFFF" text-anchor="middle" font-weight="600">A · 4</text>
+<rect x="952.0" y="235" width="144.0" height="62" rx="0" fill="#168679" stroke="#FFFFFF" stroke-width="2"/>
+<text x="1024.0" y="275.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#FFFFFF" text-anchor="middle" font-weight="600">D · 3</text>
+<rect x="1096.0" y="235" width="144.0" height="62" rx="0" fill="#168679" stroke="#FFFFFF" stroke-width="2"/>
+<text x="1168.0" y="275.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#FFFFFF" text-anchor="middle" font-weight="600">E · 3</text>
+<text x="1255" y="275.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#168679" text-anchor="start" font-weight="700">10/10</text>
+<text x="760" y="335.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#168679" text-anchor="start" font-weight="600">G2</text>
+<rect x="760" y="350" width="480" height="62" rx="6" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="760" y="350" width="192.0" height="62" rx="0" fill="#168679" stroke="#FFFFFF" stroke-width="2"/>
+<text x="856.0" y="390.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#FFFFFF" text-anchor="middle" font-weight="600">B · 4</text>
+<rect x="952.0" y="350" width="144.0" height="62" rx="0" fill="#168679" stroke="#FFFFFF" stroke-width="2"/>
+<text x="1024.0" y="390.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#FFFFFF" text-anchor="middle" font-weight="600">C · 3</text>
+<rect x="1096.0" y="350" width="144.0" height="62" rx="0" fill="#168679" stroke="#FFFFFF" stroke-width="2"/>
+<text x="1168.0" y="390.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#FFFFFF" text-anchor="middle" font-weight="600">F · 3</text>
+<text x="1255" y="390.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="23" fill="#168679" text-anchor="start" font-weight="700">10/10</text>
+<text x="1000" y="535.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="27" fill="#168679" text-anchor="middle" font-weight="600">保留 4+3+3 的组合机会</text>
+<line x1="40" y1="646" x2="1360" y2="646" stroke="#CAD6E0" stroke-width="1"/>
+<text x="55" y="683.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#53697C" text-anchor="start" font-weight="400">空白部分表示未用功率容量；降序排列不能保证消除所有资源碎片。</text>
+</svg>

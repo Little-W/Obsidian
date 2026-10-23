@@ -1,0 +1,7 @@
+algorithm,groups,sum_hpwl_um,makespan_us,reserved_peak_mw
+first_fit,6,800,220,18
+best_fit_decreasing,6,800,220,18
+geometry_greedy,6,600,220,18
+capacity_dsatur,6,800,220,18
+greedy_local_exact_repair,4,800,200,20
+exact_subset_dp,4,800,200,20

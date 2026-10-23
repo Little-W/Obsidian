@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="720" viewBox="0 0 1400 720" role="img" aria-labelledby="title desc">
+<title id="title">图06-14 超图保护需要共同考虑的实例关系</title><desc id="desc">超边可以连接多个实例；此图只演示割代价，成员容量另行假设可满足。</desc>
+<defs><marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M1,1 L11,6 L1,11 Z" fill="#53697C"/></marker></defs>
+<rect x="0" y="0" width="1400" height="720" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1.5"/>
+<rect x="40" y="35" width="7" height="42" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="65" y="68.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="33" fill="#18324A" text-anchor="start" font-weight="700">14  超图保护需要共同考虑的实例关系</text>
+<text x="65" y="110.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#53697C" text-anchor="start" font-weight="400">超边可以连接多个实例；此图只演示割代价，成员容量另行假设可满足。</text>
+<line x1="40" y1="132" x2="1360" y2="132" stroke="#CAD6E0" stroke-width="1"/>
+<rect x="60" y="210" width="580" height="170" rx="28" fill="#EDF3F8" stroke="#245C91" stroke-width="1.5"/>
+<rect x="760" y="210" width="580" height="170" rx="28" fill="#ECF6F3" stroke="#168679" stroke-width="1.5"/>
+<line x1="575" y1="295" x2="825" y2="295" stroke="#C47921" stroke-width="4"/>
+<circle cx="150" cy="295" r="31" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="150" y="304.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">A</text>
+<circle cx="345" cy="295" r="31" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="345" y="304.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">B</text>
+<circle cx="540" cy="295" r="31" fill="#FFFFFF" stroke="#245C91" stroke-width="2.5"/>
+<text x="540" y="304.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#245C91" text-anchor="middle" font-weight="700">C</text>
+<circle cx="860" cy="295" r="31" fill="#FFFFFF" stroke="#168679" stroke-width="2.5"/>
+<text x="860" y="304.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="middle" font-weight="700">D</text>
+<circle cx="1055" cy="295" r="31" fill="#FFFFFF" stroke="#168679" stroke-width="2.5"/>
+<text x="1055" y="304.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="middle" font-weight="700">E</text>
+<circle cx="1250" cy="295" r="31" fill="#FFFFFF" stroke="#168679" stroke-width="2.5"/>
+<text x="1250" y="304.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="middle" font-weight="700">F</text>
+<text x="345" y="190.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#245C91" text-anchor="middle" font-weight="400">e1={A,B,C}，权重5</text>
+<text x="1055" y="190.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="25" fill="#168679" text-anchor="middle" font-weight="400">e3={D,E,F}，权重5</text>
+<text x="700" y="260.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#C47921" text-anchor="middle" font-weight="400">e2：权重1</text>
+<rect x="60" y="445" width="570" height="140" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="60" y="445" width="570" height="7" rx="0" fill="#B14A49" stroke="#B14A49" stroke-width="1.5"/>
+<text x="82" y="492.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#B14A49" text-anchor="start" font-weight="700">划分 ABD / CEF</text>
+<text x="82" y="535.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">三条超边均被切开：5+1+5=11</text>
+<rect x="770" y="445" width="570" height="140" rx="12" fill="#FFFFFF" stroke="#CAD6E0" stroke-width="1.5"/>
+<rect x="770" y="445" width="570" height="7" rx="0" fill="#168679" stroke="#168679" stroke-width="1.5"/>
+<text x="792" y="492.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="26" fill="#168679" text-anchor="start" font-weight="700">划分 ABC / DEF</text>
+<text x="792" y="535.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#18324A" text-anchor="start" font-weight="400">只切开中间超边：代价=1</text>
+<line x1="650" y1="515" x2="745" y2="515" stroke="#53697C" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="700" y="425.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="22" fill="#53697C" text-anchor="middle" font-weight="400">交换C与D</text>
+<line x1="40" y1="656" x2="1360" y2="656" stroke="#CAD6E0" stroke-width="1"/>
+<text x="55" y="693.0" font-family="'Noto Sans CJK SC','Microsoft YaHei','PingFang SC',sans-serif" font-size="21" fill="#53697C" text-anchor="start" font-weight="400">亲近关系超图与禁止同组的冲突图含义不同；低割代价不能替代功率、人数和几何检查。</text>
+</svg>
