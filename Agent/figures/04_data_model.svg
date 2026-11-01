@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="1152pt" height="720pt" viewBox="0 0 1152 720" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-11-01T07:21:20.671337</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.10.8, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 720 
+L 1152 720 
+L 1152 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="line2d_1">
+    <path d="M 46.8 110.16 
+L 1105.2 110.16 
+" clip-path="url(#p9259f62ca4)" style="fill: none; stroke: #c7d3df; stroke-width: 1.2; stroke-linecap: square"/>
+   </g>
+   <g id="patch_2">
+    <path d="M 45.36 126 
+L 1106.64 126 
+Q 1119.6 126 1119.6 138.96 
+L 1119.6 408.24 
+Q 1119.6 421.2 1106.64 421.2 
+L 45.36 421.2 
+Q 32.4 421.2 32.4 408.24 
+L 32.4 138.96 
+Q 32.4 126 45.36 126 
+z
+" clip-path="url(#p9259f62ca4)" style="fill: #f3f6fa; stroke: #c7d3df; stroke-width: 1.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 70.56 180 
+L 332.64 180 
+Q 345.6 180 345.6 192.96 
+L 345.6 325.44 
+Q 345.6 338.4 332.64 338.4 
+L 70.56 338.4 
+Q 57.6 338.4 57.6 325.44 
+L 57.6 192.96 
+Q 57.6 180 70.56 180 
+z
+" clip-path="url(#p9259f62ca4)" style="fill: #ffffff; stroke: #2864b4; stroke-width: 2; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 444.96 180 
+L 707.04 180 
+Q 720 180 720 192.96 
+L 720 325.44 
+Q 720 338.4 707.04 338.4 
+L 444.96 338.4 
+Q 432 338.4 432 325.44 
+L 432 192.96 
+Q 432 180 444.96 180 
+z
+" clip-path="url(#p9259f62ca4)" style="fill: #ffffff; stroke: #11847b; stroke-width: 2; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 819.36 180 
+L 1081.44 180 
+Q 1094.4 180 1094.4 192.96 
+L 1094.4 325.44 
+Q 1094.4 338.4 1081.44 338.4 
+L 819.36 338.4 
+Q 806.4 338.4 806.4 325.44 
+L 806.4 192.96 
+Q 806.4 180 819.36 180 
+z
+" clip-path="url(#p9259f62ca4)" style="fill: #ffffff; stroke: #2864b4; stroke-width: 2; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 45.36 446.4 
+L 1106.64 446.4 
+Q 1119.6 446.4 1119.6 459.36 
+L 1119.6 645.84 
+Q 1119.6 658.8 1106.64 658.8 
+L 45.36 658.8 
+Q 32.4 658.8 32.4 645.84 
+L 32.4 459.36 
+Q 32.4 446.4 45.36 446.4 
+z
+" clip-path="url(#p9259f62ca4)" style="fill: #ecf7f5; stroke: #c7d3df; stroke-width: 1.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 84.96 496.8 
+L 433.44 496.8 
+Q 446.4 496.8 446.4 509.76 
+L 446.4 620.64 
+Q 446.4 633.6 433.44 633.6 
+L 84.96 633.6 
+Q 72 633.6 72 620.64 
+L 72 509.76 
+Q 72 496.8 84.96 496.8 
+z
+" clip-path="url(#p9259f62ca4)" style="fill: #ffffff; stroke: #11847b; stroke-width: 2; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_8">
+    <path d="M 624.96 496.8 
+L 973.44 496.8 
+Q 986.4 496.8 986.4 509.76 
+L 986.4 620.64 
+Q 986.4 633.6 973.44 633.6 
+L 624.96 633.6 
+Q 612 633.6 612 620.64 
+L 612 509.76 
+Q 612 496.8 624.96 496.8 
+z
+" clip-path="url(#p9259f62ca4)" style="fill: #ffffff; stroke: #11847b; stroke-width: 2; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_9">
+    <path d="M 432 259.2 
+L 348.059675 259.2 
+" clip-path="url(#p9259f62ca4)" style="fill: none; stroke: #11847b; stroke-width: 2.2; stroke-linecap: round"/>
+    <path d="M 356.059675 263.2 
+L 348.059675 259.2 
+L 356.059675 255.2 
+z
+" clip-path="url(#p9259f62ca4)" style="fill: #11847b; stroke: #11847b; stroke-width: 2.2; stroke-linecap: round"/>
+   </g>
+   <g id="patch_10">
+    <path d="M 806.4 259.2 
+L 722.459675 259.2 
+" clip-path="url(#p9259f62ca4)" style="fill: none; stroke: #2864b4; stroke-width: 2.2; stroke-linecap: round"/>
+    <path d="M 730.459675 263.2 
+L 722.459675 259.2 
+L 730.459675 255.2 
+z
+" clip-path="url(#p9259f62ca4)" style="fill: #2864b4; stroke: #2864b4; stroke-width: 2.2; stroke-linecap: round"/>
+   </g>
+   <g id="patch_11">
+    <path d="M 871.2 338.4 
+L 871.2 378 
+L 201.6 378 
+L 201.6 340.859675 
+" clip-path="url(#p9259f62ca4)" style="fill: none; stroke: #2864b4; stroke-width: 2.2; stroke-linecap: round"/>
+    <path d="M 197.6 348.859675 
+L 201.6 340.859675 
+L 205.6 348.859675 
+z
+" clip-path="url(#p9259f62ca4)" style="fill: #2864b4; stroke: #2864b4; stroke-width: 2.2; stroke-linecap: round"/>
+   </g>
+   <g id="patch_12">
+    <path d="M 612 565.2 
+L 448.859675 565.2 
+" clip-path="url(#p9259f62ca4)" style="fill: none; stroke: #11847b; stroke-width: 2.2; stroke-linecap: round"/>
+    <path d="M 456.859675 569.2 
+L 448.859675 565.2 
+L 456.859675 561.2 
+z
+" clip-path="url(#p9259f62ca4)" style="fill: #11847b; stroke: #11847b; stroke-width: 2.2; stroke-linecap: round"/>
+   </g>
+   <g id="patch_13">
+    <path d="M 1044 338.4 
+L 1044 565.2 
+L 988.859675 565.2 
+" clip-path="url(#p9259f62ca4)" style="fill: none; stroke: #2864b4; stroke-width: 2.2; stroke-linecap: round"/>
+    <path d="M 996.859675 569.2 
+L 988.859675 565.2 
+L 996.859675 561.2 
+z
+" clip-path="url(#p9259f62ca4)" style="fill: #2864b4; stroke: #2864b4; stroke-width: 2.2; stroke-linecap: round"/>
+   </g>
+   <g id="line2d_2">
+    <path d="M 74.88 234.72 
+L 328.32 234.72 
+" clip-path="url(#p9259f62ca4)" style="fill: none; stroke: #c7d3df; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_3">
+    <path d="M 449.28 234.72 
+L 702.72 234.72 
+" clip-path="url(#p9259f62ca4)" style="fill: none; stroke: #c7d3df; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_4">
+    <path d="M 823.68 234.72 
+L 1077.12 234.72 
+" clip-path="url(#p9259f62ca4)" style="fill: none; stroke: #c7d3df; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_5">
+    <path d="M 89.28 551.52 
+L 429.12 551.52 
+" clip-path="url(#p9259f62ca4)" style="fill: none; stroke: #c7d3df; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_6">
+    <path d="M 629.28 551.52 
+L 969.12 551.52 
+" clip-path="url(#p9259f62ca4)" style="fill: none; stroke: #c7d3df; stroke-linecap: square"/>
+   </g>
+   <g id="text_1">
+    <text style="font-size: 27px; font-family: 'Droid Sans Fallback'; text-anchor: start; fill: #183047" x="46.8" y="53.866406" transform="rotate(-0 46.8 53.866406)">五类实体分离设计定义与实际运行</text>
+   </g>
+   <g id="text_2">
+    <text style="font-size: 18px; font-family: 'Droid Sans Fallback'; text-anchor: start; fill: #556a7c" x="46.8" y="91.830938" transform="rotate(-0 46.8 91.830938)">角色、团队和流程可以复用；每次运行固定定义版本，并记录结果文件与证据。</text>
+   </g>
+   <g id="text_3">
+    <text style="font-size: 14px; font-family: 'Droid Sans Fallback'; text-anchor: start; fill: #556a7c" x="46.8" y="699.184062" transform="rotate(-0 46.8 699.184062)">设计归纳示意；具体框架行为以正文为准</text>
+   </g>
+   <g id="text_4">
+    <text style="font-size: 20px; font-family: 'Droid Sans Fallback'; text-anchor: start; fill: #2864b4" x="54" y="154.994375" transform="rotate(-0 54 154.994375)">设计态：可版本化定义</text>
+   </g>
+   <g id="text_5">
+    <text style="font-size: 23px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #2864b4" x="201.6" y="216.259531" transform="rotate(-0 201.6 216.259531)">AgentSpec</text>
+   </g>
+   <g id="text_6">
+    <text style="font-size: 18px; font-family: 'Droid Sans Fallback'; fill: #183047" transform="translate(156.6 267.855469)">角色与目标</text>
+    <text style="font-size: 18px; font-family: 'Droid Sans Fallback'; fill: #183047" transform="translate(156.6 292.710938)">工具与权限</text>
+    <text style="font-size: 18px; font-family: 'Droid Sans Fallback'; fill: #183047" transform="translate(139.514062 317.566406)">输入 / 输出约束</text>
+   </g>
+   <g id="text_7">
+    <text style="font-size: 23px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #11847b" x="576" y="216.259531" transform="rotate(-0 576 216.259531)">TeamSpec</text>
+   </g>
+   <g id="text_8">
+    <text style="font-size: 18px; font-family: 'Droid Sans Fallback'; fill: #183047" transform="translate(540 267.855469)">成员引用</text>
+    <text style="font-size: 18px; font-family: 'Droid Sans Fallback'; fill: #183047" transform="translate(513 292.710938)">协作方式与预算</text>
+    <text style="font-size: 18px; font-family: 'Droid Sans Fallback'; fill: #183047" transform="translate(513.914062 317.566406)">委派 / 移交规则</text>
+   </g>
+   <g id="text_9">
+    <text style="font-size: 23px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #2864b4" x="950.4" y="216.259531" transform="rotate(-0 950.4 216.259531)">FlowSpec</text>
+   </g>
+   <g id="text_10">
+    <text style="font-size: 18px; font-family: 'Droid Sans Fallback'; fill: #183047" transform="translate(887.4 267.855469)">节点与后继条件</text>
+    <text style="font-size: 18px; font-family: 'Droid Sans Fallback'; fill: #183047" transform="translate(887.4 292.710938)">状态结构与版本</text>
+    <text style="font-size: 18px; font-family: 'Droid Sans Fallback'; fill: #183047" transform="translate(887.4 317.566406)">验收与失败路径</text>
+   </g>
+   <g id="text_11">
+    <text style="font-size: 17px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #11847b" x="388.8" y="233.409219" transform="rotate(-0 388.8 233.409219)">成员</text>
+   </g>
+   <g id="text_12">
+    <text style="font-size: 17px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #2864b4" x="763.2" y="233.409219" transform="rotate(-0 763.2 233.409219)">调用</text>
+   </g>
+   <g id="text_13">
+    <text style="font-size: 18px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #2864b4" x="536.4" y="406.963125" transform="rotate(-0 536.4 406.963125)">Flow 节点也可直接调用单个 Agent</text>
+   </g>
+   <g id="text_14">
+    <text style="font-size: 20px; font-family: 'Droid Sans Fallback'; text-anchor: start; fill: #11847b" x="54" y="473.954375" transform="rotate(-0 54 473.954375)">运行态：一次具体执行</text>
+   </g>
+   <g id="text_15">
+    <text style="font-size: 23px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #11847b" x="259.2" y="533.059531" transform="rotate(-0 259.2 533.059531)">Artifact</text>
+   </g>
+   <g id="text_16">
+    <text style="font-size: 18px; font-family: 'Droid Sans Fallback'; fill: #183047" transform="translate(174.367969 586.283203)">文件位置与内容 hash</text>
+    <text style="font-size: 18px; font-family: 'Droid Sans Fallback'; fill: #183047" transform="translate(169.2 611.138672)">来源步骤、报告与证据</text>
+   </g>
+   <g id="text_17">
+    <text style="font-size: 23px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #11847b" x="799.2" y="533.059531" transform="rotate(-0 799.2 533.059531)">RunState</text>
+   </g>
+   <g id="text_18">
+    <text style="font-size: 18px; font-family: 'Droid Sans Fallback'; fill: #183047" transform="translate(731.524219 585.492188)">固定 flowVersion</text>
+    <text style="font-size: 18px; font-family: 'Droid Sans Fallback'; fill: #183047" transform="translate(680.723437 611.929688)">当前步骤、预算与 checkpoint</text>
+   </g>
+   <g id="text_19">
+    <text style="font-size: 18px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #11847b" x="529.2" y="539.670938" transform="rotate(-0 529.2 539.670938)">产出 / 引用</text>
+   </g>
+   <g id="text_20">
+    <text style="font-size: 17px; font-family: 'Droid Sans Fallback'; text-anchor: end; fill: #2864b4" x="1018.8" y="438.609219" transform="rotate(-0 1018.8 438.609219)">固定版本创建运行</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p9259f62ca4">
+   <rect x="0" y="0" width="1152" height="720"/>
+  </clipPath>
+ </defs>
+</svg>

@@ -1,0 +1,527 @@
+{
+  "checked_at": "2026-11-01",
+  "sources": [
+    {
+      "id": "R01",
+      "author": "ANTHROPIC",
+      "title": "Building effective agents",
+      "date": "2024-12-19",
+      "url": "https://www.anthropic.com/research/building-effective-agents"
+    },
+    {
+      "id": "R02",
+      "author": "LANGCHAIN",
+      "title": "LangGraph JavaScript: Graph API",
+      "date": "动态文档",
+      "url": "https://docs.langchain.com/oss/javascript/langgraph/graph-api"
+    },
+    {
+      "id": "R03",
+      "author": "LANGCHAIN",
+      "title": "LangGraph JavaScript: Persistence",
+      "date": "动态文档",
+      "url": "https://docs.langchain.com/oss/javascript/langgraph/persistence"
+    },
+    {
+      "id": "R04",
+      "author": "LANGCHAIN",
+      "title": "LangGraph JavaScript: Interrupts",
+      "date": "动态文档",
+      "url": "https://docs.langchain.com/oss/javascript/langgraph/interrupts"
+    },
+    {
+      "id": "R05",
+      "author": "LANGCHAIN",
+      "title": "LangSmith Studio",
+      "date": "动态文档",
+      "url": "https://docs.langchain.com/langsmith/studio"
+    },
+    {
+      "id": "R06",
+      "author": "OPENAI",
+      "title": "Agents SDK JavaScript: Agent Orchestration",
+      "date": "动态文档",
+      "url": "https://openai.github.io/openai-agents-js/guides/multi-agent/"
+    },
+    {
+      "id": "R07",
+      "author": "OPENAI",
+      "title": "Agents SDK Python: Handoffs",
+      "date": "动态文档",
+      "url": "https://openai.github.io/openai-agents-python/handoffs/"
+    },
+    {
+      "id": "R08",
+      "author": "OPENAI",
+      "title": "Agents SDK Python: Running agents",
+      "date": "动态文档",
+      "url": "https://openai.github.io/openai-agents-python/running_agents/"
+    },
+    {
+      "id": "R09",
+      "author": "CREWAI",
+      "title": "Production Architecture",
+      "date": "本次页面版本 v1.15.33",
+      "url": "https://docs.crewai.com/v1.15.33/en/concepts/production-architecture"
+    },
+    {
+      "id": "R10",
+      "author": "CREWAI",
+      "title": "Flows",
+      "date": "本次页面版本 v1.15.33",
+      "url": "https://docs.crewai.com/v1.15.33/en/concepts/flows"
+    },
+    {
+      "id": "R11",
+      "author": "CREWAI",
+      "title": "Checkpointing",
+      "date": "本次页面版本 v1.15.33",
+      "url": "https://docs.crewai.com/v1.15.33/en/concepts/checkpointing"
+    },
+    {
+      "id": "R12",
+      "author": "MILLER J / CREWAI",
+      "title": "Crew Studio: The Automated Agent Builder",
+      "date": "2026-07-28",
+      "url": "https://crewai.com/blog/crew-studio-automated-agent-builder"
+    },
+    {
+      "id": "R13",
+      "author": "MICROSOFT",
+      "title": "Microsoft Agent Framework Overview",
+      "date": "动态文档",
+      "url": "https://learn.microsoft.com/en-us/agent-framework/overview/"
+    },
+    {
+      "id": "R14",
+      "author": "MICROSOFT",
+      "title": "Workflow capabilities",
+      "date": "动态文档",
+      "url": "https://learn.microsoft.com/en-us/agent-framework/workflows/"
+    },
+    {
+      "id": "R15",
+      "author": "MICROSOFT",
+      "title": "Durable Extension",
+      "date": "动态文档",
+      "url": "https://learn.microsoft.com/en-us/agent-framework/hosting/durable-extension"
+    },
+    {
+      "id": "R16",
+      "author": "HENRY S / MICROSOFT",
+      "title": "Microsoft Agent Framework Version 1.0",
+      "date": "公告日期 2026-04-03",
+      "url": "https://devblogs.microsoft.com/agent-framework/microsoft-agent-framework-version-1-0/"
+    },
+    {
+      "id": "R17",
+      "author": "MICROSOFT",
+      "title": "AutoGen: official repository README",
+      "date": "本次读取的维护声明",
+      "url": "https://github.com/microsoft/autogen"
+    },
+    {
+      "id": "R18",
+      "author": "GOOGLE ADK",
+      "title": "Welcome to ADK 2.0",
+      "date": "含各语言 GA 日期",
+      "url": "https://adk.dev/2.0/"
+    },
+    {
+      "id": "R19",
+      "author": "GOOGLE ADK",
+      "title": "Graph-based agent workflows",
+      "date": "动态文档",
+      "url": "https://adk.dev/graphs/"
+    },
+    {
+      "id": "R20",
+      "author": "GOOGLE ADK",
+      "title": "Build collaborative agent teams",
+      "date": "动态文档",
+      "url": "https://adk.dev/workflows/collaboration/"
+    },
+    {
+      "id": "R21",
+      "author": "GOOGLE ADK",
+      "title": "Resume Agents",
+      "date": "动态文档",
+      "url": "https://adk.dev/runtime/resume/"
+    },
+    {
+      "id": "R22",
+      "author": "GOOGLE ADK",
+      "title": "Use the Visual Builder",
+      "date": "动态文档",
+      "url": "https://adk.dev/visual-builder/"
+    },
+    {
+      "id": "R23",
+      "author": "PYDANTIC",
+      "title": "Graph Builder API",
+      "date": "动态文档，含 V2 持久化变更",
+      "url": "https://pydantic.dev/docs/ai/graph/builder/"
+    },
+    {
+      "id": "R24",
+      "author": "PYDANTIC",
+      "title": "Durable Execution",
+      "date": "动态文档",
+      "url": "https://pydantic.dev/docs/ai/capabilities/durable_execution/overview/"
+    },
+    {
+      "id": "R25",
+      "author": "MASTRA",
+      "title": "Control flow",
+      "date": "动态文档",
+      "url": "https://mastra.ai/docs/workflows/control-flow"
+    },
+    {
+      "id": "R26",
+      "author": "MASTRA",
+      "title": "Suspend and resume",
+      "date": "动态文档",
+      "url": "https://mastra.ai/docs/workflows/suspend-and-resume"
+    },
+    {
+      "id": "R27",
+      "author": "MASTRA",
+      "title": "Subagents",
+      "date": "动态文档",
+      "url": "https://mastra.ai/docs/subagents"
+    },
+    {
+      "id": "R28",
+      "author": "LLAMAINDEX",
+      "title": "Writing durable workflows",
+      "date": "Python 动态文档",
+      "url": "https://developers.llamaindex.ai/python/llamaagents/workflows/durable_workflows/"
+    },
+    {
+      "id": "R29",
+      "author": "LLAMAINDEX",
+      "title": "Workflows",
+      "date": "TypeScript 动态文档",
+      "url": "https://developers.llamaindex.ai/typescript/framework/tutorials/workflows/"
+    },
+    {
+      "id": "R30",
+      "author": "DIFY",
+      "title": "Agent",
+      "date": "动态文档",
+      "url": "https://docs.dify.ai/en/cloud/use-dify/nodes/agent"
+    },
+    {
+      "id": "R31",
+      "author": "FLOWISE",
+      "title": "Agentflow V2",
+      "date": "动态文档",
+      "url": "https://docs.flowiseai.com/using-flowise/agentflowv2"
+    },
+    {
+      "id": "R32",
+      "author": "LANGFLOW",
+      "title": "Use Langflow agents as tools",
+      "date": "动态文档",
+      "url": "https://docs.langflow.org/agents-tools"
+    },
+    {
+      "id": "R33",
+      "author": "N8N",
+      "title": "AI Agent Tool",
+      "date": "动态文档",
+      "url": "https://docs.n8n.io/integrations/builtin/cluster-nodes/sub-nodes/n8n-nodes-langchain.toolaiagent"
+    },
+    {
+      "id": "R34",
+      "author": "XYFLOW",
+      "title": "React Flow: Quick Start",
+      "date": "动态文档",
+      "url": "https://reactflow.dev/learn"
+    },
+    {
+      "id": "R35",
+      "author": "LANGCHAIN",
+      "title": "LangSmith Studio vs Agent Chat UI: When to Use What",
+      "date": "知识库动态页面",
+      "url": "https://kb.langchain.com/articles/1353449293-langsmith-studio-vs-agent-chat-ui"
+    },
+    {
+      "id": "R36",
+      "author": "LANGFUSE",
+      "title": "Agent Graphs",
+      "date": "动态文档",
+      "url": "https://langfuse.com/docs/observability/features/agent-graphs"
+    },
+    {
+      "id": "R37",
+      "author": "MARTIN L, CEMAJ G, COHEN M / ANTHROPIC",
+      "title": "Scaling Managed Agents: Decoupling the brain from the hands",
+      "date": "2026-04-08",
+      "url": "https://www.anthropic.com/research/managed-agents"
+    },
+    {
+      "id": "R38",
+      "author": "THE LINUX FOUNDATION",
+      "title": "Agentic AI Foundation Announces Four New Projects: Agent Skills, Open Responses, OpenEnv, and OpenSandbox",
+      "date": "2026-10-22",
+      "url": "https://www.linuxfoundation.org/press/agentic-ai-foundation-announces-four-new-projects-agent-skills-open-responses-openenv-and-opensandbox"
+    },
+    {
+      "id": "R39",
+      "author": "KIM Y, GU K, PARK C, et al.",
+      "title": "Towards a Science of Scaling Agent Systems",
+      "date": "arXiv:2512.08296v3，2026-04-08",
+      "url": "https://arxiv.org/abs/2512.08296v3"
+    },
+    {
+      "id": "R40",
+      "author": "CEMRI M, PAN M Z, YANG S, et al.",
+      "title": "Why Do Multi-Agent LLM Systems Fail?",
+      "date": "NeurIPS 2025, Datasets and Benchmarks；DOI:10.52202/085713-4082",
+      "url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/b1041e52d3be19f0a9bc491657488e4a-Abstract-Datasets_and_Benchmarks_Track.html"
+    },
+    {
+      "id": "R41",
+      "author": "ANTHROPIC",
+      "title": "How we built our multi-agent research system",
+      "date": "2025-06-13",
+      "url": "https://www.anthropic.com/research/multi-agent-research-system"
+    },
+    {
+      "id": "R42",
+      "author": "LANGCHAIN",
+      "title": "State of Agent Engineering",
+      "date": "调查期 2025-11-18—2025-12-02；网页标注 2026-06-12",
+      "url": "https://www.langchain.com/state-of-agent-engineering"
+    },
+    {
+      "id": "R43",
+      "author": "MODEL CONTEXT PROTOCOL",
+      "title": "What is the Model Context Protocol (MCP)?",
+      "date": "本次页面版本 2026-07-28",
+      "url": "https://modelcontextprotocol.io/docs/2026-07-28/getting-started/intro"
+    },
+    {
+      "id": "R44",
+      "author": "A2A PROJECT",
+      "title": "What is A2A?",
+      "date": "动态文档",
+      "url": "https://a2a-protocol.org/latest/topics/what-is-a2a/"
+    },
+    {
+      "id": "R45",
+      "author": "MICROSOFT",
+      "title": "Introducing Microsoft Agent Framework: The Open-Source Engine for Agentic AI Apps",
+      "date": "2025-10-01",
+      "url": "https://devblogs.microsoft.com/foundry/introducing-microsoft-agent-framework-the-open-source-engine-for-agentic-ai-apps/"
+    },
+    {
+      "id": "R46",
+      "author": "TEMPORAL",
+      "title": "Activity basics — TypeScript SDK",
+      "date": "动态文档",
+      "url": "https://docs.temporal.io/develop/typescript/activities/basics"
+    },
+    {
+      "id": "R47",
+      "author": "LANGCHAIN",
+      "title": "LangGraph runtime",
+      "date": "动态文档",
+      "url": "https://docs.langchain.com/oss/javascript/langgraph/pregel",
+      "type": "EB/OL"
+    },
+    {
+      "id": "R48",
+      "author": "LANGCHAIN",
+      "title": "Use the graph API",
+      "date": "动态文档",
+      "url": "https://docs.langchain.com/oss/javascript/langgraph/use-graph-api",
+      "type": "EB/OL"
+    },
+    {
+      "id": "R49",
+      "author": "LANGCHAIN",
+      "title": "INVALID_CONCURRENT_GRAPH_UPDATE",
+      "date": "动态文档",
+      "url": "https://docs.langchain.com/oss/javascript/langgraph/errors/INVALID_CONCURRENT_GRAPH_UPDATE",
+      "type": "EB/OL"
+    },
+    {
+      "id": "R50",
+      "author": "LANGCHAIN",
+      "title": "Subgraphs",
+      "date": "动态文档",
+      "url": "https://docs.langchain.com/oss/javascript/langgraph/use-subgraphs",
+      "type": "EB/OL"
+    },
+    {
+      "id": "R51",
+      "author": "LANGCHAIN",
+      "title": "StateGraph — LangGraph.js API Reference",
+      "date": "动态 API 参考",
+      "url": "https://langchain-ai.github.io/langgraphjs/reference/classes/langgraph.StateGraph.html",
+      "type": "EB/OL"
+    },
+    {
+      "id": "R52",
+      "author": "PYDANTIC",
+      "title": "Joins and Reducers",
+      "date": "动态文档",
+      "url": "https://pydantic.dev/docs/ai/graph/builder/joins/",
+      "type": "EB/OL"
+    },
+    {
+      "id": "R53",
+      "author": "PYDANTIC",
+      "title": "Parallel Execution",
+      "date": "动态文档",
+      "url": "https://pydantic.dev/docs/ai/graph/builder/parallel/",
+      "type": "EB/OL"
+    },
+    {
+      "id": "R54",
+      "author": "PYDANTIC",
+      "title": "Decision Nodes",
+      "date": "动态文档",
+      "url": "https://pydantic.dev/docs/ai/graph/builder/decisions/",
+      "type": "EB/OL"
+    },
+    {
+      "id": "R55",
+      "author": "CAMUNDA",
+      "title": "Exclusive gateway",
+      "date": "版本 8.9 文档",
+      "url": "https://docs.camunda.io/docs/8.9/components/modeler/bpmn/exclusive-gateways/",
+      "type": "EB/OL"
+    },
+    {
+      "id": "R56",
+      "author": "CAMUNDA",
+      "title": "Parallel gateway",
+      "date": "版本 8.8 文档",
+      "url": "https://docs.camunda.io/docs/8.8/components/modeler/bpmn/parallel-gateways/",
+      "type": "EB/OL"
+    },
+    {
+      "id": "R57",
+      "author": "CAMUNDA",
+      "title": "Inclusive gateway",
+      "date": "版本 8.9 文档",
+      "url": "https://docs.camunda.io/docs/8.9/components/modeler/bpmn/inclusive-gateways/",
+      "type": "EB/OL"
+    },
+    {
+      "id": "R58",
+      "author": "APACHE AIRFLOW",
+      "title": "Dynamic Task Mapping",
+      "date": "动态文档",
+      "url": "https://airflow.apache.org/docs/apache-airflow/stable/authoring-and-scheduling/dynamic-task-mapping.html",
+      "type": "EB/OL"
+    },
+    {
+      "id": "R59",
+      "author": "GOOGLE ADK",
+      "title": "Graph routes",
+      "date": "动态文档",
+      "url": "https://adk.dev/graphs/routes/",
+      "type": "EB/OL"
+    },
+    {
+      "id": "R60",
+      "author": "GOOGLE ADK",
+      "title": "Data handling",
+      "date": "动态文档",
+      "url": "https://adk.dev/graphs/data-handling/",
+      "type": "EB/OL"
+    },
+    {
+      "id": "R61",
+      "author": "GOOGLE ADK",
+      "title": "Dynamic workflows",
+      "date": "动态文档",
+      "url": "https://adk.dev/graphs/dynamic/",
+      "type": "EB/OL"
+    },
+    {
+      "id": "R62",
+      "author": "DAGSTER",
+      "title": "Concepts — Ops, graphs and jobs",
+      "date": "动态文档",
+      "url": "https://dagster.io/docs/getting-started/concepts",
+      "type": "EB/OL"
+    },
+    {
+      "id": "R63",
+      "author": "DAGSTER",
+      "title": "Dynamic graphs",
+      "date": "动态文档",
+      "url": "https://dagster.io/docs/guides/build/ops/dynamic-graphs",
+      "type": "EB/OL"
+    },
+    {
+      "id": "R64",
+      "author": "PREFECT",
+      "title": "Introduction — Prefect 3",
+      "date": "动态文档",
+      "url": "https://www.prefect.io/docs/v3/get-started",
+      "type": "EB/OL"
+    },
+    {
+      "id": "R65",
+      "author": "TEMPORAL",
+      "title": "Temporal Workflow Definition",
+      "date": "动态文档",
+      "url": "https://docs.temporal.io/workflow-definition",
+      "type": "EB/OL"
+    },
+    {
+      "id": "R66",
+      "author": "BESTA M, et al.",
+      "title": "Graph of Thoughts: Solving Elaborate Problems with Large Language Models",
+      "date": "2024-02-06，arXiv v4；AAAI 2024 工作",
+      "url": "https://arxiv.org/html/2308.09687v4",
+      "type": "EB/OL"
+    },
+    {
+      "id": "R67",
+      "author": "KIM S, et al.",
+      "title": "An LLM Compiler for Parallel Function Calling",
+      "date": "2024-06-05，arXiv v3；ICML 2024 工作",
+      "url": "https://arxiv.org/html/2312.04511v3",
+      "type": "EB/OL"
+    },
+    {
+      "id": "R68",
+      "author": "ZHANG J, et al.",
+      "title": "AFlow: Automating Agentic Workflow Generation",
+      "date": "2025-04-15，arXiv v4；ICLR 2025 工作",
+      "url": "https://arxiv.org/html/2410.10762v4",
+      "type": "EB/OL"
+    },
+    {
+      "id": "R69",
+      "author": "YUE L, et al.",
+      "title": "From Static Templates to Dynamic Runtime Graphs: A Survey of Workflow Optimization for LLM Agents",
+      "date": "2026-10，Findings of EMNLP 2026",
+      "url": "https://aclanthology.org/2026.findings-emnlp.1393/",
+      "type": "C/OL"
+    },
+    {
+      "id": "R70",
+      "author": "WEI Y, et al.",
+      "title": "VFlow: Discovering Optimal Agentic Workflows for Verilog Generation",
+      "date": "2025-07-13，arXiv v2",
+      "url": "https://arxiv.org/abs/2504.03723v2",
+      "type": "EB/OL"
+    },
+    {
+      "id": "R71",
+      "author": "ASP-DAC",
+      "title": "Conference Program — ASP-DAC 2026",
+      "date": "2026-01-19 至 2026-01-22，正式议程",
+      "url": "https://www.aspdac.com/aspdac2026/program/program-abstract.html",
+      "type": "EB/OL"
+    }
+  ]
+}

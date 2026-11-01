@@ -1,0 +1,51 @@
+# Proposed authoring DSL, not an SDK configuration. See report section 9.7.
+schema: proposed-flow-dsl/v1
+id: dft-diagnose-and-repair
+revision: "example-1"
+entry: inspect
+maxRepairRounds: 3
+
+nodes:
+  inspect: { kind: invoke, executor: inspect-artifacts }
+  select:  { kind: branch, predicate: classify-check-result }
+  analyze:
+    kind: fork
+    branches:
+      clocks:  { subflow: analyze-clock-report, access: read-only }
+      coverage: { subflow: analyze-coverage-report, access: read-only }
+    join: merge
+  merge:
+    kind: join
+    fork: analyze
+    mode: all_activated_success
+    onChildFailure: fail_group
+    onEmpty: error
+  propose: { kind: invoke, executor: propose-one-patch }
+  apply:   { kind: invoke, executor: apply-patch-to-isolated-workspace }
+  verify:  { kind: invoke, executor: wait-and-verify-eda-job }
+  deliver: { kind: terminal, status: succeeded }
+  blocked: { kind: terminal, status: unresolved }
+
+control:
+  - { from: inspect, outcome: success, to: select }
+  - { from: select, outcome: passed, to: deliver }
+  - { from: select, outcome: failed_with_budget, to: analyze }
+  - { from: select, outcome: failed_without_budget, to: blocked }
+  - { from: merge, outcome: success, to: propose }
+  - { from: propose, outcome: success, to: apply }
+  - { from: apply, outcome: success, to: verify }
+  - { from: verify, outcome: completed, to: select }
+
+loopContract:
+  cycle: [select, analyze, merge, propose, apply, verify]
+  incrementRepairRoundAt: first_activation_of_apply_in_round
+  roundCounterDedupKey: [run_id, loop_instance_id, repair_round_id]
+  bindSelectInput:
+    firstVisit: inspect.result
+    laterVisits: previous_round.verify.result
+  bindReportRefs:
+    firstVisit: inspect.report_refs
+    laterVisits: previous_round.verify.report_refs
+  bindAnalysisInput: current_iteration.bound_report_refs
+  freezeReportVersionPerIteration: true
+  onNoProgress: blocked

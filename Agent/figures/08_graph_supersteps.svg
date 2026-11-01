@@ -1,0 +1,359 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="1152pt" height="720pt" viewBox="0 0 1152 720" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-11-01T07:33:42.508419</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.10.8, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 720 
+L 1152 720 
+L 1152 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="line2d_1">
+    <path d="M 46.8 110.16 
+L 1105.2 110.16 
+" clip-path="url(#p349d16163b)" style="fill: none; stroke: #c7d3df; stroke-width: 1.2; stroke-linecap: square"/>
+   </g>
+   <g id="patch_2">
+    <path d="M 58.32 136.8 
+L 1093.68 136.8 
+Q 1105.2 136.8 1105.2 148.32 
+L 1105.2 467.28 
+Q 1105.2 478.8 1093.68 478.8 
+L 58.32 478.8 
+Q 46.8 478.8 46.8 467.28 
+L 46.8 148.32 
+Q 46.8 136.8 58.32 136.8 
+z
+" clip-path="url(#p349d16163b)" style="fill: #f3f6fa; stroke: #c7d3df; stroke-width: 1.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 83.52 259.2 
+L 276.48 259.2 
+Q 288 259.2 288 270.72 
+L 288 362.88 
+Q 288 374.4 276.48 374.4 
+L 83.52 374.4 
+Q 72 374.4 72 362.88 
+L 72 270.72 
+Q 72 259.2 83.52 259.2 
+z
+" clip-path="url(#p349d16163b)" style="fill: #edf3fd; stroke: #2864b4; stroke-width: 1.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 385.92 208.8 
+L 578.88 208.8 
+Q 590.4 208.8 590.4 220.32 
+L 590.4 276.48 
+Q 590.4 288 578.88 288 
+L 385.92 288 
+Q 374.4 288 374.4 276.48 
+L 374.4 220.32 
+Q 374.4 208.8 385.92 208.8 
+z
+" clip-path="url(#p349d16163b)" style="fill: #ffffff; stroke: #2864b4; stroke-width: 1.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 385.92 352.8 
+L 578.88 352.8 
+Q 590.4 352.8 590.4 364.32 
+L 590.4 420.48 
+Q 590.4 432 578.88 432 
+L 385.92 432 
+Q 374.4 432 374.4 420.48 
+L 374.4 364.32 
+Q 374.4 352.8 385.92 352.8 
+z
+" clip-path="url(#p349d16163b)" style="fill: #ffffff; stroke: #2864b4; stroke-width: 1.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 368.64 298.8 
+L 596.16 298.8 
+Q 604.8 298.8 604.8 307.44 
+L 604.8 334.8 
+Q 604.8 343.44 596.16 343.44 
+L 368.64 343.44 
+Q 360 343.44 360 334.8 
+L 360 307.44 
+Q 360 298.8 368.64 298.8 
+z
+" clip-path="url(#p349d16163b)" style="fill: #fff5e9; stroke: #c97722; stroke-width: 1.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 702.72 219.6 
+L 838.08 219.6 
+Q 849.6 219.6 849.6 231.12 
+L 849.6 265.68 
+Q 849.6 277.2 838.08 277.2 
+L 702.72 277.2 
+Q 691.2 277.2 691.2 265.68 
+L 691.2 231.12 
+Q 691.2 219.6 702.72 219.6 
+z
+" clip-path="url(#p349d16163b)" style="fill: #ffffff; stroke: #2864b4; stroke-width: 1.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_8">
+    <path d="M 702.72 363.6 
+L 838.08 363.6 
+Q 849.6 363.6 849.6 375.12 
+L 849.6 409.68 
+Q 849.6 421.2 838.08 421.2 
+L 702.72 421.2 
+Q 691.2 421.2 691.2 409.68 
+L 691.2 375.12 
+Q 691.2 363.6 702.72 363.6 
+z
+" clip-path="url(#p349d16163b)" style="fill: #ffffff; stroke: #2864b4; stroke-width: 1.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_9">
+    <path d="M 933.12 252 
+L 1068.48 252 
+Q 1080 252 1080 263.52 
+L 1080 370.08 
+Q 1080 381.6 1068.48 381.6 
+L 933.12 381.6 
+Q 921.6 381.6 921.6 370.08 
+L 921.6 263.52 
+Q 921.6 252 933.12 252 
+z
+" clip-path="url(#p349d16163b)" style="fill: #ecf7f5; stroke: #11847b; stroke-width: 1.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_10">
+    <path d="M 58.32 514.8 
+L 1093.68 514.8 
+Q 1105.2 514.8 1105.2 526.32 
+L 1105.2 640.08 
+Q 1105.2 651.6 1093.68 651.6 
+L 58.32 651.6 
+Q 46.8 651.6 46.8 640.08 
+L 46.8 526.32 
+Q 46.8 514.8 58.32 514.8 
+z
+" clip-path="url(#p349d16163b)" style="fill: #ecf7f5; stroke: #c7d3df; stroke-width: 1.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_11">
+    <path d="M 227.52 565.2 
+L 722.88 565.2 
+Q 734.4 565.2 734.4 576.72 
+L 734.4 625.68 
+Q 734.4 637.2 722.88 637.2 
+L 227.52 637.2 
+Q 216 637.2 216 625.68 
+L 216 576.72 
+Q 216 565.2 227.52 565.2 
+z
+" clip-path="url(#p349d16163b)" style="fill: #ffffff; stroke: #11847b; stroke-width: 1.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_12">
+    <path d="M 846.72 565.2 
+L 1054.08 565.2 
+Q 1065.6 565.2 1065.6 576.72 
+L 1065.6 625.68 
+Q 1065.6 637.2 1054.08 637.2 
+L 846.72 637.2 
+Q 835.2 637.2 835.2 625.68 
+L 835.2 576.72 
+Q 835.2 565.2 846.72 565.2 
+z
+" clip-path="url(#p349d16163b)" style="fill: #ffffff; stroke: #11847b; stroke-width: 1.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="line2d_2">
+    <path d="M 288 316.8 
+L 327.6 316.8 
+" clip-path="url(#p349d16163b)" style="fill: none; stroke: #2864b4; stroke-width: 2.2; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_3">
+    <path d="M 327.6 248.4 
+L 327.6 392.4 
+" clip-path="url(#p349d16163b)" style="fill: none; stroke: #2864b4; stroke-width: 2.2; stroke-linecap: square"/>
+   </g>
+   <g id="patch_13">
+    <path d="M 327.6 248.4 
+L 371.940325 248.4 
+" clip-path="url(#p349d16163b)" style="fill: none; stroke: #2864b4; stroke-width: 2.2; stroke-linecap: round"/>
+    <path d="M 363.940325 244.4 
+L 371.940325 248.4 
+L 363.940325 252.4 
+z
+" clip-path="url(#p349d16163b)" style="fill: #2864b4; stroke: #2864b4; stroke-width: 2.2; stroke-linecap: round"/>
+   </g>
+   <g id="patch_14">
+    <path d="M 327.6 392.4 
+L 371.940325 392.4 
+" clip-path="url(#p349d16163b)" style="fill: none; stroke: #2864b4; stroke-width: 2.2; stroke-linecap: round"/>
+    <path d="M 363.940325 388.4 
+L 371.940325 392.4 
+L 363.940325 396.4 
+z
+" clip-path="url(#p349d16163b)" style="fill: #2864b4; stroke: #2864b4; stroke-width: 2.2; stroke-linecap: round"/>
+   </g>
+   <g id="patch_15">
+    <path d="M 590.4 248.4 
+L 688.740325 248.4 
+" clip-path="url(#p349d16163b)" style="fill: none; stroke: #2864b4; stroke-width: 2.2; stroke-linecap: round"/>
+    <path d="M 680.740325 244.4 
+L 688.740325 248.4 
+L 680.740325 252.4 
+z
+" clip-path="url(#p349d16163b)" style="fill: #2864b4; stroke: #2864b4; stroke-width: 2.2; stroke-linecap: round"/>
+   </g>
+   <g id="patch_16">
+    <path d="M 590.4 392.4 
+L 688.740325 392.4 
+" clip-path="url(#p349d16163b)" style="fill: none; stroke: #2864b4; stroke-width: 2.2; stroke-linecap: round"/>
+    <path d="M 680.740325 388.4 
+L 688.740325 392.4 
+L 680.740325 396.4 
+z
+" clip-path="url(#p349d16163b)" style="fill: #2864b4; stroke: #2864b4; stroke-width: 2.2; stroke-linecap: round"/>
+   </g>
+   <g id="patch_17">
+    <path d="M 849.6 248.4 
+L 885.6 248.4 
+L 885.6 288 
+L 919.140325 288 
+" clip-path="url(#p349d16163b)" style="fill: none; stroke: #11847b; stroke-width: 2.2; stroke-linecap: round"/>
+    <path d="M 911.140325 284 
+L 919.140325 288 
+L 911.140325 292 
+z
+" clip-path="url(#p349d16163b)" style="fill: #11847b; stroke: #11847b; stroke-width: 2.2; stroke-linecap: round"/>
+   </g>
+   <g id="patch_18">
+    <path d="M 849.6 392.4 
+L 885.6 392.4 
+L 885.6 345.6 
+L 919.140325 345.6 
+" clip-path="url(#p349d16163b)" style="fill: none; stroke: #11847b; stroke-width: 2.2; stroke-linecap: round"/>
+    <path d="M 911.140325 341.6 
+L 919.140325 345.6 
+L 911.140325 349.6 
+z
+" clip-path="url(#p349d16163b)" style="fill: #11847b; stroke: #11847b; stroke-width: 2.2; stroke-linecap: round"/>
+   </g>
+   <g id="patch_19">
+    <path d="M 1000.8 381.6 
+L 1000.8 493.2 
+L 475.2 493.2 
+L 475.2 562.740325 
+" clip-path="url(#p349d16163b)" style="fill: none; stroke: #11847b; stroke-width: 2.2; stroke-linecap: round"/>
+    <path d="M 479.2 554.740325 
+L 475.2 562.740325 
+L 471.2 554.740325 
+z
+" clip-path="url(#p349d16163b)" style="fill: #11847b; stroke: #11847b; stroke-width: 2.2; stroke-linecap: round"/>
+   </g>
+   <g id="patch_20">
+    <path d="M 734.4 601.2 
+L 832.740325 601.2 
+" clip-path="url(#p349d16163b)" style="fill: none; stroke: #11847b; stroke-width: 2.2; stroke-linecap: round"/>
+    <path d="M 824.740325 597.2 
+L 832.740325 601.2 
+L 824.740325 605.2 
+z
+" clip-path="url(#p349d16163b)" style="fill: #11847b; stroke: #11847b; stroke-width: 2.2; stroke-linecap: round"/>
+   </g>
+   <g id="text_1">
+    <text style="font-size: 27px; font-family: 'Droid Sans Fallback'; text-anchor: start; fill: #183047" x="46.8" y="53.111953" transform="rotate(-0 46.8 53.111953)">Pregel：本阶段写入在下一阶段才可见</text>
+   </g>
+   <g id="text_2">
+    <text style="font-size: 18px; font-family: 'Droid Sans Fallback'; text-anchor: start; fill: #556a7c" x="46.8" y="88.230937" transform="rotate(-0 46.8 88.230937)">并行节点读取阶段开始的状态；阶段结束后，reducer 合并各节点返回的更新。</text>
+   </g>
+   <g id="text_3">
+    <text style="font-size: 23px; font-family: 'Droid Sans Fallback'; text-anchor: start; fill: #2864b4" x="68.4" y="168.739531" transform="rotate(-0 68.4 168.739531)">super-step k</text>
+   </g>
+   <g id="text_4">
+    <text style="font-size: 17px; font-family: 'Droid Sans Fallback'; text-anchor: end; fill: #556a7c" x="1080" y="167.169219" transform="rotate(-0 1080 167.169219)">纯诊断示例：两个节点都只产生结果数据</text>
+   </g>
+   <g id="text_5">
+    <text style="font-size: 22px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #2864b4" x="180" y="306.429813" transform="rotate(-0 180 306.429813)">已提交状态 S(k)</text>
+   </g>
+   <g id="text_6">
+    <text style="font-size: 18px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #556a7c" x="180" y="348.006937" transform="rotate(-0 180 348.006937)">diagnoses = {}</text>
+   </g>
+   <g id="text_7">
+    <text style="font-size: 22px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #2864b4" x="482.4" y="243.069813" transform="rotate(-0 482.4 243.069813)">节点 A</text>
+   </g>
+   <g id="text_8">
+    <text style="font-size: 18px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #556a7c" x="482.4" y="271.326937" transform="rotate(-0 482.4 271.326937)">读取同一份 S(k)</text>
+   </g>
+   <g id="text_9">
+    <text style="font-size: 22px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #2864b4" x="482.4" y="387.069813" transform="rotate(-0 482.4 387.069813)">节点 B</text>
+   </g>
+   <g id="text_10">
+    <text style="font-size: 18px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #556a7c" x="482.4" y="415.326937" transform="rotate(-0 482.4 415.326937)">读取同一份 S(k)</text>
+   </g>
+   <g id="text_11">
+    <text style="font-size: 16px; font-family: 'Droid Sans Fallback'; fill: #c97722" transform="translate(433.3375 315.174688)">即使 A 先完成</text>
+    <text style="font-size: 16px; font-family: 'Droid Sans Fallback'; fill: #c97722" transform="translate(394.275 335.440313)">B 也看不到 A 本阶段写入</text>
+   </g>
+   <g id="text_12">
+    <text style="font-size: 18px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #2864b4" x="770.4" y="253.110937" transform="rotate(-0 770.4 253.110937)">{A: 诊断 A}</text>
+   </g>
+   <g id="text_13">
+    <text style="font-size: 18px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #2864b4" x="770.4" y="397.110937" transform="rotate(-0 770.4 397.110937)">{B: 诊断 B}</text>
+   </g>
+   <g id="text_14">
+    <text style="font-size: 16px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #556a7c" x="640.8" y="230.2675" transform="rotate(-0 640.8 230.2675)">返回更新</text>
+   </g>
+   <g id="text_15">
+    <text style="font-size: 16px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #556a7c" x="640.8" y="374.2675" transform="rotate(-0 640.8 374.2675)">返回更新</text>
+   </g>
+   <g id="text_16">
+    <text style="font-size: 22px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #11847b" x="1000.8" y="304.413813" transform="rotate(-0 1000.8 304.413813)">阶段结束</text>
+   </g>
+   <g id="text_17">
+    <text style="font-size: 18px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #556a7c" x="1000.8" y="351.318937" transform="rotate(-0 1000.8 351.318937)">reducer 按键合并</text>
+   </g>
+   <g id="text_18">
+    <text style="font-size: 23px; font-family: 'Droid Sans Fallback'; text-anchor: start; fill: #11847b" x="68.4" y="546.019531" transform="rotate(-0 68.4 546.019531)">super-step k+1</text>
+   </g>
+   <g id="text_19">
+    <text style="font-size: 22px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #11847b" x="475.2" y="596.877813" transform="rotate(-0 475.2 596.877813)">已合并状态 S(k+1)</text>
+   </g>
+   <g id="text_20">
+    <text style="font-size: 18px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #556a7c" x="475.2" y="622.927969" transform="rotate(-0 475.2 622.927969)">diagnoses = {A: 诊断 A, B: 诊断 B}</text>
+   </g>
+   <g id="text_21">
+    <text style="font-size: 22px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #11847b" x="950.4" y="596.877813" transform="rotate(-0 950.4 596.877813)">汇总节点 C</text>
+   </g>
+   <g id="text_22">
+    <text style="font-size: 18px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #556a7c" x="950.4" y="622.470937" transform="rotate(-0 950.4 622.470937)">读取两个诊断结果</text>
+   </g>
+   <g id="text_23">
+    <text style="font-size: 15px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #556a7c" x="784.8" y="579.925781" transform="rotate(-0 784.8 579.925781)">下一阶段读取</text>
+   </g>
+   <g id="text_24">
+    <text style="font-size: 17px; font-family: 'Droid Sans Fallback'; text-anchor: start; fill: #556a7c" x="46.8" y="681.249219" transform="rotate(-0 46.8 681.249219)">此例仅合并无副作用的诊断数据；图状态同步不保证外部工具只执行一次。</text>
+   </g>
+   <g id="text_25">
+    <text style="font-size: 14px; font-family: 'Droid Sans Fallback'; text-anchor: start; fill: #556a7c" x="46.8" y="709.984062" transform="rotate(-0 46.8 709.984062)">设计归纳示意；具体框架行为以正文为准</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p349d16163b">
+   <rect x="0" y="0" width="1152" height="720"/>
+  </clipPath>
+ </defs>
+</svg>

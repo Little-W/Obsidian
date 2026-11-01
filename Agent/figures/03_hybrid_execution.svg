@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="1152pt" height="720pt" viewBox="0 0 1152 720" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-11-01T07:21:20.303677</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.10.8, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 720 
+L 1152 720 
+L 1152 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="line2d_1">
+    <path d="M 46.8 110.16 
+L 1105.2 110.16 
+" clip-path="url(#p5b1cf217b9)" style="fill: none; stroke: #c7d3df; stroke-width: 1.2; stroke-linecap: square"/>
+   </g>
+   <g id="patch_2">
+    <path d="M 70.56 158.4 
+L 260.64 158.4 
+Q 273.6 158.4 273.6 171.36 
+L 273.6 231.84 
+Q 273.6 244.8 260.64 244.8 
+L 70.56 244.8 
+Q 57.6 244.8 57.6 231.84 
+L 57.6 171.36 
+Q 57.6 158.4 70.56 158.4 
+z
+" clip-path="url(#p5b1cf217b9)" style="fill: #edf3fd; stroke: #2864b4; stroke-width: 1.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 387.36 158.4 
+L 663.84 158.4 
+Q 676.8 158.4 676.8 171.36 
+L 676.8 231.84 
+Q 676.8 244.8 663.84 244.8 
+L 387.36 244.8 
+Q 374.4 244.8 374.4 231.84 
+L 374.4 171.36 
+Q 374.4 158.4 387.36 158.4 
+z
+" clip-path="url(#p5b1cf217b9)" style="fill: #edf3fd; stroke: #2864b4; stroke-width: 1.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 812.16 158.4 
+L 1045.44 158.4 
+Q 1058.4 158.4 1058.4 171.36 
+L 1058.4 231.84 
+Q 1058.4 244.8 1045.44 244.8 
+L 812.16 244.8 
+Q 799.2 244.8 799.2 231.84 
+L 799.2 171.36 
+Q 799.2 158.4 812.16 158.4 
+z
+" clip-path="url(#p5b1cf217b9)" style="fill: #ecf7f5; stroke: #11847b; stroke-width: 1.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 192.96 360 
+L 743.04 360 
+Q 756 360 756 372.96 
+L 756 545.04 
+Q 756 558 743.04 558 
+L 192.96 558 
+Q 180 558 180 545.04 
+L 180 372.96 
+Q 180 360 192.96 360 
+z
+" clip-path="url(#p5b1cf217b9)" style="fill: #f3f6fa; stroke: #11847b; stroke-width: 2.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 221.76 424.8 
+L 347.04 424.8 
+Q 360 424.8 360 437.76 
+L 360 483.84 
+Q 360 496.8 347.04 496.8 
+L 221.76 496.8 
+Q 208.8 496.8 208.8 483.84 
+L 208.8 437.76 
+Q 208.8 424.8 221.76 424.8 
+z
+" clip-path="url(#p5b1cf217b9)" style="fill: #ffffff; stroke: #11847b; stroke-width: 1.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 405.36 424.8 
+L 530.64 424.8 
+Q 543.6 424.8 543.6 437.76 
+L 543.6 483.84 
+Q 543.6 496.8 530.64 496.8 
+L 405.36 496.8 
+Q 392.4 496.8 392.4 483.84 
+L 392.4 437.76 
+Q 392.4 424.8 405.36 424.8 
+z
+" clip-path="url(#p5b1cf217b9)" style="fill: #ffffff; stroke: #11847b; stroke-width: 1.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_8">
+    <path d="M 588.96 424.8 
+L 714.24 424.8 
+Q 727.2 424.8 727.2 437.76 
+L 727.2 483.84 
+Q 727.2 496.8 714.24 496.8 
+L 588.96 496.8 
+Q 576 496.8 576 483.84 
+L 576 437.76 
+Q 576 424.8 588.96 424.8 
+z
+" clip-path="url(#p5b1cf217b9)" style="fill: #ffffff; stroke: #11847b; stroke-width: 1.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_9">
+    <path d="M 812.16 586.8 
+L 1016.64 586.8 
+Q 1029.6 586.8 1029.6 599.76 
+L 1029.6 642.24 
+Q 1029.6 655.2 1016.64 655.2 
+L 812.16 655.2 
+Q 799.2 655.2 799.2 642.24 
+L 799.2 599.76 
+Q 799.2 586.8 812.16 586.8 
+z
+" clip-path="url(#p5b1cf217b9)" style="fill: #ecf7f5; stroke: #11847b; stroke-width: 1.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_10">
+    <path d="M 192.96 601.2 
+L 743.04 601.2 
+Q 756 601.2 756 614.16 
+L 756 642.24 
+Q 756 655.2 743.04 655.2 
+L 192.96 655.2 
+Q 180 655.2 180 642.24 
+L 180 614.16 
+Q 180 601.2 192.96 601.2 
+z
+" clip-path="url(#p5b1cf217b9)" style="fill: #fff5e9; stroke: #c97722; stroke-width: 1.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_11">
+    <path d="M 273.6 201.6 
+L 371.940325 201.6 
+" clip-path="url(#p5b1cf217b9)" style="fill: none; stroke: #2864b4; stroke-width: 2.2; stroke-linecap: round"/>
+    <path d="M 363.940325 197.6 
+L 371.940325 201.6 
+L 363.940325 205.6 
+z
+" clip-path="url(#p5b1cf217b9)" style="fill: #2864b4; stroke: #2864b4; stroke-width: 2.2; stroke-linecap: round"/>
+   </g>
+   <g id="patch_12">
+    <path d="M 676.8 201.6 
+L 796.740325 201.6 
+" clip-path="url(#p5b1cf217b9)" style="fill: none; stroke: #2864b4; stroke-width: 2.2; stroke-linecap: round"/>
+    <path d="M 788.740325 197.6 
+L 796.740325 201.6 
+L 788.740325 205.6 
+z
+" clip-path="url(#p5b1cf217b9)" style="fill: #2864b4; stroke: #2864b4; stroke-width: 2.2; stroke-linecap: round"/>
+   </g>
+   <g id="patch_13">
+    <path d="M 360 460.8 
+L 389.940325 460.8 
+" clip-path="url(#p5b1cf217b9)" style="fill: none; stroke: #11847b; stroke-width: 2.2; stroke-linecap: round"/>
+    <path d="M 381.940325 456.8 
+L 389.940325 460.8 
+L 381.940325 464.8 
+z
+" clip-path="url(#p5b1cf217b9)" style="fill: #11847b; stroke: #11847b; stroke-width: 2.2; stroke-linecap: round"/>
+   </g>
+   <g id="patch_14">
+    <path d="M 543.6 460.8 
+L 573.540325 460.8 
+" clip-path="url(#p5b1cf217b9)" style="fill: none; stroke: #11847b; stroke-width: 2.2; stroke-linecap: round"/>
+    <path d="M 565.540325 456.8 
+L 573.540325 460.8 
+L 565.540325 464.8 
+z
+" clip-path="url(#p5b1cf217b9)" style="fill: #11847b; stroke: #11847b; stroke-width: 2.2; stroke-linecap: round"/>
+   </g>
+   <g id="patch_15">
+    <path d="M 928.8 244.8 
+L 928.8 460.8 
+L 758.459675 460.8 
+" clip-path="url(#p5b1cf217b9)" style="fill: none; stroke: #c97722; stroke-width: 2.2; stroke-linecap: round"/>
+    <path d="M 766.459675 464.8 
+L 758.459675 460.8 
+L 766.459675 456.8 
+z
+" clip-path="url(#p5b1cf217b9)" style="fill: #c97722; stroke: #c97722; stroke-width: 2.2; stroke-linecap: round"/>
+   </g>
+   <g id="patch_16">
+    <path d="M 525.6 360 
+L 525.6 247.259675 
+" clip-path="url(#p5b1cf217b9)" style="fill: none; stroke: #11847b; stroke-width: 2.2; stroke-linecap: round"/>
+    <path d="M 521.6 255.259675 
+L 525.6 247.259675 
+L 529.6 255.259675 
+z
+" clip-path="url(#p5b1cf217b9)" style="fill: #11847b; stroke: #11847b; stroke-width: 2.2; stroke-linecap: round"/>
+   </g>
+   <g id="patch_17">
+    <path d="M 1058.4 201.6 
+L 1101.6 201.6 
+L 1101.6 621 
+L 1032.059675 621 
+" clip-path="url(#p5b1cf217b9)" style="fill: none; stroke: #11847b; stroke-width: 2.2; stroke-linecap: round"/>
+    <path d="M 1040.059675 625 
+L 1032.059675 621 
+L 1040.059675 617 
+z
+" clip-path="url(#p5b1cf217b9)" style="fill: #11847b; stroke: #11847b; stroke-width: 2.2; stroke-linecap: round"/>
+   </g>
+   <g id="patch_18">
+    <path d="M 468 558 
+L 468 598.740325 
+" clip-path="url(#p5b1cf217b9)" style="fill: none; stroke: #c97722; stroke-width: 2.2; stroke-linecap: round"/>
+    <path d="M 472 590.740325 
+L 468 598.740325 
+L 464 590.740325 
+z
+" clip-path="url(#p5b1cf217b9)" style="fill: #c97722; stroke: #c97722; stroke-width: 2.2; stroke-linecap: round"/>
+   </g>
+   <g id="text_1">
+    <text style="font-size: 27px; font-family: 'Droid Sans Fallback'; text-anchor: start; fill: #183047" x="46.8" y="53.866406" transform="rotate(-0 46.8 53.866406)">推荐架构：明确外层流程，局部使用受控团队</text>
+   </g>
+   <g id="text_2">
+    <text style="font-size: 18px; font-family: 'Droid Sans Fallback'; text-anchor: start; fill: #556a7c" x="46.8" y="92.323125" transform="rotate(-0 46.8 92.323125)">程序管理阶段与验收条件；Agent 负责需要判断、规划和修复的局部任务。</text>
+   </g>
+   <g id="text_3">
+    <text style="font-size: 14px; font-family: 'Droid Sans Fallback'; text-anchor: start; fill: #556a7c" x="46.8" y="699.184062" transform="rotate(-0 46.8 699.184062)">设计归纳示意；具体框架行为以正文为准</text>
+   </g>
+   <g id="text_4">
+    <text style="font-size: 21px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #183047" x="165.6" y="195.000094" transform="rotate(-0 165.6 195.000094)">输入与环境校验</text>
+   </g>
+   <g id="text_5">
+    <text style="font-size: 17px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #556a7c" x="165.6" y="225.921219" transform="rotate(-0 165.6 225.921219)">工程、工具与前置条件</text>
+   </g>
+   <g id="text_6">
+    <text style="font-size: 21px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #183047" x="525.6" y="195.000094" transform="rotate(-0 525.6 195.000094)">任务子流程</text>
+   </g>
+   <g id="text_7">
+    <text style="font-size: 17px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #556a7c" x="525.6" y="226.386062" transform="rotate(-0 525.6 226.386062)">确定步骤 + Agent 节点</text>
+   </g>
+   <g id="text_8">
+    <text style="font-size: 21px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #183047" x="928.8" y="195.000094" transform="rotate(-0 928.8 195.000094)">程序验收</text>
+   </g>
+   <g id="text_9">
+    <text style="font-size: 17px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #556a7c" x="928.8" y="225.921219" transform="rotate(-0 928.8 225.921219)">检查真实报告与阈值</text>
+   </g>
+   <g id="text_10">
+    <text style="font-size: 23px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #11847b" x="468" y="396.259531" transform="rotate(-0 468 396.259531)">受控局部团队（示例）</text>
+   </g>
+   <g id="text_11">
+    <text style="font-size: 21px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #183047" x="284.4" y="456.216094" transform="rotate(-0 284.4 456.216094)">规划</text>
+   </g>
+   <g id="text_12">
+    <text style="font-size: 16px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #556a7c" x="284.4" y="481.5475" transform="rotate(-0 284.4 481.5475)">确定修复范围</text>
+   </g>
+   <g id="text_13">
+    <text style="font-size: 21px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #183047" x="468" y="456.216094" transform="rotate(-0 468 456.216094)">专家执行</text>
+   </g>
+   <g id="text_14">
+    <text style="font-size: 16px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #556a7c" x="468" y="481.5475" transform="rotate(-0 468 481.5475)">调用允许的工具</text>
+   </g>
+   <g id="text_15">
+    <text style="font-size: 21px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #183047" x="651.6" y="456.216094" transform="rotate(-0 651.6 456.216094)">证据检查</text>
+   </g>
+   <g id="text_16">
+    <text style="font-size: 16px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #556a7c" x="651.6" y="481.5475" transform="rotate(-0 651.6 481.5475)">返回结果与依据</text>
+   </g>
+   <g id="text_17">
+    <text style="font-size: 18px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #556a7c" x="468" y="535.350937" transform="rotate(-0 468 535.350937)">限制迭代轮数、工具范围、运行时间与成本</text>
+   </g>
+   <g id="text_18">
+    <text style="font-size: 20px; font-family: 'Droid Sans Fallback'; text-anchor: start; fill: #c97722" x="950.4" y="345.074375" transform="rotate(-0 950.4 345.074375)">未达标</text>
+   </g>
+   <g id="text_19">
+    <text style="font-size: 17px; font-family: 'Droid Sans Fallback'; text-anchor: start; fill: #556a7c" x="950.4" y="375.249219" transform="rotate(-0 950.4 375.249219)">进入局部修复</text>
+   </g>
+   <g id="text_20">
+    <text style="font-size: 18px; font-family: 'Droid Sans Fallback'; fill: #11847b" transform="translate(414 282.785977)">修复后重跑</text>
+    <text style="font-size: 18px; font-family: 'Droid Sans Fallback'; fill: #11847b" transform="translate(396 306.955898)">受影响的步骤</text>
+   </g>
+   <g id="text_21">
+    <text style="font-size: 22px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #183047" x="914.4" y="626.757812" transform="rotate(-0 914.4 626.757812)">交付已验证制品</text>
+   </g>
+   <g id="text_22">
+    <text style="font-size: 20px; font-family: 'Droid Sans Fallback'; text-anchor: end; fill: #11847b" x="1080" y="538.034375" transform="rotate(-0 1080 538.034375)">达标</text>
+   </g>
+   <g id="text_23">
+    <text style="font-size: 21px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #c97722" x="468" y="633.336094" transform="rotate(-0 468 633.336094)">预算耗尽：暂停并报告已知问题</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p5b1cf217b9">
+   <rect x="0" y="0" width="1152" height="720"/>
+  </clipPath>
+ </defs>
+</svg>

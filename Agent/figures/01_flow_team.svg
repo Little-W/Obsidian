@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="1152pt" height="720pt" viewBox="0 0 1152 720" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-11-01T07:21:19.455621</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.10.8, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 720 
+L 1152 720 
+L 1152 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="line2d_1">
+    <path d="M 46.8 110.16 
+L 1105.2 110.16 
+" clip-path="url(#p483a7d84eb)" style="fill: none; stroke: #c7d3df; stroke-width: 1.2; stroke-linecap: square"/>
+   </g>
+   <g id="patch_2">
+    <path d="M 207.36 176.4 
+L 599.04 176.4 
+Q 612 176.4 612 189.36 
+L 612 343.44 
+Q 612 356.4 599.04 356.4 
+L 207.36 356.4 
+Q 194.4 356.4 194.4 343.44 
+L 194.4 189.36 
+Q 194.4 176.4 207.36 176.4 
+z
+" clip-path="url(#p483a7d84eb)" style="fill: #edf3fd; stroke: #2864b4; stroke-width: 2.2; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 653.76 176.4 
+L 1045.44 176.4 
+Q 1058.4 176.4 1058.4 189.36 
+L 1058.4 343.44 
+Q 1058.4 356.4 1045.44 356.4 
+L 653.76 356.4 
+Q 640.8 356.4 640.8 343.44 
+L 640.8 189.36 
+Q 640.8 176.4 653.76 176.4 
+z
+" clip-path="url(#p483a7d84eb)" style="fill: #edf3fd; stroke: #2864b4; stroke-width: 2.2; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 207.36 385.2 
+L 599.04 385.2 
+Q 612 385.2 612 398.16 
+L 612 552.24 
+Q 612 565.2 599.04 565.2 
+L 207.36 565.2 
+Q 194.4 565.2 194.4 552.24 
+L 194.4 398.16 
+Q 194.4 385.2 207.36 385.2 
+z
+" clip-path="url(#p483a7d84eb)" style="fill: #ecf7f5; stroke: #11847b; stroke-width: 2.2; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 653.76 385.2 
+L 1045.44 385.2 
+Q 1058.4 385.2 1058.4 398.16 
+L 1058.4 552.24 
+Q 1058.4 565.2 1045.44 565.2 
+L 653.76 565.2 
+Q 640.8 565.2 640.8 552.24 
+L 640.8 398.16 
+Q 640.8 385.2 653.76 385.2 
+z
+" clip-path="url(#p483a7d84eb)" style="fill: #ecf7f5; stroke: #11847b; stroke-width: 2.2; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 207.36 601.2 
+L 1045.44 601.2 
+Q 1058.4 601.2 1058.4 614.16 
+L 1058.4 645.84 
+Q 1058.4 658.8 1045.44 658.8 
+L 207.36 658.8 
+Q 194.4 658.8 194.4 645.84 
+L 194.4 614.16 
+Q 194.4 601.2 207.36 601.2 
+z
+" clip-path="url(#p483a7d84eb)" style="fill: #f3f6fa; stroke: #c7d3df; stroke-width: 1.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="line2d_2">
+    <path d="M 219.6 244.8 
+L 586.8 244.8 
+" clip-path="url(#p483a7d84eb)" style="fill: none; stroke: #c7d3df; stroke-width: 1.1; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_3">
+    <path d="M 666 244.8 
+L 1033.2 244.8 
+" clip-path="url(#p483a7d84eb)" style="fill: none; stroke: #c7d3df; stroke-width: 1.1; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_4">
+    <path d="M 219.6 453.6 
+L 586.8 453.6 
+" clip-path="url(#p483a7d84eb)" style="fill: none; stroke: #c7d3df; stroke-width: 1.1; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_5">
+    <path d="M 666 453.6 
+L 1033.2 453.6 
+" clip-path="url(#p483a7d84eb)" style="fill: none; stroke: #c7d3df; stroke-width: 1.1; stroke-linecap: square"/>
+   </g>
+   <g id="text_1">
+    <text style="font-size: 27px; font-family: 'Droid Sans Fallback'; text-anchor: start; fill: #183047" x="46.8" y="53.866406" transform="rotate(-0 46.8 53.866406)">Flow 与团队是两个独立设计维度</text>
+   </g>
+   <g id="text_2">
+    <text style="font-size: 18px; font-family: 'Droid Sans Fallback'; text-anchor: start; fill: #556a7c" x="46.8" y="92.323125" transform="rotate(-0 46.8 92.323125)">控制方式决定谁选择下一步；团队规模决定有多少独立 Agent 参与。</text>
+   </g>
+   <g id="text_3">
+    <text style="font-size: 14px; font-family: 'Droid Sans Fallback'; text-anchor: start; fill: #556a7c" x="46.8" y="699.184062" transform="rotate(-0 46.8 699.184062)">设计归纳示意；具体框架行为以正文为准</text>
+   </g>
+   <g id="text_4">
+    <text style="font-size: 23px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #2864b4" x="403.2" y="147.048437" transform="rotate(-0 403.2 147.048437)">单个 Agent</text>
+   </g>
+   <g id="text_5">
+    <text style="font-size: 23px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #11847b" x="849.6" y="147.048437" transform="rotate(-0 849.6 147.048437)">多个 Agent</text>
+   </g>
+   <g id="text_6">
+    <text style="font-size: 22px; font-family: 'Droid Sans Fallback'; fill: #2864b4" transform="translate(53.2 257.387305)">明确规则</text>
+    <text style="font-size: 22px; font-family: 'Droid Sans Fallback'; fill: #2864b4" transform="translate(53.2 286.92832)">主导调度</text>
+   </g>
+   <g id="text_7">
+    <text style="font-size: 22px; font-family: 'Droid Sans Fallback'; fill: #11847b" transform="translate(53.2 466.187305)">模型动态</text>
+    <text style="font-size: 22px; font-family: 'Droid Sans Fallback'; fill: #11847b" transform="translate(42.2 495.72832)">决定下一步</text>
+   </g>
+   <g id="text_8">
+    <text style="font-size: 22px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #2864b4" x="403.2" y="220.199375" transform="rotate(-0 403.2 220.199375)">规则流程 + 单 Agent</text>
+   </g>
+   <g id="text_9">
+    <text style="font-size: 19px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #183047" x="403.2" y="281.452656" transform="rotate(-0 403.2 281.452656)">由程序规定步骤与失败路径</text>
+   </g>
+   <g id="text_10">
+    <text style="font-size: 18px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #556a7c" x="403.2" y="321.967969" transform="rotate(-0 403.2 321.967969)">校验脚本、Agent 诊断、程序验收</text>
+   </g>
+   <g id="text_11">
+    <text style="font-size: 22px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #2864b4" x="849.6" y="220.199375" transform="rotate(-0 849.6 220.199375)">规则流程 + 多 Agent</text>
+   </g>
+   <g id="text_12">
+    <text style="font-size: 19px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #183047" x="849.6" y="281.452656" transform="rotate(-0 849.6 281.452656)">由程序安排分工、并发与汇合</text>
+   </g>
+   <g id="text_13">
+    <text style="font-size: 18px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #556a7c" x="849.6" y="321.510938" transform="rotate(-0 849.6 321.510938)">多个专家分别分析，程序汇总</text>
+   </g>
+   <g id="text_14">
+    <text style="font-size: 22px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #11847b" x="403.2" y="428.999375" transform="rotate(-0 403.2 428.999375)">动态执行 + 单 Agent</text>
+   </g>
+   <g id="text_15">
+    <text style="font-size: 19px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #183047" x="403.2" y="490.697969" transform="rotate(-0 403.2 490.697969)">Agent 根据结果选择下一项工具</text>
+   </g>
+   <g id="text_16">
+    <text style="font-size: 18px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #556a7c" x="403.2" y="530.310938" transform="rotate(-0 403.2 530.310938)">一个执行循环，按需调用工具</text>
+   </g>
+   <g id="text_17">
+    <text style="font-size: 22px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #11847b" x="849.6" y="428.999375" transform="rotate(-0 849.6 428.999375)">动态执行 + 多 Agent</text>
+   </g>
+   <g id="text_18">
+    <text style="font-size: 19px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #183047" x="849.6" y="490.252656" transform="rotate(-0 849.6 490.252656)">协调者按任务选择专家与委派方式</text>
+   </g>
+   <g id="text_19">
+    <text style="font-size: 18px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #556a7c" x="849.6" y="530.310938" transform="rotate(-0 849.6 530.310938)">动态拆分任务，受预算与权限约束</text>
+   </g>
+   <g id="text_20">
+    <text style="font-size: 21px; font-family: 'Droid Sans Fallback'; text-anchor: middle; fill: #183047" x="626.4" y="635.496094" transform="rotate(-0 626.4 635.496094)">一个 Flow 可以包含团队节点；同一团队也可以采用明确的执行规则。</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p483a7d84eb">
+   <rect x="0" y="0" width="1152" height="720"/>
+  </clipPath>
+ </defs>
+</svg>

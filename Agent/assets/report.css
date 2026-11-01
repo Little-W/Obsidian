@@ -1,0 +1,29 @@
+:root{--ink:#183047;--muted:#52677b;--blue:#2864b4;--teal:#11847b;--line:#d8e2ec;--paper:#fff;--wash:#f3f6fa}
+html{scroll-behavior:smooth}
+body{max-width:1180px;margin:0 auto;padding:44px 40px 80px;background:var(--paper);color:var(--ink);font-family:"Noto Sans CJK SC","Microsoft YaHei","PingFang SC",system-ui,sans-serif;font-size:17px;line-height:1.85}
+h1{font-size:2.25rem;line-height:1.35;letter-spacing:.01em;padding-bottom:24px;border-bottom:4px solid var(--teal);margin:0 0 24px}
+h2{font-size:1.65rem;margin:58px 0 20px;padding:10px 16px;border-left:5px solid var(--teal);background:var(--wash);scroll-margin-top:18px}
+h3{font-size:1.22rem;margin:32px 0 12px;color:var(--blue);scroll-margin-top:18px}
+p{margin:13px 0}
+a{color:var(--blue);text-decoration:none;overflow-wrap:anywhere}
+a:hover{text-decoration:underline}
+blockquote{margin:20px 0;padding:14px 22px;background:#edf6f5;border-left:4px solid var(--teal);color:#35566b}
+blockquote p{margin:0}
+table{width:100%;border-collapse:collapse;margin:22px 0;font-size:.92em;line-height:1.65}
+th{background:#eaf1f8;color:var(--ink);font-weight:650}
+td,th{padding:12px 14px;border:1px solid var(--line);text-align:left;vertical-align:top}
+tbody tr:nth-child(even){background:#f9fbfd}
+img{display:block;max-width:100%;height:auto;margin:26px auto 12px;border:1px solid #e4ebf2;border-radius:8px}
+p:has(>em:first-child){color:var(--muted);font-size:.9em}
+code{font-family:"Cascadia Code","SFMono-Regular",Consolas,monospace;font-size:.9em;padding:2px 5px;background:#edf2f7;border-radius:3px}
+pre{padding:22px;background:#f3f6fa;border:1px solid var(--line);border-radius:7px;overflow:auto;line-height:1.6}
+pre code{padding:0;background:none}
+li{margin:7px 0}
+hr{border:0;border-top:1px solid var(--line);margin:36px 0}
+#TOC{background:var(--wash);border:1px solid var(--line);padding:18px 24px;margin:0 0 36px;border-radius:8px}
+#TOC>ul{columns:2;list-style:none;padding:0}
+#TOC li{break-inside:avoid;font-size:.9em}
+#TOC ul ul{padding-left:20px}
+@media(max-width:720px){body{padding:24px 18px;font-size:16px}h1{font-size:1.85rem}h2{font-size:1.4rem}table{display:block;overflow:auto}#TOC>ul{columns:1}td,th{min-width:100px}}
+@media print{body{max-width:none;padding:0;font-size:10.5pt}h2{break-before:auto}h2,h3{break-after:avoid}img,table,pre{break-inside:avoid}a{color:inherit}#TOC{display:none}}
+
