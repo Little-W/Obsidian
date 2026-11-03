@@ -1,2 +1,141 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<svg baseProfile="full" height="1040px" version="1.1" viewBox="0 0 1660 1040" width="1660px" xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink"><defs><marker id="01_总体架构_svg_gray" markerHeight="8" markerWidth="9" orient="auto" refX="8" refY="4"><path d="M0,0 L8,4 L0,8 Z" fill="#8AA0B1" /></marker><marker id="01_总体架构_svg_blue" markerHeight="8" markerWidth="9" orient="auto" refX="8" refY="4"><path d="M0,0 L8,4 L0,8 Z" fill="#2365A2" /></marker><marker id="01_总体架构_svg_teal" markerHeight="8" markerWidth="9" orient="auto" refX="8" refY="4"><path d="M0,0 L8,4 L0,8 Z" fill="#188671" /></marker><marker id="01_总体架构_svg_amber" markerHeight="8" markerWidth="9" orient="auto" refX="8" refY="4"><path d="M0,0 L8,4 L0,8 Z" fill="#AD6C18" /></marker><marker id="01_总体架构_svg_red" markerHeight="8" markerWidth="9" orient="auto" refX="8" refY="4"><path d="M0,0 L8,4 L0,8 Z" fill="#B74D53" /></marker></defs><rect fill="#FFFFFF" height="1040" width="1660" x="0" y="0" /><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="30" font-weight="bold" x="40" y="51">图 1  平台总体架构</text><text fill="#64748B" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="17" x="42" y="86">统一 Web/桌面工作区；LangGraph.js 作为唯一可执行工作流引擎，团队调度与工程工具受统一运行控制。</text><line stroke="#E2E8F0" stroke-width="1.5" x1="40" x2="1620" y1="105" y2="105" /><rect fill="#EAF3FC" height="32" rx="13" width="178" x="52" y="132" /><text fill="#2365A2" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="bold" text-anchor="middle" x="141.0" y="153.33333333333334">交互与设计层</text><rect fill="#EAF3FC" height="105" rx="12" stroke="#CCD9E5" stroke-width="1.3" width="260" x="50" y="183" /><rect fill="#2365A2" height="85" rx="2" width="5" x="50" y="193" /><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="20" font-weight="bold" x="72" y="215">项目工作区</text><text fill="#34435A" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="normal" x="72" y="245">项目 / 模型 / 工具</text><rect fill="#EAF3FC" height="105" rx="12" stroke="#CCD9E5" stroke-width="1.3" width="260" x="375" y="183" /><rect fill="#2365A2" height="85" rx="2" width="5" x="375" y="193" /><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="20" font-weight="bold" x="397" y="215">Agent 团队设计</text><text fill="#34435A" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="normal" x="397" y="245">角色 / 权限 / 协作</text><rect fill="#EAF3FC" height="105" rx="12" stroke="#CCD9E5" stroke-width="1.3" width="260" x="700" y="183" /><rect fill="#2365A2" height="85" rx="2" width="5" x="700" y="193" /><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="20" font-weight="bold" x="722" y="215">Workflow 编辑</text><text fill="#34435A" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="normal" x="722" y="245">任务 / 分支 / Gate</text><rect fill="#EAF3FC" height="105" rx="12" stroke="#CCD9E5" stroke-width="1.3" width="260" x="1025" y="183" /><rect fill="#2365A2" height="85" rx="2" width="5" x="1025" y="193" /><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="20" font-weight="bold" x="1047" y="215">Chat 与审批</text><text fill="#34435A" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="normal" x="1047" y="245">对话 / 任务干预</text><rect fill="#EAF3FC" height="105" rx="12" stroke="#CCD9E5" stroke-width="1.3" width="260" x="1350" y="183" /><rect fill="#2365A2" height="85" rx="2" width="5" x="1350" y="193" /><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="20" font-weight="bold" x="1372" y="215">运行观测</text><text fill="#34435A" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="normal" x="1372" y="245">执行图 / 证据</text><path d="M180 288 V326 H1480 V345" fill="none" marker-end="url(#01_总体架构_svg_blue)" opacity="1" stroke="#2365A2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" /><path d="M505 288 V326" fill="none" opacity="1" stroke="#2365A2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" /><path d="M830 288 V326" fill="none" opacity="1" stroke="#2365A2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" /><path d="M1155 288 V326" fill="none" opacity="1" stroke="#2365A2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" /><path d="M1480 288 V326" fill="none" opacity="1" stroke="#2365A2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" /><rect fill="#F1F5F9" height="100" rx="12" stroke="#CCD9E5" stroke-width="1.3" width="1090" x="285" y="346" /><rect fill="#8AA0B1" height="80" rx="2" width="5" x="285" y="356" /><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="23" font-weight="bold" text-anchor="middle" x="830.0" y="378">Studio API / 事件总线 / 身份与项目权限</text><text fill="#34435A" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="17" font-weight="normal" text-anchor="middle" x="830.0" y="408">工作流版本管理 · 任务与会话服务 · 命令/审批 · 事件重放 · 调用审计</text><rect fill="#E4F4EF" height="32" rx="13" width="216" x="52" y="470" /><text fill="#188671" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="bold" text-anchor="middle" x="160.0" y="491.3333333333333">工作流与团队运行层</text><path d="M830,446 L830,529" fill="none" marker-end="url(#01_总体架构_svg_teal)" opacity="1" stroke="#188671" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.6" /><rect fill="#E4F4EF" height="126" rx="12" stroke="#CCD9E5" stroke-width="1.3" width="330" x="50" y="535" /><rect fill="#188671" height="106" rx="2" width="5" x="50" y="545" /><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="19" font-weight="bold" x="72" y="567">Schema + Graph Compiler</text><text fill="#34435A" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="17" font-weight="normal" x="72" y="597">类型校验 / 图编译</text><rect fill="#E4F4EF" height="126" rx="12" stroke="#CCD9E5" stroke-width="1.3" width="330" x="460" y="535" /><rect fill="#188671" height="106" rx="2" width="5" x="460" y="545" /><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="19" font-weight="bold" x="482" y="567">Task Scheduler</text><text fill="#34435A" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="17" font-weight="normal" x="482" y="597">依赖 / 并行 / 资源配额</text><rect fill="#E4F4EF" height="126" rx="12" stroke="#CCD9E5" stroke-width="1.3" width="330" x="870" y="535" /><rect fill="#188671" height="106" rx="2" width="5" x="870" y="545" /><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="19" font-weight="bold" x="892" y="567">LangGraph Runtime</text><text fill="#34435A" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="17" font-weight="normal" x="892" y="597">Checkpoint / Subgraph / Interrupt</text><rect fill="#E4F4EF" height="126" rx="12" stroke="#CCD9E5" stroke-width="1.3" width="330" x="1280" y="535" /><rect fill="#188671" height="106" rx="2" width="5" x="1280" y="545" /><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="19" font-weight="bold" x="1302" y="567">Agent Team Runtime</text><text fill="#34435A" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="17" font-weight="normal" x="1302" y="597">Planner / 协作 / 审核</text><path d="M830 530 V508 H215 V535" fill="none" opacity="1" stroke="#188671" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" /><path d="M830 508 H625 V535" fill="none" opacity="1" stroke="#188671" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" /><path d="M830 508 H1035 V535" fill="none" opacity="1" stroke="#188671" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" /><path d="M830 508 H1445 V535" fill="none" opacity="1" stroke="#188671" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" /><rect fill="#FFF4DB" height="32" rx="13" width="228" x="52" y="698" /><text fill="#AD6C18" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="bold" text-anchor="middle" x="166.0" y="719.3333333333334">持久化与外部能力层</text><path d="M830 661 V724 H1650" fill="none" opacity="1" stroke="#8AA0B1" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" /><rect fill="#FFF4DB" height="128" rx="12" stroke="#CCD9E5" stroke-width="1.3" width="270" x="48" y="770" /><rect fill="#AD6C18" height="108" rx="2" width="5" x="48" y="780" /><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="19" font-weight="bold" x="70" y="802">项目与任务数据库</text><text fill="#34435A" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="normal" x="70" y="832">配置、任务、运行索引</text><path d="M183,724 L183,764" fill="none" marker-end="url(#01_总体架构_svg_gray)" opacity="1" stroke="#8AA0B1" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.6" /><rect fill="#FFF4DB" height="128" rx="12" stroke="#CCD9E5" stroke-width="1.3" width="270" x="375" y="770" /><rect fill="#AD6C18" height="108" rx="2" width="5" x="375" y="780" /><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="19" font-weight="bold" x="397" y="802">状态与检查点</text><text fill="#34435A" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="normal" x="397" y="832">线程恢复、状态快照</text><path d="M510,724 L510,764" fill="none" marker-end="url(#01_总体架构_svg_gray)" opacity="1" stroke="#8AA0B1" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.6" /><rect fill="#FFF4DB" height="128" rx="12" stroke="#CCD9E5" stroke-width="1.3" width="270" x="702" y="770" /><rect fill="#AD6C18" height="108" rx="2" width="5" x="702" y="780" /><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="19" font-weight="bold" x="724" y="802">Workspace / Artifacts</text><text fill="#34435A" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="normal" x="724" y="832">源码、日志、报告、哈希</text><path d="M837,724 L837,764" fill="none" marker-end="url(#01_总体架构_svg_gray)" opacity="1" stroke="#8AA0B1" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.6" /><rect fill="#FFF4DB" height="128" rx="12" stroke="#CCD9E5" stroke-width="1.3" width="270" x="1029" y="770" /><rect fill="#AD6C18" height="108" rx="2" width="5" x="1029" y="780" /><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="19" font-weight="bold" x="1051" y="802">Model / Skills</text><text fill="#34435A" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="normal" x="1051" y="832">模型网关、上下文策略</text><path d="M1164,724 L1164,764" fill="none" marker-end="url(#01_总体架构_svg_gray)" opacity="1" stroke="#8AA0B1" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.6" /><rect fill="#FFF4DB" height="128" rx="12" stroke="#CCD9E5" stroke-width="1.3" width="270" x="1356" y="770" /><rect fill="#AD6C18" height="108" rx="2" width="5" x="1356" y="780" /><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="19" font-weight="bold" x="1378" y="802">MCP / EDA Tools</text><text fill="#34435A" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="normal" x="1378" y="832">仿真、综合、ATPG</text><path d="M1491,724 L1491,764" fill="none" marker-end="url(#01_总体架构_svg_gray)" opacity="1" stroke="#8AA0B1" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.6" /><rect fill="#F1F5F9" height="64" rx="12" stroke="#CCD9E5" stroke-width="1.3" width="604" x="528" y="937" /><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="18" font-weight="bold" text-anchor="middle" x="830.0" y="969">Langfuse / OpenTelemetry（可选）</text><text fill="#34435A" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="15" font-weight="normal" text-anchor="middle" x="830.0" y="999">仅负责观测；缺失时不影响任务运行</text><path d="M830 898 V931" fill="none" marker-end="url(#01_总体架构_svg_gray)" opacity="1" stroke="#8AA0B1" stroke-dasharray="6,6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" /></svg>
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1210" viewBox="0 0 1600 1210" role="img" aria-labelledby="title description">
+  <title id="title">图 1  平台总体架构</title>
+  <desc id="description">界面提交定义与操作；LangGraph.js 执行工作流；工具、持久化和观测各有独立职责。</desc>
+  <g id="background">
+    <rect x="0" y="0" width="1600" height="1210" rx="0" fill="#FFFFFF" stroke="none" stroke-width="1.4" />
+    <line x1="48" y1="128" x2="1552" y2="128" stroke="#E2E9EF" stroke-width="1.5" />
+    <line x1="48" y1="1130" x2="1552" y2="1130" stroke="#E2E9EF" stroke-width="1.3" />
+  </g>
+  <g id="nodes">
+    <g id="ui">
+      <title>统一工作区；项目管理 · Team Designer · Workflow Editor · Chat · Run Inspector</title>
+      <rect x="430" y="172" width="710" height="112" rx="12" fill="#EEF5FC" stroke="#CED9E3" stroke-width="1.5" />
+      <rect x="431" y="189" width="4" height="78" rx="2" fill="#28649B" stroke="none" />
+    </g>
+    <g id="api">
+      <title>Studio API 与项目服务；配置 / 版本 / 会话 / 审批 / 权限 / 运行事件</title>
+      <rect x="430" y="360" width="710" height="108" rx="12" fill="#F3F6F9" stroke="#CED9E3" stroke-width="1.5" />
+      <rect x="431" y="377" width="4" height="74" rx="2" fill="#64778A" stroke="none" />
+    </g>
+    <g id="compiler">
+      <title>定义校验与图编译；版本化 Schema → 检查引用与连接规则 → 编译可执行 Graph</title>
+      <rect x="430" y="548" width="710" height="108" rx="12" fill="#EEF5FC" stroke="#CED9E3" stroke-width="1.5" />
+      <rect x="431" y="565" width="4" height="74" rx="2" fill="#28649B" stroke="none" />
+    </g>
+    <g id="runtime">
+      <title>LangGraph.js 运行核心；Graph 内调用 Agent、Task Scheduler 与 Gate；状态更新 · 条件路由 · 子图 · interrupt / resume</title>
+      <rect x="430" y="742" width="710" height="148" rx="12" fill="#EAF6F1" stroke="#CED9E3" stroke-width="1.5" />
+      <rect x="431" y="759" width="4" height="114" rx="2" fill="#197767" stroke="none" />
+    </g>
+    <g id="tools">
+      <title>模型与工具适配；Model / MCP / EDA；真实进程、权限与预算</title>
+      <rect x="48" y="742" width="310" height="148" rx="12" fill="#EAF6F1" stroke="#CED9E3" stroke-width="1.5" />
+      <rect x="49" y="759" width="4" height="114" rx="2" fill="#197767" stroke="none" />
+    </g>
+    <g id="storage">
+      <title>本地持久化；项目 / 版本 / 任务 / 事件；Thread / Checkpoint；产物索引与执行账本</title>
+      <rect x="1212" y="360" width="340" height="172" rx="12" fill="#F3F6F9" stroke="#CED9E3" stroke-width="1.5" />
+      <rect x="1213" y="377" width="4" height="138" rx="2" fill="#64778A" stroke="none" />
+    </g>
+    <g id="observability">
+      <title>观测服务（可选）；本地 Run Events；Langfuse / OpenTelemetry</title>
+      <rect x="1212" y="742" width="340" height="148" rx="12" fill="#F3F6F9" stroke="#CED9E3" stroke-width="1.5" />
+      <rect x="1213" y="759" width="4" height="114" rx="2" fill="#64778A" stroke="none" />
+    </g>
+    <g id="workspace">
+      <title>工程工作区与证据；源码、镜像、日志、波形及报告；状态中保存引用与摘要</title>
+      <rect x="430" y="1010" width="710" height="108" rx="12" fill="#FFF5E3" stroke="#CED9E3" stroke-width="1.5" />
+      <rect x="431" y="1027" width="4" height="74" rx="2" fill="#9B6419" stroke="none" />
+    </g>
+  </g>
+  <g id="connections">
+    <g id="e01" data-source="ui" data-target="api">
+      <title>用户操作通过 API 提交</title>
+      <polyline points="643,284 643,348" fill="none" stroke="#28649B" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="643,360 637.5,348 648.5,348" fill="#28649B" />
+    </g>
+    <g id="e02" data-source="api" data-target="ui">
+      <title>服务端返回已提交运行事件</title>
+      <polyline points="948.3,360 948.3,296" fill="none" stroke="#197767" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="948.3,284 953.8,296 942.8,296" fill="#197767" />
+    </g>
+    <g id="e03" data-source="api" data-target="compiler">
+      <title>校验并固定发布版本</title>
+      <polyline points="785,468 785,536" fill="none" stroke="#28649B" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="785,548 779.5,536 790.5,536" fill="#28649B" />
+    </g>
+    <g id="e04" data-source="compiler" data-target="runtime">
+      <title>传入编译后的固定版本 Graph</title>
+      <polyline points="785,656 785,730" fill="none" stroke="#28649B" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="785,742 779.5,730 790.5,730" fill="#28649B" />
+    </g>
+    <g id="e05" data-source="runtime" data-target="tools">
+      <title>运行核心请求模型或工具</title>
+      <polyline points="430,786.4 370,786.4" fill="none" stroke="#28649B" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="358,786.4 370,780.9 370,791.9" fill="#28649B" />
+    </g>
+    <g id="e06" data-source="tools" data-target="runtime">
+      <title>工具适配返回真实执行结果</title>
+      <polyline points="358,850.04 418,850.04" fill="none" stroke="#197767" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="430,850.04 418,855.54 418,844.54" fill="#197767" />
+    </g>
+    <g id="e07" data-source="api" data-target="storage">
+      <title>项目服务写入配置与运行记录</title>
+      <polyline points="1140,414 1200,414" fill="none" stroke="#28649B" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="1212,414 1200,419.5 1200,408.5" fill="#28649B" />
+    </g>
+    <g id="e08" data-source="runtime" data-target="storage">
+      <title>Checkpoint 与执行状态持久化请求</title>
+      <polyline points="1069,742 1069,698 1382,698 1382,544" fill="none" stroke="#28649B" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="1382,532 1387.5,544 1376.5,544" fill="#28649B" />
+    </g>
+    <g id="e09" data-source="runtime" data-target="observability">
+      <title>可选观测事件投递，不阻塞核心执行</title>
+      <polyline points="1140,786.4 1200,786.4" fill="none" stroke="#64778A" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="7 6" />
+      <polygon points="1212,786.4 1200,791.9 1200,780.9" fill="#64778A" />
+    </g>
+    <g id="e10" data-source="runtime" data-target="workspace">
+      <title>登记实际产物与工具证据</title>
+      <polyline points="785,890 785,998" fill="none" stroke="#9B6419" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="785,1010 779.5,998 790.5,998" fill="#9B6419" />
+    </g>
+  </g>
+  <g id="labels" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif">
+    <text x="48" y="64" font-size="25" fill="#28649B" font-weight="700" text-anchor="start">01</text>
+    <text x="112" y="64" font-size="34" fill="#18324B" font-weight="700" text-anchor="start">平台总体架构</text>
+    <text x="48" y="105" font-size="19" fill="#52677C" font-weight="400" text-anchor="start">界面提交定义与操作；LangGraph.js 执行工作流；工具、持久化和观测各有独立职责。</text>
+    <text x="785.0" y="208" font-size="23" fill="#18324B" font-weight="700" text-anchor="middle">统一工作区</text>
+    <text x="785.0" y="239" font-size="18" fill="#52677C" font-weight="400" text-anchor="middle">项目管理 · Team Designer · Workflow Editor · Chat · Run Inspector</text>
+    <text x="785.0" y="396" font-size="23" fill="#18324B" font-weight="700" text-anchor="middle">Studio API 与项目服务</text>
+    <text x="785.0" y="427" font-size="19" fill="#52677C" font-weight="400" text-anchor="middle">配置 / 版本 / 会话 / 审批 / 权限 / 运行事件</text>
+    <text x="785.0" y="584" font-size="23" fill="#18324B" font-weight="700" text-anchor="middle">定义校验与图编译</text>
+    <text x="785.0" y="615" font-size="18" fill="#52677C" font-weight="400" text-anchor="middle">版本化 Schema → 检查引用与连接规则 → 编译可执行 Graph</text>
+    <text x="785.0" y="778" font-size="23" fill="#18324B" font-weight="700" text-anchor="middle">LangGraph.js 运行核心</text>
+    <text x="785.0" y="809" font-size="18" fill="#52677C" font-weight="400" text-anchor="middle">Graph 内调用 Agent、Task Scheduler 与 Gate</text>
+    <text x="785.0" y="836" font-size="18" fill="#52677C" font-weight="400" text-anchor="middle">状态更新 · 条件路由 · 子图 · interrupt / resume</text>
+    <text x="70" y="778" font-size="23" fill="#18324B" font-weight="700" text-anchor="start">模型与工具适配</text>
+    <text x="70" y="809" font-size="19" fill="#52677C" font-weight="400" text-anchor="start">Model / MCP / EDA</text>
+    <text x="70" y="836" font-size="19" fill="#52677C" font-weight="400" text-anchor="start">真实进程、权限与预算</text>
+    <text x="1234" y="396" font-size="23" fill="#18324B" font-weight="700" text-anchor="start">本地持久化</text>
+    <text x="1234" y="427" font-size="19" fill="#52677C" font-weight="400" text-anchor="start">项目 / 版本 / 任务 / 事件</text>
+    <text x="1234" y="454" font-size="19" fill="#52677C" font-weight="400" text-anchor="start">Thread / Checkpoint</text>
+    <text x="1234" y="481" font-size="19" fill="#52677C" font-weight="400" text-anchor="start">产物索引与执行账本</text>
+    <text x="1234" y="778" font-size="23" fill="#18324B" font-weight="700" text-anchor="start">观测服务（可选）</text>
+    <text x="1234" y="809" font-size="18" fill="#52677C" font-weight="400" text-anchor="start">本地 Run Events</text>
+    <text x="1234" y="836" font-size="18" fill="#52677C" font-weight="400" text-anchor="start">Langfuse / OpenTelemetry</text>
+    <text x="785.0" y="1046" font-size="23" fill="#18324B" font-weight="700" text-anchor="middle">工程工作区与证据</text>
+    <text x="785.0" y="1077" font-size="19" fill="#52677C" font-weight="400" text-anchor="middle">源码、镜像、日志、波形及报告；状态中保存引用与摘要</text>
+    <text x="660" y="326" font-size="18" fill="#52677C" font-weight="400" text-anchor="start">操作请求</text>
+    <text x="965" y="326" font-size="18" fill="#197767" font-weight="400" text-anchor="start">状态 / 事件</text>
+    <text x="807" y="512" font-size="18" fill="#52677C" font-weight="400" text-anchor="start">校验并固定版本</text>
+    <text x="807" y="704" font-size="18" fill="#52677C" font-weight="400" text-anchor="start">启动固定版本</text>
+    <text x="394" y="774" font-size="17" fill="#52677C" font-weight="400" text-anchor="middle">调用</text>
+    <text x="394" y="837" font-size="17" fill="#197767" font-weight="400" text-anchor="middle">结果</text>
+    <text x="1176" y="402" font-size="17" fill="#52677C" font-weight="400" text-anchor="middle">配置</text>
+    <text x="1225" y="680" font-size="18" fill="#52677C" font-weight="400" text-anchor="middle">Checkpoint / 状态读写</text>
+    <text x="1176" y="774" font-size="17" fill="#64778A" font-weight="400" text-anchor="middle">事件</text>
+    <text x="807" y="953" font-size="18" fill="#9B6419" font-weight="400" text-anchor="start">登记产物与工具证据</text>
+    <text x="48" y="1156" font-size="18" fill="#52677C" font-weight="400" text-anchor="start">实线：按标注方向发起调用或返回结果。虚线：可选观测事件。持久化框表示逻辑能力，不要求使用同一张表。</text>
+  </g>
+</svg>

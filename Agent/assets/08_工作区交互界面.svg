@@ -1,2 +1,141 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<svg baseProfile="full" height="1130px" version="1.1" viewBox="0 0 1750 1130" width="1750px" xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink"><defs><marker id="08_工作区交互界面_svg_gray" markerHeight="8" markerWidth="9" orient="auto" refX="8" refY="4"><path d="M0,0 L8,4 L0,8 Z" fill="#8AA0B1" /></marker><marker id="08_工作区交互界面_svg_blue" markerHeight="8" markerWidth="9" orient="auto" refX="8" refY="4"><path d="M0,0 L8,4 L0,8 Z" fill="#2365A2" /></marker><marker id="08_工作区交互界面_svg_teal" markerHeight="8" markerWidth="9" orient="auto" refX="8" refY="4"><path d="M0,0 L8,4 L0,8 Z" fill="#188671" /></marker><marker id="08_工作区交互界面_svg_amber" markerHeight="8" markerWidth="9" orient="auto" refX="8" refY="4"><path d="M0,0 L8,4 L0,8 Z" fill="#AD6C18" /></marker><marker id="08_工作区交互界面_svg_red" markerHeight="8" markerWidth="9" orient="auto" refX="8" refY="4"><path d="M0,0 L8,4 L0,8 Z" fill="#B74D53" /></marker></defs><rect fill="#FFFFFF" height="1130" width="1750" x="0" y="0" /><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="30" font-weight="bold" x="40" y="51">图 8  统一工作区的主要交互区域</text><text fill="#64748B" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="17" x="42" y="86">同一项目内切换角色、流程和会话；Chat、Flow 与 Run 使用同一运行记录，而不是三个相互独立的页面。</text><line stroke="#E2E8F0" stroke-width="1.5" x1="40" x2="1710" y1="105" y2="105" /><rect fill="#F1F5F9" height="64" rx="10" stroke="#D9E1EC" stroke-width="1.2" width="1670" x="40" y="135" /><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="25" font-weight="bold" x="70" y="177">Agent Studio</text><rect fill="#EAF3FC" height="32" rx="13" width="315" x="360" y="149" /><text fill="#2365A2" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="18" font-weight="bold" text-anchor="middle" x="517.5" y="171.0">Project: RV32IMAC-SoC</text><rect fill="#E4F4EF" height="32" rx="13" width="300" x="695" y="149" /><text fill="#188671" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="17" font-weight="bold" text-anchor="middle" x="845.0" y="170.66666666666666">Workflow v12 · 已发布</text><rect fill="#E4F4EF" height="32" rx="13" width="95" x="1270" y="149" /><text fill="#188671" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="bold" text-anchor="middle" x="1317.5" y="170.33333333333334">运行</text><rect fill="#FFF4DB" height="32" rx="13" width="95" x="1380" y="149" /><text fill="#AD6C18" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="bold" text-anchor="middle" x="1427.5" y="170.33333333333334">暂停</text><rect fill="#F1F5F9" height="32" rx="13" width="95" x="1495" y="149" /><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="bold" text-anchor="middle" x="1542.5" y="170.33333333333334">保存</text><rect fill="#F1F5F9" height="847" rx="10" stroke="#D9E1EC" stroke-width="1.2" width="295" x="40" y="213" /><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="20" font-weight="bold" x="65" y="247">Projects</text><text fill="#34435A" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="17" font-weight="normal" x="78" y="293">·  RV32IMAC-SoC</text><text fill="#34435A" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="17" font-weight="normal" x="78" y="330">·  DFT-Automation</text><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="20" font-weight="bold" x="65" y="443">Agents</text><text fill="#34435A" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="17" font-weight="normal" x="78" y="489">·  Leader</text><text fill="#34435A" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="17" font-weight="normal" x="78" y="526">·  Architect</text><text fill="#34435A" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="17" font-weight="normal" x="78" y="563">·  RTL / DV / Software</text><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="20" font-weight="bold" x="65" y="639">Flows</text><text fill="#34435A" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="17" font-weight="normal" x="78" y="685">·  SoC Integration</text><text fill="#34435A" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="17" font-weight="normal" x="78" y="722">·  Module Verification</text><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="20" font-weight="bold" x="65" y="835">Runs</text><text fill="#34435A" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="17" font-weight="normal" x="78" y="881">·  Run #1248（进行中）</text><text fill="#34435A" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="17" font-weight="normal" x="78" y="918">·  Run #1247（已完成）</text><rect fill="#EAF3FC" height="528" rx="10" stroke="#D9E1EC" stroke-width="1.2" width="966" x="349" y="213" /><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="22" font-weight="bold" x="376" y="254">Flow / Team Canvas</text><rect fill="#EAF3FC" height="84" rx="12" stroke="#CCD9E5" stroke-width="1.3" width="270" x="680" y="289" /><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="18" font-weight="bold" text-anchor="middle" x="815.0" y="321">Leader / Planner</text><rect fill="#E4F4EF" height="84" rx="12" stroke="#CCD9E5" stroke-width="1.3" width="260" x="418" y="403" /><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="18" font-weight="bold" text-anchor="middle" x="548.0" y="435">RTL Development</text><rect fill="#FFF4DB" height="84" rx="12" stroke="#CCD9E5" stroke-width="1.3" width="260" x="765" y="403" /><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="18" font-weight="bold" text-anchor="middle" x="895.0" y="435">Verification</text><rect fill="#FFF4DB" height="84" rx="12" stroke="#CCD9E5" stroke-width="1.3" width="290" x="590" y="571" /><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="18" font-weight="bold" text-anchor="middle" x="735.0" y="603">System Gate</text><path d="M815,373 L548,397" fill="none" marker-end="url(#08_工作区交互界面_svg_blue)" opacity="1" stroke="#2365A2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.6" /><path d="M815,373 L895,397" fill="none" marker-end="url(#08_工作区交互界面_svg_blue)" opacity="1" stroke="#2365A2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.6" /><path d="M678 445 H759" fill="none" marker-end="url(#08_工作区交互界面_svg_teal)" opacity="1" stroke="#188671" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.6" /><path d="M765 473 H684" fill="none" marker-end="url(#08_工作区交互界面_svg_amber)" opacity="1" stroke="#AD6C18" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.6" /><path d="M895 487 V531 H735 V566" fill="none" marker-end="url(#08_工作区交互界面_svg_gray)" opacity="1" stroke="#8AA0B1" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.6" /><text fill="#188671" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="15" font-weight="bold" x="698" y="458">提交</text><text fill="#AD6C18" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="15" font-weight="bold" x="714" y="492">反馈</text><rect fill="#F1F5F9" height="528" rx="10" stroke="#D9E1EC" stroke-width="1.2" width="383" x="1327" y="213" /><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="22" font-weight="bold" x="1351" y="253">Inspector</text><text fill="#64748B" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="normal" x="1351" y="291">Selected Node</text><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="18" font-weight="bold" x="1351" y="318">Verification</text><text fill="#64748B" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="normal" x="1351" y="357">Assigned Role</text><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="18" font-weight="bold" x="1351" y="384">Verification Engineer</text><text fill="#64748B" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="normal" x="1351" y="423">Review Mode</text><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="18" font-weight="bold" x="1351" y="450">Independent</text><text fill="#64748B" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="normal" x="1351" y="489">Tools</text><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="18" font-weight="bold" x="1351" y="516">Verilator / Test Runner</text><text fill="#64748B" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="normal" x="1351" y="555">Max Attempts</text><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="18" font-weight="bold" x="1351" y="582">2</text><text fill="#64748B" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="normal" x="1351" y="621">Output</text><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="18" font-weight="bold" x="1351" y="648">Evidence + Decision</text><rect fill="#F9FBFE" height="305" rx="10" stroke="#D9E1EC" stroke-width="1.2" width="966" x="349" y="755" /><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="22" font-weight="bold" x="376" y="795">Chat / Team Discussion</text><rect fill="#EAF3FC" height="62" rx="10" stroke="#D9E1EC" stroke-width="1.2" width="830" x="379" y="825" /><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="18" font-weight="normal" x="399" y="863">用户：启动 C 程序回归并汇报 UART 输出和失败用例。</text><rect fill="#E4F4EF" height="72" rx="10" stroke="#D9E1EC" stroke-width="1.2" width="835" x="405" y="906" /><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="18" font-weight="normal" x="424" y="946">Leader：已完成分工；当前正在等待 SoC 回归报告。</text><rect fill="#F1F5F9" height="47" rx="10" stroke="#D9E1EC" stroke-width="1.2" width="890" x="390" y="995" /><text fill="#64748B" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="17" font-weight="normal" x="409" y="1025">输入消息 / 发送至所选 Agent / 附加文件</text><rect fill="#F1F5F9" height="305" rx="10" stroke="#D9E1EC" stroke-width="1.2" width="383" x="1327" y="755" /><text fill="#152B43" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="22" font-weight="bold" x="1351" y="795">Run / Trace</text><text fill="#34435A" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="18" font-weight="normal" x="1352" y="833">Task 17</text><text fill="#2365A2" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="17" font-weight="bold" text-anchor="end" x="1660" y="833">Running</text><text fill="#34435A" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="18" font-weight="normal" x="1352" y="883">CPU Test</text><text fill="#188671" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="17" font-weight="bold" text-anchor="end" x="1660" y="883">Passed</text><text fill="#34435A" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="18" font-weight="normal" x="1352" y="933">UART Test</text><text fill="#188671" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="17" font-weight="bold" text-anchor="end" x="1660" y="933">Passed</text><text fill="#34435A" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="18" font-weight="normal" x="1352" y="983">SoC Sim</text><text fill="#AD6C18" font-family="'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="17" font-weight="bold" text-anchor="end" x="1660" y="983">Pending</text></svg>
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1760" height="1220" viewBox="0 0 1760 1220" role="img" aria-labelledby="title description">
+  <title id="title">图 8  统一工作区与图形交互</title>
+  <desc id="description">布局与运行状态均为目标设计示意；Team、Workflow 和 Run 分开编辑或查看，Chat 共享同一任务上下文。</desc>
+  <g id="background">
+    <rect x="0" y="0" width="1760" height="1220" rx="0" fill="#FFFFFF" stroke="none" stroke-width="1.4" />
+    <line x1="48" y1="128" x2="1712" y2="128" stroke="#E2E9EF" stroke-width="1.5" />
+    <rect x="48" y="248" width="250" height="864" rx="12" fill="#F3F6F9" stroke="#CED9E3" stroke-width="1.4" />
+    <rect x="316" y="248" width="1000" height="548" rx="12" fill="#FFFFFF" stroke="#CED9E3" stroke-width="1.4" />
+    <rect x="1332" y="248" width="380" height="548" rx="12" fill="#F3F6F9" stroke="#CED9E3" stroke-width="1.4" />
+    <rect x="316" y="814" width="1000" height="298" rx="12" fill="#FFFFFF" stroke="#CED9E3" stroke-width="1.4" />
+    <rect x="1332" y="814" width="380" height="298" rx="12" fill="#F3F6F9" stroke="#CED9E3" stroke-width="1.4" />
+    <line x1="48" y1="1140" x2="1712" y2="1140" stroke="#E2E9EF" stroke-width="1.3" />
+  </g>
+  <g id="nodes">
+    <rect x="48" y="164" width="1664" height="68" rx="12" fill="#F3F6F9" stroke="#CED9E3" stroke-width="1.4" />
+    <rect x="1240" y="180" width="112" height="36" rx="8" fill="#EAF6F1" stroke="none" stroke-width="1.4" />
+    <rect x="1370" y="180" width="112" height="36" rx="8" fill="#FFF5E3" stroke="none" stroke-width="1.4" />
+    <rect x="1500" y="180" width="112" height="36" rx="8" fill="#EEF5FC" stroke="none" stroke-width="1.4" />
+    <g id="spec">
+      <title>规格确认</title>
+      <rect x="370" y="358" width="216" height="86" rx="12" fill="#EEF5FC" stroke="#CED9E3" stroke-width="1.5" />
+      <rect x="371" y="375" width="4" height="52" rx="2" fill="#28649B" stroke="none" />
+    </g>
+    <g id="dev">
+      <title>并行开发</title>
+      <rect x="710" y="358" width="216" height="86" rx="12" fill="#EAF6F1" stroke="#CED9E3" stroke-width="1.5" />
+      <rect x="711" y="375" width="4" height="52" rx="2" fill="#197767" stroke="none" />
+    </g>
+    <g id="gate">
+      <title>独立验收</title>
+      <rect x="1050" y="358" width="216" height="86" rx="12" fill="#FFF5E3" stroke="#CED9E3" stroke-width="1.5" />
+      <rect x="1051" y="375" width="4" height="52" rx="2" fill="#9B6419" stroke="none" />
+    </g>
+    <g id="regression">
+      <title>系统回归</title>
+      <rect x="1050" y="626" width="216" height="86" rx="12" fill="#EEF5FC" stroke="#CED9E3" stroke-width="1.5" />
+      <rect x="1051" y="643" width="4" height="52" rx="2" fill="#28649B" stroke="none" />
+    </g>
+    <g id="release">
+      <title>发布交付</title>
+      <rect x="710" y="626" width="216" height="86" rx="12" fill="#EAF6F1" stroke="#CED9E3" stroke-width="1.5" />
+      <rect x="711" y="643" width="4" height="52" rx="2" fill="#197767" stroke="none" />
+    </g>
+    <rect x="342" y="884" width="866" height="60" rx="10" fill="#EEF5FC" stroke="none" stroke-width="1.4" />
+    <rect x="390" y="960" width="890" height="60" rx="10" fill="#EAF6F1" stroke="none" stroke-width="1.4" />
+    <rect x="342" y="1040" width="938" height="48" rx="9" fill="#F3F6F9" stroke="none" stroke-width="1.4" />
+  </g>
+  <g id="connections">
+    <g id="e01" data-source="spec" data-target="dev">
+      <title>规格确认后开始并行开发</title>
+      <polyline points="586,401 698,401" fill="none" stroke="#28649B" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="710,401 698,406.5 698,395.5" fill="#28649B" />
+    </g>
+    <g id="e02" data-source="dev" data-target="gate">
+      <title>开发提交到独立验收</title>
+      <polyline points="926,401 1038,401" fill="none" stroke="#28649B" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="1050,401 1038,406.5 1038,395.5" fill="#28649B" />
+    </g>
+    <g id="e03" data-source="gate" data-target="regression">
+      <title>验收通过后开始系统回归</title>
+      <polyline points="1201.2,444 1201.2,614" fill="none" stroke="#197767" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="1201.2,626 1195.7,614 1206.7,614" fill="#197767" />
+    </g>
+    <g id="e04" data-source="gate" data-target="dev">
+      <title>验收失败且预算允许时退回开发</title>
+      <polyline points="1104,444 1104,530 818,530 818,456" fill="none" stroke="#9B6419" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="7 6" />
+      <polygon points="818,444 823.5,456 812.5,456" fill="#9B6419" />
+    </g>
+    <g id="e05" data-source="regression" data-target="release">
+      <title>系统回归通过后发布交付</title>
+      <polyline points="1050,669 938,669" fill="none" stroke="#197767" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="926,669 938,663.5 938,674.5" fill="#197767" />
+    </g>
+  </g>
+  <g id="labels" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif">
+    <text x="48" y="64" font-size="25" fill="#28649B" font-weight="700" text-anchor="start">08</text>
+    <text x="112" y="64" font-size="34" fill="#18324B" font-weight="700" text-anchor="start">统一工作区与图形交互</text>
+    <text x="48" y="105" font-size="19" fill="#52677C" font-weight="400" text-anchor="start">布局与运行状态均为目标设计示意；Team、Workflow 和 Run 分开编辑或查看，Chat 共享同一任务上下文。</text>
+    <text x="70" y="207" font-size="25" fill="#18324B" font-weight="700" text-anchor="start">Agent Studio</text>
+    <text x="310" y="205" font-size="22" fill="#18324B" font-weight="700" text-anchor="start">RV32IMAC-SoC</text>
+    <text x="600" y="205" font-size="20" fill="#197767" font-weight="700" text-anchor="start">Workflow v12 · 已发布</text>
+    <text x="1296" y="205" font-size="19" fill="#197767" font-weight="700" text-anchor="middle">运行</text>
+    <text x="1426" y="205" font-size="19" fill="#9B6419" font-weight="700" text-anchor="middle">暂停</text>
+    <text x="1556" y="205" font-size="19" fill="#28649B" font-weight="700" text-anchor="middle">保存</text>
+    <text x="70" y="290" font-size="22" fill="#18324B" font-weight="700" text-anchor="start">项目</text>
+    <text x="78" y="331" font-size="18" fill="#52677C" font-weight="400" text-anchor="start">RV32IMAC-SoC</text>
+    <text x="78" y="367" font-size="18" fill="#52677C" font-weight="400" text-anchor="start">DFT-Automation</text>
+    <text x="70" y="464" font-size="22" fill="#18324B" font-weight="700" text-anchor="start">团队与角色</text>
+    <text x="78" y="505" font-size="18" fill="#52677C" font-weight="400" text-anchor="start">Leader / Architect</text>
+    <text x="78" y="541" font-size="18" fill="#52677C" font-weight="400" text-anchor="start">RTL / DV / Software</text>
+    <text x="70" y="638" font-size="22" fill="#18324B" font-weight="700" text-anchor="start">流程与会话</text>
+    <text x="78" y="679" font-size="18" fill="#52677C" font-weight="400" text-anchor="start">SoC Workflow</text>
+    <text x="78" y="715" font-size="18" fill="#52677C" font-weight="400" text-anchor="start">模块验证模板</text>
+    <text x="78" y="751" font-size="18" fill="#52677C" font-weight="400" text-anchor="start">Chat Sessions</text>
+    <text x="70" y="848" font-size="22" fill="#18324B" font-weight="700" text-anchor="start">运行与产物</text>
+    <text x="78" y="889" font-size="18" fill="#52677C" font-weight="400" text-anchor="start">运行历史</text>
+    <text x="78" y="925" font-size="18" fill="#52677C" font-weight="400" text-anchor="start">Evidence / Artifacts</text>
+    <text x="78" y="961" font-size="18" fill="#52677C" font-weight="400" text-anchor="start">工具与模型设置</text>
+    <text x="340" y="286" font-size="22" fill="#28649B" font-weight="700" text-anchor="start">Workflow</text>
+    <text x="512" y="286" font-size="20" fill="#52677C" font-weight="400" text-anchor="start">Team</text>
+    <text x="614" y="286" font-size="20" fill="#52677C" font-weight="400" text-anchor="start">Run</text>
+    <text x="1288" y="286" font-size="18" fill="#52677C" font-weight="400" text-anchor="end">固定版本 · 图形编辑</text>
+    <text x="478.0" y="389" font-size="23" fill="#18324B" font-weight="700" text-anchor="middle">规格确认</text>
+    <text x="818.0" y="389" font-size="23" fill="#18324B" font-weight="700" text-anchor="middle">并行开发</text>
+    <text x="1158.0" y="389" font-size="23" fill="#18324B" font-weight="700" text-anchor="middle">独立验收</text>
+    <text x="1158.0" y="657" font-size="23" fill="#18324B" font-weight="700" text-anchor="middle">系统回归</text>
+    <text x="818.0" y="657" font-size="23" fill="#18324B" font-weight="700" text-anchor="middle">发布交付</text>
+    <text x="1220" y="550" font-size="18" fill="#197767" font-weight="400" text-anchor="start">通过</text>
+    <text x="959" y="510" font-size="18" fill="#9B6419" font-weight="400" text-anchor="middle">失败：有限返工</text>
+    <text x="988" y="653" font-size="18" fill="#197767" font-weight="400" text-anchor="middle">通过</text>
+    <text x="340" y="765" font-size="18" fill="#52677C" font-weight="400" text-anchor="start">选中：独立验收  ·  图中的边只表示工作流控制，不表示成员上下级关系。</text>
+    <text x="1356" y="286" font-size="24" fill="#18324B" font-weight="700" text-anchor="start">Inspector</text>
+    <text x="1354" y="334" font-size="17" fill="#52677C" font-weight="400" text-anchor="start">节点类型</text>
+    <text x="1354" y="362" font-size="19" fill="#18324B" font-weight="700" text-anchor="start">Gate / 独立验收</text>
+    <text x="1354" y="406" font-size="17" fill="#52677C" font-weight="400" text-anchor="start">负责角色</text>
+    <text x="1354" y="434" font-size="19" fill="#18324B" font-weight="700" text-anchor="start">Verification Engineer</text>
+    <text x="1354" y="478" font-size="17" fill="#52677C" font-weight="400" text-anchor="start">输入</text>
+    <text x="1354" y="506" font-size="19" fill="#18324B" font-weight="700" text-anchor="start">产物版本 + 工具证据</text>
+    <text x="1354" y="550" font-size="17" fill="#52677C" font-weight="400" text-anchor="start">工具</text>
+    <text x="1354" y="578" font-size="19" fill="#18324B" font-weight="700" text-anchor="start">Verilator / Test Runner</text>
+    <text x="1354" y="622" font-size="17" fill="#52677C" font-weight="400" text-anchor="start">失败处理</text>
+    <text x="1354" y="650" font-size="19" fill="#18324B" font-weight="700" text-anchor="start">最多 2 次，再升级</text>
+    <text x="1354" y="694" font-size="17" fill="#52677C" font-weight="400" text-anchor="start">输出</text>
+    <text x="1354" y="722" font-size="19" fill="#18324B" font-weight="700" text-anchor="start">Evidence + Decision</text>
+    <text x="340" y="852" font-size="24" fill="#18324B" font-weight="700" text-anchor="start">Chat / 团队讨论</text>
+    <text x="362" y="921" font-size="19" fill="#18324B" font-weight="400" text-anchor="start">用户：启动 C 程序回归，检查 UART 输出并列出失败用例。</text>
+    <text x="410" y="997" font-size="19" fill="#18324B" font-weight="400" text-anchor="start">Leader：已创建验证任务；测试是否通过需等待真实工具结果。</text>
+    <text x="362" y="1071" font-size="18" fill="#52677C" font-weight="400" text-anchor="start">发送至所选 Agent · 附加文件 · 当前 Thread / Task</text>
+    <text x="1356" y="852" font-size="24" fill="#18324B" font-weight="700" text-anchor="start">Run / 证据</text>
+    <text x="1354" y="904" font-size="19" fill="#52677C" font-weight="400" text-anchor="start">Task 17</text>
+    <text x="1688" y="904" font-size="19" fill="#197767" font-weight="700" text-anchor="end">运行中</text>
+    <text x="1354" y="950" font-size="19" fill="#52677C" font-weight="400" text-anchor="start">CPU 校验</text>
+    <text x="1688" y="950" font-size="19" fill="#197767" font-weight="700" text-anchor="end">已验收</text>
+    <text x="1354" y="996" font-size="19" fill="#52677C" font-weight="400" text-anchor="start">UART 校验</text>
+    <text x="1688" y="996" font-size="19" fill="#197767" font-weight="700" text-anchor="end">已验收</text>
+    <text x="1354" y="1042" font-size="19" fill="#52677C" font-weight="400" text-anchor="start">系统回归</text>
+    <text x="1688" y="1042" font-size="19" fill="#9B6419" font-weight="700" text-anchor="end">等待中</text>
+    <text x="48" y="1166" font-size="18" fill="#52677C" font-weight="400" text-anchor="start">交互要点：选择节点看契约，选择边看条件，选择运行看证据。正在运行的版本不会被画布修改直接覆盖。</text>
+  </g>
+</svg>

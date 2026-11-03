@@ -1,0 +1,95 @@
+﻿图,连接ID,源节点,源端口,目标节点,目标端口,箭头,虚线,含义
+1,e01,ui,S@0.3000,api,N@0.3000,True,False,用户操作通过 API 提交
+1,e02,api,N@0.7300,ui,S@0.7300,True,False,服务端返回已提交运行事件
+1,e03,api,S@0.5000,compiler,N@0.5000,True,False,校验并固定发布版本
+1,e04,compiler,S@0.5000,runtime,N@0.5000,True,False,传入编译后的固定版本 Graph
+1,e05,runtime,W@0.3000,tools,E@0.3000,True,False,运行核心请求模型或工具
+1,e06,tools,E@0.7300,runtime,W@0.7300,True,False,工具适配返回真实执行结果
+1,e07,api,E@0.5000,storage,W@0.3140,True,False,项目服务写入配置与运行记录
+1,e08,runtime,N@0.9000,storage,S@0.5000,True,False,Checkpoint 与执行状态持久化请求
+1,e09,runtime,E@0.3000,observability,W@0.3000,True,True,可选观测事件投递，不阻塞核心执行
+1,e10,runtime,S@0.5000,workspace,N@0.5000,True,False,登记实际产物与工具证据
+2,e01,leader,E@0.3000,rtl_role,W@0.5000,True,False,授权 Leader 向 RTL 角色分配任务
+2,e02,leader,E@0.8000,dv_role,W@0.5000,True,False,授权 Leader 向验证角色分配任务
+2,e03,start,E@0.5000,step,W@0.5000,True,False,阶段 A 完成后进入阶段 B
+2,e04,step,E@0.5000,gate,W@0.5000,True,False,阶段 B 提交后进入独立验收
+2,e05,contract,E@0.3000,rtl_task,W@0.5000,True,False,CPU RTL 任务依赖接口契约
+2,e06,contract,E@0.8000,sw_task,W@0.5000,True,False,软件启动任务依赖接口契约
+2,e07,run,E@0.5000,tool,W@0.5000,True,False,事件记录显示工具运行已结束
+2,e08,tool,E@0.5000,decision,W@0.5000,True,False,后续出现独立验收事件
+2,e09,team_panel,S@0.5000,identities,N@0.2360,False,True,通过稳定标识引用，无执行方向
+2,e10,flow_panel,S@0.5000,identities,N@0.7640,False,True,通过稳定标识引用，无执行方向
+2,e11,identities,S@0.2360,task_panel,N@0.5000,False,True,通过稳定标识引用，无执行方向
+2,e12,identities,S@0.7640,run_panel,N@0.5000,False,True,通过稳定标识引用，无执行方向
+3,e01,leader,S@0.2500,worker_role,N@0.5000,True,False,Leader 被授权向专业执行角色派工
+3,e02,leader,S@0.7500,review_role,N@0.5000,True,False,Leader 被授权向独立验证角色派工
+3,e03,scheduler,E@0.5000,member,W@0.5000,True,False,1. 调度器派发满足依赖的任务
+3,e04,member,S@0.3500,reviewer_gate,N@0.3500,True,False,2. 提交产物与真实工具证据
+3,e05,reviewer_gate,N@0.8000,member,S@0.8000,True,True,可修复且预算允许时退回同一任务执行者
+3,e06,reviewer_gate,W@0.4200,accepted,E@0.4200,True,False,3. 验收通过后登记任务接受状态
+3,e07,accepted,S@0.5000,next_task,N@0.5000,True,False,4. 已验收任务释放下游依赖
+3,e08,reviewer_gate,S@0.5000,blocked,N@0.5000,True,False,无法自动修复时阻塞并通知 Leader 或人工
+4,e01,created,E@0.5000,ready,W@0.5000,True,False,依赖满足
+4,e02,ready,E@0.5000,claimed,W@0.5000,True,False,领取
+4,e03,claimed,E@0.5000,running,W@0.5000,True,False,启动
+4,e04,running,E@0.5000,review,W@0.5000,True,False,提交
+4,e05,review,E@0.5000,accepted,W@0.5000,True,False,验收通过
+4,e06,review,S@0.5000,rework,N@0.3187,True,False,审核拒绝，且可修复、预算充足
+4,e07,rework,W@0.5000,ready,S@0.5000,True,True,新建 Attempt，重新检查前置条件并进入 Ready
+5,e01,input,E@0.5000,execute,W@0.5000,True,False,任务输入契约 → 真实工具执行
+5,e02,execute,E@0.5000,evidence,W@0.5000,True,False,真实工具执行 → 证据登记
+5,e03,evidence,E@0.5000,review,W@0.5000,True,False,证据登记 → 独立验收
+5,e04,review,E@0.5000,release,W@0.5000,True,False,独立验收 → 接受并发布
+5,e05,evidence,S@0.5000,record,N@0.5000,False,True,展示证据记录字段，不增加执行步骤
+5,e06,change,E@0.5000,impact,W@0.5000,True,False,change → impact
+5,e07,impact,E@0.5000,revalidate,W@0.5000,True,False,impact → revalidate
+5,e08,revalidate,E@0.5000,new_decision,W@0.5000,True,False,revalidate → new_decision
+6,e01,gui,L@0.0000,service,L@0.0000,True,False,启动：固定版本与任务
+6,e02,service,L@0.0000,db,L@0.0000,True,False,登记版本、任务与 Run
+6,e03,service,L@0.0000,graph,L@0.0000,True,False,执行（thread_id）
+6,e04,graph,L@0.0000,db,L@0.0000,True,False,保存中断状态 / Checkpoint
+6,e05,graph,L@0.0000,service,L@0.0000,True,True,interrupt：等待人工
+6,e06,service,L@0.0000,db,L@0.0000,True,False,提交待审批事件
+6,e07,service,L@0.0000,gui,L@0.0000,True,True,推送审批请求
+6,e08,gui,L@0.0000,service,L@0.0000,True,False,批准（同一 thread_id）
+6,e09,service,L@0.0000,db,L@0.0000,True,False,记录审批决定与权限校验
+6,e10,service,L@0.0000,graph,L@0.0000,True,False,Command({ resume })
+6,e11,graph,L@0.0000,db,L@0.0000,True,False,查询 operationId 账本
+6,e12,db,L@0.0000,graph,L@0.0000,True,True,未执行；允许本次调用
+6,e13,graph,L@0.0000,service,L@0.0000,True,False,提交已授权工具请求
+6,e14,service,L@0.0000,db,L@0.0000,True,False,核对并登记 operationId / started
+6,e15,service,L@0.0000,tool,L@0.0000,True,False,启动受控工具进程
+6,e16,tool,L@0.0000,service,L@0.0000,True,True,完成：退出码、日志与产物
+6,e17,service,L@0.0000,db,L@0.0000,True,False,写入真实结果与执行记录
+6,e18,service,L@0.0000,graph,L@0.0000,True,True,返回工具结果引用
+6,e19,graph,L@0.0000,gate,L@0.0000,True,False,请求独立验收
+6,e20,gate,L@0.0000,graph,L@0.0000,True,True,判定与证据引用
+6,e21,graph,L@0.0000,db,L@0.0000,True,False,保存阶段状态 / Checkpoint
+6,e22,graph,L@0.0000,service,L@0.0000,True,True,返回阶段结果
+6,e23,service,L@0.0000,db,L@0.0000,True,False,提交可重放运行事件
+6,e24,service,L@0.0000,gui,L@0.0000,True,True,推送已提交状态
+7,e01,architecture,S@0.5000,architecture_gate,N@0.5000,True,False,提交架构与接口契约进行评审
+7,e02,architecture_gate,S@0.5000,fork,N@0.5000,True,False,架构评审通过，进入并行区域
+7,e03,fork,S@0.0496,cpu_dev,N@0.5000,True,False,启动 CPU RTL 开发
+7,e04,cpu_dev,S@0.3200,cpu_check,N@0.3200,True,False,CPU RTL 开发提交指定版本给独立验证
+7,e05,cpu_check,N@0.7700,cpu_dev,S@0.7700,True,True,CPU 独立验证未通过且预算允许，返回同支路开发
+7,e06,fork,S@0.3499,ram_dev,N@0.5000,True,False,启动 RAM 开发
+7,e07,ram_dev,S@0.3200,ram_check,N@0.3200,True,False,RAM 开发提交指定版本给独立验证
+7,e08,ram_check,N@0.7700,ram_dev,S@0.7700,True,True,RAM 独立验证未通过且预算允许，返回同支路开发
+7,e09,fork,S@0.6501,uart_dev,N@0.5000,True,False,启动 UART 开发
+7,e10,uart_dev,S@0.3200,uart_check,N@0.3200,True,False,UART 开发提交指定版本给独立验证
+7,e11,uart_check,N@0.7700,uart_dev,S@0.7700,True,True,UART 独立验证未通过且预算允许，返回同支路开发
+7,e12,fork,S@0.9504,software_dev,N@0.5000,True,False,启动 裸机软件开发
+7,e13,software_dev,S@0.3200,software_check,N@0.3200,True,False,裸机软件开发提交指定版本给独立验证
+7,e14,software_check,N@0.7700,software_dev,S@0.7700,True,True,软件构建验证未通过且预算允许，返回同支路开发
+7,e15,cpu_check,S@0.5000,join,N@0.0496,True,False,该分支所有必需校验通过后到达 AND 汇合
+7,e16,ram_check,S@0.5000,join,N@0.3499,True,False,该分支所有必需校验通过后到达 AND 汇合
+7,e17,uart_check,S@0.5000,join,N@0.6501,True,False,该分支所有必需校验通过后到达 AND 汇合
+7,e18,software_check,S@0.5000,join,N@0.9504,True,False,该分支所有必需校验通过后到达 AND 汇合
+7,e19,join,S@0.5000,soc_test,N@0.5000,True,False,全部必需支路通过后解锁系统级验证
+7,e20,soc_test,S@0.5000,delivery,N@0.5000,True,False,真实系统回归通过后进行独立交付验收
+8,e01,spec,E@0.5000,dev,W@0.5000,True,False,规格确认后开始并行开发
+8,e02,dev,E@0.5000,gate,W@0.5000,True,False,开发提交到独立验收
+8,e03,gate,S@0.7000,regression,N@0.7000,True,False,验收通过后开始系统回归
+8,e04,gate,S@0.2500,dev,S@0.5000,True,True,验收失败且预算允许时退回开发
+8,e05,regression,W@0.5000,release,E@0.5000,True,False,系统回归通过后发布交付

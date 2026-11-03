@@ -1,0 +1,232 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1760" height="1640" viewBox="0 0 1760 1640" role="img" aria-labelledby="title description">
+  <title id="title">图 7  RV32IMAC SoC：软硬件团队工作流</title>
+  <desc id="description">CPU、RAM、UART 与裸机软件在冻结接口后并行开发；最终以真实 RTL 仿真运行 C 程序为验收依据。</desc>
+  <g id="background">
+    <rect x="0" y="0" width="1760" height="1640" rx="0" fill="#FFFFFF" stroke="none" stroke-width="1.4" />
+    <line x1="48" y1="128" x2="1712" y2="128" stroke="#E2E9EF" stroke-width="1.5" />
+    <line x1="48" y1="1560" x2="1712" y2="1560" stroke="#E2E9EF" stroke-width="1.3" />
+  </g>
+  <g id="nodes">
+    <g id="architecture">
+      <title>架构与接口契约（Architect）；RV32IMAC · 五级流水 · 模块接口 · 软件运行目标；Memory Map、CSR / 异常方案和验收标准由团队确定</title>
+      <rect x="560" y="174" width="640" height="118" rx="12" fill="#EEF5FC" stroke="#CED9E3" stroke-width="1.5" />
+      <rect x="561" y="191" width="4" height="84" rx="2" fill="#28649B" stroke="none" />
+    </g>
+    <g id="architecture_gate">
+      <title>架构评审 Gate；接口与验收条件确认后，才允许并行开发</title>
+      <rect x="560" y="370" width="640" height="104" rx="12" fill="#FFF5E3" stroke="#CED9E3" stroke-width="1.5" />
+      <rect x="561" y="387" width="4" height="70" rx="2" fill="#9B6419" stroke="none" />
+    </g>
+    <rect x="174" y="550" width="1412" height="10" rx="4" fill="#18324B" stroke="#18324B" stroke-width="1.4" />
+    <g id="cpu_dev">
+      <title>CPU RTL 开发；IF / ID / EX / MEM / WB；冒险、前递与 IMAC 指令</title>
+      <rect x="48" y="646" width="392" height="142" rx="12" fill="#EAF6F1" stroke="#CED9E3" stroke-width="1.5" />
+      <rect x="49" y="663" width="4" height="108" rx="2" fill="#197767" stroke="none" />
+    </g>
+    <g id="cpu_check">
+      <title>CPU 独立验证；指令、分支、访存与流水线；真实测试、波形与结果</title>
+      <rect x="48" y="928" width="392" height="142" rx="12" fill="#FFF5E3" stroke="#CED9E3" stroke-width="1.5" />
+      <rect x="49" y="945" width="4" height="108" rx="2" fill="#9B6419" stroke="none" />
+    </g>
+    <g id="ram_dev">
+      <title>RAM 开发；程序、数据与栈存储；访问接口与镜像加载</title>
+      <rect x="472" y="646" width="392" height="142" rx="12" fill="#EAF6F1" stroke="#CED9E3" stroke-width="1.5" />
+      <rect x="473" y="663" width="4" height="108" rx="2" fill="#197767" stroke="none" />
+    </g>
+    <g id="ram_check">
+      <title>RAM 独立验证；读写、对齐与访问异常；验证指定输入版本</title>
+      <rect x="472" y="928" width="392" height="142" rx="12" fill="#FFF5E3" stroke="#CED9E3" stroke-width="1.5" />
+      <rect x="473" y="945" width="4" height="108" rx="2" fill="#9B6419" stroke="none" />
+    </g>
+    <g id="uart_dev">
+      <title>UART 开发；MMIO 寄存器与串口收发；软件可访问的状态与数据</title>
+      <rect x="896" y="646" width="392" height="142" rx="12" fill="#EAF6F1" stroke="#CED9E3" stroke-width="1.5" />
+      <rect x="897" y="663" width="4" height="108" rx="2" fill="#197767" stroke="none" />
+    </g>
+    <g id="uart_check">
+      <title>UART 独立验证；寄存器、发送与接收；实际信号与输出检查</title>
+      <rect x="896" y="928" width="392" height="142" rx="12" fill="#FFF5E3" stroke="#CED9E3" stroke-width="1.5" />
+      <rect x="897" y="945" width="4" height="108" rx="2" fill="#9B6419" stroke="none" />
+    </g>
+    <g id="software_dev">
+      <title>裸机软件开发；startup / linker / UART 驱动；C 测试与程序镜像</title>
+      <rect x="1320" y="646" width="392" height="142" rx="12" fill="#EAF6F1" stroke="#CED9E3" stroke-width="1.5" />
+      <rect x="1321" y="663" width="4" height="108" rx="2" fill="#197767" stroke="none" />
+    </g>
+    <g id="software_check">
+      <title>软件构建验证；真实交叉编译与链接；ELF、镜像与启动检查</title>
+      <rect x="1320" y="928" width="392" height="142" rx="12" fill="#FFF5E3" stroke="#CED9E3" stroke-width="1.5" />
+      <rect x="1321" y="945" width="4" height="108" rx="2" fill="#9B6419" stroke="none" />
+    </g>
+    <rect x="174" y="1170" width="1412" height="10" rx="4" fill="#18324B" stroke="#18324B" stroke-width="1.4" />
+    <g id="soc_test">
+      <title>SoC 集成与系统验证；C → ELF / 镜像 → RAM 加载 → RTL 仿真；自动检查 UART 输出、退出状态与测试结果</title>
+      <rect x="560" y="1248" width="640" height="116" rx="12" fill="#EEF5FC" stroke="#CED9E3" stroke-width="1.5" />
+      <rect x="561" y="1265" width="4" height="82" rx="2" fill="#28649B" stroke="none" />
+    </g>
+    <g id="delivery">
+      <title>独立交付验收；固定源码、工具版本、日志、产物哈希与未解决风险</title>
+      <rect x="560" y="1442" width="640" height="110" rx="12" fill="#EAF6F1" stroke="#CED9E3" stroke-width="1.5" />
+      <rect x="561" y="1459" width="4" height="76" rx="2" fill="#197767" stroke="none" />
+    </g>
+  </g>
+  <g id="connections">
+    <g id="e01" data-source="architecture" data-target="architecture_gate">
+      <title>提交架构与接口契约进行评审</title>
+      <polyline points="880,292 880,358" fill="none" stroke="#28649B" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="880,370 874.5,358 885.5,358" fill="#28649B" />
+    </g>
+    <g id="e02" data-source="architecture_gate" data-target="fork">
+      <title>架构评审通过，进入并行区域</title>
+      <polyline points="880,474 880,538" fill="none" stroke="#28649B" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="880,550 874.5,538 885.5,538" fill="#28649B" />
+    </g>
+    <g id="e03" data-source="fork" data-target="cpu_dev">
+      <title>启动 CPU RTL 开发</title>
+      <polyline points="244,560 244,634" fill="none" stroke="#28649B" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="244,646 238.5,634 249.5,634" fill="#28649B" />
+    </g>
+    <g id="e04" data-source="cpu_dev" data-target="cpu_check">
+      <title>CPU RTL 开发提交指定版本给独立验证</title>
+      <polyline points="173.44,788 173.44,916" fill="none" stroke="#197767" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="173.44,928 167.94,916 178.94,916" fill="#197767" />
+    </g>
+    <g id="e05" data-source="cpu_check" data-target="cpu_dev">
+      <title>CPU 独立验证未通过且预算允许，返回同支路开发</title>
+      <polyline points="349.84,928 349.84,800" fill="none" stroke="#9B6419" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="7 6" />
+      <polygon points="349.84,788 355.34,800 344.34,800" fill="#9B6419" />
+    </g>
+    <g id="e06" data-source="fork" data-target="ram_dev">
+      <title>启动 RAM 开发</title>
+      <polyline points="668,560 668,634" fill="none" stroke="#28649B" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="668,646 662.5,634 673.5,634" fill="#28649B" />
+    </g>
+    <g id="e07" data-source="ram_dev" data-target="ram_check">
+      <title>RAM 开发提交指定版本给独立验证</title>
+      <polyline points="597.44,788 597.44,916" fill="none" stroke="#197767" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="597.44,928 591.94,916 602.94,916" fill="#197767" />
+    </g>
+    <g id="e08" data-source="ram_check" data-target="ram_dev">
+      <title>RAM 独立验证未通过且预算允许，返回同支路开发</title>
+      <polyline points="773.84,928 773.84,800" fill="none" stroke="#9B6419" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="7 6" />
+      <polygon points="773.84,788 779.34,800 768.34,800" fill="#9B6419" />
+    </g>
+    <g id="e09" data-source="fork" data-target="uart_dev">
+      <title>启动 UART 开发</title>
+      <polyline points="1092,560 1092,634" fill="none" stroke="#28649B" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="1092,646 1086.5,634 1097.5,634" fill="#28649B" />
+    </g>
+    <g id="e10" data-source="uart_dev" data-target="uart_check">
+      <title>UART 开发提交指定版本给独立验证</title>
+      <polyline points="1021.44,788 1021.44,916" fill="none" stroke="#197767" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="1021.44,928 1015.94,916 1026.94,916" fill="#197767" />
+    </g>
+    <g id="e11" data-source="uart_check" data-target="uart_dev">
+      <title>UART 独立验证未通过且预算允许，返回同支路开发</title>
+      <polyline points="1197.84,928 1197.84,800" fill="none" stroke="#9B6419" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="7 6" />
+      <polygon points="1197.84,788 1203.34,800 1192.34,800" fill="#9B6419" />
+    </g>
+    <g id="e12" data-source="fork" data-target="software_dev">
+      <title>启动 裸机软件开发</title>
+      <polyline points="1516,560 1516,634" fill="none" stroke="#28649B" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="1516,646 1510.5,634 1521.5,634" fill="#28649B" />
+    </g>
+    <g id="e13" data-source="software_dev" data-target="software_check">
+      <title>裸机软件开发提交指定版本给独立验证</title>
+      <polyline points="1445.44,788 1445.44,916" fill="none" stroke="#197767" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="1445.44,928 1439.94,916 1450.94,916" fill="#197767" />
+    </g>
+    <g id="e14" data-source="software_check" data-target="software_dev">
+      <title>软件构建验证未通过且预算允许，返回同支路开发</title>
+      <polyline points="1621.84,928 1621.84,800" fill="none" stroke="#9B6419" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="7 6" />
+      <polygon points="1621.84,788 1627.34,800 1616.34,800" fill="#9B6419" />
+    </g>
+    <g id="e15" data-source="cpu_check" data-target="join">
+      <title>该分支所有必需校验通过后到达 AND 汇合</title>
+      <polyline points="244,1070 244,1158" fill="none" stroke="#197767" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="244,1170 238.5,1158 249.5,1158" fill="#197767" />
+    </g>
+    <g id="e16" data-source="ram_check" data-target="join">
+      <title>该分支所有必需校验通过后到达 AND 汇合</title>
+      <polyline points="668,1070 668,1158" fill="none" stroke="#197767" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="668,1170 662.5,1158 673.5,1158" fill="#197767" />
+    </g>
+    <g id="e17" data-source="uart_check" data-target="join">
+      <title>该分支所有必需校验通过后到达 AND 汇合</title>
+      <polyline points="1092,1070 1092,1158" fill="none" stroke="#197767" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="1092,1170 1086.5,1158 1097.5,1158" fill="#197767" />
+    </g>
+    <g id="e18" data-source="software_check" data-target="join">
+      <title>该分支所有必需校验通过后到达 AND 汇合</title>
+      <polyline points="1516,1070 1516,1158" fill="none" stroke="#197767" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="1516,1170 1510.5,1158 1521.5,1158" fill="#197767" />
+    </g>
+    <g id="e19" data-source="join" data-target="soc_test">
+      <title>全部必需支路通过后解锁系统级验证</title>
+      <polyline points="880,1180 880,1236" fill="none" stroke="#197767" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="880,1248 874.5,1236 885.5,1236" fill="#197767" />
+    </g>
+    <g id="e20" data-source="soc_test" data-target="delivery">
+      <title>真实系统回归通过后进行独立交付验收</title>
+      <polyline points="880,1364 880,1430" fill="none" stroke="#197767" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="880,1442 874.5,1430 885.5,1430" fill="#197767" />
+    </g>
+  </g>
+  <g id="labels" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif">
+    <text x="48" y="64" font-size="25" fill="#28649B" font-weight="700" text-anchor="start">07</text>
+    <text x="112" y="64" font-size="34" fill="#18324B" font-weight="700" text-anchor="start">RV32IMAC SoC：软硬件团队工作流</text>
+    <text x="48" y="105" font-size="19" fill="#52677C" font-weight="400" text-anchor="start">CPU、RAM、UART 与裸机软件在冻结接口后并行开发；最终以真实 RTL 仿真运行 C 程序为验收依据。</text>
+    <text x="880.0" y="210" font-size="24" fill="#18324B" font-weight="700" text-anchor="middle">架构与接口契约（Architect）</text>
+    <text x="880.0" y="241" font-size="19" fill="#52677C" font-weight="400" text-anchor="middle">RV32IMAC · 五级流水 · 模块接口 · 软件运行目标</text>
+    <text x="880.0" y="268" font-size="19" fill="#52677C" font-weight="400" text-anchor="middle">Memory Map、CSR / 异常方案和验收标准由团队确定</text>
+    <text x="880.0" y="406" font-size="24" fill="#18324B" font-weight="700" text-anchor="middle">架构评审 Gate</text>
+    <text x="880.0" y="437" font-size="19" fill="#52677C" font-weight="400" text-anchor="middle">接口与验收条件确认后，才允许并行开发</text>
+    <text x="904" y="339" font-size="19" fill="#52677C" font-weight="400" text-anchor="start">评审</text>
+    <text x="904" y="520" font-size="19" fill="#52677C" font-weight="400" text-anchor="start">通过后拆分</text>
+    <text x="244.0" y="682" font-size="24" fill="#18324B" font-weight="700" text-anchor="middle">CPU RTL 开发</text>
+    <text x="244.0" y="713" font-size="19" fill="#52677C" font-weight="400" text-anchor="middle">IF / ID / EX / MEM / WB</text>
+    <text x="244.0" y="740" font-size="19" fill="#52677C" font-weight="400" text-anchor="middle">冒险、前递与 IMAC 指令</text>
+    <text x="244.0" y="964" font-size="23" fill="#18324B" font-weight="700" text-anchor="middle">CPU 独立验证</text>
+    <text x="244.0" y="995" font-size="19" fill="#52677C" font-weight="400" text-anchor="middle">指令、分支、访存与流水线</text>
+    <text x="244.0" y="1022" font-size="19" fill="#52677C" font-weight="400" text-anchor="middle">真实测试、波形与结果</text>
+    <text x="192" y="849" font-size="18" fill="#197767" font-weight="400" text-anchor="start">提交</text>
+    <text x="370" y="895" font-size="18" fill="#9B6419" font-weight="400" text-anchor="start">返工</text>
+    <text x="668.0" y="682" font-size="24" fill="#18324B" font-weight="700" text-anchor="middle">RAM 开发</text>
+    <text x="668.0" y="713" font-size="19" fill="#52677C" font-weight="400" text-anchor="middle">程序、数据与栈存储</text>
+    <text x="668.0" y="740" font-size="19" fill="#52677C" font-weight="400" text-anchor="middle">访问接口与镜像加载</text>
+    <text x="668.0" y="964" font-size="23" fill="#18324B" font-weight="700" text-anchor="middle">RAM 独立验证</text>
+    <text x="668.0" y="995" font-size="19" fill="#52677C" font-weight="400" text-anchor="middle">读写、对齐与访问异常</text>
+    <text x="668.0" y="1022" font-size="19" fill="#52677C" font-weight="400" text-anchor="middle">验证指定输入版本</text>
+    <text x="616" y="849" font-size="18" fill="#197767" font-weight="400" text-anchor="start">提交</text>
+    <text x="794" y="895" font-size="18" fill="#9B6419" font-weight="400" text-anchor="start">返工</text>
+    <text x="1092.0" y="682" font-size="24" fill="#18324B" font-weight="700" text-anchor="middle">UART 开发</text>
+    <text x="1092.0" y="713" font-size="19" fill="#52677C" font-weight="400" text-anchor="middle">MMIO 寄存器与串口收发</text>
+    <text x="1092.0" y="740" font-size="19" fill="#52677C" font-weight="400" text-anchor="middle">软件可访问的状态与数据</text>
+    <text x="1092.0" y="964" font-size="23" fill="#18324B" font-weight="700" text-anchor="middle">UART 独立验证</text>
+    <text x="1092.0" y="995" font-size="19" fill="#52677C" font-weight="400" text-anchor="middle">寄存器、发送与接收</text>
+    <text x="1092.0" y="1022" font-size="19" fill="#52677C" font-weight="400" text-anchor="middle">实际信号与输出检查</text>
+    <text x="1040" y="849" font-size="18" fill="#197767" font-weight="400" text-anchor="start">提交</text>
+    <text x="1218" y="895" font-size="18" fill="#9B6419" font-weight="400" text-anchor="start">返工</text>
+    <text x="1516.0" y="682" font-size="24" fill="#18324B" font-weight="700" text-anchor="middle">裸机软件开发</text>
+    <text x="1516.0" y="713" font-size="19" fill="#52677C" font-weight="400" text-anchor="middle">startup / linker / UART 驱动</text>
+    <text x="1516.0" y="740" font-size="19" fill="#52677C" font-weight="400" text-anchor="middle">C 测试与程序镜像</text>
+    <text x="1516.0" y="964" font-size="23" fill="#18324B" font-weight="700" text-anchor="middle">软件构建验证</text>
+    <text x="1516.0" y="995" font-size="19" fill="#52677C" font-weight="400" text-anchor="middle">真实交叉编译与链接</text>
+    <text x="1516.0" y="1022" font-size="19" fill="#52677C" font-weight="400" text-anchor="middle">ELF、镜像与启动检查</text>
+    <text x="1464" y="849" font-size="18" fill="#197767" font-weight="400" text-anchor="start">提交</text>
+    <text x="1642" y="895" font-size="18" fill="#9B6419" font-weight="400" text-anchor="start">返工</text>
+    <text x="263.0" y="1127" font-size="18" fill="#197767" font-weight="400" text-anchor="start">通过</text>
+    <text x="687.0" y="1127" font-size="18" fill="#197767" font-weight="400" text-anchor="start">通过</text>
+    <text x="1111.0" y="1127" font-size="18" fill="#197767" font-weight="400" text-anchor="start">通过</text>
+    <text x="1535.0" y="1127" font-size="18" fill="#197767" font-weight="400" text-anchor="start">通过</text>
+    <text x="880" y="1152" font-size="19" fill="#197767" font-weight="400" text-anchor="middle">AND：全部必需分支通过</text>
+    <text x="880.0" y="1284" font-size="24" fill="#18324B" font-weight="700" text-anchor="middle">SoC 集成与系统验证</text>
+    <text x="880.0" y="1315" font-size="19" fill="#52677C" font-weight="400" text-anchor="middle">C → ELF / 镜像 → RAM 加载 → RTL 仿真</text>
+    <text x="880.0" y="1342" font-size="19" fill="#52677C" font-weight="400" text-anchor="middle">自动检查 UART 输出、退出状态与测试结果</text>
+    <text x="880.0" y="1478" font-size="24" fill="#18324B" font-weight="700" text-anchor="middle">独立交付验收</text>
+    <text x="880.0" y="1509" font-size="19" fill="#52677C" font-weight="400" text-anchor="middle">固定源码、工具版本、日志、产物哈希与未解决风险</text>
+    <text x="904" y="1403" font-size="19" fill="#197767" font-weight="400" text-anchor="start">系统回归通过</text>
+    <text x="48" y="1586" font-size="18" fill="#52677C" font-weight="400" text-anchor="start">横条是显式并行拆分 / AND 汇合；橙色虚线仅回到本支路。系统失败由 Issue 定位责任任务后重新验证。</text>
+  </g>
+</svg>

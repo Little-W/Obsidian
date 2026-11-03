@@ -1,0 +1,208 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1760" height="2040" viewBox="0 0 1760 2040" role="img" aria-labelledby="title description">
+  <title id="title">图 6  人工审批、真实工具执行与恢复时序</title>
+  <desc id="description">先保存状态和事件，再通知界面；恢复时核对执行账本，防止重复执行外部命令。</desc>
+  <g id="background">
+    <rect x="0" y="0" width="1760" height="2040" rx="0" fill="#FFFFFF" stroke="none" stroke-width="1.4" />
+    <line x1="48" y1="128" x2="1712" y2="128" stroke="#E2E9EF" stroke-width="1.5" />
+    <line x1="128" y1="240" x2="128" y2="1900" stroke="#CED9E3" stroke-width="1.4" stroke-dasharray="5 7" />
+    <line x1="424" y1="240" x2="424" y2="1900" stroke="#CED9E3" stroke-width="1.4" stroke-dasharray="5 7" />
+    <line x1="720" y1="240" x2="720" y2="1900" stroke="#CED9E3" stroke-width="1.4" stroke-dasharray="5 7" />
+    <line x1="1016" y1="240" x2="1016" y2="1900" stroke="#CED9E3" stroke-width="1.4" stroke-dasharray="5 7" />
+    <line x1="1312" y1="240" x2="1312" y2="1900" stroke="#CED9E3" stroke-width="1.4" stroke-dasharray="5 7" />
+    <line x1="1608" y1="240" x2="1608" y2="1900" stroke="#CED9E3" stroke-width="1.4" stroke-dasharray="5 7" />
+    <rect x="48" y="718" width="1664" height="42" rx="6" fill="#FFF5E3" stroke="none" stroke-width="1.4" />
+    <rect x="48" y="1922" width="1664" height="56" rx="10" fill="#F3F6F9" stroke="none" stroke-width="1.4" />
+  </g>
+  <g id="nodes">
+    <g id="gui">
+      <title>用户 / GUI</title>
+      <rect x="8" y="170" width="240" height="70" rx="12" fill="#EEF5FC" stroke="#CED9E3" stroke-width="1.5" />
+      <rect x="9" y="187" width="4" height="36" rx="2" fill="#28649B" stroke="none" />
+    </g>
+    <g id="service">
+      <title>运行服务</title>
+      <rect x="304" y="170" width="240" height="70" rx="12" fill="#EEF5FC" stroke="#CED9E3" stroke-width="1.5" />
+      <rect x="305" y="187" width="4" height="36" rx="2" fill="#28649B" stroke="none" />
+    </g>
+    <g id="graph">
+      <title>LangGraph</title>
+      <rect x="600" y="170" width="240" height="70" rx="12" fill="#EEF5FC" stroke="#CED9E3" stroke-width="1.5" />
+      <rect x="601" y="187" width="4" height="36" rx="2" fill="#28649B" stroke="none" />
+    </g>
+    <g id="db">
+      <title>持久化层</title>
+      <rect x="896" y="170" width="240" height="70" rx="12" fill="#EEF5FC" stroke="#CED9E3" stroke-width="1.5" />
+      <rect x="897" y="187" width="4" height="36" rx="2" fill="#28649B" stroke="none" />
+    </g>
+    <g id="tool">
+      <title>工具进程</title>
+      <rect x="1192" y="170" width="240" height="70" rx="12" fill="#EEF5FC" stroke="#CED9E3" stroke-width="1.5" />
+      <rect x="1193" y="187" width="4" height="36" rx="2" fill="#28649B" stroke="none" />
+    </g>
+    <g id="gate">
+      <title>验收服务</title>
+      <rect x="1488" y="170" width="240" height="70" rx="12" fill="#EEF5FC" stroke="#CED9E3" stroke-width="1.5" />
+      <rect x="1489" y="187" width="4" height="36" rx="2" fill="#28649B" stroke="none" />
+    </g>
+  </g>
+  <g id="connections">
+    <g id="e01" data-source="gui" data-target="service">
+      <title>启动：固定版本与任务</title>
+      <polyline points="128,294 412,294" fill="none" stroke="#28649B" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="424,294 412,299.5 412,288.5" fill="#28649B" />
+    </g>
+    <g id="e02" data-source="service" data-target="db">
+      <title>登记版本、任务与 Run</title>
+      <polyline points="424,358 1004,358" fill="none" stroke="#28649B" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="1016,358 1004,363.5 1004,352.5" fill="#28649B" />
+    </g>
+    <g id="e03" data-source="service" data-target="graph">
+      <title>执行（thread_id）</title>
+      <polyline points="424,422 708,422" fill="none" stroke="#28649B" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="720,422 708,427.5 708,416.5" fill="#28649B" />
+    </g>
+    <g id="e04" data-source="graph" data-target="db">
+      <title>保存中断状态 / Checkpoint</title>
+      <polyline points="720,486 1004,486" fill="none" stroke="#9B6419" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="1016,486 1004,491.5 1004,480.5" fill="#9B6419" />
+    </g>
+    <g id="e05" data-source="graph" data-target="service">
+      <title>interrupt：等待人工</title>
+      <polyline points="720,550 436,550" fill="none" stroke="#9B6419" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="7 6" />
+      <polygon points="424,550 436,544.5 436,555.5" fill="#9B6419" />
+    </g>
+    <g id="e06" data-source="service" data-target="db">
+      <title>提交待审批事件</title>
+      <polyline points="424,614 1004,614" fill="none" stroke="#9B6419" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="1016,614 1004,619.5 1004,608.5" fill="#9B6419" />
+    </g>
+    <g id="e07" data-source="service" data-target="gui">
+      <title>推送审批请求</title>
+      <polyline points="424,678 140,678" fill="none" stroke="#9B6419" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="7 6" />
+      <polygon points="128,678 140,672.5 140,683.5" fill="#9B6419" />
+    </g>
+    <g id="e08" data-source="gui" data-target="service">
+      <title>批准（同一 thread_id）</title>
+      <polyline points="128,822 412,822" fill="none" stroke="#197767" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="424,822 412,827.5 412,816.5" fill="#197767" />
+    </g>
+    <g id="e09" data-source="service" data-target="db">
+      <title>记录审批决定与权限校验</title>
+      <polyline points="424,886 1004,886" fill="none" stroke="#197767" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="1016,886 1004,891.5 1004,880.5" fill="#197767" />
+    </g>
+    <g id="e10" data-source="service" data-target="graph">
+      <title>Command({ resume })</title>
+      <polyline points="424,950 708,950" fill="none" stroke="#197767" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="720,950 708,955.5 708,944.5" fill="#197767" />
+    </g>
+    <g id="e11" data-source="graph" data-target="db">
+      <title>查询 operationId 账本</title>
+      <polyline points="720,1014 1004,1014" fill="none" stroke="#28649B" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="1016,1014 1004,1019.5 1004,1008.5" fill="#28649B" />
+    </g>
+    <g id="e12" data-source="db" data-target="graph">
+      <title>未执行；允许本次调用</title>
+      <polyline points="1016,1078 732,1078" fill="none" stroke="#64778A" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="7 6" />
+      <polygon points="720,1078 732,1072.5 732,1083.5" fill="#64778A" />
+    </g>
+    <g id="e13" data-source="graph" data-target="service">
+      <title>提交已授权工具请求</title>
+      <polyline points="720,1142 436,1142" fill="none" stroke="#28649B" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="424,1142 436,1136.5 436,1147.5" fill="#28649B" />
+    </g>
+    <g id="e14" data-source="service" data-target="db">
+      <title>核对并登记 operationId / started</title>
+      <polyline points="424,1206 1004,1206" fill="none" stroke="#28649B" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="1016,1206 1004,1211.5 1004,1200.5" fill="#28649B" />
+    </g>
+    <g id="e15" data-source="service" data-target="tool">
+      <title>启动受控工具进程</title>
+      <polyline points="424,1270 1300,1270" fill="none" stroke="#28649B" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="1312,1270 1300,1275.5 1300,1264.5" fill="#28649B" />
+    </g>
+    <g id="e16" data-source="tool" data-target="service">
+      <title>完成：退出码、日志与产物</title>
+      <polyline points="1312,1334 436,1334" fill="none" stroke="#197767" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="7 6" />
+      <polygon points="424,1334 436,1328.5 436,1339.5" fill="#197767" />
+    </g>
+    <g id="e17" data-source="service" data-target="db">
+      <title>写入真实结果与执行记录</title>
+      <polyline points="424,1398 1004,1398" fill="none" stroke="#197767" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="1016,1398 1004,1403.5 1004,1392.5" fill="#197767" />
+    </g>
+    <g id="e18" data-source="service" data-target="graph">
+      <title>返回工具结果引用</title>
+      <polyline points="424,1462 708,1462" fill="none" stroke="#197767" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="7 6" />
+      <polygon points="720,1462 708,1467.5 708,1456.5" fill="#197767" />
+    </g>
+    <g id="e19" data-source="graph" data-target="gate">
+      <title>请求独立验收</title>
+      <polyline points="720,1526 1596,1526" fill="none" stroke="#28649B" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="1608,1526 1596,1531.5 1596,1520.5" fill="#28649B" />
+    </g>
+    <g id="e20" data-source="gate" data-target="graph">
+      <title>判定与证据引用</title>
+      <polyline points="1608,1590 732,1590" fill="none" stroke="#197767" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="7 6" />
+      <polygon points="720,1590 732,1584.5 732,1595.5" fill="#197767" />
+    </g>
+    <g id="e21" data-source="graph" data-target="db">
+      <title>保存阶段状态 / Checkpoint</title>
+      <polyline points="720,1654 1004,1654" fill="none" stroke="#197767" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="1016,1654 1004,1659.5 1004,1648.5" fill="#197767" />
+    </g>
+    <g id="e22" data-source="graph" data-target="service">
+      <title>返回阶段结果</title>
+      <polyline points="720,1718 436,1718" fill="none" stroke="#197767" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="7 6" />
+      <polygon points="424,1718 436,1712.5 436,1723.5" fill="#197767" />
+    </g>
+    <g id="e23" data-source="service" data-target="db">
+      <title>提交可重放运行事件</title>
+      <polyline points="424,1782 1004,1782" fill="none" stroke="#197767" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+      <polygon points="1016,1782 1004,1787.5 1004,1776.5" fill="#197767" />
+    </g>
+    <g id="e24" data-source="service" data-target="gui">
+      <title>推送已提交状态</title>
+      <polyline points="424,1846 140,1846" fill="none" stroke="#197767" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="7 6" />
+      <polygon points="128,1846 140,1840.5 140,1851.5" fill="#197767" />
+    </g>
+  </g>
+  <g id="labels" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif">
+    <text x="48" y="64" font-size="25" fill="#28649B" font-weight="700" text-anchor="start">06</text>
+    <text x="112" y="64" font-size="34" fill="#18324B" font-weight="700" text-anchor="start">人工审批、真实工具执行与恢复时序</text>
+    <text x="48" y="105" font-size="19" fill="#52677C" font-weight="400" text-anchor="start">先保存状态和事件，再通知界面；恢复时核对执行账本，防止重复执行外部命令。</text>
+    <text x="128.0" y="201" font-size="23" fill="#18324B" font-weight="700" text-anchor="middle">用户 / GUI</text>
+    <text x="424.0" y="201" font-size="23" fill="#18324B" font-weight="700" text-anchor="middle">运行服务</text>
+    <text x="720.0" y="201" font-size="23" fill="#18324B" font-weight="700" text-anchor="middle">LangGraph</text>
+    <text x="1016.0" y="201" font-size="23" fill="#18324B" font-weight="700" text-anchor="middle">持久化层</text>
+    <text x="1312.0" y="201" font-size="23" fill="#18324B" font-weight="700" text-anchor="middle">工具进程</text>
+    <text x="1608.0" y="201" font-size="23" fill="#18324B" font-weight="700" text-anchor="middle">验收服务</text>
+    <text x="276.0" y="281" font-size="18" fill="#28649B" font-weight="400" text-anchor="middle">启动：固定版本与任务</text>
+    <text x="720.0" y="345" font-size="18" fill="#28649B" font-weight="400" text-anchor="middle">登记版本、任务与 Run</text>
+    <text x="572.0" y="409" font-size="18" fill="#28649B" font-weight="400" text-anchor="middle">执行（thread_id）</text>
+    <text x="868.0" y="473" font-size="18" fill="#9B6419" font-weight="400" text-anchor="middle">保存中断状态 / Checkpoint</text>
+    <text x="572.0" y="537" font-size="18" fill="#9B6419" font-weight="400" text-anchor="middle">interrupt：等待人工</text>
+    <text x="720.0" y="601" font-size="18" fill="#9B6419" font-weight="400" text-anchor="middle">提交待审批事件</text>
+    <text x="276.0" y="665" font-size="18" fill="#9B6419" font-weight="400" text-anchor="middle">推送审批请求</text>
+    <text x="880" y="746" font-size="19" fill="#9B6419" font-weight="400" text-anchor="middle">暂停区间：待批准的工具命令尚未执行</text>
+    <text x="276.0" y="809" font-size="18" fill="#197767" font-weight="400" text-anchor="middle">批准（同一 thread_id）</text>
+    <text x="720.0" y="873" font-size="18" fill="#197767" font-weight="400" text-anchor="middle">记录审批决定与权限校验</text>
+    <text x="572.0" y="937" font-size="18" fill="#197767" font-weight="400" text-anchor="middle">Command({ resume })</text>
+    <text x="868.0" y="1001" font-size="18" fill="#28649B" font-weight="400" text-anchor="middle">查询 operationId 账本</text>
+    <text x="868.0" y="1065" font-size="18" fill="#64778A" font-weight="400" text-anchor="middle">未执行；允许本次调用</text>
+    <text x="572.0" y="1129" font-size="18" fill="#28649B" font-weight="400" text-anchor="middle">提交已授权工具请求</text>
+    <text x="720.0" y="1193" font-size="18" fill="#28649B" font-weight="400" text-anchor="middle">核对并登记 operationId / started</text>
+    <text x="868.0" y="1257" font-size="18" fill="#28649B" font-weight="400" text-anchor="middle">启动受控工具进程</text>
+    <text x="868.0" y="1321" font-size="18" fill="#197767" font-weight="400" text-anchor="middle">完成：退出码、日志与产物</text>
+    <text x="720.0" y="1385" font-size="18" fill="#197767" font-weight="400" text-anchor="middle">写入真实结果与执行记录</text>
+    <text x="572.0" y="1449" font-size="18" fill="#197767" font-weight="400" text-anchor="middle">返回工具结果引用</text>
+    <text x="1164.0" y="1513" font-size="18" fill="#28649B" font-weight="400" text-anchor="middle">请求独立验收</text>
+    <text x="1164.0" y="1577" font-size="18" fill="#197767" font-weight="400" text-anchor="middle">判定与证据引用</text>
+    <text x="868.0" y="1641" font-size="18" fill="#197767" font-weight="400" text-anchor="middle">保存阶段状态 / Checkpoint</text>
+    <text x="572.0" y="1705" font-size="18" fill="#197767" font-weight="400" text-anchor="middle">返回阶段结果</text>
+    <text x="720.0" y="1769" font-size="18" fill="#197767" font-weight="400" text-anchor="middle">提交可重放运行事件</text>
+    <text x="276.0" y="1833" font-size="18" fill="#197767" font-weight="400" text-anchor="middle">推送已提交状态</text>
+    <text x="68" y="1952" font-size="18" fill="#52677C" font-weight="400" text-anchor="start">实线为请求，虚线为返回；箭头尖端严格落在接收方生命线上。图中仅展示审批通过且工具尚未执行的分支。</text>
+  </g>
+</svg>

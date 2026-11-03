@@ -1,0 +1,56 @@
+{
+  "figures": [
+    {
+      "file": "01_总体架构.svg",
+      "connections": 10,
+      "errors": []
+    },
+    {
+      "file": "02_四层图模型.svg",
+      "connections": 12,
+      "errors": []
+    },
+    {
+      "file": "03_团队角色协作.svg",
+      "connections": 8,
+      "errors": []
+    },
+    {
+      "file": "04_任务执行状态机.svg",
+      "connections": 7,
+      "errors": []
+    },
+    {
+      "file": "05_交付物与验收证据.svg",
+      "connections": 8,
+      "errors": []
+    },
+    {
+      "file": "06_执行与暂停恢复时序.svg",
+      "connections": 24,
+      "errors": []
+    },
+    {
+      "file": "07_RV32IMAC_团队示例.svg",
+      "connections": 20,
+      "errors": []
+    },
+    {
+      "file": "08_工作区交互界面.svg",
+      "connections": 5,
+      "errors": []
+    }
+  ],
+  "checks": [
+    "port attachment",
+    "arrow direction",
+    "orthogonal routes",
+    "node clearance",
+    "text clearance",
+    "unintended edge crossing",
+    "text bounds",
+    "text overlap"
+  ],
+  "connectionCount": 94,
+  "errorCount": 0
+}
