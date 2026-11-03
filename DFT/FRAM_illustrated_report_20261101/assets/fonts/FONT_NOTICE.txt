@@ -1,0 +1,10 @@
+中文字体说明
+
+原始字体：Noto Sans CJK SC Regular
+来源：https://github.com/notofonts/noto-cjk/blob/main/Sans/OTF/SimplifiedChinese/NotoSansCJKsc-Regular.otf
+许可：SIL Open Font License 1.1（见OFL.txt）
+
+原始版权信息：
+© 2014-2021 Adobe (http://www.adobe.com/).
+
+本报告子集：FRAM Diagram Sans、FRAM Report Sans。仅保留所需字符并更改字体名称；子集仍遵循OFL。

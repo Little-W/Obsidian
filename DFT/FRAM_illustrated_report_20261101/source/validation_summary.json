@@ -1,0 +1,27 @@
+{
+  "date": "2026-11-01",
+  "chapters": 12,
+  "figures": 14,
+  "references": 42,
+  "display_formulae": 44,
+  "inline_formulae": 134,
+  "mathjax_errors": [],
+  "md_images": 14,
+  "missing_relative_assets": [],
+  "unresolved_numeric_references": [],
+  "ambiguous_adjacent_references": 0,
+  "html_images": 14,
+  "html_embedded_images": 14,
+  "html_runtime_scripts": 0,
+  "html_duplicate_ids": 0,
+  "html_broken_toc": [],
+  "html_numeric_reference_mismatch": [],
+  "missing_chinese_font_glyphs": [],
+  "png_full_decode": "all 14 figures and the overview passed",
+  "overview_pixels": [
+    1840,
+    2715
+  ],
+  "svg_visual_review": "all 14 figures reviewed",
+  "html_validation_scope": "static structure, embedded assets and formula rendering; no browser screenshot review"
+}
