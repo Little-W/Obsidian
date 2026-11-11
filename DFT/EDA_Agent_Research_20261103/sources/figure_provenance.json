@@ -1,0 +1,62 @@
+[
+  {
+    "figure": "S1_DFTAgent_Fig1",
+    "source_pdf": "DFT与EDA自动化/LLM Agents as Catalysts for Resilient DFT - An Orchestration-Based Framework Beyond Brittle Scripts.pdf",
+    "source_sha256": "08f933457b910624d6c9a1f7d6bb9b14c2041fb8e08e7239e88d7f8626287626",
+    "pdf_page": 6,
+    "original_figure": "Figure 1",
+    "clip_pdf_points": [
+      166,
+      65,
+      560,
+      350
+    ],
+    "scale": 3,
+    "method": "Direct PDF rendering; original labels retained; no diagram redrawing"
+  },
+  {
+    "figure": "S2_EDAid_Fig4",
+    "source_pdf": "通用Agent与芯片设计/Divergent Thoughts toward One Goal: LLM-based Multi-Agent Collaboration System for Electronic Design Automation.pdf",
+    "source_sha256": "9c181e6530741e3ddb098b738d0265cd6b356f9f67308c3f59360d855f86a765",
+    "pdf_page": 4,
+    "original_figure": "Figure 4",
+    "clip_pdf_points": [
+      70,
+      70,
+      526,
+      258
+    ],
+    "scale": 3,
+    "method": "Direct PDF rendering; original labels retained; no diagram redrawing"
+  },
+  {
+    "figure": "S3_ChipMEM_Fig2",
+    "source_pdf": "通用Agent与芯片设计/ChipMEM_2609.27067.pdf",
+    "source_sha256": "94aebaaa175c1475a01164c60bef592db11bd7c1fd0c57e547ac3a89ed69a6a9",
+    "pdf_page": 3,
+    "original_figure": "Figure 2",
+    "clip_pdf_points": [
+      106,
+      64,
+      506,
+      310
+    ],
+    "scale": 3,
+    "method": "Direct PDF rendering; original labels retained; no diagram redrawing"
+  },
+  {
+    "figure": "S4_AgentSPEX_Fig1",
+    "source_pdf": "通用Agent与芯片设计/AgentSPEX: An Agent Specification and Execution Language.pdf",
+    "source_sha256": "d2e0347e8a8312c45a60753256e4b852bf5a319d0dc4ed37bdbc42c4396e5ba2",
+    "pdf_page": 2,
+    "original_figure": "Figure 1",
+    "clip_pdf_points": [
+      107,
+      78,
+      505,
+      257
+    ],
+    "scale": 3,
+    "method": "Direct PDF rendering; original labels retained; no diagram redrawing"
+  }
+]

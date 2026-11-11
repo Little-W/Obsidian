@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1190" viewBox="0 0 1600 1190">
+<rect width="100%" height="100%" fill="white"/>
+<rect x="0" y="0" width="1600" height="12" rx="0" fill="#2963AE" stroke="#2963AE" stroke-width="2"/>
+<text x="54" y="55" fill="#142B45" font-size="38" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="start" dominant-baseline="central">经验复用：通过验证的做法与失败记录分别保存</text>
+<text x="54" y="108" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="start" dominant-baseline="central">经验用于提出下一次候选；旧经验不能替代当前版本的重新验证。</text>
+<rect x="70" y="165" width="680" height="115" rx="16" fill="#EDF4FD" stroke="#2963AE" stroke-width="2"/>
+<text x="410.0" y="199" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">当前运行与证据</text>
+<text x="410.0" y="241" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">候选、工具版本、输入哈希、命令、结果</text>
+<rect x="900" y="165" width="620" height="115" rx="16" fill="#EDF9F5" stroke="#168578" stroke-width="2"/>
+<text x="1210.0" y="199" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">新任务与适用条件</text>
+<text x="1210.0" y="241" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">工具 / 版本 / 工艺 / 设计结构 / 目标</text>
+<rect x="70" y="365" width="310" height="165" rx="16" fill="#EDF9F5" stroke="#168578" stroke-width="2"/>
+<text x="225.0" y="399" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">验证成功经验</text>
+<text x="225.0" y="441" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">前提 + 操作步骤</text>
+<text x="225.0" y="473" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">验证方法与适用范围</text>
+<text x="225.0" y="505" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">来源证据</text>
+<rect x="440" y="365" width="310" height="165" rx="16" fill="#FFF5E5" stroke="#A36612" stroke-width="2"/>
+<text x="595.0" y="399" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">失败与统计记录</text>
+<text x="595.0" y="441" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">错误类别 / 尝试次数</text>
+<text x="595.0" y="473" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">环境故障独立计数</text>
+<text x="595.0" y="505" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">禁止转成成功技能</text>
+<polyline points="230,280 230,365" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="230,365 236.0,350.0 224.0,350.0" fill="#2963AE"/>
+<polyline points="590,280 590,365" fill="none" stroke="#A36612" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="590,365 596.0,350.0 584.0,350.0" fill="#A36612"/>
+<rect x="70" y="615" width="680" height="130" rx="16" fill="#EDF9F5" stroke="#168578" stroke-width="2"/>
+<text x="410.0" y="649" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">版本化经验库</text>
+<text x="410.0" y="691" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">成功与失败保留不同类型；失效、过时记录可撤回</text>
+<polyline points="225,530 225,615" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="225,615 231.0,600.0 219.0,600.0" fill="#2963AE"/>
+<polyline points="595,530 595,615" fill="none" stroke="#A36612" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="595,615 601.0,600.0 589.0,600.0" fill="#A36612"/>
+<rect x="900" y="615" width="620" height="130" rx="16" fill="#EDF9F5" stroke="#168578" stroke-width="2"/>
+<text x="1210.0" y="649" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">过滤与检索</text>
+<text x="1210.0" y="691" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">先匹配适用条件，再按相关度取少量证据</text>
+<polyline points="1210,280 1210,615" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="1210,615 1216.0,600.0 1204.0,600.0" fill="#2963AE"/>
+<polyline points="750,680 900,680" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="900,680 885.0,674.0 885.0,686.0" fill="#2963AE"/>
+<rect x="900" y="900" width="620" height="115" rx="16" fill="#EDF4FD" stroke="#2963AE" stroke-width="2"/>
+<text x="1210.0" y="934" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">生成候选并重新验证</text>
+<text x="1210.0" y="976" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">记录命中经验及它对本次决策的影响</text>
+<polyline points="1210,745 1210,900" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="1210,900 1216.0,885.0 1204.0,885.0" fill="#2963AE"/>
+<text x="56" y="1090" fill="#56677D" font-size="22" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="start" dominant-baseline="central">评测时固定初始经验库；冷启动、只读经验与在线积累分别报告，防止任务间信息泄漏。</text>
+<text x="1558" y="1162" fill="#56677D" font-size="18" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="end" dominant-baseline="central">EDA Agent 研究报告 · 2026-11-03 · 作者绘制</text>
+</svg>

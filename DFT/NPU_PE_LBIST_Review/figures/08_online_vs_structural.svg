@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1700" height="1000" viewBox="0 0 1700 1000">
+<defs>
+<marker id="arr_ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#142b43"/></marker>
+<marker id="arr_blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2563a6"/></marker>
+<marker id="arr_teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#157a73"/></marker>
+<marker id="arr_orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b76414"/></marker>
+<marker id="arr_red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ae3346"/></marker>
+<marker id="arr_muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#54677a"/></marker>
+<marker id="arr_purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6c52a3"/></marker>
+</defs>
+<rect width="1700" height="1000" fill="white"/>
+<text x="54" y="60" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="36" font-weight="700" fill="#142b43" text-anchor="start">图 8  四个在线向量与完整结构测试不是同一覆盖目标</text>
+<text x="54" y="104" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="22" font-weight="400" fill="#54677a" text-anchor="start">以权重块之间插入短检查为概念示例；不绘制未经测量的覆盖率曲线。</text>
+<polyline points="54,129 1646,129" fill="none" stroke="#b9c8d6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="55" y="190" width="1590" height="290" rx="18" fill="#f4f7fb" stroke="#b9c8d6" stroke-width="2"/>
+<text x="79" y="232" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="27" font-weight="700" fill="#2563a6" text-anchor="start">运行期间：检查随 W₀、W₁、W₂ 等不同权重块重复</text>
+<rect x="90" y="280" width="250" height="125" rx="14" fill="#fff4e6" stroke="#b76414" stroke-width="2"/>
+<text x="215.0" y="333.5" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">加载 W₀</text>
+<text x="215.0" y="368.3" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">4 向量检查</text>
+<rect x="380" y="280" width="210" height="125" rx="14" fill="#edf4fc" stroke="#2563a6" stroke-width="2"/>
+<text x="485.0" y="350.9" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">计算块 0</text>
+<rect x="630" y="280" width="250" height="125" rx="14" fill="#fff4e6" stroke="#b76414" stroke-width="2"/>
+<text x="755.0" y="333.5" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">加载 W₁</text>
+<text x="755.0" y="368.3" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">4 向量检查</text>
+<rect x="920" y="280" width="210" height="125" rx="14" fill="#edf4fc" stroke="#2563a6" stroke-width="2"/>
+<text x="1025.0" y="350.9" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">计算块 1</text>
+<rect x="1170" y="280" width="250" height="125" rx="14" fill="#fff4e6" stroke="#b76414" stroke-width="2"/>
+<text x="1295.0" y="333.5" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">加载 W₂</text>
+<text x="1295.0" y="368.3" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">4 向量检查</text>
+<polyline points="340,342 380,342" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<polyline points="590,342 630,342" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<polyline points="880,342 920,342" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<polyline points="1130,342 1170,342" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<text x="1490" y="350" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="36" font-weight="400" fill="#142b43" text-anchor="middle">…</text>
+<rect x="55" y="525" width="1590" height="275" rx="18" fill="#f4f7fb" stroke="#b9c8d6" stroke-width="2"/>
+<text x="79" y="567" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="27" font-weight="700" fill="#2563a6" text-anchor="start">专门结构测试：主动控制 A、W、P 与控制状态</text>
+<rect x="90" y="615" width="350" height="110" rx="14" fill="#f3effb" stroke="#6c52a3" stroke-width="2"/>
+<text x="265.0" y="661.0" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">寄存器与控制测试</text>
+<text x="265.0" y="695.8" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">clear / hold / load</text>
+<rect x="530" y="615" width="450" height="110" rx="14" fill="#fff4e6" stroke="#b76414" stroke-width="2"/>
+<text x="755.0" y="661.0" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">随机 + 确定性向量</text>
+<text x="755.0" y="695.8" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">补足乘法器等难测逻辑</text>
+<rect x="1070" y="615" width="500" height="110" rx="14" fill="#eaf7f3" stroke="#157a73" stroke-width="2"/>
+<text x="1320.0" y="661.0" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">按统一故障清单评价</text>
+<text x="1320.0" y="695.8" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">stuck-at / transition 分开</text>
+<polyline points="440,670 530,670" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<polyline points="980,670 1070,670" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<rect x="90" y="850" width="1520" height="70" rx="14" fill="#fff0f1" stroke="#ae3346" stroke-width="2"/>
+<text x="850.0" y="894.45" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="27" font-weight="400" fill="#142b43" text-anchor="middle">跨多个权重块的累计检出率，不能写成“一次四向量测试的覆盖率”。</text>
+<polyline points="54,936 1646,936" fill="none" stroke="#b9c8d6" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="54" y="971" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="19" font-weight="400" fill="#54677a" text-anchor="start">本报告原创示意 · 非论文原图 · 示例配置不代表实测结果</text>
+<text x="1646" y="971" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="19" font-weight="400" fill="#54677a" text-anchor="end">08</text>
+</svg>

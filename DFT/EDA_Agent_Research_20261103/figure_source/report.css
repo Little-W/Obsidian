@@ -1,0 +1,37 @@
+:root { color-scheme: light; --ink:#183149; --blue:#265e9c; --muted:#56657a; }
+html { scroll-behavior:smooth; }
+body { margin:0; padding:52px 56px 90px 320px; max-width:1120px; color:var(--ink); background:#fff; font-family:"ReportCJK","Noto Sans CJK SC","Microsoft YaHei",sans-serif; font-size:16px; line-height:1.85; }
+header { border-bottom:3px solid #265e9c; padding-bottom:20px; margin-bottom:36px; }
+header h1 { font-size:32px; line-height:1.35; }
+h1 { font-size:34px; line-height:1.4; margin:0 0 25px; }
+h2 { font-size:27px; border-bottom:2px solid #dce7f2; padding-bottom:12px; margin-top:58px; scroll-margin-top:20px; }
+h3 { font-size:22px; margin:32px 0 14px; }
+h4 { font-size:19px; margin:25px 0 10px; }
+p { margin:15px 0; }
+strong { font-weight:700; color:#122e4c; }
+a { color:#265e9c; text-underline-offset:3px; overflow-wrap:anywhere; }
+blockquote { margin:25px 0; padding:12px 24px; border-left:5px solid #218779; background:#f0f8f6; }
+blockquote p { margin:8px 0; }
+figure { margin:30px 0 15px; }
+img { display:block; max-width:100%; height:auto; margin:25px auto 15px; border:1px solid #e1e8f0; border-radius:7px; }
+figcaption { font-size:14px; color:var(--muted); text-align:center; }
+table { border-collapse:collapse; width:100%; font-size:14px; margin:25px 0; table-layout:auto; }
+th { background:#edf3fa; color:#183149; text-align:left; }
+th,td { border:1px solid #d7e1ec; padding:10px 12px; vertical-align:top; }
+tr:nth-child(even) td { background:#fbfcfe; }
+td p { margin:2px 0; }
+pre { white-space:pre-wrap; overflow-wrap:anywhere; padding:20px; background:#f4f6f9; border:1px solid #d7e1ec; border-radius:8px; font-size:13px; line-height:1.6; }
+code { font-family:Consolas,DejaVu Sans Mono,monospace; background:#f0f3f7; padding:1px 4px; border-radius:3px; font-size:.9em; }
+pre code { padding:0; background:transparent; }
+math[display="block"] { overflow-x:auto; margin:25px 0; font-size:1.1em; }
+ul,ol { padding-left:25px; }
+li { margin:8px 0; }
+hr { border:0; border-top:1px solid #d9e3ed; margin:40px 0; }
+#TOC { position:fixed; left:0; top:0; bottom:0; box-sizing:border-box; width:280px; overflow-y:auto; background:#f4f7fb; border-right:1px solid #dde5ef; padding:28px 22px; font-size:13px; line-height:1.55; }
+#TOC::before { content:"EDA Agent 研究报告"; display:block; font-size:19px; font-weight:bold; margin-bottom:24px; color:#183149; }
+#TOC ul { list-style:none; padding-left:0; }
+#TOC ul ul { padding-left:10px; }
+#TOC li { margin:10px 0; }
+#TOC a { text-decoration:none; }
+@media(max-width:1000px) { body {padding:25px 20px; font-size:16px;} #TOC {position:static; width:auto; max-height:430px; border:1px solid #dde5ef; border-radius:8px; margin:20px 0;} table {font-size:13px;} th,td {padding:7px;} }
+@media print { body {padding:0; max-width:none; font-size:11pt;} #TOC {position:static; width:auto; page-break-after:always; background:white;} h2 {page-break-before:always;} h2,h3,h4 {page-break-after:avoid;} figure,table {page-break-inside:avoid;} a {color:inherit;} }

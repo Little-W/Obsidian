@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1250" viewBox="0 0 1600 1250">
+<rect width="100%" height="100%" fill="white"/>
+<rect x="0" y="0" width="1600" height="12" rx="0" fill="#2963AE" stroke="#2963AE" stroke-width="2"/>
+<text x="54" y="55" fill="#142B45" font-size="38" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="start" dominant-baseline="central">功能验证：规格驱动的双路径与反例反馈</text>
+<text x="54" y="108" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="start" dominant-baseline="central">实现与检查分别追溯到固定规格；修改检查集合需要单独审查。</text>
+<rect x="430" y="160" width="740" height="110" rx="16" fill="#EDF9F5" stroke="#168578" stroke-width="2"/>
+<text x="800.0" y="194" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">规格与接口契约</text>
+<text x="800.0" y="236" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">时序行为 / 复位 / 协议 / 异常条件</text>
+<rect x="100" y="335" width="560" height="130" rx="16" fill="#EDF4FD" stroke="#2963AE" stroke-width="2"/>
+<text x="380.0" y="369" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">实现路径</text>
+<text x="380.0" y="411" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">RTL / 修复候选</text>
+<text x="380.0" y="443" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">独立目录与版本</text>
+<rect x="940" y="335" width="560" height="130" rx="16" fill="#EDF9F5" stroke="#168578" stroke-width="2"/>
+<text x="1220.0" y="369" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">验证路径</text>
+<text x="1220.0" y="411" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">需求表 / 参考模型 / 激励 / SVA</text>
+<text x="1220.0" y="443" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">独立于候选的验收集合</text>
+<polyline points="600,270 600,300 380,300 380,335" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="380,335 386.0,320.0 374.0,320.0" fill="#2963AE"/>
+<polyline points="1000,270 1000,300 1220,300 1220,335" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="1220,335 1226.0,320.0 1214.0,320.0" fill="#2963AE"/>
+<rect x="430" y="540" width="740" height="125" rx="16" fill="#EDF9F5" stroke="#168578" stroke-width="2"/>
+<text x="800.0" y="574" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">编译、仿真与形式检查</text>
+<text x="800.0" y="616" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">回归、差分比对、断言、可达性与空真检查</text>
+<polyline points="380,465 380,500 600,500 600,540" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="600,540 606.0,525.0 594.0,525.0" fill="#2963AE"/>
+<polyline points="1220,465 1220,500 1000,500 1000,540" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="1000,540 1006.0,525.0 994.0,525.0" fill="#2963AE"/>
+<rect x="430" y="735" width="740" height="120" rx="16" fill="#EDF9F5" stroke="#168578" stroke-width="2"/>
+<text x="800.0" y="769" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">需求与证据核对</text>
+<text x="800.0" y="811" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">缺陷检出 + 规格覆盖 + 检查有效性</text>
+<polyline points="800,665 800,735" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="800,735 806.0,720.0 794.0,720.0" fill="#2963AE"/>
+<rect x="430" y="920" width="740" height="100" rx="16" fill="#EDF9F5" stroke="#168578" stroke-width="2"/>
+<text x="800.0" y="970.0" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">接纳候选并保留验证证据</text>
+<polyline points="800,855 800,920" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="800,920 806.0,905.0 794.0,905.0" fill="#2963AE"/>
+<rect x="703.0" y="869" width="194.0" height="34" rx="5" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1"/>
+<text x="800" y="886" fill="#2963AE" font-size="22" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">全部必需检查通过</text>
+<rect x="40" y="735" width="295" height="150" rx="16" fill="#FFF5E5" stroke="#A36612" stroke-width="2"/>
+<text x="187.5" y="769" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">失败诊断</text>
+<text x="187.5" y="811" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">失败轨迹与类型</text>
+<text x="187.5" y="843" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">区分 DUT / 验证环境</text>
+<polyline points="430,795 335,795" fill="none" stroke="#A36612" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="335,795 350.0,801.0 350.0,789.0" fill="#A36612"/>
+<rect x="352.0" y="757" width="62.0" height="34" rx="5" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1"/>
+<text x="383" y="774" fill="#A36612" font-size="22" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">失败</text>
+<polyline points="185,735 185,660 55,660 55,400 100,400" fill="none" stroke="#A36612" stroke-width="2.5" stroke-linejoin="round" stroke-dasharray="9 7"/>
+<polygon points="100,400 85.0,394.0 85.0,406.0" fill="#A36612"/>
+<rect x="115.1953125" y="623" width="109.609375" height="34" rx="5" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1"/>
+<text x="170" y="640" fill="#A36612" font-size="22" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">DUT 修复</text>
+<polyline points="185,885 185,1050 1545,1050 1545,400 1500,400" fill="none" stroke="#A36612" stroke-width="2.5" stroke-linejoin="round" stroke-dasharray="9 7"/>
+<polygon points="1500,400 1515.0,406.0 1515.0,394.0" fill="#A36612"/>
+<rect x="604.0" y="1033" width="392.0" height="34" rx="5" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1"/>
+<text x="800" y="1050" fill="#A36612" font-size="22" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">环境或验证资产问题：独立审查后修复</text>
+<text x="56" y="1130" fill="#56677D" font-size="22" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="start" dominant-baseline="central">覆盖项未命中时补充激励；若需修改 checker、assumption 或 waiver，走独立变更审查。</text>
+<text x="56" y="1161" fill="#56677D" font-size="22" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="start" dominant-baseline="central">禁止通过删除失败测试、弱化断言或自行删减覆盖分母来验收候选。</text>
+<text x="1558" y="1222" fill="#56677D" font-size="18" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="end" dominant-baseline="central">EDA Agent 研究报告 · 2026-11-03 · 作者绘制</text>
+</svg>

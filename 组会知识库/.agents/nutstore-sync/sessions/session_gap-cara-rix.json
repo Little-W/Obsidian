@@ -1,0 +1,21 @@
+{
+  "session": {
+    "schemaVersion": 2,
+    "id": "session_gap-cara-rix",
+    "createdAt": 1792914773301,
+    "updatedAt": 1792914773301,
+    "subagents": {
+      "master": {
+        "id": "master",
+        "type": "master",
+        "status": "idle",
+        "createdAt": 1792914773301,
+        "timeline": [],
+        "pendingInputs": [],
+        "operations": {},
+        "toolTimings": {},
+        "subagents": {}
+      }
+    }
+  }
+}

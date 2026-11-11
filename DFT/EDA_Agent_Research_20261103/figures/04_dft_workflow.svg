@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1350" viewBox="0 0 1600 1350">
+<rect width="100%" height="100%" fill="white"/>
+<rect x="0" y="0" width="1600" height="12" rx="0" fill="#2963AE" stroke="#2963AE" stroke-width="2"/>
+<text x="54" y="55" fill="#142B45" font-size="38" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="start" dominant-baseline="central">DFT：功能模式与测试模式分别验收</text>
+<text x="54" y="108" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="start" dominant-baseline="central">以下是建议工程流程；步骤顺序按工具、设计类型与 DFT 方案实例化。</text>
+<rect x="390" y="160" width="820" height="110" rx="16" fill="#EDF9F5" stroke="#168578" stroke-width="2"/>
+<text x="800.0" y="194" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">固定输入与 DFT 契约</text>
+<text x="800.0" y="236" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">RTL / 库 / 时钟复位 / 测试模式 / 故障模型</text>
+<rect x="390" y="325" width="820" height="110" rx="16" fill="#EDF4FD" stroke="#2963AE" stroke-width="2"/>
+<text x="800.0" y="359" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">建立可复现基线</text>
+<text x="800.0" y="401" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">导入、约束检查、初始 DFT 规则与故障统计</text>
+<polyline points="800,270 800,325" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="800,325 806.0,310.0 794.0,310.0" fill="#2963AE"/>
+<rect x="390" y="490" width="820" height="110" rx="16" fill="#EDF4FD" stroke="#2963AE" stroke-width="2"/>
+<text x="800.0" y="524" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">提出并执行 DFT 变更</text>
+<text x="800.0" y="566" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">脚本修复 / 可测性修复 / 扫描与测试结构插入</text>
+<polyline points="800,435 800,490" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="800,490 806.0,475.0 794.0,475.0" fill="#2963AE"/>
+<rect x="140" y="675" width="590" height="110" rx="16" fill="#EDF9F5" stroke="#168578" stroke-width="2"/>
+<text x="435.0" y="709" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">功能模式检查</text>
+<text x="435.0" y="751" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">功能等价 / 原有回归保持</text>
+<rect x="870" y="675" width="590" height="110" rx="16" fill="#EDF9F5" stroke="#168578" stroke-width="2"/>
+<text x="1165.0" y="709" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">测试模式检查</text>
+<text x="1165.0" y="751" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">DFT 规则 / 扫描连通 / 模式控制</text>
+<polyline points="600,600 600,635 435,635 435,675" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="435,675 441.0,660.0 429.0,660.0" fill="#2963AE"/>
+<polyline points="1000,600 1000,635 1165,635 1165,675" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="1165,675 1171.0,660.0 1159.0,660.0" fill="#2963AE"/>
+<rect x="390" y="855" width="820" height="110" rx="16" fill="#EDF9F5" stroke="#168578" stroke-width="2"/>
+<text x="800.0" y="889" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">ATPG 与独立结果复核</text>
+<text x="800.0" y="931" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">向量有效性 / 故障仿真 / 故障全集与分类变化</text>
+<polyline points="435,785 435,820 600,820 600,855" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="600,855 606.0,840.0 594.0,840.0" fill="#2963AE"/>
+<polyline points="1165,785 1165,820 1000,820 1000,855" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="1000,855 1006.0,840.0 994.0,840.0" fill="#2963AE"/>
+<text x="800" y="820" fill="#168578" font-size="22" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">两类检查均通过后执行</text>
+<rect x="390" y="1050" width="820" height="110" rx="16" fill="#EDF9F5" stroke="#168578" stroke-width="2"/>
+<text x="800.0" y="1084" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">接纳通过约束的候选</text>
+<text x="800.0" y="1126" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">覆盖、向量数、测试时间、功能时序与结构代价</text>
+<polyline points="800,965 800,1050" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="800,1050 806.0,1035.0 794.0,1035.0" fill="#2963AE"/>
+<rect x="703.0" y="990" width="194.0" height="34" rx="5" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1"/>
+<text x="800" y="1007" fill="#2963AE" font-size="22" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">必需检查有效通过</text>
+<polyline points="390,910 70,910 70,545 390,545" fill="none" stroke="#A36612" stroke-width="2.5" stroke-linejoin="round" stroke-dasharray="9 7"/>
+<polygon points="390,545 375.0,539.0 375.0,551.0" fill="#A36612"/>
+<rect x="139.0" y="913" width="172.0" height="34" rx="5" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1"/>
+<text x="225" y="930" fill="#A36612" font-size="22" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">诊断与受限重试</text>
+<text x="56" y="1220" fill="#56677D" font-size="22" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="start" dominant-baseline="central">LEC 在约定的功能模式下进行；它不证明扫描移位或捕获过程正确。</text>
+<text x="56" y="1251" fill="#56677D" font-size="22" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="start" dominant-baseline="central">MBIST 还需验证算法执行、故障注入、地址覆盖与测试控制接口，不能由 ATPG 覆盖率替代。</text>
+<text x="1558" y="1322" fill="#56677D" font-size="18" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="end" dominant-baseline="central">EDA Agent 研究报告 · 2026-11-03 · 作者绘制</text>
+</svg>

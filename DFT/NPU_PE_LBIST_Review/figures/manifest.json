@@ -1,0 +1,74 @@
+[
+  {
+    "id": "01_scope",
+    "title": "图 1  PE 测试研究的分类与比较范围",
+    "width": 1600,
+    "height": 1010
+  },
+  {
+    "id": "02_pe_ws_os",
+    "title": "图 2  WS 与 OS 的 Reg + MAC 结构及测试关注点",
+    "width": 1800,
+    "height": 1200
+  },
+  {
+    "id": "03_array_observation",
+    "title": "图 3  4 × 4 WS 阵列中的测试传播与定位",
+    "width": 1600,
+    "height": 1120
+  },
+  {
+    "id": "04_scan_lbist",
+    "title": "图 4  扫描式 LBIST 的基本组织",
+    "width": 1700,
+    "height": 1050
+  },
+  {
+    "id": "05_partial_scan",
+    "title": "图 5  功能通路与选择性扫描的组合",
+    "width": 1700,
+    "height": 980
+  },
+  {
+    "id": "06_partition_schedule",
+    "title": "图 6  子阵列划分与受功耗限制的测试安排",
+    "width": 1700,
+    "height": 1000
+  },
+  {
+    "id": "07_masking_aliasing",
+    "title": "图 7  故障被激活，并不保证最终签名出错",
+    "width": 1700,
+    "height": 1100
+  },
+  {
+    "id": "08_online_vs_structural",
+    "title": "图 8  四个在线向量与完整结构测试不是同一覆盖目标",
+    "width": 1700,
+    "height": 1000
+  },
+  {
+    "id": "09_hybrid_architecture",
+    "title": "图 9  面向 Reg + MAC 的混合式 Tile-LBIST 建议",
+    "width": 1800,
+    "height": 1200
+  },
+  {
+    "id": "10_bist_lifecycle",
+    "title": "图 10  自测试进入、执行与退出流程",
+    "width": 1700,
+    "height": 1110
+  },
+  {
+    "id": "11_timing",
+    "title": "图 11  两类测试时序：LOC 与功能响应有效控制",
+    "width": 1800,
+    "height": 1180
+  },
+  {
+    "id": "12_validation",
+    "title": "图 12  可复现的验证流程与分层结果",
+    "width": 1700,
+    "height": 1160
+  }
+]

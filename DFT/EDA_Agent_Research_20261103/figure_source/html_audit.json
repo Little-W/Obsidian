@@ -1,0 +1,123 @@
+{
+  "verification": "Static HTML structure and embedded image decoding; diagrams visually reviewed separately.",
+  "images": [
+    {
+      "alt": "图1：EDA Agent 研究版图",
+      "embedded": true,
+      "dimensions": [
+        3200,
+        2060
+      ]
+    },
+    {
+      "alt": "原图S1：DFTAgent的分层体系",
+      "embedded": true,
+      "dimensions": [
+        1182,
+        855
+      ]
+    },
+    {
+      "alt": "原图S2：EDAid的多候选与选择器",
+      "embedded": true,
+      "dimensions": [
+        1368,
+        564
+      ]
+    },
+    {
+      "alt": "原图S3：ChipMEM经验与统计记忆",
+      "embedded": true,
+      "dimensions": [
+        1200,
+        738
+      ]
+    },
+    {
+      "alt": "原图S4：AgentSPEX总体架构",
+      "embedded": true,
+      "dimensions": [
+        1194,
+        537
+      ]
+    },
+    {
+      "alt": "图2：受控图流程与智能体团队",
+      "embedded": true,
+      "dimensions": [
+        3200,
+        2300
+      ]
+    },
+    {
+      "alt": "图7：执行状态",
+      "embedded": true,
+      "dimensions": [
+        3200,
+        2360
+      ]
+    },
+    {
+      "alt": "图3：功能验证工作流",
+      "embedded": true,
+      "dimensions": [
+        3200,
+        2500
+      ]
+    },
+    {
+      "alt": "图6：交叉检验的独立性",
+      "embedded": true,
+      "dimensions": [
+        3200,
+        2080
+      ]
+    },
+    {
+      "alt": "图4：DFT工作流",
+      "embedded": true,
+      "dimensions": [
+        3200,
+        2700
+      ]
+    },
+    {
+      "alt": "图10：MBIST研究方案",
+      "embedded": true,
+      "dimensions": [
+        3200,
+        2280
+      ]
+    },
+    {
+      "alt": "图5：后端优化工作流",
+      "embedded": true,
+      "dimensions": [
+        3200,
+        2560
+      ]
+    },
+    {
+      "alt": "图8：经验写入与复用",
+      "embedded": true,
+      "dimensions": [
+        3200,
+        2380
+      ]
+    },
+    {
+      "alt": "图9：实验与消融设计",
+      "embedded": true,
+      "dimensions": [
+        3200,
+        2180
+      ]
+    }
+  ],
+  "broken_internal_links": [],
+  "reference_anchors": 44,
+  "tables": 15,
+  "math_elements": 11,
+  "external_scripts": [],
+  "html_bytes": 6008366
+}

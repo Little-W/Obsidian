@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1700" height="1110" viewBox="0 0 1700 1110">
+<defs>
+<marker id="arr_ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#142b43"/></marker>
+<marker id="arr_blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2563a6"/></marker>
+<marker id="arr_teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#157a73"/></marker>
+<marker id="arr_orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b76414"/></marker>
+<marker id="arr_red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ae3346"/></marker>
+<marker id="arr_muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#54677a"/></marker>
+<marker id="arr_purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6c52a3"/></marker>
+</defs>
+<rect width="1700" height="1110" fill="white"/>
+<text x="54" y="60" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="36" font-weight="700" fill="#142b43" text-anchor="start">图 10  自测试进入、执行与退出流程</text>
+<text x="54" y="104" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="22" font-weight="400" fill="#54677a" text-anchor="start">在线测试必须处理未完成事务和状态恢复；超时与测试失败要分别上报。</text>
+<polyline points="54,129 1646,129" fill="none" stroke="#b9c8d6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="90" y="210" width="400" height="110" rx="14" fill="#f3effb" stroke="#6c52a3" stroke-width="2"/>
+<text x="290.0" y="273.75" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="25" font-weight="400" fill="#142b43" text-anchor="middle">请求测试 / 检查许可</text>
+<rect x="620" y="210" width="400" height="110" rx="14" fill="#edf4fc" stroke="#2563a6" stroke-width="2"/>
+<text x="820.0" y="273.75" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="25" font-weight="400" fill="#142b43" text-anchor="middle">停止接收新事务</text>
+<rect x="1150" y="210" width="400" height="110" rx="14" fill="#edf4fc" stroke="#2563a6" stroke-width="2"/>
+<text x="1350.0" y="273.75" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="25" font-weight="400" fill="#142b43" text-anchor="middle">排空在途计算</text>
+<rect x="1150" y="430" width="400" height="110" rx="14" fill="#edf4fc" stroke="#2563a6" stroke-width="2"/>
+<text x="1350.0" y="493.75" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="25" font-weight="400" fill="#142b43" text-anchor="middle">保存必要状态</text>
+<rect x="620" y="430" width="400" height="110" rx="14" fill="#fff4e6" stroke="#b76414" stroke-width="2"/>
+<text x="820.0" y="493.75" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="25" font-weight="400" fill="#142b43" text-anchor="middle">初始化寄存器和签名</text>
+<rect x="90" y="430" width="400" height="110" rx="14" fill="#fff4e6" stroke="#b76414" stroke-width="2"/>
+<text x="290.0" y="493.75" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="25" font-weight="400" fill="#142b43" text-anchor="middle">加载测试配置 / 种子</text>
+<rect x="90" y="650" width="400" height="110" rx="14" fill="#fff4e6" stroke="#b76414" stroke-width="2"/>
+<text x="290.0" y="713.75" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="25" font-weight="400" fill="#142b43" text-anchor="middle">执行激励 + 收集响应</text>
+<rect x="620" y="650" width="400" height="110" rx="14" fill="#eaf7f3" stroke="#157a73" stroke-width="2"/>
+<text x="820.0" y="713.75" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="25" font-weight="400" fill="#142b43" text-anchor="middle">排空测试流水并比对</text>
+<rect x="1150" y="650" width="400" height="110" rx="14" fill="#eaf7f3" stroke="#157a73" stroke-width="2"/>
+<text x="1350.0" y="713.75" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="25" font-weight="400" fill="#142b43" text-anchor="middle">通过 / 失败 / 超时</text>
+<polyline points="490,265 620,265" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<polyline points="1020,265 1150,265" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<polyline points="1150,485 1020,485" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<polyline points="620,485 490,485" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<polyline points="490,705 620,705" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<polyline points="1020,705 1150,705" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<polyline points="1350,320 1350,430" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<polyline points="290,540 290,650" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<rect x="900" y="870" width="650" height="110" rx="14" fill="#eaf7f3" stroke="#157a73" stroke-width="2"/>
+<text x="1225.0" y="933.4" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">可选定位 → 恢复 / 隔离 → 上报 → 返回</text>
+<polyline points="1350,760 1350,870" fill="none" stroke="#157a73" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_teal)"/>
+<rect x="90" y="870" width="660" height="110" rx="14" fill="#fff0f1" stroke="#ae3346" stroke-width="2"/>
+<text x="420.0" y="933.4" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">终止规则：每个状态都有周期预算与异常出口</text>
+<text x="850" y="1030" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#54677a" text-anchor="middle">上电测试通常无需保存业务状态；空闲期测试也不能默认内部寄存器无有效内容。</text>
+<polyline points="54,1046 1646,1046" fill="none" stroke="#b9c8d6" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="54" y="1081" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="19" font-weight="400" fill="#54677a" text-anchor="start">本报告原创示意 · 非论文原图 · 示例配置不代表实测结果</text>
+<text x="1646" y="1081" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="19" font-weight="400" fill="#54677a" text-anchor="end">10</text>
+</svg>

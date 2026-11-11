@@ -1,0 +1,343 @@
+# Frequently used commands in linux bash
+
+## find files of specific name(`find`)
+
+```bash
+#find files recursively in current dir
+find . -name "*.lef"
+```
+
+## find contents in a file(`grep`)
+
+```bash
+#find 'to_be_found' in file note.txt
+grep 'to_be_found' note.txt
+#alternative
+cat note.txt | grep 'to_be_found'
+#here the pipe | transmits the contents to stdin rather than grep
+#an argument of grep. grep read from stdin 
+```
+
+## find contents in all files of a directory(`grep`)
+
+```bash
+# find 'to_be_found' in the current dir recursively
+grep -r 'to_be_found' .
+```
+
+## find files whose name has certain pattern and delete them
+
+```bash
+find . -type f -name "*to_be_found*" -exec rm {} \;
+# if you want to be asked when each file is deleted, add -i
+find . -type f -name "*to_be_found*" -exec rm -i {} \;
+```
+
+## extract and archive with `zip`, `tar`, `gzip`
+
+```bash
+# .zip
+zip -r dir.zip dir
+zip -r dir.zip dir -x "dir/to_be_excluded/*" # exclude files
+zip -r dir.zip dir -x "*.log" "*.txt" # 使用通配符
+zip -r dir.zip dir -x "file_to_exclude.txt" # exclude single file
+# -x 后是绝对路径而不是相对于呗压缩文件夹的相对路径
+
+unzip filename.zip -d filedir
+
+# .tar.gz
+tar -zcvf [file_name].tar.gz [dir] #打包成.tar.gz文件
+tar -zxvf [file_name].tar.gz -C [dir] #解压.tar.gz文件到指定目录
+
+# .gz
+gzip [file_name] #压缩文件，但是会删除原文件
+gzip -c [file_name] > [file_name].gz #压缩文件，保留原文件
+gzip -d [file_name].gz #解压文件
+```
+
+## check storage usage using `du`& `df`
+
+```bash
+du -sh [dir] #查看dir的总大小
+df -h [dir] #查看目录空余空间
+
+du -h --max-depth=1 [dir] #查看dir下各个子目录的大小
+du -h -d 1 [dir] #--max-depth简写-d
+```
+
+## manage soft link of directory using `ln`
+
+```bash
+# wherever you are
+ln -s source/dir/a target/dir/b #创建软链接
+
+# if you're currently in the dir of the target dir
+ln -s /source/dir/a b # 在当前目录下创建一个软链接b
+ln -s source/dir/a # 缺省目标文件夹名称，在当前目录下创建一个同名软链接a
+
+# if you want to delete the link
+rm b #删除软链接b
+```
+
+## `tmux`
+
+```bash
+sudo apt-get install tmux
+
+tmux new -s <session-name>
+
+tmux detach # or ctrl+b, d
+
+tmux ls # list all sessions
+
+tmux attach -t <session-name> # attach to a session
+
+tmux kill-session -t <session-name>
+```
+
+## `conda`常用命令
+
+```bash
+conda init
+conda create --name <env_name> python=<version>
+conda env list
+conda env remove --name <env_name>
+
+conda env export > environment.yml
+conda env create -f environment.yml
+conda env update -f environment.yml
+```
+
+## 权限设置`chmod`
+
+```bash
+# 给所有用户添加读和执行权限
+chmod -R a+rx .
+
+# 当前用户rwx，其他用户rx
+chmod -R u+rwx,g+rx,o+rx . # 或
+chmod -R 755 .
+```
+
+## 别名`alias`
+
+```bash
+# 查看当前所有别名
+alias
+
+# 创建别名
+alias ll='ls -alF'
+unalias ll # 删除别名
+
+# 永久生效
+echo "alias ca='conda activate'" >> ~/.bashrc
+echo "alias nv='nvidia-smi'" >> ~/.bashrc
+echo "alias wnv='watch -n 1 nvidia-smi'" >> ~/.bashrc
+echo "alias pi='pip install'" >> ~/.bashrc
+echo "alias py='python'" >> ~/.bashrc
+echo "alias up='cd ..'" >> ~/.bashrc
+echo "alias tnew='tmux new -s'" >> ~/.bashrc
+echo "alias tkill='tmux kill-session -t'" >> ~/.bashrc
+echo "alias tattach='tmux attach -t'" >> ~/.bashrc
+echo "alias pfind='ps aux | grep'" >> ~/.bashrc
+source ~/.bashrc     # 立即生效 
+```
+
+## nvidia-smi
+
+```bash
+# 查看GPU信息
+nvidia-smi
+
+# 持续检测GPU信息
+nvidia-smi -l 1
+# or
+watch -n 1 nvidia-smi
+```
+
+## docker
+
+安装完docker记得先更新镜像源，否则无法下载任何镜像。
+
+```bash
+########image
+docker search [镜像名]
+docker pull [镜像名]:[标签]  # 默认标签为 latest
+docker images  # 查看本地镜像
+docker rmi [镜像ID或镜像名]  # 删除镜像
+
+########container
+docker run -it --name [容器名] [镜像名] /bin/bash  # 运行容器
+docker ps -a  # 查看所有容器
+docker start [容器ID或容器名]  # 启动容器
+docker stop [容器ID或容器名]  # 停止容器
+docker restart [容器ID或容器名]  # 重启容器
+docker rm [容器ID或容器名]  # 删除容器
+docker exec -it [容器ID或容器名] /bin/bash  # 在容器运行时进入其命令行
+docker logs [容器容器ID或容器名名]  # 查看容器日志
+docker stats [容器ID或容器名]  # 查看容器资源占用情况
+```
+
+## `scp`/`rsync`传输文件
+
+假设A和B在同一个局域网，则可以使用内网ip，如果不在同一个局域网，则需要使用公网ip。现在假设要将B服务器上的文件传输到A服务器,则在A服务器终端执行：
+
+```bash
+#传输A的文件到B的文件夹下
+scp user_b@ip_b:/path/to/file /path/to/save/dir
+
+#传输B的文件夹到A的文件夹下
+scp -r user_b@ip_b:/path/to/dir/B /path/to/save/dir/A
+# B文件夹将会在A目录下
+
+# 对于远程主机指定了端口号的，例如autodl主机
+scp -rP 22 user_b@ip_b.com:/path/to/file /path/to/save/dir
+```
+
+需要注意的是，`scp`命令默认会递归地复制远程文件夹的内容到本地目标文件夹中，并且如果遇到本地已有同名文件，它会**直接**覆盖本地文件，而不会询问你是否确认或中断传输。本地原有独有的文件不受影响。在处理大文件夹或需要同步文件时，`rsync` 是比 `scp` 更好的选择，它默认只会传输差异文件，并且提供了 `-u` (更新，跳过较新的本地文件) 或 `--backup` (备份旧文件) 等高级选项。
+
+```bash
+# -a: 归档模式 (递归、保留权限、时间等)
+# -v: 显示详情
+# -z: 压缩传输 (可选)
+# --progress: 显示进度
+rsync -avz --progress user@remote_host:/remote/source_dir/ /local/target_dir/
+```
+
+## 外网服务器通过校内主机接受校内服务器文件
+
+假设现有一台校园网内远程服务器（A），还有一个外网服务器（B，无法访问校内资源，即直接使用scp无效），可以通过连接校园网的本地机器（L）中转，将校内服务器上的文件传输到外网服务器。
+
+```bash
+# 本地机器L：建立接应点（socks5）
+ssh -D 1080 user_A@ip_A
+
+# 本地机器L：建立反向ssh通道
+ssh -R 10800:localhost:10800 user_B@ip_B
+# 对于例如autodl的主机，有给出的ssh连接指令包含端口
+ssh -R 10800:localhost:10800 - p xxxx user_B@B_com
+
+# 外网主机B：配置proxychains4
+sudo apt-get update
+sudo apt-get install proxychains4
+sudo vim /etc/proxychains.conf
+# 添加以下内容(去掉井号)
+# dynamic_chain
+# [ProxyList]
+# socks5 127.0.0.1 10800
+
+# 外网主机B：使用proxychains4下载文件
+proxychains4 scp user_A@ip_A:/path/to/file /path/to/save/dir
+```
+
+具体解释可以看[ssh转发](https://github.com/AstroCIEL/notes/blob/master/basic/ssh转发.md)
+
+## git更新仓库
+
+现在假设想要将本地的某个文件夹上传到github作为一个新的仓库。首先你需要在github上创建一个仓库，假设其网址为https://github.com/username/new_repo.git。然后在本地想要上传的文件夹下执行(以下介绍ssh认证)：
+
+```bash
+git init
+git add .
+git commit -m "first commit"
+git remote add origin https://github.com/username/new_repo.git
+
+# 为了推送，需要验证身份，一种方法是使用token，但此处介绍另一种方法即使用ssh验证
+# 首先在github上生成一个ssh key
+ssh-keygen -t ed25519 -C "your_email@example.com"
+# 将生成的公钥(.pub)添加到github上(头像-->settings-->SSH and GPG keys-->New SSH key)
+# 检查当前远程url
+git remote -v
+# 如果显示的是https，则修改为ssh
+git remote set-url origin git@github.com:username/new_repo.git
+
+# 推送
+git push -u origin master
+```
+
+假设验证通过之后，则无需再进行验证，只需要执行
+
+```bash
+git add .
+git commit -m "commit_message"
+git push origin main
+```
+
+对于http token认证：
+
+```bash
+#假设当前本地仓库就是git clone下来的，因此无需git init
+git add .
+git commit -m "commit_message"
+
+# 如果是第一次push，为了让本地记住token无需再认证
+git config --global credential.helper store
+# 如果不是第一次push或者是本地已经记住认证则不需要
+
+git push origin main
+```
+
+对于不想同步的文件或者文件夹，可以通过编写.gitignore文件来排除。在.gitignore文件中，可以指定要忽略的文件或文件夹(全部使用相对路径，并且在所有文件夹后面都要加一个斜杠来表征这是一个文件夹)，例如：
+
+```gitignore
+# 忽略文件夹内所有.txt文件，不管在哪一级
+*.txt
+
+# 忽略文件夹内所有叫build的文件夹（及其内部内容），不管在哪一级
+build/
+
+# 忽略根目录下的叫build的文件夹（及其内部内容）
+/build/
+```
+
+如果当前已经不小心把不想同步的文件夹add和commit但是还没有push到远程仓库，可以执行：
+
+```bash
+git rm -r --cached [folder_name]
+
+# 然后更新.gitignore文件
+git add .gitignore
+git commit --amend --no-edit
+git push origin main
+```
+
+有时候即使主机开了代理软件例如clash，git也不会走代理，导致有时候连接超时。为了显式地告诉 Git 使用代理地址（通常 Clash 在本地开放的 HTTP 端口默认是 7890）：
+
+```bash
+# 设置 HTTP 代理
+git config --global http.proxy http://127.0.0.1:7890
+# 设置 HTTPS 代理（即使是 https 仓库，这里也填 http://...）
+git config --global https.proxy http://127.0.0.1:7890
+# --global 表示对该用户下所有 Git 仓库生效
+
+# 验证配置是否生效
+git config --global --get http.proxy
+git config --global --get https.proxy
+# 如果输出了 http://127.0.0.1:7890，说明设置成功
+
+# 后续如果要取消代理
+git config --global --unset http.proxy
+git config --global --unset https.proxy
+```
+
+## 远程主机全局代理使用本地网络转发
+
+假设内网内的某个远程主机没有翻墙能力，但是本地机器已经配置了代理（例如使用clash，默认端口7890），可以通过端口转发使得远程主机使用本地机器的网络。
+
+首先在本地机器中运行
+
+```bash
+ssh -N -R 20000:127.0.0.1:7890 remote_id@remote_ip
+```
+
+然后在远程主机上
+
+```bash
+# 设置代理
+export http_proxy="socks5h://127.0.0.1:20000"
+export https_proxy="socks5h://127.0.0.1:20000"
+
+# 取消代理
+unset http_proxy
+unset https_proxy
+```

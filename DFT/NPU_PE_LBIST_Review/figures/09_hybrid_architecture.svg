@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1200" viewBox="0 0 1800 1200">
+<defs>
+<marker id="arr_ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#142b43"/></marker>
+<marker id="arr_blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2563a6"/></marker>
+<marker id="arr_teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#157a73"/></marker>
+<marker id="arr_orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b76414"/></marker>
+<marker id="arr_red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ae3346"/></marker>
+<marker id="arr_muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#54677a"/></marker>
+<marker id="arr_purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6c52a3"/></marker>
+</defs>
+<rect width="1800" height="1200" fill="white"/>
+<text x="54" y="60" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="36" font-weight="700" fill="#142b43" text-anchor="start">图 9  面向 Reg + MAC 的混合式 Tile-LBIST 建议</text>
+<text x="54" y="104" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="22" font-weight="400" fill="#54677a" text-anchor="start">本报告提出的待验证架构，不是已实现电路，也不是特定论文的原图。</text>
+<polyline points="54,129 1746,129" fill="none" stroke="#b9c8d6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="60" y="200" width="330" height="155" rx="14" fill="#f3effb" stroke="#6c52a3" stroke-width="2"/>
+<text x="225.0" y="250.0" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="25" font-weight="400" fill="#142b43" text-anchor="middle">全局测试控制器</text>
+<text x="225.0" y="286.25" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="25" font-weight="400" fill="#142b43" text-anchor="middle">配置 / 分组 / 超时</text>
+<text x="225.0" y="322.5" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="25" font-weight="400" fill="#142b43" text-anchor="middle">安全进入与退出</text>
+<rect x="60" y="440" width="330" height="145" rx="14" fill="#fff4e6" stroke="#b76414" stroke-width="2"/>
+<text x="225.0" y="503.125" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="25" font-weight="400" fill="#142b43" text-anchor="middle">PRPG + 重播种</text>
+<text x="225.0" y="539.375" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="25" font-weight="400" fill="#142b43" text-anchor="middle">定向向量 / ATPG 补充</text>
+<rect x="60" y="730" width="330" height="135" rx="14" fill="#eaf7f3" stroke="#157a73" stroke-width="2"/>
+<text x="225.0" y="788.5" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">参考签名 / 测试配置</text>
+<text x="225.0" y="823.3" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">模式与序列版本绑定</text>
+<rect x="470" y="190" width="850" height="735" rx="18" fill="#f4f7fb" stroke="#b9c8d6" stroke-width="2"/>
+<text x="494" y="232" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="27" font-weight="700" fill="#2563a6" text-anchor="start">Tile：例如 4 × 4 或 8 × 8 PEs</text>
+<rect x="510" y="285" width="330" height="110" rx="14" fill="#fff4e6" stroke="#b76414" stroke-width="2"/>
+<text x="675.0" y="330.625" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="25" font-weight="400" fill="#142b43" text-anchor="middle">激励选择与分发</text>
+<text x="675.0" y="366.875" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="25" font-weight="400" fill="#142b43" text-anchor="middle">正常 / 自测试</text>
+<rect x="510" y="470" width="330" height="160" rx="14" fill="#edf4fc" stroke="#2563a6" stroke-width="2"/>
+<text x="675.0" y="522.5" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="25" font-weight="400" fill="#142b43" text-anchor="middle">PE 阵列</text>
+<text x="675.0" y="558.75" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="25" font-weight="400" fill="#142b43" text-anchor="middle">A/W/P 寄存器 + MAC</text>
+<text x="675.0" y="595.0" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="25" font-weight="400" fill="#142b43" text-anchor="middle">控制与相邻连接</text>
+<rect x="915" y="280" width="345" height="115" rx="14" fill="#f3effb" stroke="#6c52a3" stroke-width="2"/>
+<text x="1087.5" y="328.875" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#142b43" text-anchor="middle">可选：局部扫描 / 测试点</text>
+<text x="1087.5" y="362.225" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#142b43" text-anchor="middle">处理难控、难观测状态</text>
+<rect x="915" y="495" width="345" height="125" rx="14" fill="#eaf7f3" stroke="#157a73" stroke-width="2"/>
+<text x="1087.5" y="548.125" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="25" font-weight="400" fill="#142b43" text-anchor="middle">分组观察 / 选择器</text>
+<text x="1087.5" y="584.375" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="25" font-weight="400" fill="#142b43" text-anchor="middle">避免过早全阵列 XOR</text>
+<rect x="915" y="740" width="345" height="105" rx="14" fill="#eaf7f3" stroke="#157a73" stroke-width="2"/>
+<text x="1087.5" y="800.55" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#142b43" text-anchor="middle">Tile MISR / 原始响应模式</text>
+<polyline points="390,510 450,510 450,340 510,340" fill="none" stroke="#b76414" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_orange)"/>
+<polyline points="675,395 675,470" fill="none" stroke="#b76414" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_orange)"/>
+<polyline points="840,550 915,550" fill="none" stroke="#157a73" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_teal)"/>
+<polyline points="1087,620 1087,740" fill="none" stroke="#157a73" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_teal)"/>
+<polyline points="1087,395 1087,440 760,440 760,470" fill="none" stroke="#6c52a3" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_purple)" stroke-dasharray="9 7"/>
+<rect x="1390" y="470" width="335" height="155" rx="14" fill="#eaf7f3" stroke="#157a73" stroke-width="2"/>
+<text x="1557.5" y="521.1" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">比对与故障状态</text>
+<text x="1557.5" y="555.9" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">PASS / FAIL / TIMEOUT</text>
+<text x="1557.5" y="590.7" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">Tile / 行列诊断</text>
+<polyline points="1260,792 1350,792 1350,550 1390,550" fill="none" stroke="#157a73" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_teal)"/>
+<polyline points="390,795 430,795 430,970 1557,970 1557,625" fill="none" stroke="#157a73" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_teal)"/>
+<polyline points="390,265 430,265 430,170 1557,170 1557,470" fill="none" stroke="#6c52a3" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_purple)" stroke-dasharray="9 7"/>
+<text x="1430" y="220" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="22" font-weight="400" fill="#6c52a3" text-anchor="start">模式控制 / 状态</text>
+<text x="510" y="720" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#54677a" text-anchor="start">观察点优先放在截断、</text>
+<text x="510" y="762" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#54677a" text-anchor="start">饱和与激活函数之前。</text>
+<text x="510" y="804" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#54677a" text-anchor="start">诊断时可重跑失败组。</text>
+<rect x="60" y="1030" width="1670" height="85" rx="14" fill="#fff4e6" stroke="#b76414" stroke-width="2"/>
+<text x="895.0" y="1081.25" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="25" font-weight="400" fill="#142b43" text-anchor="middle">共享发生器节省复制成本；局部观察改善可观测性。实际收益必须由同网表故障仿真与 PPA 验证。</text>
+<polyline points="54,1136 1746,1136" fill="none" stroke="#b9c8d6" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="54" y="1171" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="19" font-weight="400" fill="#54677a" text-anchor="start">本报告原创示意 · 非论文原图 · 示例配置不代表实测结果</text>
+<text x="1746" y="1171" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="19" font-weight="400" fill="#54677a" text-anchor="end">09</text>
+</svg>

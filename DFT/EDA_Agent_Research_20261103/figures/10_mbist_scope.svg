@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1140" viewBox="0 0 1600 1140">
+<rect width="100%" height="100%" fill="white"/>
+<rect x="0" y="0" width="1600" height="12" rx="0" fill="#2963AE" stroke="#2963AE" stroke-width="2"/>
+<text x="54" y="55" fill="#142B45" font-size="38" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="start" dominant-baseline="central">MBIST 方向：把算法求解与 Agent 决策分别验证</text>
+<text x="54" y="108" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="start" dominant-baseline="central">建议研究方案；不表示已有论文或本项目已经实现。</text>
+<rect x="420" y="160" width="760" height="115" rx="16" fill="#EDF9F5" stroke="#168578" stroke-width="2"/>
+<text x="800.0" y="194" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">存储器与故障契约</text>
+<text x="800.0" y="236" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">接口 / 时钟 / 功率 / 几何条件 / 目标故障模型</text>
+<rect x="80" y="350" width="650" height="140" rx="16" fill="#EDF4FD" stroke="#2963AE" stroke-width="2"/>
+<text x="405.0" y="384" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">Agent 负责组织与解释</text>
+<text x="405.0" y="426" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">选择合法候选与工具配置</text>
+<text x="405.0" y="458" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">根据失败证据安排下一轮</text>
+<rect x="870" y="350" width="650" height="140" rx="16" fill="#EDF9F5" stroke="#168578" stroke-width="2"/>
+<text x="1195.0" y="384" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">专用算法与求解器</text>
+<text x="1195.0" y="426" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">分组、容量约束、时序与功耗求解</text>
+<text x="1195.0" y="458" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">返回可独立检查的解或证书</text>
+<polyline points="600,275 600,310 405,310 405,350" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="405,350 411.0,335.0 399.0,335.0" fill="#2963AE"/>
+<polyline points="1000,275 1000,310 1195,310 1195,350" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="1195,350 1201.0,335.0 1189.0,335.0" fill="#2963AE"/>
+<polyline points="730,420 870,420" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="870,420 855.0,414.0 855.0,426.0" fill="#2963AE"/>
+<rect x="747.0" y="380" width="106.0" height="34" rx="5" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1"/>
+<text x="800" y="397" fill="#2963AE" font-size="22" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">候选配置</text>
+<rect x="420" y="575" width="760" height="145" rx="16" fill="#EDF9F5" stroke="#168578" stroke-width="2"/>
+<text x="800.0" y="609" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">独立核验与故障注入</text>
+<text x="800.0" y="651" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">逐组重算合法性；核对求解下界或可行性</text>
+<text x="800.0" y="683" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">检查 March 操作、故障检出与控制器行为</text>
+<polyline points="405,490 405,535 600,535 600,575" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="600,575 606.0,560.0 594.0,560.0" fill="#2963AE"/>
+<polyline points="1195,490 1195,535 1000,535 1000,575" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="1000,575 1006.0,560.0 994.0,560.0" fill="#2963AE"/>
+<rect x="420" y="810" width="760" height="120" rx="16" fill="#EDF9F5" stroke="#168578" stroke-width="2"/>
+<text x="800.0" y="844" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">通过后输出测试配置与证据</text>
+<text x="800.0" y="886" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">算法适用范围、控制器代价、测试时间与功耗</text>
+<polyline points="800,720 800,810" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="800,810 806.0,795.0 794.0,795.0" fill="#2963AE"/>
+<rect x="769.0" y="748" width="62.0" height="34" rx="5" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1"/>
+<text x="800" y="765" fill="#2963AE" font-size="22" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">通过</text>
+<polyline points="420,640 55,640 55,420 80,420" fill="none" stroke="#A36612" stroke-width="2.5" stroke-linejoin="round" stroke-dasharray="9 7"/>
+<polygon points="80,420 65.0,414.0 65.0,426.0" fill="#A36612"/>
+<text x="56" y="1010" fill="#56677D" font-size="22" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="start" dominant-baseline="central">Agent 文字解释不是数学最优性证书；March 算法检出能力依赖明确的故障模型。</text>
+<text x="1558" y="1112" fill="#56677D" font-size="18" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="end" dominant-baseline="central">EDA Agent 研究报告 · 2026-11-03 · 作者绘制</text>
+</svg>

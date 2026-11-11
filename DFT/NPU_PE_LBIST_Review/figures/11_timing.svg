@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1180" viewBox="0 0 1800 1180">
+<defs>
+<marker id="arr_ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#142b43"/></marker>
+<marker id="arr_blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2563a6"/></marker>
+<marker id="arr_teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#157a73"/></marker>
+<marker id="arr_orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b76414"/></marker>
+<marker id="arr_red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ae3346"/></marker>
+<marker id="arr_muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#54677a"/></marker>
+<marker id="arr_purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6c52a3"/></marker>
+</defs>
+<rect width="1800" height="1180" fill="white"/>
+<text x="54" y="60" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="36" font-weight="700" fill="#142b43" text-anchor="start">图 11  两类测试时序：LOC 与功能响应有效控制</text>
+<text x="54" y="104" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="22" font-weight="400" fill="#54677a" text-anchor="start">时序仅用于说明事件关系；不是完整门级测试协议，波形不按比例。</text>
+<polyline points="54,129 1746,129" fill="none" stroke="#b9c8d6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="55" y="175" width="1690" height="390" rx="18" fill="#f4f7fb" stroke="#b9c8d6" stroke-width="2"/>
+<text x="79" y="217" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="27" font-weight="700" fill="#2563a6" text-anchor="start">A  Launch-on-Capture：扫描装入状态后，使用两个功能脉冲</text>
+<text x="415.0" y="270" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="22" font-weight="400" fill="#54677a" text-anchor="middle">移位末段</text>
+<text x="565.0" y="270" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="22" font-weight="400" fill="#54677a" text-anchor="middle">稳定窗口</text>
+<text x="715.0" y="270" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="22" font-weight="400" fill="#54677a" text-anchor="middle">Launch</text>
+<text x="865.0" y="270" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="22" font-weight="400" fill="#54677a" text-anchor="middle">Capture</text>
+<text x="1015.0" y="270" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="22" font-weight="400" fill="#54677a" text-anchor="middle">读出准备</text>
+<text x="1165.0" y="270" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="22" font-weight="400" fill="#54677a" text-anchor="middle">移位读出</text>
+<text x="95" y="340" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="25" font-weight="400" fill="#142b43" text-anchor="start">scan_en</text>
+<polyline points="340,300 490,300 490,345 640,345 640,345 790,345 790,345 940,345 940,345 1090,345 1090,300 1240,300" fill="none" stroke="#6c52a3" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="95" y="440" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="25" font-weight="400" fill="#142b43" text-anchor="start">测试时钟</text>
+<polyline points="340,445 375,445 375,395 425,395 425,445 490,445 640,445 675,445 675,395 725,395 725,445 790,445 825,445 825,395 875,395 875,445 940,445 1090,445 1125,445 1125,395 1175,395 1175,445 1240,445" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="1390" y="340" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#6c52a3" text-anchor="start">功能模式</text>
+<text x="1390" y="400" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#2563a6" text-anchor="start">Launch 产生转换</text>
+<text x="1390" y="438" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#2563a6" text-anchor="start">Capture 捕获响应</text>
+<text x="920" y="517" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#54677a" text-anchor="middle">两次功能脉冲间隔由目标测试频率决定；RTL 翻转并不等于通过时序故障测试。</text>
+<rect x="55" y="605" width="1690" height="455" rx="18" fill="#f4f7fb" stroke="#b9c8d6" stroke-width="2"/>
+<text x="79" y="647" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="27" font-weight="700" fill="#2563a6" text-anchor="start">B  功能路径 BIST：示例流水延迟 L = 2，不存在反压</text>
+<text x="475.0" y="710" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#54677a" text-anchor="middle">周期 0</text>
+<text x="645.0" y="710" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#54677a" text-anchor="middle">周期 1</text>
+<text x="815.0" y="710" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#54677a" text-anchor="middle">周期 2</text>
+<text x="985.0" y="710" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#54677a" text-anchor="middle">周期 3</text>
+<text x="1155.0" y="710" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#54677a" text-anchor="middle">周期 4</text>
+<text x="1325.0" y="710" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#54677a" text-anchor="middle">周期 5</text>
+<text x="90" y="796" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="25" font-weight="400" fill="#142b43" text-anchor="start">accept_test</text>
+<rect x="390" y="760" width="135" height="55" rx="14" fill="#fff4e6" stroke="#b76414" stroke-width="2"/>
+<text x="457.5" y="795.9" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">1</text>
+<rect x="560" y="760" width="135" height="55" rx="14" fill="#fff4e6" stroke="#b76414" stroke-width="2"/>
+<text x="627.5" y="795.9" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">1</text>
+<rect x="730" y="760" width="135" height="55" rx="14" fill="#fff4e6" stroke="#b76414" stroke-width="2"/>
+<text x="797.5" y="795.9" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">1</text>
+<rect x="900" y="760" width="135" height="55" rx="14" fill="#edf4fc" stroke="#2563a6" stroke-width="2"/>
+<text x="967.5" y="795.9" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">0</text>
+<rect x="1070" y="760" width="135" height="55" rx="14" fill="#edf4fc" stroke="#2563a6" stroke-width="2"/>
+<text x="1137.5" y="795.9" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">0</text>
+<rect x="1240" y="760" width="135" height="55" rx="14" fill="#edf4fc" stroke="#2563a6" stroke-width="2"/>
+<text x="1307.5" y="795.9" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">0</text>
+<text x="90" y="881" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="25" font-weight="400" fill="#142b43" text-anchor="start">out_valid</text>
+<rect x="390" y="845" width="135" height="55" rx="14" fill="#edf4fc" stroke="#2563a6" stroke-width="2"/>
+<text x="457.5" y="880.9" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">0</text>
+<rect x="560" y="845" width="135" height="55" rx="14" fill="#edf4fc" stroke="#2563a6" stroke-width="2"/>
+<text x="627.5" y="880.9" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">0</text>
+<rect x="730" y="845" width="135" height="55" rx="14" fill="#eaf7f3" stroke="#157a73" stroke-width="2"/>
+<text x="797.5" y="880.9" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">1</text>
+<rect x="900" y="845" width="135" height="55" rx="14" fill="#eaf7f3" stroke="#157a73" stroke-width="2"/>
+<text x="967.5" y="880.9" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">1</text>
+<rect x="1070" y="845" width="135" height="55" rx="14" fill="#eaf7f3" stroke="#157a73" stroke-width="2"/>
+<text x="1137.5" y="880.9" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">1</text>
+<rect x="1240" y="845" width="135" height="55" rx="14" fill="#edf4fc" stroke="#2563a6" stroke-width="2"/>
+<text x="1307.5" y="880.9" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">0</text>
+<text x="90" y="966" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="25" font-weight="400" fill="#142b43" text-anchor="start">MISR_en</text>
+<rect x="390" y="930" width="135" height="55" rx="14" fill="#edf4fc" stroke="#2563a6" stroke-width="2"/>
+<text x="457.5" y="965.9" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">0</text>
+<rect x="560" y="930" width="135" height="55" rx="14" fill="#edf4fc" stroke="#2563a6" stroke-width="2"/>
+<text x="627.5" y="965.9" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">0</text>
+<rect x="730" y="930" width="135" height="55" rx="14" fill="#eaf7f3" stroke="#157a73" stroke-width="2"/>
+<text x="797.5" y="965.9" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">1</text>
+<rect x="900" y="930" width="135" height="55" rx="14" fill="#eaf7f3" stroke="#157a73" stroke-width="2"/>
+<text x="967.5" y="965.9" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">1</text>
+<rect x="1070" y="930" width="135" height="55" rx="14" fill="#eaf7f3" stroke="#157a73" stroke-width="2"/>
+<text x="1137.5" y="965.9" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">1</text>
+<rect x="1240" y="930" width="135" height="55" rx="14" fill="#edf4fc" stroke="#2563a6" stroke-width="2"/>
+<text x="1307.5" y="965.9" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">0</text>
+<text x="915" y="1030" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#54677a" text-anchor="middle">PRPG 在接受激励时前进；MISR 仅在对应有效结果到达时更新。反压存在时必须按实际事务对齐。</text>
+<polyline points="54,1116 1746,1116" fill="none" stroke="#b9c8d6" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="54" y="1151" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="19" font-weight="400" fill="#54677a" text-anchor="start">本报告原创示意 · 非论文原图 · 示例配置不代表实测结果</text>
+<text x="1746" y="1151" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="19" font-weight="400" fill="#54677a" text-anchor="end">11</text>
+</svg>

@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1280" viewBox="0 0 1600 1280">
+<rect width="100%" height="100%" fill="white"/>
+<rect x="0" y="0" width="1600" height="12" rx="0" fill="#2963AE" stroke="#2963AE" stroke-width="2"/>
+<text x="54" y="55" fill="#142B45" font-size="38" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="start" dominant-baseline="central">后端优化：先满足约束，再比较设计质量</text>
+<text x="54" y="108" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="start" dominant-baseline="central">候选基于同一基准设计，使用相同工艺、约束集合与评价方式。</text>
+<rect x="365" y="160" width="870" height="110" rx="16" fill="#EDF9F5" stroke="#168578" stroke-width="2"/>
+<text x="800.0" y="194" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">冻结比较条件</text>
+<text x="800.0" y="236" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">功能 / SDC / 模式角点 / 工具与工艺 / 预算与随机种子</text>
+<rect x="365" y="320" width="870" height="115" rx="16" fill="#EDF4FD" stroke="#2963AE" stroke-width="2"/>
+<text x="800.0" y="354" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">计划与候选探索</text>
+<text x="800.0" y="396" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">RTL 变换、综合选项、布局参数或 ECO 策略</text>
+<polyline points="800,270 800,320" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="800,320 806.0,305.0 794.0,305.0" fill="#2963AE"/>
+<rect x="365" y="490" width="870" height="110" rx="16" fill="#EDF9F5" stroke="#168578" stroke-width="2"/>
+<text x="800.0" y="524" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">分级预检</text>
+<text x="800.0" y="566" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">语法、合法性、等价检查、初步综合与约束完整性</text>
+<polyline points="800,435 800,490" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="800,490 806.0,475.0 794.0,475.0" fill="#2963AE"/>
+<rect x="365" y="655" width="870" height="115" rx="16" fill="#EDF9F5" stroke="#168578" stroke-width="2"/>
+<text x="800.0" y="689" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">完整物理评价</text>
+<text x="800.0" y="731" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">布局布线 / 提取 / 多模式多角点 STA / 功耗与 DRC</text>
+<polyline points="800,600 800,655" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="800,655 806.0,640.0 794.0,640.0" fill="#2963AE"/>
+<rect x="365" y="825" width="870" height="115" rx="16" fill="#EDF9F5" stroke="#168578" stroke-width="2"/>
+<text x="800.0" y="859" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">独立硬门槛</text>
+<text x="800.0" y="901" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">等价有效、约束未弱化、各必需角点满足、数据完整</text>
+<polyline points="800,770 800,825" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="800,825 806.0,810.0 794.0,810.0" fill="#2963AE"/>
+<rect x="365" y="1000" width="870" height="112" rx="16" fill="#EDF9F5" stroke="#168578" stroke-width="2"/>
+<text x="800.0" y="1034" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">保留满足约束的 Pareto 候选</text>
+<text x="800.0" y="1076" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">比较功耗、性能、面积；记录全部运行成本</text>
+<polyline points="800,940 800,1000" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="800,1000 806.0,985.0 794.0,985.0" fill="#2963AE"/>
+<rect x="769.0" y="953" width="62.0" height="34" rx="5" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1"/>
+<text x="800" y="970" fill="#2963AE" font-size="22" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">通过</text>
+<polyline points="365,880 85,880 85,377 365,377" fill="none" stroke="#A36612" stroke-width="2.5" stroke-linejoin="round" stroke-dasharray="9 7"/>
+<polygon points="365,377 350.0,371.0 350.0,383.0" fill="#A36612"/>
+<rect x="143.1171875" y="886" width="147.765625" height="34" rx="5" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1"/>
+<text x="217" y="903" fill="#A36612" font-size="22" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">失败 / 新证据</text>
+<polyline points="1235,1056 1495,1056 1495,377 1235,377" fill="none" stroke="#A36612" stroke-width="2.5" stroke-linejoin="round" stroke-dasharray="9 7"/>
+<polygon points="1235,377 1250.0,383.0 1250.0,371.0" fill="#A36612"/>
+<rect x="1274.0" y="1108" width="172.0" height="34" rx="5" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1"/>
+<text x="1360" y="1125" fill="#A36612" font-size="22" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">预算内继续探索</text>
+<text x="56" y="1190" fill="#56677D" font-size="22" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="start" dominant-baseline="central">改大时钟周期、增加无依据 false path 或删除角点会改变问题，不能计为原任务优化成功。</text>
+<text x="1558" y="1252" fill="#56677D" font-size="18" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="end" dominant-baseline="central">EDA Agent 研究报告 · 2026-11-03 · 作者绘制</text>
+</svg>

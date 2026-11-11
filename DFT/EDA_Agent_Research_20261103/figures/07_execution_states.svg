@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1180" viewBox="0 0 1600 1180">
+<rect width="100%" height="100%" fill="white"/>
+<rect x="0" y="0" width="1600" height="12" rx="0" fill="#2963AE" stroke="#2963AE" stroke-width="2"/>
+<text x="54" y="55" fill="#142B45" font-size="38" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="start" dominant-baseline="central">执行状态：完成调用与完成验收分别记录</text>
+<text x="54" y="108" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="start" dominant-baseline="central">状态由执行器和证据驱动；模型的“已完成”文字不能直接触发接纳。</text>
+<rect x="460" y="165" width="680" height="100" rx="16" fill="#EDF4FD" stroke="#2963AE" stroke-width="2"/>
+<text x="800.0" y="199" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">就绪 READY</text>
+<text x="800.0" y="241" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">依赖与前置条件满足</text>
+<rect x="460" y="325" width="680" height="100" rx="16" fill="#EDF4FD" stroke="#2963AE" stroke-width="2"/>
+<text x="800.0" y="359" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">执行 RUNNING</text>
+<text x="800.0" y="401" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">job_id / 超时 / 心跳 / 资源记录</text>
+<polyline points="800,265 800,325" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="800,325 806.0,310.0 794.0,310.0" fill="#2963AE"/>
+<rect x="460" y="490" width="680" height="100" rx="16" fill="#EDF4FD" stroke="#2963AE" stroke-width="2"/>
+<text x="800.0" y="524" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">产物已生成 PRODUCED</text>
+<text x="800.0" y="566" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">退出码与产物存在性已检查</text>
+<polyline points="800,425 800,490" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="800,490 806.0,475.0 794.0,475.0" fill="#2963AE"/>
+<rect x="460" y="655" width="680" height="110" rx="16" fill="#EDF9F5" stroke="#168578" stroke-width="2"/>
+<text x="800.0" y="689" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">检查 VALIDATING</text>
+<text x="800.0" y="731" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">绑定同一输入、候选与验收集合</text>
+<polyline points="800,590 800,655" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="800,655 806.0,640.0 794.0,640.0" fill="#2963AE"/>
+<rect x="460" y="930" width="680" height="100" rx="16" fill="#EDF9F5" stroke="#168578" stroke-width="2"/>
+<text x="800.0" y="964" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">接纳 ACCEPTED</text>
+<text x="800.0" y="1006" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">所有必需检查有效通过</text>
+<polyline points="800,765 800,930" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="800,930 806.0,915.0 794.0,915.0" fill="#2963AE"/>
+<rect x="769.0" y="818" width="62.0" height="34" rx="5" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1"/>
+<text x="800" y="835" fill="#2963AE" font-size="22" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">通过</text>
+<rect x="50" y="655" width="300" height="130" rx="16" fill="#FFF0F2" stroke="#AE414A" stroke-width="2"/>
+<text x="200.0" y="689" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">失败 FAILED</text>
+<text x="200.0" y="731" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">明确的违例或反例</text>
+<text x="200.0" y="763" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">按类别修复</text>
+<polyline points="460,710 350,710" fill="none" stroke="#AE414A" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="350,710 365.0,716.0 365.0,704.0" fill="#AE414A"/>
+<rect x="1250" y="655" width="300" height="155" rx="16" fill="#FFF5E5" stroke="#A36612" stroke-width="2"/>
+<text x="1400.0" y="689" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">未判定</text>
+<text x="1400.0" y="731" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">INCONCLUSIVE</text>
+<text x="1400.0" y="763" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">超时 / 证据不全</text>
+<text x="1400.0" y="795" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">保持未通过状态</text>
+<polyline points="1140,710 1250,710" fill="none" stroke="#A36612" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="1250,710 1235.0,704.0 1235.0,716.0" fill="#A36612"/>
+<rect x="1250" y="325" width="300" height="130" rx="16" fill="#FFF5E5" stroke="#A36612" stroke-width="2"/>
+<text x="1400.0" y="359" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">阻塞 BLOCKED</text>
+<text x="1400.0" y="401" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">许可 / 文件 / 环境</text>
+<text x="1400.0" y="433" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">交由运行环境处理</text>
+<polyline points="1140,375 1250,375" fill="none" stroke="#A36612" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="1250,375 1235.0,369.0 1235.0,381.0" fill="#A36612"/>
+<polyline points="200,655 200,215 460,215" fill="none" stroke="#A36612" stroke-width="2.5" stroke-linejoin="round" stroke-dasharray="9 7"/>
+<polygon points="460,215 445.0,209.0 445.0,221.0" fill="#A36612"/>
+<rect x="135.0" y="283" width="194.0" height="34" rx="5" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1"/>
+<text x="232" y="300" fill="#A36612" font-size="22" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">新候选且预算允许</text>
+<polyline points="460,375 395,375 395,615 305,615 305,655" fill="none" stroke="#AE414A" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="305,655 311.0,640.0 299.0,640.0" fill="#AE414A"/>
+<rect x="292.0" y="578" width="106.0" height="34" rx="5" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1"/>
+<text x="345" y="595" fill="#AE414A" font-size="22" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">执行错误</text>
+<text x="56" y="1060" fill="#56677D" font-size="22" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="start" dominant-baseline="central">图中省略：阻塞解除后重新检查前置条件，再返回 READY；证据不足进入受限诊断。</text>
+<text x="56" y="1091" fill="#56677D" font-size="22" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="start" dominant-baseline="central">重试需新信息或明确的暂态故障；预算耗尽后停止该分支，并保留已验收版本。</text>
+<text x="1558" y="1152" fill="#56677D" font-size="18" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="end" dominant-baseline="central">EDA Agent 研究报告 · 2026-11-03 · 作者绘制</text>
+</svg>

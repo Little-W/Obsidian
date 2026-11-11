@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1200" viewBox="0 0 1800 1200">
+<defs>
+<marker id="arr_ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#142b43"/></marker>
+<marker id="arr_blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2563a6"/></marker>
+<marker id="arr_teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#157a73"/></marker>
+<marker id="arr_orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b76414"/></marker>
+<marker id="arr_red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ae3346"/></marker>
+<marker id="arr_muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#54677a"/></marker>
+<marker id="arr_purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6c52a3"/></marker>
+</defs>
+<rect width="1800" height="1200" fill="white"/>
+<text x="54" y="60" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="36" font-weight="700" fill="#142b43" text-anchor="start">图 2  WS 与 OS 的 Reg + MAC 结构及测试关注点</text>
+<text x="54" y="104" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="22" font-weight="400" fill="#54677a" text-anchor="start">代表性寄存器级示意；真实 PE 的流水级、旁路和寄存器位置应以 RTL 为准。</text>
+<polyline points="54,129 1746,129" fill="none" stroke="#b9c8d6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="50" y="165" width="1700" height="425" rx="18" fill="#f4f7fb" stroke="#b9c8d6" stroke-width="2"/>
+<text x="74" y="207" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="27" font-weight="700" fill="#2563a6" text-anchor="start">WS：权重保存在本地，部分和向下传递</text>
+<rect x="50" y="665" width="1700" height="425" rx="18" fill="#f4f7fb" stroke="#b9c8d6" stroke-width="2"/>
+<text x="74" y="707" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="27" font-weight="700" fill="#2563a6" text-anchor="start">OS：部分和保存在本地，累加器构成反馈</text>
+<rect x="210" y="290" width="180" height="85" rx="14" fill="#edf4fc" stroke="#2563a6" stroke-width="2"/>
+<text x="300.0" y="323.875" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#142b43" text-anchor="middle">A_reg</text>
+<text x="300.0" y="357.225" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#142b43" text-anchor="middle">输入 / 转发</text>
+<rect x="525" y="400" width="200" height="85" rx="14" fill="#eaf7f3" stroke="#157a73" stroke-width="2"/>
+<text x="625.0" y="433.875" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#142b43" text-anchor="middle">W_reg</text>
+<text x="625.0" y="467.225" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#142b43" text-anchor="middle">load / hold</text>
+<rect x="535" y="285" width="180" height="95" rx="14" fill="#edf4fc" stroke="#2563a6" stroke-width="2"/>
+<text x="625.0" y="323.5" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">乘法器</text>
+<text x="625.0" y="358.3" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">a × w</text>
+<rect x="875" y="285" width="180" height="95" rx="14" fill="#edf4fc" stroke="#2563a6" stroke-width="2"/>
+<text x="965.0" y="323.5" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">加法器</text>
+<text x="965.0" y="358.3" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">+ p_in</text>
+<rect x="1215" y="285" width="210" height="95" rx="14" fill="#edf4fc" stroke="#2563a6" stroke-width="2"/>
+<text x="1320.0" y="323.5" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">P_reg</text>
+<text x="1320.0" y="358.3" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">捕获 / 转发</text>
+<polyline points="90,332 210,332" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<text x="90" y="310" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#142b43" text-anchor="start">a_in</text>
+<polyline points="390,332 535,332" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<polyline points="625,400 625,380" fill="none" stroke="#157a73" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_teal)"/>
+<polyline points="715,332 875,332" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<polyline points="1055,332 1215,332" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<polyline points="1425,332 1640,332" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<text x="1510" y="309" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#142b43" text-anchor="start">p_out</text>
+<polyline points="965,240 965,285" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<text x="965" y="224" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#142b43" text-anchor="middle">p_in</text>
+<polyline points="300,290 300,250 465,250" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<text x="360" y="233" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="22" font-weight="400" fill="#142b43" text-anchor="start">a_out</text>
+<polyline points="470,442 525,442" fill="none" stroke="#157a73" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_teal)"/>
+<text x="450" y="480" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="21" font-weight="400" fill="#142b43" text-anchor="middle">w_load</text>
+<text x="875" y="452" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="start">测试关键：独立设置 a、w、p_in</text>
+<text x="875" y="492" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="start">确保 W_reg 与 P_reg 可控、响应可见</text>
+<rect x="90" y="520" width="1620" height="48" rx="14" fill="#fff4e6" stroke="#b76414" stroke-width="2"/>
+<text x="900.0" y="551.7" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="22" font-weight="400" fill="#142b43" text-anchor="middle">可选观察点：P_reg 输入或输出；量化 / 饱和之前观察有助于避免错误掩盖。</text>
+<rect x="210" y="800" width="180" height="85" rx="14" fill="#edf4fc" stroke="#2563a6" stroke-width="2"/>
+<text x="300.0" y="833.875" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#142b43" text-anchor="middle">A_reg</text>
+<text x="300.0" y="867.225" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#142b43" text-anchor="middle">输入 / 转发</text>
+<rect x="525" y="910" width="200" height="85" rx="14" fill="#eaf7f3" stroke="#157a73" stroke-width="2"/>
+<text x="625.0" y="943.875" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#142b43" text-anchor="middle">W_reg</text>
+<text x="625.0" y="977.225" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#142b43" text-anchor="middle">输入 / 转发</text>
+<rect x="535" y="795" width="180" height="95" rx="14" fill="#edf4fc" stroke="#2563a6" stroke-width="2"/>
+<text x="625.0" y="833.5" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">乘法器</text>
+<text x="625.0" y="868.3" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">a × w</text>
+<rect x="875" y="795" width="180" height="95" rx="14" fill="#edf4fc" stroke="#2563a6" stroke-width="2"/>
+<text x="965.0" y="833.5" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">加法器</text>
+<text x="965.0" y="868.3" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">+ acc</text>
+<rect x="1215" y="795" width="210" height="95" rx="14" fill="#edf4fc" stroke="#2563a6" stroke-width="2"/>
+<text x="1320.0" y="833.5" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">ACC_reg</text>
+<text x="1320.0" y="868.3" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">clear / hold</text>
+<polyline points="90,842 210,842" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<text x="90" y="820" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#142b43" text-anchor="start">a_in</text>
+<polyline points="390,842 535,842" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<polyline points="625,910 625,890" fill="none" stroke="#157a73" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_teal)"/>
+<polyline points="715,842 875,842" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<polyline points="1055,842 1215,842" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<polyline points="1425,842 1640,842" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<text x="1510" y="820" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#142b43" text-anchor="start">result</text>
+<polyline points="1470,842 1470,960 965,960 965,890" fill="none" stroke="#6c52a3" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_purple)"/>
+<circle cx="1470" cy="842" r="5" fill="#2563a6"/>
+<text x="1120" y="1006" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#6c52a3" text-anchor="middle">累加反馈：acc(t+1) = acc(t) + a(t)w(t)</text>
+<polyline points="470,952 525,952" fill="none" stroke="#157a73" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_teal)"/>
+<text x="450" y="991" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="21" font-weight="400" fill="#142b43" text-anchor="middle">w_in</text>
+<rect x="90" y="1030" width="1620" height="48" rx="14" fill="#fff4e6" stroke="#b76414" stroke-width="2"/>
+<text x="900.0" y="1061.7" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="22" font-weight="400" fill="#142b43" text-anchor="middle">测试关键：初始化 acc、检查保持与清零、控制反馈路径，并避免不同周期的错误相消。</text>
+<polyline points="54,1136 1746,1136" fill="none" stroke="#b9c8d6" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="54" y="1171" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="19" font-weight="400" fill="#54677a" text-anchor="start">本报告原创示意 · 非论文原图 · 示例配置不代表实测结果</text>
+<text x="1746" y="1171" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="19" font-weight="400" fill="#54677a" text-anchor="end">02</text>
+</svg>

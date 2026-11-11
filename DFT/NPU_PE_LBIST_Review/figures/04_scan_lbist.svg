@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1700" height="1050" viewBox="0 0 1700 1050">
+<defs>
+<marker id="arr_ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#142b43"/></marker>
+<marker id="arr_blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2563a6"/></marker>
+<marker id="arr_teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#157a73"/></marker>
+<marker id="arr_orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b76414"/></marker>
+<marker id="arr_red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ae3346"/></marker>
+<marker id="arr_muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#54677a"/></marker>
+<marker id="arr_purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6c52a3"/></marker>
+</defs>
+<rect width="1700" height="1050" fill="white"/>
+<text x="54" y="60" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="36" font-weight="700" fill="#142b43" text-anchor="start">图 4  扫描式 LBIST 的基本组织</text>
+<text x="54" y="104" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="22" font-weight="400" fill="#54677a" text-anchor="start">扫描移位和功能捕获是两个阶段；图中功能环路与串行测试通路分开表示。</text>
+<polyline points="54,129 1646,129" fill="none" stroke="#b9c8d6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="65" y="390" width="220" height="130" rx="14" fill="#fff4e6" stroke="#b76414" stroke-width="2"/>
+<text x="175.0" y="446.0" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">共享 PRPG</text>
+<text x="175.0" y="480.8" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">LFSR / 重播种</text>
+<rect x="350" y="390" width="210" height="130" rx="14" fill="#fff4e6" stroke="#b76414" stroke-width="2"/>
+<text x="455.0" y="446.0" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">相位扩展</text>
+<text x="455.0" y="480.8" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">扫描输入</text>
+<polyline points="285,455 350,455" fill="none" stroke="#b76414" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_orange)"/>
+<rect x="635" y="180" width="520" height="620" rx="18" fill="#f4f7fb" stroke="#b9c8d6" stroke-width="2"/>
+<text x="659" y="222" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="27" font-weight="700" fill="#2563a6" text-anchor="start">PE 阵列：多个扫描分组</text>
+<rect x="670" y="290" width="190" height="85" rx="14" fill="#edf4fc" stroke="#2563a6" stroke-width="2"/>
+<text x="765.0" y="324.25" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="22" font-weight="400" fill="#142b43" text-anchor="middle">扫描触发器</text>
+<text x="765.0" y="356.15" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="22" font-weight="400" fill="#142b43" text-anchor="middle">Reg / Control</text>
+<rect x="920" y="290" width="195" height="85" rx="14" fill="#edf4fc" stroke="#2563a6" stroke-width="2"/>
+<text x="1017.5" y="324.25" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="22" font-weight="400" fill="#142b43" text-anchor="middle">组合逻辑</text>
+<text x="1017.5" y="356.15" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="22" font-weight="400" fill="#142b43" text-anchor="middle">MUL + ADD</text>
+<polyline points="860,332 920,332" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<polyline points="1017,290 1017,260 765,260 765,290" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<polyline points="560,420 600,420 600,332 670,332" fill="none" stroke="#b76414" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_orange)"/>
+<rect x="670" y="455" width="190" height="85" rx="14" fill="#edf4fc" stroke="#2563a6" stroke-width="2"/>
+<text x="765.0" y="489.25" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="22" font-weight="400" fill="#142b43" text-anchor="middle">扫描触发器</text>
+<text x="765.0" y="521.15" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="22" font-weight="400" fill="#142b43" text-anchor="middle">Reg / Control</text>
+<rect x="920" y="455" width="195" height="85" rx="14" fill="#edf4fc" stroke="#2563a6" stroke-width="2"/>
+<text x="1017.5" y="489.25" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="22" font-weight="400" fill="#142b43" text-anchor="middle">组合逻辑</text>
+<text x="1017.5" y="521.15" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="22" font-weight="400" fill="#142b43" text-anchor="middle">MUL + ADD</text>
+<polyline points="860,497 920,497" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<polyline points="1017,455 1017,425 765,425 765,455" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<polyline points="560,455 620,455 620,497 670,497" fill="none" stroke="#b76414" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_orange)"/>
+<rect x="670" y="620" width="190" height="85" rx="14" fill="#edf4fc" stroke="#2563a6" stroke-width="2"/>
+<text x="765.0" y="654.25" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="22" font-weight="400" fill="#142b43" text-anchor="middle">扫描触发器</text>
+<text x="765.0" y="686.15" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="22" font-weight="400" fill="#142b43" text-anchor="middle">Reg / Control</text>
+<rect x="920" y="620" width="195" height="85" rx="14" fill="#edf4fc" stroke="#2563a6" stroke-width="2"/>
+<text x="1017.5" y="654.25" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="22" font-weight="400" fill="#142b43" text-anchor="middle">组合逻辑</text>
+<text x="1017.5" y="686.15" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="22" font-weight="400" fill="#142b43" text-anchor="middle">MUL + ADD</text>
+<polyline points="860,662 920,662" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<polyline points="1017,620 1017,590 765,590 765,620" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<polyline points="560,490 580,490 580,662 670,662" fill="none" stroke="#b76414" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_orange)"/>
+<polyline points="765,375 765,402 1220,402 1220,527 1260,527" fill="none" stroke="#b76414" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_orange)"/>
+<polyline points="765,540 765,567 1260,567" fill="none" stroke="#b76414" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_orange)"/>
+<polyline points="765,705 765,732 1220,732 1220,607 1260,607" fill="none" stroke="#b76414" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_orange)"/>
+<rect x="1260" y="507" width="210" height="120" rx="14" fill="#fff4e6" stroke="#b76414" stroke-width="2"/>
+<text x="1365.0" y="558.0" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">响应压缩</text>
+<text x="1365.0" y="592.8" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">MISR / 屏蔽</text>
+<polyline points="1365,627 1365,720" fill="none" stroke="#b76414" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_orange)"/>
+<rect x="1240" y="720" width="250" height="80" rx="14" fill="#eaf7f3" stroke="#157a73" stroke-width="2"/>
+<text x="1365.0" y="768.05" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#142b43" text-anchor="middle">签名与参考值比较</text>
+<text x="1290" y="443" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="22" font-weight="400" fill="#b76414" text-anchor="start">scan_out</text>
+<text x="1290" y="475" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="20" font-weight="400" fill="#b76414" text-anchor="start">各通道独立</text>
+<rect x="100" y="850" width="360" height="90" rx="14" fill="#f3effb" stroke="#6c52a3" stroke-width="2"/>
+<text x="280.0" y="903.05" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#142b43" text-anchor="middle">BIST 控制器 + 受控测试时钟</text>
+<polyline points="460,895 500,895 500,815 895,815 895,800" fill="none" stroke="#6c52a3" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_purple)" stroke-dasharray="9 7"/>
+<text x="520" y="864" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#54677a" text-anchor="start">控制 scan_en、移位计数、捕获脉冲和 MISR_en</text>
+<text x="520" y="906" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#54677a" text-anchor="start">ATPG 确定性补充向量可通过重播种或压缩存储加入</text>
+<polyline points="54,986 1646,986" fill="none" stroke="#b9c8d6" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="54" y="1021" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="19" font-weight="400" fill="#54677a" text-anchor="start">本报告原创示意 · 非论文原图 · 示例配置不代表实测结果</text>
+<text x="1646" y="1021" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="19" font-weight="400" fill="#54677a" text-anchor="end">04</text>
+</svg>

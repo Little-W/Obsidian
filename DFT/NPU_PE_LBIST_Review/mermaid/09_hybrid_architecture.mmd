@@ -1,0 +1,14 @@
+flowchart LR
+  CTRL["全局控制 / 分区 / 超时"] -.-> GEN
+  GEN["PRPG + 重播种 + 确定性补充"] --> SEL
+  subgraph T["Tile"]
+    SEL["激励选择与分发"] --> PE["Reg + MAC 阵列"]
+    TP["可选局部扫描 / 测试点"] --> PE
+    PE --> OBS["分组观察 / 诊断选择"]
+    OBS --> SIG["MISR / 原始响应模式"]
+  end
+  SIG --> CHECK["比对与故障状态"]
+  GOLD["与配置绑定的参考签名"] --> CHECK
+  CTRL -.-> TP
+  CTRL -.-> OBS
+  CTRL -.-> CHECK

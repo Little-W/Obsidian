@@ -1,0 +1,82 @@
+[
+  {
+    "file": "01_research_landscape",
+    "width": 1600,
+    "height": 1030,
+    "geometry_issues": [],
+    "nodes": 0,
+    "edges": 0
+  },
+  {
+    "file": "02_controlled_architecture",
+    "width": 1600,
+    "height": 1150,
+    "geometry_issues": [],
+    "nodes": 7,
+    "edges": 8
+  },
+  {
+    "file": "03_verification_workflow",
+    "width": 1600,
+    "height": 1250,
+    "geometry_issues": [],
+    "nodes": 7,
+    "edges": 9
+  },
+  {
+    "file": "04_dft_workflow",
+    "width": 1600,
+    "height": 1350,
+    "geometry_issues": [],
+    "nodes": 7,
+    "edges": 8
+  },
+  {
+    "file": "05_backend_workflow",
+    "width": 1600,
+    "height": 1280,
+    "geometry_issues": [],
+    "nodes": 6,
+    "edges": 7
+  },
+  {
+    "file": "06_cross_check",
+    "width": 1600,
+    "height": 1040,
+    "geometry_issues": [],
+    "nodes": 2,
+    "edges": 0
+  },
+  {
+    "file": "07_execution_states",
+    "width": 1600,
+    "height": 1180,
+    "geometry_issues": [],
+    "nodes": 8,
+    "edges": 9
+  },
+  {
+    "file": "08_memory_workflow",
+    "width": 1600,
+    "height": 1190,
+    "geometry_issues": [],
+    "nodes": 7,
+    "edges": 7
+  },
+  {
+    "file": "09_evaluation_design",
+    "width": 1600,
+    "height": 1090,
+    "geometry_issues": [],
+    "nodes": 7,
+    "edges": 6
+  },
+  {
+    "file": "10_mbist_scope",
+    "width": 1600,
+    "height": 1140,
+    "geometry_issues": [],
+    "nodes": 5,
+    "edges": 7
+  }
+]

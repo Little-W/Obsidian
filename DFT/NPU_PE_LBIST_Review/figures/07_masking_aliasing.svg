@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1700" height="1100" viewBox="0 0 1700 1100">
+<defs>
+<marker id="arr_ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#142b43"/></marker>
+<marker id="arr_blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2563a6"/></marker>
+<marker id="arr_teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#157a73"/></marker>
+<marker id="arr_orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b76414"/></marker>
+<marker id="arr_red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ae3346"/></marker>
+<marker id="arr_muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#54677a"/></marker>
+<marker id="arr_purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6c52a3"/></marker>
+</defs>
+<rect width="1700" height="1100" fill="white"/>
+<text x="54" y="60" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="36" font-weight="700" fill="#142b43" text-anchor="start">图 7  故障被激活，并不保证最终签名出错</text>
+<text x="54" y="104" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="22" font-weight="400" fill="#54677a" text-anchor="start">需要分别评估内部可检测性、输出可观测性与压缩造成的漏检。</text>
+<polyline points="54,129 1646,129" fill="none" stroke="#b9c8d6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="55" y="205" width="280" height="130" rx="14" fill="#edf4fc" stroke="#2563a6" stroke-width="2"/>
+<text x="195.0" y="261.0" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">内部故障</text>
+<text x="195.0" y="295.8" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">必须被激活</text>
+<rect x="365" y="205" width="280" height="130" rx="14" fill="#edf4fc" stroke="#2563a6" stroke-width="2"/>
+<text x="505.0" y="261.0" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">算术传播</text>
+<text x="505.0" y="295.8" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">可能相消</text>
+<rect x="675" y="205" width="280" height="130" rx="14" fill="#edf4fc" stroke="#2563a6" stroke-width="2"/>
+<text x="815.0" y="261.0" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">截断 / 饱和</text>
+<text x="815.0" y="295.8" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">可能掩盖</text>
+<rect x="985" y="205" width="280" height="130" rx="14" fill="#edf4fc" stroke="#2563a6" stroke-width="2"/>
+<text x="1125.0" y="261.0" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">空间压缩</text>
+<text x="1125.0" y="295.8" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">可能抵消</text>
+<rect x="1295" y="205" width="280" height="130" rx="14" fill="#edf4fc" stroke="#2563a6" stroke-width="2"/>
+<text x="1435.0" y="261.0" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">MISR 签名</text>
+<text x="1435.0" y="295.8" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">仍可能别名</text>
+<polyline points="335,270 365,270" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<polyline points="645,270 675,270" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<polyline points="955,270 985,270" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<polyline points="1265,270 1295,270" fill="none" stroke="#2563a6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_blue)"/>
+<rect x="55" y="410" width="770" height="430" rx="18" fill="#f4f7fb" stroke="#b9c8d6" stroke-width="2"/>
+<text x="79" y="452" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="27" font-weight="700" fill="#ae3346" text-anchor="start">例 A：空间 XOR 抵消</text>
+<rect x="95" y="500" width="235" height="95" rx="14" fill="#fff0f1" stroke="#ae3346" stroke-width="2"/>
+<text x="212.5" y="555.55" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#142b43" text-anchor="middle">响应误差 Δy₀ = e</text>
+<rect x="95" y="670" width="235" height="95" rx="14" fill="#fff0f1" stroke="#ae3346" stroke-width="2"/>
+<text x="212.5" y="725.55" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="23" font-weight="400" fill="#142b43" text-anchor="middle">响应误差 Δy₁ = e</text>
+<rect x="420" y="585" width="120" height="90" rx="14" fill="#fff4e6" stroke="#b76414" stroke-width="2"/>
+<text x="480.0" y="638.4" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">XOR</text>
+<polyline points="330,548 380,548 380,630 420,630" fill="none" stroke="#ae3346" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_red)"/>
+<polyline points="330,717 380,717 380,630" fill="none" stroke="#ae3346" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="540,630 610,630" fill="none" stroke="#b76414" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_orange)"/>
+<rect x="610" y="585" width="170" height="90" rx="14" fill="#eaf7f3" stroke="#157a73" stroke-width="2"/>
+<text x="695.0" y="638.4" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">e ⊕ e = 0</text>
+<text x="440" y="806" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="22" font-weight="400" fill="#54677a" text-anchor="middle">错误已在 MISR 之前丢失；加宽 MISR 无法补救。</text>
+<rect x="875" y="410" width="770" height="430" rx="18" fill="#f4f7fb" stroke="#b9c8d6" stroke-width="2"/>
+<text x="899" y="452" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="27" font-weight="700" fill="#ae3346" text-anchor="start">例 B：只比较相邻 PE</text>
+<rect x="915" y="500" width="280" height="95" rx="14" fill="#fff0f1" stroke="#ae3346" stroke-width="2"/>
+<text x="1055.0" y="555.2" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="22" font-weight="400" fill="#142b43" text-anchor="middle">PE 0：同样的错误结果</text>
+<rect x="915" y="670" width="280" height="95" rx="14" fill="#fff0f1" stroke="#ae3346" stroke-width="2"/>
+<text x="1055.0" y="725.2" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="22" font-weight="400" fill="#142b43" text-anchor="middle">PE 1：同样的错误结果</text>
+<rect x="1290" y="585" width="270" height="90" rx="14" fill="#fff4e6" stroke="#b76414" stroke-width="2"/>
+<text x="1425.0" y="638.4" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">相等 → 误判通过</text>
+<polyline points="1195,548 1240,548 1240,630 1290,630" fill="none" stroke="#ae3346" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arr_red)"/>
+<polyline points="1195,717 1240,717 1240,630" fill="none" stroke="#ae3346" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="1260" y="806" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="22" font-weight="400" fill="#54677a" text-anchor="middle">需要可信参考、分组观察或重复独立检查。</text>
+<rect x="80" y="900" width="1540" height="90" rx="14" fill="#f3effb" stroke="#6c52a3" stroke-width="2"/>
+<text x="850.0" y="936.0" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">P_alias ≈ 2⁻ᵐ 只在相应随机性假设下成立。</text>
+<text x="850.0" y="970.8" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="24" font-weight="400" fill="#142b43" text-anchor="middle">它不是确定性相关故障的保证，更不是未激活故障的检测概率。</text>
+<polyline points="54,1036 1646,1036" fill="none" stroke="#b9c8d6" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="54" y="1071" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="19" font-weight="400" fill="#54677a" text-anchor="start">本报告原创示意 · 非论文原图 · 示例配置不代表实测结果</text>
+<text x="1646" y="1071" font-family="Noto Sans CJK SC, Noto Sans CJK JP, WenQuanYi Zen Hei, sans-serif" font-size="19" font-weight="400" fill="#54677a" text-anchor="end">07</text>
+</svg>

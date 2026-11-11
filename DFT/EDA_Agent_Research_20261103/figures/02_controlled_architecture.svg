@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1150" viewBox="0 0 1600 1150">
+<rect width="100%" height="100%" fill="white"/>
+<rect x="0" y="0" width="1600" height="12" rx="0" fill="#2963AE" stroke="#2963AE" stroke-width="2"/>
+<text x="54" y="55" fill="#142B45" font-size="38" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="start" dominant-baseline="central">受控图流程与智能体团队的分工</text>
+<text x="54" y="108" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="start" dominant-baseline="central">图执行器控制顺序、资源与状态；智能体提出计划或变更；验收节点读取可复核证据。</text>
+<rect x="350" y="165" width="900" height="112" rx="16" fill="#EDF9F5" stroke="#168578" stroke-width="2"/>
+<text x="800.0" y="199" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">固定工程契约</text>
+<text x="800.0" y="241" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">规格版本 / 工具与工艺版本 / 时钟与模式 / 验收集合</text>
+<rect x="350" y="330" width="900" height="125" rx="16" fill="#EDF4FD" stroke="#2963AE" stroke-width="2"/>
+<text x="800.0" y="364" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">图执行器</text>
+<text x="800.0" y="406" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">依赖、并行、预算、失败分类、恢复、分支与合并</text>
+<polyline points="800,277 800,330" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="800,330 806.0,315.0 794.0,315.0" fill="#2963AE"/>
+<rect x="70" y="520" width="450" height="140" rx="16" fill="#EDF4FD" stroke="#2963AE" stroke-width="2"/>
+<text x="295.0" y="554" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">计划与诊断 Agent</text>
+<text x="295.0" y="596" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">读取摘要和失败证据</text>
+<text x="295.0" y="628" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">输出候选任务或修复假设</text>
+<rect x="575" y="520" width="450" height="140" rx="16" fill="#EDF4FD" stroke="#2963AE" stroke-width="2"/>
+<text x="800.0" y="554" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">实现与优化 Agent</text>
+<text x="800.0" y="596" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">在独立候选目录工作</text>
+<text x="800.0" y="628" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">输出变更与预期影响</text>
+<rect x="1080" y="520" width="450" height="140" rx="16" fill="#EDF4FD" stroke="#2963AE" stroke-width="2"/>
+<text x="1305.0" y="554" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">独立审查 Agent</text>
+<text x="1305.0" y="596" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">读取规格与实际工具结果</text>
+<text x="1305.0" y="628" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">提出可执行的反例检查</text>
+<polyline points="430,455 430,485 295,485 295,520" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="295,520 301.0,505.0 289.0,505.0" fill="#2963AE"/>
+<polyline points="800,455 800,485 800,485 800,520" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="800,520 806.0,505.0 794.0,505.0" fill="#2963AE"/>
+<polyline points="1170,455 1170,485 1305,485 1305,520" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="1305,520 1311.0,505.0 1299.0,505.0" fill="#2963AE"/>
+<rect x="350" y="735" width="900" height="115" rx="16" fill="#EDF9F5" stroke="#168578" stroke-width="2"/>
+<text x="800.0" y="769" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">确定工具与结构化证据</text>
+<text x="800.0" y="811" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">仿真 / 形式 / ATPG / 故障仿真 / 布局布线 / STA</text>
+<polyline points="295,660 295,700 430,700 430,735" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="430,735 436.0,720.0 424.0,720.0" fill="#2963AE"/>
+<polyline points="800,660 800,700 800,700 800,735" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="800,735 806.0,720.0 794.0,720.0" fill="#2963AE"/>
+<polyline points="1305,660 1305,700 1170,700 1170,735" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="1170,735 1176.0,720.0 1164.0,720.0" fill="#2963AE"/>
+<rect x="350" y="905" width="900" height="112" rx="16" fill="#EDF9F5" stroke="#168578" stroke-width="2"/>
+<text x="800.0" y="939" fill="#142B45" font-size="29" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">独立验收节点</text>
+<text x="800.0" y="981" fill="#56677D" font-size="23" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="middle" dominant-baseline="central">结果绑定候选哈希；全部必需检查有效通过后才接纳</text>
+<polyline points="800,850 800,905" fill="none" stroke="#2963AE" stroke-width="2.5" stroke-linejoin="round"/>
+<polygon points="800,905 806.0,890.0 794.0,890.0" fill="#2963AE"/>
+<text x="56" y="1065" fill="#56677D" font-size="22" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="start" dominant-baseline="central">审查意见可以触发检查；验收权由既定规则执行。模型多数票不能替代工具证明。</text>
+<text x="1558" y="1122" fill="#56677D" font-size="18" font-family="Noto Sans CJK SC,Microsoft YaHei,PingFang SC,Arial,sans-serif" text-anchor="end" dominant-baseline="central">EDA Agent 研究报告 · 2026-11-03 · 作者绘制</text>
+</svg>

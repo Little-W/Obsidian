@@ -1,0 +1,12 @@
+flowchart TB
+  RTL["参数化 RTL 与正确参考模型"] --> FUNC["功能 / 协议 / 状态机回归"]
+  RTL --> NET["统一工艺与约束下的网表"]
+  NET --> BASE["全扫描 ATPG 参考"]
+  NET --> FAULT["结构故障仿真"]
+  NET --> PPA["时序 / 面积 / 活动与功耗估计"]
+  BASE --> FAULT
+  FAULT --> RAW["原始响应可检测集合"]
+  RAW --> SIG["签名可检测集合 / 压缩损失"]
+  FUNC --> RESULT["逐模块结果与完整实验记录"]
+  SIG --> RESULT
+  PPA --> RESULT

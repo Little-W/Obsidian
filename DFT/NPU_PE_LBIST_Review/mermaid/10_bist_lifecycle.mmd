@@ -1,0 +1,15 @@
+flowchart TB
+  S["请求测试 / 检查许可"] --> Q["停止接收新事务"]
+  Q --> D["排空在途计算"]
+  D --> SAVE["保存必要状态"]
+  SAVE --> INIT["初始化寄存器 / PRPG / MISR"]
+  INIT --> LOAD["配置测试模式与种子"]
+  LOAD --> RUN["执行激励并收集有效响应"]
+  RUN --> DRAIN["排空测试流水"]
+  DRAIN --> CHECK{"结果"}
+  CHECK -->|"通过"| RESTORE["恢复状态与上报"]
+  CHECK -->|"失败"| DIAG["可选诊断 / 隔离"]
+  DIAG --> RESTORE
+  CHECK -->|"超时或异常"| FAIL["安全退出并上报异常"]
+  RESTORE --> END["返回正常执行或隔离状态"]
+  FAIL --> END
