@@ -1,0 +1,5 @@
+condition,cycles,frequency_hz,source,scope
+CModel isolated position,36833039,100000000,logs/LLM量化推理优化.md#10.25,archived aggregate result
+CModel feedback after prompt,38029451,100000000,logs/evidence/llm_quantization/qwen25_static_prompt_v34_fresh_cmodel_20260914.log,position 30 after 30 real prompt tokens
+SoC isolated program,51333024,100000000,logs/evidence/llm_quantization/qwen25_soc_v26_l1fix_numeric_background_20260914_1819.log,program_cycles timing-enabled DDR
+SoC isolated turn,51365366,100000000,logs/evidence/llm_quantization/qwen25_soc_v26_l1fix_numeric_background_20260914_1819.log,interval_sim_cycles for turn

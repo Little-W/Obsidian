@@ -1,0 +1,3 @@
+experiment,baseline_relative_l2,candidate_relative_l2,source
+joint MLP layer 21,0.035005626,0.0051409232,logs/LLM量化推理优化.md#10.23
+block-aware down,0.03030709,0.03318408,logs/LLM量化推理优化.md#10.21

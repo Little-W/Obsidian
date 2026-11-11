@@ -1,0 +1,21 @@
+digraph direct_panel_software_flow {
+  graph [rankdir=TB, bgcolor="transparent", pad="0.24", nodesep="0.52", ranksep="0.66", splines=ortho];
+  node [shape=box, style="rounded,filled", fontname="Noto Sans CJK SC", fontsize=15, margin="0.19,0.13", penwidth=1.25, color="#356A96", fillcolor="#EAF4FC"];
+  edge [fontname="Noto Sans CJK SC", fontsize=12, color="#476F91", penwidth=1.15, arrowsize=0.8];
+
+  input [label="行主序 A[M,K]\n模型输入 INT8 或 INT16", fillcolor="#F6F2E8", color="#826C33"];
+  weight [label="行主序 B[K,N]\n编译期常量", fillcolor="#F6F2E8", color="#826C33"];
+  packa [label="运行时 A 面板打包\n按 tile 行与 K 组排列", fillcolor="#E8F4EC", color="#4B855F"];
+  packb [label="编译期 B 面板打包\n按 tile 列与 K 组排列", fillcolor="#E8F4EC", color="#4B855F"];
+  dma_in [label="DMA 装入 L1BUF\nA、B 面板", fillcolor="#EAF4FC", color="#356A96"];
+  direct [label="DIRECT_GEMM\n16×16 Direct Matrix Array", fillcolor="#FBE9EA", color="#A55C62"];
+  dma_out [label="DMA 保存 L1BUF C tile\n至工作区", fillcolor="#EAF4FC", color="#356A96"];
+  unpack [label="运行时 C 面板还原\nINT32 行主序矩阵", fillcolor="#E8F4EC", color="#4B855F"];
+  output [label="行主序 C[M,N]\n模型输出 INT32", fillcolor="#F6F2E8", color="#826C33"];
+
+  { rank=same; input; weight; }
+  { rank=same; packa; packb; }
+  input -> packa -> dma_in;
+  weight -> packb -> dma_in;
+  dma_in -> direct -> dma_out -> unpack -> output;
+}

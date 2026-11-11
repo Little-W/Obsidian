@@ -1,0 +1,22 @@
+{
+  "schema": "transformer_npu.complex_math_materials.v1",
+  "scope": "standalone mathematical illustrations; no hardware timing or model acceptance claims",
+  "cordic": {
+    "samples": 4097,
+    "word_bits": 32,
+    "fraction_bits": 28,
+    "gain": "finite-iteration compensated",
+    "shift": "Python signed arithmetic right shift",
+    "angle_rounding": "nearest even",
+    "coordinate_overflow": "assert signed32 range"
+  },
+  "newton": {
+    "decimal_precision": 100,
+    "initial_relative_error": "0.1",
+    "rounding": "none"
+  },
+  "softmax": {
+    "bound": "delta/(1+delta), delta=(N-1)exp(-T)",
+    "empirical": false
+  }
+}

@@ -1,0 +1,99 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1700 1110" width="1700" height="1110">
+  <rect x="0" y="0" width="1700.0" height="1110.0" fill="white" />
+  <defs>
+    <marker id="arrow2563EB" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#2563EB" />
+    </marker>
+    <marker id="arrow7C3AED" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#7C3AED" />
+    </marker>
+    <marker id="arrow059669" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#059669" />
+    </marker>
+    <marker id="arrowD97706" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#D97706" />
+    </marker>
+    <marker id="arrow0F766E" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#0F766E" />
+    </marker>
+  </defs>
+  <rect x="45.0" y="95.0" width="1610.0" height="930.0" rx="14" fill="#F8FBFF" stroke="#2563EB" stroke-width="1.6" />
+  <text x="69.0" y="129.0" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="start">
+    <tspan x="69.0" y="129.0">Matrix / Vector 执行域</tspan>
+  </text>
+  <path d="M315,270 L315,335" fill="none" stroke="#2563EB" stroke-width="3" marker-end="url(#arrow2563EB)" />
+  <path d="M1385,270 L1385,335" fill="none" stroke="#2563EB" stroke-width="3" marker-end="url(#arrow2563EB)" />
+  <path d="M315,480 L315,565" fill="none" stroke="#2563EB" stroke-width="3" marker-end="url(#arrow2563EB)" />
+  <path d="M535,443.75 L560,500 L850,500 L850,565" fill="none" stroke="#2563EB" stroke-width="3" marker-end="url(#arrow2563EB)" />
+  <path d="M1385,480 L1385,565" fill="none" stroke="#2563EB" stroke-width="3" marker-end="url(#arrow2563EB)" />
+  <path d="M535,696.75 L555,700 L555,830 L540,828.75" fill="none" stroke="#D97706" stroke-width="3" marker-end="url(#arrowD97706)" marker-start="url(#arrowD97706)" />
+  <path d="M850,720 L850,790" fill="none" stroke="#D97706" stroke-width="3" marker-end="url(#arrowD97706)" marker-start="url(#arrowD97706)" />
+  <path d="M1165,458.25 L1140,500 L1140,830 L1160,828.75" fill="none" stroke="#D97706" stroke-width="3" marker-end="url(#arrowD97706)" marker-start="url(#arrowD97706)" />
+  <path d="M205,720 L205,760 L290,760 L290,820" fill="none" stroke="#7C3AED" stroke-width="3" marker-end="url(#arrow7C3AED)" marker-start="url(#arrow7C3AED)" />
+  <path d="M630,696.75 L590,700 L540,700 L540,890 L485,887.5" fill="none" stroke="#7C3AED" stroke-width="3" marker-end="url(#arrow7C3AED)" marker-start="url(#arrow7C3AED)" />
+  <path d="M1605,689 L1630,680 L1630,960 L520,960 L520,910 L485,928" fill="none" stroke="#7C3AED" stroke-width="3" marker-end="url(#arrow7C3AED)" marker-start="url(#arrow7C3AED)" />
+  <path d="M485,955 L600,990 L1645,990 L1645,887 L1600,887.5" fill="none" stroke="#7C3AED" stroke-width="3" marker-end="url(#arrow7C3AED)" marker-start="url(#arrow7C3AED)" />
+  <text x="52.0" y="55.0" fill="#17324D" font-family="Noto Sans CJK SC" font-size="30.0" font-weight="600" text-anchor="start">
+    <tspan x="52.0" y="55.0">矩阵与向量执行单元的共享计算结构</tspan>
+  </text>
+  <rect x="95.0" y="150.0" width="440.0" height="120.0" rx="14" fill="#CCFBF1" stroke="#0F766E" stroke-width="1.5" />
+  <text x="315.0" y="205.275" fill="#17324D" font-family="Noto Sans CJK SC" font-size="21.0" font-weight="600" text-anchor="middle">
+    <tspan x="315.0" y="205.275">Matrix 任务接口</tspan>
+    <tspan x="315.0" y="235.725">GEMM / BMM / Direct 等命令</tspan>
+  </text>
+  <rect x="1165.0" y="150.0" width="440.0" height="120.0" rx="14" fill="#CCFBF1" stroke="#0F766E" stroke-width="1.5" />
+  <text x="1385.0" y="205.275" fill="#17324D" font-family="Noto Sans CJK SC" font-size="21.0" font-weight="600" text-anchor="middle">
+    <tspan x="1385.0" y="205.275">Vector 任务接口</tspan>
+    <tspan x="1385.0" y="235.725">逐元素操作、MUL / FMA</tspan>
+  </text>
+  <rect x="95.0" y="335.0" width="440.0" height="145.0" rx="14" fill="#DBEAFE" stroke="#2563EB" stroke-width="1.5" />
+  <text x="315.0" y="402.775" fill="#17324D" font-family="Noto Sans CJK SC" font-size="21.0" font-weight="600" text-anchor="middle">
+    <tspan x="315.0" y="402.775">Matrix Engine 路由</tspan>
+    <tspan x="315.0" y="433.22499999999997">Direct 为主；Scalar 为可选兼容路径</tspan>
+  </text>
+  <rect x="1165.0" y="335.0" width="440.0" height="145.0" rx="14" fill="#DBEAFE" stroke="#2563EB" stroke-width="1.5" />
+  <text x="1385.0" y="387.55" fill="#17324D" font-family="Noto Sans CJK SC" font-size="21.0" font-weight="600" text-anchor="middle">
+    <tspan x="1385.0" y="387.55">Vector Engine</tspan>
+    <tspan x="1385.0" y="418.0">轻量 ALU 独立执行；MUL / FMA 请求共享阵</tspan>
+    <tspan x="1385.0" y="448.45">列</tspan>
+  </text>
+  <rect x="95.0" y="565.0" width="440.0" height="155.0" rx="14" fill="#FEF3C7" stroke="#D97706" stroke-width="1.5" />
+  <text x="315.0" y="637.775" fill="#17324D" font-family="Noto Sans CJK SC" font-size="21.0" font-weight="600" text-anchor="middle">
+    <tspan x="315.0" y="637.775">Direct Matrix Array</tspan>
+    <tspan x="315.0" y="668.225">面板控制、A/B 根操作数与输出管理</tspan>
+  </text>
+  <rect x="630.0" y="565.0" width="440.0" height="155.0" rx="14" fill="#FEF3C7" stroke="#D97706" stroke-width="1.5" />
+  <text x="850.0" y="637.775" fill="#17324D" font-family="Noto Sans CJK SC" font-size="21.0" font-weight="600" text-anchor="middle">
+    <tspan x="850.0" y="637.775">Scalar Matrix 路径</tspan>
+    <tspan x="850.0" y="668.225">可选 GEMM/BMM 控制与部分和状态</tspan>
+  </text>
+  <rect x="1165.0" y="565.0" width="440.0" height="155.0" rx="14" fill="#FEF3C7" stroke="#D97706" stroke-width="1.5" />
+  <text x="1385.0" y="622.55" fill="#17324D" font-family="Noto Sans CJK SC" font-size="21.0" font-weight="600" text-anchor="middle">
+    <tspan x="1385.0" y="622.55">Vector 轻量 ALU</tspan>
+    <tspan x="1385.0" y="653.0">ADD / SUB / MAX / MIN / CMP / SELECT / CL</tspan>
+    <tspan x="1385.0" y="683.4499999999999">AMP / RELU</tspan>
+  </text>
+  <rect x="540.0" y="790.0" width="620.0" height="155.0" rx="14" fill="#FEF3C7" stroke="#D97706" stroke-width="1.5" />
+  <text x="850.0" y="847.55" fill="#17324D" font-family="Noto Sans CJK SC" font-size="21.0" font-weight="600" text-anchor="middle">
+    <tspan x="850.0" y="847.55">共享可重构 PE 阵列</tspan>
+    <tspan x="850.0" y="878.0">4 个物理 PE；每 PE 8 个 4×8 乘法叶</tspan>
+    <tspan x="850.0" y="908.4499999999999">逻辑 step 分四相位；A/B 各有深度 2 FIFO</tspan>
+  </text>
+  <rect x="95.0" y="820.0" width="390.0" height="135.0" rx="14" fill="#F3E8FF" stroke="#7C3AED" stroke-width="1.5" />
+  <text x="290.0" y="852.325" fill="#17324D" font-family="Noto Sans CJK SC" font-size="21.0" font-weight="600" text-anchor="middle">
+    <tspan x="290.0" y="852.325">Matrix / Vector L1 请求 fabric</tspan>
+    <tspan x="290.0" y="882.7750000000001">两路普通 L1 请求选择、旁路和响应归</tspan>
+    <tspan x="290.0" y="913.225">属</tspan>
+    <tspan x="290.0" y="943.6750000000001">Direct 面板另走分阶段面板接口</tspan>
+  </text>
+  <rect x="1220.0" y="820.0" width="380.0" height="135.0" rx="14" fill="#F3E8FF" stroke="#7C3AED" stroke-width="1.5" />
+  <text x="1410.0" y="867.55" fill="#17324D" font-family="Noto Sans CJK SC" font-size="21.0" font-weight="600" text-anchor="middle">
+    <tspan x="1410.0" y="867.55">L1BUF</tspan>
+    <tspan x="1410.0" y="898.0">七个普通客户端与独立 Direct 面板通</tspan>
+    <tspan x="1410.0" y="928.4499999999999">路</tspan>
+  </text>
+  <text x="850.0" y="1073.5" fill="#475569" font-family="Noto Sans CJK SC" font-size="22.0" font-weight="600" text-anchor="middle">
+    <tspan x="850.0" y="1073.5">MUL / FMA 由 Direct、Scalar 与 Vector 竞争同一阵列；Vector 普通 ALU 不占用 PE。</tspan>
+  </text>
+</svg>

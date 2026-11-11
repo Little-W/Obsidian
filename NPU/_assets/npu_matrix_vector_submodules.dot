@@ -1,0 +1,27 @@
+// Supplemental connectivity listing; editable drawing: npu_matrix_vector_submodules.drawio
+digraph NPU {
+  rankdir=TB;
+  ts [label="TaskScheduler：Matrix / Vector 任务与完成"];
+  container [label=""];
+  path [label="Matrix 路径选择：Direct 或 Scalar"];
+  direct [label="Direct Matrix Array\n独立 16×16 PE 阵列\nA/B 两阶段面板读取"];
+  scalar [label="Scalar Matrix\n独立 Scalar Matrix MAC\n部分和与普通 L1 访问"];
+  vector [label="Integer Vector\n独立 Vector Multiply Unit\n整数逐元素访问"];
+  memory [label="MV Memory Path：两路独立请求 / 响应\n每路最多 2 项在途；写相关检查与两项旁路缓存"];
+  fifo0 [label="Matrix 请求 FIFO\n2 项 × 93 bit"];
+  fifo1 [label="Vector 请求 FIFO\n2 项 × 93 bit"];
+  l1 [label="L1BUF Controller：五路普通客户端 + Direct 面板接口\n16 Bank，各 Bank 独立读 / 写仲裁，存储阵列为 1R1W"];
+  ts -> path [dir=both];
+  ts -> vector [dir=both];
+  path -> direct [dir=both];
+  path -> scalar [dir=both];
+  scalar -> memory [dir=both];
+  vector -> memory [dir=both];
+  memory -> fifo0;
+  memory -> fifo1;
+  fifo0 -> l1;
+  fifo1 -> l1;
+  direct -> l1 [dir=both];
+  l1 -> memory;
+  l1 -> memory;
+}

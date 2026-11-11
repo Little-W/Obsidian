@@ -1,0 +1,196 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1410" width="1600" height="1410">
+  <rect x="0" y="0" width="1600.0" height="1410.0" fill="white" />
+  <defs>
+    <marker id="arrow2563EB" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#2563EB" />
+    </marker>
+    <marker id="arrow7C3AED" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#7C3AED" />
+    </marker>
+    <marker id="arrow059669" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#059669" />
+    </marker>
+    <marker id="arrowD97706" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#D97706" />
+    </marker>
+    <marker id="arrow0F766E" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#0F766E" />
+    </marker>
+  </defs>
+  <path d="M690,165 L1010,165" fill="none" stroke="#2563EB" stroke-width="2.2" marker-end="url(#arrow2563EB)" />
+  <path d="M690,283 L1010,283" fill="none" stroke="#2563EB" stroke-width="2.2" marker-end="url(#arrow2563EB)" />
+  <path d="M690,401 L1010,401" fill="none" stroke="#2563EB" stroke-width="2.2" marker-end="url(#arrow2563EB)" />
+  <path d="M690,519 L1010,519" fill="none" stroke="#2563EB" stroke-width="2.2" marker-end="url(#arrow2563EB)" />
+  <path d="M690,637 L1010,637" fill="none" stroke="#2563EB" stroke-width="2.2" marker-end="url(#arrow2563EB)" />
+  <path d="M690,755 L1010,755" fill="none" stroke="#2563EB" stroke-width="2.2" marker-end="url(#arrow2563EB)" />
+  <path d="M690,873 L1010,873" fill="none" stroke="#2563EB" stroke-width="2.2" marker-end="url(#arrow2563EB)" />
+  <path d="M690,991 L1010,991" fill="none" stroke="#059669" stroke-width="2.2" marker-end="url(#arrow059669)" />
+  <path d="M690,1109 L1010,1109" fill="none" stroke="#059669" stroke-width="2.2" marker-end="url(#arrow059669)" />
+  <path d="M690,1227 L1010,1227" fill="none" stroke="#059669" stroke-width="2.2" marker-end="url(#arrow059669)" />
+  <text x="52.0" y="55.0" fill="#17324D" font-family="Noto Sans CJK SC" font-size="30.0" font-weight="600" text-anchor="start">
+    <tspan x="52.0" y="55.0">命令前端子模块连接</tspan>
+  </text>
+  <text x="60.0" y="107.0" fill="#17324D" font-family="Noto Sans CJK SC" font-size="18.0" font-weight="600" text-anchor="start">
+    <tspan x="60.0" y="107.0">接口关系</tspan>
+  </text>
+  <text x="490.0" y="107.0" fill="#17324D" font-family="Noto Sans CJK SC" font-size="18.0" font-weight="600" text-anchor="middle">
+    <tspan x="490.0" y="107.0">发起方</tspan>
+  </text>
+  <text x="1210.0" y="107.0" fill="#17324D" font-family="Noto Sans CJK SC" font-size="18.0" font-weight="600" text-anchor="middle">
+    <tspan x="1210.0" y="107.0">接收方</tspan>
+  </text>
+  <rect x="45.0" y="118.0" width="205.0" height="94.0" rx="14" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5" />
+  <text x="147.5" y="160.95" fill="#17324D" font-family="Noto Sans CJK SC" font-size="18.0" font-weight="600" text-anchor="middle">
+    <tspan x="147.5" y="160.95">valid / ready</tspan>
+    <tspan x="147.5" y="187.04999999999998">单向传递</tspan>
+  </text>
+  <rect x="290.0" y="118.0" width="400.0" height="94.0" rx="14" fill="#CCFBF1" stroke="#0F766E" stroke-width="1.5" />
+  <text x="490.0" y="160.95" fill="#17324D" font-family="Noto Sans CJK SC" font-size="18.0" font-weight="600" text-anchor="middle">
+    <tspan x="490.0" y="160.95">命令分拍</tspan>
+    <tspan x="490.0" y="187.04999999999998">64-bit 数据与起止标志</tspan>
+  </text>
+  <rect x="1010.0" y="118.0" width="400.0" height="94.0" rx="14" fill="#DBEAFE" stroke="#2563EB" stroke-width="1.5" />
+  <text x="1210.0" y="160.95" fill="#17324D" font-family="Noto Sans CJK SC" font-size="18.0" font-weight="600" text-anchor="middle">
+    <tspan x="1210.0" y="160.95">分拍组合</tspan>
+    <tspan x="1210.0" y="187.04999999999998">低字与高字次序检查</tspan>
+  </text>
+  <rect x="45.0" y="236.0" width="205.0" height="94.0" rx="14" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5" />
+  <text x="147.5" y="278.95" fill="#17324D" font-family="Noto Sans CJK SC" font-size="18.0" font-weight="600" text-anchor="middle">
+    <tspan x="147.5" y="278.95">低字有效</tspan>
+    <tspan x="147.5" y="305.05">单向传递</tspan>
+  </text>
+  <rect x="290.0" y="236.0" width="400.0" height="94.0" rx="14" fill="#DBEAFE" stroke="#2563EB" stroke-width="1.5" />
+  <text x="490.0" y="278.95" fill="#17324D" font-family="Noto Sans CJK SC" font-size="18.0" font-weight="600" text-anchor="middle">
+    <tspan x="490.0" y="278.95">分拍组合</tspan>
+    <tspan x="490.0" y="305.05">低字与高字次序检查</tspan>
+  </text>
+  <rect x="1010.0" y="236.0" width="400.0" height="94.0" rx="14" fill="#DBEAFE" stroke="#2563EB" stroke-width="1.5" />
+  <text x="1210.0" y="278.95" fill="#17324D" font-family="Noto Sans CJK SC" font-size="18.0" font-weight="600" text-anchor="middle">
+    <tspan x="1210.0" y="278.95">分拍等待计时</tspan>
+    <tspan x="1210.0" y="305.05">高字等待上限 32 周期</tspan>
+  </text>
+  <rect x="45.0" y="354.0" width="205.0" height="94.0" rx="14" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5" />
+  <text x="147.5" y="396.95" fill="#17324D" font-family="Noto Sans CJK SC" font-size="18.0" font-weight="600" text-anchor="middle">
+    <tspan x="147.5" y="396.95">收到高字</tspan>
+    <tspan x="147.5" y="423.05">单向传递</tspan>
+  </text>
+  <rect x="290.0" y="354.0" width="400.0" height="94.0" rx="14" fill="#DBEAFE" stroke="#2563EB" stroke-width="1.5" />
+  <text x="490.0" y="396.95" fill="#17324D" font-family="Noto Sans CJK SC" font-size="18.0" font-weight="600" text-anchor="middle">
+    <tspan x="490.0" y="396.95">分拍等待计时</tspan>
+    <tspan x="490.0" y="423.05">高字等待上限 32 周期</tspan>
+  </text>
+  <rect x="1010.0" y="354.0" width="400.0" height="94.0" rx="14" fill="#DBEAFE" stroke="#2563EB" stroke-width="1.5" />
+  <text x="1210.0" y="396.95" fill="#17324D" font-family="Noto Sans CJK SC" font-size="18.0" font-weight="600" text-anchor="middle">
+    <tspan x="1210.0" y="396.95">固定字段检查</tspan>
+    <tspan x="1210.0" y="423.05">操作码与本地编号</tspan>
+  </text>
+  <rect x="45.0" y="472.0" width="205.0" height="94.0" rx="14" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5" />
+  <text x="147.5" y="514.95" fill="#17324D" font-family="Noto Sans CJK SC" font-size="18.0" font-weight="600" text-anchor="middle">
+    <tspan x="147.5" y="514.95">固定字段合法</tspan>
+    <tspan x="147.5" y="541.0500000000001">单向传递</tspan>
+  </text>
+  <rect x="290.0" y="472.0" width="400.0" height="94.0" rx="14" fill="#DBEAFE" stroke="#2563EB" stroke-width="1.5" />
+  <text x="490.0" y="514.95" fill="#17324D" font-family="Noto Sans CJK SC" font-size="18.0" font-weight="600" text-anchor="middle">
+    <tspan x="490.0" y="514.95">固定字段检查</tspan>
+    <tspan x="490.0" y="541.0500000000001">操作码与本地编号</tspan>
+  </text>
+  <rect x="1010.0" y="472.0" width="400.0" height="94.0" rx="14" fill="#D1FAE5" stroke="#059669" stroke-width="1.5" />
+  <text x="1210.0" y="514.95" fill="#17324D" font-family="Noto Sans CJK SC" font-size="18.0" font-weight="600" text-anchor="middle">
+    <tspan x="1210.0" y="514.95">编号占用查询</tspan>
+    <tspan x="1210.0" y="541.0500000000001">任务表与接纳项</tspan>
+  </text>
+  <rect x="45.0" y="590.0" width="205.0" height="94.0" rx="14" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5" />
+  <text x="147.5" y="632.95" fill="#17324D" font-family="Noto Sans CJK SC" font-size="18.0" font-weight="600" text-anchor="middle">
+    <tspan x="147.5" y="632.95">编号空闲</tspan>
+    <tspan x="147.5" y="659.0500000000001">单向传递</tspan>
+  </text>
+  <rect x="290.0" y="590.0" width="400.0" height="94.0" rx="14" fill="#D1FAE5" stroke="#059669" stroke-width="1.5" />
+  <text x="490.0" y="632.95" fill="#17324D" font-family="Noto Sans CJK SC" font-size="18.0" font-weight="600" text-anchor="middle">
+    <tspan x="490.0" y="632.95">编号占用查询</tspan>
+    <tspan x="490.0" y="659.0500000000001">任务表与接纳项</tspan>
+  </text>
+  <rect x="1010.0" y="590.0" width="400.0" height="94.0" rx="14" fill="#F3E8FF" stroke="#7C3AED" stroke-width="1.5" />
+  <text x="1210.0" y="632.95" fill="#17324D" font-family="Noto Sans CJK SC" font-size="18.0" font-weight="600" text-anchor="middle">
+    <tspan x="1210.0" y="632.95">完整指令队列</tspan>
+    <tspan x="1210.0" y="659.0500000000001">深度 8；寄存队首</tspan>
+  </text>
+  <rect x="45.0" y="708.0" width="205.0" height="94.0" rx="14" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5" />
+  <text x="147.5" y="750.95" fill="#17324D" font-family="Noto Sans CJK SC" font-size="18.0" font-weight="600" text-anchor="middle">
+    <tspan x="147.5" y="750.95">完整指令</tspan>
+    <tspan x="147.5" y="777.0500000000001">单向传递</tspan>
+  </text>
+  <rect x="290.0" y="708.0" width="400.0" height="94.0" rx="14" fill="#F3E8FF" stroke="#7C3AED" stroke-width="1.5" />
+  <text x="490.0" y="750.95" fill="#17324D" font-family="Noto Sans CJK SC" font-size="18.0" font-weight="600" text-anchor="middle">
+    <tspan x="490.0" y="750.95">完整指令队列</tspan>
+    <tspan x="490.0" y="777.0500000000001">深度 8；寄存队首</tspan>
+  </text>
+  <rect x="1010.0" y="708.0" width="400.0" height="94.0" rx="14" fill="#F3E8FF" stroke="#7C3AED" stroke-width="1.5" />
+  <text x="1210.0" y="750.95" fill="#17324D" font-family="Noto Sans CJK SC" font-size="18.0" font-weight="600" text-anchor="middle">
+    <tspan x="1210.0" y="750.95">外部描述符装载器</tspan>
+    <tspan x="1210.0" y="777.0500000000001">普通/内联直通；外部记录查缓存或读 DDR</tspan>
+  </text>
+  <rect x="45.0" y="826.0" width="205.0" height="94.0" rx="14" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5" />
+  <text x="147.5" y="868.95" fill="#17324D" font-family="Noto Sans CJK SC" font-size="18.0" font-weight="600" text-anchor="middle">
+    <tspan x="147.5" y="868.95">命令与展开上下文</tspan>
+    <tspan x="147.5" y="895.0500000000001">单向传递</tspan>
+  </text>
+  <rect x="290.0" y="826.0" width="400.0" height="94.0" rx="14" fill="#F3E8FF" stroke="#7C3AED" stroke-width="1.5" />
+  <text x="490.0" y="868.95" fill="#17324D" font-family="Noto Sans CJK SC" font-size="18.0" font-weight="600" text-anchor="middle">
+    <tspan x="490.0" y="868.95">外部描述符装载器</tspan>
+    <tspan x="490.0" y="895.0500000000001">普通/内联直通；外部记录查缓存或读 DDR</tspan>
+  </text>
+  <rect x="1010.0" y="826.0" width="400.0" height="94.0" rx="14" fill="#DBEAFE" stroke="#2563EB" stroke-width="1.5" />
+  <text x="1210.0" y="868.95" fill="#17324D" font-family="Noto Sans CJK SC" font-size="18.0" font-weight="600" text-anchor="middle">
+    <tspan x="1210.0" y="868.95">任务调度器</tspan>
+    <tspan x="1210.0" y="895.0500000000001">命令、descriptor 状态与地址快照</tspan>
+  </text>
+  <rect x="45.0" y="944.0" width="205.0" height="94.0" rx="14" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5" />
+  <text x="147.5" y="986.95" fill="#17324D" font-family="Noto Sans CJK SC" font-size="18.0" font-weight="600" text-anchor="middle">
+    <tspan x="147.5" y="986.95">检查结果</tspan>
+    <tspan x="147.5" y="1013.0500000000001">单向传递</tspan>
+  </text>
+  <rect x="290.0" y="944.0" width="400.0" height="94.0" rx="14" fill="#DBEAFE" stroke="#2563EB" stroke-width="1.5" />
+  <text x="490.0" y="986.95" fill="#17324D" font-family="Noto Sans CJK SC" font-size="18.0" font-weight="600" text-anchor="middle">
+    <tspan x="490.0" y="986.95">固定字段检查</tspan>
+    <tspan x="490.0" y="1013.0500000000001">操作码与本地编号</tspan>
+  </text>
+  <rect x="1010.0" y="944.0" width="400.0" height="94.0" rx="14" fill="#D1FAE5" stroke="#059669" stroke-width="1.5" />
+  <text x="1210.0" y="986.95" fill="#17324D" font-family="Noto Sans CJK SC" font-size="18.0" font-weight="600" text-anchor="middle">
+    <tspan x="1210.0" y="986.95">接收结果保持</tspan>
+    <tspan x="1210.0" y="1013.0500000000001">状态、编号和剩余空间</tspan>
+  </text>
+  <rect x="45.0" y="1062.0" width="205.0" height="94.0" rx="14" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5" />
+  <text x="147.5" y="1104.95" fill="#17324D" font-family="Noto Sans CJK SC" font-size="18.0" font-weight="600" text-anchor="middle">
+    <tspan x="147.5" y="1104.95">查询结果</tspan>
+    <tspan x="147.5" y="1131.05">单向传递</tspan>
+  </text>
+  <rect x="290.0" y="1062.0" width="400.0" height="94.0" rx="14" fill="#D1FAE5" stroke="#059669" stroke-width="1.5" />
+  <text x="490.0" y="1104.95" fill="#17324D" font-family="Noto Sans CJK SC" font-size="18.0" font-weight="600" text-anchor="middle">
+    <tspan x="490.0" y="1104.95">编号占用查询</tspan>
+    <tspan x="490.0" y="1131.05">任务表与接纳项</tspan>
+  </text>
+  <rect x="1010.0" y="1062.0" width="400.0" height="94.0" rx="14" fill="#D1FAE5" stroke="#059669" stroke-width="1.5" />
+  <text x="1210.0" y="1104.95" fill="#17324D" font-family="Noto Sans CJK SC" font-size="18.0" font-weight="600" text-anchor="middle">
+    <tspan x="1210.0" y="1104.95">接收结果保持</tspan>
+    <tspan x="1210.0" y="1131.05">状态、编号和剩余空间</tspan>
+  </text>
+  <rect x="45.0" y="1180.0" width="205.0" height="94.0" rx="14" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5" />
+  <text x="147.5" y="1222.95" fill="#17324D" font-family="Noto Sans CJK SC" font-size="18.0" font-weight="600" text-anchor="middle">
+    <tspan x="147.5" y="1222.95">valid / ready</tspan>
+    <tspan x="147.5" y="1249.05">单向传递</tspan>
+  </text>
+  <rect x="290.0" y="1180.0" width="400.0" height="94.0" rx="14" fill="#D1FAE5" stroke="#059669" stroke-width="1.5" />
+  <text x="490.0" y="1222.95" fill="#17324D" font-family="Noto Sans CJK SC" font-size="18.0" font-weight="600" text-anchor="middle">
+    <tspan x="490.0" y="1222.95">接收结果保持</tspan>
+    <tspan x="490.0" y="1249.05">状态、编号和剩余空间</tspan>
+  </text>
+  <rect x="1010.0" y="1180.0" width="400.0" height="94.0" rx="14" fill="#D1FAE5" stroke="#059669" stroke-width="1.5" />
+  <text x="1210.0" y="1222.95" fill="#17324D" font-family="Noto Sans CJK SC" font-size="18.0" font-weight="600" text-anchor="middle">
+    <tspan x="1210.0" y="1222.95">接收结果接口</tspan>
+    <tspan x="1210.0" y="1249.05">64-bit 结果</tspan>
+  </text>
+  <text x="57.0" y="1391.0" fill="#475569" font-family="Noto Sans CJK SC" font-size="18.0" font-weight="600" text-anchor="start">
+    <tspan x="57.0" y="1391.0">每行独立表示一项逻辑连接；同名方框表示同一模块的不同接口。</tspan>
+  </text>
+</svg>

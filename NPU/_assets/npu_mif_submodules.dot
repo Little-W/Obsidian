@@ -1,0 +1,20 @@
+digraph NPU_MIF_SUBMODULES {
+  graph [rankdir=LR, bgcolor="#FFFFFF", pad="0.20", nodesep="0.50", ranksep="0.80", splines=polyline, outputorder=nodesfirst, fontname="Noto Sans CJK SC", fontsize=20, fontcolor="#123B5D", labelloc=t, label="MIF 与 AXI Master 子模块连接"];
+  node [shape=box, style="rounded,filled", margin="0.18,0.12", fontname="Noto Sans CJK SC", fontsize=14, color="#64748B", penwidth=1.3, fillcolor="#F8FAFC", fontcolor="#17324D"];
+  edge [fontname="Noto Sans CJK SC", fontsize=11, color="#2563EB", fontcolor="#334155", penwidth=1.4, arrowsize=0.72];
+  DMA [label="DMA\n物理地址请求", fillcolor="#E0F2FE", color="#0284C7"];
+  subgraph cluster_mif {
+    label="MIF"; fontname="Noto Sans CJK SC"; fontsize=16; color="#93C5FD"; fillcolor="#EFF6FF"; style="rounded,filled"; penwidth=1.4;
+    CHECK [label="地址检查\n对齐 / 范围 / 4KiB"];
+    FSM [label="MIF 状态机\nAR、R、AW/W、B"];
+    RQ [label="两项读响应队列\n隔离 AXI 与 DMA", fillcolor="#DBEAFE"];
+    ERR [label="首个错误寄存器\n地址 / 状态"];
+    CHECK -> FSM; FSM -> RQ; FSM -> ERR;
+  }
+  FAB [label="SoC AXI Fabric", fillcolor="#F3E8FF", color="#7C3AED"];
+  MEM [label="DDR / 系统存储", fillcolor="#FEF3C7", color="#D97706"];
+  DMA -> CHECK [label="req"];
+  RQ -> DMA [label="rsp"];
+  FSM -> FAB [dir=both, label="m_axi_* 64-bit"];
+  FAB -> MEM [dir=both];
+}

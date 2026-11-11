@@ -1,0 +1,71 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="Electron" agent="NPU design specification" version="31.3.2" compressed="false">
+  <diagram id="9564d995d7cd" name="Page-1">
+    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1370" background="#FFFFFF" math="1" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="v2" value="&lt;b&gt;L1BUF：七路普通客户端、分段面板与 1R1W bank&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=0;fontFamily=Noto Sans CJK SC;fontSize=30;fontColor=#17324D;align=left;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;fontColor=#17324D;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="14" width="1620" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="v3" value="&lt;b&gt;执行集群访问接口&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#CBD5E1;strokeWidth=1.6;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=left;fontStyle=1;verticalAlign=top;spacing=8;arcSize=12;arcSize=4;spacingTop=12;spacingLeft=24;container=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="60" y="100" width="1580" height="290" as="geometry" />
+        </mxCell>
+        <mxCell id="v4" value="&lt;b&gt;七路普通客户端&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;Host、DMA、Matrix/Vector ×2、Complex&lt;br&gt;DMA 复制写、Complex 独立写&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="100" y="175" width="700" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="v5" value="&lt;b&gt;Direct 面板接口&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;A/B 读，C 读写，B-only 与紧凑 A&lt;br&gt;读结果 32×64 bit；写载荷 16×64 bit&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="900" y="175" width="700" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="v6" value="&lt;b&gt;各客户端独立顺序队列&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;2 项待执行请求；3 项响应信用&lt;br&gt;同步返回级、短响应存储和写提交指示&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="100" y="510" width="700" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="v7" value="&lt;b&gt;面板分段与收集流水&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;先检查完整范围，再逐 bank 段访问&lt;br&gt;四 bank：独立最终响应寄存器&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="900" y="510" width="700" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="v8" value="&lt;b&gt;逐 bank 读写仲裁与冲突处理&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;普通读写分别轮转；相同行读写串行&lt;br&gt;默认四 bank：面板段保留参与 bank 的读写两方向&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E8FF;strokeColor=#7C3AED;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="100" y="830" width="1500" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#2563EB;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="v4" target="v6">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#7C3AED;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.23333333333333334;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="v6" target="v8">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#D97706;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="v5" target="v7">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#7C3AED;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.7666666666666667;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="v7" target="v8">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="v13" value="&lt;b&gt;Bank 0&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;64-bit 1R1W&lt;br&gt;32768 word；256 KiB&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CCFBF1;strokeColor=#0F766E;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="100" y="1130" width="330" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#7C3AED;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=0.11;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="v8" target="v13">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="v15" value="&lt;b&gt;Bank 1&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;64-bit 1R1W&lt;br&gt;32768 word；256 KiB&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CCFBF1;strokeColor=#0F766E;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="490" y="1130" width="330" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="e16" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#7C3AED;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=0.37;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="v8" target="v15">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="v17" value="&lt;b&gt;Bank 2&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;64-bit 1R1W&lt;br&gt;32768 word；256 KiB&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CCFBF1;strokeColor=#0F766E;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="880" y="1130" width="330" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="e18" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#7C3AED;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=0.63;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="v8" target="v17">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="v19" value="&lt;b&gt;Bank 3&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;64-bit 1R1W&lt;br&gt;32768 word；256 KiB&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CCFBF1;strokeColor=#0F766E;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1270" y="1130" width="330" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="e20" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#7C3AED;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=0.89;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="v8" target="v19">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="v21" value="&lt;b&gt;默认总容量 1 MiB；支持 4 / 8 / 16 bank。宽面板是分段结果，不增加物理 RAM 端口。&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=0;fontFamily=Noto Sans CJK SC;fontSize=23;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;fontColor=#475569;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="80" y="1310" width="1540" height="45" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

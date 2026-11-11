@@ -1,0 +1,21 @@
+// Supplemental connectivity listing; editable drawing: npu_l1buf_submodules.drawio
+digraph NPU {
+  rankdir=TB;
+  clients [label="五路普通客户端\nHost / DMA / Scalar Matrix / Vector / Complex"];
+  direct [label="Direct Matrix Array\n24-lane 完整面板请求与响应"];
+  req [label="逐客户端请求 FIFO\n每路 2 项，ready 仅取决于占用数"];
+  panel [label="面板组地址与检查状态寄存\n按 Bank 捕获 row；共享循环轮转"];
+  arb [label="逐 Bank 的读仲裁 + 写仲裁\n同方向轮转；同地址读写串行；面板优先使用所需端口"];
+  ram [label="16 × 8192 × 64-bit SRAM\n每 Bank 八个字节切片；单份 1R1W 数据"];
+  rsp [label="逐客户端响应 FIFO\n每路 3 项；寄存已预留额度"];
+  gather [label="面板合并与响应保持\nA/B 合并，暂停不占用 RAM 输出"];
+  clients -> req;
+  direct -> panel;
+  req -> arb;
+  panel -> arb;
+  arb -> ram;
+  ram -> rsp;
+  ram -> gather;
+  rsp -> clients;
+  gather -> direct;
+}

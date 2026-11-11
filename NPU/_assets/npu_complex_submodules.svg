@@ -1,0 +1,69 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1700 1040" width="1700" height="1040">
+  <rect x="0" y="0" width="1700.0" height="1040.0" fill="white" />
+  <defs>
+    <marker id="arrow2563EB" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#2563EB" />
+    </marker>
+    <marker id="arrow7C3AED" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#7C3AED" />
+    </marker>
+    <marker id="arrow059669" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#059669" />
+    </marker>
+    <marker id="arrowD97706" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#D97706" />
+    </marker>
+    <marker id="arrow0F766E" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#0F766E" />
+    </marker>
+  </defs>
+  <rect x="45.0" y="95.0" width="1610.0" height="850.0" rx="14" fill="#F8FBFF" stroke="#2563EB" stroke-width="1.6" />
+  <text x="69.0" y="129.0" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="start">
+    <tspan x="69.0" y="129.0">Complex Engine</tspan>
+  </text>
+  <path d="M850,265 L850,320" fill="none" stroke="#2563EB" stroke-width="3" marker-end="url(#arrow2563EB)" />
+  <path d="M620,439 L590,460 L340,460 L340,515" fill="none" stroke="#2563EB" stroke-width="3" marker-end="url(#arrow2563EB)" />
+  <path d="M1080,439 L1110,460 L1360,460 L1360,515" fill="none" stroke="#2563EB" stroke-width="3" marker-end="url(#arrow2563EB)" />
+  <path d="M575,612.5 L590,620 L590,770 L600,755.5" fill="none" stroke="#D97706" stroke-width="3" marker-end="url(#arrowD97706)" marker-start="url(#arrowD97706)" />
+  <path d="M1125,612.5 L1110,620 L1110,770 L1100,755.5" fill="none" stroke="#D97706" stroke-width="3" marker-end="url(#arrowD97706)" marker-start="url(#arrowD97706)" />
+  <path d="M850,840 L850,850" fill="none" stroke="#D97706" stroke-width="3" marker-end="url(#arrowD97706)" marker-start="url(#arrowD97706)" />
+  <text x="52.0" y="55.0" fill="#17324D" font-family="Noto Sans CJK SC" font-size="30.0" font-weight="600" text-anchor="start">
+    <tspan x="52.0" y="55.0">Complex 算子、共享算术与存储连接</tspan>
+  </text>
+  <rect x="620.0" y="145.0" width="460.0" height="120.0" rx="14" fill="#CCFBF1" stroke="#0F766E" stroke-width="1.5" />
+  <text x="850.0" y="200.275" fill="#17324D" font-family="Noto Sans CJK SC" font-size="21.0" font-weight="600" text-anchor="middle">
+    <tspan x="850.0" y="200.275">Complex Task Context</tspan>
+    <tspan x="850.0" y="230.725">opcode、地址、形状、dtype 与静态参数</tspan>
+  </text>
+  <rect x="620.0" y="320.0" width="460.0" height="140.0" rx="14" fill="#DBEAFE" stroke="#2563EB" stroke-width="1.5" />
+  <text x="850.0" y="385.275" fill="#17324D" font-family="Noto Sans CJK SC" font-size="21.0" font-weight="600" text-anchor="middle">
+    <tspan x="850.0" y="385.275">任务路由与单任务上下文</tspan>
+    <tspan x="850.0" y="415.72499999999997">按 opcode 选择 Legacy 控制器或连续流算子</tspan>
+  </text>
+  <rect x="105.0" y="515.0" width="470.0" height="150.0" rx="14" fill="#DBEAFE" stroke="#2563EB" stroke-width="1.5" />
+  <text x="340.0" y="585.275" fill="#17324D" font-family="Noto Sans CJK SC" font-size="21.0" font-weight="600" text-anchor="middle">
+    <tspan x="340.0" y="585.275">Legacy 数值控制路径</tspan>
+    <tspan x="340.0" y="615.725">ACT / Softmax / Norm 与兼容逐步控制</tspan>
+  </text>
+  <rect x="1125.0" y="515.0" width="470.0" height="150.0" rx="14" fill="#FEF3C7" stroke="#D97706" stroke-width="1.5" />
+  <text x="1360.0" y="570.05" fill="#17324D" font-family="Noto Sans CJK SC" font-size="21.0" font-weight="600" text-anchor="middle">
+    <tspan x="1360.0" y="570.05">连续流算子</tspan>
+    <tspan x="1360.0" y="600.5">RoPE、Dynamic A8、FP32 MAC/SUM、在线 So</tspan>
+    <tspan x="1360.0" y="630.9499999999999">ftmax/PV、MIXED_FMA</tspan>
+  </text>
+  <rect x="600.0" y="710.0" width="500.0" height="130.0" rx="14" fill="#FEF3C7" stroke="#D97706" stroke-width="1.5" />
+  <text x="850.0" y="755.05" fill="#17324D" font-family="Noto Sans CJK SC" font-size="21.0" font-weight="600" text-anchor="middle">
+    <tspan x="850.0" y="755.05">Arithmetic Fabric + 双逻辑请求 FIFO</tspan>
+    <tspan x="850.0" y="785.5">每个 owner 两项；按 tag 归属结果</tspan>
+    <tspan x="850.0" y="815.9499999999999">两个逻辑入口仲裁到单个算术流水</tspan>
+  </text>
+  <rect x="600.0" y="850.0" width="500.0" height="90.0" rx="14" fill="#FEF3C7" stroke="#D97706" stroke-width="1.5" />
+  <text x="850.0" y="890.275" fill="#17324D" font-family="Noto Sans CJK SC" font-size="21.0" font-weight="600" text-anchor="middle">
+    <tspan x="850.0" y="890.275">单个物理 mixed-FMA word 流水</tspan>
+    <tspan x="850.0" y="920.725">FP32 处理单元素；FP16 每 word 四组顺序处理</tspan>
+  </text>
+  <text x="850.0" y="998.5" fill="#475569" font-family="Noto Sans CJK SC" font-size="22.0" font-weight="600" text-anchor="middle">
+    <tspan x="850.0" y="998.5">两路请求用于缓冲客户端并发；共享算术资源的数量为一个，FP16 word 的四个 half 依次处理。L1 与同步行 RAM 接口见正文端口表。</tspan>
+  </text>
+</svg>

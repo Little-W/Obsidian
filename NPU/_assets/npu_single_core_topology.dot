@@ -1,0 +1,35 @@
+digraph npu_single_core_topology {
+  graph [rankdir=LR, splines=polyline, nodesep=0.45, ranksep=0.8, pad=0.25, bgcolor="white"];
+  node [shape=box, style="rounded,filled", color="#286090", fillcolor="#EAF3F8", fontname="Noto Sans CJK SC", fontsize=15, margin="0.16,0.10"];
+  edge [color="#4F6D7A", penwidth=1.25, fontname="Noto Sans CJK SC", fontsize=11];
+
+  CPU [label="CPU / Runtime\nAXI4-Lite MMIO"];
+  AXIS [label="AXI Slave Frontend\n命令、描述符与状态寄存器"];
+  CFE [label="Command Fetch Engine\n低/高 64-bit 命令拼接"];
+  TS [label="Task Scheduler\n8 个任务槽\n依赖检查与单发射"];
+  DMA [label="DMA Engine\nCopy、格式转换、Fill、\nTranspose 2D、Pack/Split"];
+  MVE [label="Matrix / Vector Engine\nDirect Array、Scalar、\n整数 Vector 与共享 MAC"];
+  CME [label="Complex Math Engine\nSoftmax、Norm、Act、Stat"];
+  L1 [label="L1BUF Controller\n1 MiB / 16 banks\n4 个普通客户端"];
+  MIF [label="Memory Interface\n一项外部请求\n读 1–16 beat、写 1 beat"];
+  MEM [label="外部 AXI4 存储器"];
+  LSC [label="Load/Store Controller\n寄存器与中断"];
+  CRG [label="CRG / WDT\n时钟、复位与超时"];
+
+  CPU -> AXIS [label="AXI4-Lite"];
+  AXIS -> CFE [label="64-bit 低/高半命令"];
+  CFE -> TS [label="128-bit 命令"];
+  TS -> DMA [label="DMA Task"];
+  TS -> MVE [label="Matrix / Vector Task"];
+  TS -> CME [label="Complex Task"];
+  AXIS -> L1 [label="L1 窗口", dir=both];
+  DMA -> L1 [label="普通 64-bit 访问", dir=both];
+  MVE -> L1 [label="普通访问 / 24-lane 面板", dir=both];
+  CME -> L1 [label="普通 64-bit 访问", dir=both];
+  DMA -> MIF [label="全局内存请求", dir=both];
+  MIF -> MEM [label="AXI4", dir=both];
+  AXIS -> LSC [label="控制请求 / 中断", dir=both];
+  LSC -> TS [label="软复位、状态读取"];
+  CRG -> AXIS [label="复位 / 时钟"];
+  CRG -> TS [label="复位 / 超时"];
+}

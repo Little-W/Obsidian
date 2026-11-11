@@ -1,0 +1,17 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="Electron" agent="NPU design specification" version="31.3.2" compressed="false">
+  <diagram id="0ea87efec862" name="Page-1">
+    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="736" math="1" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="v2" value="&lt;b&gt;系统存储接口 AXI 读时序&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=0;fontFamily=Noto Sans CJK SC;fontSize=30;fontColor=#17324D;align=left;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;fontColor=#17324D;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="14" width="1120" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="w3" value="{&quot;signal&quot;:[{&quot;name&quot;:&quot;clk&quot;,&quot;wave&quot;:&quot;p.....&quot;},{&quot;name&quot;:&quot;ARVALID&quot;,&quot;wave&quot;:&quot;01.0..&quot;},{&quot;name&quot;:&quot;ARREADY&quot;,&quot;wave&quot;:&quot;0.1...&quot;},{&quot;name&quot;:&quot;RVALID&quot;,&quot;wave&quot;:&quot;0..1.0&quot;},{&quot;name&quot;:&quot;RREADY&quot;,&quot;wave&quot;:&quot;1..01.&quot;},{&quot;name&quot;:&quot;RDATA / RLAST&quot;,&quot;wave&quot;:&quot;x..=.x&quot;,&quot;data&quot;:[&quot;D / L&quot;]},{&quot;name&quot;:&quot;internal_rsp&quot;,&quot;wave&quot;:&quot;x...=x&quot;,&quot;data&quot;:[&quot;VALID&quot;]}],&quot;head&quot;:{&quot;text&quot;:&quot;系统存储接口 AXI 读时序&quot;,&quot;tick&quot;:0},&quot;foot&quot;:{&quot;text&quot;:&quot;AR 暂停期间地址与属性保持；R 暂停期间数据、状态和末拍标志保持&quot;},&quot;config&quot;:{&quot;hscale&quot;:2}}" style="shape=mxgraph.wavedrom.abstract.timing;shadow=0;dashed=0;align=left;strokeWidth=1;labelBackgroundColor=#ffffff;noLabel=1;imageAspect=1;" vertex="1" parent="1">
+          <mxGeometry x="35" y="78" width="1130" height="626" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

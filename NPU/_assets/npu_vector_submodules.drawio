@@ -1,0 +1,134 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="Electron" agent="NPU design specification" version="31.3.2" compressed="false">
+  <diagram id="5d7468cf8a13" name="Page-1">
+    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1292" background="#FFFFFF" math="1" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="v2" value="&lt;b&gt;整数向量通路子模块连接&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=0;fontFamily=Noto Sans CJK SC;fontSize=30;fontColor=#17324D;align=left;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;fontColor=#17324D;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="14" width="1520" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="v3" value="&lt;b&gt;接口关系&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=0;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=left;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;fontColor=#17324D;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="48" y="78" width="190" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="v4" value="&lt;b&gt;发起方&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=0;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;fontColor=#17324D;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="290" y="78" width="400" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="v5" value="&lt;b&gt;接收方&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=0;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;fontColor=#17324D;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="1010" y="78" width="400" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="v6" value="&lt;b&gt;任务握手&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;单向传递&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#CBD5E1;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="45" y="118" width="205" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="v7" value="&lt;b&gt;向量任务&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;操作、地址、形状与数据格式&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CCFBF1;strokeColor=#0F766E;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="290" y="118" width="400" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="v8" value="&lt;b&gt;向量控制器&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;字段检查、游标与读算写状态&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1010" y="118" width="400" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=18;html=1;strokeColor=#2563EB;strokeWidth=2.2;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="v7" target="v8">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="v10" value="&lt;b&gt;阶段控制&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;单向传递&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#CBD5E1;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="45" y="236" width="205" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="v11" value="&lt;b&gt;向量控制器&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;字段检查、游标与读算写状态&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="290" y="236" width="400" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="v12" value="&lt;b&gt;向量数据通路&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;操作数、掩码、结果与写回&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1010" y="236" width="400" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=18;html=1;strokeColor=#2563EB;strokeWidth=2.2;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="v11" target="v12">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="v14" value="&lt;b&gt;访存与计算状态&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;单向传递&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#CBD5E1;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="45" y="354" width="205" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="v15" value="&lt;b&gt;向量数据通路&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;操作数、掩码、结果与写回&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="290" y="354" width="400" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="v16" value="&lt;b&gt;向量控制器&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;字段检查、游标与读算写状态&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1010" y="354" width="400" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="e17" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=18;html=1;strokeColor=#059669;strokeWidth=2.2;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="v15" target="v16">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="v18" value="&lt;b&gt;整数操作&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;双向请求与返回&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#CBD5E1;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="45" y="472" width="205" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="v19" value="&lt;b&gt;向量数据通路&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;操作数、掩码、结果与写回&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="290" y="472" width="400" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="v20" value="&lt;b&gt;整数执行流水&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;加减、比较、选择、裁剪与 ReLU&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1010" y="472" width="400" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="e21" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=18;html=1;strokeColor=#D97706;strokeWidth=2.2;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="v19" target="v20">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="v22" value="&lt;b&gt;连续乘法数据&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;双向请求与返回&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#CBD5E1;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="45" y="590" width="205" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="v23" value="&lt;b&gt;向量数据通路&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;操作数、掩码、结果与写回&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="290" y="590" width="400" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="v24" value="&lt;b&gt;连续乘法整理&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;INT8 八对 / INT16 四对打包&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1010" y="590" width="400" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="e25" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=18;html=1;strokeColor=#D97706;strokeWidth=2.2;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="v23" target="v24">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="v26" value="&lt;b&gt;64-bit L1&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;双向请求与返回&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#CBD5E1;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="45" y="708" width="205" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="v27" value="&lt;b&gt;向量数据通路&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;操作数、掩码、结果与写回&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="290" y="708" width="400" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="v28" value="&lt;b&gt;内部存储通路&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;L1 请求与响应&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E8FF;strokeColor=#7C3AED;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1010" y="708" width="400" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="e29" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=18;html=1;strokeColor=#7C3AED;strokeWidth=2.2;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="v27" target="v28">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="v30" value="&lt;b&gt;MUL&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;双向请求与返回&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#CBD5E1;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="45" y="826" width="205" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="v31" value="&lt;b&gt;连续乘法整理&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;INT8 八对 / INT16 四对打包&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="290" y="826" width="400" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="v32" value="&lt;b&gt;Matrix 共享 PE 接口&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;MUL / FMA ready-valid 请求与返回&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1010" y="826" width="400" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="e33" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=18;html=1;strokeColor=#D97706;strokeWidth=2.2;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="v31" target="v32">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="v34" value="&lt;b&gt;FMA&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;双向请求与返回&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#CBD5E1;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="45" y="944" width="205" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="v35" value="&lt;b&gt;向量数据通路&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;操作数、掩码、结果与写回&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="290" y="944" width="400" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="v36" value="&lt;b&gt;Matrix 共享 PE 接口&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;MUL / FMA ready-valid 请求与返回&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1010" y="944" width="400" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="e37" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=18;html=1;strokeColor=#D97706;strokeWidth=2.2;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="v35" target="v36">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="v38" value="&lt;b&gt;完成消息&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;单向传递&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#CBD5E1;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="45" y="1062" width="205" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="v39" value="&lt;b&gt;向量控制器&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;字段检查、游标与读算写状态&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="290" y="1062" width="400" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="v40" value="&lt;b&gt;向量完成&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;状态、地址与进度&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D1FAE5;strokeColor=#059669;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1010" y="1062" width="400" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="e41" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=18;html=1;strokeColor=#059669;strokeWidth=2.2;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="v39" target="v40">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="v42" value="每行独立表示一项逻辑连接；同名方框表示同一模块的不同接口。" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=0;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=left;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;fontColor=#475569;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="45" y="1244" width="1460" height="40" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

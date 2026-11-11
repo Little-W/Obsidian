@@ -1,0 +1,65 @@
+digraph model_compiler_driver_overview {
+  graph [rankdir=TB, bgcolor="transparent", pad="0.24", nodesep="0.54", ranksep="0.72", splines=ortho];
+  node [shape=box, style="rounded,filled", fontname="Noto Sans CJK SC", fontsize=15, margin="0.18,0.12", penwidth=1.25, color="#356A96", fillcolor="#EAF4FC"];
+  edge [fontname="Noto Sans CJK SC", fontsize=12, color="#476F91", penwidth=1.15, arrowsize=0.8];
+
+  model [label="模型输入\n框架模型或低层 JSON IR", fillcolor="#F6F2E8", color="#826C33"];
+  target [label="目标配置\n存储、地址与阵列参数", fillcolor="#F6F2E8", color="#826C33"];
+
+  subgraph cluster_compiler {
+    label="模型编译器";
+    fontname="Noto Sans CJK SC";
+    fontsize=16;
+    fontcolor="#244B6A";
+    color="#86B6DC";
+    style="rounded";
+    frontend [label="前端与图检查\n形状、数据格式、算子约束"];
+    lowering [label="算子降级与任务生成\n矩阵、向量、复杂函数、DMA"];
+    schedule [label="调度与存储规划\nL1BUF、外部区域、事件、批次"];
+    assemble [label="汇编与交付生成\n128-bit 命令、权重、运行时记录"];
+    frontend -> lowering -> schedule -> assemble;
+  }
+
+  subgraph cluster_tvm {
+    label="TVM 静态 AOT 集成";
+    fontname="Noto Sans CJK SC";
+    fontsize=16;
+    fontcolor="#5A4B7B";
+    color="#B6A7D5";
+    style="rounded";
+    partition [label="Relax 分区\nNPU 子图与 CPU 子图"];
+    cpu [label="CPU 静态函数\n非 NPU 算子"];
+    npu [label="NPU 子图代码生成\n调用模型编译器"];
+    partition -> cpu;
+    partition -> npu;
+  }
+
+  package [label="静态模型交付物\n命令、常量、I/O 绑定、批次记录", fillcolor="#E8F4EC", color="#4B855F"];
+
+  subgraph cluster_runtime {
+    label="Runtime 与 C 驱动";
+    fontname="Noto Sans CJK SC";
+    fontsize=16;
+    fontcolor="#315B47";
+    color="#8EBE9A";
+    style="rounded";
+    runtime [label="模型 Runtime\n张量检查、DMA 内存区、批次执行", fillcolor="#E8F4EC", color="#4B855F"];
+    driver [label="NPU C 驱动\n命令编码、任务等待、地址与 Cache 同步", fillcolor="#E8F4EC", color="#4B855F"];
+    platform [label="平台适配层\nMMIO、AXI 提交、屏障、Cache、内存区", fillcolor="#E8F4EC", color="#4B855F"];
+    runtime -> driver -> platform;
+  }
+
+  hw [label="NPU 硬件\nAXI Slave、CFE、TaskScheduler、执行单元、L1BUF、MIF", fillcolor="#FBE9EA", color="#A55C62"];
+
+  { rank=same; model; target; }
+  model -> frontend;
+  target -> frontend;
+  target -> schedule;
+  model -> partition;
+  target -> npu;
+  assemble -> package;
+  npu -> package;
+  cpu -> runtime;
+  package -> runtime;
+  platform -> hw;
+}

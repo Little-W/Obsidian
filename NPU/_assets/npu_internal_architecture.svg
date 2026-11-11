@@ -1,0 +1,91 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1760 1340" width="1760" height="1340">
+  <rect x="0" y="0" width="1760.0" height="1340.0" fill="white" />
+  <defs>
+    <marker id="arrow2563EB" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#2563EB" />
+    </marker>
+    <marker id="arrow7C3AED" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#7C3AED" />
+    </marker>
+    <marker id="arrow059669" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#059669" />
+    </marker>
+    <marker id="arrowD97706" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#D97706" />
+    </marker>
+    <marker id="arrow0F766E" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#0F766E" />
+    </marker>
+  </defs>
+  <rect x="70.0" y="100.0" width="1620.0" height="1160.0" rx="14" fill="#F8FBFF" stroke="#2563EB" stroke-width="1.6" />
+  <text x="94.0" y="134.0" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="start">
+    <tspan x="94.0" y="134.0">NPU Core</tspan>
+  </text>
+  <rect x="100.0" y="420.0" width="1540.0" height="440.0" rx="14" fill="#FFFBEB" stroke="#D97706" stroke-width="1.6" />
+  <path d="M210,310 L210,490" fill="none" stroke="#2563EB" stroke-width="3" marker-end="url(#arrow2563EB)" />
+  <path d="M410,490 L410,310" fill="none" stroke="#059669" stroke-width="3" marker-end="url(#arrow059669)" />
+  <path d="M625,310 L625,490" fill="none" stroke="#2563EB" stroke-width="3" marker-end="url(#arrow2563EB)" />
+  <path d="M745,490 L745,310" fill="none" stroke="#059669" stroke-width="3" marker-end="url(#arrow059669)" />
+  <path d="M875,310 L875,490" fill="none" stroke="#2563EB" stroke-width="3" marker-end="url(#arrow2563EB)" />
+  <path d="M995,490 L995,310" fill="none" stroke="#059669" stroke-width="3" marker-end="url(#arrow059669)" />
+  <path d="M1210,310 L1210,490" fill="none" stroke="#2563EB" stroke-width="3" marker-end="url(#arrow2563EB)" />
+  <path d="M1510,490 L1510,310" fill="none" stroke="#059669" stroke-width="3" marker-end="url(#arrow059669)" />
+  <path d="M282,810 L282,1010" fill="none" stroke="#7C3AED" stroke-width="3" marker-end="url(#arrow7C3AED)" marker-start="url(#arrow7C3AED)" />
+  <path d="M460,810 L460,920 L610,920 L610,1010" fill="none" stroke="#7C3AED" stroke-width="3" marker-end="url(#arrow7C3AED)" marker-start="url(#arrow7C3AED)" />
+  <path d="M750,810 L750,1010" fill="none" stroke="#7C3AED" stroke-width="3" marker-end="url(#arrow7C3AED)" marker-start="url(#arrow7C3AED)" />
+  <path d="M1000,810 L1000,1010" fill="none" stroke="#7C3AED" stroke-width="3" marker-end="url(#arrow7C3AED)" marker-start="url(#arrow7C3AED)" />
+  <path d="M1280,810 L1280,1010" fill="none" stroke="#7C3AED" stroke-width="3" marker-end="url(#arrow7C3AED)" marker-start="url(#arrow7C3AED)" />
+  <path d="M1530,810 L1530,1010" fill="none" stroke="#7C3AED" stroke-width="3" marker-end="url(#arrow7C3AED)" marker-start="url(#arrow7C3AED)" />
+  <text x="52.0" y="55.0" fill="#17324D" font-family="Noto Sans CJK SC" font-size="30.0" font-weight="600" text-anchor="start">
+    <tspan x="52.0" y="55.0">NPU 执行集群与片上访存结构</tspan>
+  </text>
+  <rect x="130.0" y="170.0" width="1480.0" height="140.0" rx="14" fill="#DBEAFE" stroke="#2563EB" stroke-width="1.5" />
+  <text x="870.0" y="234.6" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="870.0" y="234.6">TaskScheduler</tspan>
+    <tspan x="870.0" y="269.4">四类逻辑任务接口；事件依赖、任务 RAM、完成记录与 ACK</tspan>
+  </text>
+  <text x="1072.0" y="469.0" fill="#475569" font-family="Noto Sans CJK SC" font-size="23.0" font-weight="600" text-anchor="start">
+    <tspan x="1072.0" y="469.0">执行引擎</tspan>
+  </text>
+  <rect x="130.0" y="490.0" width="380.0" height="320.0" rx="14" fill="#FEF3C7" stroke="#D97706" stroke-width="1.5" />
+  <text x="320.0" y="609.8" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="320.0" y="609.8">DMA / Layout Engine</tspan>
+    <tspan x="320.0" y="644.5999999999999">连续搬运与类型转换</tspan>
+    <tspan x="320.0" y="679.4">L1 本地复制独立写口</tspan>
+    <tspan x="320.0" y="714.1999999999999">Ethernet 旁带 RX</tspan>
+  </text>
+  <rect x="560.0" y="490.0" width="500.0" height="320.0" rx="14" fill="#FEF3C7" stroke="#D97706" stroke-width="1.5" />
+  <text x="810.0" y="592.4" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="810.0" y="592.4">Matrix / Vector 包装</tspan>
+    <tspan x="810.0" y="627.1999999999999">Direct / Scalar / Vector MUL-FMA</tspan>
+    <tspan x="810.0" y="662.0">共享四个物理 PE，每 PE 八个 4×8 乘法叶</tspan>
+    <tspan x="810.0" y="696.8">Vector 轻量 ALU 独立，乘法需仲裁</tspan>
+    <tspan x="810.0" y="731.5999999999999">16 个逻辑 lane 按模式分 phase 执行</tspan>
+  </text>
+  <rect x="1110.0" y="490.0" width="500.0" height="320.0" rx="14" fill="#FEF3C7" stroke="#D97706" stroke-width="1.5" />
+  <text x="1360.0" y="592.4" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="1360.0" y="592.4">Complex Engine</tspan>
+    <tspan x="1360.0" y="627.1999999999999">可裁剪 stream / legacy 路径</tspan>
+    <tspan x="1360.0" y="662.0">两个逻辑 FMA 请求入口经仲裁</tspan>
+    <tspan x="1360.0" y="696.8">共享一个物理 mixed-FMA word 流水</tspan>
+    <tspan x="1360.0" y="731.5999999999999">普通 L1 与独立写回端口</tspan>
+  </text>
+  <rect x="130.0" y="1010.0" width="380.0" height="210.0" rx="14" fill="#F3E8FF" stroke="#7C3AED" stroke-width="1.5" />
+  <text x="320.0" y="1074.8" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="320.0" y="1074.8">MIF / AXI Master</tspan>
+    <tspan x="320.0" y="1109.6">DMA、程序和描述符共同使用</tspan>
+    <tspan x="320.0" y="1144.3999999999999">默认八项读环，单写上下文</tspan>
+    <tspan x="320.0" y="1179.2">读写可重叠，返回有归属</tspan>
+  </text>
+  <rect x="560.0" y="1010.0" width="1050.0" height="210.0" rx="14" fill="#F3E8FF" stroke="#7C3AED" stroke-width="1.5" />
+  <text x="1085.0" y="1074.8" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="1085.0" y="1074.8">L1BUF 与七客户端 fabric</tspan>
+    <tspan x="1085.0" y="1109.6">1 MiB，默认四个 64-bit 1R1W bank，可选 4 / 8 / 16 bank</tspan>
+    <tspan x="1085.0" y="1144.3999999999999">普通端口：Host / DMA / MV×2 / Complex / 本地复制写 / Complex 写</tspan>
+    <tspan x="1085.0" y="1179.2">Direct 面板：读载荷 2048 bit，写载荷 1024 bit，分阶段收集</tspan>
+  </text>
+  <text x="870.0" y="1312.5" fill="#475569" font-family="Noto Sans CJK SC" font-size="23.0" font-weight="600" text-anchor="middle">
+    <tspan x="870.0" y="1312.5">蓝：任务派发　绿：完成返回　紫：访存请求与响应；端口容量不等于单拍实际计算并行度。</tspan>
+  </text>
+</svg>

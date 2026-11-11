@@ -1,0 +1,81 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1370" width="1400" height="1370">
+  <rect x="0" y="0" width="1400.0" height="1370.0" fill="white" />
+  <defs>
+    <marker id="arrow2563EB" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#2563EB" />
+    </marker>
+    <marker id="arrow7C3AED" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#7C3AED" />
+    </marker>
+    <marker id="arrow059669" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#059669" />
+    </marker>
+    <marker id="arrowD97706" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#D97706" />
+    </marker>
+    <marker id="arrow0F766E" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#0F766E" />
+    </marker>
+  </defs>
+  <rect x="70.0" y="100.0" width="1260.0" height="1180.0" rx="14" fill="#F8FBFF" stroke="#2563EB" stroke-width="1.6" />
+  <text x="94.0" y="134.0" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="start">
+    <tspan x="94.0" y="134.0">NPU 命令与系统控制</tspan>
+  </text>
+  <path d="M540,255 L860,255" fill="none" stroke="#059669" stroke-width="3" marker-end="url(#arrow059669)" marker-start="url(#arrow059669)" />
+  <path d="M860,575 L540,575" fill="none" stroke="#2563EB" stroke-width="3" marker-end="url(#arrow2563EB)" />
+  <path d="M540,905 L860,905" fill="none" stroke="#7C3AED" stroke-width="3" marker-end="url(#arrow7C3AED)" marker-start="url(#arrow7C3AED)" />
+  <path d="M330,330 L330,500" fill="none" stroke="#2563EB" stroke-width="3" marker-end="url(#arrow2563EB)" />
+  <path d="M1070,330 L1070,500" fill="none" stroke="#059669" stroke-width="3" marker-end="url(#arrow059669)" />
+  <path d="M330,650 L330,820" fill="none" stroke="#2563EB" stroke-width="3" marker-end="url(#arrow2563EB)" />
+  <path d="M1070,650 L1070,820" fill="none" stroke="#7C3AED" stroke-width="3" marker-end="url(#arrow7C3AED)" marker-start="url(#arrow7C3AED)" />
+  <path d="M330,990 L330,1130" fill="none" stroke="#2563EB" stroke-width="3" marker-end="url(#arrow2563EB)" />
+  <path d="M1070,990 L1070,1130" fill="none" stroke="#7C3AED" stroke-width="3" marker-end="url(#arrow7C3AED)" marker-start="url(#arrow7C3AED)" />
+  <text x="52.0" y="55.0" fill="#17324D" font-family="Noto Sans CJK SC" font-size="30.0" font-weight="600" text-anchor="start">
+    <tspan x="52.0" y="55.0">命令入口、程序预取与描述符装载</tspan>
+  </text>
+  <rect x="120.0" y="180.0" width="420.0" height="150.0" rx="14" fill="#DBEAFE" stroke="#2563EB" stroke-width="1.5" />
+  <text x="330.0" y="249.6" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="330.0" y="249.6">AXI Slave Frontend</tspan>
+    <tspan x="330.0" y="284.4">主控命令 beat / CSR / 查询</tspan>
+  </text>
+  <rect x="860.0" y="180.0" width="420.0" height="150.0" rx="14" fill="#D1FAE5" stroke="#059669" stroke-width="1.5" />
+  <text x="1070.0" y="249.6" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="1070.0" y="249.6">LSC</tspan>
+    <tspan x="1070.0" y="284.4">保持型状态、程序配置与启动</tspan>
+  </text>
+  <rect x="120.0" y="500.0" width="420.0" height="150.0" rx="14" fill="#DBEAFE" stroke="#2563EB" stroke-width="1.5" />
+  <text x="330.0" y="552.2" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="330.0" y="552.2">CFE 命令前端</tspan>
+    <tspan x="330.0" y="587.0">AXI / Sequencer 共用入口</tspan>
+    <tspan x="330.0" y="621.8000000000001">两拍检查、ID 去重与 FIFO</tspan>
+  </text>
+  <rect x="860.0" y="500.0" width="420.0" height="150.0" rx="14" fill="#DBEAFE" stroke="#2563EB" stroke-width="1.5" />
+  <text x="1070.0" y="569.6" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="1070.0" y="569.6">Program Sequencer</tspan>
+    <tspan x="1070.0" y="604.4">八命令预取 / 两批缓冲 / 屏障</tspan>
+  </text>
+  <rect x="120.0" y="820.0" width="420.0" height="170.0" rx="14" fill="#F3E8FF" stroke="#7C3AED" stroke-width="1.5" />
+  <text x="330.0" y="899.6" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="330.0" y="899.6">外部描述符装载器</tspan>
+    <tspan x="330.0" y="934.4">缓存与续接模板；展开紧凑内联</tspan>
+  </text>
+  <rect x="860.0" y="820.0" width="420.0" height="170.0" rx="14" fill="#F3E8FF" stroke="#7C3AED" stroke-width="1.5" />
+  <text x="1070.0" y="899.6" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="1070.0" y="899.6">共享 MIF / AXI Master</tspan>
+    <tspan x="1070.0" y="934.4">程序、描述符与 DMA 请求仲裁</tspan>
+  </text>
+  <rect x="120.0" y="1130.0" width="420.0" height="120.0" rx="14" fill="#DBEAFE" stroke="#2563EB" stroke-width="1.5" />
+  <text x="330.0" y="1184.6" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="330.0" y="1184.6">TaskScheduler</tspan>
+    <tspan x="330.0" y="1219.3999999999999">接纳命令及记录，等待和派发</tspan>
+  </text>
+  <rect x="860.0" y="1130.0" width="420.0" height="120.0" rx="14" fill="#F3E8FF" stroke="#7C3AED" stroke-width="1.5" />
+  <text x="1070.0" y="1184.6" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="1070.0" y="1184.6">SoC 存储返回</tspan>
+    <tspan x="1070.0" y="1219.3999999999999">DDR 静态程序和只读描述符</tspan>
+  </text>
+  <text x="700.0" y="1332.0" fill="#475569" font-family="Noto Sans CJK SC" font-size="22.0" font-weight="600" text-anchor="middle">
+    <tspan x="700.0" y="1332.0">图示为配置、取指和描述符数据方向；任务完成、ACK 与引擎连接另见执行图及端口表。</tspan>
+  </text>
+</svg>

@@ -1,0 +1,7 @@
+condition,top1_matches,positions,top32_overlap,topk,gap_mae,source
+FP32 group,26,30,24.2,32,1.2730933,logs/evidence/llm_quantization/qwen25_v7_nihao_teacher30_comparison_20260911.json
+Token-A8 wide,25,30,23.6,32,,logs/LLM量化推理优化.md#10.13
+Session calib.,25,30,23.9333,32,,logs/LLM量化推理优化.md#10.15
+Clip α=0.98,25,30,24,32,,logs/LLM量化推理优化.md#10.17
+Strict ABI,25,30,23.9667,32,1.37540,logs/LLM量化推理优化.md#10.23
+Joint MLP,24,30,24.1333,32,1.31738,logs/LLM量化推理优化.md#10.23

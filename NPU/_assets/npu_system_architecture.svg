@@ -1,0 +1,93 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1360" width="1500" height="1360">
+  <rect x="0" y="0" width="1500.0" height="1360.0" fill="white" />
+  <defs>
+    <marker id="arrow2563EB" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#2563EB" />
+    </marker>
+    <marker id="arrow7C3AED" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#7C3AED" />
+    </marker>
+    <marker id="arrow059669" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#059669" />
+    </marker>
+    <marker id="arrowD97706" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#D97706" />
+    </marker>
+    <marker id="arrow0F766E" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#0F766E" />
+    </marker>
+  </defs>
+  <rect x="60.0" y="100.0" width="1380.0" height="440.0" rx="14" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.6" />
+  <text x="84.0" y="134.0" fill="#17324D" font-family="Noto Sans CJK SC" font-size="22.0" font-weight="600" text-anchor="start">
+    <tspan x="84.0" y="134.0">SoC 外部系统</tspan>
+  </text>
+  <rect x="390.0" y="600.0" width="1050.0" height="610.0" rx="14" fill="#F8FBFF" stroke="#2563EB" stroke-width="1.6" />
+  <text x="414.0" y="634.0" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="start">
+    <tspan x="414.0" y="634.0">NPU 子系统</tspan>
+  </text>
+  <path d="M750,300 L750,410" fill="none" stroke="#0F766E" stroke-width="3" marker-end="url(#arrow0F766E)" marker-start="url(#arrow0F766E)" />
+  <path d="M1210,300 L1210,410" fill="none" stroke="#7C3AED" stroke-width="3" marker-end="url(#arrow7C3AED)" marker-start="url(#arrow7C3AED)" />
+  <path d="M650,510 L650,680" fill="none" stroke="#2563EB" stroke-width="3" marker-end="url(#arrow2563EB)" marker-start="url(#arrow2563EB)" />
+  <path d="M650,810 L650,970" fill="none" stroke="#2563EB" stroke-width="3" marker-end="url(#arrow2563EB)" marker-start="url(#arrow2563EB)" />
+  <path d="M1200,510 L1200,680" fill="none" stroke="#7C3AED" stroke-width="3" marker-end="url(#arrow7C3AED)" marker-start="url(#arrow7C3AED)" />
+  <path d="M1200,810 L1200,970" fill="none" stroke="#7C3AED" stroke-width="3" marker-end="url(#arrow7C3AED)" marker-start="url(#arrow7C3AED)" />
+  <path d="M450,1020 L220,1020 L220,300" fill="none" stroke="#059669" stroke-width="3" marker-end="url(#arrow059669)" />
+  <path d="M320,1135 L450,1135" fill="none" stroke="#D97706" stroke-width="3" marker-end="url(#arrowD97706)" />
+  <text x="52.0" y="55.0" fill="#17324D" font-family="Noto Sans CJK SC" font-size="30.0" font-weight="600" text-anchor="start">
+    <tspan x="52.0" y="55.0">NPU 与系统控制、DDR 和中断的连接</tspan>
+  </text>
+  <rect x="85.0" y="170.0" width="270.0" height="130.0" rx="14" fill="#D1FAE5" stroke="#059669" stroke-width="1.5" />
+  <text x="220.0" y="212.2" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="220.0" y="212.2">PLIC / CPU 中断处理</tspan>
+    <tspan x="220.0" y="247.0">读取 NPU 状态，软件</tspan>
+    <tspan x="220.0" y="281.79999999999995">清除保持位</tspan>
+  </text>
+  <rect x="600.0" y="170.0" width="300.0" height="130.0" rx="14" fill="#CCFBF1" stroke="#0F766E" stroke-width="1.5" />
+  <text x="750.0" y="229.6" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="750.0" y="229.6">主控 CPU</tspan>
+    <tspan x="750.0" y="264.4">配置、启动、采样和终端</tspan>
+  </text>
+  <rect x="1050.0" y="170.0" width="320.0" height="130.0" rx="14" fill="#F3E8FF" stroke="#7C3AED" stroke-width="1.5" />
+  <text x="1210.0" y="212.2" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="1210.0" y="212.2">系统存储 / DDR</tspan>
+    <tspan x="1210.0" y="247.0">静态程序、描述符、权重、</tspan>
+    <tspan x="1210.0" y="281.79999999999995">KV</tspan>
+  </text>
+  <rect x="450.0" y="410.0" width="950.0" height="100.0" rx="14" fill="#CCFBF1" stroke="#0F766E" stroke-width="1.5" />
+  <text x="925.0" y="454.6" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="925.0" y="454.6">SoC AXI Fabric</tspan>
+    <tspan x="925.0" y="489.40000000000003">CPU 访问 NPU Slave；NPU Master 访问系统存储</tspan>
+  </text>
+  <rect x="450.0" y="680.0" width="400.0" height="130.0" rx="14" fill="#DBEAFE" stroke="#2563EB" stroke-width="1.5" />
+  <text x="650.0" y="739.6" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="650.0" y="739.6">64-bit AXI Slave</tspan>
+    <tspan x="650.0" y="774.4">CMD、CSR、控制和 Host L1 窗口</tspan>
+  </text>
+  <rect x="1000.0" y="680.0" width="400.0" height="130.0" rx="14" fill="#F3E8FF" stroke="#7C3AED" stroke-width="1.5" />
+  <text x="1200.0" y="739.6" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="1200.0" y="739.6">64-bit AXI Master</tspan>
+    <tspan x="1200.0" y="774.4">DMA、程序取指、描述符装载</tspan>
+  </text>
+  <rect x="450.0" y="970.0" width="950.0" height="200.0" rx="14" fill="#DBEAFE" stroke="#2563EB" stroke-width="1.5" />
+  <text x="925.0" y="1029.8" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="925.0" y="1029.8">NPU Core</tspan>
+    <tspan x="925.0" y="1064.6">CFE、取指与描述符、调度和执行集群</tspan>
+    <tspan x="925.0" y="1099.3999999999999">四物理 PE；共享 Complex FMA；1 MiB L1</tspan>
+    <tspan x="925.0" y="1134.2">当前默认 4 bank；各配置能力分别检查</tspan>
+  </text>
+  <rect x="60.0" y="1080.0" width="260.0" height="110.0" rx="14" fill="#FEF3C7" stroke="#D97706" stroke-width="1.5" />
+  <text x="190.0" y="1112.2" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="190.0" y="1112.2">板级 Ethernet RX</tspan>
+    <tspan x="190.0" y="1147.0">解析头，提供 DMA 旁</tspan>
+    <tspan x="190.0" y="1181.8">带命令</tspan>
+  </text>
+  <text x="72.0" y="720.05" fill="#059669" font-family="Noto Sans CJK SC" font-size="21.0" font-weight="600" text-anchor="start">
+    <tspan x="72.0" y="720.05">IRQ 电平</tspan>
+    <tspan x="72.0" y="750.5">SoC 合并</tspan>
+    <tspan x="72.0" y="780.9499999999999">送 PLIC</tspan>
+  </text>
+  <text x="750.0" y="1304.0" fill="#475569" font-family="Noto Sans CJK SC" font-size="23.0" font-weight="600" text-anchor="middle">
+    <tspan x="750.0" y="1304.0">蓝：命令与配置　紫：系统存储　绿：保持型中断　橙：RX 数据与旁带控制</tspan>
+  </text>
+</svg>

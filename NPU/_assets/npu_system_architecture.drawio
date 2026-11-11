@@ -1,0 +1,78 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="Electron" agent="NPU design specification" version="31.3.2" compressed="false">
+  <diagram id="c3560969e553" name="Page-1">
+    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1500" pageHeight="1360" background="#FFFFFF" math="1" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="v2" value="&lt;b&gt;NPU 与系统控制、DDR 和中断的连接&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=0;fontFamily=Noto Sans CJK SC;fontSize=30;fontColor=#17324D;align=left;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;fontColor=#17324D;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="14" width="1420" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="v3" value="&lt;b&gt;SoC 外部系统&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#CBD5E1;strokeWidth=1.6;fontFamily=Noto Sans CJK SC;fontSize=22;fontColor=#17324D;align=left;fontStyle=1;verticalAlign=top;spacing=8;arcSize=12;arcSize=4;spacingTop=12;spacingLeft=24;container=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="60" y="100" width="1380" height="440" as="geometry" />
+        </mxCell>
+        <mxCell id="v4" value="&lt;b&gt;NPU 子系统&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FBFF;strokeColor=#2563EB;strokeWidth=1.6;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=left;fontStyle=1;verticalAlign=top;spacing=8;arcSize=12;arcSize=4;spacingTop=12;spacingLeft=24;container=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="390" y="600" width="1050" height="610" as="geometry" />
+        </mxCell>
+        <mxCell id="v5" value="&lt;b&gt;PLIC / CPU 中断处理&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;读取 NPU 状态，软件清除保持位&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D1FAE5;strokeColor=#059669;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="85" y="170" width="270" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="v6" value="&lt;b&gt;主控 CPU&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;配置、启动、采样和终端&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CCFBF1;strokeColor=#0F766E;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="600" y="170" width="300" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="v7" value="&lt;b&gt;系统存储 / DDR&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;静态程序、描述符、权重、KV&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E8FF;strokeColor=#7C3AED;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="170" width="320" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="v8" value="&lt;b&gt;SoC AXI Fabric&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;CPU 访问 NPU Slave；NPU Master 访问系统存储&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CCFBF1;strokeColor=#0F766E;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="450" y="410" width="950" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="v9" value="&lt;b&gt;64-bit AXI Slave&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;CMD、CSR、控制和 Host L1 窗口&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="450" y="680" width="400" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="v10" value="&lt;b&gt;64-bit AXI Master&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;DMA、程序取指、描述符装载&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E8FF;strokeColor=#7C3AED;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="680" width="400" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="v11" value="&lt;b&gt;NPU Core&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;CFE、取指与描述符、调度和执行集群&lt;br&gt;四物理 PE；共享 Complex FMA；1 MiB L1&lt;br&gt;当前默认 4 bank；各配置能力分别检查&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="450" y="970" width="950" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="v12" value="&lt;b&gt;板级 Ethernet RX&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;解析头，提供 DMA 旁带命令&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="60" y="1080" width="260" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#0F766E;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.3157894736842105;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="v6" target="v8">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#7C3AED;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.8;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="v7" target="v8">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="e15" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#2563EB;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=0.21052631578947367;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="v8" target="v9">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="e16" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#2563EB;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.21052631578947367;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="v9" target="v11">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="e17" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#7C3AED;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=0.7894736842105263;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="v8" target="v10">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="e18" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#7C3AED;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.7894736842105263;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="v10" target="v11">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="e19" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=18;html=1;strokeColor=#059669;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;exitX=0;exitY=0.25;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="v11" target="v5">
+          <mxGeometry relative="1" x="0" y="0" as="geometry">
+            <Array as="points">
+              <mxPoint x="220" y="1020" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="v20" value="&lt;b&gt;IRQ 电平&#10;SoC 合并&#10;送 PLIC&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=0;fontFamily=Noto Sans CJK SC;fontSize=21;fontColor=#17324D;align=left;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;fontColor=#059669;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="60" y="690" width="140" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="e21" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#D97706;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.825;entryDx=0;entryDy=0;" edge="1" parent="1" source="v12" target="v11">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="v22" value="&lt;b&gt;蓝：命令与配置　紫：系统存储　绿：保持型中断　橙：RX 数据与旁带控制&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=0;fontFamily=Noto Sans CJK SC;fontSize=23;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;fontColor=#475569;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="70" y="1270" width="1360" height="45" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

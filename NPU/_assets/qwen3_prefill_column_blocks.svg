@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="16" markerHeight="12" refX="16" refY="6" orient="auto"><path d="M0,0 L16,6 L0,12 Z" fill="#38566d"/></marker>
+    <style>
+      text {font-family:'Noto Sans CJK SC',sans-serif;fill:#203849;text-anchor:middle;font-size:21px}
+      .title {font-size:26px;font-weight:700}
+      .box {stroke:#507b99;stroke-width:2;fill:#edf5fb;rx:12}
+      .host {fill:#eef6ee;stroke:#60916a}
+      .wire {fill:none;stroke:#38566d;stroke-width:3;marker-end:url(#arrow)}
+      .small {font-size:18px}
+    </style>
+  </defs>
+  <rect width="1200" height="630" fill="white"/>
+  <text x="600" y="36" class="title">Qwen 静态模板与矩阵执行流程</text>
+  <rect x="330" y="60" width="540" height="76" class="box host"/>
+  <text x="600" y="92">部署包：共享 INT8 Matrix-B 权重与 scale</text>
+  <text x="600" y="120" class="small">离线编译固定形状模板，运行时按有效行数选择</text>
+  <path d="M440,136 V170 H275 V205" class="wire"/>
+  <path d="M760,136 V170 H925 V205" class="wire"/>
+  <rect x="60" y="205" width="430" height="104" class="box host"/>
+  <text x="275" y="238" class="title">Prefill</text>
+  <text x="275" y="267">16 / 32 行模板，每块最多 64 列</text>
+  <text x="275" y="294" class="small">准备当前列块的 B 常量与 A/C 转换记录</text>
+  <rect x="710" y="205" width="430" height="104" class="box host"/>
+  <text x="925" y="238" class="title">Decode</text>
+  <text x="925" y="267">M = 1，完整输出列模板</text>
+  <text x="925" y="294" class="small">直接使用 Scalar Matrix-B 权重布局</text>
+  <path d="M275,309 V358" class="wire"/>
+  <path d="M925,309 V358" class="wire"/>
+  <rect x="60" y="358" width="430" height="100" class="box"/>
+  <text x="275" y="391">DMA → Direct Matrix Array → DMA</text>
+  <text x="275" y="420">每条命令计算一个 16×16 输出块</text>
+  <text x="275" y="446" class="small">列尾块或存储条件不满足时使用 Scalar</text>
+  <rect x="710" y="358" width="430" height="100" class="box"/>
+  <text x="925" y="391">DMA → Scalar Matrix → DMA</text>
+  <text x="925" y="420">使用独立 Scalar Matrix MAC</text>
+  <text x="925" y="446" class="small">单行不填充到 Direct 的 16 行</text>
+  <path d="M275,458 V498 H440 V531" class="wire"/>
+  <path d="M925,458 V498 H760 V531" class="wire"/>
+  <rect x="330" y="531" width="540" height="76" class="box host"/>
+  <text x="600" y="564">INT32 结果按原输出通道编号恢复</text>
+  <text x="600" y="592" class="small">乘以该行激活 scale 与该输出通道权重 scale</text>
+</svg>

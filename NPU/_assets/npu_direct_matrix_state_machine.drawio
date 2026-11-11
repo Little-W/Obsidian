@@ -1,0 +1,188 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="Electron" compressed="false">
+  <diagram name="Page-1" id="npu_direct_matrix_state_machine">
+    <mxGraphModel page="1" pageWidth="1350" pageHeight="1100" background="#FFFFFF">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Direct Matrix 控制状态机：面板间隔可等待" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;strokeWidth=2;strokeColor=#64748B;fillColor=#EFF6FF;fontColor=#17324D;fontFamily=Noto Sans CJK SC;fontSize=30;fontStyle=1;spacing=12;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="70" y="15" width="1190" height="60" />
+        </mxCell>
+        <mxCell id="idle" value="IDLE&lt;br&gt;等待任务" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;strokeWidth=2;strokeColor=#64748B;fillColor=#EFF6FF;fontColor=#17324D;fontFamily=Noto Sans CJK SC;fontSize=24;fontStyle=1;spacing=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="80" y="120" width="280" height="100" />
+        </mxCell>
+        <mxCell id="setup" value="TILE_SETUP&lt;br&gt;清累加器 / 首次读请求" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;strokeWidth=2;strokeColor=#64748B;fillColor=#EFF6FF;fontColor=#17324D;fontFamily=Noto Sans CJK SC;fontSize=24;fontStyle=1;spacing=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="500" y="120" width="280" height="100" />
+        </mxCell>
+        <mxCell id="accum" value="ACCUM_LOAD&lt;br&gt;装入八个 C 列对" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;strokeWidth=2;strokeColor=#64748B;fillColor=#EFF6FF;fontColor=#17324D;fontFamily=Noto Sans CJK SC;fontSize=24;fontStyle=1;spacing=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="980" y="120" width="280" height="100" />
+        </mxCell>
+        <mxCell id="prime" value="PANEL_PRIME&lt;br&gt;发出首个 A/B 请求" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;strokeWidth=2;strokeColor=#64748B;fillColor=#EFF6FF;fontColor=#17324D;fontFamily=Noto Sans CJK SC;fontSize=24;fontStyle=1;spacing=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="980" y="340" width="280" height="100" />
+        </mxCell>
+        <mxCell id="wait" value="PANEL_WAIT&lt;br&gt;等待一组完整 A/B" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;strokeWidth=2;strokeColor=#64748B;fillColor=#FEF3C7;fontColor=#17324D;fontFamily=Noto Sans CJK SC;fontSize=24;fontStyle=1;spacing=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="500" y="340" width="280" height="100" />
+        </mxCell>
+        <mxCell id="compute" value="COMPUTE&lt;br&gt;计算已保存的一个 K 组" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;strokeWidth=2;strokeColor=#64748B;fillColor=#EFF6FF;fontColor=#17324D;fontFamily=Noto Sans CJK SC;fontSize=24;fontStyle=1;spacing=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="500" y="585" width="280" height="100" />
+        </mxCell>
+        <mxCell id="drain" value="COMPUTE_DRAIN&lt;br&gt;等待乘积累加完成" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;strokeWidth=2;strokeColor=#64748B;fillColor=#FEF3C7;fontColor=#17324D;fontFamily=Noto Sans CJK SC;fontSize=24;fontStyle=1;spacing=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="980" y="585" width="280" height="100" />
+        </mxCell>
+        <mxCell id="out" value="OUT_PREP&lt;br&gt;形成首个输出列对" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;strokeWidth=2;strokeColor=#64748B;fillColor=#EFF6FF;fontColor=#17324D;fontFamily=Noto Sans CJK SC;fontSize=24;fontStyle=1;spacing=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="980" y="840" width="280" height="100" />
+        </mxCell>
+        <mxCell id="store" value="OUT_STORE&lt;br&gt;按握手写出八个列对" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;strokeWidth=2;strokeColor=#64748B;fillColor=#EFF6FF;fontColor=#17324D;fontFamily=Noto Sans CJK SC;fontSize=24;fontStyle=1;spacing=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="500" y="840" width="280" height="100" />
+        </mxCell>
+        <mxCell id="owait" value="OUT_WAIT&lt;br&gt;等待最后写响应" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;strokeWidth=2;strokeColor=#64748B;fillColor=#FEF3C7;fontColor=#17324D;fontFamily=Noto Sans CJK SC;fontSize=24;fontStyle=1;spacing=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="80" y="840" width="280" height="100" />
+        </mxCell>
+        <mxCell id="done" value="DONE&lt;br&gt;保持完成消息" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;strokeWidth=2;strokeColor=#64748B;fillColor=#EFF6FF;fontColor=#17324D;fontFamily=Noto Sans CJK SC;fontSize=24;fontStyle=1;spacing=12;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="80" y="585" width="280" height="100" />
+        </mxCell>
+        <mxCell id="e0" style="edgeStyle=none;rounded=0;html=1;strokeColor=#2563EB;strokeWidth=3;endArrow=block;endSize=14;endFill=1;" edge="1" parent="1">
+          <mxGeometry as="geometry" relative="1">
+            <mxPoint as="sourcePoint" x="360" y="170" />
+            <mxPoint as="targetPoint" x="500" y="170" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e1" style="edgeStyle=none;rounded=0;html=1;strokeColor=#2563EB;strokeWidth=3;endArrow=block;endSize=14;endFill=1;" edge="1" parent="1">
+          <mxGeometry as="geometry" relative="1">
+            <mxPoint as="sourcePoint" x="780" y="170" />
+            <mxPoint as="targetPoint" x="980" y="170" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e2" style="edgeStyle=none;rounded=0;html=1;strokeColor=#2563EB;strokeWidth=3;endArrow=block;endSize=14;endFill=1;" edge="1" parent="1">
+          <mxGeometry as="geometry" relative="1">
+            <mxPoint as="sourcePoint" x="1120" y="220" />
+            <mxPoint as="targetPoint" x="1120" y="340" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e3" style="edgeStyle=none;rounded=0;html=1;strokeColor=#2563EB;strokeWidth=3;endArrow=block;endSize=14;endFill=1;" edge="1" parent="1">
+          <mxGeometry as="geometry" relative="1">
+            <mxPoint as="sourcePoint" x="980" y="390" />
+            <mxPoint as="targetPoint" x="780" y="390" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e4" style="edgeStyle=none;rounded=0;html=1;strokeColor=#2563EB;strokeWidth=3;endArrow=block;endSize=14;endFill=1;" edge="1" parent="1">
+          <mxGeometry as="geometry" relative="1">
+            <mxPoint as="sourcePoint" x="640" y="220" />
+            <mxPoint as="targetPoint" x="640" y="340" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e5" style="edgeStyle=none;rounded=0;html=1;strokeColor=#2563EB;strokeWidth=3;endArrow=block;endSize=14;endFill=1;" edge="1" parent="1">
+          <mxGeometry as="geometry" relative="1">
+            <mxPoint as="sourcePoint" x="640" y="440" />
+            <mxPoint as="targetPoint" x="640" y="585" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e6" style="edgeStyle=none;rounded=0;html=1;strokeColor=#2563EB;strokeWidth=3;endArrow=block;endSize=14;endFill=1;" edge="1" parent="1">
+          <mxGeometry as="geometry" relative="1">
+            <mxPoint as="sourcePoint" x="780" y="635" />
+            <mxPoint as="targetPoint" x="980" y="635" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e7" style="edgeStyle=none;rounded=0;html=1;strokeColor=#2563EB;strokeWidth=3;endArrow=block;endSize=14;endFill=1;" edge="1" parent="1">
+          <mxGeometry as="geometry" relative="1">
+            <mxPoint as="sourcePoint" x="1120" y="685" />
+            <mxPoint as="targetPoint" x="1120" y="840" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e8" style="edgeStyle=none;rounded=0;html=1;strokeColor=#2563EB;strokeWidth=3;endArrow=block;endSize=14;endFill=1;" edge="1" parent="1">
+          <mxGeometry as="geometry" relative="1">
+            <mxPoint as="sourcePoint" x="980" y="890" />
+            <mxPoint as="targetPoint" x="780" y="890" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e9" style="edgeStyle=none;rounded=0;html=1;strokeColor=#2563EB;strokeWidth=3;endArrow=block;endSize=14;endFill=1;" edge="1" parent="1">
+          <mxGeometry as="geometry" relative="1">
+            <mxPoint as="sourcePoint" x="500" y="890" />
+            <mxPoint as="targetPoint" x="360" y="890" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e10" style="edgeStyle=none;rounded=0;html=1;strokeColor=#2563EB;strokeWidth=3;endArrow=block;endSize=14;endFill=1;" edge="1" parent="1">
+          <mxGeometry as="geometry" relative="1">
+            <mxPoint as="sourcePoint" x="220" y="840" />
+            <mxPoint as="targetPoint" x="220" y="685" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e11" style="edgeStyle=none;rounded=0;html=1;strokeColor=#2563EB;strokeWidth=3;endArrow=block;endSize=14;endFill=1;" edge="1" parent="1">
+          <mxGeometry as="geometry" relative="1">
+            <mxPoint as="sourcePoint" x="80" y="635" />
+            <mxPoint as="targetPoint" x="80" y="170" />
+            <Array as="points">
+              <mxPoint x="30" y="635" />
+              <mxPoint x="30" y="170" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e12" style="edgeStyle=none;rounded=0;html=1;strokeColor=#2563EB;strokeWidth=3;endArrow=block;endSize=14;endFill=1;" edge="1" parent="1">
+          <mxGeometry as="geometry" relative="1">
+            <mxPoint as="sourcePoint" x="500" y="625" />
+            <mxPoint as="targetPoint" x="500" y="390" />
+            <Array as="points">
+              <mxPoint x="430" y="625" />
+              <mxPoint x="430" y="390" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e13" style="edgeStyle=none;rounded=0;html=1;strokeColor=#2563EB;strokeWidth=3;endArrow=block;endSize=14;endFill=1;" edge="1" parent="1">
+          <mxGeometry as="geometry" relative="1">
+            <mxPoint as="sourcePoint" x="560" y="685" />
+            <mxPoint as="targetPoint" x="720" y="685" />
+            <Array as="points">
+              <mxPoint x="560" y="750" />
+              <mxPoint x="720" y="750" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="label0" value="任务握手" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;strokeWidth=2;strokeColor=#64748B;fillColor=#EFF6FF;fontColor=#17324D;fontFamily=Noto Sans CJK SC;fontSize=20;fontStyle=1;spacing=12;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="360" y="115" width="140" height="45" />
+        </mxCell>
+        <mxCell id="label1" value="续算：首个 C 已接受" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;strokeWidth=2;strokeColor=#64748B;fillColor=#EFF6FF;fontColor=#17324D;fontFamily=Noto Sans CJK SC;fontSize=20;fontStyle=1;spacing=12;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="785" y="90" width="190" height="70" />
+        </mxCell>
+        <mxCell id="label2" value="八个 C 已返回" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;strokeWidth=2;strokeColor=#64748B;fillColor=#EFF6FF;fontColor=#17324D;fontFamily=Noto Sans CJK SC;fontSize=20;fontStyle=1;spacing=12;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="1140" y="245" width="180" height="60" />
+        </mxCell>
+        <mxCell id="label3" value="首个 A/B 已接受" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;strokeWidth=2;strokeColor=#64748B;fillColor=#EFF6FF;fontColor=#17324D;fontFamily=Noto Sans CJK SC;fontSize=20;fontStyle=1;spacing=12;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="785" y="315" width="190" height="60" />
+        </mxCell>
+        <mxCell id="label4" value="首次计算&lt;br&gt;首个 A/B 已接受" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;strokeWidth=2;strokeColor=#64748B;fillColor=#EFF6FF;fontColor=#17324D;fontFamily=Noto Sans CJK SC;fontSize=20;fontStyle=1;spacing=12;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="665" y="240" width="245" height="70" />
+        </mxCell>
+        <mxCell id="label5" value="面板响应成功" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;strokeWidth=2;strokeColor=#64748B;fillColor=#EFF6FF;fontColor=#17324D;fontFamily=Noto Sans CJK SC;fontSize=20;fontStyle=1;spacing=12;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="665" y="485" width="190" height="50" />
+        </mxCell>
+        <mxCell id="label6" value="最后 K 组" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;strokeWidth=2;strokeColor=#64748B;fillColor=#EFF6FF;fontColor=#17324D;fontFamily=Noto Sans CJK SC;fontSize=20;fontStyle=1;spacing=12;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="790" y="580" width="180" height="45" />
+        </mxCell>
+        <mxCell id="label7" value="流水已排空" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;strokeWidth=2;strokeColor=#64748B;fillColor=#EFF6FF;fontColor=#17324D;fontFamily=Noto Sans CJK SC;fontSize=20;fontStyle=1;spacing=12;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="1140" y="740" width="180" height="50" />
+        </mxCell>
+        <mxCell id="label8" value="输出已准备" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;strokeWidth=2;strokeColor=#64748B;fillColor=#EFF6FF;fontColor=#17324D;fontFamily=Noto Sans CJK SC;fontSize=20;fontStyle=1;spacing=12;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="790" y="835" width="180" height="45" />
+        </mxCell>
+        <mxCell id="label9" value="最后列对&lt;br&gt;请求已接受" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;strokeWidth=2;strokeColor=#64748B;fillColor=#EFF6FF;fontColor=#17324D;fontFamily=Noto Sans CJK SC;fontSize=20;fontStyle=1;spacing=12;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="365" y="800" width="130" height="80" />
+        </mxCell>
+        <mxCell id="label10" value="最后写响应成功" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;strokeWidth=2;strokeColor=#64748B;fillColor=#EFF6FF;fontColor=#17324D;fontFamily=Noto Sans CJK SC;fontSize=20;fontStyle=1;spacing=12;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="240" y="730" width="230" height="50" />
+        </mxCell>
+        <mxCell id="label11" value="完成握手" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;strokeWidth=2;strokeColor=#64748B;fillColor=#EFF6FF;fontColor=#17324D;fontFamily=Noto Sans CJK SC;fontSize=20;fontStyle=1;spacing=12;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="60" y="400" width="210" height="45" />
+        </mxCell>
+        <mxCell id="label12" value="尚有 K 组&lt;br&gt;下一面板未到" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;strokeWidth=2;strokeColor=#64748B;fillColor=#EFF6FF;fontColor=#17324D;fontFamily=Noto Sans CJK SC;fontSize=20;fontStyle=1;spacing=12;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="225" y="475" width="190" height="70" />
+        </mxCell>
+        <mxCell id="label13" value="尚有 K 组且下一面板已到" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;strokeWidth=2;strokeColor=#64748B;fillColor=#EFF6FF;fontColor=#17324D;fontFamily=Noto Sans CJK SC;fontSize=20;fontStyle=1;spacing=12;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="480" y="760" width="345" height="55" />
+        </mxCell>
+        <mxCell id="label_note" value="未满足转移条件时保持；面板访问错误转 DONE，并报告错误状态。" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;strokeWidth=2;strokeColor=#64748B;fillColor=#EFF6FF;fontColor=#17324D;fontFamily=Noto Sans CJK SC;fontSize=20;fontStyle=1;spacing=12;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="80" y="1010" width="1180" height="55" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

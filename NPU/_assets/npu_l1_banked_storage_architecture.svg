@@ -1,0 +1,93 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1700 1370" width="1700" height="1370">
+  <rect x="0" y="0" width="1700.0" height="1370.0" fill="white" />
+  <defs>
+    <marker id="arrow2563EB" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#2563EB" />
+    </marker>
+    <marker id="arrow7C3AED" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#7C3AED" />
+    </marker>
+    <marker id="arrow059669" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#059669" />
+    </marker>
+    <marker id="arrowD97706" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#D97706" />
+    </marker>
+    <marker id="arrow0F766E" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#0F766E" />
+    </marker>
+  </defs>
+  <rect x="60.0" y="100.0" width="1580.0" height="290.0" rx="14" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.6" />
+  <text x="84.0" y="134.0" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="start">
+    <tspan x="84.0" y="134.0">执行集群访问接口</tspan>
+  </text>
+  <path d="M450,345 L450,510" fill="none" stroke="#2563EB" stroke-width="3" marker-end="url(#arrow2563EB)" marker-start="url(#arrow2563EB)" />
+  <path d="M450,680 L450,830" fill="none" stroke="#7C3AED" stroke-width="3" marker-end="url(#arrow7C3AED)" marker-start="url(#arrow7C3AED)" />
+  <path d="M1250,345 L1250,510" fill="none" stroke="#D97706" stroke-width="3" marker-end="url(#arrowD97706)" marker-start="url(#arrowD97706)" />
+  <path d="M1250,680 L1250,830" fill="none" stroke="#7C3AED" stroke-width="3" marker-end="url(#arrow7C3AED)" marker-start="url(#arrow7C3AED)" />
+  <path d="M265,1000 L265,1130" fill="none" stroke="#7C3AED" stroke-width="3" marker-end="url(#arrow7C3AED)" marker-start="url(#arrow7C3AED)" />
+  <path d="M655,1000 L655,1130" fill="none" stroke="#7C3AED" stroke-width="3" marker-end="url(#arrow7C3AED)" marker-start="url(#arrow7C3AED)" />
+  <path d="M1045,1000 L1045,1130" fill="none" stroke="#7C3AED" stroke-width="3" marker-end="url(#arrow7C3AED)" marker-start="url(#arrow7C3AED)" />
+  <path d="M1435,1000 L1435,1130" fill="none" stroke="#7C3AED" stroke-width="3" marker-end="url(#arrow7C3AED)" marker-start="url(#arrow7C3AED)" />
+  <text x="52.0" y="55.0" fill="#17324D" font-family="Noto Sans CJK SC" font-size="30.0" font-weight="600" text-anchor="start">
+    <tspan x="52.0" y="55.0">L1BUF：七路普通客户端、分段面板与 1R1W bank</tspan>
+  </text>
+  <rect x="100.0" y="175.0" width="700.0" height="170.0" rx="14" fill="#DBEAFE" stroke="#2563EB" stroke-width="1.5" />
+  <text x="450.0" y="237.2" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="450.0" y="237.2">七路普通客户端</tspan>
+    <tspan x="450.0" y="272.0">Host、DMA、Matrix/Vector ×2、Complex</tspan>
+    <tspan x="450.0" y="306.79999999999995">DMA 复制写、Complex 独立写</tspan>
+  </text>
+  <rect x="900.0" y="175.0" width="700.0" height="170.0" rx="14" fill="#FEF3C7" stroke="#D97706" stroke-width="1.5" />
+  <text x="1250.0" y="237.2" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="1250.0" y="237.2">Direct 面板接口</tspan>
+    <tspan x="1250.0" y="272.0">A/B 读，C 读写，B-only 与紧凑 A</tspan>
+    <tspan x="1250.0" y="306.79999999999995">读结果 32×64 bit；写载荷 16×64 bit</tspan>
+  </text>
+  <rect x="100.0" y="510.0" width="700.0" height="170.0" rx="14" fill="#DBEAFE" stroke="#2563EB" stroke-width="1.5" />
+  <text x="450.0" y="572.2" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="450.0" y="572.2">各客户端独立顺序队列</tspan>
+    <tspan x="450.0" y="607.0">2 项待执行请求；3 项响应信用</tspan>
+    <tspan x="450.0" y="641.8000000000001">同步返回级、短响应存储和写提交指示</tspan>
+  </text>
+  <rect x="900.0" y="510.0" width="700.0" height="170.0" rx="14" fill="#FEF3C7" stroke="#D97706" stroke-width="1.5" />
+  <text x="1250.0" y="572.2" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="1250.0" y="572.2">面板分段与收集流水</tspan>
+    <tspan x="1250.0" y="607.0">先检查完整范围，再逐 bank 段访问</tspan>
+    <tspan x="1250.0" y="641.8000000000001">四 bank：独立最终响应寄存器</tspan>
+  </text>
+  <rect x="100.0" y="830.0" width="1500.0" height="170.0" rx="14" fill="#F3E8FF" stroke="#7C3AED" stroke-width="1.5" />
+  <text x="850.0" y="892.2" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="850.0" y="892.2">逐 bank 读写仲裁与冲突处理</tspan>
+    <tspan x="850.0" y="927.0">普通读写分别轮转；相同行读写串行</tspan>
+    <tspan x="850.0" y="961.8000000000001">默认四 bank：面板段保留参与 bank 的读写两方向</tspan>
+  </text>
+  <rect x="100.0" y="1130.0" width="330.0" height="160.0" rx="14" fill="#CCFBF1" stroke="#0F766E" stroke-width="1.5" />
+  <text x="265.0" y="1187.2" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="265.0" y="1187.2">Bank 0</tspan>
+    <tspan x="265.0" y="1222.0">64-bit 1R1W</tspan>
+    <tspan x="265.0" y="1256.8">32768 word；256 KiB</tspan>
+  </text>
+  <rect x="490.0" y="1130.0" width="330.0" height="160.0" rx="14" fill="#CCFBF1" stroke="#0F766E" stroke-width="1.5" />
+  <text x="655.0" y="1187.2" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="655.0" y="1187.2">Bank 1</tspan>
+    <tspan x="655.0" y="1222.0">64-bit 1R1W</tspan>
+    <tspan x="655.0" y="1256.8">32768 word；256 KiB</tspan>
+  </text>
+  <rect x="880.0" y="1130.0" width="330.0" height="160.0" rx="14" fill="#CCFBF1" stroke="#0F766E" stroke-width="1.5" />
+  <text x="1045.0" y="1187.2" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="1045.0" y="1187.2">Bank 2</tspan>
+    <tspan x="1045.0" y="1222.0">64-bit 1R1W</tspan>
+    <tspan x="1045.0" y="1256.8">32768 word；256 KiB</tspan>
+  </text>
+  <rect x="1270.0" y="1130.0" width="330.0" height="160.0" rx="14" fill="#CCFBF1" stroke="#0F766E" stroke-width="1.5" />
+  <text x="1435.0" y="1187.2" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="1435.0" y="1187.2">Bank 3</tspan>
+    <tspan x="1435.0" y="1222.0">64-bit 1R1W</tspan>
+    <tspan x="1435.0" y="1256.8">32768 word；256 KiB</tspan>
+  </text>
+  <text x="850.0" y="1344.0" fill="#475569" font-family="Noto Sans CJK SC" font-size="23.0" font-weight="600" text-anchor="middle">
+    <tspan x="850.0" y="1344.0">默认总容量 1 MiB；支持 4 / 8 / 16 bank。宽面板是分段结果，不增加物理 RAM 端口。</tspan>
+  </text>
+</svg>

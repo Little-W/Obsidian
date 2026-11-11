@@ -1,0 +1,115 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="Electron" agent="NPU design specification" version="31.3.2" compressed="false">
+  <diagram id="7860485a809e" name="Page-1">
+    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="620" math="1" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="v2" value="&lt;b&gt;任务表项生命周期&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=0;fontFamily=Noto Sans CJK SC;fontSize=30;fontColor=#17324D;align=left;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;fontColor=#17324D;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="14" width="1520" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="v3" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#17324D;strokeColor=#17324D;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=15;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;ellipse;" vertex="1" parent="1">
+          <mxGeometry x="45" y="190" width="28" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="v4" value="&lt;b&gt;FREE&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;表项可分配&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=22;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;arcSize=18;spacing=5;" vertex="1" parent="1">
+          <mxGeometry x="120" y="160" width="190" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="v5" value="&lt;b&gt;WAIT_EVENT&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;等待事件与前序任务&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=22;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;arcSize=18;spacing=5;" vertex="1" parent="1">
+          <mxGeometry x="390" y="160" width="220" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="v6" value="&lt;b&gt;READY&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;满足发射条件&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=22;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;arcSize=18;spacing=5;" vertex="1" parent="1">
+          <mxGeometry x="700" y="160" width="190" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="v7" value="&lt;b&gt;RUNNING&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;执行单元已接收&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=22;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;arcSize=18;spacing=5;" vertex="1" parent="1">
+          <mxGeometry x="980" y="160" width="200" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="v8" value="&lt;b&gt;SUCCESS&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;正确完成&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D1FAE5;strokeColor=#059669;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=22;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;arcSize=18;spacing=5;" vertex="1" parent="1">
+          <mxGeometry x="1310" y="95" width="190" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="v9" value="&lt;b&gt;ERROR&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;检查或执行失败&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#DC2626;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=22;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;arcSize=18;spacing=5;" vertex="1" parent="1">
+          <mxGeometry x="1310" y="285" width="190" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="s10" style="edgeStyle=none;rounded=1;curved=1;html=1;strokeColor=#2563EB;strokeWidth=2.5;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="73" y="204.0" as="sourcePoint" />
+            <mxPoint x="120" y="210.0" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="v11" value="&lt;b&gt;[复位释放]&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=0;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;fontColor=#17324D;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="74" y="145" width="95" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="s12" style="edgeStyle=none;rounded=1;curved=1;html=1;strokeColor=#2563EB;strokeWidth=2.5;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="310" y="210.0" as="sourcePoint" />
+            <mxPoint x="390" y="210.0" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="v13" value="&lt;b&gt;command_accept&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=0;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;fontColor=#17324D;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="310" y="128" width="80" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="s14" style="edgeStyle=none;rounded=1;curved=1;html=1;strokeColor=#2563EB;strokeWidth=2.5;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="610" y="210.0" as="sourcePoint" />
+            <mxPoint x="700" y="210.0" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="v15" value="&lt;b&gt;[dependencies_done]&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=0;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;fontColor=#17324D;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="610" y="128" width="90" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="s16" style="edgeStyle=none;rounded=1;curved=1;html=1;strokeColor=#2563EB;strokeWidth=2.5;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="890" y="210.0" as="sourcePoint" />
+            <mxPoint x="980" y="210.0" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="v17" value="&lt;b&gt;task_valid &amp;amp;&amp;amp; task_ready&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=0;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;fontColor=#17324D;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="888" y="128" width="95" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="s18" style="edgeStyle=none;rounded=1;curved=1;html=1;strokeColor=#2563EB;strokeWidth=2.5;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1180" y="192.0" as="sourcePoint" />
+            <mxPoint x="1310" y="160.0" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="v19" value="&lt;b&gt;done [status=SUCCESS]&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=0;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;fontColor=#17324D;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="1175" y="92" width="140" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="s20" style="edgeStyle=none;rounded=1;curved=1;html=1;strokeColor=#2563EB;strokeWidth=2.5;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1180" y="232.0" as="sourcePoint" />
+            <mxPoint x="1310" y="320.0" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="v21" value="&lt;b&gt;done [status!=SUCCESS]&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=0;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;fontColor=#17324D;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="1178" y="300" width="135" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="s22" style="edgeStyle=none;rounded=1;curved=1;html=1;strokeColor=#059669;strokeWidth=2.5;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1405.0" y="95" as="sourcePoint" />
+            <Array as="points">
+              <mxPoint x="1405" y="58" />
+              <mxPoint x="215" y="58" />
+            </Array>
+            <mxPoint x="215.0" y="160" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="v23" value="&lt;b&gt;software_ack&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=0;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;fontColor=#17324D;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="745" y="28" width="110" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="s24" style="edgeStyle=none;rounded=1;curved=1;html=1;strokeColor=#DC2626;strokeWidth=2.5;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1405.0" y="385" as="sourcePoint" />
+            <Array as="points">
+              <mxPoint x="1405" y="455" />
+              <mxPoint x="215" y="455" />
+            </Array>
+            <mxPoint x="215.0" y="260" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="v25" value="&lt;b&gt;software_ack&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=0;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;fontColor=#17324D;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="745" y="462" width="110" height="32" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

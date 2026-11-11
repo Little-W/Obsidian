@@ -1,0 +1,23 @@
+digraph NPU_LSC_CRG_WDT_SUBMODULES {
+  graph [rankdir=LR, bgcolor="#FFFFFF", pad="0.20", nodesep="0.50", ranksep="0.80", splines=polyline, outputorder=nodesfirst, fontname="Noto Sans CJK SC", fontsize=20, fontcolor="#123B5D", labelloc=t, label="LSC、CRG 与 WDT 子模块连接"];
+  node [shape=box, style="rounded,filled", margin="0.18,0.12", fontname="Noto Sans CJK SC", fontsize=14, color="#64748B", penwidth=1.3, fillcolor="#F8FAFC", fontcolor="#17324D"];
+  edge [fontname="Noto Sans CJK SC", fontsize=11, color="#059669", fontcolor="#334155", penwidth=1.4, arrowsize=0.72];
+  AXIS [label="AXI Slave Frontend\nCSR / 控制请求", fillcolor="#E0F2FE", color="#0284C7"];
+  subgraph cluster_ctrl {
+    label="运行控制与状态"; fontname="Noto Sans CJK SC"; fontsize=16; color="#6EE7B7"; fillcolor="#ECFDF5"; style="rounded,filled"; penwidth=1.4;
+    LSC [label="LSC\n配置寄存器 / 状态 / 中断\n首个错误 / 完成通知"];
+    CRG [label="CRG\n复位同步释放\n时钟使能 / DVFS 应答"];
+    WDT [label="WDT\n前进监测 / 超时请求"];
+    LSC -> CRG [label="start / stop / 软复位"];
+    WDT -> LSC [label="超时"];
+  }
+  TS [label="TaskScheduler\n完成 / 空闲 / 控制", fillcolor="#DBEAFE", color="#2563EB"];
+  ENGS [label="DMA / MVE / CME / MIF / L1BUF\n空闲与错误状态", fillcolor="#FEF3C7", color="#D97706"];
+  OUT [label="SoC\n中断 / 电源与时钟请求", fillcolor="#F3E8FF", color="#7C3AED"];
+  AXIS -> LSC [dir=both, label="64-bit 控制"];
+  LSC -> TS [dir=both, label="完成 / 控制请求"];
+  ENGS -> WDT [label="进度 / 空闲"];
+  CRG -> ENGS [label="时钟 / 复位"];
+  LSC -> OUT [label="IRQ / 状态"];
+  OUT -> CRG [label="DVFS / power / reset"];
+}

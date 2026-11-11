@@ -1,0 +1,23 @@
+digraph NPU_CFE_SUBMODULES {
+  graph [rankdir=LR, bgcolor="#FFFFFF", pad="0.20", nodesep="0.48", ranksep="0.80", splines=polyline, outputorder=nodesfirst, fontname="Noto Sans CJK SC", fontsize=20, fontcolor="#123B5D", labelloc=t, label="Command Front End 子模块连接"];
+  node [shape=box, style="rounded,filled", margin="0.18,0.12", fontname="Noto Sans CJK SC", fontsize=14, color="#64748B", penwidth=1.3, fillcolor="#F8FAFC", fontcolor="#17324D"];
+  edge [fontname="Noto Sans CJK SC", fontsize=11, color="#2563EB", fontcolor="#334155", penwidth=1.4, arrowsize=0.72];
+  IN [label="AXI Slave Frontend\n64-bit CMD beat", fillcolor="#E0F2FE", color="#0284C7"];
+  subgraph cluster_cfe {
+    label="Command Front End"; fontname="Noto Sans CJK SC"; fontsize=16; color="#93C5FD"; fillcolor="#EFF6FF"; style="rounded,filled"; penwidth=1.4;
+    ASM [label="低 / 高 word 组合\nfirst / last 检查"];
+    TIMER [label="第二 beat 计时\n32-cycle 上限"];
+    CHECK [label="opcode 与本地编号检查"];
+    LOOKUP [label="TaskScheduler 编号查询"];
+    FIFO [label="8 项 CMD FIFO\n队首输出寄存器", fillcolor="#DBEAFE"];
+    RESP [label="64-bit 接收结果", fillcolor="#DBEAFE"];
+    ASM -> TIMER; TIMER -> CHECK; CHECK -> LOOKUP; LOOKUP -> FIFO;
+    CHECK -> RESP;
+  }
+  TS [label="TaskScheduler\n完整 128-bit 指令", fillcolor="#D1FAE5", color="#059669"];
+  OUT [label="AXI Slave Frontend\n接收结果", fillcolor="#E0F2FE", color="#0284C7"];
+  IN -> ASM [label="valid / ready"];
+  FIFO -> TS [label="128-bit CMD"];
+  TS -> LOOKUP [label="busy / free"];
+  RESP -> OUT [label="valid / ready"];
+}

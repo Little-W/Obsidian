@@ -1,0 +1,53 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="Electron" agent="NPU design specification" version="31.3.2" compressed="false">
+  <diagram id="d3a69074bde0" name="Page-1">
+    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1070" background="#FFFFFF" math="1" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="v2" value="&lt;b&gt;整数主干、显式浮点流与结果写回&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=0;fontFamily=Noto Sans CJK SC;fontSize=30;fontColor=#17324D;align=left;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;fontColor=#17324D;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="14" width="1720" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="v3" value="&lt;b&gt;整数编码与打包权重&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;A8 / W4；其他模式由配置决定&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E8FF;strokeColor=#7C3AED;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="70" y="160" width="320" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="v4" value="&lt;b&gt;Matrix 整数阵列与组缩放&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;整数部分和、零点校正、公共指数宽累加&lt;br&gt;整行输出尺度、最终一次 RNE 和饱和&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="560" y="160" width="650" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="v5" value="&lt;b&gt;整数主干输出&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;INT8 / INT16 / INT32&lt;br&gt;附带明确的数值尺度&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E8FF;strokeColor=#7C3AED;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1450" y="160" width="280" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="v6" value="&lt;b&gt;静态参数与动态状态&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;权重尺度、zero point 与配置不随 token 重编&lt;br&gt;A8 / 输出行统计通过状态区发布&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D1FAE5;strokeColor=#059669;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="560" y="410" width="650" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="v7" value="&lt;b&gt;显式浮点位型&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;binary32 使用 INT32 容器&lt;br&gt;packed binary16 使用格式标志&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E8FF;strokeColor=#7C3AED;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="70" y="720" width="320" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="v8" value="&lt;b&gt;Complex 流与共享 FMA&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;转换、乘加、归约、非线性与统计&lt;br&gt;按指令控制 FP16 / FP32；私有行 RAM&lt;br&gt;一个物理字流水，逻辑请求排队&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="560" y="720" width="650" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="v9" value="&lt;b&gt;按指令格式写回&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;浮点位型或整数编码&lt;br&gt;转换与量化次序明确&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E8FF;strokeColor=#7C3AED;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1450" y="720" width="280" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#7C3AED;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="v3" target="v4">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#7C3AED;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="v4" target="v5">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#7C3AED;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="v7" target="v8">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#7C3AED;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="v8" target="v9">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#059669;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="v6" target="v4">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="v15" value="&lt;b&gt;原始浮点位型不等于 signed INT32 数值；RNE、缩放、bias 与饱和均按具体操作定义。&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=0;fontFamily=Noto Sans CJK SC;fontSize=23;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;fontColor=#475569;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="90" y="985" width="1620" height="42" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

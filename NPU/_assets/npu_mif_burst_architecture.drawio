@@ -1,0 +1,82 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="Electron" agent="NPU design specification" version="31.3.2" compressed="false">
+  <diagram id="82217d4075a1" name="Page-1">
+    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1740" background="#FFFFFF" math="1" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="v2" value="&lt;b&gt;MIF：三类请求、读事务环与独立写上下文&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=0;fontFamily=Noto Sans CJK SC;fontSize=30;fontColor=#17324D;align=left;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;fontColor=#17324D;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="14" width="1620" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="v3" value="&lt;b&gt;DMA&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;数据读写&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="80" y="130" width="440" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="v4" value="&lt;b&gt;Program Sequencer&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;静态程序 burst 预取&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="620" y="130" width="440" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="v5" value="&lt;b&gt;描述符装载器&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;缓存未命中读取&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="130" width="440" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="v6" value="&lt;b&gt;第一级窗口仲裁&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;DMA / 程序；等待程序时限制 DMA 读窗口&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="80" y="400" width="980" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="v7" value="&lt;b&gt;第二级请求仲裁与返回归属&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;控制请求流 / 描述符；整段返回后再切换请求源&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="80" y="680" width="1520" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#2563EB;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.22448979591836735;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="v3" target="v6">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#2563EB;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.7755102040816326;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="v4" target="v6">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#2563EB;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.3223684210526316;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="v6" target="v7">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#2563EB;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.8552631578947368;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="v5" target="v7">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="v12" value="&lt;b&gt;两项请求 FIFO&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;129-bit 请求记录；隔离 ready 组合路径&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="80" y="950" width="1520" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#2563EB;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="v7" target="v12">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="v14" value="&lt;b&gt;&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#CBD5E1;strokeWidth=1.6;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=left;fontStyle=1;verticalAlign=top;spacing=8;arcSize=12;arcSize=4;spacingTop=12;spacingLeft=24;container=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="60" y="1170" width="1580" height="460" as="geometry" />
+        </mxCell>
+        <mxCell id="v15" value="&lt;b&gt;AXI MIF Master&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=0;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;fontColor=#475569;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="650" y="1190" width="400" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="e16" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=18;html=1;strokeColor=#059669;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;exitX=0;exitY=0.6;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="v14" target="v7">
+          <mxGeometry relative="1" x="0" y="0" as="geometry">
+            <Array as="points">
+              <mxPoint x="20" y="1446" />
+              <mxPoint x="20" y="755" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="v17" value="&lt;b&gt;默认八项有序读事务环&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;ARID=0，1～256 beat / burst&lt;br&gt;R 检查、两项返回队列；读响应优先&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E8FF;strokeColor=#7C3AED;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="100" y="1280" width="700" height="210" as="geometry" />
+        </mxCell>
+        <mxCell id="v18" value="&lt;b&gt;一个独立写上下文&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;AWLEN=0；AW / W 分别握手&lt;br&gt;等待 B 后返回；可与活动读流重叠&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="900" y="1280" width="700" height="210" as="geometry" />
+        </mxCell>
+        <mxCell id="e19" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#7C3AED;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;exitX=0.24342105263157895;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="v12" target="v17">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="e20" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#D97706;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;exitX=0.7697368421052632;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="v12" target="v18">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="v21" value="&lt;b&gt;AXI AR / R&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=0;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;fontColor=#7C3AED;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="180" y="1530" width="540" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="v22" value="&lt;b&gt;AXI AW / W / B&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=0;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;fontColor=#D97706;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="980" y="1530" width="540" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="v23" value="&lt;b&gt;请求 FIFO 只用于发出方向；响应由 Master 直接回到仲裁器并按已保存的归属交付。&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=0;fontFamily=Noto Sans CJK SC;fontSize=23;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;fontColor=#475569;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="70" y="1670" width="1560" height="45" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

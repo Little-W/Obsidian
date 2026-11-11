@@ -1,0 +1,87 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1700 1740" width="1700" height="1740">
+  <rect x="0" y="0" width="1700.0" height="1740.0" fill="white" />
+  <defs>
+    <marker id="arrow2563EB" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#2563EB" />
+    </marker>
+    <marker id="arrow7C3AED" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#7C3AED" />
+    </marker>
+    <marker id="arrow059669" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#059669" />
+    </marker>
+    <marker id="arrowD97706" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#D97706" />
+    </marker>
+    <marker id="arrow0F766E" markerWidth="20" markerHeight="14" refX="20" refY="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M0,0 L20,7 L0,14 Z" fill="#0F766E" />
+    </marker>
+  </defs>
+  <rect x="60.0" y="1170.0" width="1580.0" height="460.0" rx="14" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.6" />
+  <path d="M300,270 L300,400" fill="none" stroke="#2563EB" stroke-width="3" marker-end="url(#arrow2563EB)" marker-start="url(#arrow2563EB)" />
+  <path d="M840,270 L840,400" fill="none" stroke="#2563EB" stroke-width="3" marker-end="url(#arrow2563EB)" marker-start="url(#arrow2563EB)" />
+  <path d="M570,540 L570,680" fill="none" stroke="#2563EB" stroke-width="3" marker-end="url(#arrow2563EB)" marker-start="url(#arrow2563EB)" />
+  <path d="M1380,270 L1380,680" fill="none" stroke="#2563EB" stroke-width="3" marker-end="url(#arrow2563EB)" marker-start="url(#arrow2563EB)" />
+  <path d="M840,830 L840,950" fill="none" stroke="#2563EB" stroke-width="3" marker-end="url(#arrow2563EB)" />
+  <path d="M60,1446 L20,1446 L20,755 L80,755" fill="none" stroke="#059669" stroke-width="3" marker-end="url(#arrow059669)" />
+  <path d="M450,1080 L450,1280" fill="none" stroke="#7C3AED" stroke-width="3" marker-end="url(#arrow7C3AED)" />
+  <path d="M1250,1080 L1250,1280" fill="none" stroke="#D97706" stroke-width="3" marker-end="url(#arrowD97706)" />
+  <text x="52.0" y="55.0" fill="#17324D" font-family="Noto Sans CJK SC" font-size="30.0" font-weight="600" text-anchor="start">
+    <tspan x="52.0" y="55.0">MIF：三类请求、读事务环与独立写上下文</tspan>
+  </text>
+  <rect x="80.0" y="130.0" width="440.0" height="140.0" rx="14" fill="#DBEAFE" stroke="#2563EB" stroke-width="1.5" />
+  <text x="300.0" y="194.6" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="300.0" y="194.6">DMA</tspan>
+    <tspan x="300.0" y="229.39999999999998">数据读写</tspan>
+  </text>
+  <rect x="620.0" y="130.0" width="440.0" height="140.0" rx="14" fill="#DBEAFE" stroke="#2563EB" stroke-width="1.5" />
+  <text x="840.0" y="194.6" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="840.0" y="194.6">Program Sequencer</tspan>
+    <tspan x="840.0" y="229.39999999999998">静态程序 burst 预取</tspan>
+  </text>
+  <rect x="1160.0" y="130.0" width="440.0" height="140.0" rx="14" fill="#DBEAFE" stroke="#2563EB" stroke-width="1.5" />
+  <text x="1380.0" y="194.6" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="1380.0" y="194.6">描述符装载器</tspan>
+    <tspan x="1380.0" y="229.39999999999998">缓存未命中读取</tspan>
+  </text>
+  <rect x="80.0" y="400.0" width="980.0" height="140.0" rx="14" fill="#DBEAFE" stroke="#2563EB" stroke-width="1.5" />
+  <text x="570.0" y="464.6" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="570.0" y="464.6">第一级窗口仲裁</tspan>
+    <tspan x="570.0" y="499.40000000000003">DMA / 程序；等待程序时限制 DMA 读窗口</tspan>
+  </text>
+  <rect x="80.0" y="680.0" width="1520.0" height="150.0" rx="14" fill="#DBEAFE" stroke="#2563EB" stroke-width="1.5" />
+  <text x="840.0" y="749.6" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="840.0" y="749.6">第二级请求仲裁与返回归属</tspan>
+    <tspan x="840.0" y="784.4">控制请求流 / 描述符；整段返回后再切换请求源</tspan>
+  </text>
+  <rect x="80.0" y="950.0" width="1520.0" height="130.0" rx="14" fill="#DBEAFE" stroke="#2563EB" stroke-width="1.5" />
+  <text x="840.0" y="1009.6" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="840.0" y="1009.6">两项请求 FIFO</tspan>
+    <tspan x="840.0" y="1044.4">129-bit 请求记录；隔离 ready 组合路径</tspan>
+  </text>
+  <text x="850.0" y="1227.0" fill="#475569" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="850.0" y="1227.0">AXI MIF Master</tspan>
+  </text>
+  <rect x="100.0" y="1280.0" width="700.0" height="210.0" rx="14" fill="#F3E8FF" stroke="#7C3AED" stroke-width="1.5" />
+  <text x="450.0" y="1362.2" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="450.0" y="1362.2">默认八项有序读事务环</tspan>
+    <tspan x="450.0" y="1397.0">ARID=0，1～256 beat / burst</tspan>
+    <tspan x="450.0" y="1431.8">R 检查、两项返回队列；读响应优先</tspan>
+  </text>
+  <rect x="900.0" y="1280.0" width="700.0" height="210.0" rx="14" fill="#FEF3C7" stroke="#D97706" stroke-width="1.5" />
+  <text x="1250.0" y="1362.2" fill="#17324D" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="1250.0" y="1362.2">一个独立写上下文</tspan>
+    <tspan x="1250.0" y="1397.0">AWLEN=0；AW / W 分别握手</tspan>
+    <tspan x="1250.0" y="1431.8">等待 B 后返回；可与活动读流重叠</tspan>
+  </text>
+  <text x="450.0" y="1567.0" fill="#7C3AED" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="450.0" y="1567.0">AXI AR / R</tspan>
+  </text>
+  <text x="1250.0" y="1567.0" fill="#D97706" font-family="Noto Sans CJK SC" font-size="24.0" font-weight="600" text-anchor="middle">
+    <tspan x="1250.0" y="1567.0">AXI AW / W / B</tspan>
+  </text>
+  <text x="850.0" y="1704.0" fill="#475569" font-family="Noto Sans CJK SC" font-size="23.0" font-weight="600" text-anchor="middle">
+    <tspan x="850.0" y="1704.0">请求 FIFO 只用于发出方向；响应由 Master 直接回到仲裁器并按已保存的归属交付。</tspan>
+  </text>
+</svg>

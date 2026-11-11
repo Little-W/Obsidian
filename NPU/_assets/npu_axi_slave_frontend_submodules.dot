@@ -1,0 +1,28 @@
+digraph NPU_AXI_SLAVE_FRONTEND_SUBMODULES {
+  graph [rankdir=LR, bgcolor="#FFFFFF", pad="0.20", nodesep="0.52", ranksep="0.78", splines=polyline, outputorder=nodesfirst, fontname="Noto Sans CJK SC", fontsize=20, fontcolor="#123B5D", labelloc=t, label="AXI Slave Frontend 与内部子模块"];
+  node [shape=box, style="rounded,filled", margin="0.18,0.12", fontname="Noto Sans CJK SC", fontsize=14, color="#64748B", penwidth=1.3, fillcolor="#F8FAFC", fontcolor="#17324D"];
+  edge [fontname="Noto Sans CJK SC", fontsize=11, color="#2563EB", fontcolor="#334155", penwidth=1.4, arrowsize=0.72];
+  AXI [label="s_axi_*\n64-bit AXI4 Slave", fillcolor="#E0F2FE", color="#0284C7"];
+  subgraph cluster_frontend {
+    label="AXI Slave Frontend"; fontname="Noto Sans CJK SC"; fontsize=16; color="#93C5FD"; fillcolor="#EFF6FF"; style="rounded,filled"; penwidth=1.4;
+    WR [label="写地址与写数据\nAW/W 合法性检查"];
+    DEC [label="地址译码\nCMD / CSR / L1 窗口"];
+    RSP [label="写响应\nB 通道"];
+    RD [label="读地址与读数据\nAR/R 通道"];
+    CMD [label="CMD beat 接口\nfirst / last / 接收结果", fillcolor="#DBEAFE"];
+    CSR [label="LSC 控制接口\n寄存器与控制请求", fillcolor="#D1FAE5"];
+    L1 [label="L1 外部窗口接口\n单 beat 读写", fillcolor="#F3E8FF"];
+    WR -> DEC; DEC -> RSP; DEC -> RD;
+    DEC -> CMD; DEC -> CSR; DEC -> L1;
+  }
+  CFE [label="Command Front End", fillcolor="#DBEAFE", color="#2563EB"];
+  LSC [label="LSC / TaskScheduler", fillcolor="#D1FAE5", color="#059669"];
+  L1C [label="L1BUF Controller", fillcolor="#F3E8FF", color="#7C3AED"];
+  AXI -> WR [label="AW / W"];
+  AXI -> RD [label="AR"];
+  RSP -> AXI [label="B"];
+  RD -> AXI [label="R"];
+  CMD -> CFE [label="64-bit beat / 结果"];
+  CSR -> LSC [label="控制请求 / 响应"];
+  L1 -> L1C [label="64-bit 请求 / 响应"];
+}

@@ -47,22 +47,22 @@ digraph BlockOuterProductGrid {
     label=<
       <TABLE BORDER="2" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4" COLOR="#25825B" BGCOLOR="#F4FFF9">
         <TR>
-          <TD WIDTH="92" HEIGHT="92" FIXEDSIZE="TRUE" BGCOLOR="#F1F3F7"><B>A × B</B><BR/><FONT POINT-SIZE="12">块坐标</FONT></TD>
-          <TD PORT="weight_in" WIDTH="92" HEIGHT="92" FIXEDSIZE="TRUE" BGCOLOR="#F6B84A"><B>B[p,j]</B></TD>
-          <TD WIDTH="92" HEIGHT="92" FIXEDSIZE="TRUE" BGCOLOR="#F6B84A"><B>B[p,j+1]</B></TD>
-          <TD WIDTH="92" HEIGHT="92" FIXEDSIZE="TRUE" BGCOLOR="#F6B84A"><B>B[p,j+2]</B></TD>
+          <TD WIDTH="112" HEIGHT="92" FIXEDSIZE="TRUE" BGCOLOR="#F1F3F7"><B>A × B</B><BR/><FONT POINT-SIZE="12">块坐标</FONT></TD>
+          <TD PORT="weight_in" WIDTH="112" HEIGHT="92" FIXEDSIZE="TRUE" BGCOLOR="#F6B84A"><B>B[p,j]</B></TD>
+          <TD WIDTH="112" HEIGHT="92" FIXEDSIZE="TRUE" BGCOLOR="#F6B84A"><B>B[p,j+1]</B></TD>
+          <TD WIDTH="112" HEIGHT="92" FIXEDSIZE="TRUE" BGCOLOR="#F6B84A"><B>B[p,j+2]</B></TD>
         </TR>
         <TR>
-          <TD PORT="ia_in" WIDTH="92" HEIGHT="92" FIXEDSIZE="TRUE" BGCOLOR="#6CB3F4"><B>A[i,p]</B></TD>
-          <TD WIDTH="92" HEIGHT="92" FIXEDSIZE="TRUE"><B>C[i,j]</B><BR/><FONT POINT-SIZE="12">+= 块乘</FONT></TD>
-          <TD WIDTH="92" HEIGHT="92" FIXEDSIZE="TRUE"><B>C[i,j+1]</B><BR/><FONT POINT-SIZE="12">+= 块乘</FONT></TD>
-          <TD WIDTH="92" HEIGHT="92" FIXEDSIZE="TRUE"><B>C[i,j+2]</B><BR/><FONT POINT-SIZE="12">+= 块乘</FONT></TD>
+          <TD PORT="ia_in" WIDTH="112" HEIGHT="92" FIXEDSIZE="TRUE" BGCOLOR="#6CB3F4"><B>A[i,p]</B></TD>
+          <TD WIDTH="112" HEIGHT="92" FIXEDSIZE="TRUE"><B>C[i,j]</B><BR/><FONT POINT-SIZE="12">+= 块乘</FONT></TD>
+          <TD WIDTH="112" HEIGHT="92" FIXEDSIZE="TRUE"><B>C[i,j+1]</B><BR/><FONT POINT-SIZE="12">+= 块乘</FONT></TD>
+          <TD WIDTH="112" HEIGHT="92" FIXEDSIZE="TRUE"><B>C[i,j+2]</B><BR/><FONT POINT-SIZE="12">+= 块乘</FONT></TD>
         </TR>
         <TR>
-          <TD WIDTH="92" HEIGHT="92" FIXEDSIZE="TRUE" BGCOLOR="#6CB3F4"><B>A[i+1,p]</B></TD>
-          <TD WIDTH="92" HEIGHT="92" FIXEDSIZE="TRUE"><B>C[i+1,j]</B><BR/><FONT POINT-SIZE="12">+= 块乘</FONT></TD>
-          <TD WIDTH="92" HEIGHT="92" FIXEDSIZE="TRUE"><B>C[i+1,j+1]</B><BR/><FONT POINT-SIZE="12">+= 块乘</FONT></TD>
-          <TD WIDTH="92" HEIGHT="92" FIXEDSIZE="TRUE"><B>C[i+1,j+2]</B><BR/><FONT POINT-SIZE="12">+= 块乘</FONT></TD>
+          <TD WIDTH="112" HEIGHT="92" FIXEDSIZE="TRUE" BGCOLOR="#6CB3F4"><B>A[i+1,p]</B></TD>
+          <TD WIDTH="112" HEIGHT="92" FIXEDSIZE="TRUE"><B>C[i+1,j]</B><BR/><FONT POINT-SIZE="12">+= 块乘</FONT></TD>
+          <TD WIDTH="112" HEIGHT="92" FIXEDSIZE="TRUE"><B>C[i+1,j+1]</B><BR/><FONT POINT-SIZE="12">+= 块乘</FONT></TD>
+          <TD WIDTH="112" HEIGHT="92" FIXEDSIZE="TRUE"><B>C[i+1,j+2]</B><BR/><FONT POINT-SIZE="12">+= 块乘</FONT></TD>
         </TR>
       </TABLE>
     >

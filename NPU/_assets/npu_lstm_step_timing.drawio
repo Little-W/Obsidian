@@ -1,0 +1,17 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="Electron" agent="NPU design specification" version="31.3.2" compressed="false">
+  <diagram id="a15918d893df" name="Page-1">
+    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="736" math="1" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="v2" value="&lt;b&gt;LSTM 单时间步任务依赖时序&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=0;fontFamily=Noto Sans CJK SC;fontSize=30;fontColor=#17324D;align=left;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;fontColor=#17324D;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="14" width="1320" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="w3" value="{&quot;signal&quot;:[{&quot;name&quot;:&quot;clk&quot;,&quot;wave&quot;:&quot;p.......&quot;},{&quot;name&quot;:&quot;input_matrix&quot;,&quot;wave&quot;:&quot;==x.....&quot;,&quot;data&quot;:[&quot;RUN&quot;,&quot;DONE&quot;]},{&quot;name&quot;:&quot;state_matrix&quot;,&quot;wave&quot;:&quot;=.=x....&quot;,&quot;data&quot;:[&quot;RUN&quot;,&quot;DONE&quot;]},{&quot;name&quot;:&quot;gate_sum&quot;,&quot;wave&quot;:&quot;=.===x..&quot;,&quot;data&quot;:[&quot;WAIT&quot;,&quot;READY&quot;,&quot;RUN&quot;,&quot;DONE&quot;]},{&quot;name&quot;:&quot;gate_activation&quot;,&quot;wave&quot;:&quot;=...===x&quot;,&quot;data&quot;:[&quot;WAIT&quot;,&quot;READY&quot;,&quot;RUN&quot;,&quot;DONE&quot;]},{&quot;name&quot;:&quot;state_update&quot;,&quot;wave&quot;:&quot;=.....==&quot;,&quot;data&quot;:[&quot;WAIT&quot;,&quot;READY&quot;,&quot;DONE&quot;]},{&quot;name&quot;:&quot;event_release&quot;,&quot;wave&quot;:&quot;x==x=x==&quot;,&quot;data&quot;:[&quot;E0&quot;,&quot;E1&quot;,&quot;E2&quot;,&quot;E3&quot;,&quot;E4&quot;]}],&quot;head&quot;:{&quot;text&quot;:&quot;LSTM 单时间步任务依赖时序&quot;,&quot;tick&quot;:0},&quot;foot&quot;:{&quot;text&quot;:&quot;输入矩阵与状态矩阵可并行执行；门值求和、激活和状态更新按事件关系依次发射&quot;},&quot;config&quot;:{&quot;hscale&quot;:2}}" style="shape=mxgraph.wavedrom.abstract.timing;shadow=0;dashed=0;align=left;strokeWidth=1;labelBackgroundColor=#ffffff;noLabel=1;imageAspect=1;" vertex="1" parent="1">
+          <mxGeometry x="35" y="78" width="1330" height="626" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

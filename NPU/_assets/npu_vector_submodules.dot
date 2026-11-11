@@ -1,0 +1,23 @@
+digraph NPU_VECTOR_SUBMODULES {
+  graph [rankdir=LR, bgcolor="#FFFFFF", pad="0.20", nodesep="0.50", ranksep="0.80", splines=polyline, outputorder=nodesfirst, fontname="Noto Sans CJK SC", fontsize=20, fontcolor="#123B5D", labelloc=t, label="Integer Vector 子模块连接"];
+  node [shape=box, style="rounded,filled", margin="0.18,0.12", fontname="Noto Sans CJK SC", fontsize=14, color="#64748B", penwidth=1.3, fillcolor="#F8FAFC", fontcolor="#17324D"];
+  edge [fontname="Noto Sans CJK SC", fontsize=11, color="#2563EB", fontcolor="#334155", penwidth=1.4, arrowsize=0.72];
+  TASK [label="Vector Task Context", fillcolor="#E0F2FE", color="#0284C7"];
+  subgraph cluster_vector {
+    label="Integer Vector"; fontname="Noto Sans CJK SC"; fontsize=16; color="#93C5FD"; fillcolor="#EFF6FF"; style="rounded,filled"; penwidth=1.4;
+    CTRL [label="Vector Controller\n字段检查 / 元素游标\n读、算、写状态"];
+    DP [label="Vector Datapath\n操作数 / mask / 结果\nL1 字段与写回"];
+    PIPE [label="整数执行流水\nADD / SUB / MAX / MIN\nCMP / SELECT / CLAMP / RELU", fillcolor="#DBEAFE"];
+    PMUL [label="连续 MUL 打包\nINT8：4 项 / INT16：1 项"];
+    CTRL -> DP [label="阶段控制"];
+    DP -> CTRL [label="结果 / 访存状态"];
+    DP -> PIPE; DP -> PMUL;
+  }
+  MEM [label="MV Memory Path\nL1 请求与响应", fillcolor="#F3E8FF", color="#7C3AED"];
+  MAC [label="Shared MAC\nMUL / FMA 返回", fillcolor="#FEF3C7", color="#D97706"];
+  DONE [label="TaskScheduler\n完成状态", fillcolor="#D1FAE5", color="#059669"];
+  TASK -> CTRL;
+  DP -> MEM [dir=both, label="64-bit L1"];
+  PMUL -> MAC [dir=both]; DP -> MAC [dir=both, label="FMA"];
+  CTRL -> DONE [label="done"];
+}

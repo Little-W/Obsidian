@@ -1,0 +1,91 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="Electron" agent="NPU design specification" version="31.3.2" compressed="false">
+  <diagram id="9e2a6f445f4b" name="Page-1">
+    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1760" pageHeight="1340" background="#FFFFFF" math="1" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="v2" value="&lt;b&gt;NPU 执行集群与片上访存结构&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=0;fontFamily=Noto Sans CJK SC;fontSize=30;fontColor=#17324D;align=left;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;fontColor=#17324D;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="14" width="1680" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="v3" value="&lt;b&gt;NPU Core&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FBFF;strokeColor=#2563EB;strokeWidth=1.6;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=left;fontStyle=1;verticalAlign=top;spacing=8;arcSize=12;arcSize=4;spacingTop=12;spacingLeft=24;container=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="70" y="100" width="1620" height="1160" as="geometry" />
+        </mxCell>
+        <mxCell id="v4" value="&lt;b&gt;TaskScheduler&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;四类逻辑任务接口；事件依赖、任务 RAM、完成记录与 ACK&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="130" y="170" width="1480" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="v5" value="&lt;b&gt;&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFBEB;strokeColor=#D97706;strokeWidth=1.6;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=left;fontStyle=1;verticalAlign=top;spacing=8;arcSize=12;arcSize=4;spacingTop=12;spacingLeft=24;container=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="100" y="420" width="1540" height="440" as="geometry" />
+        </mxCell>
+        <mxCell id="v6" value="&lt;b&gt;执行引擎&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=0;fontFamily=Noto Sans CJK SC;fontSize=23;fontColor=#17324D;align=left;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;fontColor=#475569;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="440" width="140" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="v7" value="&lt;b&gt;DMA / Layout Engine&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;连续搬运与类型转换&lt;br&gt;L1 本地复制独立写口&lt;br&gt;Ethernet 旁带 RX&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="130" y="490" width="380" height="320" as="geometry" />
+        </mxCell>
+        <mxCell id="v8" value="&lt;b&gt;Matrix / Vector 包装&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;Direct / Scalar / Vector MUL-FMA&lt;br&gt;共享四个物理 PE，每 PE 八个 4×8 乘法叶&lt;br&gt;Vector 轻量 ALU 独立，乘法需仲裁&lt;br&gt;16 个逻辑 lane 按模式分 phase 执行&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="560" y="490" width="500" height="320" as="geometry" />
+        </mxCell>
+        <mxCell id="v9" value="&lt;b&gt;Complex Engine&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;可裁剪 stream / legacy 路径&lt;br&gt;两个逻辑 FMA 请求入口经仲裁&lt;br&gt;共享一个物理 mixed-FMA word 流水&lt;br&gt;普通 L1 与独立写回端口&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1110" y="490" width="500" height="320" as="geometry" />
+        </mxCell>
+        <mxCell id="v10" value="&lt;b&gt;MIF / AXI Master&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;DMA、程序和描述符共同使用&lt;br&gt;默认八项读环，单写上下文&lt;br&gt;读写可重叠，返回有归属&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E8FF;strokeColor=#7C3AED;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="130" y="1010" width="380" height="210" as="geometry" />
+        </mxCell>
+        <mxCell id="v11" value="&lt;b&gt;L1BUF 与七客户端 fabric&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;1 MiB，默认四个 64-bit 1R1W bank，可选 4 / 8 / 16 bank&lt;br&gt;普通端口：Host / DMA / MV×2 / Complex / 本地复制写 / Complex 写&lt;br&gt;Direct 面板：读载荷 2048 bit，写载荷 1024 bit，分阶段收集&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E8FF;strokeColor=#7C3AED;strokeWidth=1.5;fontFamily=Noto Sans CJK SC;fontSize=24;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="560" y="1010" width="1050" height="210" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#2563EB;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;exitX=0.05405405405405406;exitY=1;exitDx=0;exitDy=0;entryX=0.21052631578947367;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="v4" target="v7">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#059669;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;exitX=0.7368421052631579;exitY=0;exitDx=0;exitDy=0;entryX=0.1891891891891892;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="v7" target="v4">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#2563EB;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;exitX=0.3344594594594595;exitY=1;exitDx=0;exitDy=0;entryX=0.13;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="v4" target="v8">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="e15" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#059669;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;exitX=0.37;exitY=0;exitDx=0;exitDy=0;entryX=0.4155405405405405;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="v8" target="v4">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="e16" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#2563EB;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;exitX=0.5033783783783784;exitY=1;exitDx=0;exitDy=0;entryX=0.63;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="v4" target="v8">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="e17" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#059669;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;exitX=0.87;exitY=0;exitDx=0;exitDy=0;entryX=0.5844594594594594;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="v8" target="v4">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="e18" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#2563EB;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;exitX=0.7297297297297297;exitY=1;exitDx=0;exitDy=0;entryX=0.2;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="v4" target="v9">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="e19" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#059669;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;exitX=0.8;exitY=0;exitDx=0;exitDy=0;entryX=0.9324324324324325;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="v9" target="v4">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="e20" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#7C3AED;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=0.4;exitY=1;exitDx=0;exitDy=0;entryX=0.4;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="v7" target="v10">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="e21" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=18;html=1;strokeColor=#7C3AED;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=0.868421052631579;exitY=1;exitDx=0;exitDy=0;entryX=0.047619047619047616;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="v7" target="v11">
+          <mxGeometry relative="1" x="0" y="0" as="geometry">
+            <Array as="points">
+              <mxPoint x="460" y="920" />
+              <mxPoint x="610" y="920" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e22" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#7C3AED;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=0.38;exitY=1;exitDx=0;exitDy=0;entryX=0.18095238095238095;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="v8" target="v11">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="e23" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#7C3AED;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=0.88;exitY=1;exitDx=0;exitDy=0;entryX=0.41904761904761906;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="v8" target="v11">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="e24" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#7C3AED;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=0.34;exitY=1;exitDx=0;exitDy=0;entryX=0.6857142857142857;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="v9" target="v11">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="e25" value="" style="edgeStyle=none;rounded=0;html=1;strokeColor=#7C3AED;strokeWidth=3;fontFamily=Noto Sans CJK SC;fontSize=18;fontColor=#475569;labelBackgroundColor=#FFFFFF;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=0.84;exitY=1;exitDx=0;exitDy=0;entryX=0.9238095238095239;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="v9" target="v11">
+          <mxGeometry relative="1" x="0" y="0" as="geometry" />
+        </mxCell>
+        <mxCell id="v26" value="&lt;b&gt;蓝：任务派发　绿：完成返回　紫：访存请求与响应；端口容量不等于单拍实际计算并行度。&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;strokeWidth=0;fontFamily=Noto Sans CJK SC;fontSize=23;fontColor=#17324D;align=center;fontStyle=1;verticalAlign=middle;spacing=8;arcSize=12;fontColor=#475569;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="100" y="1280" width="1540" height="42" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
