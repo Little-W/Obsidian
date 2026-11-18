@@ -15,6 +15,7 @@
     "11": "11_多端口与新型存储器扩展.md",
     "12": "12_设计验证与工具接入.md",
     "13": "13_算例与源码说明.md",
+    "14": "14_故障模型与测试序列索引.md",
     "90": "90_参考文献与研究进展索引.md"
   },
   "titles": {
@@ -32,6 +33,7 @@
     "11": "多端口与新型存储器扩展",
     "12": "设计验证与工具接入",
     "13": "算例与源码说明",
+    "14": "故障模型与测试序列索引",
     "90": "参考文献与研究进展索引"
   },
   "order": [
@@ -49,41 +51,13 @@
     "11",
     "12",
     "13",
+    "14",
     "90"
   ],
-  "figure_renumbering": {
-    "M": {
-      "1": 2,
-      "2": 5,
-      "3": 7,
-      "4": 6,
-      "5": 8,
-      "6": 11,
-      "7": 10,
-      "8": 13,
-      "9": 9,
-      "10": 12
-    },
-    "S": {
-      "1": 1,
-      "2": 14,
-      "3": 3,
-      "4": 16,
-      "5": 19,
-      "6": 20,
-      "7": 15,
-      "8": 18,
-      "9": 17,
-      "10": 21,
-      "11": 22,
-      "12": 4,
-      "13": 24,
-      "14": 23,
-      "15": 25
-    }
-  },
-  "reference_count": 50,
-  "date": "2026-10-17",
-  "drawing_edition": "precise-geometry-v2",
-  "drawing_validation": "precise_geometry_validation.json"
+  "reference_count": 90,
+  "date": "2026-11-18",
+  "drawing_edition": "editable-svg",
+  "drawing_validation": "precise_geometry_validation.json",
+  "figure_count": 54,
+  "research_drawing_validation": "research_figure_validation.json"
 }

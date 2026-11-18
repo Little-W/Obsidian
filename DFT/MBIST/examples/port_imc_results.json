@@ -1,0 +1,257 @@
+{
+  "DualPortExhaustive_N3": {
+    "ideal_pass": true,
+    "duplex_instances_detected": 48,
+    "concurrent_instances_detected": 24,
+    "abstract_cycles": 480
+  },
+  "DualPortExhaustive_N4": {
+    "ideal_pass": true,
+    "duplex_instances_detected": 192,
+    "concurrent_instances_detected": 48,
+    "abstract_cycles": 1152
+  },
+  "IMC_Nc2": {
+    "ideal_pass": true,
+    "operations": 26,
+    "checked_formula": "12.5*Nc+1",
+    "detected_cases": [
+      {
+        "model": "selected_one_ignored",
+        "victim": 0,
+        "first_mismatch": 24
+      },
+      {
+        "model": "selected_one_ignored",
+        "victim": 1,
+        "first_mismatch": 20
+      },
+      {
+        "model": "unselected_one_contributes",
+        "victim": 0,
+        "first_mismatch": 25
+      },
+      {
+        "model": "unselected_one_contributes",
+        "victim": 1,
+        "first_mismatch": 21
+      }
+    ]
+  },
+  "IMC_Nc4": {
+    "ideal_pass": true,
+    "operations": 51,
+    "checked_formula": "12.5*Nc+1",
+    "detected_cases": [
+      {
+        "model": "selected_one_ignored",
+        "victim": 0,
+        "first_mismatch": 49
+      },
+      {
+        "model": "selected_one_ignored",
+        "victim": 1,
+        "first_mismatch": 45
+      },
+      {
+        "model": "selected_one_ignored",
+        "victim": 2,
+        "first_mismatch": 41
+      },
+      {
+        "model": "selected_one_ignored",
+        "victim": 3,
+        "first_mismatch": 37
+      },
+      {
+        "model": "unselected_one_contributes",
+        "victim": 0,
+        "first_mismatch": 8
+      },
+      {
+        "model": "unselected_one_contributes",
+        "victim": 1,
+        "first_mismatch": 8
+      },
+      {
+        "model": "unselected_one_contributes",
+        "victim": 2,
+        "first_mismatch": 42
+      },
+      {
+        "model": "unselected_one_contributes",
+        "victim": 3,
+        "first_mismatch": 38
+      }
+    ]
+  },
+  "IMC_Nc6": {
+    "ideal_pass": true,
+    "operations": 76,
+    "checked_formula": "12.5*Nc+1",
+    "detected_cases": [
+      {
+        "model": "selected_one_ignored",
+        "victim": 0,
+        "first_mismatch": 74
+      },
+      {
+        "model": "selected_one_ignored",
+        "victim": 1,
+        "first_mismatch": 70
+      },
+      {
+        "model": "selected_one_ignored",
+        "victim": 2,
+        "first_mismatch": 66
+      },
+      {
+        "model": "selected_one_ignored",
+        "victim": 3,
+        "first_mismatch": 62
+      },
+      {
+        "model": "selected_one_ignored",
+        "victim": 4,
+        "first_mismatch": 58
+      },
+      {
+        "model": "selected_one_ignored",
+        "victim": 5,
+        "first_mismatch": 54
+      },
+      {
+        "model": "unselected_one_contributes",
+        "victim": 0,
+        "first_mismatch": 10
+      },
+      {
+        "model": "unselected_one_contributes",
+        "victim": 1,
+        "first_mismatch": 10
+      },
+      {
+        "model": "unselected_one_contributes",
+        "victim": 2,
+        "first_mismatch": 13
+      },
+      {
+        "model": "unselected_one_contributes",
+        "victim": 3,
+        "first_mismatch": 13
+      },
+      {
+        "model": "unselected_one_contributes",
+        "victim": 4,
+        "first_mismatch": 59
+      },
+      {
+        "model": "unselected_one_contributes",
+        "victim": 5,
+        "first_mismatch": 55
+      }
+    ]
+  },
+  "IMC_Nc8": {
+    "ideal_pass": true,
+    "operations": 101,
+    "checked_formula": "12.5*Nc+1",
+    "detected_cases": [
+      {
+        "model": "selected_one_ignored",
+        "victim": 0,
+        "first_mismatch": 99
+      },
+      {
+        "model": "selected_one_ignored",
+        "victim": 1,
+        "first_mismatch": 95
+      },
+      {
+        "model": "selected_one_ignored",
+        "victim": 2,
+        "first_mismatch": 91
+      },
+      {
+        "model": "selected_one_ignored",
+        "victim": 3,
+        "first_mismatch": 87
+      },
+      {
+        "model": "selected_one_ignored",
+        "victim": 4,
+        "first_mismatch": 83
+      },
+      {
+        "model": "selected_one_ignored",
+        "victim": 5,
+        "first_mismatch": 79
+      },
+      {
+        "model": "selected_one_ignored",
+        "victim": 6,
+        "first_mismatch": 75
+      },
+      {
+        "model": "selected_one_ignored",
+        "victim": 7,
+        "first_mismatch": 71
+      },
+      {
+        "model": "unselected_one_contributes",
+        "victim": 0,
+        "first_mismatch": 12
+      },
+      {
+        "model": "unselected_one_contributes",
+        "victim": 1,
+        "first_mismatch": 12
+      },
+      {
+        "model": "unselected_one_contributes",
+        "victim": 2,
+        "first_mismatch": 15
+      },
+      {
+        "model": "unselected_one_contributes",
+        "victim": 3,
+        "first_mismatch": 15
+      },
+      {
+        "model": "unselected_one_contributes",
+        "victim": 4,
+        "first_mismatch": 18
+      },
+      {
+        "model": "unselected_one_contributes",
+        "victim": 5,
+        "first_mismatch": 18
+      },
+      {
+        "model": "unselected_one_contributes",
+        "victim": 6,
+        "first_mismatch": 76
+      },
+      {
+        "model": "unselected_one_contributes",
+        "victim": 7,
+        "first_mismatch": 72
+      }
+    ]
+  },
+  "CrossPortAddress_N2": {
+    "ideal_pass": true,
+    "detected_nonidentity_permutations": 1,
+    "port_accesses": 10
+  },
+  "CrossPortAddress_N3": {
+    "ideal_pass": true,
+    "detected_nonidentity_permutations": 5,
+    "port_accesses": 21
+  },
+  "CrossPortAddress_N4": {
+    "ideal_pass": true,
+    "detected_nonidentity_permutations": 23,
+    "port_accesses": 36
+  }
+}

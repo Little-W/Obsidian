@@ -1,0 +1,181 @@
+{
+  "scope": "Digital examples, CSV exports and local document consistency",
+  "html_regenerated": true,
+  "expected_commands": 17,
+  "completed_commands": 17,
+  "passed": true,
+  "checks": [
+    {
+      "name": "march_sequences",
+      "command": [
+        "python3",
+        "src/validate_march_sequences.py"
+      ],
+      "elapsed_seconds": 0.059,
+      "return_code": 0,
+      "passed": true
+    },
+    {
+      "name": "fault_detection",
+      "command": [
+        "python3",
+        "src/fault_detection_examples.py"
+      ],
+      "elapsed_seconds": 1.514,
+      "return_code": 0,
+      "passed": true
+    },
+    {
+      "name": "static_fault_models",
+      "command": [
+        "python3",
+        "src/validate_static_fault_models.py"
+      ],
+      "elapsed_seconds": 0.097,
+      "return_code": 0,
+      "passed": true
+    },
+    {
+      "name": "multirun_sequences",
+      "command": [
+        "python3",
+        "src/validate_multirun_sequences.py"
+      ],
+      "elapsed_seconds": 0.164,
+      "return_code": 0,
+      "passed": true
+    },
+    {
+      "name": "multirun_faults",
+      "command": [
+        "python3",
+        "src/validate_multirun_faults.py"
+      ],
+      "elapsed_seconds": 1.098,
+      "return_code": 0,
+      "passed": true
+    },
+    {
+      "name": "sequence_generation",
+      "command": [
+        "python3",
+        "src/sequence_generation_examples.py"
+      ],
+      "elapsed_seconds": 0.47,
+      "return_code": 0,
+      "passed": true
+    },
+    {
+      "name": "port_and_imc",
+      "command": [
+        "python3",
+        "src/port_imc_examples.py"
+      ],
+      "elapsed_seconds": 0.129,
+      "return_code": 0,
+      "passed": true
+    },
+    {
+      "name": "march_ic",
+      "command": [
+        "python3",
+        "src/validate_march_ic.py"
+      ],
+      "elapsed_seconds": 0.068,
+      "return_code": 0,
+      "passed": true
+    },
+    {
+      "name": "transparent_march",
+      "command": [
+        "python3",
+        "src/transparent_march_examples.py"
+      ],
+      "elapsed_seconds": 0.217,
+      "return_code": 0,
+      "passed": true
+    },
+    {
+      "name": "read_disturb_and_pause",
+      "command": [
+        "python3",
+        "src/validate_read_disturb_and_pause.py"
+      ],
+      "elapsed_seconds": 0.068,
+      "return_code": 0,
+      "passed": true
+    },
+    {
+      "name": "teaching_examples",
+      "command": [
+        "python3",
+        "src/teaching_examples.py"
+      ],
+      "elapsed_seconds": 0.26,
+      "return_code": 0,
+      "passed": true
+    },
+    {
+      "name": "trace_exports",
+      "command": [
+        "python3",
+        "src/export_march_traces.py",
+        "--examples"
+      ],
+      "elapsed_seconds": 0.15,
+      "return_code": 0,
+      "passed": true
+    },
+    {
+      "name": "document_files",
+      "command": [
+        "python3",
+        "src/validate_handbook.py"
+      ],
+      "elapsed_seconds": 0.194,
+      "return_code": 0,
+      "passed": true
+    },
+    {
+      "name": "mathjax",
+      "command": [
+        "node",
+        "src/check_mathjax.js"
+      ],
+      "elapsed_seconds": 2.493,
+      "return_code": 0,
+      "passed": true
+    },
+    {
+      "name": "html_export",
+      "command": [
+        "python3",
+        "src/render_html.py"
+      ],
+      "elapsed_seconds": 2.758,
+      "return_code": 0,
+      "passed": true
+    },
+    {
+      "name": "standalone_grouping_html",
+      "command": [
+        "python3",
+        "code/build_html.py"
+      ],
+      "elapsed_seconds": 1.416,
+      "return_code": 0,
+      "passed": true
+    },
+    {
+      "name": "html_references",
+      "command": [
+        "python3",
+        "src/check_html.py",
+        "--static-only"
+      ],
+      "elapsed_seconds": 0.929,
+      "return_code": 0,
+      "passed": true
+    }
+  ]
+}

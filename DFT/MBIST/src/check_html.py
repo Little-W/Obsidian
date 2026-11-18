@@ -8,12 +8,12 @@ from pathlib import Path
 from urllib.parse import unquote, urlsplit, quote
 import argparse
 import json
+import hashlib
 import shutil
 import re
 import base64
 import mimetypes
 from html.parser import HTMLParser
-from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
 class Links(HTMLParser):
@@ -25,14 +25,36 @@ class Links(HTMLParser):
         for key in ('href','src'):
             if key in attrs: self.links.append(attrs[key])
 
+def check_export_versions(root: Path) -> tuple[int, list[str]]:
+    records=[]
+    main_report=root/'checks/html_export.json'
+    if main_report.exists():
+        records.extend(json.loads(main_report.read_text(encoding='utf-8')).get('pages',[]))
+    standalone_report=root/'results/rendering.json'
+    if standalone_report.exists():
+        records.append(json.loads(standalone_report.read_text(encoding='utf-8')))
+    checked=0
+    errors=[]
+    for record in records:
+        for key in ('source','html'):
+            digest=record.get(key+'_sha256')
+            if not digest:
+                continue
+            path=root/record[key]
+            checked+=1
+            if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest()!=digest:
+                errors.append(f'{record[key]}: content differs from the HTML export record; regenerate the reading pages')
+    return checked,errors
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--browser', type=Path)
     parser.add_argument('--screenshots', type=Path, help='Optional inspection folder outside the package.')
+    parser.add_argument('--static-only',action='store_true',help='Check local links and rendered markup without launching Chromium.')
     args=parser.parse_args()
     pages=sorted(ROOT.glob('*.html'))+sorted((ROOT/'html').glob('*.html'))
     parsed={}
-    errors=[]
+    version_checks,errors=check_export_versions(ROOT)
     for file in pages:
         p=Links();p.feed(file.read_text(encoding='utf-8'));parsed[file.resolve()]=p
         if len(p.ids)!=len(set(p.ids)):errors.append(f'{file.name}: duplicate IDs')
@@ -47,6 +69,18 @@ def main():
             elif part.fragment and target in parsed and unquote(part.fragment) not in parsed[target].ids:
                 errors.append(f'{file.name}: missing anchor {url}')
     browser_results=[]
+    if args.static_only:
+        for file in pages:
+            source=file.read_text(encoding='utf-8')
+            if any(marker in source for marker in ('MBISTMATHPLACEHOLDER','data-mjx-error','data-mml-node="merror"')):
+                errors.append(f'{file.name}: invalid rendered math or placeholder')
+        report={'scope':'Static HTML file, fragment and image references; duplicate identifiers and rendered-math markers. Browser layout checks are a separate command.',
+                'pages':len(pages),'local_links':checked_links,'export_hash_checks':version_checks,
+                'passed':not errors,'errors':errors}
+        (ROOT/'checks/html_static_validation.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+        print(json.dumps(report,ensure_ascii=False,indent=2))
+        raise SystemExit(1 if errors else 0)
+    from playwright.sync_api import sync_playwright
     with sync_playwright() as p:
         browser=p.chromium.launch(headless=True,executable_path=str(args.browser) if args.browser else shutil.which('chromium'),args=['--no-sandbox'])
         for width in (1440,390):
@@ -80,6 +114,7 @@ def main():
         browser.close()
     report={'scope':'Chromium set_content with inlined local CSS and images; links checked statically. File navigation, external URLs, and Obsidian UI not tested.',
             'pages':len(pages),'local_links':checked_links,'viewport_checks':len(browser_results),
+            'export_hash_checks':version_checks,
             'passed':not errors,'errors':errors,'browser_results':browser_results}
     (ROOT/'checks/browser_validation.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     print(json.dumps({k:v for k,v in report.items() if k!='browser_results'},ensure_ascii=False,indent=2))

@@ -1,0 +1,240 @@
+{
+  "scope": "Specified delayed-read and whole-word digital models, and fault-free transparent-sequence state checks; no analog timing model.",
+  "delayed_read_cases": 128,
+  "delayed_read_cases_detected": 128,
+  "read_disturb_example": {
+    "initial_value": 0,
+    "K": 4,
+    "stress_only_detected": false,
+    "with_observation_detected": true,
+    "disturb_on_observation": false,
+    "trace": [
+      {
+        "step": 1,
+        "phase": "initialize",
+        "operation": "w0",
+        "state_after": 0
+      },
+      {
+        "step": 2,
+        "phase": "stress",
+        "stress_index": 1,
+        "operation": "r0",
+        "expected": 0,
+        "actual": 0,
+        "state_before": 0,
+        "state_after": 0,
+        "mismatch": false
+      },
+      {
+        "step": 3,
+        "phase": "stress",
+        "stress_index": 2,
+        "operation": "r0",
+        "expected": 0,
+        "actual": 0,
+        "state_before": 0,
+        "state_after": 0,
+        "mismatch": false
+      },
+      {
+        "step": 4,
+        "phase": "stress",
+        "stress_index": 3,
+        "operation": "r0",
+        "expected": 0,
+        "actual": 0,
+        "state_before": 0,
+        "state_after": 0,
+        "mismatch": false
+      },
+      {
+        "step": 5,
+        "phase": "stress",
+        "stress_index": 4,
+        "operation": "r0",
+        "expected": 0,
+        "actual": 0,
+        "state_before": 0,
+        "state_after": 1,
+        "mismatch": false
+      },
+      {
+        "step": 6,
+        "phase": "observe",
+        "operation": "r0",
+        "expected": 0,
+        "actual": 1,
+        "state_before": 1,
+        "state_after": 1,
+        "mismatch": true
+      }
+    ]
+  },
+  "observation_read_disturb_example": {
+    "initial_value": 0,
+    "K": 4,
+    "stress_only_detected": false,
+    "with_observation_detected": false,
+    "disturb_on_observation": true,
+    "trace": [
+      {
+        "step": 1,
+        "phase": "initialize",
+        "operation": "w0",
+        "state_after": 0
+      },
+      {
+        "step": 2,
+        "phase": "stress",
+        "stress_index": 1,
+        "operation": "r0",
+        "expected": 0,
+        "actual": 0,
+        "state_before": 0,
+        "state_after": 0,
+        "mismatch": false
+      },
+      {
+        "step": 3,
+        "phase": "stress",
+        "stress_index": 2,
+        "operation": "r0",
+        "expected": 0,
+        "actual": 0,
+        "state_before": 0,
+        "state_after": 0,
+        "mismatch": false
+      },
+      {
+        "step": 4,
+        "phase": "stress",
+        "stress_index": 3,
+        "operation": "r0",
+        "expected": 0,
+        "actual": 0,
+        "state_before": 0,
+        "state_after": 0,
+        "mismatch": false
+      },
+      {
+        "step": 5,
+        "phase": "stress",
+        "stress_index": 4,
+        "operation": "r0",
+        "expected": 0,
+        "actual": 0,
+        "state_before": 0,
+        "state_after": 0,
+        "mismatch": false
+      },
+      {
+        "step": 6,
+        "phase": "observe",
+        "operation": "r0",
+        "expected": 0,
+        "actual": 0,
+        "state_before": 0,
+        "state_after": 1,
+        "mismatch": false
+      }
+    ]
+  },
+  "transparent_pause": {
+    "fault_free_runs": 192,
+    "completed_blocks_checked": 2304,
+    "restored_block_ends": 672,
+    "conditions": "Complete operation block, no pending read response, no local failure, restored data, completed and matching final signature; host writes require a new reference scan.",
+    "example": {
+      "initial": [
+        0,
+        1,
+        0,
+        1
+      ],
+      "after_four_blocks": [
+        1,
+        0,
+        1,
+        0
+      ],
+      "after_eight_blocks": [
+        0,
+        1,
+        0,
+        1
+      ],
+      "host_updated_data": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "old_reference_signature": 15,
+      "signature_after_host_write": 3,
+      "restart_reference_signature": 3,
+      "restart_final_signature": 3
+    },
+    "passed": true
+  },
+  "word_coupling": {
+    "word_width": 8,
+    "aggressor_bit": 0,
+    "victim_bit": 1,
+    "first_error_step": 5,
+    "trace": [
+      {
+        "step": 1,
+        "operation": "w",
+        "data": 0,
+        "faulty_before": null,
+        "faulty_after": 0,
+        "healthy_after": 0,
+        "activated": false,
+        "read_mismatch": false
+      },
+      {
+        "step": 2,
+        "operation": "w",
+        "data": 1,
+        "faulty_before": 0,
+        "faulty_after": 1,
+        "healthy_after": 1,
+        "activated": false,
+        "read_mismatch": false
+      },
+      {
+        "step": 3,
+        "operation": "r",
+        "data": 1,
+        "faulty_before": 1,
+        "faulty_after": 1,
+        "healthy_after": 1,
+        "activated": false,
+        "read_mismatch": false
+      },
+      {
+        "step": 4,
+        "operation": "w",
+        "data": 3,
+        "faulty_before": 1,
+        "faulty_after": 1,
+        "healthy_after": 3,
+        "activated": true,
+        "read_mismatch": false
+      },
+      {
+        "step": 5,
+        "operation": "r",
+        "data": 3,
+        "faulty_before": 1,
+        "faulty_after": 1,
+        "healthy_after": 3,
+        "activated": false,
+        "read_mismatch": true
+      }
+    ],
+    "passed": true
+  },
+  "passed": true
+}

@@ -17,26 +17,32 @@ def extract():
         text = (ROOT / name).read_text(encoding='utf-8')
         for match in re.finditer(r'```[^\n]*\n([\s\S]*?)```', text):
             block = match[1]
-            br = re.search(r'\{([\s\S]*?)\}', block)
-            if not br:
-                continue
-            elements = re.findall(r'([↑↓⇕])\s*\(([^()]*)\)', br[1])
-            if not elements:
-                continue
-            remainder = re.sub(r'([↑↓⇕])\s*\(([^()]*)\)', '', br[1])
-            if re.sub(r'[;\s]', '', remainder):
-                continue
-            operations = []
-            for direction, raw in elements:
-                ops = [x.strip() for x in raw.split(',')]
-                if not all(re.fullmatch(r'[rw][01]', op) for op in ops):
-                    break
-                operations.append((direction, ops))
-            else:
-                before = text[:match.start()]
-                labels = re.findall(r'(?m)^(?:#{2,5}\s+([^\n]+)|\*\*([^\n]+?)\*\*)', before)
-                label = next((a or b for a, b in reversed(labels)), name)
-                yield name, before.count('\n') + 1, label, operations, block.strip()
+            groups = [(m.start(),m[1]) for m in re.finditer(r'\{([^{}]*)\}',block)]
+            if not groups and re.search(r'(?m)^M0\s*:',block):
+                groups = [(0,block)]
+            for offset, body in groups:
+                body = re.sub(r'(?m)^M\d+\s*:\s*','',body)
+                elements = re.findall(r'([↑↓⇕])\s*\(([^()]*)\)',body)
+                if not elements:
+                    continue
+                remainder = re.sub(r'([↑↓⇕])\s*\(([^()]*)\)','',body)
+                if re.sub(r'[;\s]','',remainder):
+                    continue
+                operations=[]
+                for direction, raw in elements:
+                    ops=[x.strip() for x in raw.split(',')]
+                    if not all(re.fullmatch(r'[rw][01]',op) for op in ops):
+                        break
+                    operations.append((direction,ops))
+                else:
+                    before=text[:match.start()]
+                    labels=re.findall(r'(?m)^(?:#{2,5}\s+([^\n]+)|\*\*([^\n]+?)\*\*)',before)
+                    label=next((a or b for a,b in reversed(labels)),name)
+                    local_label=re.findall(r'(?m)^(March[^\n{}]+)',block[:offset])
+                    if local_label:
+                        label=local_label[-1].strip('：: =')
+                    source='; '.join(direction+'('+','.join(ops)+')' for direction,ops in operations)
+                    yield name,before.count('\n')+1,label,operations,source
 
 def main():
     results, errors = [], []

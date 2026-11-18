@@ -4,5 +4,9 @@
   "tex_errors": 0,
   "embedded_figures": 26,
   "footnotes": 16,
-  "html_bytes": 1457530
+  "html_bytes": 1455359,
+  "source": "06_存储器分组与功耗分析.md",
+  "html": "html/06_存储器分组与功耗分析_离线阅读.html",
+  "source_sha256": "9cf73aea08e5204f592d52c31cf69fe43bc151245e5256b10e9587bb2c309757",
+  "html_sha256": "abf18f27b05add0385e010e067f51dba49ff66858c046069edd74ded0a0fbe98"
 }

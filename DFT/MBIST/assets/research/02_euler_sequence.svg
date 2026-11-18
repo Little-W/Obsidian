@@ -1,0 +1,76 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1530" viewBox="0 0 1200 1530" role="img" aria-labelledby="fig-title fig-description" version="1.1" data-layout-version="precise-ports-v2">
+  <title id="fig-title">图 27  欧拉回路与逐边读取</title>
+  <desc id="fig-description">状态为 (a,b)；每条有向边表示一个单元的翻转写入。</desc>
+  <metadata>{"layout": "named ports + orthogonal routes", "font_policy": "editable text; no embedded fonts", "version": 2}</metadata>
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#1967A4" />
+    </marker>
+    <marker id="arrow-teal" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#118575" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#D97A16" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#B84051" />
+    </marker>
+    <marker id="arrow-muted" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#4F6278" />
+    </marker>
+    <marker id="arrow-slate" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#738A9F" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#92517C" />
+    </marker>
+  </defs>
+  <g id="layer-background">
+    <rect width="1200" height="1530" fill="#FFFFFF" />
+  </g>
+  <g id="layer-shapes">
+    <rect id="q00" x="170" y="300" width="260" height="120" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="q10" x="770" y="300" width="260" height="120" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="q01" x="170" y="760" width="260" height="120" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="q11" x="770" y="760" width="260" height="120" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="path" x="70" y="1000" width="1060" height="210" rx="12" fill="#FFFFFF" stroke="#118575" stroke-width="2" data-kind="node" data-obstacle="true" />
+  </g>
+  <g id="layer-connectors">
+    <polyline id="e1" points="430,340 770,340" fill="none" stroke="#1967A4" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="1: w1(a)" data-source-node="q00" data-source-side="E" data-source-fraction="0.3333333333333333" data-target-node="q10" data-target-side="W" data-target-fraction="0.3333333333333333" marker-end="url(#arrow-blue)" />
+    <polyline id="e8" points="770,380 430,380" fill="none" stroke="#D97A16" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="8: w0(a)" data-source-node="q10" data-source-side="W" data-source-fraction="0.6666666666666666" data-target-node="q00" data-target-side="E" data-target-fraction="0.6666666666666666" marker-end="url(#arrow-orange)" />
+    <polyline id="e2" points="835,420 835,760" fill="none" stroke="#1967A4" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="2: w1(b)" data-source-node="q10" data-source-side="S" data-source-fraction="0.25" data-target-node="q11" data-target-side="N" data-target-fraction="0.25" marker-end="url(#arrow-blue)" />
+    <polyline id="e7" points="965,760 965,420" fill="none" stroke="#D97A16" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="7: w0(b)" data-source-node="q11" data-source-side="N" data-source-fraction="0.75" data-target-node="q10" data-target-side="S" data-target-fraction="0.75" marker-end="url(#arrow-orange)" />
+    <polyline id="e3" points="770,800 430,800" fill="none" stroke="#1967A4" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="3: w0(a)" data-source-node="q11" data-source-side="W" data-source-fraction="0.3333333333333333" data-target-node="q01" data-target-side="E" data-target-fraction="0.3333333333333333" marker-end="url(#arrow-blue)" />
+    <polyline id="e6" points="430,840 770,840" fill="none" stroke="#D97A16" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="6: w1(a)" data-source-node="q01" data-source-side="E" data-source-fraction="0.6666666666666666" data-target-node="q11" data-target-side="W" data-target-fraction="0.6666666666666666" marker-end="url(#arrow-orange)" />
+    <polyline id="e4" points="235,760 235,420" fill="none" stroke="#1967A4" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="4: w0(b)" data-source-node="q01" data-source-side="N" data-source-fraction="0.25" data-target-node="q00" data-target-side="S" data-target-fraction="0.25" marker-end="url(#arrow-blue)" />
+    <polyline id="e5" points="365,420 365,760" fill="none" stroke="#D97A16" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="5: w1(b)" data-source-node="q00" data-source-side="S" data-source-fraction="0.75" data-target-node="q01" data-target-side="N" data-target-fraction="0.75" marker-end="url(#arrow-orange)" />
+  </g>
+  <g id="layer-text">
+    <text id="text-0001" x="64" y="80" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="48" font-weight="700" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">图 27  欧拉回路与逐边读取</text>
+    <text id="text-0002" x="64" y="145" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">状态为 (a,b)；每条有向边表示一个单元的翻转写入。</text>
+    <text id="text-0003" x="300.0" y="360.0" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="44" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="q00">00</text>
+    <text id="text-0004" x="900.0" y="360.0" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="44" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="q10">10</text>
+    <text id="text-0005" x="300.0" y="820.0" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="44" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="q01">01</text>
+    <text id="text-0006" x="900.0" y="820.0" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="44" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="q11">11</text>
+    <text id="text-0007" x="600" y="285" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">1：w1(a)</text>
+    <text id="text-0008" x="600" y="435" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#D97A16" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">8：w0(a)</text>
+    <text id="text-0009" x="600" y="745" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">3：w0(a)</text>
+    <text id="text-0010" x="600" y="925" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#D97A16" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">6：w1(a)</text>
+    <text id="text-0011" x="205" y="555" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="34" font-weight="400" fill="#1967A4" text-anchor="end" dominant-baseline="central" data-kind="text" data-padding="12">4</text>
+    <text id="text-0012" x="385" y="625" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="34" font-weight="400" fill="#D97A16" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">5</text>
+    <text id="text-0013" x="805" y="555" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="34" font-weight="400" fill="#1967A4" text-anchor="end" dominant-baseline="central" data-kind="text" data-padding="12">2</text>
+    <text id="text-0014" x="985" y="625" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="34" font-weight="400" fill="#D97A16" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">7</text>
+    <text id="text-0015" x="600" y="535" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="700" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">每经过一条边</text>
+    <text id="text-0016" x="600" y="590" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="700" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">读取 a 与 b</text>
+    <text id="text-0017" x="600" y="645" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">再执行下一条写入</text>
+    <text id="text-0018" x="600.0" y="1048" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#118575" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="path">完整状态顺序</text>
+    <text id="text-0019" x="600.0" y="1106" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="path">00 → 10 → 11 → 01 → 00</text>
+    <text id="text-0020" x="600.0" y="1156" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="path">00 → 01 → 11 → 10 → 00</text>
+    <text id="text-0021" x="64" y="1280" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">相邻两行共享中间的 00；8 条有向边各经过一次。</text>
+    <text id="text-0022" x="64" y="1326" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">初始化 2 次写入；每边 1 次写入与 2 次读取，共 26 次访问。</text>
+    <text id="text-0023" x="64" y="1372" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">边的覆盖检查与故障读取检查分别执行。</text>
+    <text id="text-0024" x="64" y="1418" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">数字 1 至 8 对应正文的完整操作表。</text>
+  </g>
+  <g id="layer-junctions" />
+</svg>

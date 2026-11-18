@@ -1,0 +1,27 @@
+{
+  "renderer": "Sharp/libvips",
+  "measurement": "Rasterized text ink bounds; SVG named-port and segment checks",
+  "figures": 3,
+  "text_count": 75,
+  "passed": true,
+  "results": [
+    {
+      "file": "assets/research/01_fault_observation.svg",
+      "texts": 27,
+      "connectors": 0,
+      "issues": []
+    },
+    {
+      "file": "assets/research/02_euler_sequence.svg",
+      "texts": 24,
+      "connectors": 8,
+      "issues": []
+    },
+    {
+      "file": "assets/research/03_sequence_search.svg",
+      "texts": 24,
+      "connectors": 7,
+      "issues": []
+    }
+  ]
+}

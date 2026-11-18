@@ -1,0 +1,1093 @@
+{
+  "initialization_semantics": "Unknown values before the first write; state-conditioned activation requires known values; SAF is unconditional.",
+  "sequences": {
+    "March C-": [
+      [
+        "any",
+        "w0"
+      ],
+      [
+        "up",
+        "r0 w1"
+      ],
+      [
+        "up",
+        "r1 w0"
+      ],
+      [
+        "down",
+        "r0 w1"
+      ],
+      [
+        "down",
+        "r1 w0"
+      ],
+      [
+        "any",
+        "r0"
+      ]
+    ],
+    "March SR": [
+      [
+        "down",
+        "w0"
+      ],
+      [
+        "up",
+        "r0 w1 r1 w0"
+      ],
+      [
+        "up",
+        "r0 r0"
+      ],
+      [
+        "up",
+        "w1"
+      ],
+      [
+        "down",
+        "r1 w0 r0 w1"
+      ],
+      [
+        "down",
+        "r1 r1"
+      ]
+    ],
+    "March LR": [
+      [
+        "any",
+        "w0"
+      ],
+      [
+        "down",
+        "r0 w1"
+      ],
+      [
+        "up",
+        "r1 w0 r0 w1"
+      ],
+      [
+        "up",
+        "r1 w0"
+      ],
+      [
+        "up",
+        "r0 w1 r1 w0"
+      ],
+      [
+        "up",
+        "r0"
+      ]
+    ],
+    "March SS": [
+      [
+        "any",
+        "w0"
+      ],
+      [
+        "up",
+        "r0 r0 w0 r0 w1"
+      ],
+      [
+        "up",
+        "r1 r1 w1 r1 w0"
+      ],
+      [
+        "down",
+        "r0 r0 w0 r0 w1"
+      ],
+      [
+        "down",
+        "r1 r1 w1 r1 w0"
+      ],
+      [
+        "any",
+        "r0"
+      ]
+    ],
+    "March MSS": [
+      [
+        "any",
+        "w0"
+      ],
+      [
+        "up",
+        "r0 r0 w1 w1"
+      ],
+      [
+        "up",
+        "r1 r1 w0 w0"
+      ],
+      [
+        "down",
+        "r0 r0 w1 w1"
+      ],
+      [
+        "down",
+        "r1 r1 w0 w0"
+      ],
+      [
+        "any",
+        "r0"
+      ]
+    ],
+    "March AB": [
+      [
+        "any",
+        "w0"
+      ],
+      [
+        "down",
+        "r0 w1 r1 w1 r1"
+      ],
+      [
+        "down",
+        "r1 w0 r0 w0 r0"
+      ],
+      [
+        "up",
+        "r0 w1 r1 w1 r1"
+      ],
+      [
+        "up",
+        "r1 w0 r0 w0 r0"
+      ],
+      [
+        "any",
+        "r0"
+      ]
+    ],
+    "March AZ1 element expansion": [
+      [
+        "any",
+        "w0"
+      ],
+      [
+        "down",
+        "w1"
+      ],
+      [
+        "up",
+        "w1 r1 r1 w0"
+      ],
+      [
+        "up",
+        "w0 r0"
+      ],
+      [
+        "up",
+        "r0 w1 w1 r1"
+      ],
+      [
+        "up",
+        "r1"
+      ]
+    ],
+    "March AZ element expansion": [
+      [
+        "any",
+        "w0"
+      ],
+      [
+        "down",
+        "w1"
+      ],
+      [
+        "up",
+        "w1 r1 r1 w0 w0"
+      ],
+      [
+        "up",
+        "r0"
+      ],
+      [
+        "up",
+        "r0 w1 w1 r1"
+      ],
+      [
+        "up",
+        "r1"
+      ]
+    ],
+    "March AZ2": [
+      [
+        "down",
+        "w0"
+      ],
+      [
+        "down",
+        "w0 r0"
+      ],
+      [
+        "up",
+        "r0 w1 w1 r1"
+      ],
+      [
+        "up",
+        "r1 w0"
+      ],
+      [
+        "down",
+        "r0 w1 w1 r1"
+      ],
+      [
+        "down",
+        "r1"
+      ]
+    ],
+    "March RAW": [
+      [
+        "any",
+        "w0"
+      ],
+      [
+        "up",
+        "r0 w0 r0 r0 w1 r1"
+      ],
+      [
+        "up",
+        "r1 w1 r1 r1 w0 r0"
+      ],
+      [
+        "down",
+        "r0 w0 r0 r0 w1 r1"
+      ],
+      [
+        "down",
+        "r1 w1 r1 r1 w0 r0"
+      ],
+      [
+        "any",
+        "r0"
+      ]
+    ],
+    "RAW1 illustration": [
+      [
+        "up",
+        "w0"
+      ],
+      [
+        "up",
+        "w0 r0"
+      ],
+      [
+        "up",
+        "r0"
+      ],
+      [
+        "up",
+        "w1 r1"
+      ],
+      [
+        "up",
+        "r1"
+      ],
+      [
+        "up",
+        "w1 r1"
+      ],
+      [
+        "up",
+        "r1"
+      ],
+      [
+        "up",
+        "w0 r0"
+      ],
+      [
+        "up",
+        "r0"
+      ]
+    ],
+    "Dynamic-RAWC1 n=1": [
+      [
+        "any",
+        "w0"
+      ],
+      [
+        "up",
+        "r0 w0 r0 r0 w1 r1"
+      ],
+      [
+        "up",
+        "r1 w1 r1 r1 w0 r0"
+      ],
+      [
+        "down",
+        "r0 w0 r0 r0 w1 r1"
+      ],
+      [
+        "down",
+        "r1 w1 r1 r1 w0 r0"
+      ],
+      [
+        "any",
+        "r0"
+      ]
+    ],
+    "Dynamic-RAWC2 n=1": [
+      [
+        "any",
+        "w0"
+      ],
+      [
+        "up",
+        "r0 w0 w0 r0 r0 r0 w0 r0 w1 r1"
+      ],
+      [
+        "up",
+        "r1 w1 w1 r1 r1 r1 w1 r1 w0 r0"
+      ],
+      [
+        "down",
+        "r0 w0 w0 r0 r0 r0 w0 r0 w1 r1"
+      ],
+      [
+        "down",
+        "r1 w1 w1 r1 r1 r1 w1 r1 w0 r0"
+      ],
+      [
+        "any",
+        "r0"
+      ]
+    ],
+    "Dynamic-RAWC1 n=2": [
+      [
+        "any",
+        "w0"
+      ],
+      [
+        "up",
+        "r0 w0 r0 r0 r0 w1 r1"
+      ],
+      [
+        "up",
+        "r1 w1 r1 r1 r1 w0 r0"
+      ],
+      [
+        "down",
+        "r0 w0 r0 r0 w1 r1"
+      ],
+      [
+        "down",
+        "r1 w1 r1 r1 w0 r0"
+      ],
+      [
+        "any",
+        "r0"
+      ]
+    ],
+    "Dynamic-RAWC2 n=2": [
+      [
+        "any",
+        "w0"
+      ],
+      [
+        "up",
+        "r0 w0 w0 r0 r0 r0 r0 w0 r0 w1 r1"
+      ],
+      [
+        "up",
+        "r1 w1 w1 r1 r1 r1 r1 w1 r1 w0 r0"
+      ],
+      [
+        "down",
+        "r0 w0 w0 r0 r0 r0 w0 r0 w1 r1"
+      ],
+      [
+        "down",
+        "r1 w1 w1 r1 r1 r1 w1 r1 w0 r0"
+      ],
+      [
+        "any",
+        "r0"
+      ]
+    ],
+    "Dynamic-RAWC1 n=3": [
+      [
+        "any",
+        "w0"
+      ],
+      [
+        "up",
+        "r0 w0 r0 r0 r0 r0 w1 r1"
+      ],
+      [
+        "up",
+        "r1 w1 r1 r1 r1 r1 w0 r0"
+      ],
+      [
+        "down",
+        "r0 w0 r0 r0 w1 r1"
+      ],
+      [
+        "down",
+        "r1 w1 r1 r1 w0 r0"
+      ],
+      [
+        "any",
+        "r0"
+      ]
+    ],
+    "Dynamic-RAWC2 n=3": [
+      [
+        "any",
+        "w0"
+      ],
+      [
+        "up",
+        "r0 w0 w0 r0 r0 r0 r0 r0 w0 r0 w1 r1"
+      ],
+      [
+        "up",
+        "r1 w1 w1 r1 r1 r1 r1 r1 w1 r1 w0 r0"
+      ],
+      [
+        "down",
+        "r0 w0 w0 r0 r0 r0 w0 r0 w1 r1"
+      ],
+      [
+        "down",
+        "r1 w1 w1 r1 r1 r1 w1 r1 w0 r0"
+      ],
+      [
+        "any",
+        "r0"
+      ]
+    ],
+    "Dynamic-RAWC1 n=8": [
+      [
+        "any",
+        "w0"
+      ],
+      [
+        "up",
+        "r0 w0 r0 r0 r0 r0 r0 r0 r0 r0 r0 w1 r1"
+      ],
+      [
+        "up",
+        "r1 w1 r1 r1 r1 r1 r1 r1 r1 r1 r1 w0 r0"
+      ],
+      [
+        "down",
+        "r0 w0 r0 r0 w1 r1"
+      ],
+      [
+        "down",
+        "r1 w1 r1 r1 w0 r0"
+      ],
+      [
+        "any",
+        "r0"
+      ]
+    ],
+    "Dynamic-RAWC2 n=8": [
+      [
+        "any",
+        "w0"
+      ],
+      [
+        "up",
+        "r0 w0 w0 r0 r0 r0 r0 r0 r0 r0 r0 r0 r0 w0 r0 w1 r1"
+      ],
+      [
+        "up",
+        "r1 w1 w1 r1 r1 r1 r1 r1 r1 r1 r1 r1 r1 w1 r1 w0 r0"
+      ],
+      [
+        "down",
+        "r0 w0 w0 r0 r0 r0 w0 r0 w1 r1"
+      ],
+      [
+        "down",
+        "r1 w1 w1 r1 r1 r1 w1 r1 w0 r0"
+      ],
+      [
+        "any",
+        "r0"
+      ]
+    ],
+    "Dynamic-RAWC1 n=9": [
+      [
+        "any",
+        "w0"
+      ],
+      [
+        "up",
+        "r0 w0 r0 r0 r0 r0 r0 r0 r0 r0 r0 r0 w1 r1"
+      ],
+      [
+        "up",
+        "r1 w1 r1 r1 r1 r1 r1 r1 r1 r1 r1 r1 w0 r0"
+      ],
+      [
+        "down",
+        "r0 w0 r0 r0 w1 r1"
+      ],
+      [
+        "down",
+        "r1 w1 r1 r1 w0 r0"
+      ],
+      [
+        "any",
+        "r0"
+      ]
+    ]
+  },
+  "fault_models": [
+    [
+      "SAF",
+      1,
+      0,
+      null,
+      null
+    ],
+    [
+      "SAF",
+      1,
+      1,
+      null,
+      null
+    ],
+    [
+      "TF",
+      1,
+      0,
+      null,
+      null
+    ],
+    [
+      "TF",
+      1,
+      1,
+      null,
+      null
+    ],
+    [
+      "RDF",
+      1,
+      0,
+      null,
+      null
+    ],
+    [
+      "RDF",
+      1,
+      1,
+      null,
+      null
+    ],
+    [
+      "IRF",
+      1,
+      0,
+      null,
+      null
+    ],
+    [
+      "IRF",
+      1,
+      1,
+      null,
+      null
+    ],
+    [
+      "DRDF",
+      1,
+      0,
+      null,
+      null
+    ],
+    [
+      "DRDF",
+      1,
+      1,
+      null,
+      null
+    ],
+    [
+      "WDF",
+      1,
+      0,
+      null,
+      null
+    ],
+    [
+      "WDF",
+      1,
+      1,
+      null,
+      null
+    ],
+    [
+      "CFtr",
+      1,
+      0,
+      2,
+      0
+    ],
+    [
+      "CFtr",
+      2,
+      0,
+      1,
+      0
+    ],
+    [
+      "CFtr",
+      1,
+      0,
+      2,
+      1
+    ],
+    [
+      "CFtr",
+      2,
+      0,
+      1,
+      1
+    ],
+    [
+      "CFtr",
+      1,
+      1,
+      2,
+      0
+    ],
+    [
+      "CFtr",
+      2,
+      1,
+      1,
+      0
+    ],
+    [
+      "CFtr",
+      1,
+      1,
+      2,
+      1
+    ],
+    [
+      "CFtr",
+      2,
+      1,
+      1,
+      1
+    ],
+    [
+      "CFdrd",
+      1,
+      0,
+      2,
+      0
+    ],
+    [
+      "CFdrd",
+      2,
+      0,
+      1,
+      0
+    ],
+    [
+      "CFdrd",
+      1,
+      0,
+      2,
+      1
+    ],
+    [
+      "CFdrd",
+      2,
+      0,
+      1,
+      1
+    ],
+    [
+      "CFdrd",
+      1,
+      1,
+      2,
+      0
+    ],
+    [
+      "CFdrd",
+      2,
+      1,
+      1,
+      0
+    ],
+    [
+      "CFdrd",
+      1,
+      1,
+      2,
+      1
+    ],
+    [
+      "CFdrd",
+      2,
+      1,
+      1,
+      1
+    ],
+    [
+      "CFwd",
+      1,
+      0,
+      2,
+      0
+    ],
+    [
+      "CFwd",
+      2,
+      0,
+      1,
+      0
+    ],
+    [
+      "CFwd",
+      1,
+      0,
+      2,
+      1
+    ],
+    [
+      "CFwd",
+      2,
+      0,
+      1,
+      1
+    ],
+    [
+      "CFwd",
+      1,
+      1,
+      2,
+      0
+    ],
+    [
+      "CFwd",
+      2,
+      1,
+      1,
+      0
+    ],
+    [
+      "CFwd",
+      1,
+      1,
+      2,
+      1
+    ],
+    [
+      "CFwd",
+      2,
+      1,
+      1,
+      1
+    ]
+  ],
+  "results": {
+    "March C-": {
+      "length_per_address": 10,
+      "faults_detected": {
+        "SAF": 2,
+        "TF": 2,
+        "RDF": 2,
+        "IRF": 2,
+        "DRDF": 0,
+        "WDF": 0,
+        "CFtr": 8,
+        "CFdrd": 0,
+        "CFwd": 0
+      },
+      "detected_of_36": 16
+    },
+    "March SR": {
+      "length_per_address": 14,
+      "faults_detected": {
+        "SAF": 2,
+        "TF": 2,
+        "RDF": 2,
+        "IRF": 2,
+        "DRDF": 2,
+        "WDF": 0,
+        "CFtr": 8,
+        "CFdrd": 4,
+        "CFwd": 0
+      },
+      "detected_of_36": 22
+    },
+    "March LR": {
+      "length_per_address": 14,
+      "faults_detected": {
+        "SAF": 2,
+        "TF": 2,
+        "RDF": 2,
+        "IRF": 2,
+        "DRDF": 0,
+        "WDF": 0,
+        "CFtr": 8,
+        "CFdrd": 0,
+        "CFwd": 0
+      },
+      "detected_of_36": 16
+    },
+    "March SS": {
+      "length_per_address": 22,
+      "faults_detected": {
+        "SAF": 2,
+        "TF": 2,
+        "RDF": 2,
+        "IRF": 2,
+        "DRDF": 2,
+        "WDF": 2,
+        "CFtr": 8,
+        "CFdrd": 8,
+        "CFwd": 8
+      },
+      "detected_of_36": 36
+    },
+    "March MSS": {
+      "length_per_address": 18,
+      "faults_detected": {
+        "SAF": 2,
+        "TF": 2,
+        "RDF": 2,
+        "IRF": 2,
+        "DRDF": 2,
+        "WDF": 2,
+        "CFtr": 8,
+        "CFdrd": 8,
+        "CFwd": 8
+      },
+      "detected_of_36": 36
+    },
+    "March AB": {
+      "length_per_address": 22,
+      "faults_detected": {
+        "SAF": 2,
+        "TF": 2,
+        "RDF": 2,
+        "IRF": 2,
+        "DRDF": 2,
+        "WDF": 2,
+        "CFtr": 8,
+        "CFdrd": 8,
+        "CFwd": 8
+      },
+      "detected_of_36": 36
+    },
+    "March AZ1 element expansion": {
+      "length_per_address": 13,
+      "faults_detected": {
+        "SAF": 2,
+        "TF": 2,
+        "RDF": 2,
+        "IRF": 2,
+        "DRDF": 2,
+        "WDF": 2,
+        "CFtr": 5,
+        "CFdrd": 6,
+        "CFwd": 6
+      },
+      "detected_of_36": 29
+    },
+    "March AZ element expansion": {
+      "length_per_address": 13,
+      "faults_detected": {
+        "SAF": 2,
+        "TF": 2,
+        "RDF": 2,
+        "IRF": 2,
+        "DRDF": 2,
+        "WDF": 2,
+        "CFtr": 6,
+        "CFdrd": 6,
+        "CFwd": 6
+      },
+      "detected_of_36": 30
+    },
+    "March AZ2": {
+      "length_per_address": 14,
+      "faults_detected": {
+        "SAF": 2,
+        "TF": 2,
+        "RDF": 2,
+        "IRF": 2,
+        "DRDF": 2,
+        "WDF": 2,
+        "CFtr": 6,
+        "CFdrd": 6,
+        "CFwd": 6
+      },
+      "detected_of_36": 30
+    },
+    "March RAW": {
+      "length_per_address": 26,
+      "faults_detected": {
+        "SAF": 2,
+        "TF": 2,
+        "RDF": 2,
+        "IRF": 2,
+        "DRDF": 2,
+        "WDF": 2,
+        "CFtr": 8,
+        "CFdrd": 8,
+        "CFwd": 8
+      },
+      "detected_of_36": 36
+    },
+    "RAW1 illustration": {
+      "length_per_address": 13,
+      "faults_detected": {
+        "SAF": 2,
+        "TF": 2,
+        "RDF": 2,
+        "IRF": 2,
+        "DRDF": 2,
+        "WDF": 2,
+        "CFtr": 4,
+        "CFdrd": 6,
+        "CFwd": 4
+      },
+      "detected_of_36": 26
+    },
+    "Dynamic-RAWC1 n=1": {
+      "length_per_address": 26,
+      "faults_detected": {
+        "SAF": 2,
+        "TF": 2,
+        "RDF": 2,
+        "IRF": 2,
+        "DRDF": 2,
+        "WDF": 2,
+        "CFtr": 8,
+        "CFdrd": 8,
+        "CFwd": 8
+      },
+      "detected_of_36": 36
+    },
+    "Dynamic-RAWC2 n=1": {
+      "length_per_address": 42,
+      "faults_detected": {
+        "SAF": 2,
+        "TF": 2,
+        "RDF": 2,
+        "IRF": 2,
+        "DRDF": 2,
+        "WDF": 2,
+        "CFtr": 8,
+        "CFdrd": 8,
+        "CFwd": 8
+      },
+      "detected_of_36": 36
+    },
+    "Dynamic-RAWC1 n=2": {
+      "length_per_address": 28,
+      "faults_detected": {
+        "SAF": 2,
+        "TF": 2,
+        "RDF": 2,
+        "IRF": 2,
+        "DRDF": 2,
+        "WDF": 2,
+        "CFtr": 8,
+        "CFdrd": 8,
+        "CFwd": 8
+      },
+      "detected_of_36": 36
+    },
+    "Dynamic-RAWC2 n=2": {
+      "length_per_address": 44,
+      "faults_detected": {
+        "SAF": 2,
+        "TF": 2,
+        "RDF": 2,
+        "IRF": 2,
+        "DRDF": 2,
+        "WDF": 2,
+        "CFtr": 8,
+        "CFdrd": 8,
+        "CFwd": 8
+      },
+      "detected_of_36": 36
+    },
+    "Dynamic-RAWC1 n=3": {
+      "length_per_address": 30,
+      "faults_detected": {
+        "SAF": 2,
+        "TF": 2,
+        "RDF": 2,
+        "IRF": 2,
+        "DRDF": 2,
+        "WDF": 2,
+        "CFtr": 8,
+        "CFdrd": 8,
+        "CFwd": 8
+      },
+      "detected_of_36": 36
+    },
+    "Dynamic-RAWC2 n=3": {
+      "length_per_address": 46,
+      "faults_detected": {
+        "SAF": 2,
+        "TF": 2,
+        "RDF": 2,
+        "IRF": 2,
+        "DRDF": 2,
+        "WDF": 2,
+        "CFtr": 8,
+        "CFdrd": 8,
+        "CFwd": 8
+      },
+      "detected_of_36": 36
+    },
+    "Dynamic-RAWC1 n=8": {
+      "length_per_address": 40,
+      "faults_detected": {
+        "SAF": 2,
+        "TF": 2,
+        "RDF": 2,
+        "IRF": 2,
+        "DRDF": 2,
+        "WDF": 2,
+        "CFtr": 8,
+        "CFdrd": 8,
+        "CFwd": 8
+      },
+      "detected_of_36": 36
+    },
+    "Dynamic-RAWC2 n=8": {
+      "length_per_address": 56,
+      "faults_detected": {
+        "SAF": 2,
+        "TF": 2,
+        "RDF": 2,
+        "IRF": 2,
+        "DRDF": 2,
+        "WDF": 2,
+        "CFtr": 8,
+        "CFdrd": 8,
+        "CFwd": 8
+      },
+      "detected_of_36": 36
+    },
+    "Dynamic-RAWC1 n=9": {
+      "length_per_address": 42,
+      "faults_detected": {
+        "SAF": 2,
+        "TF": 2,
+        "RDF": 2,
+        "IRF": 2,
+        "DRDF": 2,
+        "WDF": 2,
+        "CFtr": 8,
+        "CFdrd": 8,
+        "CFwd": 8
+      },
+      "detected_of_36": 36
+    }
+  }
+}

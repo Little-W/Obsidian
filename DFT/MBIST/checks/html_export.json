@@ -4,84 +4,123 @@
     {
       "source": "00_MBIST总体架构与阅读导航.md",
       "html": "html/00_MBIST总体架构与阅读导航.html",
+      "source_sha256": "829033bc959893144eef61712828bf5fa1344df1ab3049ceafceb74162b6a618",
+      "html_sha256": "8db69a145acc98ca76c03a5089acda8707401b0d370b8300f112c6e57860ba04",
       "math_count": 1
     },
     {
       "source": "01_存储器接口与测试控制器.md",
       "html": "html/01_存储器接口与测试控制器.html",
+      "source_sha256": "e8ffc5652af86f4f8164e2dbc49c190cbf21e21924e56d692734c529055e6b0f",
+      "html_sha256": "fc23822d4eb66b0401bb9f3447cb5373d1bc2c874e5bc9b2e5eb81fd0a3ec79b",
       "math_count": 13
     },
     {
       "source": "02_故障模型与检测原理.md",
       "html": "html/02_故障模型与检测原理.html",
-      "math_count": 2
+      "source_sha256": "05b67b48e511a386c2af4c917b476ea091fd71a84e9cd40d65dc03a1405d61ef",
+      "html_sha256": "fc4140e518d13d8550b1b5d155c196be7eaca842d98278ab6f890c2c975ada7a",
+      "math_count": 27
     },
     {
       "source": "03_March基础与经典算法.md",
       "html": "html/03_March基础与经典算法.html",
-      "math_count": 20
+      "source_sha256": "a88b60cbbbc7bc103fc69fd88be69a3c25ff0cef7b3438c76c1b73714778d1c0",
+      "html_sha256": "e23c094e6663328849c1fc9bfd9711fa3fe45e543af1fb57bcd8d1e20fb24363",
+      "math_count": 19
     },
     {
       "source": "04_增强March与复杂故障测试.md",
       "html": "html/04_增强March与复杂故障测试.html",
-      "math_count": 41
+      "source_sha256": "2dd6f3a3ff8c6bf9a9f0a52cb2f3bb750966d394b822f18158012c4c550217f8",
+      "html_sha256": "9a3902cf4abfafb1675988abbb8955ddc6e7c8f3f9535971df286ca159157dc9",
+      "math_count": 6
     },
     {
       "source": "05_测试算法生成与选择.md",
       "html": "html/05_测试算法生成与选择.html",
-      "math_count": 18
+      "source_sha256": "37a9d1e57ad5ff1b54ac8f3bef0e1d0cdaf7fe42074ff5ce4af6fd7de224625b",
+      "html_sha256": "80746578ef1aea7515b31a0641c94fd5154d139aacc05912a956a50d920147c7",
+      "math_count": 115
     },
     {
       "source": "06_存储器分组与功耗分析.md",
       "html": "html/06_存储器分组与功耗分析.html",
-      "math_count": 48
+      "source_sha256": "9cf73aea08e5204f592d52c31cf69fe43bc151245e5256b10e9587bb2c309757",
+      "html_sha256": "bf9e52ee75a02f02f2586df29d2d420fa6aa20a94e59e56bd762a52394a987c0",
+      "math_count": 184
     },
     {
       "source": "07_并发调度与联合优化.md",
       "html": "html/07_并发调度与联合优化.html",
+      "source_sha256": "7e1e7ee9d73054ab7159deabb66e72cfb9ff3c63220d81a848753dee397c87f5",
+      "html_sha256": "9b18112e7de2f988359cbd4c7ff8ed4d30f49dfdd563604284efaf845ea85d9a",
       "math_count": 20
     },
     {
       "source": "08_自适应与运行期间测试.md",
       "html": "html/08_自适应与运行期间测试.html",
-      "math_count": 18
+      "source_sha256": "42064011904ab155c6cf8ecf2e57f31d7885324852e07120e79beefa16d0c68e",
+      "html_sha256": "9bce329f9aa92d3abcbd20fd150e9c96d392a2727e8d629124a260d5e0796461",
+      "math_count": 58
     },
     {
       "source": "09_故障诊断与结果记录.md",
       "html": "html/09_故障诊断与结果记录.html",
+      "source_sha256": "3137d2b06f99de760d65947749ebaee67e7285d88a190d0fe1d837b936ce9feb",
+      "html_sha256": "ff69c98fe83786212ae1aa6c611da3b6ae21038bf2035340ae8c7b2e4d0b0eef",
       "math_count": 14
     },
     {
       "source": "10_冗余分析自修复与纠错码.md",
       "html": "html/10_冗余分析自修复与纠错码.html",
+      "source_sha256": "a418262773c6aa6c47153cc93ce3eb872699bd37d3f0faae8793f55d02fa5587",
+      "html_sha256": "68df3c740842117bdfb2042b906192f1074c27c60077e4fa4914b57234a2ad92",
       "math_count": 18
     },
     {
       "source": "11_多端口与新型存储器扩展.md",
       "html": "html/11_多端口与新型存储器扩展.html",
-      "math_count": 3
+      "source_sha256": "453b6e516867df01e29c9d1519fbf72d545579548caae71cfd659f38c0b6c9cc",
+      "html_sha256": "785b579510e8349652d2d22926f59d36bcd2196c0c011fbe0f4ec0d9968ba376",
+      "math_count": 46
     },
     {
       "source": "12_设计验证与工具接入.md",
       "html": "html/12_设计验证与工具接入.html",
+      "source_sha256": "886e6802e02eed3e10864c4733af99618b74cb0f5d9ed5b1ffae8ab464196dd7",
+      "html_sha256": "58aa36bde8fbb1b132da525fb838810c7a19326315da10ac0fe7da375c0232fc",
       "math_count": 4
     },
     {
       "source": "13_算例与源码说明.md",
       "html": "html/13_算例与源码说明.html",
+      "source_sha256": "2cd184ac5970f6454895083837c0307e6ea7e97e2741c9d5dca0c56d9c1cd53a",
+      "html_sha256": "380e2c82bec6d36063451ce244546a6aa16cb8279e498d81fedef6ae549d24c4",
+      "math_count": 2
+    },
+    {
+      "source": "14_故障模型与测试序列索引.md",
+      "html": "html/14_故障模型与测试序列索引.html",
+      "source_sha256": "e93b57f1acb0591b6cbb26fa07aba3af12f96b1d3ab8d57739e8b33e35989996",
+      "html_sha256": "ad640fe34a16c2e1dfeecaa9437c5bd18b270acf9cb2361c9efec2cab8b2f950",
       "math_count": 0
     },
     {
       "source": "90_参考文献与研究进展索引.md",
       "html": "html/90_参考文献与研究进展索引.html",
+      "source_sha256": "b572467eacd6916b25f6652b4a18da3f963d18f05b9034b12b11895f3813314d",
+      "html_sha256": "46eec16f7d62606ee938ce831c72351ef7f93bbf583e76b80d67c23eb9f2ab75",
       "math_count": 0
     },
     {
       "source": "README.md",
       "html": "html/README.html",
+      "source_sha256": "c06f6e0288b82525bb03bb8dc69b62b4e470f0d595057b3562849eb8224503b4",
+      "html_sha256": "69f7a29225cd218cce69a1d93d772759b95ac3720bd13e9a12506ae274598452",
       "math_count": 0
     }
   ],
-  "unique_rendered_math": 155,
-  "total_math": 220
+  "unique_rendered_math": 405,
+  "total_math": 527
 }

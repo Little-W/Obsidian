@@ -1,12 +1,64 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>使用说明 · MBIST 设计架构与方法</title><link rel="stylesheet" href="book.css"></head>
-<body><aside class="sidebar"><div class="brand">MBIST 设计架构</div><div class="subtitle">从算法操作到系统实现<br>原理 · 约束 · 结果 · 验证</div><a class="home" href="../阅读入口.html">← 文档首页</a><details class="mobile-index"><summary>展开文档目录</summary></details><nav><a class="" href="00_MBIST%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E9%98%85%E8%AF%BB%E5%AF%BC%E8%88%AA.html">00 · MBIST总体架构与阅读导航</a><a class="" href="01_%E5%AD%98%E5%82%A8%E5%99%A8%E6%8E%A5%E5%8F%A3%E4%B8%8E%E6%B5%8B%E8%AF%95%E6%8E%A7%E5%88%B6%E5%99%A8.html">01 · 存储器接口与测试控制器</a><a class="" href="02_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%A3%80%E6%B5%8B%E5%8E%9F%E7%90%86.html">02 · 故障模型与检测原理</a><a class="" href="03_March%E5%9F%BA%E7%A1%80%E4%B8%8E%E7%BB%8F%E5%85%B8%E7%AE%97%E6%B3%95.html">03 · March 基础与经典算法</a><a class="" href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 · 增强 March 与复杂故障测试</a><a class="" href="05_%E6%B5%8B%E8%AF%95%E7%AE%97%E6%B3%95%E7%94%9F%E6%88%90%E4%B8%8E%E9%80%89%E6%8B%A9.html">05 · 测试算法生成与选择</a><a class="" href="06_%E5%AD%98%E5%82%A8%E5%99%A8%E5%88%86%E7%BB%84%E4%B8%8E%E5%8A%9F%E8%80%97%E5%88%86%E6%9E%90.html">06 · 存储器分组与功耗分析</a><a class="" href="07_%E5%B9%B6%E5%8F%91%E8%B0%83%E5%BA%A6%E4%B8%8E%E8%81%94%E5%90%88%E4%BC%98%E5%8C%96.html">07 · 并发调度与联合优化</a><a class="" href="08_%E8%87%AA%E9%80%82%E5%BA%94%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%9C%9F%E9%97%B4%E6%B5%8B%E8%AF%95.html">08 · 自适应与运行期间测试</a><a class="" href="09_%E6%95%85%E9%9A%9C%E8%AF%8A%E6%96%AD%E4%B8%8E%E7%BB%93%E6%9E%9C%E8%AE%B0%E5%BD%95.html">09 · 故障诊断与结果记录</a><a class="" href="10_%E5%86%97%E4%BD%99%E5%88%86%E6%9E%90%E8%87%AA%E4%BF%AE%E5%A4%8D%E4%B8%8E%E7%BA%A0%E9%94%99%E7%A0%81.html">10 · 冗余分析自修复与纠错码</a><a class="" href="11_%E5%A4%9A%E7%AB%AF%E5%8F%A3%E4%B8%8E%E6%96%B0%E5%9E%8B%E5%AD%98%E5%82%A8%E5%99%A8%E6%89%A9%E5%B1%95.html">11 · 多端口与新型存储器扩展</a><a class="" href="12_%E8%AE%BE%E8%AE%A1%E9%AA%8C%E8%AF%81%E4%B8%8E%E5%B7%A5%E5%85%B7%E6%8E%A5%E5%85%A5.html">12 · 设计验证与工具接入</a><a class="" href="13_%E7%AE%97%E4%BE%8B%E4%B8%8E%E6%BA%90%E7%A0%81%E8%AF%B4%E6%98%8E.html">13 · 算例与源码说明</a><a class="" href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E7%A0%94%E7%A9%B6%E8%BF%9B%E5%B1%95%E7%B4%A2%E5%BC%95.html">90 · 参考文献与研究进展索引</a></nav></aside><div class="reading"><main class="paper"><div class="eyebrow">MBIST · 设计架构与方法</div><h1 id="MBIST 设计架构与方法">MBIST 设计架构与方法</h1>
-<p>精确绘图版</p>
-<p>以总览为入口，按设计模块进入专题。全书由 <strong>1 份总览、12 份专题与 2 份附录</strong> 组成。</p>
+<body><aside class="sidebar"><div class="brand">MBIST 设计架构</div><div class="subtitle">从算法操作到系统实现<br>原理 · 约束 · 结果 · 验证</div><a class="home" href="../阅读入口.html">← 文档首页</a><details class="mobile-index"><summary>展开文档目录</summary></details><nav><a class="" href="00_MBIST%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E9%98%85%E8%AF%BB%E5%AF%BC%E8%88%AA.html">00 · MBIST总体架构与阅读导航</a><a class="" href="01_%E5%AD%98%E5%82%A8%E5%99%A8%E6%8E%A5%E5%8F%A3%E4%B8%8E%E6%B5%8B%E8%AF%95%E6%8E%A7%E5%88%B6%E5%99%A8.html">01 · 存储器接口与测试控制器</a><a class="" href="02_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%A3%80%E6%B5%8B%E5%8E%9F%E7%90%86.html">02 · 故障模型与检测原理</a><a class="" href="03_March%E5%9F%BA%E7%A1%80%E4%B8%8E%E7%BB%8F%E5%85%B8%E7%AE%97%E6%B3%95.html">03 · March 基础与经典算法</a><a class="" href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 · 增强 March 与复杂故障测试</a><a class="" href="05_%E6%B5%8B%E8%AF%95%E7%AE%97%E6%B3%95%E7%94%9F%E6%88%90%E4%B8%8E%E9%80%89%E6%8B%A9.html">05 · 测试算法生成与选择</a><a class="" href="06_%E5%AD%98%E5%82%A8%E5%99%A8%E5%88%86%E7%BB%84%E4%B8%8E%E5%8A%9F%E8%80%97%E5%88%86%E6%9E%90.html">06 · 存储器分组与功耗分析</a><a class="" href="07_%E5%B9%B6%E5%8F%91%E8%B0%83%E5%BA%A6%E4%B8%8E%E8%81%94%E5%90%88%E4%BC%98%E5%8C%96.html">07 · 并发调度与联合优化</a><a class="" href="08_%E8%87%AA%E9%80%82%E5%BA%94%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%9C%9F%E9%97%B4%E6%B5%8B%E8%AF%95.html">08 · 自适应与运行期间测试</a><a class="" href="09_%E6%95%85%E9%9A%9C%E8%AF%8A%E6%96%AD%E4%B8%8E%E7%BB%93%E6%9E%9C%E8%AE%B0%E5%BD%95.html">09 · 故障诊断与结果记录</a><a class="" href="10_%E5%86%97%E4%BD%99%E5%88%86%E6%9E%90%E8%87%AA%E4%BF%AE%E5%A4%8D%E4%B8%8E%E7%BA%A0%E9%94%99%E7%A0%81.html">10 · 冗余分析自修复与纠错码</a><a class="" href="11_%E5%A4%9A%E7%AB%AF%E5%8F%A3%E4%B8%8E%E6%96%B0%E5%9E%8B%E5%AD%98%E5%82%A8%E5%99%A8%E6%89%A9%E5%B1%95.html">11 · 多端口与新型存储器扩展</a><a class="" href="12_%E8%AE%BE%E8%AE%A1%E9%AA%8C%E8%AF%81%E4%B8%8E%E5%B7%A5%E5%85%B7%E6%8E%A5%E5%85%A5.html">12 · 设计验证与工具接入</a><a class="" href="13_%E7%AE%97%E4%BE%8B%E4%B8%8E%E6%BA%90%E7%A0%81%E8%AF%B4%E6%98%8E.html">13 · 算例与源码说明</a><a class="" href="14_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%B5%8B%E8%AF%95%E5%BA%8F%E5%88%97%E7%B4%A2%E5%BC%95.html">14 · 故障模型与测试序列索引</a><a class="" href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E7%A0%94%E7%A9%B6%E8%BF%9B%E5%B1%95%E7%B4%A2%E5%BC%95.html">90 · 参考文献与研究进展索引</a></nav></aside><div class="reading"><main class="paper"><div class="eyebrow">MBIST · 设计架构与方法</div><h1 id="MBIST 设计架构与方法">MBIST 设计架构与方法</h1>
+<p>本手册将存储器故障、March 测试序列、算法生成和系统实现放在同一套文档中介绍。正文包括 <strong>1 份总览、12 份专题与 3 份附录</strong>，附带可编辑 SVG、PNG、离线网页和可运行算例。</p>
 <p><strong>开始阅读：<a href="00_MBIST%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E9%98%85%E8%AF%BB%E5%AF%BC%E8%88%AA.html">MBIST总体架构与阅读导航</a></strong></p>
-<p><strong>浏览器阅读：</strong> 打开 <a href="../%E9%98%85%E8%AF%BB%E5%85%A5%E5%8F%A3.html">阅读入口.html</a>。网页可离线查看，公式已生成；Markdown 是正文的可编辑来源。</p>
-<h2 id="内容目录">内容目录</h2>
+<p><strong>浏览器阅读：<a href="../%E9%98%85%E8%AF%BB%E5%85%A5%E5%8F%A3.html">阅读入口.html</a></strong>。公式已经转换为数学矢量图，页面与插图均可离线查看。Markdown 是可编辑正文。</p>
+<h2 id="故障与算法阅读路线">故障与算法阅读路线</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>阅读目标</th>
+  <th>章节</th>
+  <th>主要内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>理解一次操作怎样激活并检出故障</td>
+  <td><a href="02_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%A3%80%E6%B5%8B%E5%8E%9F%E7%90%86.html">02_故障模型与检测原理</a></td>
+  <td>故障原型、单元状态、局部序列、逐次读取结果和近期故障模型</td>
+</tr>
+<tr>
+  <td>理解地址方向与 March 元素</td>
+  <td><a href="03_March%E5%9F%BA%E7%A1%80%E4%B8%8E%E7%BB%8F%E5%85%B8%E7%AE%97%E6%B3%95.html">03_March基础与经典算法</a></td>
+  <td>完整序列、逐阶段作用、地址关系与长度计算</td>
+</tr>
+<tr>
+  <td>学习增强与多背景测试</td>
+  <td><a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04_增强March与复杂故障测试</a></td>
+  <td>SS、AB、AZ、Dynamic-RAWC，以及三、四、五单元测试的完整生成规则</td>
+</tr>
+<tr>
+  <td>学习自动生成测试序列</td>
+  <td><a href="05_%E6%B5%8B%E8%AF%95%E7%AE%97%E6%B3%95%E7%94%9F%E6%88%90%E4%B8%8E%E9%80%89%E6%8B%A9.html">05_测试算法生成与选择</a></td>
+  <td>欧拉回路、历史状态、集合覆盖、元启发算法、MarchGen和互补测试学习</td>
+</tr>
+<tr>
+  <td>学习透明测试与数据恢复</td>
+  <td><a href="08_%E8%87%AA%E9%80%82%E5%BA%94%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%9C%9F%E9%97%B4%E6%B5%8B%E8%AF%95.html">08_自适应与运行期间测试</a></td>
+  <td>双地址序列、局部互补比较、初末签名与数据恢复</td>
+</tr>
+<tr>
+  <td>扩展至其他存储技术</td>
+  <td><a href="11_%E5%A4%9A%E7%AB%AF%E5%8F%A3%E4%B8%8E%E6%96%B0%E5%9E%8B%E5%AD%98%E5%82%A8%E5%99%A8%E6%89%A9%E5%B1%95.html">11_多端口与新型存储器扩展</a></td>
+  <td>多端口、DRAM、FeRAM、STT-MRAM、RRAM及存储器内部计算</td>
+</tr>
+<tr>
+  <td>按故障查找完整序列</td>
+  <td><a href="14_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%B5%8B%E8%AF%95%E5%BA%8F%E5%88%97%E7%B4%A2%E5%BC%95.html">14_故障模型与测试序列索引</a></td>
+  <td>前置状态、激活、观察、算法长度、地址与背景要求</td>
+</tr>
+<tr>
+  <td>运行与核对算例</td>
+  <td><a href="13_%E7%AE%97%E4%BE%8B%E4%B8%8E%E6%BA%90%E7%A0%81%E8%AF%B4%E6%98%8E.html">13_算例与源码说明</a></td>
+  <td>故障注入、背景遍历、搜索结果、程序入口和检查范围</td>
+</tr>
+</tbody>
+</table></div>
+<p>各算法分别给出方向、初始化、操作顺序、期望读值、适用故障与操作次数。论文算法和本手册的教学构造分别标明来源；表述为覆盖率的数字同时给出故障集合或实验范围。</p>
+<h2 id="完整目录">完整目录</h2>
 <div class="table-wrap"><table>
 <thead>
 <tr>
@@ -72,29 +124,41 @@
   <td><a href="13_%E7%AE%97%E4%BE%8B%E4%B8%8E%E6%BA%90%E7%A0%81%E8%AF%B4%E6%98%8E.html">算例与源码说明</a></td>
 </tr>
 <tr>
+  <td>14</td>
+  <td><a href="14_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%B5%8B%E8%AF%95%E5%BA%8F%E5%88%97%E7%B4%A2%E5%BC%95.html">故障模型与测试序列索引</a></td>
+</tr>
+<tr>
   <td>90</td>
   <td><a href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E7%A0%94%E7%A9%B6%E8%BF%9B%E5%B1%95%E7%B4%A2%E5%BC%95.html">参考文献与研究进展索引</a></td>
 </tr>
 </tbody>
 </table></div>
 <h2 id="Obsidian 与插图">Obsidian 与插图</h2>
-<p>将整个目录作为 Obsidian 仓库打开，或复制到已有仓库。保留 <code>assets/</code> 的相对位置，不要只移动 Markdown。公式使用 <code>$...$</code> 与 <code>$$...$$</code>，目录使用 Obsidian 标题链接。</p>
-<p>25 张插图为采用固定连接点与正交路径的可编辑 SVG，并附同一渲染环境生成的 PNG。标题为 48 像素，主要文字为 32—36 像素，最小字号为 28 像素。文字、图形与连接线均为独立对象，未转换为轮廓，未将 PNG 包装为 SVG，也未附带字体文件。</p>
-<p><strong>检查图形：<a href="../%E7%B2%BE%E7%A1%AE%E7%BB%98%E5%9B%BE%E6%A3%80%E6%9F%A5.html">精确绘图检查.html</a></strong>。可以切换显示连接点、实际文字矩形与避让区域，并查看每条连接的起点、终点和含义。该辅助页面不会把检查标记写入正文插图。</p>
-<p>25 张正文图的 792 个文字对象与 59 条连接（53 条带箭头）通过精确几何检查。检查覆盖真实渲染的文字范围、箭头尖端、模块边框、连接点、进入方向以及没有明确连接点的交叉。</p>
-<p>直接编辑 SVG 后，重新运行源码会覆盖手工改动；需要重复生成时，请修改 <code>src/precise_march.py</code> 或 <code>src/precise_systems.py</code>。普通 SVG 编辑器不会自动维持 Python 源码中的连接点关系。</p>
-<h2 id="重新生成">重新生成</h2>
-<pre><code class="language-bash">python src/teaching_examples.py
-python src/rebuild_assets.py --png
-python src/test_geometry_checks.py
-python src/build_drawing_review.py
-python src/validate_march_sequences.py
+<p>将整个目录作为 Obsidian 仓库打开，或复制到已有仓库。保留 <code>assets/</code> 的相对位置。公式使用 <code>$...$</code> 与 <code>$$...$$</code>，章节目录使用 Obsidian 标题链接。</p>
+<p>插图包括 10 张 March 图、15 张系统图、26 张分组专题图，以及 3 张故障观测与序列生成图。全部提供原生 SVG 与 PNG；文字保持可编辑。新绘图使用明确的连接点、水平或垂直线段与箭头，绘图源码位于 <code>src/generate_research_figures.py</code>。</p>
+<p><a href="../%E6%8F%92%E5%9B%BE%E7%B4%A2%E5%BC%95.html">查看插图索引</a>。基础图的连接点辅助页面为 <a href="../%E7%B2%BE%E7%A1%AE%E7%BB%98%E5%9B%BE%E6%A3%80%E6%9F%A5.html">精确绘图检查.html</a>。</p>
+<h2 id="运行核心算例">运行核心算例</h2>
+<p>以下命令在本目录执行，算法算例只需要 Python 3.10 或更新版本。</p>
+<p>运行全部数字模型算例、逐访问表导出和文档静态检查：</p>
+<pre><code class="language-bash">python src/run_checks.py
+</code></pre>
+<p>各程序也可以单独运行：</p>
+<pre><code class="language-bash">python src/validate_march_sequences.py
+python src/fault_detection_examples.py
+python src/validate_static_fault_models.py
+python src/validate_multirun_sequences.py
+python src/validate_multirun_faults.py
+python src/sequence_generation_examples.py
+python src/port_imc_examples.py
+python src/validate_march_ic.py
+python src/transparent_march_examples.py
+python src/validate_read_disturb_and_pause.py
+python src/export_march_traces.py --examples
+python src/teaching_examples.py
 python src/validate_handbook.py
 </code></pre>
-<p>SVG 与算例程序只需要 Python 标准库；精确文字测量、几何检查和 PNG 导出需要 Playwright 与 Chromium。完整命令和网页生成说明见 <code>13_算例与源码说明.md</code>。</p>
-<h2 id="资料与验证范围">资料与验证范围</h2>
-<p>文献检索截止 2026-10-17；参考资料 52 条记录去重为 50 条。完整 March 序列、算例与论文适用条件随专题保留。</p>
-<p>绘图、文件与算例程序检查记录在 <code>checks/</code>；程序检查不等价于商业 MBIST 工具、晶体管级缺陷、电源网络、温度或芯片验证，也不构成故障覆盖证明。</p>
-<h2 id="字体与重新编辑">字体与重新编辑</h2>
-<p>图形使用 Noto Sans CJK SC 的实际渲染结果检查。SVG 保留常见中文字体回退设置；更换字体后字形尺寸可能变化，应重新运行检查程序。PNG 为对应渲染结果的固定副本。</p>
-<div class="footer">文献检索截止 2026-10-17。此页为 Markdown 的离线阅读副本；编辑后需重新生成。图示、算例与论文证据范围分别说明。</div></main></div></body></html>
+<p>逐次访问 CSV 保存在 <code>examples/traces/</code>，算法及示例清单见 <a href="../examples/march_trace_catalog.json">march_trace_catalog.json</a>。统一检查结果见 <a href="../checks/run_checks_results.json">run_checks_results.json</a>。</p>
+<p>结果写入 <code>examples/</code> 和 <code>checks/</code>。每份结果说明使用的故障定义、初始状态、地址数量和检查类型。插图生成、网页生成与可选依赖见第 13 章。</p>
+<h2 id="文献范围">文献范围</h2>
+<p>故障模型、增强算法与序列生成专题的文献检索截止 <strong>2026-11-18</strong>。参考文献列出标题、作者、发表时间和原文地址，并标明全文、摘要或预印本的使用范围。系统分组、调度与修复专题沿用各章列出的研究范围。</p>
+<div class="footer">故障模型、算法与生成方法的检索截止 2026-11-18。此页为 Markdown 的离线阅读副本，公式与插图可离线查看。</div></main></div></body></html>

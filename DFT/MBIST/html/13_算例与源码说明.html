@@ -1,186 +1,640 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>算例与源码说明 · MBIST 设计架构与方法</title><link rel="stylesheet" href="book.css"></head>
-<body><aside class="sidebar"><div class="brand">MBIST 设计架构</div><div class="subtitle">从算法操作到系统实现<br>原理 · 约束 · 结果 · 验证</div><a class="home" href="../阅读入口.html">← 文档首页</a><details class="mobile-index"><summary>展开文档目录</summary></details><nav><a class="" href="00_MBIST%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E9%98%85%E8%AF%BB%E5%AF%BC%E8%88%AA.html">00 · MBIST总体架构与阅读导航</a><a class="" href="01_%E5%AD%98%E5%82%A8%E5%99%A8%E6%8E%A5%E5%8F%A3%E4%B8%8E%E6%B5%8B%E8%AF%95%E6%8E%A7%E5%88%B6%E5%99%A8.html">01 · 存储器接口与测试控制器</a><a class="" href="02_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%A3%80%E6%B5%8B%E5%8E%9F%E7%90%86.html">02 · 故障模型与检测原理</a><a class="" href="03_March%E5%9F%BA%E7%A1%80%E4%B8%8E%E7%BB%8F%E5%85%B8%E7%AE%97%E6%B3%95.html">03 · March 基础与经典算法</a><a class="" href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 · 增强 March 与复杂故障测试</a><a class="" href="05_%E6%B5%8B%E8%AF%95%E7%AE%97%E6%B3%95%E7%94%9F%E6%88%90%E4%B8%8E%E9%80%89%E6%8B%A9.html">05 · 测试算法生成与选择</a><a class="" href="06_%E5%AD%98%E5%82%A8%E5%99%A8%E5%88%86%E7%BB%84%E4%B8%8E%E5%8A%9F%E8%80%97%E5%88%86%E6%9E%90.html">06 · 存储器分组与功耗分析</a><a class="" href="07_%E5%B9%B6%E5%8F%91%E8%B0%83%E5%BA%A6%E4%B8%8E%E8%81%94%E5%90%88%E4%BC%98%E5%8C%96.html">07 · 并发调度与联合优化</a><a class="" href="08_%E8%87%AA%E9%80%82%E5%BA%94%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%9C%9F%E9%97%B4%E6%B5%8B%E8%AF%95.html">08 · 自适应与运行期间测试</a><a class="" href="09_%E6%95%85%E9%9A%9C%E8%AF%8A%E6%96%AD%E4%B8%8E%E7%BB%93%E6%9E%9C%E8%AE%B0%E5%BD%95.html">09 · 故障诊断与结果记录</a><a class="" href="10_%E5%86%97%E4%BD%99%E5%88%86%E6%9E%90%E8%87%AA%E4%BF%AE%E5%A4%8D%E4%B8%8E%E7%BA%A0%E9%94%99%E7%A0%81.html">10 · 冗余分析自修复与纠错码</a><a class="" href="11_%E5%A4%9A%E7%AB%AF%E5%8F%A3%E4%B8%8E%E6%96%B0%E5%9E%8B%E5%AD%98%E5%82%A8%E5%99%A8%E6%89%A9%E5%B1%95.html">11 · 多端口与新型存储器扩展</a><a class="" href="12_%E8%AE%BE%E8%AE%A1%E9%AA%8C%E8%AF%81%E4%B8%8E%E5%B7%A5%E5%85%B7%E6%8E%A5%E5%85%A5.html">12 · 设计验证与工具接入</a><a class="current" href="13_%E7%AE%97%E4%BE%8B%E4%B8%8E%E6%BA%90%E7%A0%81%E8%AF%B4%E6%98%8E.html">13 · 算例与源码说明</a><a class="" href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E7%A0%94%E7%A9%B6%E8%BF%9B%E5%B1%95%E7%B4%A2%E5%BC%95.html">90 · 参考文献与研究进展索引</a></nav></aside><div class="reading"><main class="paper"><div class="eyebrow">MBIST · 设计架构与方法</div><h1 id="13 算例与源码说明">13 算例与源码说明</h1>
-<p><a href="00_MBIST%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E9%98%85%E8%AF%BB%E5%AF%BC%E8%88%AA.html">总览</a> · <a href="12_%E8%AE%BE%E8%AE%A1%E9%AA%8C%E8%AF%81%E4%B8%8E%E5%B7%A5%E5%85%B7%E6%8E%A5%E5%85%A5.html">上一篇：设计验证与工具接入</a> · <a href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E7%A0%94%E7%A9%B6%E8%BF%9B%E5%B1%95%E7%B4%A2%E5%BC%95.html">下一篇：参考文献与研究进展索引</a></p>
-<hr />
-<p>本附录说明算例、程序与图形的复算和检查方式，不替代各专题的原理推导。随文代码包含两类检查：<strong>系统分析模型的确定性复算</strong>，以及 <strong>March 完整序列的操作计数与无故障执行检查</strong>。两类检查均不等价于目标宏的物理缺陷覆盖验证；程序结果也不等同于工业工具通过、物理缺陷完全覆盖或芯片性能改善。</p>
+<body><aside class="sidebar"><div class="brand">MBIST 设计架构</div><div class="subtitle">从算法操作到系统实现<br>原理 · 约束 · 结果 · 验证</div><a class="home" href="../阅读入口.html">← 文档首页</a><details class="mobile-index"><summary>展开文档目录</summary></details><nav><a class="" href="00_MBIST%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E9%98%85%E8%AF%BB%E5%AF%BC%E8%88%AA.html">00 · MBIST总体架构与阅读导航</a><a class="" href="01_%E5%AD%98%E5%82%A8%E5%99%A8%E6%8E%A5%E5%8F%A3%E4%B8%8E%E6%B5%8B%E8%AF%95%E6%8E%A7%E5%88%B6%E5%99%A8.html">01 · 存储器接口与测试控制器</a><a class="" href="02_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%A3%80%E6%B5%8B%E5%8E%9F%E7%90%86.html">02 · 故障模型与检测原理</a><a class="" href="03_March%E5%9F%BA%E7%A1%80%E4%B8%8E%E7%BB%8F%E5%85%B8%E7%AE%97%E6%B3%95.html">03 · March 基础与经典算法</a><a class="" href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 · 增强 March 与复杂故障测试</a><a class="" href="05_%E6%B5%8B%E8%AF%95%E7%AE%97%E6%B3%95%E7%94%9F%E6%88%90%E4%B8%8E%E9%80%89%E6%8B%A9.html">05 · 测试算法生成与选择</a><a class="" href="06_%E5%AD%98%E5%82%A8%E5%99%A8%E5%88%86%E7%BB%84%E4%B8%8E%E5%8A%9F%E8%80%97%E5%88%86%E6%9E%90.html">06 · 存储器分组与功耗分析</a><a class="" href="07_%E5%B9%B6%E5%8F%91%E8%B0%83%E5%BA%A6%E4%B8%8E%E8%81%94%E5%90%88%E4%BC%98%E5%8C%96.html">07 · 并发调度与联合优化</a><a class="" href="08_%E8%87%AA%E9%80%82%E5%BA%94%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%9C%9F%E9%97%B4%E6%B5%8B%E8%AF%95.html">08 · 自适应与运行期间测试</a><a class="" href="09_%E6%95%85%E9%9A%9C%E8%AF%8A%E6%96%AD%E4%B8%8E%E7%BB%93%E6%9E%9C%E8%AE%B0%E5%BD%95.html">09 · 故障诊断与结果记录</a><a class="" href="10_%E5%86%97%E4%BD%99%E5%88%86%E6%9E%90%E8%87%AA%E4%BF%AE%E5%A4%8D%E4%B8%8E%E7%BA%A0%E9%94%99%E7%A0%81.html">10 · 冗余分析自修复与纠错码</a><a class="" href="11_%E5%A4%9A%E7%AB%AF%E5%8F%A3%E4%B8%8E%E6%96%B0%E5%9E%8B%E5%AD%98%E5%82%A8%E5%99%A8%E6%89%A9%E5%B1%95.html">11 · 多端口与新型存储器扩展</a><a class="" href="12_%E8%AE%BE%E8%AE%A1%E9%AA%8C%E8%AF%81%E4%B8%8E%E5%B7%A5%E5%85%B7%E6%8E%A5%E5%85%A5.html">12 · 设计验证与工具接入</a><a class="current" href="13_%E7%AE%97%E4%BE%8B%E4%B8%8E%E6%BA%90%E7%A0%81%E8%AF%B4%E6%98%8E.html">13 · 算例与源码说明</a><a class="" href="14_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%B5%8B%E8%AF%95%E5%BA%8F%E5%88%97%E7%B4%A2%E5%BC%95.html">14 · 故障模型与测试序列索引</a><a class="" href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E7%A0%94%E7%A9%B6%E8%BF%9B%E5%B1%95%E7%B4%A2%E5%BC%95.html">90 · 参考文献与研究进展索引</a></nav></aside><div class="reading"><main class="paper"><div class="eyebrow">MBIST · 设计架构与方法</div><h1 id="13 算例与源码说明">13 算例与源码说明</h1>
+<p><a href="00_MBIST%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E9%98%85%E8%AF%BB%E5%AF%BC%E8%88%AA.html">总览</a> · <a href="12_%E8%AE%BE%E8%AE%A1%E9%AA%8C%E8%AF%81%E4%B8%8E%E5%B7%A5%E5%85%B7%E6%8E%A5%E5%85%A5.html">上一篇：设计验证与工具接入</a> · <a href="14_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%B5%8B%E8%AF%95%E5%BA%8F%E5%88%97%E7%B4%A2%E5%BC%95.html">下一篇：故障模型与测试序列索引</a></p>
+<p>本附录说明如何执行文中的具体序列、复算背景访问次数、注入指定数字故障和重新生成网页。程序按照各自明确的模型运行，输出结果与模型定义一同保存，便于读者检查某一次写入或读取为何产生相应结果。</p>
 <h2 id="目录">目录</h2>
 <ul>
-<li><a href="#1.%20%E7%AE%97%E4%BE%8B%E4%B8%8E%E4%B8%93%E9%A2%98">1. 算例与专题</a></li>
-<li><a href="#2.%20%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84%E4%B8%8E%E8%81%8C%E8%B4%A3">2. 目录结构与职责</a></li>
-<li><a href="#3.%20%E7%A8%8B%E5%BA%8F%E8%BF%90%E8%A1%8C%E4%B8%8E%E6%A3%80%E6%9F%A5">3. 程序运行与检查</a></li>
-<li><a href="#4.%20%E6%8F%92%E5%9B%BE%E7%BC%96%E8%BE%91%E4%B8%8E%E7%94%9F%E6%88%90">4. 插图编辑与生成</a></li>
-<li><a href="#5.%20%E9%93%BE%E6%8E%A5%E5%85%AC%E5%BC%8F%E4%B8%8E%E9%A1%B5%E9%9D%A2%E6%A3%80%E6%9F%A5">5. 链接公式与页面检查</a></li>
+<li><a href="#1.%20%E6%A3%80%E6%9F%A5%E7%B1%BB%E5%9E%8B%E4%B8%8E%E9%98%85%E8%AF%BB%E7%9B%AE%E6%A0%87">1. 检查类型与阅读目标</a></li>
+<li><a href="#2.%20%E6%96%87%E4%BB%B6%E7%9B%AE%E5%BD%95">2. 文件目录</a></li>
+<li><a href="#3.%20%E9%80%90%E6%93%8D%E4%BD%9C%E6%95%85%E9%9A%9C%E6%A3%80%E6%B5%8B%E7%AE%97%E4%BE%8B">3. 逐操作故障检测算例</a></li>
+<li><a href="#4.%20%E5%A4%9A%E8%83%8C%E6%99%AF%E5%BA%8F%E5%88%97%E4%B8%8E%E5%B1%80%E9%83%A8%E6%95%85%E9%9A%9C%E6%B3%A8%E5%85%A5">4. 多背景序列与局部故障注入</a></li>
+<li><a href="#5.%20%E5%BA%8F%E5%88%97%E6%90%9C%E7%B4%A2%E4%B8%8E%E6%9C%80%E7%9F%AD%E6%80%A7%E6%A3%80%E6%9F%A5">5. 序列搜索与最短性检查</a></li>
+<li><a href="#6.%20%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90%E7%AE%97%E4%BE%8B">6. 系统分析算例</a></li>
+<li><a href="#7.%20%E6%8F%92%E5%9B%BE%E7%94%9F%E6%88%90%E4%B8%8E%E6%A3%80%E6%9F%A5">7. 插图生成与检查</a></li>
+<li><a href="#8.%20%E7%BD%91%E9%A1%B5%E5%85%AC%E5%BC%8F%E4%B8%8E%E6%96%87%E4%BB%B6%E6%A3%80%E6%9F%A5">8. 网页公式与文件检查</a></li>
+<li><a href="#9.%20%E5%AF%BC%E5%87%BA%E9%80%90%E8%AE%BF%E9%97%AE%E6%B5%8B%E8%AF%95%E5%BA%8F%E5%88%97">9. 导出逐访问测试序列</a></li>
+<li><a href="#10.%20%E7%BB%9F%E4%B8%80%E6%A3%80%E6%9F%A5%E4%B8%8E%E8%A1%A5%E5%85%85%E6%93%8D%E4%BD%9C%E7%AE%97%E4%BE%8B">10. 统一检查与补充操作算例</a></li>
 </ul>
-<h2 id="1. 算例与专题">1. 算例与专题</h2>
+<h2 id="1. 检查类型与阅读目标">1. 检查类型与阅读目标</h2>
+<p>已执行检查的集中结果见 <a href="../checks/verification_summary.json">verification_summary.json</a>，各程序的完整状态轨迹与参数保存在本章列出的结果文件中。</p>
 <div class="table-wrap"><table>
 <thead>
 <tr>
-  <th>算例</th>
-  <th>所属专题</th>
-  <th>程序输出</th>
-  <th>范围</th>
+  <th>检查类型</th>
+  <th>回答的问题</th>
+  <th>程序与结果</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-  <td>March 完整序列计数与无故障执行</td>
-  <td><a href="03_March%E5%9F%BA%E7%A1%80%E4%B8%8E%E7%BB%8F%E5%85%B8%E7%AE%97%E6%B3%95.html">March基础与经典算法</a>、<a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">增强March与复杂故障测试</a></td>
-  <td><code>checks/march_sequences.json</code></td>
-  <td>对已列完整序列检查读写期望；不证明故障覆盖</td>
+  <td>无故障执行</td>
+  <td>读取期望是否与前序写入一致，长度是否正确</td>
+  <td><code>src/validate_march_sequences.py</code>；<code>checks/march_sequences.json</code></td>
 </tr>
 <tr>
-  <td>每周期一项操作的理想时间</td>
-  <td><a href="01_%E5%AD%98%E5%82%A8%E5%99%A8%E6%8E%A5%E5%8F%A3%E4%B8%8E%E6%B5%8B%E8%AF%95%E6%8E%A7%E5%88%B6%E5%99%A8.html">存储器接口与测试控制器</a></td>
-  <td>文中表格</td>
-  <td>65536 个 32 位字、100 MHz；不含额外等待</td>
+  <td>局部故障轨迹</td>
+  <td>哪一步激活故障，哪一次读取首先发现错误</td>
+  <td><code>src/fault_detection_examples.py</code>；<code>examples/fault_detection_results.json</code></td>
 </tr>
 <tr>
-  <td>物理地址循环填充</td>
-  <td><a href="01_%E5%AD%98%E5%82%A8%E5%99%A8%E6%8E%A5%E5%8F%A3%E4%B8%8E%E6%B5%8B%E8%AF%95%E6%8E%A7%E5%88%B6%E5%99%A8.html">存储器接口与测试控制器</a></td>
-  <td><code>examples/results.json</code></td>
-  <td>两个 512 字实例的特定共享循环</td>
+  <td>指定静态原型集合</td>
+  <td>在给定原型和初始化方式下，各序列检出多少项</td>
+  <td><code>src/validate_static_fault_models.py</code>；<code>examples/march_sequence_data.json</code></td>
 </tr>
 <tr>
-  <td>六存储器分组与调度</td>
-  <td><a href="07_%E5%B9%B6%E5%8F%91%E8%B0%83%E5%BA%A6%E4%B8%8E%E8%81%94%E5%90%88%E4%BC%98%E5%8C%96.html">并发调度与联合优化</a></td>
-  <td><code>examples/results.json</code></td>
-  <td>整数时间、串行组、固定任务功率</td>
+  <td>多背景状态图</td>
+  <td>背景如何变化，各条操作边出现几次</td>
+  <td><code>src/validate_multirun_sequences.py</code>；<code>examples/multirun_sequences.json</code></td>
 </tr>
 <tr>
-  <td>互补功率阶段与非法重叠</td>
-  <td><a href="07_%E5%B9%B6%E5%8F%91%E8%B0%83%E5%BA%A6%E4%B8%8E%E8%81%94%E5%90%88%E4%BC%98%E5%8C%96.html">并发调度与联合优化</a></td>
-  <td><code>examples/results.json</code></td>
-  <td>给定分段常数曲线，不是电源网络分析</td>
+  <td>多背景局部故障注入</td>
+  <td>激活后是否存在读取能够观察受害单元的异常</td>
+  <td><code>src/validate_multirun_faults.py</code>；<code>examples/multirun_fault_results.json</code></td>
 </tr>
 <tr>
-  <td>行列修复的贪心反例</td>
-  <td><a href="10_%E5%86%97%E4%BD%99%E5%88%86%E6%9E%90%E8%87%AA%E4%BF%AE%E5%A4%8D%E4%B8%8E%E7%BA%A0%E9%94%99%E7%A0%81.html">冗余分析自修复与纠错码</a></td>
-  <td><code>examples/results.json</code></td>
-  <td>一条备用行、两条备用列、五个故障单元</td>
+  <td>搜索结果复算</td>
+  <td>随机种子、目标函数和独立搜索是否得到所述结果</td>
+  <td><code>src/sequence_generation_examples.py</code>；<code>examples/sequence_generation_results.json</code></td>
 </tr>
 <tr>
-  <td>零漏检样本的统计上限</td>
-  <td><a href="08_%E8%87%AA%E9%80%82%E5%BA%94%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%9C%9F%E9%97%B4%E6%B5%8B%E8%AF%95.html">自适应与运行期间测试</a></td>
-  <td><code>examples/results.json</code></td>
-  <td>独立同分布二项模型下的演示</td>
+  <td>系统分析</td>
+  <td>给定实例的分组、调度、功率和行列修复结果如何得到</td>
+  <td><code>src/teaching_examples.py</code>；<code>examples/results.json</code></td>
 </tr>
 </tbody>
 </table></div>
-<h2 id="2. 目录结构与职责">2. 目录结构与职责</h2>
-<pre><code class="language-text">MBIST设计架构与方法_精确绘图版/
-├── README.md                         阅读和编辑入口
-├── 00_MBIST总体架构与阅读导航.md       总览
-├── 01_…md 至 12_…md                  12 个设计专题
-├── 13_算例与源码说明.md               本附录
-├── 90_参考文献与研究进展索引.md        统一文献与研究索引
-├── 阅读入口.html                      已生成的离线网页入口
-├── html/                              各篇的离线阅读页
-├── assets/march/                      10 张算法插图、PNG 副本
-├── assets/systems/                    15 张系统插图、PNG 副本
-├── src/                               绘图、算例、检查与网页生成源码
-├── examples/                          算例输入和复算结果
-└── checks/                            内容对照、公式与文件检查
+<p>程序检查使用离散单元状态和文中声明的操作规则。真实宏的脉宽、电压、物理邻接、写入掩码、ECC 和端口时序需要在相应器件或宏模型中设定，并继续执行电路级或器件级测试。</p>
+<h2 id="2. 文件目录">2. 文件目录</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>位置</th>
+  <th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><code>00_…md</code> 至 <code>12_…md</code></td>
+  <td>总览与 12 个专题</td>
+</tr>
+<tr>
+  <td><code>13_算例与源码说明.md</code></td>
+  <td>本附录</td>
+</tr>
+<tr>
+  <td><code>14_故障模型与测试序列索引.md</code></td>
+  <td>按故障查找序列、算法条件和逐操作例子</td>
+</tr>
+<tr>
+  <td><code>90_参考文献与研究进展索引.md</code></td>
+  <td>统一文献、主题索引和检索范围</td>
+</tr>
+<tr>
+  <td><code>阅读入口.html</code>、<code>html/</code></td>
+  <td>离线阅读入口和各章页面</td>
+</tr>
+<tr>
+  <td><code>assets/march/</code></td>
+  <td>10 张 March 插图与 PNG</td>
+</tr>
+<tr>
+  <td><code>assets/systems/</code></td>
+  <td>15 张系统插图与 PNG</td>
+</tr>
+<tr>
+  <td><code>assets/grouping/</code></td>
+  <td>26 张分组、调度和功率插图</td>
+</tr>
+<tr>
+  <td><code>assets/research/</code></td>
+  <td>故障观测、欧拉回路、序列搜索的 3 张插图</td>
+</tr>
+<tr>
+  <td><code>src/</code></td>
+  <td>算法示例、故障仿真、绘图和网页生成程序</td>
+</tr>
+<tr>
+  <td><code>examples/</code></td>
+  <td>各类示例的机器可读结果</td>
+</tr>
+<tr>
+  <td><code>examples/traces/</code></td>
+  <td>逐次访问表，包含地址、读写数据和状态变化</td>
+</tr>
+<tr>
+  <td><code>code/</code>、<code>data/</code>、<code>results/</code></td>
+  <td>存储器分组的 C++ 示例、输入和结果</td>
+</tr>
+<tr>
+  <td><code>checks/</code></td>
+  <td>文件引用、公式、图形和内容检查结果</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="3. 逐操作故障检测算例">3. 逐操作故障检测算例</h2>
+<h3 id="3.1 运行方法">3.1 运行方法</h3>
+<p>以下命令在资料根目录执行，使用 Python 标准库。</p>
+<pre><code class="language-bash">python src/validate_march_sequences.py
+python src/fault_detection_examples.py
+python src/validate_static_fault_models.py
 </code></pre>
-<h2 id="3. 程序运行与检查">3. 程序运行与检查</h2>
-<p>以下两项标准库程序需 Python 3.10 或更新版本，命令在资料根目录执行。</p>
+<p><code>validate_march_sequences.py</code> 读取章节内可直接解析的完整 March 表达式，在多个小容量和 <code>⇕</code> 的两种方向选择下执行。每个地址必须先建立期望状态，随后读值与前序操作保持一致。重复读参数、多背景函数和多端口原子操作由专用程序处理。</p>
+<h3 id="3.2 单个故障的状态轨迹">3.2 单个故障的状态轨迹</h3>
+<p><code>fault_detection_examples.py</code> 保存 14 个具体执行例子，并对其中 9 个单单元例子交换 0、1 再检查。每一步输出地址、读写操作、执行前后状态、期望值、实际返回值及是否发生不一致。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>例子</th>
+  <th>完整局部序列</th>
+  <th>最早错误读取</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>固定为 0</td>
+  <td><code>w1; r1</code></td>
+  <td>第 2 步</td>
+</tr>
+<tr>
+  <td>0→1 转换失败</td>
+  <td><code>w0; w1; r1</code></td>
+  <td>第 3 步</td>
+</tr>
+<tr>
+  <td>重复写 0 造成破坏</td>
+  <td><code>w1; w0; w0; r0</code></td>
+  <td>第 4 步</td>
+</tr>
+<tr>
+  <td>读 0 当次返回错误并破坏状态</td>
+  <td><code>w0; r0</code></td>
+  <td>第 2 步</td>
+</tr>
+<tr>
+  <td>读 0 当次返回正确随后破坏状态</td>
+  <td><code>w0; r0; r0</code></td>
+  <td>第 3 步</td>
+</tr>
+<tr>
+  <td>连续第二次读 0 后破坏状态</td>
+  <td><code>w0; r0; r0; r0</code></td>
+  <td>第 4 步</td>
+</tr>
+<tr>
+  <td>激励单元上升转换使受害单元反转</td>
+  <td><code>w0(a); w0(v); w1(a); r0(v)</code></td>
+  <td>第 4 步</td>
+</tr>
+</tbody>
+</table></div>
+<p>代码同时执行观测条件不足的例子：DRDF 只读一次、动态模型只读两次、在观测前重新写入，以及两个耦合反转后才读取。其输出用于说明具体的掩盖机制。第 02 章给出这些模型的正式定义与逐步说明。</p>
+<h3 id="3.3 完整 March 的小容量枚举">3.3 完整 March 的小容量枚举</h3>
+<p>同一程序还对正文中可解析的完整序列执行三地址试验。每个故障单独注入，枚举 8 种初始位型、全部目标地址、相异激励与受害地址，以及 <code>⇕</code> 的可选方向。模型包括 SAF、TF、WDF、IRF、RDF、DRDF、连续两次读取后的破坏模型，以及指定 CFin、CFid、CFst。</p>
+<p>输出中的 <code>detected_in_all_tested_settings</code> 仅在该原型的全部受测设置都出现错误读取时增加；<code>missed_examples</code> 保存可复算的未检出设置。由此可以直接检查某个相同长度的序列为什么得到不同结果。</p>
+<h3 id="3.4 36 个静态原型的指定集合">3.4 36 个静态原型的指定集合</h3>
+<p><code>validate_static_fault_models.py</code> 定义六类单单元故障的双极性实例，以及 CFtr、CFdrd、CFwd 的受害值、激励值和两种地址关系，共 36 个原型。该程序令单元在首写之前为未知值，状态相关激活要求前置值已经由写入建立，并将原型定义与初始化规则写入结果 JSON。对故障从首写即生效的全部初始位型，另用第 3.3 节的枚举程序检查。</p>
+<p>在此集合中，March AZ1 的逐元素版本检出 29/36，March AZ 为 30/36，March AZ2 为 30/36，March SS、MSS 与 AB 为 36/36。第 04 章结合各自的完整操作顺序解释这些结果。该集合、三地址枚举集合与论文中的其他故障集合分别报告，计算覆盖率时使用各自分母。</p>
+<h3 id="3.5 双端口与存内计算算例">3.5 双端口与存内计算算例</h3>
+<pre><code class="language-bash">python src/port_imc_examples.py
+</code></pre>
+<p>程序执行第 11 章的双端口完整枚举教学算法，以及 March IMC-8T 的七阶段逻辑模型。三地址模型检测 48 个双激励故障与 24 个并发受阻故障；四地址模型分别检测 192 个和 48 个实例。对列深 2、4、6、8 的 IMC 模型，分别执行 26、51、76、101 次操作，与 <span class="math-inline"><mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.357ex;" xmlns="http://www.w3.org/2000/svg" width="10.617ex" height="1.902ex" role="img" focusable="false" viewBox="0 -683 4692.6 840.8"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mn"><path data-c="31" d="M213 578L200 573Q186 568 160 563T102 556H83V602H102Q149 604 189 617T245 641T273 663Q275 666 285 666Q294 666 302 660V361L303 61Q310 54 315 52T339 48T401 46H427V0H416Q395 3 257 3Q121 3 100 0H88V46H114Q136 46 152 46T177 47T193 50T201 52T207 57T213 61V578Z"></path><path data-c="32" d="M109 429Q82 429 66 447T50 491Q50 562 103 614T235 666Q326 666 387 610T449 465Q449 422 429 383T381 315T301 241Q265 210 201 149L142 93L218 92Q375 92 385 97Q392 99 409 186V189H449V186Q448 183 436 95T421 3V0H50V19V31Q50 38 56 46T86 81Q115 113 136 137Q145 147 170 174T204 211T233 244T261 278T284 308T305 340T320 369T333 401T340 431T343 464Q343 527 309 573T212 619Q179 619 154 602T119 569T109 550Q109 549 114 549Q132 549 151 535T170 489Q170 464 154 447T109 429Z" transform="translate(500,0)"></path><path data-c="2E" d="M78 60Q78 84 95 102T138 120Q162 120 180 104T199 61Q199 36 182 18T139 0T96 17T78 60Z" transform="translate(1000,0)"></path><path data-c="35" d="M164 157Q164 133 148 117T109 101H102Q148 22 224 22Q294 22 326 82Q345 115 345 210Q345 313 318 349Q292 382 260 382H254Q176 382 136 314Q132 307 129 306T114 304Q97 304 95 310Q93 314 93 485V614Q93 664 98 664Q100 666 102 666Q103 666 123 658T178 642T253 634Q324 634 389 662Q397 666 402 666Q410 666 410 648V635Q328 538 205 538Q174 538 149 544L139 546V374Q158 388 169 396T205 412T256 420Q337 420 393 355T449 201Q449 109 385 44T229 -22Q148 -22 99 32T50 154Q50 178 61 192T84 210T107 214Q132 214 148 197T164 157Z" transform="translate(1278,0)"></path></g><g data-mml-node="msub" transform="translate(1778,0)"><g data-mml-node="mi"><path data-c="1D441" d="M234 637Q231 637 226 637Q201 637 196 638T191 649Q191 676 202 682Q204 683 299 683Q376 683 387 683T401 677Q612 181 616 168L670 381Q723 592 723 606Q723 633 659 637Q635 637 635 648Q635 650 637 660Q641 676 643 679T653 683Q656 683 684 682T767 680Q817 680 843 681T873 682Q888 682 888 672Q888 650 880 642Q878 637 858 637Q787 633 769 597L620 7Q618 0 599 0Q585 0 582 2Q579 5 453 305L326 604L261 344Q196 88 196 79Q201 46 268 46H278Q284 41 284 38T282 19Q278 6 272 0H259Q228 2 151 2Q123 2 100 2T63 2T46 1Q31 1 31 10Q31 14 34 26T39 40Q41 46 62 46Q130 49 150 85Q154 91 221 362L289 634Q287 635 234 637Z"></path></g><g data-mml-node="mi" transform="translate(836,-150) scale(0.707)"><path data-c="1D450" d="M34 159Q34 268 120 355T306 442Q362 442 394 418T427 355Q427 326 408 306T360 285Q341 285 330 295T319 325T330 359T352 380T366 386H367Q367 388 361 392T340 400T306 404Q276 404 249 390Q228 381 206 359Q162 315 142 235T121 119Q121 73 147 50Q169 26 205 26H209Q321 26 394 111Q403 121 406 121Q410 121 419 112T429 98T420 83T391 55T346 25T282 0T202 -11Q127 -11 81 37T34 159Z"></path></g></g><g data-mml-node="mo" transform="translate(3192.4,0)"><path data-c="2B" d="M56 237T56 250T70 270H369V420L370 570Q380 583 389 583Q402 583 409 568V270H707Q722 262 722 250T707 230H409V-68Q401 -82 391 -82H389H387Q375 -82 369 -68V230H70Q56 237 56 250Z"></path></g><g data-mml-node="mn" transform="translate(4192.6,0)"><path data-c="31" d="M213 578L200 573Q186 568 160 563T102 556H83V602H102Q149 604 189 617T245 641T273 663Q275 666 285 666Q294 666 302 660V361L303 61Q310 54 315 52T339 48T401 46H427V0H416Q395 3 257 3Q121 3 100 0H88V46H114Q136 46 152 46T177 47T193 50T201 52T207 57T213 61V578Z"></path></g></g></g></svg></mjx-container></span> 一致；40 个明确的计算选择故障全部被检测。对跨端口地址对应关系，程序还检查 2、3、4 地址下共 29 个非恒等排列，逐个使用第 11 章的单个地址写 1、其余地址写 0 的序列检测。完整结果见 <a href="../examples/port_imc_results.json">port_imc_results.json</a>。</p>
+<h3 id="3.6 地址译码器的 March iC− 算例">3.6 地址译码器的 March iC− 算例</h3>
+<pre><code class="language-bash">python src/validate_march_ic.py
+</code></pre>
+<p>程序以固定地址背景函数展开第 04 章的六元素序列，检查正反遍历时的期望值和 <code>10N</code> 操作数。16 次无故障运行均通过；对连续地址转换后旧字线继续有效的指定模型，160 个独立实例均产生确定的错误读值。四地址示例在第 5 次访问检测到初始化阶段双选写入留下的错误。</p>
+<p>16 地址的专用次序还检查低两位子译码器的全部 8 种有向单比特转换。程序将双选读取不同值时的结果记为 <code>X</code>，不把该不确定返回单独计入已检测的二进制错误。结果保存于 <a href="../examples/march_ic_results.json">march_ic_results.json</a>。</p>
+<h3 id="3.7 双地址透明测试算例">3.7 双地址透明测试算例</h3>
+<pre><code class="language-bash">python src/transparent_march_examples.py
+</code></pre>
+<p>程序执行第 08 章的 <code>March_2A_1</code> 与 <code>March_2A_2</code>。容量 2、4、8 的全部初态，结合计数器和 Gray 码的不同地址位删除方式，共形成 4,320 次无故障运行；操作数、局部互补比较、各基本阶段的数据恢复均通过检查。另有 512 个 SAF/TF 实例全部被局部比较检出。</p>
+<p>程序保存四单元完整操作轨迹，以及通过初末签名差异检测 CFid、通过反向阶段检测指定邻域图案故障的例子。CRC-4 的多项式和更新方式是本手册明确给定的实现选择。结果保存于 <a href="../examples/transparent_march_results.json">transparent_march_results.json</a>。</p>
+<h2 id="4. 多背景序列与局部故障注入">4. 多背景序列与局部故障注入</h2>
+<pre><code class="language-bash">python src/validate_multirun_sequences.py
+python src/validate_multirun_faults.py
+</code></pre>
+<h3 id="4.1 背景与操作的确定性展开">4.1 背景与操作的确定性展开</h3>
+<p><code>validate_multirun_sequences.py</code> 把第 04 章给出的背景函数转换为 16×16 单元的实际读写序列。它逐次检查无故障期望值、背景切换、最后读取和总访问次数，并遍历不同物理位置类别的局部状态图。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>算法</th>
+  <th style="text-align:right">实际访问次数</th>
+  <th style="text-align:right">每单元系数</th>
+  <th style="text-align:right">局部几何类别</th>
+  <th style="text-align:right">每类转换边数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>MT-R3CCF</td>
+  <td style="text-align:right">5,376</td>
+  <td style="text-align:right">21N</td>
+  <td style="text-align:right">16</td>
+  <td style="text-align:right">24</td>
+</tr>
+<tr>
+  <td>MT-3CCF</td>
+  <td style="text-align:right">9,472</td>
+  <td style="text-align:right">37N</td>
+  <td style="text-align:right">16</td>
+  <td style="text-align:right">24</td>
+</tr>
+<tr>
+  <td>MT-4CCF</td>
+  <td style="text-align:right">18,688</td>
+  <td style="text-align:right">73N</td>
+  <td style="text-align:right">4</td>
+  <td style="text-align:right">64</td>
+</tr>
+<tr>
+  <td>MT-NPSF</td>
+  <td style="text-align:right">20,736</td>
+  <td style="text-align:right">81N</td>
+  <td style="text-align:right">16</td>
+  <td style="text-align:right">160</td>
+</tr>
+<tr>
+  <td>MT-ENPSF</td>
+  <td style="text-align:right">45,312</td>
+  <td style="text-align:right">177N</td>
+  <td style="text-align:right">16</td>
+  <td style="text-align:right">160</td>
+</tr>
+</tbody>
+</table></div>
+<p>表中 <span class="math-inline"><mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.186ex;" xmlns="http://www.w3.org/2000/svg" width="8.42ex" height="1.731ex" role="img" focusable="false" viewBox="0 -683 3721.6 765"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mi"><path data-c="1D441" d="M234 637Q231 637 226 637Q201 637 196 638T191 649Q191 676 202 682Q204 683 299 683Q376 683 387 683T401 677Q612 181 616 168L670 381Q723 592 723 606Q723 633 659 637Q635 637 635 648Q635 650 637 660Q641 676 643 679T653 683Q656 683 684 682T767 680Q817 680 843 681T873 682Q888 682 888 672Q888 650 880 642Q878 637 858 637Q787 633 769 597L620 7Q618 0 599 0Q585 0 582 2Q579 5 453 305L326 604L261 344Q196 88 196 79Q201 46 268 46H278Q284 41 284 38T282 19Q278 6 272 0H259Q228 2 151 2Q123 2 100 2T63 2T46 1Q31 1 31 10Q31 14 34 26T39 40Q41 46 62 46Q130 49 150 85Q154 91 221 362L289 634Q287 635 234 637Z"></path></g><g data-mml-node="mo" transform="translate(1165.8,0)"><path data-c="3D" d="M56 347Q56 360 70 367H707Q722 359 722 347Q722 336 708 328L390 327H72Q56 332 56 347ZM56 153Q56 168 72 173H708Q722 163 722 153Q722 140 707 133H70Q56 140 56 153Z"></path></g><g data-mml-node="mn" transform="translate(2221.6,0)"><path data-c="32" d="M109 429Q82 429 66 447T50 491Q50 562 103 614T235 666Q326 666 387 610T449 465Q449 422 429 383T381 315T301 241Q265 210 201 149L142 93L218 92Q375 92 385 97Q392 99 409 186V189H449V186Q448 183 436 95T421 3V0H50V19V31Q50 38 56 46T86 81Q115 113 136 137Q145 147 170 174T204 211T233 244T261 278T284 308T305 340T320 369T333 401T340 431T343 464Q343 527 309 573T212 619Q179 619 154 602T119 569T109 550Q109 549 114 549Q132 549 151 535T170 489Q170 464 154 447T109 429Z"></path><path data-c="35" d="M164 157Q164 133 148 117T109 101H102Q148 22 224 22Q294 22 326 82Q345 115 345 210Q345 313 318 349Q292 382 260 382H254Q176 382 136 314Q132 307 129 306T114 304Q97 304 95 310Q93 314 93 485V614Q93 664 98 664Q100 666 102 666Q103 666 123 658T178 642T253 634Q324 634 389 662Q397 666 402 666Q410 666 410 648V635Q328 538 205 538Q174 538 149 544L139 546V374Q158 388 169 396T205 412T256 420Q337 420 393 355T449 201Q449 109 385 44T229 -22Q148 -22 99 32T50 154Q50 178 61 192T84 210T107 214Q132 214 148 197T164 157Z" transform="translate(500,0)"></path><path data-c="36" d="M42 313Q42 476 123 571T303 666Q372 666 402 630T432 550Q432 525 418 510T379 495Q356 495 341 509T326 548Q326 592 373 601Q351 623 311 626Q240 626 194 566Q147 500 147 364L148 360Q153 366 156 373Q197 433 263 433H267Q313 433 348 414Q372 400 396 374T435 317Q456 268 456 210V192Q456 169 451 149Q440 90 387 34T253 -22Q225 -22 199 -14T143 16T92 75T56 172T42 313ZM257 397Q227 397 205 380T171 335T154 278T148 216Q148 133 160 97T198 39Q222 21 251 21Q302 21 329 59Q342 77 347 104T352 209Q352 289 347 316T329 361Q302 397 257 397Z" transform="translate(1000,0)"></path></g></g></g></svg></mjx-container></span>。统计转换边时仅计入测试阶段，背景切换单独计数。扩展的读、非转换写和转换写操作集合，三单元为每类 72 条边，四单元为 192 条，五单元为 480 条。程序同时检查边的唯一性和读取期望。</p>
+<h3 id="4.2 从经过操作边到发现错误">4.2 从经过操作边到发现错误</h3>
+<p><code>validate_multirun_faults.py</code> 对局部故障逐个执行以下过程：</p>
+<ol>
+<li>指定完整局部位型、激励单元、一次读或写事件，以及受害单元。</li>
+<li>从全零状态开始，执行实际背景初始化和全部测试操作。</li>
+<li>当前状态与激励条件相符时，使受害单元相对正常操作后的值发生反转。</li>
+<li>如果激励事件就是受害单元读取，当次仍返回破坏前的正确值，再改变内部状态；后续读取负责发现异常。</li>
+<li>使用预定的期望读值比较实际返回值，保存最早不一致的位置。</li>
+</ol>
+<p>三、四单元模型分别枚举各单元作为受害单元；五单元邻域固定中心作为受害单元。结果如下。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>算法</th>
+  <th style="text-align:right">独立故障场景</th>
+  <th style="text-align:right">检出场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>MT-R3CCF</td>
+  <td style="text-align:right">1,152</td>
+  <td style="text-align:right">1,152</td>
+</tr>
+<tr>
+  <td>MT-3CCF</td>
+  <td style="text-align:right">3,456</td>
+  <td style="text-align:right">3,456</td>
+</tr>
+<tr>
+  <td>MT-4CCF</td>
+  <td style="text-align:right">3,072</td>
+  <td style="text-align:right">3,072</td>
+</tr>
+<tr>
+  <td>MT-NPSF</td>
+  <td style="text-align:right">2,560</td>
+  <td style="text-align:right">2,560</td>
+</tr>
+<tr>
+  <td>MT-ENPSF</td>
+  <td style="text-align:right">7,680</td>
+  <td style="text-align:right">7,680</td>
+</tr>
+<tr>
+  <td>合计</td>
+  <td style="text-align:right">17,920</td>
+  <td style="text-align:right">17,920</td>
+</tr>
+</tbody>
+</table></div>
+<p>此表对应源码中定义的单个局部静态错误模型，包含当次读出正确、随后破坏内部值的情况。动态历史、多个同时存在的故障、模拟电压与概率性写入需要各自的扩展状态和执行规则。</p>
+<h2 id="5. 序列搜索与最短性检查">5. 序列搜索与最短性检查</h2>
+<pre><code class="language-bash">python src/sequence_generation_examples.py
+</code></pre>
+<p>该程序执行第 05 章的两个教学构造。</p>
+<p><strong>两单元欧拉回路。</strong> 记录 8 条有向转换边的完整顺序。初始写入 2 次，每条边包含 1 次翻转写和 2 次读取，总访问次数为 26。程序同时执行逐边读取和末尾集中读取，以检查观测位置对故障检出的影响。</p>
+<p><strong>单单元序列优化。</strong> 对 12 个明确的数字故障原型及两种初始值，共 24 种设置运行模拟退火。另用独立广度优先搜索求解同一有限状态问题，验证获得的 11 次操作序列达到该问题的最短长度。具体序列、随机种子、搜索次数和各步骤信息见第 05 章及结果 JSON。</p>
+<p>教学搜索采用单单元操作语法。论文的 11N 互补 March 测试具有另一个故障集合、地址方向和状态分析方法，两者分别解释和验证。</p>
+<h2 id="6. 系统分析算例">6. 系统分析算例</h2>
 <pre><code class="language-bash">python src/teaching_examples.py
-python src/validate_march_sequences.py
 </code></pre>
-<p><code>teaching_examples.py</code> 枚举给定六实例问题的合法划分，并在声明的整数时间模型中进行精确搜索。它允许有任务运行时主动等待，但不会把结果外推为连续时间、任意任务数或任意控制器结构下的最优值。</p>
-<p><code>validate_march_sequences.py</code> 从专题 Markdown 提取完整 March 序列，在多个小容量和两种可选遍历方向下执行无故障模型。它检查初始化、读期望、操作计数和终态一致性；摘要式序列、带省略号的流程以及透明测试原理例子都不会被误认为完整算法。</p>
-<h2 id="4. 插图编辑与生成">4. 插图编辑与生成</h2>
-<p>全部 25 张图已改为<strong>固定连接点、水平与垂直路径、真实文字范围检查</strong>的确定性绘图。标题为 48 像素，主要文字为 32—36 像素，最小字号为 28 像素。图号和原图片路径保持不变，因此所有专题使用同一套更新后的图。</p>
-<h3 id="4.1 绘图源码">4.1 绘图源码</h3>
+<p>系统分析程序包含物理地址循环、六存储器分组与调度、互补功率阶段、行列冗余选择，以及二项统计模型下零漏检样本的概率上限。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>算例</th>
+  <th>使用条件</th>
+  <th>对应章节</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>共享物理地址循环</td>
+  <td>两个 512 字实例的指定循环</td>
+  <td>第 01 章</td>
+</tr>
+<tr>
+  <td>六存储器分组与调度</td>
+  <td>整数时间、组内串行、固定任务功率</td>
+  <td>第 07 章</td>
+</tr>
+<tr>
+  <td>互补功率阶段</td>
+  <td>给定分段常数曲线与并发关系</td>
+  <td>第 07 章</td>
+</tr>
+<tr>
+  <td>行列修复</td>
+  <td>一条备用行、两条备用列、五个故障单元</td>
+  <td>第 10 章</td>
+</tr>
+<tr>
+  <td>零漏检样本统计</td>
+  <td>独立同分布二项模型</td>
+  <td>第 08 章</td>
+</tr>
+</tbody>
+</table></div>
+<p>第 06 章还提供 C++ 分组示例。其运行命令、输入格式和比较结果在该章单独说明。</p>
+<h2 id="7. 插图生成与检查">7. 插图生成与检查</h2>
+<h3 id="7.1 可编辑图形">7.1 可编辑图形</h3>
+<p>图形文字、矩形、连接线与箭头保留为原生 SVG 对象。新增三幅图的标题为 48 像素，正文通常为 30 至 38 像素。既有图形的尺寸与颜色由各自绘图程序定义。</p>
 <div class="table-wrap"><table>
 <thead>
 <tr>
   <th>文件</th>
-  <th>职责</th>
+  <th>功能</th>
 </tr>
 </thead>
 <tbody>
 <tr>
   <td><code>src/svg_geometry.py</code></td>
-  <td>定义方框、四条边上的连接点、文字、连接路径与箭头标记；只用 Python 标准库</td>
+  <td>矩形、命名连接点、文字、正交线段与箭头</td>
 </tr>
 <tr>
   <td><code>src/precise_march.py</code></td>
-  <td>10 张 March 插图的对象、位置、内容和连接关系</td>
+  <td>10 张 March 图</td>
 </tr>
 <tr>
   <td><code>src/precise_systems.py</code></td>
-  <td>15 张系统插图；算例数据继续来自 <code>examples/results.json</code></td>
+  <td>15 张系统图</td>
 </tr>
 <tr>
-  <td><code>src/generate_precise_figures.py</code></td>
-  <td>生成全部或指定类别的 SVG 与连接说明</td>
+  <td><code>src/generate_research_figures.py</code></td>
+  <td>故障观测、欧拉回路和序列搜索图</td>
+</tr>
+<tr>
+  <td><code>src/validate_research_figures.py</code></td>
+  <td>以实际渲染的文字像素范围检查新图，导出 PNG</td>
+</tr>
+<tr>
+  <td><code>src/render_svg_metrics.cjs</code></td>
+  <td>使用 Sharp/libvips 渲染 SVG 并测量文字</td>
 </tr>
 <tr>
   <td><code>src/validate_precise_figures.py</code></td>
-  <td>测量实际文字范围，检查连接与相交，按相同渲染结果导出 PNG</td>
+  <td>使用 Chromium 测量 SVG 对象并检查连接几何</td>
 </tr>
 <tr>
   <td><code>src/test_geometry_checks.py</code></td>
-  <td>故意制造偏移、穿框、文字相交等 11 类错误，检查校验程序能否发现</td>
+  <td>检查几何校验程序能否发现设定的不合法图形</td>
 </tr>
 <tr>
   <td><code>src/build_drawing_review.py</code></td>
-  <td>生成离线检查页面，以及与正文分开保存的辅助检查图</td>
+  <td>生成基础图形的连接点辅助页面</td>
 </tr>
 </tbody>
 </table></div>
-<p><code>generate_march_figures.py</code>、<code>generate_system_figures.py</code> 与 <code>check_svg_layout.py</code> 入口仍可使用，均指向当前实现。</p>
-<h3 id="4.2 连接点与路径">4.2 连接点与路径</h3>
-<p>节点四条边分别以 <code>N</code>、<code>S</code>、<code>W</code>、<code>E</code> 表示上、下、左、右。连接点由节点位置、边与边上比例计算，不采用手工估计的线段位置。</p>
-<pre><code class="language-python">from svg_geometry import Figure
-
-fig = Figure(&quot;example&quot;, &quot;连接点示例&quot;, &quot;从发送模块的下边连接到接收模块的上边。&quot;, 850)
-fig.node(&quot;sender&quot;, 160, 240, 880, &quot;发送模块&quot;, [&quot;产生测试命令&quot;])
-fig.node(&quot;receiver&quot;, 160, 580, 880, &quot;接收模块&quot;, [&quot;接收并执行命令&quot;])
-fig.connect(&quot;command&quot;, &quot;sender&quot;, &quot;receiver&quot;, meaning=&quot;测试命令从发送模块到接收模块&quot;)
-fig.save(&quot;example.svg&quot;)
-</code></pre>
-<p>多段路径用 <code>edge(..., via=[...])</code> 明确给出水平、垂直转折点；函数拒绝斜向连接。分支和合并处需要声明 <code>junction()</code>，不能用没有标记的交叉来冒充连接。箭头图形尖端与标记参考位置一致，终点直接落在接收节点的边上。</p>
-<p>更改节点尺寸或位置时，连接点会按节点重新计算；如果原转折点不再构成合法路径，需要一起调整转折点并重新检查。<strong>SVG 手工修改不会自动回写到源码，普通编辑器也不保证保持这些连接关系。</strong></p>
-<h3 id="4.3 重新生成与检查">4.3 重新生成与检查</h3>
-<pre><code class="language-bash"># SVG 生成只需要 Python 标准库
+<pre><code class="language-bash"># 生成算法与系统 SVG
 python src/rebuild_assets.py
 
-# 安装精确检查与 PNG 导出的可选依赖
+# 生成三幅研究图
+python src/generate_research_figures.py
+
+# 渲染研究图、检查文字与连接、导出 PNG
+npm install sharp
+python src/validate_research_figures.py
+
+# 使用 Chromium 检查基础图形
 python -m pip install playwright
 python -m playwright install chromium
-
-# 复算分析模型、生成 SVG、检查几何、导出同环境 PNG
-python src/rebuild_assets.py --png
-
-# 检查程序自身，以及离线辅助检查页面
+python src/validate_precise_figures.py --png
 python src/test_geometry_checks.py
-python src/build_drawing_review.py
-
-# 只检查，不重新生成插图
-python src/validate_precise_figures.py
 </code></pre>
-<p>存在系统 Chromium 时，程序会优先使用它；也可以通过 <code>--browser /path/to/chromium</code> 指定。检查失败会返回非零退出状态，不会把发现重叠的结果写成“通过”。</p>
-<p>检查通过后打开 <a href="../%E7%B2%BE%E7%A1%AE%E7%BB%98%E5%9B%BE%E6%A3%80%E6%9F%A5.html">精确绘图检查.html</a>。橙色框表示真实渲染的文字矩形及其避让范围，青色圆圈标出连接线的端点；这些辅助内容只在检查副本中出现。每张图下方还列出了连接起点、终点与含义。</p>
-<p>普通卡片文字设置额外内边距；几何检查要求文字与连接线、箭头尖端至少间隔 10 像素，普通边框至少间隔 6 像素，小型数据矩阵中的单个数字采用 4 像素。检查同时考虑箭头尖端，不会只检查线段中心。</p>
-<p>图形检查使用 Noto Sans CJK SC 的真实渲染范围。未分发字体文件；更换字体、修改文字或移动图形后应再次检查。PNG 为对应渲染结果的固定副本。</p>
-<h2 id="5. 链接公式与页面检查">5. 链接公式与页面检查</h2>
+<h3 id="7.2 连接点定义">7.2 连接点定义</h3>
+<p>节点四边以 <code>N</code>、<code>S</code>、<code>W</code>、<code>E</code> 表示上、下、左、右。连接点由节点位置、边与比例计算；路径的水平、垂直转折由 <code>via</code> 明确给出。箭头尖端与目标连接点使用同一坐标。</p>
+<pre><code class="language-python">from svg_geometry import Figure
+
+figure = Figure(&quot;example&quot;, &quot;连接点示例&quot;, &quot;测试命令由控制器发送至存储器。&quot;, 850)
+figure.node(&quot;controller&quot;, 160, 240, 880, &quot;测试控制器&quot;, [&quot;产生测试命令&quot;])
+figure.node(&quot;memory&quot;, 160, 580, 880, &quot;存储器&quot;, [&quot;执行读写操作&quot;])
+figure.connect(&quot;command&quot;, &quot;controller&quot;, &quot;memory&quot;, meaning=&quot;发送测试命令&quot;)
+figure.save(&quot;example.svg&quot;)
+</code></pre>
+<p>修改图形后，应从相应源码重新生成并检查。直接修改 SVG 时，后续运行生成程序会采用源码中的内容。图中采用 Noto Sans CJK SC，并提供常见中文字体回退设置；PNG 保存相应的渲染结果。</p>
+<h2 id="8. 网页公式与文件检查">8. 网页公式与文件检查</h2>
 <pre><code class="language-bash">python src/validate_handbook.py
 
-# 可选：需要 Node.js 与已安装的 mathjax-full 3.x
+# 安装网页生成依赖
+python -m pip install 'mistune&gt;=3,&lt;4'
+npm install mathjax-full@3
+
+# 检查公式并生成离线阅读页面
 node src/check_mathjax.js
-
-# 可选：需要 Playwright 与 Chromium
-python src/check_svg_layout.py
-python src/check_html.py
-
-# 可选：重建离线阅读网页，需要 Mistune 3.x、Node.js 和 mathjax-full
 python src/render_html.py
+
+# 静态检查全部网页引用
+python src/check_html.py --static-only
+
+# 具有可用 Chromium 时检查页面布局
+python src/check_html.py
 </code></pre>
-<p><code>validate_handbook.py</code> 检查本地文档与图片引用、目录目标、参考资料编号、代码块、公式分隔、SVG 原生文字以及资料包内不含字体文件等项目。MathJax 检查只验证 TeX 转换，不是对 Obsidian 应用界面的测试；SVG 精确几何检查也不是存储器时序或电气验证。<code>check_html.py</code> 将本地样式和插图直接送入 Chromium 检查布局，同时静态检查页面链接；它不访问外部网站，也不测试浏览器原生文件导航。</p>
-<p>离线网页中的公式已转换为可直接显示的数学矢量内容，不依赖浏览时联网。Markdown 中仍然保留可修改的 LaTeX。编辑 Markdown 后，应重新运行网页生成器，网页不会自动同步更新。</p>
-<hr />
-<p><a href="00_MBIST%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E9%98%85%E8%AF%BB%E5%AF%BC%E8%88%AA.html">总览</a> · <a href="12_%E8%AE%BE%E8%AE%A1%E9%AA%8C%E8%AF%81%E4%B8%8E%E5%B7%A5%E5%85%B7%E6%8E%A5%E5%85%A5.html">上一篇：设计验证与工具接入</a> · <a href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E7%A0%94%E7%A9%B6%E8%BF%9B%E5%B1%95%E7%B4%A2%E5%BC%95.html">下一篇：参考文献与研究进展索引</a></p>
-<div class="footer">文献检索截止 2026-10-17。此页为 Markdown 的离线阅读副本；编辑后需重新生成。图示、算例与论文证据范围分别说明。</div></main></div></body></html>
+<p><code>validate_handbook.py</code> 检查本地文档和图片引用、标题目标、文献引用、代码块及数学公式分隔。MathJax 将正文 LaTeX 转换为 SVG 数学内容，生成后的网页无需联网加载公式库。</p>
+<p><code>check_html.py --static-only</code> 检查 HTML 标题目标、相对链接、插图引用、重复标识符、公式错误标记和未替换内容。同时核对正文与 HTML 导出时保存的文件校验值，检查阅读副本是否对应当前正文。完整浏览器模式另外检查两种页面宽度下的图片加载与页面宽度。</p>
+<p>程序将每类检查的实际执行结果写入 <code>checks/</code>。编辑正文后需要重新生成 HTML，Markdown 与 HTML 才会具有一致内容。</p>
+<h2 id="9. 导出逐访问测试序列">9. 导出逐访问测试序列</h2>
+<p><code>src/export_march_traces.py</code> 将算法展开为逐访问 CSV，给出每一步的地址、读写操作、读取期望、写入值以及状态变化。工具直接使用现有定义：21 套固定序列由 <code>validate_march_sequences.extract()</code> 从第 03、04 章读取，March iC− 调用 <code>validate_march_ic.expanded()</code>，两套双地址透明测试调用 <code>transparent_march_examples.run()</code>。</p>
+<p>导出前执行无故障仿真，检查读期望和访问次数；写出 CSV 后重新读取文件，逐字段比较并再次执行状态检查。透明测试还会检查局部互补比较、初末签名及原数据恢复。</p>
+<h3 id="9.1 使用方法">9.1 使用方法</h3>
+<p>以下命令从文档包根目录执行，只需 Python 标准库。</p>
+<pre><code class="language-bash"># 列出全部 24 种算法、简写名称、长度系数和容量要求
+python3 src/export_march_traces.py --list
+
+# 导出 4 个地址的 March C−
+python3 src/export_march_traces.py --algorithm &quot;C-&quot; --size 4 --output examples/traces/c_minus.csv
+
+# 导出 16 个地址的 March SS
+python3 src/export_march_traces.py --algorithm &quot;SS&quot; --size 16 --output examples/traces/ss_16.csv
+
+# 导出采用 Gray 码顺序的 March iC−
+python3 src/export_march_traces.py --algorithm &quot;iC-&quot; --size 8 --output examples/traces/ic_8.csv
+
+# 指定透明测试的原数据，位串从左到右对应地址 0、1、2、3
+python3 src/export_march_traces.py --algorithm &quot;2A_2&quot; --size 4 --initial 1100 --output examples/traces/transparent_4.csv
+
+# 重新生成六个预设示例及算法目录，并执行检查
+python3 src/export_march_traces.py --examples
+</code></pre>
+<p><code>--algorithm</code> 同时接受完整名称与列出的简写，例如 <code>March C-</code>、<code>C-</code>、<code>March SS</code>、<code>SS</code>、<code>March_2A_2</code>、<code>2A_2</code>。名称中的 <code>−</code> 和 <code>-</code> 均可使用。<code>--output</code> 可指定所需 CSV 路径；省略时，文件写入 <code>examples/traces/</code>，文件名包含算法和地址数。<code>--size</code> 默认值为 4。</p>
+<p><code>--initial</code> 接受一个重复使用的位，或恰好包含 N 位的数据串。例如 <code>--initial 1</code> 表示全部地址初值为 1，<code>--initial 1100</code> 表示四个地址依次为 1、1、0、0。固定测试与 iC− 默认从未知值开始，并由算法中的初始化写入建立数据。透明测试默认采用地址 0 开始的交替初值 <code>0101…</code>。</p>
+<h3 id="9.2 导出字段">9.2 导出字段</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>字段</th>
+  <th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><code>algorithm</code></td>
+  <td>算法的完整名称</td>
+</tr>
+<tr>
+  <td><code>stage</code></td>
+  <td>March 元素 <code>M0</code>、<code>M1</code> 等，或透明测试的 <code>initial_signature</code>、<code>base_1</code>、<code>base_2</code>、<code>final_signature</code></td>
+</tr>
+<tr>
+  <td><code>step</code></td>
+  <td>从 1 开始的全局访问编号</td>
+</tr>
+<tr>
+  <td><code>address</code></td>
+  <td>从 0 开始的逻辑地址</td>
+</tr>
+<tr>
+  <td><code>operation</code></td>
+  <td><code>w0</code>、<code>w1</code>、<code>r0</code>、<code>r1</code>；没有逐位比较期望的采集或签名读取记为 <code>r</code></td>
+</tr>
+<tr>
+  <td><code>expected_read</code></td>
+  <td>本次直接比较的期望值；写入、透明采集读取和签名读取为空</td>
+</tr>
+<tr>
+  <td><code>write_value</code></td>
+  <td>写入的数据；读操作为空</td>
+</tr>
+<tr>
+  <td><code>observed_read</code></td>
+  <td>无故障执行返回的数据；写操作为空</td>
+</tr>
+<tr>
+  <td><code>cell_before</code>、<code>cell_after</code></td>
+  <td>被访问单元在操作前后的值，<code>x</code> 表示尚未初始化</td>
+</tr>
+<tr>
+  <td><code>state_before</code>、<code>state_after</code></td>
+  <td>全部地址按升序排列的状态串；N≤16 时提供，较大容量留空</td>
+</tr>
+<tr>
+  <td><code>direction</code></td>
+  <td>实际使用的地址顺序，例如 <code>ascending</code>、<code>descending</code>、<code>gray_forward</code>、<code>gray_reverse</code>、<code>double_forward</code>、<code>double_reverse</code></td>
+</tr>
+<tr>
+  <td><code>background</code></td>
+  <td>iC− 的地址背景值，或透明测试的原始数据；普通固定序列为空</td>
+</tr>
+<tr>
+  <td><code>observation</code></td>
+  <td><code>direct_compare</code> 为固定期望比较，<code>capture_data</code> 为暂存读取数据，<code>local_compare</code> 为透明互补检查，<code>signature_reference</code>、<code>signature_result</code> 为初末签名读取，<code>write</code> 为写操作</td>
+</tr>
+</tbody>
+</table></div>
+<p>CSV 使用带 UTF-8 标记的编码，方便表格软件识别。状态串中的前导零有实际含义，导入表格软件时应把两个完整状态字段设为文本类型。</p>
+<p>透明测试的首条块内读取决定后续写入反值，所以该行的 <code>expected_read</code> 为空。随后的 <code>local_compare</code> 行才填写互补值期望。初末扫描的结果由签名比较检查，目录中给出两次签名及所使用的教学 CRC-4 规则。仿真中的完整状态记录用于检查恢复情况。</p>
+<h3 id="9.3 地址与容量要求">9.3 地址与容量要求</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>算法类别</th>
+  <th>容量与具体展开方式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>21 套固定序列</td>
+  <td>N 为正整数；<code>⇕</code> 元素具体选择升序，其余元素保持定义中的升降序</td>
+</tr>
+<tr>
+  <td>March iC−</td>
+  <td>N 为不小于 2 的 2 的整数次幂；地址顺序为反射 Gray 码 <code>i XOR (i &gt;&gt; 1)</code>，背景相位为 0，末尾读取采用正向 Gray 顺序</td>
+</tr>
+<tr>
+  <td>March_2A_1、March_2A_2</td>
+  <td>N 为 2 至 256 之间的 2 的整数次幂；双地址顺序为两次完整升序扫描，第二基本阶段采用该序列的逆序；初末签名扫描均为升序</td>
+</tr>
+</tbody>
+</table></div>
+<p>透明测试的导出容量上限为 256，因为被复用的仿真程序会为每次访问保存完整状态。该上限属于当前导出实现的资源控制。算法本身的容量关系由对应章节说明。</p>
+<p>输入未知算法名、非正容量、iC− 或透明测试不支持的容量，或者长度不匹配的原数据时，程序会给出明确错误并以状态码 2 结束。没有生成失败算法的 CSV。</p>
+<h3 id="9.4 包内预生成示例">9.4 包内预生成示例</h3>
+<p>六个文件均采用 N=4。透明示例原数据为 <code>0101</code>，其余示例从未知值开始执行初始化。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>算法</th>
+  <th style="text-align:right">长度系数</th>
+  <th style="text-align:right">CSV 数据行数</th>
+  <th>文件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>March C−</td>
+  <td style="text-align:right">10N</td>
+  <td style="text-align:right">40</td>
+  <td><a href="../examples/traces/march_c_minus_N4.csv">march_c_minus_N4.csv</a></td>
+</tr>
+<tr>
+  <td>March SS</td>
+  <td style="text-align:right">22N</td>
+  <td style="text-align:right">88</td>
+  <td><a href="../examples/traces/march_ss_N4.csv">march_ss_N4.csv</a></td>
+</tr>
+<tr>
+  <td>March AB</td>
+  <td style="text-align:right">22N</td>
+  <td style="text-align:right">88</td>
+  <td><a href="../examples/traces/march_ab_N4.csv">march_ab_N4.csv</a></td>
+</tr>
+<tr>
+  <td>March AZ2</td>
+  <td style="text-align:right">14N</td>
+  <td style="text-align:right">56</td>
+  <td><a href="../examples/traces/march_az2_N4.csv">march_az2_N4.csv</a></td>
+</tr>
+<tr>
+  <td>March iC−</td>
+  <td style="text-align:right">10N</td>
+  <td style="text-align:right">40</td>
+  <td><a href="../examples/traces/march_ic_minus_N4.csv">march_ic_minus_N4.csv</a></td>
+</tr>
+<tr>
+  <td>March_2A_2</td>
+  <td style="text-align:right">14N</td>
+  <td style="text-align:right">56</td>
+  <td><a href="../examples/traces/march_2a_2_N4.csv">march_2a_2_N4.csv</a></td>
+</tr>
+</tbody>
+</table></div>
+<p><a href="../examples/march_trace_catalog.json">march_trace_catalog.json</a> 汇总全部 24 种算法、定义来源、预设文件、初末状态、访问数和检查结果。<code>--examples</code> 会执行 104 次无故障展开检查、六个 CSV 的回读检查及六类无效输入检查；其中包括透明测试 N=4 的全部初始数据。成功时，目录文件的 <code>passed</code> 为 <code>true</code>，命令退出状态为 0。</p>
+<p>这些表格用于核对操作展开和无故障行为。故障检测过程与覆盖结果由对应章节及故障仿真程序提供。</p>
+<h2 id="10. 统一检查与补充操作算例">10. 统一检查与补充操作算例</h2>
+<p>运行全部数字模型、逐访问 CSV 导出和文档静态检查：</p>
+<pre><code class="language-bash">python3 src/run_checks.py
+</code></pre>
+<p>已安装本章所列网页依赖时，使用 <code>python3 src/run_checks.py --rebuild-html</code> 同时检查公式并重新生成所有离线页面；只运行数字模型时使用 <code>--models-only</code>。程序按顺序执行，每项记录实际退出状态和用时；遇到失败时停止。完整结果写入 <a href="../checks/run_checks_results.json">run_checks_results.json</a>。</p>
+<p><code>validate_read_disturb_and_pause.py</code> 检查第 04、08、11 章的补充操作例子：128 个读后破坏场景、192 次透明测试运行中的 2,304 个完整操作块结束位置，以及八位字的转换耦合实例。透明测试检查访问次数的奇偶性与数据恢复之间的关系，并演示应用正常写入后重新计算初始签名的过程。</p>
+<pre><code class="language-bash">python3 src/validate_read_disturb_and_pause.py
+</code></pre>
+<p>该程序分别保存实际读返回值和内部状态，因此能够明确区分本次已经读出的错误与最后一次操作后才形成的变化。结果见 <a href="../examples/read_disturb_and_pause_results.json">read_disturb_and_pause_results.json</a>。</p>
+<div class="footer">故障模型、算法与生成方法的检索截止 2026-11-18。此页为 Markdown 的离线阅读副本，公式与插图可离线查看。</div></main></div></body></html>

@@ -1,0 +1,180 @@
+{
+  "definitions": {
+    "MT-R3CCF": [
+      [
+        "0",
+        "r0^c0",
+        "r0",
+        "c0"
+      ],
+      [
+        "r",
+        "wt"
+      ],
+      2,
+      21
+    ],
+    "MT-3CCF": [
+      [
+        "0",
+        "r0^c0",
+        "r0",
+        "c0"
+      ],
+      [
+        "r",
+        "wt",
+        "wnt",
+        "r"
+      ],
+      2,
+      37
+    ],
+    "MT-4CCF": [
+      [
+        "0",
+        "c0",
+        "1",
+        "1^c0",
+        "r0",
+        "r0^c0",
+        "1^r0",
+        "1^r0^c0"
+      ],
+      [
+        "r",
+        "wt",
+        "wnt",
+        "r",
+        "r",
+        "wt",
+        "wnt",
+        "r"
+      ],
+      1,
+      73
+    ],
+    "MT_NPSF_81N": [
+      [
+        "0",
+        "r0",
+        "c0",
+        "r0^c0",
+        "c1",
+        "c0^c1",
+        "r1",
+        "r0^r1",
+        "r0^r1^c0",
+        "r1^c0",
+        "r0^c1",
+        "r0^c0^c1",
+        "r0^r1^c0^c1",
+        "r1^c0^c1",
+        "1^r0^r1^c1",
+        "1^r1^c1"
+      ],
+      [
+        "r",
+        "wt"
+      ],
+      2,
+      81
+    ],
+    "MT_ENPSF": [
+      [
+        "0",
+        "r0",
+        "c0",
+        "r0^c0",
+        "c1",
+        "c0^c1",
+        "r1",
+        "r0^r1",
+        "r0^r1^c0",
+        "r1^c0",
+        "r0^c1",
+        "r0^c0^c1",
+        "r0^r1^c0^c1",
+        "r1^c0^c1",
+        "1^r0^r1^c1",
+        "1^r1^c1"
+      ],
+      [
+        "r",
+        "wnt",
+        "r",
+        "r",
+        "wt"
+      ],
+      2,
+      177
+    ]
+  },
+  "results": {
+    "MT-R3CCF": {
+      "array_shape": [
+        16,
+        16
+      ],
+      "operations": 5376,
+      "operations_per_cell": 21,
+      "groups_checked": 16,
+      "cells_per_group": 3,
+      "unique_transition_edges_per_group": 24,
+      "each_transition_edge_count": 1,
+      "full_operation_edges_per_group": 48
+    },
+    "MT-3CCF": {
+      "array_shape": [
+        16,
+        16
+      ],
+      "operations": 9472,
+      "operations_per_cell": 37,
+      "groups_checked": 16,
+      "cells_per_group": 3,
+      "unique_transition_edges_per_group": 24,
+      "each_transition_edge_count": 1,
+      "full_operation_edges_per_group": 72
+    },
+    "MT-4CCF": {
+      "array_shape": [
+        16,
+        16
+      ],
+      "operations": 18688,
+      "operations_per_cell": 73,
+      "groups_checked": 4,
+      "cells_per_group": 4,
+      "unique_transition_edges_per_group": 64,
+      "each_transition_edge_count": 1,
+      "full_operation_edges_per_group": 192
+    },
+    "MT_NPSF_81N": {
+      "array_shape": [
+        16,
+        16
+      ],
+      "operations": 20736,
+      "operations_per_cell": 81,
+      "groups_checked": 16,
+      "cells_per_group": 5,
+      "unique_transition_edges_per_group": 160,
+      "each_transition_edge_count": 1,
+      "full_operation_edges_per_group": 320
+    },
+    "MT_ENPSF": {
+      "array_shape": [
+        16,
+        16
+      ],
+      "operations": 45312,
+      "operations_per_cell": 177,
+      "groups_checked": 16,
+      "cells_per_group": 5,
+      "unique_transition_edges_per_group": 160,
+      "each_transition_edge_count": 1,
+      "full_operation_edges_per_group": 480
+    }
+  }
+}

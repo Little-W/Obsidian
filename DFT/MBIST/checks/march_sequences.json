@@ -1,16 +1,16 @@
 {
   "scope": "Fault-free initialization/read-expectation/count simulation; no fault-coverage proof.",
-  "sequence_count": 16,
-  "simulation_count": 255,
+  "sequence_count": 21,
+  "simulation_count": 305,
   "errors": [],
   "passed": true,
   "sequences": [
     {
       "file": "03_March基础与经典算法.md",
-      "line": 89,
-      "label": "2.1 完整测试序列",
+      "line": 91,
+      "label": "March C−",
       "operations_per_address": 10,
-      "sequence": "March C− = {\n  ⇕(w0);\n  ↑(r0, w1);\n  ↑(r1, w0);\n  ↓(r0, w1);\n  ↓(r1, w0);\n  ⇕(r0)\n}\n\n测试长度 = N + 2N + 2N + 2N + 2N + N = 10N",
+      "sequence": "⇕(w0); ↑(r0,w1); ↑(r1,w0); ↓(r0,w1); ↓(r1,w0); ⇕(r0)",
       "test_count": 20,
       "tests": [
         {
@@ -257,10 +257,10 @@
     },
     {
       "file": "03_March基础与经典算法.md",
-      "line": 163,
-      "label": "3.2.1 MATS：4N",
+      "line": 165,
+      "label": "3.2.1 MATS 4N",
       "operations_per_address": 4,
-      "sequence": "{ ⇕(w0); ↑(r0,w1); ⇕(r1) }",
+      "sequence": "⇕(w0); ↑(r0,w1); ⇕(r1)",
       "test_count": 20,
       "tests": [
         {
@@ -507,10 +507,10 @@
     },
     {
       "file": "03_March基础与经典算法.md",
-      "line": 171,
-      "label": "3.2.2 MATS+：5N",
+      "line": 173,
+      "label": "3.2.2 MATS+ 5N",
       "operations_per_address": 5,
-      "sequence": "{ ⇕(w0); ↑(r0,w1); ↓(r1,w0) }",
+      "sequence": "⇕(w0); ↑(r0,w1); ↓(r1,w0)",
       "test_count": 10,
       "tests": [
         {
@@ -627,10 +627,10 @@
     },
     {
       "file": "03_March基础与经典算法.md",
-      "line": 179,
-      "label": "3.2.3 MATS++：6N",
+      "line": 181,
+      "label": "3.2.3 MATS++ 6N",
       "operations_per_address": 6,
-      "sequence": "{ ⇕(w0); ↑(r0,w1); ↓(r1,w0,r0) }",
+      "sequence": "⇕(w0); ↑(r0,w1); ↓(r1,w0,r0)",
       "test_count": 10,
       "tests": [
         {
@@ -747,10 +747,10 @@
     },
     {
       "file": "03_March基础与经典算法.md",
-      "line": 187,
-      "label": "3.2.4 March X：6N",
+      "line": 189,
+      "label": "3.2.4 March X 6N",
       "operations_per_address": 6,
-      "sequence": "{ ⇕(w0); ↑(r0,w1); ↓(r1,w0); ⇕(r0) }",
+      "sequence": "⇕(w0); ↑(r0,w1); ↓(r1,w0); ⇕(r0)",
       "test_count": 20,
       "tests": [
         {
@@ -997,10 +997,10 @@
     },
     {
       "file": "03_March基础与经典算法.md",
-      "line": 195,
-      "label": "3.2.5 March Y：8N",
+      "line": 197,
+      "label": "3.2.5 March Y 8N",
       "operations_per_address": 8,
-      "sequence": "{ ⇕(w0); ↑(r0,w1,r1); ↓(r1,w0,r0); ⇕(r0) }",
+      "sequence": "⇕(w0); ↑(r0,w1,r1); ↓(r1,w0,r0); ⇕(r0)",
       "test_count": 20,
       "tests": [
         {
@@ -1247,10 +1247,10 @@
     },
     {
       "file": "03_March基础与经典算法.md",
-      "line": 205,
-      "label": "3.2.6 March C：11N",
+      "line": 207,
+      "label": "3.2.6 March C 11N",
       "operations_per_address": 11,
-      "sequence": "{ ⇕(w0);\n  ↑(r0,w1); ↑(r1,w0); ↑(r0);\n  ↓(r0,w1); ↓(r1,w0); ⇕(r0) }",
+      "sequence": "⇕(w0); ↑(r0,w1); ↑(r1,w0); ↑(r0); ↓(r0,w1); ↓(r1,w0); ⇕(r0)",
       "test_count": 20,
       "tests": [
         {
@@ -1497,10 +1497,10 @@
     },
     {
       "file": "03_March基础与经典算法.md",
-      "line": 219,
-      "label": "3.2.8 March C+：14N",
+      "line": 221,
+      "label": "3.2.8 March C+ 14N",
       "operations_per_address": 14,
-      "sequence": "{ ⇕(w0);\n  ↑(r0,w1,r1);\n  ↑(r1,w0,r0);\n  ↓(r0,w1,r1);\n  ↓(r1,w0,r0);\n  ⇕(r0) }",
+      "sequence": "⇕(w0); ↑(r0,w1,r1); ↑(r1,w0,r0); ↓(r0,w1,r1); ↓(r1,w0,r0); ⇕(r0)",
       "test_count": 20,
       "tests": [
         {
@@ -1747,10 +1747,260 @@
     },
     {
       "file": "03_March基础与经典算法.md",
-      "line": 240,
+      "line": 236,
+      "label": "3.2.9 March CL 12N",
+      "operations_per_address": 12,
+      "sequence": "⇕(w0); ↑(r0,w1); ↑(r1,r1,w0); ↓(r0,w1,r1); ↓(r1,w0); ⇕(r0)",
+      "test_count": 20,
+      "tests": [
+        {
+          "N": 1,
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ],
+          "operations": 12,
+          "final_values": [
+            0
+          ],
+          "passed": true
+        },
+        {
+          "N": 1,
+          "arbitrary_directions": [
+            "↑",
+            "↓"
+          ],
+          "operations": 12,
+          "final_values": [
+            0
+          ],
+          "passed": true
+        },
+        {
+          "N": 1,
+          "arbitrary_directions": [
+            "↓",
+            "↑"
+          ],
+          "operations": 12,
+          "final_values": [
+            0
+          ],
+          "passed": true
+        },
+        {
+          "N": 1,
+          "arbitrary_directions": [
+            "↓",
+            "↓"
+          ],
+          "operations": 12,
+          "final_values": [
+            0
+          ],
+          "passed": true
+        },
+        {
+          "N": 2,
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ],
+          "operations": 24,
+          "final_values": [
+            0
+          ],
+          "passed": true
+        },
+        {
+          "N": 2,
+          "arbitrary_directions": [
+            "↑",
+            "↓"
+          ],
+          "operations": 24,
+          "final_values": [
+            0
+          ],
+          "passed": true
+        },
+        {
+          "N": 2,
+          "arbitrary_directions": [
+            "↓",
+            "↑"
+          ],
+          "operations": 24,
+          "final_values": [
+            0
+          ],
+          "passed": true
+        },
+        {
+          "N": 2,
+          "arbitrary_directions": [
+            "↓",
+            "↓"
+          ],
+          "operations": 24,
+          "final_values": [
+            0
+          ],
+          "passed": true
+        },
+        {
+          "N": 4,
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ],
+          "operations": 48,
+          "final_values": [
+            0
+          ],
+          "passed": true
+        },
+        {
+          "N": 4,
+          "arbitrary_directions": [
+            "↑",
+            "↓"
+          ],
+          "operations": 48,
+          "final_values": [
+            0
+          ],
+          "passed": true
+        },
+        {
+          "N": 4,
+          "arbitrary_directions": [
+            "↓",
+            "↑"
+          ],
+          "operations": 48,
+          "final_values": [
+            0
+          ],
+          "passed": true
+        },
+        {
+          "N": 4,
+          "arbitrary_directions": [
+            "↓",
+            "↓"
+          ],
+          "operations": 48,
+          "final_values": [
+            0
+          ],
+          "passed": true
+        },
+        {
+          "N": 7,
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ],
+          "operations": 84,
+          "final_values": [
+            0
+          ],
+          "passed": true
+        },
+        {
+          "N": 7,
+          "arbitrary_directions": [
+            "↑",
+            "↓"
+          ],
+          "operations": 84,
+          "final_values": [
+            0
+          ],
+          "passed": true
+        },
+        {
+          "N": 7,
+          "arbitrary_directions": [
+            "↓",
+            "↑"
+          ],
+          "operations": 84,
+          "final_values": [
+            0
+          ],
+          "passed": true
+        },
+        {
+          "N": 7,
+          "arbitrary_directions": [
+            "↓",
+            "↓"
+          ],
+          "operations": 84,
+          "final_values": [
+            0
+          ],
+          "passed": true
+        },
+        {
+          "N": 16,
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ],
+          "operations": 192,
+          "final_values": [
+            0
+          ],
+          "passed": true
+        },
+        {
+          "N": 16,
+          "arbitrary_directions": [
+            "↑",
+            "↓"
+          ],
+          "operations": 192,
+          "final_values": [
+            0
+          ],
+          "passed": true
+        },
+        {
+          "N": 16,
+          "arbitrary_directions": [
+            "↓",
+            "↑"
+          ],
+          "operations": 192,
+          "final_values": [
+            0
+          ],
+          "passed": true
+        },
+        {
+          "N": 16,
+          "arbitrary_directions": [
+            "↓",
+            "↓"
+          ],
+          "operations": 192,
+          "final_values": [
+            0
+          ],
+          "passed": true
+        }
+      ]
+    },
+    {
+      "file": "03_March基础与经典算法.md",
+      "line": 253,
       "label": "March A（15N）：",
       "operations_per_address": 15,
-      "sequence": "{ ⇕(w0);\n  ↑(r0,w1,w0,w1);\n  ↑(r1,w0,w1);\n  ↓(r1,w0,w1,w0);\n  ↓(r0,w1,w0) }",
+      "sequence": "⇕(w0); ↑(r0,w1,w0,w1); ↑(r1,w0,w1); ↓(r1,w0,w1,w0); ↓(r0,w1,w0)",
       "test_count": 10,
       "tests": [
         {
@@ -1867,10 +2117,10 @@
     },
     {
       "file": "03_March基础与经典算法.md",
-      "line": 252,
+      "line": 265,
       "label": "March B（17N）：",
       "operations_per_address": 17,
-      "sequence": "{ ⇕(w0);\n  ↑(r0,w1,r1,w0,r0,w1);\n  ↑(r1,w0,w1);\n  ↓(r1,w0,w1,w0);\n  ↓(r0,w1,w0) }",
+      "sequence": "⇕(w0); ↑(r0,w1,r1,w0,r0,w1); ↑(r1,w0,w1); ↓(r1,w0,w1,w0); ↓(r0,w1,w0)",
       "test_count": 10,
       "tests": [
         {
@@ -1987,10 +2237,10 @@
     },
     {
       "file": "04_增强March与复杂故障测试.md",
-      "line": 50,
-      "label": "1.2 March LR：14N 级别，重点解决特定关联故障",
+      "line": 49,
+      "label": "1.2 March LR：14N",
       "operations_per_address": 14,
-      "sequence": "{ ⇕(w0);\n  ↓(r0,w1);\n  ↑(r1,w0,r0,w1);\n  ↑(r1,w0);\n  ↑(r0,w1,r1,w0);\n  ↑(r0) }",
+      "sequence": "⇕(w0); ↓(r0,w1); ↑(r1,w0,r0,w1); ↑(r1,w0); ↑(r0,w1,r1,w0); ↑(r0)",
       "test_count": 10,
       "tests": [
         {
@@ -2107,10 +2357,10 @@
     },
     {
       "file": "04_增强March与复杂故障测试.md",
-      "line": 65,
-      "label": "1.3 March SR：14N，面向更多静态读写故障原型",
+      "line": 66,
+      "label": "1.3 March SR：14N",
       "operations_per_address": 14,
-      "sequence": "{ ↓(w0);\n  ↑(r0,w1,r1,w0);\n  ↓(r0,r0);\n  ↑(w1);\n  ↓(r1,w0,r0,w1);\n  ↑(r1,r1) }",
+      "sequence": "↓(w0); ↑(r0,w1,r1,w0); ↑(r0,r0); ↑(w1); ↓(r1,w0,r0,w1); ↓(r1,r1)",
       "test_count": 5,
       "tests": [
         {
@@ -2162,10 +2412,10 @@
     },
     {
       "file": "04_增强March与复杂故障测试.md",
-      "line": 82,
-      "label": "1.4 March SS：22N，较完整的非关联静态故障覆盖",
+      "line": 83,
+      "label": "1.4 March SS：22N",
       "operations_per_address": 22,
-      "sequence": "{ ⇕(w0);\n  ↑(r0,r0,w0,r0,w1);\n  ↑(r1,r1,w1,r1,w0);\n  ↓(r0,r0,w0,r0,w1);\n  ↓(r1,r1,w1,r1,w0);\n  ⇕(r0) }",
+      "sequence": "⇕(w0); ↑(r0,r0,w0,r0,w1); ↑(r1,r1,w1,r1,w0); ↓(r0,r0,w0,r0,w1); ↓(r1,r1,w1,r1,w0); ⇕(r0)",
       "test_count": 20,
       "tests": [
         {
@@ -2412,10 +2662,10 @@
     },
     {
       "file": "04_增强March与复杂故障测试.md",
-      "line": 99,
-      "label": "1.5 March MSS：18N，减少完全静态故障检测所需操作",
+      "line": 123,
+      "label": "1.5 March MSS：18N",
       "operations_per_address": 18,
-      "sequence": "{ ⇕(w0);\n  ↑(r0,r0,w1,w1);\n  ↑(r1,r1,w0,w0);\n  ↓(r0,r0,w1,w1);\n  ↓(r1,r1,w0,w0);\n  ⇕(r0) }",
+      "sequence": "⇕(w0); ↑(r0,r0,w1,w1); ↑(r1,r1,w0,w0); ↓(r0,r0,w1,w1); ↓(r1,r1,w0,w0); ⇕(r0)",
       "test_count": 20,
       "tests": [
         {
@@ -2662,10 +2912,10 @@
     },
     {
       "file": "04_增强March与复杂故障测试.md",
-      "line": 118,
-      "label": "1.6 March AB：22N，重点是现实关联静态故障",
+      "line": 140,
+      "label": "1.6 March AB：22N",
       "operations_per_address": 22,
-      "sequence": "{ ⇕(w0);\n  ↓(r0,w1,r1,w1,r1);\n  ↓(r1,w0,r0,w0,r0);\n  ↑(r0,w1,r1,w1,r1);\n  ↑(r1,w0,r0,w0,r0);\n  ⇕(r0) }",
+      "sequence": "⇕(w0); ↓(r0,w1,r1,w1,r1); ↓(r1,w0,r0,w0,r0); ↑(r0,w1,r1,w1,r1); ↑(r1,w0,r0,w0,r0); ⇕(r0)",
       "test_count": 20,
       "tests": [
         {
@@ -2912,10 +3162,305 @@
     },
     {
       "file": "04_增强March与复杂故障测试.md",
-      "line": 180,
+      "line": 168,
+      "label": "March AZ1（13N）",
+      "operations_per_address": 13,
+      "sequence": "⇕(w0); ↓(w1); ↑(w1,r1,r1,w0); ↑(w0,r0); ↑(r0,w1,w1,r1); ↑(r1)",
+      "test_count": 10,
+      "tests": [
+        {
+          "N": 1,
+          "arbitrary_directions": [
+            "↑"
+          ],
+          "operations": 13,
+          "final_values": [
+            1
+          ],
+          "passed": true
+        },
+        {
+          "N": 1,
+          "arbitrary_directions": [
+            "↓"
+          ],
+          "operations": 13,
+          "final_values": [
+            1
+          ],
+          "passed": true
+        },
+        {
+          "N": 2,
+          "arbitrary_directions": [
+            "↑"
+          ],
+          "operations": 26,
+          "final_values": [
+            1
+          ],
+          "passed": true
+        },
+        {
+          "N": 2,
+          "arbitrary_directions": [
+            "↓"
+          ],
+          "operations": 26,
+          "final_values": [
+            1
+          ],
+          "passed": true
+        },
+        {
+          "N": 4,
+          "arbitrary_directions": [
+            "↑"
+          ],
+          "operations": 52,
+          "final_values": [
+            1
+          ],
+          "passed": true
+        },
+        {
+          "N": 4,
+          "arbitrary_directions": [
+            "↓"
+          ],
+          "operations": 52,
+          "final_values": [
+            1
+          ],
+          "passed": true
+        },
+        {
+          "N": 7,
+          "arbitrary_directions": [
+            "↑"
+          ],
+          "operations": 91,
+          "final_values": [
+            1
+          ],
+          "passed": true
+        },
+        {
+          "N": 7,
+          "arbitrary_directions": [
+            "↓"
+          ],
+          "operations": 91,
+          "final_values": [
+            1
+          ],
+          "passed": true
+        },
+        {
+          "N": 16,
+          "arbitrary_directions": [
+            "↑"
+          ],
+          "operations": 208,
+          "final_values": [
+            1
+          ],
+          "passed": true
+        },
+        {
+          "N": 16,
+          "arbitrary_directions": [
+            "↓"
+          ],
+          "operations": 208,
+          "final_values": [
+            1
+          ],
+          "passed": true
+        }
+      ]
+    },
+    {
+      "file": "04_增强March与复杂故障测试.md",
+      "line": 168,
+      "label": "March AZ（13N）",
+      "operations_per_address": 13,
+      "sequence": "⇕(w0); ↓(w1); ↑(w1,r1,r1,w0,w0); ↑(r0); ↑(r0,w1,w1,r1); ↑(r1)",
+      "test_count": 10,
+      "tests": [
+        {
+          "N": 1,
+          "arbitrary_directions": [
+            "↑"
+          ],
+          "operations": 13,
+          "final_values": [
+            1
+          ],
+          "passed": true
+        },
+        {
+          "N": 1,
+          "arbitrary_directions": [
+            "↓"
+          ],
+          "operations": 13,
+          "final_values": [
+            1
+          ],
+          "passed": true
+        },
+        {
+          "N": 2,
+          "arbitrary_directions": [
+            "↑"
+          ],
+          "operations": 26,
+          "final_values": [
+            1
+          ],
+          "passed": true
+        },
+        {
+          "N": 2,
+          "arbitrary_directions": [
+            "↓"
+          ],
+          "operations": 26,
+          "final_values": [
+            1
+          ],
+          "passed": true
+        },
+        {
+          "N": 4,
+          "arbitrary_directions": [
+            "↑"
+          ],
+          "operations": 52,
+          "final_values": [
+            1
+          ],
+          "passed": true
+        },
+        {
+          "N": 4,
+          "arbitrary_directions": [
+            "↓"
+          ],
+          "operations": 52,
+          "final_values": [
+            1
+          ],
+          "passed": true
+        },
+        {
+          "N": 7,
+          "arbitrary_directions": [
+            "↑"
+          ],
+          "operations": 91,
+          "final_values": [
+            1
+          ],
+          "passed": true
+        },
+        {
+          "N": 7,
+          "arbitrary_directions": [
+            "↓"
+          ],
+          "operations": 91,
+          "final_values": [
+            1
+          ],
+          "passed": true
+        },
+        {
+          "N": 16,
+          "arbitrary_directions": [
+            "↑"
+          ],
+          "operations": 208,
+          "final_values": [
+            1
+          ],
+          "passed": true
+        },
+        {
+          "N": 16,
+          "arbitrary_directions": [
+            "↓"
+          ],
+          "operations": 208,
+          "final_values": [
+            1
+          ],
+          "passed": true
+        }
+      ]
+    },
+    {
+      "file": "04_增强March与复杂故障测试.md",
+      "line": 168,
+      "label": "March AZ2（14N）",
+      "operations_per_address": 14,
+      "sequence": "↓(w0); ↓(w0,r0); ↑(r0,w1,w1,r1); ↑(r1,w0); ↓(r0,w1,w1,r1); ↓(r1)",
+      "test_count": 5,
+      "tests": [
+        {
+          "N": 1,
+          "arbitrary_directions": [],
+          "operations": 14,
+          "final_values": [
+            1
+          ],
+          "passed": true
+        },
+        {
+          "N": 2,
+          "arbitrary_directions": [],
+          "operations": 28,
+          "final_values": [
+            1
+          ],
+          "passed": true
+        },
+        {
+          "N": 4,
+          "arbitrary_directions": [],
+          "operations": 56,
+          "final_values": [
+            1
+          ],
+          "passed": true
+        },
+        {
+          "N": 7,
+          "arbitrary_directions": [],
+          "operations": 98,
+          "final_values": [
+            1
+          ],
+          "passed": true
+        },
+        {
+          "N": 16,
+          "arbitrary_directions": [],
+          "operations": 224,
+          "final_values": [
+            1
+          ],
+          "passed": true
+        }
+      ]
+    },
+    {
+      "file": "04_增强March与复杂故障测试.md",
+      "line": 236,
       "label": "2.2 March RAW：26N",
       "operations_per_address": 26,
-      "sequence": "{ ⇕(w0);\n  ↑(r0,w0,r0,r0,w1,r1);\n  ↑(r1,w1,r1,r1,w0,r0);\n  ↓(r0,w0,r0,r0,w1,r1);\n  ↓(r1,w1,r1,r1,w0,r0);\n  ⇕(r0) }",
+      "sequence": "⇕(w0); ↑(r0,w0,r0,r0,w1,r1); ↑(r1,w1,r1,r1,w0,r0); ↓(r0,w0,r0,r0,w1,r1); ↓(r1,w1,r1,r1,w0,r0); ⇕(r0)",
       "test_count": 20,
       "tests": [
         {
@@ -3153,6 +3698,61 @@
             "↓"
           ],
           "operations": 416,
+          "final_values": [
+            0
+          ],
+          "passed": true
+        }
+      ]
+    },
+    {
+      "file": "04_增强March与复杂故障测试.md",
+      "line": 255,
+      "label": "2.3 13N 分离读取示例",
+      "operations_per_address": 13,
+      "sequence": "↑(w0); ↑(w0,r0); ↑(r0); ↑(w1,r1); ↑(r1); ↑(w1,r1); ↑(r1); ↑(w0,r0); ↑(r0)",
+      "test_count": 5,
+      "tests": [
+        {
+          "N": 1,
+          "arbitrary_directions": [],
+          "operations": 13,
+          "final_values": [
+            0
+          ],
+          "passed": true
+        },
+        {
+          "N": 2,
+          "arbitrary_directions": [],
+          "operations": 26,
+          "final_values": [
+            0
+          ],
+          "passed": true
+        },
+        {
+          "N": 4,
+          "arbitrary_directions": [],
+          "operations": 52,
+          "final_values": [
+            0
+          ],
+          "passed": true
+        },
+        {
+          "N": 7,
+          "arbitrary_directions": [],
+          "operations": 91,
+          "final_values": [
+            0
+          ],
+          "passed": true
+        },
+        {
+          "N": 16,
+          "arbitrary_directions": [],
+          "operations": 208,
           "final_values": [
             0
           ],

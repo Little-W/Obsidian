@@ -1,0 +1,8 @@
+{
+  "scope": "Static HTML file, fragment and image references; duplicate identifiers and rendered-math markers. Browser layout checks are a separate command.",
+  "pages": 21,
+  "local_links": 1564,
+  "export_hash_checks": 36,
+  "passed": true,
+  "errors": []
+}

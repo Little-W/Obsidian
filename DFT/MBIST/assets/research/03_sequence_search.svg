@@ -1,0 +1,76 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1775" viewBox="0 0 1200 1775" role="img" aria-labelledby="fig-title fig-description" version="1.1" data-layout-version="precise-ports-v2">
+  <title id="fig-title">图 28  故障仿真驱动的序列搜索</title>
+  <desc id="fig-description">同一故障集合用于评价候选；完整结果另用独立遍历检查。</desc>
+  <metadata>{"layout": "named ports + orthogonal routes", "font_policy": "editable text; no embedded fonts", "version": 2}</metadata>
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#1967A4" />
+    </marker>
+    <marker id="arrow-teal" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#118575" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#D97A16" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#B84051" />
+    </marker>
+    <marker id="arrow-muted" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#4F6278" />
+    </marker>
+    <marker id="arrow-slate" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#738A9F" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#92517C" />
+    </marker>
+  </defs>
+  <g id="layer-background">
+    <rect width="1200" height="1775" fill="#FFFFFF" />
+  </g>
+  <g id="layer-shapes">
+    <rect id="spec" x="80" y="230" width="1040" height="170" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="candidate" x="80" y="560" width="440" height="220" rx="12" fill="#FFFFFF" stroke="#118575" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="simulate" x="680" y="560" width="440" height="220" rx="12" fill="#FFFFFF" stroke="#118575" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="update" x="80" y="1050" width="440" height="220" rx="12" fill="#FFFFFF" stroke="#D97A16" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="score" x="680" y="1050" width="440" height="220" rx="12" fill="#FFFFFF" stroke="#D97A16" stroke-width="2" data-kind="node" data-obstacle="true" />
+    <rect id="check" x="80" y="1470" width="1040" height="180" rx="12" fill="#FFFFFF" stroke="#1967A4" stroke-width="2" data-kind="node" data-obstacle="true" />
+  </g>
+  <g id="layer-connectors">
+    <polyline id="spec-candidate" points="300,400 300,560" fill="none" stroke="#1967A4" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="候选语法、初始化和执行限制" data-source-node="spec" data-source-side="S" data-source-fraction="0.21153846153846154" data-target-node="candidate" data-target-side="N" data-target-fraction="0.5" marker-end="url(#arrow-blue)" />
+    <polyline id="spec-simulate" points="900,400 900,560" fill="none" stroke="#1967A4" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="故障模型和检测条件" data-source-node="spec" data-source-side="S" data-source-fraction="0.7884615384615384" data-target-node="simulate" data-target-side="N" data-target-fraction="0.5" marker-end="url(#arrow-blue)" />
+    <polyline id="candidate-simulate" points="520,670 680,670" fill="none" stroke="#118575" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="执行候选序列" data-source-node="candidate" data-source-side="E" data-source-fraction="0.5" data-target-node="simulate" data-target-side="W" data-target-fraction="0.5" marker-end="url(#arrow-teal)" />
+    <polyline id="simulate-score" points="900,780 900,1050" fill="none" stroke="#118575" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="检出集合、长度与成本" data-source-node="simulate" data-source-side="S" data-source-fraction="0.5" data-target-node="score" data-target-side="N" data-target-fraction="0.5" marker-end="url(#arrow-teal)" />
+    <polyline id="score-update" points="680,1160 520,1160" fill="none" stroke="#D97A16" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="按照搜索规则接受或拒绝" data-source-node="score" data-source-side="W" data-source-fraction="0.5" data-target-node="update" data-target-side="E" data-target-fraction="0.5" marker-end="url(#arrow-orange)" />
+    <polyline id="update-candidate" points="300,1050 300,780" fill="none" stroke="#D97A16" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="形成下一轮候选" data-source-node="update" data-source-side="N" data-source-fraction="0.5" data-target-node="candidate" data-target-side="S" data-target-fraction="0.5" marker-end="url(#arrow-orange)" />
+    <polyline id="score-check" points="900,1270 900,1470" fill="none" stroke="#1967A4" stroke-width="3" stroke-linejoin="round" stroke-linecap="butt" data-kind="connector" data-meaning="选取达到停止条件的最佳候选" data-source-node="score" data-source-side="S" data-source-fraction="0.5" data-target-node="check" data-target-side="N" data-target-fraction="0.7884615384615384" marker-end="url(#arrow-blue)" />
+  </g>
+  <g id="layer-text">
+    <text id="text-0001" x="64" y="80" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="48" font-weight="700" fill="#172D46" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">图 28  故障仿真驱动的序列搜索</text>
+    <text id="text-0002" x="64" y="145" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">同一故障集合用于评价候选；完整结果另用独立遍历检查。</text>
+    <text id="text-0003" x="600.0" y="278" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="spec">故障集合与控制器限制</text>
+    <text id="text-0004" x="600.0" y="336" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="spec">初始状态、激励历史、时间条件、读出规则</text>
+    <text id="text-0005" x="300.0" y="608" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="34" font-weight="700" fill="#118575" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="candidate">生成候选序列</text>
+    <text id="text-0006" x="300.0" y="666" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="candidate">读写步骤与地址方向</text>
+    <text id="text-0007" x="300.0" y="716" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="candidate">保留合法初始化</text>
+    <text id="text-0008" x="900.0" y="608" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="34" font-weight="700" fill="#118575" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="simulate">逐操作故障仿真</text>
+    <text id="text-0009" x="900.0" y="666" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="simulate">更新单元与历史状态</text>
+    <text id="text-0010" x="900.0" y="716" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="simulate">逐次比较读出值</text>
+    <text id="text-0011" x="300.0" y="1098" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="34" font-weight="700" fill="#D97A16" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="update">产生下一个候选</text>
+    <text id="text-0012" x="300.0" y="1156" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="update">变异、交换或删减</text>
+    <text id="text-0013" x="300.0" y="1206" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="update">修复期望值与顺序</text>
+    <text id="text-0014" x="900.0" y="1098" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="34" font-weight="700" fill="#D97A16" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="score">比较候选质量</text>
+    <text id="text-0015" x="900.0" y="1156" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="score">优先减少未检出故障</text>
+    <text id="text-0016" x="900.0" y="1206" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="score">再减少操作数与成本</text>
+    <text id="text-0017" x="600.0" y="1518" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="36" font-weight="700" fill="#1967A4" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="check">独立执行最终序列</text>
+    <text id="text-0018" x="600.0" y="1576" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="32" font-weight="400" fill="#172D46" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="20" data-owner="check">遍历初始状态、地址关系与指定故障，记录最早错误读取</text>
+    <text id="text-0019" x="600" y="615" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#118575" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">执行</text>
+    <text id="text-0020" x="600" y="1105" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#D97A16" text-anchor="middle" dominant-baseline="central" data-kind="text" data-padding="12">选择</text>
+    <text id="text-0021" x="335" y="915" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#D97A16" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">继续搜索</text>
+    <text id="text-0022" x="935" y="915" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#118575" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">检测结果</text>
+    <text id="text-0023" x="935" y="1385" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#1967A4" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">停止条件</text>
+    <text id="text-0024" x="64" y="1695" font-family="&quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, &quot;PingFang SC&quot;, &quot;Source Han Sans SC&quot;, sans-serif" font-size="30" font-weight="400" fill="#4F6278" text-anchor="start" dominant-baseline="central" data-kind="text" data-padding="12">教学搜索同时输出随机种子、终止条件、实际结果与独立检查结果。</text>
+  </g>
+  <g id="layer-junctions" />
+</svg>

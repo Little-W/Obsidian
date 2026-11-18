@@ -8,11 +8,13 @@ from __future__ import annotations
 from pathlib import Path
 from urllib.parse import quote, urlsplit, unquote
 import html
+import hashlib
 import json
 import re
 import shutil
 import subprocess
 import tempfile
+import xml.etree.ElementTree as ET
 try:
     import mistune
 except ImportError as exc:
@@ -36,7 +38,7 @@ def url_for(url: str) -> str:
     path = unquote(parsed.path)
     if path.endswith('.md'):
         path = Path(path).with_suffix('.html').name
-    elif path.startswith(('assets/', 'src/', 'checks/', 'examples/')):
+    elif path.startswith(('assets/', 'src/', 'checks/', 'examples/', 'code/', 'data/', 'results/')):
         path = '../' + path
     elif path in ('阅读入口.html', '插图索引.html', '精确绘图检查.html'):
         path = '../' + path
@@ -44,9 +46,19 @@ def url_for(url: str) -> str:
 
 
 class Renderer(mistune.HTMLRenderer):
+    def reset_headings(self) -> None:
+        self.heading_occurrences = {}
+
     def heading(self, text: str, level: int, **attrs) -> str:
         anchor = html.unescape(re.sub('<[^>]*>', '', text))
-        return f'<h{level} id="{html.escape(anchor, quote=True)}">{text}</h{level}>\n'
+        count = self.heading_occurrences.get(anchor, 0) + 1
+        self.heading_occurrences[anchor] = count
+        if count > 1:
+            anchor += f'-{count}'
+        alias = ''
+        if re.fullmatch(r'(?:R|FM|MS|SG)\d+',anchor):
+            alias=f'<span id="{anchor.lower()}" aria-hidden="true"></span>'
+        return alias+f'<h{level} id="{html.escape(anchor, quote=True)}">{text}</h{level}>\n'
 
     def link(self, text: str, url: str, title=None) -> str:
         return super().link(text, url_for(url), title)
@@ -64,7 +76,7 @@ def page(title: str, content: str, sidebar: str, stylesheet: str = 'book.css') -
     return f'''<!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{html.escape(title)} · MBIST 设计架构与方法</title><link rel="stylesheet" href="{stylesheet}"></head>
-<body>{sidebar}<div class="reading"><main class="paper"><div class="eyebrow">MBIST · 设计架构与方法</div>{content}<div class="footer">文献检索截止 2026-10-17。此页为 Markdown 的离线阅读副本；编辑后需重新生成。图示、算例与论文证据范围分别说明。</div></main></div></body></html>'''
+<body>{sidebar}<div class="reading"><main class="paper"><div class="eyebrow">MBIST · 设计架构与方法</div>{content}<div class="footer">故障模型、算法与生成方法的检索截止 2026-11-18。此页为 Markdown 的离线阅读副本，公式与插图可离线查看。</div></main></div></body></html>'''
 
 
 def main() -> None:
@@ -88,7 +100,8 @@ def main() -> None:
     html_dir = ROOT / 'html'
     html_dir.mkdir(exist_ok=True)
     (html_dir / 'book.css').write_text(CSS, encoding='utf-8')
-    md = mistune.create_markdown(renderer=Renderer(escape=False), plugins=['table', 'footnotes', 'url'])
+    renderer = Renderer(escape=False)
+    md = mistune.create_markdown(renderer=renderer, plugins=['table', 'footnotes', 'url'])
     report = []
     for name, raw in docs:
         text = without_frontmatter(raw)
@@ -107,6 +120,7 @@ def main() -> None:
             text = text[:item['start']] + replacement + text[item['end']:]
         text = re.sub(r'\[\[#([^|\]]+)\|([^\]]+)\]\]',
                       lambda m: '[' + m[2] + '](#' + quote(m[1], safe='') + ')', text)
+        renderer.reset_headings()
         content = md(text)
         for marker, (fragment, display) in fragments.items():
             if display:
@@ -127,41 +141,50 @@ def main() -> None:
         title = manifest['titles'].get(current, '使用说明')
         out = html_dir / Path(name).with_suffix('.html').name
         out.write_text(page(title, content, sidebar), encoding='utf-8')
-        report.append({'source': name, 'html': str(out.relative_to(ROOT)), 'math_count': len(fragments)})
+        report.append({'source': name, 'html': str(out.relative_to(ROOT)),
+                       'source_sha256': hashlib.sha256(raw.encode('utf-8')).hexdigest(),
+                       'html_sha256': hashlib.sha256(out.read_bytes()).hexdigest(),
+                       'math_count': len(fragments)})
     descriptions = {
         '00': '模块职责、测试过程与设计层次，以及阅读路线的组织。',
         '01': '存储器清单、端口时序、控制器共享与期望结果对应。',
         '02': '故障的触发与观测条件，以及覆盖率的适用范围。',
         '03': 'March 表达、C− 六阶段推导与经典算法比较。',
-        '04': '静态与动态故障、关联故障、地址和邻近图案测试。',
-        '05': '算法选择、集合覆盖、约束搜索与缺陷驱动生成。',
+        '04': '完整增强序列、逐操作检测、多背景函数与访问次数。',
+        '05': '欧拉回路、元启发算法、MarchGen、强化学习与完整算例。',
         '06': '分组方法与功率模型的统一分析，延伸至电压下降和温度。',
         '07': '活动任务、阶段功率与完成时间；六存储器联合优化。',
-        '08': '测试策略调整、透明测试、数据保存恢复与风险。',
+        '08': '双地址透明序列、局部比较、初末签名与运行期间测试。',
         '09': '故障记录、定位、队列、压缩与诊断信息带宽。',
         '10': '备用行列选择、贪心反例、精确分析与修复后复测。',
         '11': '多端口、堆叠、非易失性存储器与存储器内部计算。',
         '12': '接口验证、工具配置、故障实验和公平比较。',
         '13': '运行算例程序、重新生成 SVG 并检查文档。',
-        '90': '50 条统一参考资料及近期研究按主题归属索引。',
+        '14': '按故障查询激活与观察操作、完整算法、地址条件和验证范围。',
+        '90': '参考资料、近期故障模型与算法生成研究的主题索引。',
         }
     def cards(keys):
         return '<div class="cards">' + ''.join(f'<a class="card" href="html/{quote(Path(manifest["files"][k]).with_suffix(".html").name)}"><div class="number">{k} / MBIST</div><h3>{manifest["titles"][k]}</h3><p>{descriptions[k]}</p></a>' for k in keys) + '</div>'
-    landing = f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MBIST 设计架构与方法 · 阅读入口</title><link rel="stylesheet" href="html/book.css"></head><body><main class="landing"><section class="hero"><div class="eyebrow">Architecture-oriented handbook</div><h1>MBIST 设计架构与方法</h1><p>把 March 算法与系统设计放在同一套架构中组织：说明执行电路、故障条件、功率限制与结果处理之间的关系。</p><div class="actions"><a class="button" href="html/{quote(Path(manifest['files']['00']).with_suffix('.html').name)}">从总体架构开始</a><a class="button secondary" href="插图索引.html">查看全部插图</a><a class="button secondary" href="html/README.html">文件与源码说明</a><a class="button secondary" href="精确绘图检查.html">连接点与避让检查</a></div><div class="stats">1 份总览 · 12 个专题 · 2 份附录 · 25 张可编辑插图 · 50 条参考资料</div></section><h2 class="section-label">总览与设计专题</h2>{cards([k for k in manifest['order'] if int(k) <= 12])}<h2 class="section-label">算例与文献附录</h2>{cards(['13','90'])}<div class="footer">此阅读入口、所有专题页面、公式和插图均可离线打开。Markdown 为编辑版本，HTML 为阅读副本。文献检索截止日期为 2026-10-17；全部技术图采用固定连接点与精确几何检查。请勿单独移动文件而破坏相对目录。</div></main></body></html>'''
+    landing = f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MBIST 设计架构与方法 · 阅读入口</title><link rel="stylesheet" href="html/book.css"></head><body><main class="landing"><section class="hero"><div class="eyebrow">Architecture-oriented handbook</div><h1>MBIST 设计架构与方法</h1><p>把 March 算法与系统设计放在同一套架构中组织：说明执行电路、故障条件、功率限制与结果处理之间的关系。</p><div class="actions"><a class="button" href="html/{quote(Path(manifest['files']['00']).with_suffix('.html').name)}">从总体架构开始</a><a class="button secondary" href="插图索引.html">查看全部插图</a><a class="button secondary" href="html/README.html">文件与源码说明</a><a class="button secondary" href="精确绘图检查.html">连接点与避让检查</a></div><div class="stats">1 份总览 · 12 个专题 · 3 份附录 · 54 张可编辑插图 · 研究与算例索引</div></section><h2 class="section-label">总览与设计专题</h2>{cards([k for k in manifest['order'] if int(k) <= 12])}<h2 class="section-label">算例、故障索引与文献</h2>{cards(['13','14','90'])}<div class="footer">此阅读入口、所有专题页面、公式和插图均可离线打开。Markdown 为编辑版本，HTML 为阅读副本。故障模型与算法专题的文献检索截止日期为 2026-11-18。请勿单独移动文件而破坏相对目录。</div></main></body></html>'''
     (ROOT / '阅读入口.html').write_text(landing, encoding='utf-8')
     figures = []
-    for group in ('march', 'systems'):
+    for group in ('march', 'systems', 'research'):
         data = json.loads((ROOT / 'assets' / group / 'figures_manifest.json').read_text(encoding='utf-8'))
         for item in (data['figures'] if isinstance(data, dict) else data):
             figures.append((int(re.search(r'图\s*(\d+)', item['title'])[1]), group, item))
-    gallery = '<h1>25 张可编辑技术插图</h1><p><a href="阅读入口.html">← 返回阅读入口</a> · <a href="精确绘图检查.html">查看连接点与文字避让</a> · 每张图均保留原生文字和图形对象；绘图源码位于 src。</p>'
+    gallery = '<h1>可编辑技术插图</h1><p><a href="阅读入口.html">← 返回阅读入口</a> · <a href="精确绘图检查.html">查看基础图连接点</a> · 每张图保留原生文字和图形对象。</p>'
     for number, group, item in sorted(figures):
         svg = f'assets/{group}/{item["file"]}'
         png = f'assets/{group}/png/{Path(item["file"]).with_suffix(".png").name}'
         gallery += f'<section class="gallery-item"><h2>{html.escape(item["title"])}</h2><img src="{quote(svg)}" alt="{html.escape(item["title"])}"><div class="gallery-links"><a href="{quote(svg)}">SVG</a> · <a href="{quote(png)}">PNG</a></div></section>'
+    gallery += '<h2>存储器分组、调度与功率专题</h2>'
+    for path in sorted((ROOT/'assets/grouping').glob('*.svg')):
+        title=ET.parse(path).findtext('{http://www.w3.org/2000/svg}title') or path.stem
+        svg=str(path.relative_to(ROOT));png=str(path.with_suffix('.png').relative_to(ROOT))
+        gallery += f'<section class="gallery-item"><h2>{html.escape(title)}</h2><img src="{quote(svg)}" alt="{html.escape(title)}"><div class="gallery-links"><a href="{quote(svg)}">SVG</a> · <a href="{quote(png)}">PNG</a></div></section>'
     (ROOT / '插图索引.html').write_text('<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MBIST 插图索引</title><link rel="stylesheet" href="html/book.css"></head><body><main class="landing">' + gallery + '</main></body></html>', encoding='utf-8')
     (ROOT / 'checks/html_export.json').write_text(json.dumps({'offline': True, 'pages': report, 'unique_rendered_math': len(rendered), 'total_math': sum(x['math_count'] for x in report)}, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
-    print(f'Built {len(report)} document pages, one reading entrance, and a 25-figure gallery.')
+    print(f'Built {len(report)} document pages, one reading entrance, and a complete figure gallery.')
 
 if __name__ == '__main__':
     main()

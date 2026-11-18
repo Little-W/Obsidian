@@ -1,0 +1,610 @@
+{
+  "schema_version": 1,
+  "scope": "Fault-free logical one-bit access traces.",
+  "fixed_sequence_count": 21,
+  "algorithm_count": 24,
+  "fields": [
+    "algorithm",
+    "stage",
+    "step",
+    "address",
+    "operation",
+    "expected_read",
+    "write_value",
+    "observed_read",
+    "cell_before",
+    "cell_after",
+    "state_before",
+    "state_after",
+    "direction",
+    "background",
+    "observation"
+  ],
+  "state_snapshot_limit": 16,
+  "algorithms": [
+    {
+      "name": "March C-",
+      "aliases": [
+        "C-"
+      ],
+      "kind": "fixed",
+      "source": "03_March基础与经典算法.md",
+      "source_line": 91,
+      "source_label": "March C−",
+      "definition_provider": "validate_march_sequences.extract",
+      "coefficient": 10,
+      "sequence": "⇕(w0); ↑(r0,w1); ↑(r1,w0); ↓(r0,w1); ↓(r1,w0); ⇕(r0)",
+      "capacity_rule": "Any positive integer number of one-bit addresses."
+    },
+    {
+      "name": "MATS",
+      "aliases": [],
+      "kind": "fixed",
+      "source": "03_March基础与经典算法.md",
+      "source_line": 165,
+      "source_label": "3.2.1 MATS 4N",
+      "definition_provider": "validate_march_sequences.extract",
+      "coefficient": 4,
+      "sequence": "⇕(w0); ↑(r0,w1); ⇕(r1)",
+      "capacity_rule": "Any positive integer number of one-bit addresses."
+    },
+    {
+      "name": "MATS+",
+      "aliases": [],
+      "kind": "fixed",
+      "source": "03_March基础与经典算法.md",
+      "source_line": 173,
+      "source_label": "3.2.2 MATS+ 5N",
+      "definition_provider": "validate_march_sequences.extract",
+      "coefficient": 5,
+      "sequence": "⇕(w0); ↑(r0,w1); ↓(r1,w0)",
+      "capacity_rule": "Any positive integer number of one-bit addresses."
+    },
+    {
+      "name": "MATS++",
+      "aliases": [],
+      "kind": "fixed",
+      "source": "03_March基础与经典算法.md",
+      "source_line": 181,
+      "source_label": "3.2.3 MATS++ 6N",
+      "definition_provider": "validate_march_sequences.extract",
+      "coefficient": 6,
+      "sequence": "⇕(w0); ↑(r0,w1); ↓(r1,w0,r0)",
+      "capacity_rule": "Any positive integer number of one-bit addresses."
+    },
+    {
+      "name": "March X",
+      "aliases": [
+        "X"
+      ],
+      "kind": "fixed",
+      "source": "03_March基础与经典算法.md",
+      "source_line": 189,
+      "source_label": "3.2.4 March X 6N",
+      "definition_provider": "validate_march_sequences.extract",
+      "coefficient": 6,
+      "sequence": "⇕(w0); ↑(r0,w1); ↓(r1,w0); ⇕(r0)",
+      "capacity_rule": "Any positive integer number of one-bit addresses."
+    },
+    {
+      "name": "March Y",
+      "aliases": [
+        "Y"
+      ],
+      "kind": "fixed",
+      "source": "03_March基础与经典算法.md",
+      "source_line": 197,
+      "source_label": "3.2.5 March Y 8N",
+      "definition_provider": "validate_march_sequences.extract",
+      "coefficient": 8,
+      "sequence": "⇕(w0); ↑(r0,w1,r1); ↓(r1,w0,r0); ⇕(r0)",
+      "capacity_rule": "Any positive integer number of one-bit addresses."
+    },
+    {
+      "name": "March C",
+      "aliases": [
+        "C"
+      ],
+      "kind": "fixed",
+      "source": "03_March基础与经典算法.md",
+      "source_line": 207,
+      "source_label": "3.2.6 March C 11N",
+      "definition_provider": "validate_march_sequences.extract",
+      "coefficient": 11,
+      "sequence": "⇕(w0); ↑(r0,w1); ↑(r1,w0); ↑(r0); ↓(r0,w1); ↓(r1,w0); ⇕(r0)",
+      "capacity_rule": "Any positive integer number of one-bit addresses."
+    },
+    {
+      "name": "March C+",
+      "aliases": [
+        "C+"
+      ],
+      "kind": "fixed",
+      "source": "03_March基础与经典算法.md",
+      "source_line": 221,
+      "source_label": "3.2.8 March C+ 14N",
+      "definition_provider": "validate_march_sequences.extract",
+      "coefficient": 14,
+      "sequence": "⇕(w0); ↑(r0,w1,r1); ↑(r1,w0,r0); ↓(r0,w1,r1); ↓(r1,w0,r0); ⇕(r0)",
+      "capacity_rule": "Any positive integer number of one-bit addresses."
+    },
+    {
+      "name": "March CL",
+      "aliases": [
+        "CL"
+      ],
+      "kind": "fixed",
+      "source": "03_March基础与经典算法.md",
+      "source_line": 236,
+      "source_label": "3.2.9 March CL 12N",
+      "definition_provider": "validate_march_sequences.extract",
+      "coefficient": 12,
+      "sequence": "⇕(w0); ↑(r0,w1); ↑(r1,r1,w0); ↓(r0,w1,r1); ↓(r1,w0); ⇕(r0)",
+      "capacity_rule": "Any positive integer number of one-bit addresses."
+    },
+    {
+      "name": "March A",
+      "aliases": [
+        "A"
+      ],
+      "kind": "fixed",
+      "source": "03_March基础与经典算法.md",
+      "source_line": 253,
+      "source_label": "March A（15N）：",
+      "definition_provider": "validate_march_sequences.extract",
+      "coefficient": 15,
+      "sequence": "⇕(w0); ↑(r0,w1,w0,w1); ↑(r1,w0,w1); ↓(r1,w0,w1,w0); ↓(r0,w1,w0)",
+      "capacity_rule": "Any positive integer number of one-bit addresses."
+    },
+    {
+      "name": "March B",
+      "aliases": [
+        "B"
+      ],
+      "kind": "fixed",
+      "source": "03_March基础与经典算法.md",
+      "source_line": 265,
+      "source_label": "March B（17N）：",
+      "definition_provider": "validate_march_sequences.extract",
+      "coefficient": 17,
+      "sequence": "⇕(w0); ↑(r0,w1,r1,w0,r0,w1); ↑(r1,w0,w1); ↓(r1,w0,w1,w0); ↓(r0,w1,w0)",
+      "capacity_rule": "Any positive integer number of one-bit addresses."
+    },
+    {
+      "name": "March LR",
+      "aliases": [
+        "LR"
+      ],
+      "kind": "fixed",
+      "source": "04_增强March与复杂故障测试.md",
+      "source_line": 49,
+      "source_label": "1.2 March LR：14N",
+      "definition_provider": "validate_march_sequences.extract",
+      "coefficient": 14,
+      "sequence": "⇕(w0); ↓(r0,w1); ↑(r1,w0,r0,w1); ↑(r1,w0); ↑(r0,w1,r1,w0); ↑(r0)",
+      "capacity_rule": "Any positive integer number of one-bit addresses."
+    },
+    {
+      "name": "March SR",
+      "aliases": [
+        "SR"
+      ],
+      "kind": "fixed",
+      "source": "04_增强March与复杂故障测试.md",
+      "source_line": 66,
+      "source_label": "1.3 March SR：14N",
+      "definition_provider": "validate_march_sequences.extract",
+      "coefficient": 14,
+      "sequence": "↓(w0); ↑(r0,w1,r1,w0); ↑(r0,r0); ↑(w1); ↓(r1,w0,r0,w1); ↓(r1,r1)",
+      "capacity_rule": "Any positive integer number of one-bit addresses."
+    },
+    {
+      "name": "March SS",
+      "aliases": [
+        "SS"
+      ],
+      "kind": "fixed",
+      "source": "04_增强March与复杂故障测试.md",
+      "source_line": 83,
+      "source_label": "1.4 March SS：22N",
+      "definition_provider": "validate_march_sequences.extract",
+      "coefficient": 22,
+      "sequence": "⇕(w0); ↑(r0,r0,w0,r0,w1); ↑(r1,r1,w1,r1,w0); ↓(r0,r0,w0,r0,w1); ↓(r1,r1,w1,r1,w0); ⇕(r0)",
+      "capacity_rule": "Any positive integer number of one-bit addresses."
+    },
+    {
+      "name": "March MSS",
+      "aliases": [
+        "MSS"
+      ],
+      "kind": "fixed",
+      "source": "04_增强March与复杂故障测试.md",
+      "source_line": 123,
+      "source_label": "1.5 March MSS：18N",
+      "definition_provider": "validate_march_sequences.extract",
+      "coefficient": 18,
+      "sequence": "⇕(w0); ↑(r0,r0,w1,w1); ↑(r1,r1,w0,w0); ↓(r0,r0,w1,w1); ↓(r1,r1,w0,w0); ⇕(r0)",
+      "capacity_rule": "Any positive integer number of one-bit addresses."
+    },
+    {
+      "name": "March AB",
+      "aliases": [
+        "AB"
+      ],
+      "kind": "fixed",
+      "source": "04_增强March与复杂故障测试.md",
+      "source_line": 140,
+      "source_label": "1.6 March AB：22N",
+      "definition_provider": "validate_march_sequences.extract",
+      "coefficient": 22,
+      "sequence": "⇕(w0); ↓(r0,w1,r1,w1,r1); ↓(r1,w0,r0,w0,r0); ↑(r0,w1,r1,w1,r1); ↑(r1,w0,r0,w0,r0); ⇕(r0)",
+      "capacity_rule": "Any positive integer number of one-bit addresses."
+    },
+    {
+      "name": "March AZ1",
+      "aliases": [
+        "AZ1"
+      ],
+      "kind": "fixed",
+      "source": "04_增强March与复杂故障测试.md",
+      "source_line": 168,
+      "source_label": "March AZ1（13N）",
+      "definition_provider": "validate_march_sequences.extract",
+      "coefficient": 13,
+      "sequence": "⇕(w0); ↓(w1); ↑(w1,r1,r1,w0); ↑(w0,r0); ↑(r0,w1,w1,r1); ↑(r1)",
+      "capacity_rule": "Any positive integer number of one-bit addresses."
+    },
+    {
+      "name": "March AZ",
+      "aliases": [
+        "AZ"
+      ],
+      "kind": "fixed",
+      "source": "04_增强March与复杂故障测试.md",
+      "source_line": 168,
+      "source_label": "March AZ（13N）",
+      "definition_provider": "validate_march_sequences.extract",
+      "coefficient": 13,
+      "sequence": "⇕(w0); ↓(w1); ↑(w1,r1,r1,w0,w0); ↑(r0); ↑(r0,w1,w1,r1); ↑(r1)",
+      "capacity_rule": "Any positive integer number of one-bit addresses."
+    },
+    {
+      "name": "March AZ2",
+      "aliases": [
+        "AZ2"
+      ],
+      "kind": "fixed",
+      "source": "04_增强March与复杂故障测试.md",
+      "source_line": 168,
+      "source_label": "March AZ2（14N）",
+      "definition_provider": "validate_march_sequences.extract",
+      "coefficient": 14,
+      "sequence": "↓(w0); ↓(w0,r0); ↑(r0,w1,w1,r1); ↑(r1,w0); ↓(r0,w1,w1,r1); ↓(r1)",
+      "capacity_rule": "Any positive integer number of one-bit addresses."
+    },
+    {
+      "name": "March RAW",
+      "aliases": [
+        "RAW"
+      ],
+      "kind": "fixed",
+      "source": "04_增强March与复杂故障测试.md",
+      "source_line": 236,
+      "source_label": "2.2 March RAW：26N",
+      "definition_provider": "validate_march_sequences.extract",
+      "coefficient": 26,
+      "sequence": "⇕(w0); ↑(r0,w0,r0,r0,w1,r1); ↑(r1,w1,r1,r1,w0,r0); ↓(r0,w0,r0,r0,w1,r1); ↓(r1,w1,r1,r1,w0,r0); ⇕(r0)",
+      "capacity_rule": "Any positive integer number of one-bit addresses."
+    },
+    {
+      "name": "March 13N separated reads",
+      "aliases": [
+        "13N separated reads"
+      ],
+      "kind": "fixed",
+      "source": "04_增强March与复杂故障测试.md",
+      "source_line": 255,
+      "source_label": "2.3 13N 分离读取示例",
+      "definition_provider": "validate_march_sequences.extract",
+      "coefficient": 13,
+      "sequence": "↑(w0); ↑(w0,r0); ↑(r0); ↑(w1,r1); ↑(r1); ↑(w1,r1); ↑(r1); ↑(w0,r0); ↑(r0)",
+      "capacity_rule": "Any positive integer number of one-bit addresses."
+    },
+    {
+      "name": "March iC-",
+      "aliases": [
+        "iC-"
+      ],
+      "kind": "ic",
+      "source": "src/validate_march_ic.py",
+      "definition_provider": "validate_march_ic.expanded",
+      "coefficient": 10,
+      "capacity_rule": "Power of two, at least 2; reflected Gray-code address order."
+    },
+    {
+      "name": "March_2A_1",
+      "aliases": [
+        "2A_1"
+      ],
+      "kind": "transparent",
+      "variant": 1,
+      "source": "src/transparent_march_examples.py",
+      "definition_provider": "transparent_march_examples.run",
+      "coefficient": 8,
+      "capacity_rule": "Power of two from 2 through 256; two full address sweeps."
+    },
+    {
+      "name": "March_2A_2",
+      "aliases": [
+        "2A_2"
+      ],
+      "kind": "transparent",
+      "variant": 2,
+      "source": "src/transparent_march_examples.py",
+      "definition_provider": "transparent_march_examples.run",
+      "coefficient": 14,
+      "capacity_rule": "Power of two from 2 through 256; two full address sweeps."
+    }
+  ],
+  "exports": [
+    {
+      "algorithm": "March C-",
+      "kind": "fixed",
+      "size": 4,
+      "operations_per_address": 10,
+      "initial_state": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "source": "03_March基础与经典算法.md",
+      "definition_provider": "validate_march_sequences.extract",
+      "full_state_columns_included": true,
+      "state_address_order": "Ascending logical addresses, left to right.",
+      "sequence": "⇕(w0); ↑(r0,w1); ↑(r1,w0); ↓(r0,w1); ↓(r1,w0); ⇕(r0)",
+      "arbitrary_direction": "ascending",
+      "source_line": 91,
+      "operation_count": 40,
+      "final_state": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "read_count": 20,
+      "write_count": 20,
+      "fault_free_validation_passed": true,
+      "csv_path": "examples/traces/march_c_minus_N4.csv",
+      "csv_round_trip_passed": true
+    },
+    {
+      "algorithm": "March SS",
+      "kind": "fixed",
+      "size": 4,
+      "operations_per_address": 22,
+      "initial_state": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "source": "04_增强March与复杂故障测试.md",
+      "definition_provider": "validate_march_sequences.extract",
+      "full_state_columns_included": true,
+      "state_address_order": "Ascending logical addresses, left to right.",
+      "sequence": "⇕(w0); ↑(r0,r0,w0,r0,w1); ↑(r1,r1,w1,r1,w0); ↓(r0,r0,w0,r0,w1); ↓(r1,r1,w1,r1,w0); ⇕(r0)",
+      "arbitrary_direction": "ascending",
+      "source_line": 83,
+      "operation_count": 88,
+      "final_state": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "read_count": 52,
+      "write_count": 36,
+      "fault_free_validation_passed": true,
+      "csv_path": "examples/traces/march_ss_N4.csv",
+      "csv_round_trip_passed": true
+    },
+    {
+      "algorithm": "March AB",
+      "kind": "fixed",
+      "size": 4,
+      "operations_per_address": 22,
+      "initial_state": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "source": "04_增强March与复杂故障测试.md",
+      "definition_provider": "validate_march_sequences.extract",
+      "full_state_columns_included": true,
+      "state_address_order": "Ascending logical addresses, left to right.",
+      "sequence": "⇕(w0); ↓(r0,w1,r1,w1,r1); ↓(r1,w0,r0,w0,r0); ↑(r0,w1,r1,w1,r1); ↑(r1,w0,r0,w0,r0); ⇕(r0)",
+      "arbitrary_direction": "ascending",
+      "source_line": 140,
+      "operation_count": 88,
+      "final_state": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "read_count": 52,
+      "write_count": 36,
+      "fault_free_validation_passed": true,
+      "csv_path": "examples/traces/march_ab_N4.csv",
+      "csv_round_trip_passed": true
+    },
+    {
+      "algorithm": "March AZ2",
+      "kind": "fixed",
+      "size": 4,
+      "operations_per_address": 14,
+      "initial_state": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "source": "04_增强March与复杂故障测试.md",
+      "definition_provider": "validate_march_sequences.extract",
+      "full_state_columns_included": true,
+      "state_address_order": "Ascending logical addresses, left to right.",
+      "sequence": "↓(w0); ↓(w0,r0); ↑(r0,w1,w1,r1); ↑(r1,w0); ↓(r0,w1,w1,r1); ↓(r1)",
+      "arbitrary_direction": "ascending",
+      "source_line": 168,
+      "operation_count": 56,
+      "final_state": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "read_count": 28,
+      "write_count": 28,
+      "fault_free_validation_passed": true,
+      "csv_path": "examples/traces/march_az2_N4.csv",
+      "csv_round_trip_passed": true
+    },
+    {
+      "algorithm": "March iC-",
+      "kind": "ic",
+      "size": 4,
+      "operations_per_address": 10,
+      "initial_state": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "source": "src/validate_march_ic.py",
+      "definition_provider": "validate_march_ic.expanded",
+      "full_state_columns_included": true,
+      "state_address_order": "Ascending logical addresses, left to right.",
+      "address_order": [
+        0,
+        1,
+        3,
+        2
+      ],
+      "background": [
+        0,
+        1,
+        1,
+        0
+      ],
+      "background_phase": 0,
+      "final_reverse": false,
+      "operation_count": 40,
+      "final_state": [
+        0,
+        1,
+        1,
+        0
+      ],
+      "read_count": 20,
+      "write_count": 20,
+      "fault_free_validation_passed": true,
+      "csv_path": "examples/traces/march_ic_minus_N4.csv",
+      "csv_round_trip_passed": true
+    },
+    {
+      "algorithm": "March_2A_2",
+      "kind": "transparent",
+      "size": 4,
+      "operations_per_address": 14,
+      "initial_state": [
+        0,
+        1,
+        0,
+        1
+      ],
+      "source": "src/transparent_march_examples.py",
+      "definition_provider": "transparent_march_examples.run",
+      "full_state_columns_included": true,
+      "state_address_order": "Ascending logical addresses, left to right.",
+      "address_order": [
+        0,
+        1,
+        2,
+        3,
+        0,
+        1,
+        2,
+        3
+      ],
+      "reverse_address_order": [
+        3,
+        2,
+        1,
+        0,
+        3,
+        2,
+        1,
+        0
+      ],
+      "reference_signature": 15,
+      "final_signature": 15,
+      "restored": true,
+      "signature_rule": "Teaching CRC-4 x^4+x+1, zero seed, MSB first, final XOR zero.",
+      "read_rule": "Only local_compare rows have direct expected_read values; signature scans and capture reads are data-dependent.",
+      "operation_count": 56,
+      "final_state": [
+        0,
+        1,
+        0,
+        1
+      ],
+      "read_count": 40,
+      "write_count": 16,
+      "fault_free_validation_passed": true,
+      "csv_path": "examples/traces/march_2a_2_N4.csv",
+      "csv_round_trip_passed": true
+    }
+  ],
+  "validation": {
+    "generated_runs": 104,
+    "csv_round_trips": 6,
+    "input_rejection_checks": [
+      {
+        "case": "unknown_algorithm",
+        "message": "Unknown algorithm 'unknown_march_algorithm'. Use --list to see supported names.",
+        "passed": true
+      },
+      {
+        "case": "nonpositive_size",
+        "message": "--size must be a positive integer.",
+        "passed": true
+      },
+      {
+        "case": "unsupported_ic_size",
+        "message": "March iC- requires a power-of-two --size of at least 2.",
+        "passed": true
+      },
+      {
+        "case": "unsupported_transparent_size",
+        "message": "March_2A_2 requires a power-of-two --size of at least 2.",
+        "passed": true
+      },
+      {
+        "case": "transparent_snapshot_limit",
+        "message": "March_2A_2 trace export supports --size <= 256; the source simulator records a full memory snapshot for every access.",
+        "passed": true
+      },
+      {
+        "case": "initial_pattern_length",
+        "message": "--initial needs one bit or exactly 4 bits; received 3.",
+        "passed": true
+      }
+    ],
+    "read_expectations_passed": true,
+    "access_counts_passed": true,
+    "transparent_restoration_passed": true
+  },
+  "passed": true
+}

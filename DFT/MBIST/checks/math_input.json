@@ -1,1322 +1,3164 @@
 [
   {
     "file": "00_MBIST总体架构与阅读导航.md",
-    "line": 84,
+    "line": 90,
     "tex": "10N",
     "display": false
   },
   {
     "file": "01_存储器接口与测试控制器.md",
-    "line": 103,
+    "line": 110,
     "tex": "\nT_G=\\sum_{i\\in G}T_i.\n",
     "display": true
   },
   {
     "file": "01_存储器接口与测试控制器.md",
-    "line": 111,
+    "line": 118,
     "tex": "\nT_G\\approx\\max_{i\\in G}T_i.\n",
     "display": true
   },
   {
     "file": "01_存储器接口与测试控制器.md",
-    "line": 129,
+    "line": 138,
     "tex": "N",
     "display": false
   },
   {
     "file": "01_存储器接口与测试控制器.md",
-    "line": 129,
+    "line": 138,
     "tex": "10N",
     "display": false
   },
   {
     "file": "01_存储器接口与测试控制器.md",
-    "line": 140,
+    "line": 150,
     "tex": "t",
     "display": false
   },
   {
     "file": "01_存储器接口与测试控制器.md",
-    "line": 140,
+    "line": 150,
     "tex": "t+2",
     "display": false
   },
   {
     "file": "01_存储器接口与测试控制器.md",
-    "line": 148,
+    "line": 160,
     "tex": "\nT_i=T_{\\mathrm{config},i}+T_{\\mathrm{entry},i}\n+\\frac{C_{\\mathrm{op},i}+C_{\\mathrm{wait},i}+C_{\\mathrm{drain},i}}{f_i}\n+T_{\\mathrm{result},i}+T_{\\mathrm{exit},i}.\n",
     "display": true
   },
   {
     "file": "01_存储器接口与测试控制器.md",
-    "line": 154,
+    "line": 166,
     "tex": "C_{\\mathrm{op},i}",
     "display": false
   },
   {
     "file": "01_存储器接口与测试控制器.md",
-    "line": 154,
+    "line": 166,
     "tex": "C_{\\mathrm{wait},i}",
     "display": false
   },
   {
     "file": "01_存储器接口与测试控制器.md",
-    "line": 154,
+    "line": 166,
     "tex": "C_{\\mathrm{drain},i}",
     "display": false
   },
   {
     "file": "01_存储器接口与测试控制器.md",
-    "line": 163,
+    "line": 176,
     "tex": "\n128\\times16=2048\n",
     "display": true
   },
   {
     "file": "01_存储器接口与测试控制器.md",
-    "line": 169,
+    "line": 182,
     "tex": "\n128\\times4+32\\times16=1024\n",
     "display": true
   },
   {
     "file": "01_存储器接口与测试控制器.md",
-    "line": 209,
+    "line": 228,
     "tex": "14N",
     "display": false
   },
   {
     "file": "02_故障模型与检测原理.md",
-    "line": 51,
-    "tex": "f",
+    "line": 60,
+    "tex": "\\langle S/F/R\\rangle",
     "display": false
   },
   {
     "file": "02_故障模型与检测原理.md",
-    "line": 120,
-    "tex": "\n\\mathrm{Coverage}=\\frac{\\text{检测到的指定故障数量}}{\\text{评估的指定故障总数量}}.\n",
+    "line": 60,
+    "tex": "S",
+    "display": false
+  },
+  {
+    "file": "02_故障模型与检测原理.md",
+    "line": 60,
+    "tex": "F",
+    "display": false
+  },
+  {
+    "file": "02_故障模型与检测原理.md",
+    "line": 60,
+    "tex": "R",
+    "display": false
+  },
+  {
+    "file": "02_故障模型与检测原理.md",
+    "line": 60,
+    "tex": "-",
+    "display": false
+  },
+  {
+    "file": "02_故障模型与检测原理.md",
+    "line": 60,
+    "tex": "\\langle S_a;S_v/F/R\\rangle",
+    "display": false
+  },
+  {
+    "file": "02_故障模型与检测原理.md",
+    "line": 62,
+    "tex": "\\langle 0r0/1/0\\rangle",
+    "display": false
+  },
+  {
+    "file": "02_故障模型与检测原理.md",
+    "line": 91,
+    "tex": "t_f",
+    "display": false
+  },
+  {
+    "file": "02_故障模型与检测原理.md",
+    "line": 91,
+    "tex": "t\\ge t_f",
+    "display": false
+  },
+  {
+    "file": "02_故障模型与检测原理.md",
+    "line": 99,
+    "tex": "\\langle0r0/1/0\\rangle",
+    "display": false
+  },
+  {
+    "file": "02_故障模型与检测原理.md",
+    "line": 128,
+    "tex": "\n(r0,r0,w0,r0,w1).\n",
     "display": true
   },
   {
+    "file": "02_故障模型与检测原理.md",
+    "line": 195,
+    "tex": "\\langle0r0r0/1/0\\rangle",
+    "display": false
+  },
+  {
+    "file": "02_故障模型与检测原理.md",
+    "line": 211,
+    "tex": "\\Delta t",
+    "display": false
+  },
+  {
+    "file": "02_故障模型与检测原理.md",
+    "line": 212,
+    "tex": "k",
+    "display": false
+  },
+  {
+    "file": "02_故障模型与检测原理.md",
+    "line": 212,
+    "tex": "k",
+    "display": false
+  },
+  {
+    "file": "02_故障模型与检测原理.md",
+    "line": 222,
+    "tex": "2\\times2",
+    "display": false
+  },
+  {
+    "file": "02_故障模型与检测原理.md",
+    "line": 226,
+    "tex": "P=(1,0,1,0)",
+    "display": false
+  },
+  {
+    "file": "02_故障模型与检测原理.md",
+    "line": 238,
+    "tex": "2^4=16",
+    "display": false
+  },
+  {
+    "file": "02_故障模型与检测原理.md",
+    "line": 238,
+    "tex": "16\\times2=32",
+    "display": false
+  },
+  {
+    "file": "02_故障模型与检测原理.md",
+    "line": 238,
+    "tex": "4\\times16\\times2=128",
+    "display": false
+  },
+  {
+    "file": "02_故障模型与检测原理.md",
+    "line": 271,
+    "tex": "\n\\{\\Updownarrow(w0);\\operatorname{wait}(t);\\Updownarrow(r0);\n\\Updownarrow(w1);\\operatorname{wait}(t);\\Updownarrow(r1)\\}.\n",
+    "display": true
+  },
+  {
+    "file": "02_故障模型与检测原理.md",
+    "line": 367,
+    "tex": "\n\\mathrm{FC}=\\frac{|\\{f\\in\\mathcal F:\\text{测试中至少一次观察到 }f\\text{ 造成的差异}\\}|}{|\\mathcal F|}.\n",
+    "display": true
+  },
+  {
+    "file": "02_故障模型与检测原理.md",
+    "line": 371,
+    "tex": "\\mathcal F",
+    "display": false
+  },
+  {
+    "file": "02_故障模型与检测原理.md",
+    "line": 375,
+    "tex": "p",
+    "display": false
+  },
+  {
+    "file": "02_故障模型与检测原理.md",
+    "line": 375,
+    "tex": "k",
+    "display": false
+  },
+  {
+    "file": "02_故障模型与检测原理.md",
+    "line": 377,
+    "tex": "\nP_{\\mathrm{detect}}=1-(1-p)^k.\n",
+    "display": true
+  },
+  {
+    "file": "02_故障模型与检测原理.md",
+    "line": 381,
+    "tex": "p=0.1",
+    "display": false
+  },
+  {
     "file": "03_March基础与经典算法.md",
-    "line": 46,
+    "line": 50,
     "tex": "N",
     "display": false
   },
   {
     "file": "03_March基础与经典算法.md",
-    "line": 57,
+    "line": 62,
     "tex": "3N",
     "display": false
   },
   {
     "file": "03_March基础与经典算法.md",
-    "line": 62,
+    "line": 68,
     "tex": "\nL=N\\sum_{i=1}^{m}k_i,\n",
     "display": true
   },
   {
     "file": "03_March基础与经典算法.md",
-    "line": 66,
+    "line": 72,
     "tex": "m",
     "display": false
   },
   {
     "file": "03_March基础与经典算法.md",
-    "line": 66,
+    "line": 72,
     "tex": "k_i",
     "display": false
   },
   {
     "file": "03_March基础与经典算法.md",
-    "line": 66,
+    "line": 72,
     "tex": "i",
     "display": false
   },
   {
     "file": "03_March基础与经典算法.md",
-    "line": 66,
+    "line": 72,
     "tex": "10N",
     "display": false
   },
   {
     "file": "03_March基础与经典算法.md",
-    "line": 68,
+    "line": 74,
     "tex": "10N",
     "display": false
   },
   {
     "file": "03_March基础与经典算法.md",
-    "line": 68,
+    "line": 74,
     "tex": "10N",
     "display": false
   },
   {
     "file": "03_March基础与经典算法.md",
-    "line": 70,
+    "line": 76,
     "tex": "\n\\begin{aligned}\nT_{\\mathrm{test}} \\approx{}& L_r t_r+L_w t_w \\\\\n&+T_{\\mathrm{switch}}+T_{\\mathrm{pipeline}}+T_{\\mathrm{wait}}.\n\\end{aligned}\n",
     "display": true
   },
   {
     "file": "03_March基础与经典算法.md",
-    "line": 77,
+    "line": 83,
     "tex": "L\\times\\text{时钟周期}",
     "display": false
   },
   {
     "file": "03_March基础与经典算法.md",
-    "line": 134,
+    "line": 145,
     "tex": "10N",
     "display": false
   },
   {
     "file": "03_March基础与经典算法.md",
-    "line": 144,
+    "line": 157,
     "tex": "13N",
     "display": false
   },
   {
     "file": "03_March基础与经典算法.md",
-    "line": 144,
+    "line": 157,
     "tex": "14N",
     "display": false
   },
   {
     "file": "03_March基础与经典算法.md",
-    "line": 144,
+    "line": 157,
     "tex": "18N",
     "display": false
   },
   {
     "file": "03_March基础与经典算法.md",
-    "line": 182,
+    "line": 201,
     "tex": "8N",
     "display": false
   },
   {
     "file": "03_March基础与经典算法.md",
-    "line": 193,
+    "line": 213,
     "tex": "10N",
     "display": false
   },
   {
     "file": "03_March基础与经典算法.md",
-    "line": 193,
+    "line": 213,
     "tex": "11N",
     "display": false
   },
   {
     "file": "03_March基础与经典算法.md",
-    "line": 193,
+    "line": 213,
     "tex": "10N",
     "display": false
   },
   {
-    "file": "03_March基础与经典算法.md",
-    "line": 211,
-    "tex": "12N",
-    "display": false
-  },
-  {
     "file": "04_增强March与复杂故障测试.md",
-    "line": 45,
-    "tex": "14N",
-    "display": false
-  },
-  {
-    "file": "04_增强March与复杂故障测试.md",
-    "line": 56,
-    "tex": "D",
-    "display": false
-  },
-  {
-    "file": "04_增强March与复杂故障测试.md",
-    "line": 59,
-    "tex": "14N",
-    "display": false
-  },
-  {
-    "file": "04_增强March与复杂故障测试.md",
-    "line": 70,
-    "tex": "14N",
-    "display": false
-  },
-  {
-    "file": "04_增强March与复杂故障测试.md",
-    "line": 73,
-    "tex": "22N",
-    "display": false
-  },
-  {
-    "file": "04_增强March与复杂故障测试.md",
-    "line": 75,
-    "tex": "22N",
-    "display": false
-  },
-  {
-    "file": "04_增强March与复杂故障测试.md",
-    "line": 86,
-    "tex": "12N",
-    "display": false
-  },
-  {
-    "file": "04_增强March与复杂故障测试.md",
-    "line": 102,
-    "tex": "18N",
-    "display": false
-  },
-  {
-    "file": "04_增强March与复杂故障测试.md",
-    "line": 102,
-    "tex": "14N",
-    "display": false
-  },
-  {
-    "file": "04_增强March与复杂故障测试.md",
-    "line": 109,
-    "tex": "22N",
-    "display": false
-  },
-  {
-    "file": "04_增强March与复杂故障测试.md",
-    "line": 122,
-    "tex": "22N",
-    "display": false
-  },
-  {
-    "file": "04_增强March与复杂故障测试.md",
-    "line": 122,
-    "tex": "14N",
-    "display": false
-  },
-  {
-    "file": "04_增强March与复杂故障测试.md",
-    "line": 129,
-    "tex": "13N",
-    "display": false
-  },
-  {
-    "file": "04_增强March与复杂故障测试.md",
-    "line": 135,
-    "tex": "13N",
-    "display": false
-  },
-  {
-    "file": "04_增强March与复杂故障测试.md",
-    "line": 166,
-    "tex": "26N",
-    "display": false
-  },
-  {
-    "file": "04_增强March与复杂故障测试.md",
-    "line": 187,
-    "tex": "26N",
-    "display": false
-  },
-  {
-    "file": "04_增强March与复杂故障测试.md",
-    "line": 189,
-    "tex": "13N",
-    "display": false
-  },
-  {
-    "file": "04_增强March与复杂故障测试.md",
-    "line": 196,
-    "tex": "n",
-    "display": false
-  },
-  {
-    "file": "04_增强March与复杂故障测试.md",
-    "line": 200,
-    "tex": "n",
-    "display": false
-  },
-  {
-    "file": "04_增强March与复杂故障测试.md",
-    "line": 200,
-    "tex": "26N",
-    "display": false
-  },
-  {
-    "file": "04_增强March与复杂故障测试.md",
-    "line": 246,
-    "tex": "D=\\lceil\\log_2 N\\rceil",
-    "display": false
-  },
-  {
-    "file": "04_增强March与复杂故障测试.md",
-    "line": 246,
-    "tex": "15N+2D",
-    "display": false
-  },
-  {
-    "file": "04_增强March与复杂故障测试.md",
-    "line": 246,
-    "tex": "18N+2D",
-    "display": false
-  },
-  {
-    "file": "04_增强March与复杂故障测试.md",
-    "line": 253,
-    "tex": "2^4=16",
-    "display": false
-  },
-  {
-    "file": "04_增强March与复杂故障测试.md",
-    "line": 253,
-    "tex": "2^5=32",
-    "display": false
-  },
-  {
-    "file": "04_增强March与复杂故障测试.md",
-    "line": 290,
-    "tex": "4\\times4",
-    "display": false
-  },
-  {
-    "file": "04_增强March与复杂故障测试.md",
-    "line": 292,
-    "tex": "\nL=16(1+4)N+N=81N.\n",
+    "line": 280,
+    "tex": "\nL_1=[1+(n+5)+(n+5)+6+6+1]N=(24+2n)N.\n",
     "display": true
   },
   {
     "file": "04_增强March与复杂故障测试.md",
-    "line": 296,
-    "tex": "177N",
-    "display": false
+    "line": 315,
+    "tex": "\nL_2=[1+(n+9)+(n+9)+10+10+1]N=(40+2n)N.\n",
+    "display": true
   },
   {
     "file": "04_增强March与复杂故障测试.md",
-    "line": 301,
-    "tex": "4\\times4",
-    "display": false
+    "line": 501,
+    "tex": "\nL=16(N+2N+2N)+N=81N.\n",
+    "display": true
   },
   {
     "file": "04_增强March与复杂故障测试.md",
-    "line": 303,
-    "tex": "3\\times3",
-    "display": false
+    "line": 523,
+    "tex": "\nL=16(N+5N+5N)+N=177N.\n",
+    "display": true
   },
   {
     "file": "04_增强March与复杂故障测试.md",
-    "line": 311,
-    "tex": "14N",
-    "display": false
+    "line": 572,
+    "tex": "\n\\operatorname{popcount}(q_k\\oplus q_{k+1})=1.\n",
+    "display": true
   },
   {
     "file": "04_增强March与复杂故障测试.md",
-    "line": 317,
-    "tex": "81N",
-    "display": false
+    "line": 578,
+    "tex": "\nB(q_k)=b\\oplus(k\\bmod2),\\qquad b\\in\\{0,1\\}.\n",
+    "display": true
   },
   {
-    "file": "04_增强March与复杂故障测试.md",
-    "line": 317,
-    "tex": "177N",
-    "display": false
-  },
-  {
-    "file": "04_增强March与复杂故障测试.md",
-    "line": 322,
-    "tex": "37N",
-    "display": false
-  },
-  {
-    "file": "04_增强March与复杂故障测试.md",
-    "line": 322,
-    "tex": "73N",
-    "display": false
-  },
-  {
-    "file": "04_增强March与复杂故障测试.md",
-    "line": 322,
-    "tex": "21N",
-    "display": false
-  },
-  {
-    "file": "04_增强March与复杂故障测试.md",
-    "line": 323,
-    "tex": "13N",
-    "display": false
-  },
-  {
-    "file": "04_增强March与复杂故障测试.md",
-    "line": 324,
-    "tex": "81N",
-    "display": false
-  },
-  {
-    "file": "04_增强March与复杂故障测试.md",
-    "line": 324,
-    "tex": "177N",
-    "display": false
-  },
-  {
-    "file": "04_增强March与复杂故障测试.md",
-    "line": 325,
-    "tex": "18N",
-    "display": false
-  },
-  {
-    "file": "04_增强March与复杂故障测试.md",
-    "line": 325,
-    "tex": "14N",
+    "file": "05_测试算法生成与选择.md",
+    "line": 76,
+    "tex": "\\mathcal F_{\\mathrm{req}}",
     "display": false
   },
   {
     "file": "05_测试算法生成与选择.md",
-    "line": 60,
-    "tex": "S_1,S_2,\\ldots,S_k",
+    "line": 78,
+    "tex": "\n\\min L(M),\\qquad\n\\mathrm{Detect}(M,f)=1\\quad\\forall f\\in\\mathcal F_{\\mathrm{req}}.\n",
+    "display": true
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 85,
+    "tex": "\n\\max_M\\sum_{f\\in\\mathcal F}p_f\\,\\mathrm{Detect}(M,f),\n\\qquad L(M)\\le L_{\\max}.\n",
+    "display": true
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 90,
+    "tex": "p_f",
     "display": false
   },
   {
     "file": "05_测试算法生成与选择.md",
-    "line": 60,
-    "tex": "l_j",
+    "line": 98,
+    "tex": "q_t",
     "display": false
   },
   {
     "file": "05_测试算法生成与选择.md",
-    "line": 60,
+    "line": 98,
+    "tex": "t",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 98,
+    "tex": "z_{f,t}",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 98,
     "tex": "f",
     "display": false
   },
   {
     "file": "05_测试算法生成与选择.md",
-    "line": 60,
-    "tex": "a_{fj}=1",
+    "line": 98,
+    "tex": "u_t",
     "display": false
   },
   {
     "file": "05_测试算法生成与选择.md",
-    "line": 60,
+    "line": 100,
+    "tex": "\nq_{t+1}=T_0(q_t,u_t),\\qquad\nz_{f,t+1}=T_f(z_{f,t},u_t).\n",
+    "display": true
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 105,
+    "tex": "u_t",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 105,
+    "tex": "y_{0,t}",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 105,
+    "tex": "y_{f,t}",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 107,
+    "tex": "\nd_{f,t+1}=d_{f,t}\\lor\n\\bigl(\\mathrm{Read}(u_t)\\land y_{f,t}\\ne y_{0,t}\\bigr).\n",
+    "display": true
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 143,
+    "tex": "k",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 143,
+    "tex": "k",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 145,
+    "tex": "\nV=\\{0,1\\}^{k}.\n",
+    "display": true
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 149,
+    "tex": "k",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 151,
+    "tex": "\n|V|=2^k,\\qquad |E_{\\mathrm{transition}}|=k2^k.\n",
+    "display": true
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 157,
+    "tex": "3k2^k",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 163,
+    "tex": "|E|",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 192,
+    "tex": "\nL=2+8(1+2)=26\n",
+    "display": true
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 206,
+    "tex": "2\\times2\\times2=8",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 239,
+    "tex": "O(|V|+|E|)",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 251,
+    "tex": "B_i(a)",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 251,
+    "tex": "i",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 251,
+    "tex": "a",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 251,
+    "tex": "\\overline B_i(a)=1-B_i(a)",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 259,
+    "tex": "4N",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 261,
+    "tex": "a",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 261,
+    "tex": "\\overline B_i",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 261,
+    "tex": "B_i",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 265,
+    "tex": "B_i",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 265,
+    "tex": "B_{i+1}",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 273,
+    "tex": "4\\times4",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 273,
+    "tex": "N",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 273,
+    "tex": "N",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 273,
+    "tex": "16(1+4)N+N=81N",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 273,
+    "tex": "177N",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 290,
+    "tex": "\nc(B_i,B_j)=2\\,|\\{a:B_i(a)\\ne B_j(a)\\}|.\n",
+    "display": true
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 314,
+    "tex": "\\{0,1\\}^{3}",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 333,
+    "tex": "8\\times5=40",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 419,
+    "tex": "P",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 419,
+    "tex": "G",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 419,
+    "tex": "L",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 419,
+    "tex": "F",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 419,
+    "tex": "O(PGLF)",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 425,
+    "tex": "E",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 425,
+    "tex": "\\Delta E=E(M')-E(M)",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 427,
+    "tex": "\nP_{\\mathrm{accept}}=\\exp(-\\Delta E/T).\n",
+    "display": true
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 431,
+    "tex": "T",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 431,
+    "tex": "T",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 431,
+    "tex": "T",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 433,
+    "tex": "T=4",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 433,
+    "tex": "e^{-1/4}\\approx0.7788",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 433,
+    "tex": "T=0.05",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 433,
+    "tex": "2.06\\times10^{-9}",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 437,
+    "tex": "d\\in\\{0,1\\}",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 454,
+    "tex": "\nE(M)=100\\,[24-C(M)]+L(M).\n",
+    "display": true
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 458,
+    "tex": "C(M)",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 464,
+    "tex": "N",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 470,
+    "tex": "11N",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 533,
+    "tex": "\\mathcal N_1",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 534,
+    "tex": "\\mathcal N_2",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 535,
+    "tex": "\\mathcal N_3",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 536,
+    "tex": "\\mathcal N_4",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 555,
     "tex": "S_j",
     "display": false
   },
   {
     "file": "05_测试算法生成与选择.md",
-    "line": 60,
-    "tex": "x_j",
+    "line": 555,
+    "tex": "l_j",
     "display": false
   },
   {
     "file": "05_测试算法生成与选择.md",
-    "line": 62,
-    "tex": "\n\\min_{x_j\\in\\{0,1\\}}\\ \\sum_j l_jx_j,\n",
+    "line": 555,
+    "tex": "a_{fj}=1",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 555,
+    "tex": "f",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 557,
+    "tex": "\n\\min\\sum_j l_jx_j,\\qquad\n\\sum_j a_{fj}x_j\\ge1\\;\\forall f,\\qquad x_j\\in\\{0,1\\}.\n",
     "display": true
   },
   {
     "file": "05_测试算法生成与选择.md",
-    "line": 68,
-    "tex": "\n\\sum_j a_{fj}x_j\\ge1,\\qquad\\forall f\\in\\mathcal{F}_{\\mathrm{required}}.\n",
-    "display": true
+    "line": 566,
+    "tex": "S_1",
+    "display": false
   },
   {
     "file": "05_测试算法生成与选择.md",
-    "line": 90,
+    "line": 566,
+    "tex": "\\{f_1,f_2,f_3\\}",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 567,
+    "tex": "S_2",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 567,
+    "tex": "\\{f_3,f_4\\}",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 568,
+    "tex": "S_3",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 568,
+    "tex": "\\{f_1,f_4\\}",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 569,
+    "tex": "S_4",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 569,
+    "tex": "\\{f_2\\}",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 571,
+    "tex": "S_1+S_2",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 571,
+    "tex": "S_1+S_3",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 571,
+    "tex": "f_3",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 571,
+    "tex": "2^4=16",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 577,
     "tex": "K",
     "display": false
   },
   {
     "file": "05_测试算法生成与选择.md",
-    "line": 99,
-    "tex": "2^3=8",
+    "line": 577,
+    "tex": "u_t",
     "display": false
   },
   {
     "file": "05_测试算法生成与选择.md",
-    "line": 110,
-    "tex": "\n\\min\\left(\\ T_{\\mathrm{test}},\\ A_{\\mathrm{ctrl}},\\ P_{\\mathrm{peak}},\\ E_{\\mathrm{test}},\\ C_{\\mathrm{implementation}}\\right),\n",
+    "line": 577,
+    "tex": "q_t",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 577,
+    "tex": "z_{f,t}",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 577,
+    "tex": "d_{f,t}",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 580,
+    "tex": "T_0",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 581,
+    "tex": "T_f",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 582,
+    "tex": "d_{f,K}=1",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 584,
+    "tex": "K",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 646,
+    "tex": "\nT_{i,j}=\\langle LAS,CAS,HAS\\rangle,\n",
     "display": true
   },
   {
     "file": "05_测试算法生成与选择.md",
-    "line": 118,
-    "tex": "81N",
+    "line": 650,
+    "tex": "\\lambda_{i-1}",
     "display": false
   },
   {
     "file": "05_测试算法生成与选择.md",
-    "line": 118,
-    "tex": "76N",
+    "line": 650,
+    "tex": "\\lambda_i",
     "display": false
   },
   {
     "file": "05_测试算法生成与选择.md",
-    "line": 138,
-    "tex": "10N",
+    "line": 654,
+    "tex": "\\lambda_i",
     "display": false
   },
   {
     "file": "05_测试算法生成与选择.md",
-    "line": 138,
-    "tex": "13N",
+    "line": 654,
+    "tex": "\\lambda_{i-1}",
     "display": false
   },
   {
     "file": "05_测试算法生成与选择.md",
-    "line": 138,
-    "tex": "18N",
+    "line": 655,
+    "tex": "\\lambda_{i-1}",
     "display": false
   },
   {
     "file": "05_测试算法生成与选择.md",
-    "line": 138,
-    "tex": "22N",
+    "line": 655,
+    "tex": "\\lambda_i",
     "display": false
   },
   {
     "file": "05_测试算法生成与选择.md",
-    "line": 138,
-    "tex": "26N",
+    "line": 701,
+    "tex": "F",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 701,
+    "tex": "M_t",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 703,
+    "tex": "\nr_t=\\frac{|C(M_t,F)|-|C(M_{t-1},F)|}{|F|}.\n",
+    "display": true
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 707,
+    "tex": "\\gamma=1",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 707,
+    "tex": "D",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 709,
+    "tex": "\n\\operatorname{EFC}(M)=\\mathbb E_{F\\sim D}\n\\left[\\frac{|C(M,F)|}{|F|}\\right],\\qquad L(M)\\le L_{\\max}.\n",
+    "display": true
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 714,
+    "tex": "2/24=1/12",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 718,
+    "tex": "\na^*=\\arg\\max_{a\\in V(s')}Q_\\theta(s',a),\n",
+    "display": true
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 722,
+    "tex": "\ny=r+\\gamma Q_{\\theta^-}(s',a^*).\n",
+    "display": true
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 726,
+    "tex": "y=r",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 766,
+    "tex": "11N",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 845,
+    "tex": "11N",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 874,
+    "tex": "c_r,c_w",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 874,
+    "tex": "c_{\\mathrm{wait}}",
+    "display": false
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 876,
+    "tex": "\nC_{\\mathrm{test}}=n_rc_r+n_wc_w+c_{\\mathrm{wait}}+c_{\\mathrm{control}}.\n",
+    "display": true
+  },
+  {
+    "file": "05_测试算法生成与选择.md",
+    "line": 880,
+    "tex": "c_{\\mathrm{control}}",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 51,
+    "line": 69,
     "tex": "5\\,\\mu\\mathrm{s}",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 51,
+    "line": 69,
     "tex": "3\\,\\mathrm{mW}",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 51,
+    "line": 69,
     "tex": "6\\,\\mathrm{mW}",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 53,
+    "line": 71,
     "tex": "10\\,\\mu\\mathrm{s}",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 53,
+    "line": 71,
     "tex": "5\\,\\mu\\mathrm{s}",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 59,
+    "line": 83,
+    "tex": "\n\\min_{\\mathrm{lex}}\\left(N_{\\mathrm{ctrl}},\\;\\sum_g H_g,\\;T_{\\mathrm{test}}\\right).\n",
+    "display": true
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 87,
+    "tex": "\\min_{\\mathrm{lex}}",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 87,
+    "tex": "T_{\\mathrm{test}}\\leq T_{\\max}",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 91,
+    "tex": "\nJ=w_A\\frac{A}{A_0}+w_T\\frac{T}{T_0}+w_H\\frac{H}{H_0}.\n",
+    "display": true
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 95,
+    "tex": "A_0,T_0,H_0",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 99,
+    "tex": "1400\\,\\mu\\mathrm m",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 101,
+    "tex": "x/\\mu\\mathrm m",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 101,
+    "tex": "y/\\mu\\mathrm m",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 118,
+    "tex": "10\\,\\mathrm{mW}",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 118,
+    "tex": "300\\,\\mu\\mathrm m",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 118,
+    "tex": "20\\,\\mathrm{mW}",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 128,
     "tex": "P",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 59,
+    "line": 128,
     "tex": "E",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 59,
+    "line": 128,
     "tex": "I",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 61,
+    "line": 130,
     "tex": "\nE=\\int_0^T P(t)\\,dt,\\qquad P_{\\mathrm{avg}}=\\frac{E}{T}.\n",
     "display": true
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 70,
+    "line": 140,
     "tex": "\nP_{\\mathrm{dynamic}}\\approx\\alpha C V^2f.\n",
     "display": true
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 74,
+    "line": 144,
     "tex": "\\alpha",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 74,
+    "line": 144,
     "tex": "C",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 74,
+    "line": 144,
     "tex": "V",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 74,
+    "line": 144,
     "tex": "f",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 78,
+    "line": 148,
     "tex": "\nE_{\\mathrm{test}}\\approx n_r E_r+n_w E_w\n+E_{\\mathrm{clock}}+E_{\\mathrm{interface}}+E_{\\mathrm{compare}}\n+\\int_0^T P_{\\mathrm{leakage}}(t)\\,dt.\n",
     "display": true
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 84,
+    "line": 154,
     "tex": "E_r",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 84,
+    "line": 154,
     "tex": "E_w",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 116,
-    "tex": "H=(V,E)",
+    "line": 187,
+    "tex": "a_i(t)",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 123,
-    "tex": "4\\,\\mathrm{mW}",
-    "display": false
-  },
-  {
-    "file": "06_存储器分组与功耗分析.md",
-    "line": 123,
-    "tex": "10\\,\\mathrm{mW}",
-    "display": false
-  },
-  {
-    "file": "06_存储器分组与功耗分析.md",
-    "line": 123,
-    "tex": "8\\,\\mathrm{mW}",
-    "display": false
-  },
-  {
-    "file": "06_存储器分组与功耗分析.md",
-    "line": 123,
-    "tex": "12\\,\\mathrm{mW}",
-    "display": false
-  },
-  {
-    "file": "06_存储器分组与功耗分析.md",
-    "line": 127,
-    "tex": "\n\\sum_{i\\in G}P_i\\leq P_G^{\\max}.\n",
-    "display": true
-  },
-  {
-    "file": "06_存储器分组与功耗分析.md",
-    "line": 134,
-    "tex": "D",
-    "display": false
-  },
-  {
-    "file": "06_存储器分组与功耗分析.md",
-    "line": 136,
-    "tex": "\n|x_i-x_j|+|y_i-y_j|\\leq D,\\qquad \\forall i,j\\in G.\n",
-    "display": true
-  },
-  {
-    "file": "06_存储器分组与功耗分析.md",
-    "line": 140,
-    "tex": "x=0,4,8",
-    "display": false
-  },
-  {
-    "file": "06_存储器分组与功耗分析.md",
-    "line": 140,
-    "tex": "5",
-    "display": false
-  },
-  {
-    "file": "06_存储器分组与功耗分析.md",
-    "line": 144,
-    "tex": "D",
-    "display": false
-  },
-  {
-    "file": "06_存储器分组与功耗分析.md",
-    "line": 144,
-    "tex": "2D",
-    "display": false
-  },
-  {
-    "file": "06_存储器分组与功耗分析.md",
-    "line": 144,
-    "tex": "D",
-    "display": false
-  },
-  {
-    "file": "06_存储器分组与功耗分析.md",
-    "line": 147,
-    "tex": "x_{ig}=1",
-    "display": false
-  },
-  {
-    "file": "06_存储器分组与功耗分析.md",
-    "line": 147,
+    "line": 187,
     "tex": "i",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 147,
+    "line": 187,
+    "tex": "t",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 189,
+    "tex": "\nP_g(t)=P_{\\mathrm{ctrl},g}(t)+\\sum_{i\\in g}a_i(t)P_i(t)\n+P_{\\mathrm{interface},g}(t)+P_{\\mathrm{idle},g}(t).\n",
+    "display": true
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 194,
+    "tex": "\\widehat P_i",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 198,
+    "tex": "\\sum_i T_i",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 198,
+    "tex": "\\max_i\\widehat P_i",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 199,
+    "tex": "\\max_i T_i",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 199,
+    "tex": "\\sum_i\\widehat P_i",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 200,
+    "tex": "\\sum_s\\max_{i\\in s}T_i",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 200,
+    "tex": "\\max_s\\sum_{i\\in s}\\widehat P_i",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 201,
+    "tex": "\\max_t\\sum_i a_i(t)\\widehat P_i",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 211,
+    "tex": "\nE=4\\times100+3\\times60=580\\,\\mathrm{nJ}.\n",
+    "display": true
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 215,
+    "tex": "7\\times100=700\\,\\mathrm{nJ}",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 215,
+    "tex": "1\\,\\mathrm{mW}\\cdot1\\,\\mu\\mathrm s=1\\,\\mathrm{nJ}",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 223,
+    "tex": "H=(V,E)",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 231,
+    "tex": "4\\,\\mathrm{mW}",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 231,
+    "tex": "10\\,\\mathrm{mW}",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 231,
+    "tex": "8\\,\\mathrm{mW}",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 231,
+    "tex": "12\\,\\mathrm{mW}",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 235,
+    "tex": "\n\\sum_{i\\in G}P_i\\leq P_G^{\\max}.\n",
+    "display": true
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 243,
+    "tex": "D",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 245,
+    "tex": "\n|x_i-x_j|+|y_i-y_j|\\leq D,\\qquad \\forall i,j\\in G.\n",
+    "display": true
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 249,
+    "tex": "x=0,4,8",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 249,
+    "tex": "5",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 253,
+    "tex": "D",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 253,
+    "tex": "2D",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 253,
+    "tex": "D",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 257,
+    "tex": "x_{ig}=1",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 257,
+    "tex": "i",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 257,
     "tex": "g",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 147,
+    "line": 257,
     "tex": "y_g=1",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 149,
+    "line": 259,
     "tex": "\n\\begin{aligned}\n\\min\\quad &\\sum_g y_g\\\\\n\\text{满足}\\quad\n&\\sum_g x_{ig}=1, &&\\forall i,\\\\\n&x_{ig}\\leq y_g, &&\\forall i,g,\\\\\n&x_{ig}+x_{jg}\\leq1, &&\\forall(i,j)\\in E,\\ \\forall g,\\\\\n&\\sum_i x_{ig}\\leq K_g y_g, &&\\forall g.\n\\end{aligned}\n",
     "display": true
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 160,
+    "line": 270,
     "tex": "K_g",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 164,
+    "line": 274,
     "tex": "\nA_{\\mathrm{test}}=\n\\sum_g A_{\\mathrm{controller},g}\n+\\sum_i A_{\\mathrm{interface},i}\n+A_{\\mathrm{compare}}+A_{\\mathrm{diagnosis}}\n+A_{\\mathrm{repair}}+A_{\\mathrm{buffer}}.\n",
     "display": true
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 190,
-    "tex": "K(u,v)",
+    "line": 290,
+    "tex": "\nD_1(G)=\\max_{i,j\\in G}\\left(\\lvert x_i-x_j\\rvert+\\lvert y_i-y_j\\rvert\\right).\n",
+    "display": true
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 294,
+    "tex": "u_i=x_i+y_i",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 190,
+    "line": 294,
+    "tex": "v_i=x_i-y_i",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 296,
+    "tex": "\nD_1(G)=\\max\\left(\\max_i u_i-\\min_i u_i,\\;\\max_i v_i-\\min_i v_i\\right).\n",
+    "display": true
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 304,
+    "tex": "\nH(G)=\\left(x_{\\max}-x_{\\min}\\right)+\\left(y_{\\max}-y_{\\min}\\right).\n",
+    "display": true
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 310,
+    "tex": "D_1(G)\\leq H(G)\\leq2D_1(G)",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 310,
+    "tex": "(0,100),(100,0),(200,100),(100,200)",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 312,
+    "tex": "c_g",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 314,
+    "tex": "\n\\max_{i\\in G}\\lVert (x_i,y_i)-c_g\\rVert_1\\leq R_g.\n",
+    "display": true
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 348,
+    "tex": "K",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 348,
+    "tex": "P_G^{\\max}",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 350,
+    "tex": "\nN_{\\mathrm{LB}}=\\max\\left(\n\\left\\lceil\\frac nK\\right\\rceil,\n\\left\\lceil\\frac{\\sum_i P_i}{P_G^{\\max}}\\right\\rceil,\n\\omega(H)\n\\right).\n",
+    "display": true
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 358,
+    "tex": "\\omega(H)",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 390,
+    "tex": "4,4,3,3,3,3",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 407,
+    "tex": "4,4,6,6",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 407,
+    "tex": "6,6,4,4",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 411,
+    "tex": "n",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 411,
+    "tex": "O(n^2)",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 411,
+    "tex": "O(n\\log n)",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 421,
+    "tex": "\nm^*=\\arg\\min_{m\\in U,\\;\\mathrm{legal}(G\\cup\\{m\\})}\n\\left[H(G\\cup\\{m\\})-H(G)\\right].\n",
+    "display": true
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 426,
+    "tex": "U",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 426,
+    "tex": "G",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 468,
+    "tex": "\n\\Delta(G_a,G_b)=J(G_a\\cup G_b)-J(G_a)-J(G_b).\n",
+    "display": true
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 472,
+    "tex": "\\mathrm{legal}(G_a\\cup G_b)",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 496,
+    "tex": "O(n\\log n)",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 506,
+    "tex": "\n\\min_{G_1,\\ldots,G_k,\\mu_1,\\ldots,\\mu_k}\n\\sum_{g=1}^{k}\\sum_{i\\in G_g}\\lVert z_i-\\mu_g\\rVert_2^2.\n",
+    "display": true
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 511,
+    "tex": "z_i",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 517,
+    "tex": "(0,50)",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 517,
+    "tex": "(200,50)",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 529,
+    "tex": "k",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 529,
+    "tex": "k",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 531,
+    "tex": "O(nkd)",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 531,
+    "tex": "d",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 537,
+    "tex": "\\varepsilon",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 539,
+    "tex": "\nN_{\\varepsilon}(i)=\\{j:d(z_i,z_j)\\leq\\varepsilon\\}.\n",
+    "display": true
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 549,
+    "tex": "\\varepsilon=110\\,\\mu\\mathrm m",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 602,
+    "tex": "\n\\text{可用颜色 }g\n\\iff \\text{不与该颜色成员冲突}\\ \\land\\ \\mathrm{legal}(G_g\\cup\\{i\\}).\n",
+    "display": true
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 619,
+    "tex": "O(n^2)",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 627,
+    "tex": "e",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 627,
+    "tex": "w_e",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 629,
+    "tex": "\nJ_{\\mathrm{cut}}=\\sum_e w_e\\,\\mathbf1[e\\text{跨越两个或更多分区}].\n",
+    "display": true
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 637,
+    "tex": "e_1=\\{A,B,C\\}",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 637,
+    "tex": "e_2=\\{C,D\\}",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 637,
+    "tex": "e_3=\\{D,E,F\\}",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 655,
     "tex": "M(x,y)",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 192,
-    "tex": "\nS(x,y)=\\sum_u\\sum_v K(u,v)M(x-u,y-v).\n",
+    "line": 655,
+    "tex": "K(u,v)",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 657,
+    "tex": "\nS(x,y)=\\sum_{u,v}K(u,v)M(x-u,y-v).\n",
     "display": true
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 225,
+    "line": 661,
+    "tex": "S(x,y)",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 683,
+    "tex": "Q(x,y)",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 689,
+    "tex": "\\epsilon",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 689,
+    "tex": "4\\epsilon",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 713,
+    "tex": "\\Delta J=J_{\\mathrm{new}}-J_{\\mathrm{old}}",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 713,
+    "tex": "\\tau",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 715,
+    "tex": "\np_{\\mathrm{accept}}=\n\\begin{cases}\n1,&\\Delta J\\leq0,\\\\\n\\exp(-\\Delta J/\\tau),&\\Delta J>0.\n\\end{cases}\n",
+    "display": true
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 723,
+    "tex": "\\tau",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 723,
+    "tex": "\\tau",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 725,
+    "tex": "\\Delta J=2",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 725,
+    "tex": "\\tau=5",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 725,
+    "tex": "\\tau=0.5",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 795,
+    "tex": "x_{ig}",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 795,
+    "tex": "y_g",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 797,
+    "tex": "\n\\sum_i P_i x_{ig}\\leq P_g^{\\max}y_g.\n",
+    "display": true
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 801,
+    "tex": "y_g\\leq\\sum_i x_{ig}",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 801,
+    "tex": "x_{ig}\\leq y_g",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 801,
+    "tex": "n",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 803,
+    "tex": "y_g\\geq y_{g+1}",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 807,
+    "tex": "X_g^{\\min},X_g^{\\max},Y_g^{\\min},Y_g^{\\max}",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 809,
+    "tex": "\n\\begin{aligned}\nX_g^{\\min}&\\leq x_i+M_x(1-x_{ig}),\\\\\nX_g^{\\max}&\\geq x_i-M_x(1-x_{ig}).\n\\end{aligned}\n",
+    "display": true
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 816,
+    "tex": "y",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 818,
+    "tex": "\nX_g^{\\max}-X_g^{\\min}+Y_g^{\\max}-Y_g^{\\min}\\leq H_{\\max}.\n",
+    "display": true
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 822,
+    "tex": "M_x",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 822,
+    "tex": "x_{ig}=1",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 828,
+    "tex": "\\mathcal C",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 828,
+    "tex": "z_S",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 828,
+    "tex": "S",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 830,
+    "tex": "\n\\begin{aligned}\n\\min\\quad&\\sum_{S\\in\\mathcal C}z_S,\\\\\n\\text{满足}\\quad&\\sum_{S\\in\\mathcal C:i\\in S}z_S=1,\\quad\\forall i,\\\\\n&z_S\\in\\{0,1\\}.\n\\end{aligned}\n",
+    "display": true
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 855,
+    "tex": "(4,800\\,\\mu\\mathrm m)",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 859,
+    "tex": "R",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 859,
+    "tex": "i",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 861,
+    "tex": "\nF(R)=\\min_{\\substack{S\\subseteq R,\\ i\\in S\\\\S\\text{合法}}}\n\\left\\{c(S)+F(R\\setminus S)\\right\\},\\qquad F(\\varnothing)=0.\n",
+    "display": true
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 866,
+    "tex": "c(S)=1",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 866,
+    "tex": "(1,H(S))",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 866,
+    "tex": "i",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 868,
+    "tex": "i",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 870,
+    "tex": "O(3^n)",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 870,
+    "tex": "O(2^n)",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 874,
+    "tex": "U",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 874,
+    "tex": "L",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 876,
+    "tex": "\n\\mathrm{gap}=\\frac{U-L}{\\max(1,\\lvert U\\rvert)}.\n",
+    "display": true
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 880,
+    "tex": "U",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 880,
+    "tex": "L",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 886,
+    "tex": "s_i",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 886,
+    "tex": "d_i",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 886,
+    "tex": "e_i=s_i+d_i",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 894,
+    "tex": "\\max_i T_i",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 900,
+    "tex": "\n\\sum_i P_i\\,\\mathbf1[s_i\\leq t<e_i]\\leq P_{\\mathrm{chip}}^{\\max},\\qquad\\forall t.\n",
+    "display": true
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 904,
+    "tex": "B_{\\max}",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 934,
+    "tex": "s",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 934,
+    "tex": "m_i",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 934,
+    "tex": "g",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 934,
+    "tex": "t",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 936,
+    "tex": "\n\\begin{aligned}\ns\\to m_i &: \\text{容量 }1,\\\\\nm_i\\to g &: \\text{仅当实例能进入该候选组时连边，容量 }1,\\\\\ng\\to t &: \\text{容量 }K_g.\n\\end{aligned}\n",
+    "display": true
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 944,
+    "tex": "p>0",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 946,
+    "tex": "\nK_g=\\min\\left(K_g^{\\mathrm{count}},\\left\\lfloor\\frac{P_g^{\\max}}p\\right\\rfloor\\right).\n",
+    "display": true
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 962,
+    "tex": "c_{ig}",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 962,
+    "tex": "\\sum_{i,g}c_{ig}x_{ig}",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 1025,
+    "tex": "100+60+60=220\\,\\mu\\mathrm s",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 1033,
+    "tex": "(4,800)",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 1121,
     "tex": "\n\\Delta V(t)\\approx R\\,I(t)+L\\frac{dI(t)}{dt}.\n",
     "display": true
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 238,
+    "line": 1135,
     "tex": "\nC_{\\mathrm{th}}\\frac{dT}{dt}\n=P(t)-\\frac{T-T_{\\mathrm{ambient}}}{R_{\\mathrm{th}}}.\n",
     "display": true
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 243,
+    "line": 1140,
     "tex": "R_{\\mathrm{th}}",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 243,
+    "line": 1140,
     "tex": "C_{\\mathrm{th}}",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 247,
+    "line": 1144,
     "tex": "\n\\mathbf C\\frac{d\\boldsymbol\\theta}{dt}\n=\\mathbf P(t)-\\mathbf G\\boldsymbol\\theta(t),\n\\qquad\n\\boldsymbol\\theta=\\mathbf T-T_{\\mathrm{ambient}}\\mathbf1.\n",
     "display": true
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 263,
+    "line": 1161,
     "tex": "z",
     "display": false
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 265,
+    "line": 1163,
     "tex": "\n\\sum_{j\\in z}\\mathbf1[s_j\\leq t<s_j+d_j]\\leq K_z.\n",
     "display": true
   },
   {
     "file": "06_存储器分组与功耗分析.md",
-    "line": 269,
+    "line": 1167,
     "tex": "T_z(t)\\leq T_z^{\\max}",
     "display": false
   },
   {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 1185,
+    "tex": "P",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 1185,
+    "tex": "T_a",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 1185,
+    "tex": "T_0",
+    "display": false
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 1187,
+    "tex": "\nT(t)=T_a+PR_{\\mathrm{th}}\n+\\left(T_0-T_a-PR_{\\mathrm{th}}\\right)\n\\exp\\left(-\\frac{t}{R_{\\mathrm{th}}C_{\\mathrm{th}}}\\right).\n",
+    "display": true
+  },
+  {
+    "file": "06_存储器分组与功耗分析.md",
+    "line": 1193,
+    "tex": "T_0",
+    "display": false
+  },
+  {
     "file": "07_并发调度与联合优化.md",
-    "line": 38,
+    "line": 40,
     "tex": "j",
     "display": false
   },
   {
     "file": "07_并发调度与联合优化.md",
-    "line": 38,
+    "line": 40,
     "tex": "d_j",
     "display": false
   },
   {
     "file": "07_并发调度与联合优化.md",
-    "line": 38,
+    "line": 40,
     "tex": "s_j",
     "display": false
   },
   {
     "file": "07_并发调度与联合优化.md",
-    "line": 38,
+    "line": 40,
     "tex": "g(j)",
     "display": false
   },
   {
     "file": "07_并发调度与联合优化.md",
-    "line": 38,
+    "line": 40,
     "tex": "p_j(\\tau)",
     "display": false
   },
   {
     "file": "07_并发调度与联合优化.md",
-    "line": 40,
+    "line": 42,
     "tex": "\nT_{\\max}=\\max_j(s_j+d_j).\n",
     "display": true
   },
   {
     "file": "07_并发调度与联合优化.md",
-    "line": 46,
+    "line": 48,
     "tex": "\nP_{\\mathrm{base}}(t)+\\sum_jp_j(t-s_j)\\leq P_{\\mathrm{limit}}(t),\\qquad \\forall t.\n",
     "display": true
   },
   {
     "file": "07_并发调度与联合优化.md",
-    "line": 50,
+    "line": 52,
     "tex": "p_j(\\tau)=0",
     "display": false
   },
   {
     "file": "07_并发调度与联合优化.md",
-    "line": 50,
+    "line": 52,
     "tex": "P_{\\mathrm{base}}",
     "display": false
   },
   {
     "file": "07_并发调度与联合优化.md",
-    "line": 55,
+    "line": 58,
     "tex": "\n\\left|\\{g(j):s_j\\leq t<s_j+d_j\\}\\right|\\leq B_{\\max}.\n",
     "display": true
   },
   {
     "file": "07_并发调度与联合优化.md",
-    "line": 69,
+    "line": 74,
     "tex": "2\\,\\mathrm{mW}",
     "display": false
   },
   {
     "file": "07_并发调度与联合优化.md",
-    "line": 69,
+    "line": 74,
     "tex": "2\\,\\mu\\mathrm{s}",
     "display": false
   },
   {
     "file": "07_并发调度与联合优化.md",
-    "line": 69,
+    "line": 74,
     "tex": "7\\,\\mathrm{mW}",
     "display": false
   },
   {
     "file": "07_并发调度与联合优化.md",
-    "line": 69,
+    "line": 74,
     "tex": "2\\,\\mu\\mathrm{s}",
     "display": false
   },
   {
     "file": "07_并发调度与联合优化.md",
-    "line": 69,
+    "line": 74,
     "tex": "10\\,\\mathrm{mW}",
     "display": false
   },
   {
     "file": "07_并发调度与联合优化.md",
-    "line": 71,
+    "line": 76,
     "tex": "4\\,\\mathrm{mW}",
     "display": false
   },
   {
     "file": "07_并发调度与联合优化.md",
-    "line": 71,
+    "line": 76,
     "tex": "14\\,\\mathrm{mW}",
     "display": false
   },
   {
     "file": "07_并发调度与联合优化.md",
-    "line": 90,
+    "line": 98,
     "tex": "\nE=(6\\times2+2\\times4)+(2\\times4+6\\times2)\n=40\\,\\mathrm{nJ}.\n",
     "display": true
   },
   {
     "file": "07_并发调度与联合优化.md",
-    "line": 111,
+    "line": 123,
     "tex": "8\\,\\mathrm{mW}",
     "display": false
   },
   {
     "file": "07_并发调度与联合优化.md",
-    "line": 146,
+    "line": 160,
     "tex": "8+5+6=19",
     "display": false
   },
   {
     "file": "08_自适应与运行期间测试.md",
-    "line": 59,
+    "line": 63,
     "tex": "a",
     "display": false
   },
   {
     "file": "08_自适应与运行期间测试.md",
-    "line": 59,
+    "line": 63,
     "tex": "f",
     "display": false
   },
   {
     "file": "08_自适应与运行期间测试.md",
-    "line": 59,
+    "line": 63,
     "tex": "D_{af}=1",
     "display": false
   },
   {
     "file": "08_自适应与运行期间测试.md",
-    "line": 59,
+    "line": 63,
     "tex": "a",
     "display": false
   },
   {
     "file": "08_自适应与运行期间测试.md",
-    "line": 59,
+    "line": 63,
     "tex": "f",
     "display": false
   },
   {
     "file": "08_自适应与运行期间测试.md",
-    "line": 59,
+    "line": 63,
     "tex": "z_a",
     "display": false
   },
   {
     "file": "08_自适应与运行期间测试.md",
-    "line": 61,
+    "line": 65,
     "tex": "\n\\begin{aligned}\n\\min\\quad &\\sum_a t_a z_a\\\\\n\\text{满足}\\quad &\\sum_a D_{af}z_a\\geq1,\\qquad \\forall f\\in\\mathcal F_{\\mathrm{mandatory}}.\n\\end{aligned}\n",
     "display": true
   },
   {
     "file": "08_自适应与运行期间测试.md",
-    "line": 68,
+    "line": 72,
     "tex": "D_{af}",
     "display": false
   },
   {
     "file": "08_自适应与运行期间测试.md",
-    "line": 74,
+    "line": 80,
     "tex": "t_A,t_B",
     "display": false
   },
   {
     "file": "08_自适应与运行期间测试.md",
-    "line": 74,
+    "line": 80,
     "tex": "q_A,q_B",
     "display": false
   },
   {
     "file": "08_自适应与运行期间测试.md",
-    "line": 76,
+    "line": 82,
     "tex": "t_A+(1-q_A)t_B",
     "display": false
   },
   {
     "file": "08_自适应与运行期间测试.md",
-    "line": 76,
+    "line": 82,
     "tex": "t_B+(1-q_B)t_A",
     "display": false
   },
   {
     "file": "08_自适应与运行期间测试.md",
-    "line": 78,
+    "line": 84,
     "tex": "\n\\frac{q_A}{t_A}\\geq\\frac{q_B}{t_B}.\n",
     "display": true
   },
   {
     "file": "08_自适应与运行期间测试.md",
-    "line": 85,
+    "line": 92,
     "tex": "n",
     "display": false
   },
   {
     "file": "08_自适应与运行期间测试.md",
-    "line": 87,
+    "line": 94,
     "tex": "\np_{\\mathrm{upper}}=1-0.05^{1/n}\\approx\\frac{3}{n}.\n",
     "display": true
   },
   {
     "file": "08_自适应与运行期间测试.md",
-    "line": 91,
+    "line": 98,
     "tex": "n=3000",
     "display": false
   },
   {
     "file": "08_自适应与运行期间测试.md",
-    "line": 109,
+    "line": 106,
+    "tex": "8N",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 106,
+    "tex": "14N",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 110,
+    "tex": "N=2^m",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 110,
+    "tex": "D=(d_0,\\ldots,d_{2N-1})",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 110,
+    "tex": "m+1",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 110,
+    "tex": "0",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 110,
+    "tex": "2N-1",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 110,
+    "tex": "m",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 112,
+    "tex": "N=4",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 112,
+    "tex": "c_2c_1c_0",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 116,
+    "tex": "c_0",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 117,
+    "tex": "c_1",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 118,
+    "tex": "c_2",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 131,
+    "tex": "B(i)",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 140,
     "tex": "x",
     "display": false
   },
   {
     "file": "08_自适应与运行期间测试.md",
-    "line": 137,
+    "line": 140,
+    "tex": "B(i)",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 140,
+    "tex": "1-x",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 140,
+    "tex": "2\\Uparrow(ra,w\\overline a,ra)",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 142,
+    "tex": "i",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 142,
+    "tex": "x_i",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 144,
+    "tex": "\n\\begin{aligned}\nB(i)\\text{ 第一次}:&\\quad r(x_i),\\ w(\\overline{x_i}),\\ r(\\overline{x_i}),\\\\\nB(i)\\text{ 第二次}:&\\quad r(\\overline{x_i}),\\ w(x_i),\\ r(x_i).\n\\end{aligned}\n",
+    "display": true
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 151,
+    "tex": "x_i",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 155,
+    "tex": "A",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 172,
+    "tex": "2N",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 172,
+    "tex": "6N",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 174,
+    "tex": "\nL_{2A\\_1}=N+6N+N=8N,\\qquad\nL_{2A\\_2}=N+6N+6N+N=14N.\n",
+    "display": true
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 179,
+    "tex": "6N",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 179,
+    "tex": "2N",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 179,
+    "tex": "10N",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 179,
+    "tex": "4N",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 217,
+    "tex": "x=0",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 218,
+    "tex": "1-x=1",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 233,
+    "tex": "S_R",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 233,
+    "tex": "S_F",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 233,
+    "tex": "S_F=15",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 233,
+    "tex": "S_R=3",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 253,
+    "tex": "S_F\\ne S_R",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 253,
+    "tex": "p(x)=x^4+x+1",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 253,
+    "tex": "b",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 255,
+    "tex": "\nf=S_3\\oplus b,\\qquad\nS\\leftarrow(S\\ll1)\\mathbin{\\&}15,\\qquad\nf=1\\text{ 时 }S\\leftarrow S\\oplus3.\n",
+    "display": true
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 265,
+    "tex": "\\overline{\\overline{x_i}}=x_i",
+    "display": false
+  },
+  {
+    "file": "08_自适应与运行期间测试.md",
+    "line": 310,
     "tex": "\nT_{\\mathrm{burst}}=T_{\\mathrm{acquire}}+T_{\\mathrm{save}}\n+T_{\\mathrm{test}}+T_{\\mathrm{restore}}+T_{\\mathrm{release}},\n",
     "display": true
   },
   {
     "file": "09_故障诊断与结果记录.md",
-    "line": 46,
+    "line": 49,
     "tex": "\n\\mathbf e=\\mathbf d_{\\mathrm{observed}}\\oplus\\mathbf d_{\\mathrm{expected}}.\n",
     "display": true
   },
   {
     "file": "09_故障诊断与结果记录.md",
-    "line": 50,
+    "line": 53,
     "tex": "\\mathbf e",
     "display": false
   },
   {
     "file": "09_故障诊断与结果记录.md",
-    "line": 50,
+    "line": 53,
     "tex": "b",
     "display": false
   },
   {
     "file": "09_故障诊断与结果记录.md",
-    "line": 59,
+    "line": 65,
     "tex": "j",
     "display": false
   },
   {
     "file": "09_故障诊断与结果记录.md",
-    "line": 59,
+    "line": 65,
     "tex": "r_j(t)",
     "display": false
   },
   {
     "file": "09_故障诊断与结果记录.md",
-    "line": 59,
+    "line": 65,
     "tex": "R(t)",
     "display": false
   },
   {
     "file": "09_故障诊断与结果记录.md",
-    "line": 59,
+    "line": 65,
     "tex": "Q_{\\max}",
     "display": false
   },
   {
     "file": "09_故障诊断与结果记录.md",
-    "line": 61,
+    "line": 67,
     "tex": "\n\\frac{dQ}{dt}=\\sum_jr_j(t)-R(t),\\qquad 0\\leq Q(t)\\leq Q_{\\max}.\n",
     "display": true
   },
   {
     "file": "09_故障诊断与结果记录.md",
-    "line": 72,
+    "line": 79,
     "tex": "2^{-r}",
     "display": false
   },
   {
     "file": "09_故障诊断与结果记录.md",
-    "line": 72,
+    "line": 79,
     "tex": "r",
     "display": false
   },
   {
     "file": "09_故障诊断与结果记录.md",
-    "line": 76,
+    "line": 85,
     "tex": "F",
     "display": false
   },
   {
     "file": "09_故障诊断与结果记录.md",
-    "line": 76,
+    "line": 85,
     "tex": "a",
     "display": false
   },
   {
     "file": "09_故障诊断与结果记录.md",
-    "line": 76,
+    "line": 85,
     "tex": "Y",
     "display": false
   },
   {
     "file": "09_故障诊断与结果记录.md",
-    "line": 78,
+    "line": 87,
     "tex": "\na^*=\\arg\\max_a\n\\frac{H(F)-\\mathbb E_Y[H(F\\mid Y,a)]}{\\mathrm{cost}(a)}.\n",
     "display": true
   },
   {
     "file": "10_冗余分析自修复与纠错码.md",
-    "line": 40,
+    "line": 42,
     "tex": "R_s",
     "display": false
   },
   {
     "file": "10_冗余分析自修复与纠错码.md",
-    "line": 40,
+    "line": 42,
     "tex": "C_s",
     "display": false
   },
   {
     "file": "10_冗余分析自修复与纠错码.md",
-    "line": 40,
+    "line": 42,
     "tex": "r",
     "display": false
   },
   {
     "file": "10_冗余分析自修复与纠错码.md",
-    "line": 43,
+    "line": 46,
     "tex": "\\mathcal F",
     "display": false
   },
   {
     "file": "10_冗余分析自修复与纠错码.md",
-    "line": 43,
+    "line": 46,
     "tex": "u_r=1",
     "display": false
   },
   {
     "file": "10_冗余分析自修复与纠错码.md",
-    "line": 43,
+    "line": 46,
     "tex": "r",
     "display": false
   },
   {
     "file": "10_冗余分析自修复与纠错码.md",
-    "line": 43,
+    "line": 46,
     "tex": "v_c=1",
     "display": false
   },
   {
     "file": "10_冗余分析自修复与纠错码.md",
-    "line": 43,
+    "line": 46,
     "tex": "c",
     "display": false
   },
   {
     "file": "10_冗余分析自修复与纠错码.md",
-    "line": 45,
+    "line": 48,
     "tex": "\n\\begin{aligned}\n&u_r+v_c\\geq1, &&\\forall(r,c)\\in\\mathcal F,\\\\\n&\\sum_r u_r\\leq R_s,\\\\\n&\\sum_c v_c\\leq C_s.\n\\end{aligned}\n",
     "display": true
   },
   {
     "file": "10_冗余分析自修复与纠错码.md",
-    "line": 55,
+    "line": 58,
     "tex": "R_s+C_s",
     "display": false
   },
   {
     "file": "10_冗余分析自修复与纠错码.md",
-    "line": 61,
+    "line": 66,
     "tex": "\n\\mathcal F=\\{(0,0),(0,1),(1,0),(1,1),(2,2)\\},\n\\qquad R_s=1,\\quad C_s=2.\n",
     "display": true
   },
   {
     "file": "10_冗余分析自修复与纠错码.md",
-    "line": 68,
+    "line": 73,
     "tex": "2\\times2",
     "display": false
   },
   {
     "file": "10_冗余分析自修复与纠错码.md",
-    "line": 77,
+    "line": 83,
     "tex": "k",
     "display": false
   },
   {
     "file": "10_冗余分析自修复与纠错码.md",
-    "line": 77,
+    "line": 83,
     "tex": "k",
     "display": false
   },
   {
     "file": "10_冗余分析自修复与纠错码.md",
-    "line": 77,
+    "line": 83,
     "tex": "k\\leq R_s+C_s",
     "display": false
   },
   {
     "file": "10_冗余分析自修复与纠错码.md",
-    "line": 82,
+    "line": 89,
     "tex": "(r,c)",
     "display": false
   },
   {
     "file": "10_冗余分析自修复与纠错码.md",
-    "line": 82,
+    "line": 89,
     "tex": "r",
     "display": false
   },
   {
     "file": "10_冗余分析自修复与纠错码.md",
-    "line": 82,
+    "line": 89,
     "tex": "c",
     "display": false
   },
   {
     "file": "11_多端口与新型存储器扩展.md",
-    "line": 74,
-    "tex": "10N",
+    "line": 34,
+    "tex": "w^P_d(a)",
     "display": false
   },
   {
     "file": "11_多端口与新型存储器扩展.md",
-    "line": 76,
-    "tex": "10N",
+    "line": 34,
+    "tex": "P",
     "display": false
   },
   {
     "file": "11_多端口与新型存储器扩展.md",
-    "line": 89,
-    "tex": "10N",
+    "line": 34,
+    "tex": "a",
     "display": false
   },
   {
-    "file": "12_设计验证与工具接入.md",
-    "line": 157,
-    "tex": "\n\\left(\nA_{\\mathrm{test}},\\ T_{\\mathrm{max}},\\ E_{\\mathrm{test}},\\\nP_{\\mathrm{peak}},\\ \\Theta_{\\mathrm{peak}},\\ T_{\\mathrm{diagnosis}}\n\\right).\n",
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 34,
+    "tex": "d",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 34,
+    "tex": "r^P_d(a)",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 34,
+    "tex": "d",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 48,
+    "tex": "w^A_1(a)\\parallel w^B_1(v)",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 58,
+    "tex": "w^A_0(a)\\parallel w^B_0(b)",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 66,
+    "tex": "N",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 68,
+    "tex": "\n\\mathcal A=\\{(i,j):0\\le i,j<N,\\ i\\ne j\\}.\n",
     "display": true
   },
   {
-    "file": "12_设计验证与工具接入.md",
-    "line": 164,
-    "tex": "T_{\\mathrm{max}}",
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 72,
+    "tex": "N=3",
     "display": false
   },
   {
-    "file": "12_设计验证与工具接入.md",
-    "line": 164,
-    "tex": "\\Theta_{\\mathrm{peak}}",
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 78,
+    "tex": "N(N-1)",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 110,
+    "tex": "O(N^3)",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 110,
+    "tex": "N(N-1)",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 110,
+    "tex": "O(N^2)",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 114,
+    "tex": "P_0",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 114,
+    "tex": "P",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 116,
+    "tex": "\n\\begin{aligned}\nM2_0:&\\quad \\Updownarrow_{P_0}(w0);\\quad\n\\text{对每个 }P:\\ \\Uparrow_P(r0);\\ \\Uparrow_P(r0,w1);\\ \\Uparrow_P(r1,w0),\\\\\nM2_1:&\\quad \\Updownarrow_{P_0}(w1);\\quad\n\\text{对每个 }P:\\ \\Uparrow_P(r1);\\ \\Uparrow_P(r1,w0);\\ \\Uparrow_P(r0,w1).\n\\end{aligned}\n",
+    "display": true
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 139,
+    "tex": "i\\ne j",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 139,
+    "tex": "c_0\\ne c_1",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 148,
+    "tex": "O(N^2)",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 148,
+    "tex": "O(N)",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 287,
+    "tex": "\\mathcal R_0,\\mathcal R_1",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 287,
+    "tex": "\\mathcal R_U",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 301,
+    "tex": "\\mathcal R_b",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 309,
+    "tex": "\\mathcal R_U",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 309,
+    "tex": "\\mathcal R_1",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 333,
+    "tex": "S",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 335,
+    "tex": "\n\\operatorname{NOR}(S)=\\neg\\bigvee_{i\\in S}d_i.\n",
+    "display": true
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 341,
+    "tex": "N_c",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 341,
+    "tex": "N_{col}",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 341,
+    "tex": "N=N_cN_{col}",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 347,
+    "tex": "\n\\begin{aligned}\n\\{&\\Updownarrow(w0);\\\\\n&\\Uparrow(r0,w1,\\operatorname{NAND}(i,i+1));\\\\\n&\\Uparrow(r1,w0);\\\\\n&\\Downarrow(r0,w1,\\operatorname{NAND}(i,i-1));\\\\\n&\\Downarrow(r1,w0);\\ \\Updownarrow(r0)\\}.\n\\end{aligned}\n",
+    "display": true
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 357,
+    "tex": "2(N_c-1)",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 357,
+    "tex": "12N-2N_{col}",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 357,
+    "tex": "12N",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 371,
+    "tex": "N+4N+N/2+3N=8.5N",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 379,
+    "tex": "N",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 380,
+    "tex": "N/2+N",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 381,
+    "tex": "2N",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 382,
+    "tex": "2N",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 383,
+    "tex": "2N",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 384,
+    "tex": "N_{col}=N/N_c",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 385,
+    "tex": "4N",
+    "display": false
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 389,
+    "tex": "\nL=\\left(12+\\frac12+\\frac1{N_c}\\right)N\n=12.5N+N_{col}.\n",
+    "display": true
+  },
+  {
+    "file": "11_多端口与新型存储器扩展.md",
+    "line": 447,
+    "tex": "kN",
     "display": false
   },
   {
     "file": "12_设计验证与工具接入.md",
     "line": 176,
+    "tex": "\n\\left(\nA_{\\mathrm{test}},\\ T_{\\mathrm{max}},\\ E_{\\mathrm{test}},\\\nP_{\\mathrm{peak}},\\ \\Theta_{\\mathrm{peak}},\\ T_{\\mathrm{diagnosis}}\n\\right).\n",
+    "display": true
+  },
+  {
+    "file": "12_设计验证与工具接入.md",
+    "line": 183,
+    "tex": "T_{\\mathrm{max}}",
+    "display": false
+  },
+  {
+    "file": "12_设计验证与工具接入.md",
+    "line": 183,
+    "tex": "\\Theta_{\\mathrm{peak}}",
+    "display": false
+  },
+  {
+    "file": "12_设计验证与工具接入.md",
+    "line": 196,
     "tex": "N",
+    "display": false
+  },
+  {
+    "file": "13_算例与源码说明.md",
+    "line": 113,
+    "tex": "12.5N_c+1",
+    "display": false
+  },
+  {
+    "file": "13_算例与源码说明.md",
+    "line": 154,
+    "tex": "N=256",
     "display": false
   }
 ]

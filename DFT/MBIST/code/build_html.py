@@ -5,16 +5,18 @@ Rebuild dependencies: markdown-it-py, node, mathjax-full. No fonts are packaged.
 from __future__ import annotations
 import base64
 import html
+import hashlib
 import json
 import re
 import subprocess
 import tempfile
 from pathlib import Path
+from urllib.parse import quote, unquote
 from markdown_it import MarkdownIt
 
 ROOT=Path(__file__).resolve().parents[1]
 SOURCE=ROOT/'06_存储器分组与功耗分析.md'
-OUTPUT=ROOT/'06_存储器分组与功耗分析_离线阅读.html'
+OUTPUT=ROOT/'html/06_存储器分组与功耗分析_离线阅读.html'
 
 STYLE=r'''
 :root {--ink:#213649;--muted:#607286;--blue:#245c91;--teal:#168679;--line:#dce4eb;--pale:#f4f7fa;}
@@ -119,15 +121,20 @@ def main():
     body=re.sub(r'(<table>.*?</table>)',r'<div class="table-wrap">\1</div>',body,flags=re.S)
     def mdlink(m):
         target,label=m.group(1),m.group(2)
-        if not (ROOT/target).is_file():return f'<span class="series-link" title="原MBIST系列的其他章节，本独立包未包含">{label}</span>'
-        return m.group(0)
+        source=ROOT/unquote(target)
+        if not source.is_file():raise FileNotFoundError(source)
+        return f'<a href="{quote(source.with_suffix(".html").name)}">{label}</a>'
     body=re.sub(r'<a href="([^"#]+\.md)">([^<]+)</a>',mdlink,body)
     page='<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>06 存储器分组与功耗分析 · 算法详解</title><style>'+STYLE+'</style></head><body>'
     page+='<nav aria-label="文章目录"><div class="brand">MBIST / CHAPTER 06</div>'+''.join(nav)+'</nav>'
     page+='<main><div class="hero-label">算法原理 · 几何与功率约束 · 可复现用例</div>'+body
-    page+='<div class="footer">离线阅读版：全部26幅图和公式已内嵌，不依赖网络加载。原系列其他章节的导航仅保留文字说明。</div></main></body></html>'
+    page+='<div class="footer">离线阅读版：26 幅图和公式已内嵌，页面无需联网加载。章节导航指向同目录下的专题网页。</div></main></body></html>'
+    OUTPUT.parent.mkdir(parents=True,exist_ok=True)
     OUTPUT.write_text(page,encoding='utf-8')
-    report={'display_equations':sum(x['display'] for x in math_items),'inline_equations':sum(not x['display'] for x in math_items),'tex_errors':len(errors),'embedded_figures':body.count('data:image/svg+xml;base64,'),'footnotes':len(order),'html_bytes':len(page.encode())}
+    report={'display_equations':sum(x['display'] for x in math_items),'inline_equations':sum(not x['display'] for x in math_items),'tex_errors':len(errors),'embedded_figures':body.count('data:image/svg+xml;base64,'),'footnotes':len(order),'html_bytes':len(page.encode()),
+            'source':str(SOURCE.relative_to(ROOT)), 'html':str(OUTPUT.relative_to(ROOT)),
+            'source_sha256':hashlib.sha256(SOURCE.read_bytes()).hexdigest(),
+            'html_sha256':hashlib.sha256(OUTPUT.read_bytes()).hexdigest()}
     (ROOT/'results/rendering.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
     print(json.dumps(report,ensure_ascii=False,indent=2))
 

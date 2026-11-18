@@ -1,0 +1,128 @@
+{
+  "date": "2026-11-18",
+  "scope": "Specified digital memory and fault models, sequence counts, access trace exports, search examples, local documentation consistency, formula conversion and figure geometry.",
+  "march": {
+    "sequence_count": 21,
+    "simulation_count": 305,
+    "passed": true
+  },
+  "fault_detection": {
+    "example_count": 14,
+    "mirrored_example_count": 9,
+    "healthy_run_count": 488,
+    "fault_injection_run_count": 49776,
+    "passed": true
+  },
+  "multirun_faults": {
+    "fault_scenarios": 17920,
+    "passed": true
+  },
+  "march_ic": {
+    "healthy_runs": 16,
+    "stale_wordline_fault_runs": 160,
+    "passed": true
+  },
+  "transparent_march": {
+    "schema_version": 1,
+    "source_doi": "10.3390/e23070894",
+    "fault_free_runs": 4320,
+    "simple_fault_runs_detected": 512,
+    "passed": true,
+    "details": "examples/transparent_march_results.json"
+  },
+  "sequence_generation": {
+    "passed": true,
+    "details": "examples/sequence_generation_results.json"
+  },
+  "port_and_imc": {
+    "details": "examples/port_imc_results.json",
+    "dual_port_faults_detected": 312,
+    "imc_faults_detected": 40,
+    "cross_port_permutations_detected": 29
+  },
+  "grouping": {
+    "base_algorithms_validated": [
+      "best_fit_decreasing",
+      "capacity_dsatur",
+      "exact_subset_dp",
+      "first_fit",
+      "geometry_greedy",
+      "greedy_local_exact_repair"
+    ],
+    "independent_optimum_groups": 4,
+    "independent_optimum_sum_hpwl_um": 800,
+    "group_count_lower_bound": 4,
+    "random_cases_cross_checked": 24,
+    "invalid_input_cases_rejected": 3,
+    "commercial_eda_executed": false,
+    "scope": "synthetic example; exactness applies only to declared grouping model"
+  },
+  "documents": {
+    "markdown_documents": 17,
+    "reference_count": 90,
+    "svg_count": 54,
+    "math_expressions": 527,
+    "passed": true,
+    "numbered_chapters": 16
+  },
+  "mathjax": {
+    "engine": "MathJax full",
+    "version": "3.2.2",
+    "total": 527,
+    "display": 94,
+    "inline": 433,
+    "errors": [],
+    "passed": true,
+    "scope": "Offline TeX-to-SVG conversion; not an Obsidian UI test."
+  },
+  "html": {
+    "scope": "Static HTML file, fragment and image references; duplicate identifiers and rendered-math markers. Browser layout checks are a separate command.",
+    "pages": 21,
+    "local_links": 1564,
+    "export_hash_checks": 36,
+    "passed": true,
+    "errors": []
+  },
+  "research_figures": {
+    "renderer": "Sharp/libvips",
+    "figures": 3,
+    "text_count": 75,
+    "passed": true
+  },
+  "static_fault_models": {
+    "details": "examples/march_sequence_data.json",
+    "initialization_semantics": "Unknown values before the first write; state-conditioned activation requires known values; SAF is unconditional."
+  },
+  "multirun_sequences": {
+    "details": "examples/multirun_sequences.json",
+    "array_rows": 16,
+    "array_columns": 16,
+    "tested_algorithms": 5
+  },
+  "trace_exports": {
+    "algorithm_count": 24,
+    "generated_runs": 104,
+    "csv_round_trips": 6,
+    "csv_files": 6,
+    "csv_access_rows": 368,
+    "invalid_input_checks": 6,
+    "passed": true,
+    "details": "examples/march_trace_catalog.json"
+  },
+  "read_disturb_and_pause": {
+    "delayed_read_cases": 128,
+    "delayed_read_cases_detected": 128,
+    "transparent_runs": 192,
+    "completed_blocks_checked": 2304,
+    "restored_block_ends": 672,
+    "passed": true,
+    "details": "examples/read_disturb_and_pause_results.json"
+  },
+  "unified_checks": {
+    "expected_commands": 17,
+    "completed_commands": 17,
+    "html_regenerated": true,
+    "passed": true,
+    "details": "checks/run_checks_results.json"
+  }
+}

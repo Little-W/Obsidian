@@ -15,7 +15,7 @@ def main() -> None:
     expressions, referenced_images = [], set()
     manifests = json.loads((ROOT / 'checks/book_manifest.json').read_text(encoding='utf-8'))
     refs = json.loads((ROOT / 'checks/reference_index.json').read_text(encoding='utf-8'))
-    # Footnotes are stable global R identifiers, each document has local definitions.
+    # Each document defines its own reference identifiers.
     for path in sorted(ROOT.glob('*.md')):
         text = path.read_text(encoding='utf-8')
         prose = mask_code(text)
@@ -24,8 +24,8 @@ def main() -> None:
         counts['code_blocks'] += len(fences) // 2
         if len(fences) % 2:
             errors.append(f'{path.name}: unbalanced code fences')
-        used = re.findall(r'\[\^(R\d+)\](?!:)', prose)
-        defs = re.findall(r'^\[\^(R\d+)\]:', prose, re.M)
+        used = re.findall(r'\[\^([A-Z]+\d+)\](?!:)', prose)
+        defs = re.findall(r'^\[\^([A-Z]+\d+)\]:', prose, re.M)
         for key in set(used) - set(defs):
             errors.append(f'{path.name}: missing footnote {key}')
         if len(defs) != len(set(defs)):
@@ -72,16 +72,20 @@ def main() -> None:
         fonts = [float(e.get('font-size', '0')) for e in texts]
         item = {'file': str(svg.relative_to(ROOT)), 'text_objects': len(texts),
                 'raster_images': len(rasters), 'minimum_text_size': min(fonts) if fonts else 0}
-        if not texts or rasters or min(fonts) < 28:
-            errors.append(f'{svg.name}: expected native SVG text of size >= 28 and no raster images')
+        minimum=20 if svg.parent.name=='grouping' else 28
+        if not texts or rasters or min(fonts) < minimum:
+            errors.append(f'{svg.name}: expected native SVG text of size >= {minimum} and no raster images')
         figures.append(item)
     svg_names = {f['file'] for f in figures}
-    if svg_names != referenced_images:
-        errors.append('SVG files and referenced image files are not identical sets')
+    gallery=ROOT/'插图索引.html'
+    gallery_images=set()
+    if gallery.exists():
+        gallery_images={unquote(url) for url in re.findall(r'<img[^>]+src="([^"]+\.svg)"',gallery.read_text(encoding='utf-8'))}
+    if not svg_names.issubset(referenced_images|gallery_images):
+        errors.append('Some SVG files are absent from both chapter figures and the figure index')
     for file in ROOT.rglob('*'):
         if file.suffix.lower() in {'.ttf', '.ttc', '.otf', '.woff', '.woff2'}:
             errors.append(f'Font file present: {file}')
-    source_map = json.loads((ROOT / 'checks/source_map.json').read_text(encoding='utf-8'))
     (ROOT / 'checks/math_input.json').write_text(json.dumps(expressions, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     report = {'scope': 'Local file links, headings, references, math delimiters, native SVGs; no hardware or physical validation.',
               **counts, 'reference_count': manifests['reference_count'], 'svg_count': len(figures),

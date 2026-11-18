@@ -1,0 +1,625 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>故障模型与测试序列索引 · MBIST 设计架构与方法</title><link rel="stylesheet" href="book.css"></head>
+<body><aside class="sidebar"><div class="brand">MBIST 设计架构</div><div class="subtitle">从算法操作到系统实现<br>原理 · 约束 · 结果 · 验证</div><a class="home" href="../阅读入口.html">← 文档首页</a><details class="mobile-index"><summary>展开文档目录</summary></details><nav><a class="" href="00_MBIST%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E9%98%85%E8%AF%BB%E5%AF%BC%E8%88%AA.html">00 · MBIST总体架构与阅读导航</a><a class="" href="01_%E5%AD%98%E5%82%A8%E5%99%A8%E6%8E%A5%E5%8F%A3%E4%B8%8E%E6%B5%8B%E8%AF%95%E6%8E%A7%E5%88%B6%E5%99%A8.html">01 · 存储器接口与测试控制器</a><a class="" href="02_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%A3%80%E6%B5%8B%E5%8E%9F%E7%90%86.html">02 · 故障模型与检测原理</a><a class="" href="03_March%E5%9F%BA%E7%A1%80%E4%B8%8E%E7%BB%8F%E5%85%B8%E7%AE%97%E6%B3%95.html">03 · March 基础与经典算法</a><a class="" href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 · 增强 March 与复杂故障测试</a><a class="" href="05_%E6%B5%8B%E8%AF%95%E7%AE%97%E6%B3%95%E7%94%9F%E6%88%90%E4%B8%8E%E9%80%89%E6%8B%A9.html">05 · 测试算法生成与选择</a><a class="" href="06_%E5%AD%98%E5%82%A8%E5%99%A8%E5%88%86%E7%BB%84%E4%B8%8E%E5%8A%9F%E8%80%97%E5%88%86%E6%9E%90.html">06 · 存储器分组与功耗分析</a><a class="" href="07_%E5%B9%B6%E5%8F%91%E8%B0%83%E5%BA%A6%E4%B8%8E%E8%81%94%E5%90%88%E4%BC%98%E5%8C%96.html">07 · 并发调度与联合优化</a><a class="" href="08_%E8%87%AA%E9%80%82%E5%BA%94%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%9C%9F%E9%97%B4%E6%B5%8B%E8%AF%95.html">08 · 自适应与运行期间测试</a><a class="" href="09_%E6%95%85%E9%9A%9C%E8%AF%8A%E6%96%AD%E4%B8%8E%E7%BB%93%E6%9E%9C%E8%AE%B0%E5%BD%95.html">09 · 故障诊断与结果记录</a><a class="" href="10_%E5%86%97%E4%BD%99%E5%88%86%E6%9E%90%E8%87%AA%E4%BF%AE%E5%A4%8D%E4%B8%8E%E7%BA%A0%E9%94%99%E7%A0%81.html">10 · 冗余分析自修复与纠错码</a><a class="" href="11_%E5%A4%9A%E7%AB%AF%E5%8F%A3%E4%B8%8E%E6%96%B0%E5%9E%8B%E5%AD%98%E5%82%A8%E5%99%A8%E6%89%A9%E5%B1%95.html">11 · 多端口与新型存储器扩展</a><a class="" href="12_%E8%AE%BE%E8%AE%A1%E9%AA%8C%E8%AF%81%E4%B8%8E%E5%B7%A5%E5%85%B7%E6%8E%A5%E5%85%A5.html">12 · 设计验证与工具接入</a><a class="" href="13_%E7%AE%97%E4%BE%8B%E4%B8%8E%E6%BA%90%E7%A0%81%E8%AF%B4%E6%98%8E.html">13 · 算例与源码说明</a><a class="current" href="14_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%B5%8B%E8%AF%95%E5%BA%8F%E5%88%97%E7%B4%A2%E5%BC%95.html">14 · 故障模型与测试序列索引</a><a class="" href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E7%A0%94%E7%A9%B6%E8%BF%9B%E5%B1%95%E7%B4%A2%E5%BC%95.html">90 · 参考文献与研究进展索引</a></nav></aside><div class="reading"><main class="paper"><div class="eyebrow">MBIST · 设计架构与方法</div><h1 id="14 故障模型与测试序列索引">14 故障模型与测试序列索引</h1>
+<p><a href="00_MBIST%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E9%98%85%E8%AF%BB%E5%AF%BC%E8%88%AA.html">总览</a> · <a href="13_%E7%AE%97%E4%BE%8B%E4%B8%8E%E6%BA%90%E7%A0%81%E8%AF%B4%E6%98%8E.html">上一篇：算例与源码说明</a> · <a href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E7%A0%94%E7%A9%B6%E8%BF%9B%E5%B1%95%E7%B4%A2%E5%BC%95.html">下一篇：参考文献与研究进展索引</a></p>
+<p>本章按故障查找激活、观察和掩盖条件，并索引完整算法。故障表采用指定极性；互补极性、地址角色、覆盖范围及原始来源见所链接章节。</p>
+<h2 id="1. 符号与查阅方法">1. 符号与查阅方法</h2>
+<p><code>x</code> 为待测单元，<code>a</code> 为激励单元，<code>v</code> 为受害单元；<code>r0/r1</code> 包含比较，<code>w0/w1</code> 表示写入。<code>a&lt;v</code> 为遍历中的相对位置。普通 March 使用无故障期望；透明测试由实际读数计算局部写值，另比较初末签名。</p>
+<p>掩盖栏指首次有效观察前的行为；已检出的失败应累计保留。前置状态、初始化和激活操作分别记录。<a href="02_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%A3%80%E6%B5%8B%E5%8E%9F%E7%90%86.html">02 §1、§8</a></p>
+<h2 id="2. 按故障查找操作">2. 按故障查找操作</h2>
+<h3 id="2.1 单单元故障">2.1 单单元故障</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>故障实例</th>
+  <th>前置状态</th>
+  <th>激活操作与影响</th>
+  <th>观察操作</th>
+  <th>可能掩盖错误的操作</th>
+  <th>详细位置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>SAF0，固定为 0</td>
+  <td>任意</td>
+  <td><code>w1(x)</code> 后仍为 0</td>
+  <td><code>r1(x)</code></td>
+  <td>改用 <code>w0,r0</code>，不再检查写 1</td>
+  <td><a href="02_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%A3%80%E6%B5%8B%E5%8E%9F%E7%90%86.html">02 §2</a>；<a href="03_March%E5%9F%BA%E7%A1%80%E4%B8%8E%E7%BB%8F%E5%85%B8%E7%AE%97%E6%B3%95.html">03 §4.1</a></td>
+</tr>
+<tr>
+  <td>TF↑，上升转换失败</td>
+  <td><code>x=0</code></td>
+  <td><code>w1(x)</code> 后仍为 0</td>
+  <td><code>r1(x)</code></td>
+  <td>读取前写回 0</td>
+  <td><a href="02_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%A3%80%E6%B5%8B%E5%8E%9F%E7%90%86.html">02 §2</a>；<a href="03_March%E5%9F%BA%E7%A1%80%E4%B8%8E%E7%BB%8F%E5%85%B8%E7%AE%97%E6%B3%95.html">03 §4.1</a></td>
+</tr>
+<tr>
+  <td>WDF0，同值写破坏</td>
+  <td><code>x=0</code></td>
+  <td><code>w0(x)</code> 使其变为 1</td>
+  <td>紧接 <code>r0(x)</code></td>
+  <td>转换写 1 后改用期望 1</td>
+  <td><a href="02_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%A3%80%E6%B5%8B%E5%8E%9F%E7%90%86.html">02 §2</a>；<a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 §1.4</a></td>
+</tr>
+<tr>
+  <td>RDF0，读破坏并当次返回错误</td>
+  <td><code>x=0</code></td>
+  <td><code>r0(x)</code> 使其变为 1，返回 1</td>
+  <td>当次读取</td>
+  <td>失败已由当次比较记录</td>
+  <td><a href="02_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%A3%80%E6%B5%8B%E5%8E%9F%E7%90%86.html">02 §2</a></td>
+</tr>
+<tr>
+  <td>IRF0，错误读返回</td>
+  <td><code>x=0</code></td>
+  <td><code>r0(x)</code> 返回 1，内部仍为 0</td>
+  <td>当次读取</td>
+  <td>失败已由当次比较记录</td>
+  <td><a href="02_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%A3%80%E6%B5%8B%E5%8E%9F%E7%90%86.html">02 §2</a></td>
+</tr>
+<tr>
+  <td>DRDF0，欺骗性读破坏</td>
+  <td><code>x=0</code></td>
+  <td>第一次读取返回 0，内部变为 1</td>
+  <td>第二个 <code>r0(x)</code></td>
+  <td>两次读取之间写 1，改用期望 1</td>
+  <td><a href="02_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%A3%80%E6%B5%8B%E5%8E%9F%E7%90%86.html">02 §2</a>；<a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 §1.4</a></td>
+</tr>
+<tr>
+  <td>DRF0，保持失效</td>
+  <td><code>w0(x)</code> 已建立 0</td>
+  <td><code>wait(t)</code> 达到故障时间后变为 1</td>
+  <td><code>r0(x)</code></td>
+  <td>观察前重新写入 0</td>
+  <td><a href="02_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%A3%80%E6%B5%8B%E5%8E%9F%E7%90%86.html">02 §6.2</a></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="2.2 双单元、相互影响的故障与邻域图案">2.2 双单元、相互影响的故障与邻域图案</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>故障实例</th>
+  <th>前置状态</th>
+  <th>激活操作与影响</th>
+  <th>观察操作</th>
+  <th>可能掩盖错误的操作</th>
+  <th>详细位置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>CFst，状态耦合</td>
+  <td><code>a=0,v=0</code></td>
+  <td><code>w1(a)</code> 后 <code>v</code> 无法保持 0</td>
+  <td><code>r0(v)</code></td>
+  <td>解除激励状态后重写 <code>v=0</code></td>
+  <td><a href="02_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%A3%80%E6%B5%8B%E5%8E%9F%E7%90%86.html">02 §3</a></td>
+</tr>
+<tr>
+  <td>CFin，反转耦合</td>
+  <td><code>a=0,v=0</code></td>
+  <td><code>w1(a)</code> 使 <code>v</code> 反转为 1</td>
+  <td><code>r0(v)</code></td>
+  <td>重写 <code>v</code>；第二次反转也可能抵消错误</td>
+  <td><a href="03_March%E5%9F%BA%E7%A1%80%E4%B8%8E%E7%BB%8F%E5%85%B8%E7%AE%97%E6%B3%95.html">03 §4.2–4.3</a></td>
+</tr>
+<tr>
+  <td>CFid，强制值耦合</td>
+  <td><code>a=0,v=1</code></td>
+  <td><code>w1(a)</code> 强制 <code>v=0</code></td>
+  <td><code>r1(v)</code></td>
+  <td>观察前重写 <code>v=1</code></td>
+  <td><a href="02_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%A3%80%E6%B5%8B%E5%8E%9F%E7%90%86.html">02 §3</a></td>
+</tr>
+<tr>
+  <td>CFtr，转换耦合</td>
+  <td><code>a=1,v=0</code></td>
+  <td><code>w1(v)</code> 无法完成上升转换</td>
+  <td><code>r1(v)</code></td>
+  <td>读取前写回 0</td>
+  <td><a href="03_March%E5%9F%BA%E7%A1%80%E4%B8%8E%E7%BB%8F%E5%85%B8%E7%AE%97%E6%B3%95.html">03 §4.4</a>；<a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 §1.7</a></td>
+</tr>
+<tr>
+  <td>CFds，干扰耦合</td>
+  <td><code>a=0,v=0</code></td>
+  <td><code>r0(a)</code> 使 <code>v</code> 变为 1</td>
+  <td><code>r0(v)</code></td>
+  <td>先重写 <code>v=0</code></td>
+  <td><a href="02_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%A3%80%E6%B5%8B%E5%8E%9F%E7%90%86.html">02 §3</a></td>
+</tr>
+<tr>
+  <td>CFwd，写干扰耦合</td>
+  <td><code>a=1,v=0</code></td>
+  <td>非转换 <code>w0(v)</code> 使 <code>v=1</code></td>
+  <td>紧接 <code>r0(v)</code></td>
+  <td>先执行转换写 1</td>
+  <td><a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 §1.4</a></td>
+</tr>
+<tr>
+  <td>CFrd / CFir</td>
+  <td><code>a=1,v=0</code></td>
+  <td><code>r0(v)</code> 返回 1；前者改变内部值，后者保持内部值</td>
+  <td>当次读取</td>
+  <td>失败已由当次比较记录</td>
+  <td><a href="02_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%A3%80%E6%B5%8B%E5%8E%9F%E7%90%86.html">02 §3</a></td>
+</tr>
+<tr>
+  <td>CFdrd</td>
+  <td><code>a=1,v=0</code></td>
+  <td>第一个 <code>r0(v)</code> 返回 0，内部变为 1</td>
+  <td>第二个 <code>r0(v)</code></td>
+  <td>中间写入 1 并采用新期望</td>
+  <td><a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 §1.4</a>；<a href="05_%E6%B5%8B%E8%AF%95%E7%AE%97%E6%B3%95%E7%94%9F%E6%88%90%E4%B8%8E%E9%80%89%E6%8B%A9.html">05 §9.6</a></td>
+</tr>
+<tr>
+  <td>linked faults 的两次反转例</td>
+  <td><code>a=b=v=0</code></td>
+  <td><code>a</code>、<code>b</code> 各自上升均反转 <code>v</code></td>
+  <td>每次反转后读取 <code>v</code></td>
+  <td>两次反转后才读取，错误抵消</td>
+  <td><a href="02_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%A3%80%E6%B5%8B%E5%8E%9F%E7%90%86.html">02 §4.1</a>；March AB 见 <a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 §1.6</a></td>
+</tr>
+<tr>
+  <td>SNPSF，静态邻域图案</td>
+  <td><code>v=0</code>，目标邻域图案未成立</td>
+  <td>邻居变为 <code>1010</code>，使 <code>v=1</code></td>
+  <td><code>r0(v)</code></td>
+  <td>解除图案后重写 <code>v</code></td>
+  <td><a href="02_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%A3%80%E6%B5%8B%E5%8E%9F%E7%90%86.html">02 §5</a>；<a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 §5</a></td>
+</tr>
+<tr>
+  <td>PNPSF，被动邻域图案</td>
+  <td>邻居 <code>1010</code>，<code>v=0</code></td>
+  <td><code>w1(v)</code> 失败</td>
+  <td><code>r1(v)</code></td>
+  <td>读取前写回 0</td>
+  <td><a href="02_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%A3%80%E6%B5%8B%E5%8E%9F%E7%90%86.html">02 §5</a>；<a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 §5</a></td>
+</tr>
+<tr>
+  <td>ANPSF，主动邻域图案</td>
+  <td>邻居 <code>0010</code>，<code>v=0</code></td>
+  <td>第一邻居上升，<code>v</code> 被反转</td>
+  <td><code>r0(v)</code></td>
+  <td>先重写 <code>v</code></td>
+  <td><a href="02_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%A3%80%E6%B5%8B%E5%8E%9F%E7%90%86.html">02 §5</a>；<a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 §5</a></td>
+</tr>
+<tr>
+  <td>扩展三、四、五单元模型</td>
+  <td>指定几何关系与完整局部位型</td>
+  <td>指定单元转换写、同值写或读</td>
+  <td>读受害单元；读后破坏再读一次</td>
+  <td>切换背景先写后读，覆盖错误</td>
+  <td><a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 §3–5</a></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="2.3 动态历史、地址译码与字内操作">2.3 动态历史、地址译码与字内操作</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>故障或目标</th>
+  <th>前置条件</th>
+  <th>激活与观察</th>
+  <th>会中断条件或掩盖错误的操作</th>
+  <th>详细位置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>连续两读后破坏的教学模型</td>
+  <td><code>x=0</code>，读取历史为空</td>
+  <td>第二次 <code>r0</code> 返回 0 后破坏为 1；第三次 <code>r0</code> 检出</td>
+  <td>第 02 章模型中，写入或其他地址访问清除计数</td>
+  <td><a href="02_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%A3%80%E6%B5%8B%E5%8E%9F%E7%90%86.html">02 §4</a>；<a href="05_%E6%B5%8B%E8%AF%95%E7%AE%97%E6%B3%95%E7%94%9F%E6%88%90%E4%B8%8E%E9%80%89%E6%8B%A9.html">05 §7–8</a></td>
+</tr>
+<tr>
+  <td>第 <code>q</code> 次读后破坏</td>
+  <td>已写入目标值，明确历史重置规则</td>
+  <td>连续读 <code>q+1</code> 次；RAWC1 同值写后连续读 <code>n+1</code> 次</td>
+  <td>重置历史；观察前恢复写入</td>
+  <td><a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 §2</a></td>
+</tr>
+<tr>
+  <td>地址别名 / 多重选择写入</td>
+  <td>相异地址 <code>a,v</code>；先使 <code>v=0</code></td>
+  <td>写 <code>a=1</code>，随后 <code>r0(v)</code>；别名例为 <code>w0(a),w1(v),r0(a)</code></td>
+  <td>观察前统一写入同值，消除地址间差异</td>
+  <td><a href="02_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%A3%80%E6%B5%8B%E5%8E%9F%E7%90%86.html">02 §6.1</a>；<a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 §6.1</a></td>
+</tr>
+<tr>
+  <td>旧字线延迟撤销</td>
+  <td>指定相邻地址转换和时序</td>
+  <td>从 <code>a</code> 转到 <code>v</code>，写相反数据，再读 <code>a</code></td>
+  <td>同值背景；读取 <code>a</code> 前重写其正确值</td>
+  <td>March iC−：<a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 §6.2</a></td>
+</tr>
+<tr>
+  <td>字内耦合</td>
+  <td>字初值为 0，具有所需写掩码</td>
+  <td>仅写 <code>a=1</code> 后读字；仅写 <code>v=1</code> 后再读字</td>
+  <td>其他位同时改变，改变激活条件</td>
+  <td><a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 §6.3</a></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="2.4 多端口、透明测试与存内计算">2.4 多端口、透明测试与存内计算</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>故障或目标</th>
+  <th>前置条件</th>
+  <th>激活与观察</th>
+  <th>会改变检测条件的操作</th>
+  <th>完整程序或实例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>并发转换受阻 / 双激励耦合</td>
+  <td>两地址准备好转换，第三单元背景已知</td>
+  <td>两端口同时转换；读取目标和第三受害单元</td>
+  <td>将并发写串行化；观察前重写受害单元</td>
+  <td><a href="11_%E5%A4%9A%E7%AB%AF%E5%8F%A3%E4%B8%8E%E6%96%B0%E5%9E%8B%E5%AD%98%E5%82%A8%E5%99%A8%E6%89%A9%E5%B1%95.html">11 §2.2</a></td>
+</tr>
+<tr>
+  <td>跨端口地址对应错误</td>
+  <td>P0 写入仅 <code>j</code> 为 1 的背景</td>
+  <td>P1 读全部地址，期望 <code>(x==j)</code></td>
+  <td>统一背景消除地址差异</td>
+  <td><a href="11_%E5%A4%9A%E7%AB%AF%E5%8F%A3%E4%B8%8E%E6%96%B0%E5%9E%8B%E5%AD%98%E5%82%A8%E5%99%A8%E6%89%A9%E5%B1%95.html">11 §2.3</a></td>
+</tr>
+<tr>
+  <td>跨端口行列误选</td>
+  <td>两行、两列的四个交点初值为 0</td>
+  <td>两端口同时写对角位置为 1；读四位置，期望 <code>1,1,0,0</code></td>
+  <td>读取交叉位置前恢复区域</td>
+  <td>M3 局部例：<a href="11_%E5%A4%9A%E7%AB%AF%E5%8F%A3%E4%B8%8E%E6%96%B0%E5%9E%8B%E5%AD%98%E5%82%A8%E5%99%A8%E6%89%A9%E5%B1%95.html">11 §2.4</a></td>
+</tr>
+<tr>
+  <td>透明测试中的 SAF / TF</td>
+  <td>原数据任意，局部读数为 <code>x</code></td>
+  <td><code>read→write(1−x)→read</code>；末读比较 <code>1−x</code></td>
+  <td>在末读前恢复原值；清除局部失败标志</td>
+  <td><a href="08_%E8%87%AA%E9%80%82%E5%BA%94%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%9C%9F%E9%97%B4%E6%B5%8B%E8%AF%95.html">08 §3.1.5</a></td>
+</tr>
+<tr>
+  <td>透明测试中的指定 CFid</td>
+  <td>初态 <code>0101</code>；地址 0 上升强制地址 1 为 0</td>
+  <td>局部互补比较通过，最终扫描签名与初始签名不同</td>
+  <td>覆盖数据；签名混叠也会使差异不可见</td>
+  <td><a href="08_%E8%87%AA%E9%80%82%E5%BA%94%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%9C%9F%E9%97%B4%E6%B5%8B%E8%AF%95.html">08 §3.1.6、3.1.8</a></td>
+</tr>
+<tr>
+  <td>IMC 选择错误</td>
+  <td>一列中仅 <code>i=1</code></td>
+  <td><code>NOR_all</code> 应为 0；<code>NOR_except(i)</code> 应为 1</td>
+  <td>两次计算前先把 <code>i</code> 恢复为 0</td>
+  <td>March IMC-8T：<a href="11_%E5%A4%9A%E7%AB%AF%E5%8F%A3%E4%B8%8E%E6%96%B0%E5%9E%8B%E5%AD%98%E5%82%A8%E5%99%A8%E6%89%A9%E5%B1%95.html">11 §6.4–6.5</a></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="2.5 新型器件与时间、环境相关故障">2.5 新型器件与时间、环境相关故障</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>故障或研究目标</th>
+  <th>前置状态和参数</th>
+  <th>激活操作</th>
+  <th>观察操作</th>
+  <th>可能掩盖错误或改变条件的操作</th>
+  <th>位置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>FeRAM 读后写回失败</td>
+  <td>已写入 1</td>
+  <td>第一次读取正确，写回后内部成为 0</td>
+  <td>第二次 <code>r1</code></td>
+  <td>中间重新写入 1</td>
+  <td><a href="11_%E5%A4%9A%E7%AB%AF%E5%8F%A3%E4%B8%8E%E6%96%B0%E5%9E%8B%E5%AD%98%E5%82%A8%E5%99%A8%E6%89%A9%E5%B1%95.html">11 §3.3</a></td>
+</tr>
+<tr>
+  <td>FeRAM 压印、RAD、疲劳</td>
+  <td>初态、脉宽、电压、温度、间隔</td>
+  <td>保持同极性后反向写；读后延时；重复读写循环</td>
+  <td>检查转换、读值和裕量的变化</td>
+  <td>恢复脉冲或改变间隔会改变历史</td>
+  <td><a href="11_%E5%A4%9A%E7%AB%AF%E5%8F%A3%E4%B8%8E%E6%96%B0%E5%9E%8B%E5%AD%98%E5%82%A8%E5%99%A8%E6%89%A9%E5%B1%95.html">11 §3.4–3.5</a></td>
+</tr>
+<tr>
+  <td>STT-MRAM 写入失败、磁耦合、读扰动</td>
+  <td>邻域背景、写电流、脉宽和初态</td>
+  <td>受测脉冲写入；K 次应力读</td>
+  <td>写后读；另加一次观察读，记录首次失败</td>
+  <td>观察前强写恢复；改变邻域或脉宽</td>
+  <td><a href="11_%E5%A4%9A%E7%AB%AF%E5%8F%A3%E4%B8%8E%E6%96%B0%E5%9E%8B%E5%AD%98%E5%82%A8%E5%99%A8%E6%89%A9%E5%B1%95.html">11 §4</a></td>
+</tr>
+<tr>
+  <td>RRAM UWF、DeepF、URF、IUSF</td>
+  <td>电阻有效区间和测量条件</td>
+  <td>SET/RESET、重复读取或指定背景下写入</td>
+  <td>二进制比较与电流 / 电阻区间检查</td>
+  <td>后续 SET/RESET 可改变异常状态</td>
+  <td><a href="11_%E5%A4%9A%E7%AB%AF%E5%8F%A3%E4%B8%8E%E6%96%B0%E5%9E%8B%E5%AD%98%E5%82%A8%E5%99%A8%E6%89%A9%E5%B1%95.html">11 §5</a></td>
+</tr>
+<tr>
+  <td>DRAM 保持、RowHammer、RowPress、ColumnDisturb</td>
+  <td>背景、刷新、温度和物理位置</td>
+  <td><code>ACT→保持 t_on→PRE</code> 重复 <code>k</code> 次，或规定保持时间</td>
+  <td>读取邻近行；共享列扰动扩大受害区域</td>
+  <td>观察前重写受害数据；激励期间刷新会改变积累条件</td>
+  <td><a href="02_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%A3%80%E6%B5%8B%E5%8E%9F%E7%90%86.html">02 §7.2–7.3</a>；<a href="11_%E5%A4%9A%E7%AB%AF%E5%8F%A3%E4%B8%8E%E6%96%B0%E5%9E%8B%E5%AD%98%E5%82%A8%E5%99%A8%E6%89%A9%E5%B1%95.html">11 §7</a></td>
+</tr>
+</tbody>
+</table></div>
+<p>器件条目采用参数化模板，执行时须填写时间、环境和测量规则。第 02 章第 7 节注明各研究的全文、摘要或预印本范围；第 11 章列出定义与来源。</p>
+<h2 id="3. 完整算法与可执行构造清单">3. 完整算法与可执行构造清单</h2>
+<h3 id="3.1 计数与验证类型">3.1 计数与验证类型</h3>
+<p><code>N</code> 为受测地址数，长度包括初始化；每个地址完成元素操作后再推进。多背景测试按单元计数，使用第 04 章的完整周期背景及边界条件。多端口事件与 IMC 计算按各自定义计数。</p>
+<p>验证类型：执行指无故障初始化、读期望和长度检查；注入指指定数字故障；状态图指局部操作边；搜索指有限模型复算。具体集合与结果见 <a href="13_%E7%AE%97%E4%BE%8B%E4%B8%8E%E6%BA%90%E7%A0%81%E8%AF%B4%E6%98%8E.html">13 §1、§3–5</a>。</p>
+<h3 id="3.2 经典与增强 March">3.2 经典与增强 March</h3>
+<p>下列算法采用二进制背景，首次写入初始化；每个元素内连续访问同一地址。全部操作和方向见对应原表。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>算法</th>
+  <th style="text-align:right">操作数</th>
+  <th>地址、背景或历史条件</th>
+  <th>完整定义</th>
+  <th>已有验证</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>MATS / MATS+ / MATS++</td>
+  <td style="text-align:right"><code>4N / 5N / 6N</code></td>
+  <td>固定背景</td>
+  <td><a href="03_March%E5%9F%BA%E7%A1%80%E4%B8%8E%E7%BB%8F%E5%85%B8%E7%AE%97%E6%B3%95.html">03 §3.2.1–3.2.3</a></td>
+  <td>执行、注入</td>
+</tr>
+<tr>
+  <td>March X / March Y</td>
+  <td style="text-align:right"><code>6N / 8N</code></td>
+  <td>Y 增加转换后的读取</td>
+  <td><a href="03_March%E5%9F%BA%E7%A1%80%E4%B8%8E%E7%BB%8F%E5%85%B8%E7%AE%97%E6%B3%95.html">03 §3.2.4–3.2.5</a></td>
+  <td>执行、注入</td>
+</tr>
+<tr>
+  <td>March C / March C−</td>
+  <td style="text-align:right"><code>11N / 10N</code></td>
+  <td>升降序及末尾读取</td>
+  <td><a href="03_March%E5%9F%BA%E7%A1%80%E4%B8%8E%E7%BB%8F%E5%85%B8%E7%AE%97%E6%B3%95.html">03 §3.2.6–3.2.7</a></td>
+  <td>执行、注入</td>
+</tr>
+<tr>
+  <td>March C+ / March CL</td>
+  <td style="text-align:right"><code>14N / 12N</code></td>
+  <td>固定读取位置</td>
+  <td><a href="03_March%E5%9F%BA%E7%A1%80%E4%B8%8E%E7%BB%8F%E5%85%B8%E7%AE%97%E6%B3%95.html">03 §3.2.8–3.2.9</a></td>
+  <td>执行、注入</td>
+</tr>
+<tr>
+  <td>March A / March B</td>
+  <td style="text-align:right"><code>15N / 17N</code></td>
+  <td>转换写和读的次序固定</td>
+  <td><a href="03_March%E5%9F%BA%E7%A1%80%E4%B8%8E%E7%BB%8F%E5%85%B8%E7%AE%97%E6%B3%95.html">03 §3.3</a></td>
+  <td>执行、注入</td>
+</tr>
+<tr>
+  <td>March LR / March SR</td>
+  <td style="text-align:right"><code>14N / 14N</code></td>
+  <td>各自操作表不同</td>
+  <td><a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 §1.2–1.3</a></td>
+  <td>执行、注入</td>
+</tr>
+<tr>
+  <td>March SS / March MSS</td>
+  <td style="text-align:right"><code>22N / 18N</code></td>
+  <td>双读取、同值写、升降序</td>
+  <td><a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 §1.4–1.5</a></td>
+  <td>执行、注入</td>
+</tr>
+<tr>
+  <td>March AB</td>
+  <td style="text-align:right"><code>22N</code></td>
+  <td>2006 年 linked faults 版本</td>
+  <td><a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 §1.6</a></td>
+  <td>执行、注入</td>
+</tr>
+<tr>
+  <td>March AZ1 / March AZ / March AZ2</td>
+  <td style="text-align:right"><code>13N / 13N / 14N</code></td>
+  <td>写入所属元素影响背景</td>
+  <td><a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 §1.7</a></td>
+  <td>执行、注入</td>
+</tr>
+<tr>
+  <td>March RAW</td>
+  <td style="text-align:right"><code>26N</code></td>
+  <td>写读组合与连续读</td>
+  <td><a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 §2.2</a></td>
+  <td>执行、注入</td>
+</tr>
+<tr>
+  <td>分离读取教学序列</td>
+  <td style="text-align:right"><code>13N</code></td>
+  <td>固定升序、跨遍历读取</td>
+  <td><a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 §2.3</a></td>
+  <td>执行、注入</td>
+</tr>
+<tr>
+  <td>Dynamic-RAWC1</td>
+  <td style="text-align:right"><code>(24+2n)N</code></td>
+  <td><code>1≤n≤9</code>；同一地址连续读取</td>
+  <td><a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 §2.4</a></td>
+  <td>所列参数实例的执行、注入</td>
+</tr>
+<tr>
+  <td>Dynamic-RAWC2</td>
+  <td style="text-align:right"><code>(40+2n)N</code></td>
+  <td><code>1≤n≤8</code>；重复写与读的组合</td>
+  <td><a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 §2.5</a></td>
+  <td>所列参数实例的执行、注入</td>
+</tr>
+<tr>
+  <td>March iC−</td>
+  <td style="text-align:right"><code>10N</code></td>
+  <td>次序 <code>Q</code> 与 <code>B(q_k)=b⊕(k mod 2)</code>；子译码器转换齐备</td>
+  <td><a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 §6.2</a></td>
+  <td>执行、转换图、双选写注入</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="3.3 多背景、搜索结果与透明测试">3.3 多背景、搜索结果与透明测试</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>算法或构造</th>
+  <th style="text-align:right">操作数</th>
+  <th>前置、地址或背景条件</th>
+  <th>完整定义</th>
+  <th>已有验证</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>MT-R3CCF / MT-3CCF</td>
+  <td style="text-align:right"><code>21N / 37N</code></td>
+  <td>角形三单元、四背景；切换先读后写</td>
+  <td><a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 §3、§4.1–4.3</a></td>
+  <td>执行、状态图、局部注入</td>
+</tr>
+<tr>
+  <td>MT-4CCF</td>
+  <td style="text-align:right"><code>73N</code></td>
+  <td>2×2 四单元；八背景与八操作元素</td>
+  <td><a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 §4.4</a></td>
+  <td>执行、状态图、局部注入</td>
+</tr>
+<tr>
+  <td>MT_NPSF_81N / MT_ENPSF</td>
+  <td style="text-align:right"><code>81N / 177N</code></td>
+  <td>中心加四邻居；十六个 4×4 周期背景</td>
+  <td><a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 §5</a></td>
+  <td>执行、状态图、局部注入</td>
+</tr>
+<tr>
+  <td>两单元欧拉教学构造</td>
+  <td style="text-align:right"><code>26</code> 次局部访问</td>
+  <td>初值 00；每条边后读两单元</td>
+  <td><a href="05_%E6%B5%8B%E8%AF%95%E7%AE%97%E6%B3%95%E7%94%9F%E6%88%90%E4%B8%8E%E9%80%89%E6%8B%A9.html">05 §3.3</a></td>
+  <td>八条边、注入</td>
+</tr>
+<tr>
+  <td>模拟退火与 BFS 的教学结果</td>
+  <td style="text-align:right"><code>11N</code></td>
+  <td>每个地址执行 11 操作；12 个原型、两种初值</td>
+  <td><a href="05_%E6%B5%8B%E8%AF%95%E7%AE%97%E6%B3%95%E7%94%9F%E6%88%90%E4%B8%8E%E9%80%89%E6%8B%A9.html">05 §7.3、§8.3</a></td>
+  <td>注入、搜索、有限问题最短性</td>
+</tr>
+<tr>
+  <td>DDQN：AB1 剩余集合子集</td>
+  <td style="text-align:right"><code>5N</code></td>
+  <td><code>CFst、CFrd、CFir</code> 子集；先写 0</td>
+  <td><a href="05_%E6%B5%8B%E8%AF%95%E7%AE%97%E6%B3%95%E7%94%9F%E6%88%90%E4%B8%8E%E9%80%89%E6%8B%A9.html">05 §9.6 A</a></td>
+  <td>执行；原文模型分析</td>
+</tr>
+<tr>
+  <td>DDQN：AB1 剩余集合</td>
+  <td style="text-align:right"><code>11N</code></td>
+  <td>原文 24 个剩余原型，先写 0</td>
+  <td><a href="05_%E6%B5%8B%E8%AF%95%E7%AE%97%E6%B3%95%E7%94%9F%E6%88%90%E4%B8%8E%E9%80%89%E6%8B%A9.html">05 §9.6 B</a></td>
+  <td>执行、两个耦合注入实例</td>
+</tr>
+<tr>
+  <td>DDQN：LR 剩余集合</td>
+  <td style="text-align:right"><code>16N</code></td>
+  <td>原文 28 个剩余原型，先写 1</td>
+  <td><a href="05_%E6%B5%8B%E8%AF%95%E7%AE%97%E6%B3%95%E7%94%9F%E6%88%90%E4%B8%8E%E9%80%89%E6%8B%A9.html">05 §9.6 C</a></td>
+  <td>执行；原文模型分析</td>
+</tr>
+<tr>
+  <td>March_2A_1 / March_2A_2</td>
+  <td style="text-align:right"><code>8N / 14N</code></td>
+  <td><code>N=2^m</code>；任意初态；双地址次序；后者增加反向阶段</td>
+  <td><a href="08_%E8%87%AA%E9%80%82%E5%BA%94%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%9C%9F%E9%97%B4%E6%B5%8B%E8%AF%95.html">08 §3.1</a></td>
+  <td>执行、恢复、SAF/TF 与耦合注入</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="3.4 多端口与存内计算">3.4 多端口与存内计算</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>算法或构造</th>
+  <th style="text-align:right">操作数</th>
+  <th>执行条件</th>
+  <th>完整定义</th>
+  <th>已有验证</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>并发耦合完整枚举教学程序</td>
+  <td style="text-align:right"><code>O(N³)</code></td>
+  <td>有序地址对、四种双转换、两种背景；整片初始化与读取</td>
+  <td><a href="11_%E5%A4%9A%E7%AB%AF%E5%8F%A3%E4%B8%8E%E6%96%B0%E5%9E%8B%E5%AD%98%E5%82%A8%E5%99%A8%E6%89%A9%E5%B1%95.html">11 §2.2</a></td>
+  <td>执行、双激励与并发受阻注入</td>
+</tr>
+<tr>
+  <td>M2</td>
+  <td style="text-align:right"><code>(2+10p)N</code></td>
+  <td><code>p</code> 个读写端口；两个互补轮次；P0 初始化</td>
+  <td><a href="11_%E5%A4%9A%E7%AB%AF%E5%8F%A3%E4%B8%8E%E6%96%B0%E5%9E%8B%E5%AD%98%E5%82%A8%E5%99%A8%E6%89%A9%E5%B1%95.html">11 §2.3</a></td>
+  <td>文献序列与操作数核算</td>
+</tr>
+<tr>
+  <td>跨端口单个 1 的教学序列</td>
+  <td style="text-align:right"><code>2N²+N</code></td>
+  <td>每个地址依次为唯一的 1；P0 写、P1 读</td>
+  <td><a href="11_%E5%A4%9A%E7%AB%AF%E5%8F%A3%E4%B8%8E%E6%96%B0%E5%9E%8B%E5%AD%98%E5%82%A8%E5%99%A8%E6%89%A9%E5%B1%95.html">11 §2.3</a></td>
+  <td>执行、非恒等地址置换注入</td>
+</tr>
+<tr>
+  <td>March C−8</td>
+  <td style="text-align:right"><code>12N−2N_col</code></td>
+  <td>列内相邻 NAND；有界列两端省略越界计算</td>
+  <td><a href="11_%E5%A4%9A%E7%AB%AF%E5%8F%A3%E4%B8%8E%E6%96%B0%E5%9E%8B%E5%AD%98%E5%82%A8%E5%99%A8%E6%89%A9%E5%B1%95.html">11 §6.2</a></td>
+  <td>文献操作展开与长度核算</td>
+</tr>
+<tr>
+  <td>March 8T-RPD</td>
+  <td style="text-align:right"><code>8.5N</code></td>
+  <td>偶数列深、不重叠地址对、选择性 NOR</td>
+  <td><a href="11_%E5%A4%9A%E7%AB%AF%E5%8F%A3%E4%B8%8E%E6%96%B0%E5%9E%8B%E5%AD%98%E5%82%A8%E5%99%A8%E6%89%A9%E5%B1%95.html">11 §6.3</a></td>
+  <td>文献操作展开与长度核算</td>
+</tr>
+<tr>
+  <td>March IMC-8T</td>
+  <td style="text-align:right"><code>12.5N+N_col</code></td>
+  <td>偶数列深 <code>N_c</code>；七阶段</td>
+  <td><a href="11_%E5%A4%9A%E7%AB%AF%E5%8F%A3%E4%B8%8E%E6%96%B0%E5%9E%8B%E5%AD%98%E5%82%A8%E5%99%A8%E6%89%A9%E5%B1%95.html">11 §6.4</a></td>
+  <td>执行、计算选择故障注入</td>
+</tr>
+</tbody>
+</table></div>
+<p>M2 为 <code>2N+2p(N+2N+2N)</code>。IMC 中 <code>N=N_cN_col</code>，一次读、写或计算计一个抽象操作，周期数由延迟与列并行能力确定。</p>
+<h3 id="3.5 生成方法与局部模板的定位">3.5 生成方法与局部模板的定位</h3>
+<p><a href="05_%E6%B5%8B%E8%AF%95%E7%AE%97%E6%B3%95%E7%94%9F%E6%88%90%E4%B8%8E%E9%80%89%E6%8B%A9.html">05 章</a>依次解释欧拉回路与 Hierholzer（§3）、多背景（§4）、de Bruijn 历史窗口（§5）、遗传算法及其他元启发搜索（§6–7）、集合覆盖、SAT、BFS（§8）、MarchGen 与 DDQN（§9）。输出长度随模型与约束变化。</p>
+<p>字内掩码与整字写片段见 <a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 §6.3</a>；M1 方法、M3 局部实例见 <a href="11_%E5%A4%9A%E7%AB%AF%E5%8F%A3%E4%B8%8E%E6%96%B0%E5%9E%8B%E5%AD%98%E5%82%A8%E5%99%A8%E6%89%A9%E5%B1%95.html">11 §2</a>；器件模板见 <a href="11_%E5%A4%9A%E7%AB%AF%E5%8F%A3%E4%B8%8E%E6%96%B0%E5%9E%8B%E5%AD%98%E5%82%A8%E5%99%A8%E6%89%A9%E5%B1%95.html">11 §3–5、§7</a>；March CC 文献条目见 <a href="11_%E5%A4%9A%E7%AB%AF%E5%8F%A3%E4%B8%8E%E6%96%B0%E5%9E%8B%E5%AD%98%E5%82%A8%E5%99%A8%E6%89%A9%E5%B1%95.html">11 FM23</a>。透明测试暂停、恢复与释放条件见 <a href="08_%E8%87%AA%E9%80%82%E5%BA%94%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%9C%9F%E9%97%B4%E6%B5%8B%E8%AF%95.html">08 §4.6</a>。</p>
+<h2 id="4. 从局部故障到完整遍历的两个例子">4. 从局部故障到完整遍历的两个例子</h2>
+<h3 id="4.1 将 CFwd 放入 March SS">4.1 将 CFwd 放入 March SS</h3>
+<p>目标为 <code>a=1,v=0</code> 时，<code>w0(v)</code> 使 <code>v=1</code>。初始化写 0 后，执行 <code>↑(r0,r0,w0,r0,w1)</code>：当 <code>a&lt;v</code>，访问 <code>v</code> 前，<code>a</code> 已完成末尾 <code>w1</code>，<code>v</code> 仍为 0。第三项 <code>w0(v)</code> 激活故障，第四项 <code>r0(v)</code> 读到 1，第五项 <code>w1(v)</code> 建立下一阶段背景。</p>
+<p>对应下降元素处理 <code>a&gt;v</code>，互补元素提供另一极性。第四项读取应位于末尾转换写之前；若先写 1，实际值与新期望都为 1，原错误便被掩盖。<a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 §1.4</a></p>
+<h3 id="4.2 将字线撤销延迟转成数据差异">4.2 将字线撤销延迟转成数据差异</h3>
+<p>取 <code>Q=(0,1,3,2)</code>，对应背景为 <code>(0,1,0,1)</code>。初始化先向地址 0 写 0，再向地址 1 写 1。若旧字线继续有效，第二次写入同时使地址 0 变为 1。March iC− 初始化后的第一次读取期望地址 0 为 0，在第 5 次访问检出。</p>
+<p>扩展阵列时，构造地址次序并固定背景函数，反向遍历仍按同一函数取期望；再检查目标子译码器的有向转换和规定时序。<a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 §6.2</a></p>
+<h2 id="5. 来源与结果定位">5. 来源与结果定位</h2>
+<p>模型与算法来源见各表链接及<a href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E7%A0%94%E7%A9%B6%E8%BF%9B%E5%B1%95%E7%B4%A2%E5%BC%95.html">统一文献索引</a>；程序、参数与结果 JSON 见<a href="13_%E7%AE%97%E4%BE%8B%E4%B8%8E%E6%BA%90%E7%A0%81%E8%AF%B4%E6%98%8E.html">第 13 章</a>。<a href="13_%E7%AE%97%E4%BE%8B%E4%B8%8E%E6%BA%90%E7%A0%81%E8%AF%B4%E6%98%8E.html">13 §9</a>提供逐访问 CSV 导出方法及<a href="../examples/march_trace_catalog.json">算法目录</a>。</p>
+<div class="footer">故障模型、算法与生成方法的检索截止 2026-11-18。此页为 Markdown 的离线阅读副本，公式与插图可离线查看。</div></main></div></body></html>

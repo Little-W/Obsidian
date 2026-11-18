@@ -1,0 +1,4541 @@
+{
+  "schema_version": 1,
+  "source_doi": "10.3390/e23070894",
+  "signature_choice": {
+    "width": 4,
+    "polynomial": "x^4+x+1",
+    "seed": 0,
+    "final_xor": 0,
+    "input_order": "address ascending",
+    "scope": "Teaching implementation; the paper leaves the signature polynomial unspecified."
+  },
+  "fault_free_validation": [
+    {
+      "depth": 2,
+      "initial_patterns": 4,
+      "address_generators": 4,
+      "variants": 2,
+      "runs": 32
+    },
+    {
+      "depth": 4,
+      "initial_patterns": 16,
+      "address_generators": 6,
+      "variants": 2,
+      "runs": 192
+    },
+    {
+      "depth": 8,
+      "initial_patterns": 256,
+      "address_generators": 8,
+      "variants": 2,
+      "runs": 4096
+    }
+  ],
+  "fault_free_runs": 4320,
+  "simple_fault_runs_detected": 512,
+  "samples": {
+    "fault_free_8N": {
+      "variant": "March_2A_1",
+      "initial": [
+        0,
+        1,
+        0,
+        1
+      ],
+      "addresses": [
+        0,
+        1,
+        2,
+        3,
+        0,
+        1,
+        2,
+        3
+      ],
+      "operation_count": 32,
+      "local_failures": [],
+      "reference_signature": 15,
+      "final_signature": 15,
+      "signature_mismatch": false,
+      "detected": false,
+      "final": [
+        0,
+        1,
+        0,
+        1
+      ],
+      "restored": true,
+      "base_final_states": [
+        [
+          0,
+          1,
+          0,
+          1
+        ]
+      ],
+      "fault": {
+        "kind": "none"
+      },
+      "trace": [
+        {
+          "step": 1,
+          "phase": "initial_signature",
+          "address": 0,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 2,
+          "phase": "initial_signature",
+          "address": 1,
+          "operation": "read",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 3,
+          "phase": "initial_signature",
+          "address": 2,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 4,
+          "phase": "initial_signature",
+          "address": 3,
+          "operation": "read",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 5,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 6,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 7,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "read_compare",
+          "observed": 1,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 8,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "read_latch",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 9,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "write0",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 10,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 0,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 11,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 12,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 13,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "read_compare",
+          "observed": 1,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 14,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "read_latch",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 15,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "write0",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 16,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 0,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 17,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "read_latch",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 18,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "write0",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 19,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 0,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 20,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 21,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 22,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "read_compare",
+          "observed": 1,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 23,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "read_latch",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 24,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "write0",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 25,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 0,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 26,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 27,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 28,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "read_compare",
+          "observed": 1,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 29,
+          "phase": "final_signature",
+          "address": 0,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 30,
+          "phase": "final_signature",
+          "address": 1,
+          "operation": "read",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 31,
+          "phase": "final_signature",
+          "address": 2,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 32,
+          "phase": "final_signature",
+          "address": 3,
+          "operation": "read",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        }
+      ]
+    },
+    "fault_free_14N": {
+      "variant": "March_2A_2",
+      "initial": [
+        0,
+        1,
+        0,
+        1
+      ],
+      "addresses": [
+        0,
+        1,
+        2,
+        3,
+        0,
+        1,
+        2,
+        3
+      ],
+      "operation_count": 56,
+      "local_failures": [],
+      "reference_signature": 15,
+      "final_signature": 15,
+      "signature_mismatch": false,
+      "detected": false,
+      "final": [
+        0,
+        1,
+        0,
+        1
+      ],
+      "restored": true,
+      "base_final_states": [
+        [
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          0,
+          1
+        ]
+      ],
+      "fault": {
+        "kind": "none"
+      },
+      "trace": [
+        {
+          "step": 1,
+          "phase": "initial_signature",
+          "address": 0,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 2,
+          "phase": "initial_signature",
+          "address": 1,
+          "operation": "read",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 3,
+          "phase": "initial_signature",
+          "address": 2,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 4,
+          "phase": "initial_signature",
+          "address": 3,
+          "operation": "read",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 5,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 6,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 7,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "read_compare",
+          "observed": 1,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 8,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "read_latch",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 9,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "write0",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 10,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 0,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 11,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 12,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 13,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "read_compare",
+          "observed": 1,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 14,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "read_latch",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 15,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "write0",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 16,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 0,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 17,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "read_latch",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 18,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "write0",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 19,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 0,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 20,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 21,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 22,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "read_compare",
+          "observed": 1,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 23,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "read_latch",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 24,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "write0",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 25,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 0,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 26,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 27,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 28,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "read_compare",
+          "observed": 1,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 29,
+          "phase": "base_2",
+          "address": 3,
+          "operation": "read_latch",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 30,
+          "phase": "base_2",
+          "address": 3,
+          "operation": "write0",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 31,
+          "phase": "base_2",
+          "address": 3,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 0,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 32,
+          "phase": "base_2",
+          "address": 2,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 33,
+          "phase": "base_2",
+          "address": 2,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 34,
+          "phase": "base_2",
+          "address": 2,
+          "operation": "read_compare",
+          "observed": 1,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 35,
+          "phase": "base_2",
+          "address": 1,
+          "operation": "read_latch",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 36,
+          "phase": "base_2",
+          "address": 1,
+          "operation": "write0",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 37,
+          "phase": "base_2",
+          "address": 1,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 0,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 38,
+          "phase": "base_2",
+          "address": 0,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 39,
+          "phase": "base_2",
+          "address": 0,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 40,
+          "phase": "base_2",
+          "address": 0,
+          "operation": "read_compare",
+          "observed": 1,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 41,
+          "phase": "base_2",
+          "address": 3,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 42,
+          "phase": "base_2",
+          "address": 3,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 43,
+          "phase": "base_2",
+          "address": 3,
+          "operation": "read_compare",
+          "observed": 1,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 44,
+          "phase": "base_2",
+          "address": 2,
+          "operation": "read_latch",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 45,
+          "phase": "base_2",
+          "address": 2,
+          "operation": "write0",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 46,
+          "phase": "base_2",
+          "address": 2,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 0,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 47,
+          "phase": "base_2",
+          "address": 1,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 48,
+          "phase": "base_2",
+          "address": 1,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 49,
+          "phase": "base_2",
+          "address": 1,
+          "operation": "read_compare",
+          "observed": 1,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 50,
+          "phase": "base_2",
+          "address": 0,
+          "operation": "read_latch",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 51,
+          "phase": "base_2",
+          "address": 0,
+          "operation": "write0",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 52,
+          "phase": "base_2",
+          "address": 0,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 0,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 53,
+          "phase": "final_signature",
+          "address": 0,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 54,
+          "phase": "final_signature",
+          "address": 1,
+          "operation": "read",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 55,
+          "phase": "final_signature",
+          "address": 2,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 56,
+          "phase": "final_signature",
+          "address": 3,
+          "operation": "read",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        }
+      ]
+    },
+    "SAF0": {
+      "variant": "March_2A_1",
+      "initial": [
+        0,
+        1,
+        0,
+        1
+      ],
+      "addresses": [
+        0,
+        1,
+        2,
+        3,
+        0,
+        1,
+        2,
+        3
+      ],
+      "operation_count": 32,
+      "local_failures": [
+        {
+          "step": 13,
+          "base": 1,
+          "visit": 3,
+          "address": 2,
+          "expected": 1,
+          "observed": 0
+        },
+        {
+          "step": 25,
+          "base": 1,
+          "visit": 7,
+          "address": 2,
+          "expected": 1,
+          "observed": 0
+        }
+      ],
+      "reference_signature": 15,
+      "final_signature": 15,
+      "signature_mismatch": false,
+      "detected": true,
+      "final": [
+        0,
+        1,
+        0,
+        1
+      ],
+      "restored": true,
+      "base_final_states": [
+        [
+          0,
+          1,
+          0,
+          1
+        ]
+      ],
+      "fault": {
+        "kind": "SAF",
+        "target": 2,
+        "value": 0
+      },
+      "trace": [
+        {
+          "step": 1,
+          "phase": "initial_signature",
+          "address": 0,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 2,
+          "phase": "initial_signature",
+          "address": 1,
+          "operation": "read",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 3,
+          "phase": "initial_signature",
+          "address": 2,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 4,
+          "phase": "initial_signature",
+          "address": 3,
+          "operation": "read",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 5,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 6,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 7,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "read_compare",
+          "observed": 1,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 8,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "read_latch",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 9,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "write0",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 10,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 0,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 11,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 12,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": true,
+          "memory_after": [
+            1,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 13,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 14,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "read_latch",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 15,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "write0",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 16,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 0,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 17,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "read_latch",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 18,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "write0",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 19,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 0,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 20,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 21,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 22,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "read_compare",
+          "observed": 1,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 23,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 24,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": true,
+          "memory_after": [
+            0,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 25,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 26,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 27,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 28,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "read_compare",
+          "observed": 1,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 29,
+          "phase": "final_signature",
+          "address": 0,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 30,
+          "phase": "final_signature",
+          "address": 1,
+          "operation": "read",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 31,
+          "phase": "final_signature",
+          "address": 2,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 32,
+          "phase": "final_signature",
+          "address": 3,
+          "operation": "read",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        }
+      ]
+    },
+    "TF_up": {
+      "variant": "March_2A_1",
+      "initial": [
+        0,
+        1,
+        0,
+        1
+      ],
+      "addresses": [
+        0,
+        1,
+        2,
+        3,
+        0,
+        1,
+        2,
+        3
+      ],
+      "operation_count": 32,
+      "local_failures": [
+        {
+          "step": 13,
+          "base": 1,
+          "visit": 3,
+          "address": 2,
+          "expected": 1,
+          "observed": 0
+        },
+        {
+          "step": 25,
+          "base": 1,
+          "visit": 7,
+          "address": 2,
+          "expected": 1,
+          "observed": 0
+        }
+      ],
+      "reference_signature": 15,
+      "final_signature": 15,
+      "signature_mismatch": false,
+      "detected": true,
+      "final": [
+        0,
+        1,
+        0,
+        1
+      ],
+      "restored": true,
+      "base_final_states": [
+        [
+          0,
+          1,
+          0,
+          1
+        ]
+      ],
+      "fault": {
+        "kind": "TF",
+        "target": 2,
+        "before": 0
+      },
+      "trace": [
+        {
+          "step": 1,
+          "phase": "initial_signature",
+          "address": 0,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 2,
+          "phase": "initial_signature",
+          "address": 1,
+          "operation": "read",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 3,
+          "phase": "initial_signature",
+          "address": 2,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 4,
+          "phase": "initial_signature",
+          "address": 3,
+          "operation": "read",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 5,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 6,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 7,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "read_compare",
+          "observed": 1,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 8,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "read_latch",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 9,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "write0",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 10,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 0,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 11,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 12,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": true,
+          "memory_after": [
+            1,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 13,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 14,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "read_latch",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 15,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "write0",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 16,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 0,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 17,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "read_latch",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 18,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "write0",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 19,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 0,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 20,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 21,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 22,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "read_compare",
+          "observed": 1,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 23,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 24,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": true,
+          "memory_after": [
+            0,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 25,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 26,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 27,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 28,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "read_compare",
+          "observed": 1,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 29,
+          "phase": "final_signature",
+          "address": 0,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 30,
+          "phase": "final_signature",
+          "address": 1,
+          "operation": "read",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 31,
+          "phase": "final_signature",
+          "address": 2,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 32,
+          "phase": "final_signature",
+          "address": 3,
+          "operation": "read",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        }
+      ]
+    },
+    "CFid_signature": {
+      "variant": "March_2A_1",
+      "initial": [
+        0,
+        1,
+        0,
+        1
+      ],
+      "addresses": [
+        0,
+        1,
+        2,
+        3,
+        0,
+        1,
+        2,
+        3
+      ],
+      "operation_count": 32,
+      "local_failures": [],
+      "reference_signature": 15,
+      "final_signature": 3,
+      "signature_mismatch": true,
+      "detected": true,
+      "final": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "restored": false,
+      "base_final_states": [
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "fault": {
+        "kind": "CFid",
+        "aggressor": 0,
+        "before": 0,
+        "victim": 1,
+        "forced_value": 0
+      },
+      "trace": [
+        {
+          "step": 1,
+          "phase": "initial_signature",
+          "address": 0,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 2,
+          "phase": "initial_signature",
+          "address": 1,
+          "operation": "read",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 3,
+          "phase": "initial_signature",
+          "address": 2,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 4,
+          "phase": "initial_signature",
+          "address": 3,
+          "operation": "read",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 5,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 6,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": true,
+          "memory_after": [
+            1,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 7,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "read_compare",
+          "observed": 1,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 8,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 9,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 10,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "read_compare",
+          "observed": 1,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 11,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 12,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 13,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "read_compare",
+          "observed": 1,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 14,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "read_latch",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 15,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "write0",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 16,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 0,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 17,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "read_latch",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 18,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "write0",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 19,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 0,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 20,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "read_latch",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 21,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "write0",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 22,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 0,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 23,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "read_latch",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 24,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "write0",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 25,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 0,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 26,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 27,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 28,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "read_compare",
+          "observed": 1,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 29,
+          "phase": "final_signature",
+          "address": 0,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 30,
+          "phase": "final_signature",
+          "address": 1,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 31,
+          "phase": "final_signature",
+          "address": 2,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 32,
+          "phase": "final_signature",
+          "address": 3,
+          "operation": "read",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            1
+          ]
+        }
+      ]
+    },
+    "PNPSF_8N": {
+      "variant": "March_2A_1",
+      "initial": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "addresses": [
+        0,
+        1,
+        2,
+        3,
+        0,
+        1,
+        2,
+        3
+      ],
+      "operation_count": 32,
+      "local_failures": [],
+      "reference_signature": 0,
+      "final_signature": 0,
+      "signature_mismatch": false,
+      "detected": false,
+      "final": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "restored": true,
+      "base_final_states": [
+        [
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "fault": {
+        "kind": "PNPSF",
+        "target": 1,
+        "before": 0,
+        "neighbors": [
+          0,
+          2
+        ],
+        "background": [
+          0,
+          1
+        ]
+      },
+      "trace": [
+        {
+          "step": 1,
+          "phase": "initial_signature",
+          "address": 0,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 2,
+          "phase": "initial_signature",
+          "address": 1,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 3,
+          "phase": "initial_signature",
+          "address": 2,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 4,
+          "phase": "initial_signature",
+          "address": 3,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 5,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 6,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 7,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "read_compare",
+          "observed": 1,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 8,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 9,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 10,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "read_compare",
+          "observed": 1,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 11,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 12,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 13,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "read_compare",
+          "observed": 1,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 14,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 15,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 16,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "read_compare",
+          "observed": 1,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 17,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "read_latch",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 18,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "write0",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 19,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 0,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 20,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "read_latch",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 21,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "write0",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 22,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 0,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 23,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "read_latch",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 24,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "write0",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 25,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 0,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 26,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "read_latch",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 27,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "write0",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 28,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 0,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 29,
+          "phase": "final_signature",
+          "address": 0,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 30,
+          "phase": "final_signature",
+          "address": 1,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 31,
+          "phase": "final_signature",
+          "address": 2,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 32,
+          "phase": "final_signature",
+          "address": 3,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    "PNPSF_14N": {
+      "variant": "March_2A_2",
+      "initial": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "addresses": [
+        0,
+        1,
+        2,
+        3,
+        0,
+        1,
+        2,
+        3
+      ],
+      "operation_count": 56,
+      "local_failures": [
+        {
+          "step": 37,
+          "base": 2,
+          "visit": 3,
+          "address": 1,
+          "expected": 1,
+          "observed": 0
+        }
+      ],
+      "reference_signature": 0,
+      "final_signature": 12,
+      "signature_mismatch": true,
+      "detected": true,
+      "final": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "restored": false,
+      "base_final_states": [
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ]
+      ],
+      "fault": {
+        "kind": "PNPSF",
+        "target": 1,
+        "before": 0,
+        "neighbors": [
+          0,
+          2
+        ],
+        "background": [
+          0,
+          1
+        ]
+      },
+      "trace": [
+        {
+          "step": 1,
+          "phase": "initial_signature",
+          "address": 0,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 2,
+          "phase": "initial_signature",
+          "address": 1,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 3,
+          "phase": "initial_signature",
+          "address": 2,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 4,
+          "phase": "initial_signature",
+          "address": 3,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 5,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 6,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 7,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "read_compare",
+          "observed": 1,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 8,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 9,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 10,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "read_compare",
+          "observed": 1,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 11,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 12,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 13,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "read_compare",
+          "observed": 1,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 14,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 15,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 16,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "read_compare",
+          "observed": 1,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 17,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "read_latch",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 18,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "write0",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 19,
+          "phase": "base_1",
+          "address": 0,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 0,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 20,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "read_latch",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 21,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "write0",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 22,
+          "phase": "base_1",
+          "address": 1,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 0,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 23,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "read_latch",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 24,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "write0",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 25,
+          "phase": "base_1",
+          "address": 2,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 0,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 26,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "read_latch",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 27,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "write0",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 28,
+          "phase": "base_1",
+          "address": 3,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 0,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 29,
+          "phase": "base_2",
+          "address": 3,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 30,
+          "phase": "base_2",
+          "address": 3,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 31,
+          "phase": "base_2",
+          "address": 3,
+          "operation": "read_compare",
+          "observed": 1,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 32,
+          "phase": "base_2",
+          "address": 2,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "step": 33,
+          "phase": "base_2",
+          "address": 2,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 34,
+          "phase": "base_2",
+          "address": 2,
+          "operation": "read_compare",
+          "observed": 1,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 35,
+          "phase": "base_2",
+          "address": 1,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 36,
+          "phase": "base_2",
+          "address": 1,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": true,
+          "memory_after": [
+            0,
+            0,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 37,
+          "phase": "base_2",
+          "address": 1,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 38,
+          "phase": "base_2",
+          "address": 0,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            0,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 39,
+          "phase": "base_2",
+          "address": 0,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 40,
+          "phase": "base_2",
+          "address": 0,
+          "operation": "read_compare",
+          "observed": 1,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 41,
+          "phase": "base_2",
+          "address": 3,
+          "operation": "read_latch",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            1,
+            1
+          ]
+        },
+        {
+          "step": 42,
+          "phase": "base_2",
+          "address": 3,
+          "operation": "write0",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 43,
+          "phase": "base_2",
+          "address": 3,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 0,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 44,
+          "phase": "base_2",
+          "address": 2,
+          "operation": "read_latch",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "step": 45,
+          "phase": "base_2",
+          "address": 2,
+          "operation": "write0",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 46,
+          "phase": "base_2",
+          "address": 2,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 0,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 47,
+          "phase": "base_2",
+          "address": 1,
+          "operation": "read_latch",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 48,
+          "phase": "base_2",
+          "address": 1,
+          "operation": "write1",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 49,
+          "phase": "base_2",
+          "address": 1,
+          "operation": "read_compare",
+          "observed": 1,
+          "expected": 1,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 50,
+          "phase": "base_2",
+          "address": 0,
+          "operation": "read_latch",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            1,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 51,
+          "phase": "base_2",
+          "address": 0,
+          "operation": "write0",
+          "observed": null,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 52,
+          "phase": "base_2",
+          "address": 0,
+          "operation": "read_compare",
+          "observed": 0,
+          "expected": 0,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 53,
+          "phase": "final_signature",
+          "address": 0,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 54,
+          "phase": "final_signature",
+          "address": 1,
+          "operation": "read",
+          "observed": 1,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 55,
+          "phase": "final_signature",
+          "address": 2,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "step": 56,
+          "phase": "final_signature",
+          "address": 3,
+          "operation": "read",
+          "observed": 0,
+          "expected": null,
+          "triggered": false,
+          "memory_after": [
+            0,
+            1,
+            0,
+            0
+          ]
+        }
+      ]
+    }
+  },
+  "signature_collision_example": {
+    "first": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "second": [
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      1
+    ],
+    "signature": 0
+  },
+  "passed": true
+}

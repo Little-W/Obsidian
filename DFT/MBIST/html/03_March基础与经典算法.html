@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>March 基础与经典算法 · MBIST 设计架构与方法</title><link rel="stylesheet" href="book.css"></head>
-<body><aside class="sidebar"><div class="brand">MBIST 设计架构</div><div class="subtitle">从算法操作到系统实现<br>原理 · 约束 · 结果 · 验证</div><a class="home" href="../阅读入口.html">← 文档首页</a><details class="mobile-index"><summary>展开文档目录</summary></details><nav><a class="" href="00_MBIST%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E9%98%85%E8%AF%BB%E5%AF%BC%E8%88%AA.html">00 · MBIST总体架构与阅读导航</a><a class="" href="01_%E5%AD%98%E5%82%A8%E5%99%A8%E6%8E%A5%E5%8F%A3%E4%B8%8E%E6%B5%8B%E8%AF%95%E6%8E%A7%E5%88%B6%E5%99%A8.html">01 · 存储器接口与测试控制器</a><a class="" href="02_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%A3%80%E6%B5%8B%E5%8E%9F%E7%90%86.html">02 · 故障模型与检测原理</a><a class="current" href="03_March%E5%9F%BA%E7%A1%80%E4%B8%8E%E7%BB%8F%E5%85%B8%E7%AE%97%E6%B3%95.html">03 · March 基础与经典算法</a><a class="" href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 · 增强 March 与复杂故障测试</a><a class="" href="05_%E6%B5%8B%E8%AF%95%E7%AE%97%E6%B3%95%E7%94%9F%E6%88%90%E4%B8%8E%E9%80%89%E6%8B%A9.html">05 · 测试算法生成与选择</a><a class="" href="06_%E5%AD%98%E5%82%A8%E5%99%A8%E5%88%86%E7%BB%84%E4%B8%8E%E5%8A%9F%E8%80%97%E5%88%86%E6%9E%90.html">06 · 存储器分组与功耗分析</a><a class="" href="07_%E5%B9%B6%E5%8F%91%E8%B0%83%E5%BA%A6%E4%B8%8E%E8%81%94%E5%90%88%E4%BC%98%E5%8C%96.html">07 · 并发调度与联合优化</a><a class="" href="08_%E8%87%AA%E9%80%82%E5%BA%94%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%9C%9F%E9%97%B4%E6%B5%8B%E8%AF%95.html">08 · 自适应与运行期间测试</a><a class="" href="09_%E6%95%85%E9%9A%9C%E8%AF%8A%E6%96%AD%E4%B8%8E%E7%BB%93%E6%9E%9C%E8%AE%B0%E5%BD%95.html">09 · 故障诊断与结果记录</a><a class="" href="10_%E5%86%97%E4%BD%99%E5%88%86%E6%9E%90%E8%87%AA%E4%BF%AE%E5%A4%8D%E4%B8%8E%E7%BA%A0%E9%94%99%E7%A0%81.html">10 · 冗余分析自修复与纠错码</a><a class="" href="11_%E5%A4%9A%E7%AB%AF%E5%8F%A3%E4%B8%8E%E6%96%B0%E5%9E%8B%E5%AD%98%E5%82%A8%E5%99%A8%E6%89%A9%E5%B1%95.html">11 · 多端口与新型存储器扩展</a><a class="" href="12_%E8%AE%BE%E8%AE%A1%E9%AA%8C%E8%AF%81%E4%B8%8E%E5%B7%A5%E5%85%B7%E6%8E%A5%E5%85%A5.html">12 · 设计验证与工具接入</a><a class="" href="13_%E7%AE%97%E4%BE%8B%E4%B8%8E%E6%BA%90%E7%A0%81%E8%AF%B4%E6%98%8E.html">13 · 算例与源码说明</a><a class="" href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E7%A0%94%E7%A9%B6%E8%BF%9B%E5%B1%95%E7%B4%A2%E5%BC%95.html">90 · 参考文献与研究进展索引</a></nav></aside><div class="reading"><main class="paper"><div class="eyebrow">MBIST · 设计架构与方法</div><h1 id="03 March 基础与经典算法">03 March 基础与经典算法</h1>
+<body><aside class="sidebar"><div class="brand">MBIST 设计架构</div><div class="subtitle">从算法操作到系统实现<br>原理 · 约束 · 结果 · 验证</div><a class="home" href="../阅读入口.html">← 文档首页</a><details class="mobile-index"><summary>展开文档目录</summary></details><nav><a class="" href="00_MBIST%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E9%98%85%E8%AF%BB%E5%AF%BC%E8%88%AA.html">00 · MBIST总体架构与阅读导航</a><a class="" href="01_%E5%AD%98%E5%82%A8%E5%99%A8%E6%8E%A5%E5%8F%A3%E4%B8%8E%E6%B5%8B%E8%AF%95%E6%8E%A7%E5%88%B6%E5%99%A8.html">01 · 存储器接口与测试控制器</a><a class="" href="02_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%A3%80%E6%B5%8B%E5%8E%9F%E7%90%86.html">02 · 故障模型与检测原理</a><a class="current" href="03_March%E5%9F%BA%E7%A1%80%E4%B8%8E%E7%BB%8F%E5%85%B8%E7%AE%97%E6%B3%95.html">03 · March 基础与经典算法</a><a class="" href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">04 · 增强 March 与复杂故障测试</a><a class="" href="05_%E6%B5%8B%E8%AF%95%E7%AE%97%E6%B3%95%E7%94%9F%E6%88%90%E4%B8%8E%E9%80%89%E6%8B%A9.html">05 · 测试算法生成与选择</a><a class="" href="06_%E5%AD%98%E5%82%A8%E5%99%A8%E5%88%86%E7%BB%84%E4%B8%8E%E5%8A%9F%E8%80%97%E5%88%86%E6%9E%90.html">06 · 存储器分组与功耗分析</a><a class="" href="07_%E5%B9%B6%E5%8F%91%E8%B0%83%E5%BA%A6%E4%B8%8E%E8%81%94%E5%90%88%E4%BC%98%E5%8C%96.html">07 · 并发调度与联合优化</a><a class="" href="08_%E8%87%AA%E9%80%82%E5%BA%94%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%9C%9F%E9%97%B4%E6%B5%8B%E8%AF%95.html">08 · 自适应与运行期间测试</a><a class="" href="09_%E6%95%85%E9%9A%9C%E8%AF%8A%E6%96%AD%E4%B8%8E%E7%BB%93%E6%9E%9C%E8%AE%B0%E5%BD%95.html">09 · 故障诊断与结果记录</a><a class="" href="10_%E5%86%97%E4%BD%99%E5%88%86%E6%9E%90%E8%87%AA%E4%BF%AE%E5%A4%8D%E4%B8%8E%E7%BA%A0%E9%94%99%E7%A0%81.html">10 · 冗余分析自修复与纠错码</a><a class="" href="11_%E5%A4%9A%E7%AB%AF%E5%8F%A3%E4%B8%8E%E6%96%B0%E5%9E%8B%E5%AD%98%E5%82%A8%E5%99%A8%E6%89%A9%E5%B1%95.html">11 · 多端口与新型存储器扩展</a><a class="" href="12_%E8%AE%BE%E8%AE%A1%E9%AA%8C%E8%AF%81%E4%B8%8E%E5%B7%A5%E5%85%B7%E6%8E%A5%E5%85%A5.html">12 · 设计验证与工具接入</a><a class="" href="13_%E7%AE%97%E4%BE%8B%E4%B8%8E%E6%BA%90%E7%A0%81%E8%AF%B4%E6%98%8E.html">13 · 算例与源码说明</a><a class="" href="14_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%B5%8B%E8%AF%95%E5%BA%8F%E5%88%97%E7%B4%A2%E5%BC%95.html">14 · 故障模型与测试序列索引</a><a class="" href="90_%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E4%B8%8E%E7%A0%94%E7%A9%B6%E8%BF%9B%E5%B1%95%E7%B4%A2%E5%BC%95.html">90 · 参考文献与研究进展索引</a></nav></aside><div class="reading"><main class="paper"><div class="eyebrow">MBIST · 设计架构与方法</div><h1 id="03 March 基础与经典算法">03 March 基础与经典算法</h1>
 <p><a href="00_MBIST%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E9%98%85%E8%AF%BB%E5%AF%BC%E8%88%AA.html">总览</a> · <a href="02_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%A3%80%E6%B5%8B%E5%8E%9F%E7%90%86.html">上一篇：故障模型与检测原理</a> · <a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">下一篇：增强March与复杂故障测试</a></p>
 <hr />
 <blockquote>
@@ -11,7 +11,7 @@
 <thead>
 <tr>
   <th>专题定位</th>
-  <th>范围约定</th>
+  <th>内容范围</th>
 </tr>
 </thead>
 <tbody>
@@ -34,6 +34,8 @@
 <li><a href="#1.%20March%20%E6%93%8D%E4%BD%9C%E7%AC%A6%E5%8F%B7%E4%B8%8E%E9%81%8D%E5%8E%86%E8%A7%84%E5%88%99">1. March 操作符号与遍历规则</a></li>
 <li><a href="#2.%20March%20C%E2%88%92%20%E6%9E%84%E6%88%90">2. March C− 构成</a></li>
 <li><a href="#3.%20%E7%BB%8F%E5%85%B8%E7%AE%97%E6%B3%95%E4%B8%8E%E9%95%BF%E5%BA%A6">3. 经典算法与长度</a></li>
+<li><a href="#4.%20%E4%BB%8E%E5%BA%8F%E5%88%97%E5%AE%9A%E4%BD%8D%E5%85%B7%E4%BD%93%E6%95%85%E9%9A%9C%E7%9A%84%E6%BF%80%E6%B4%BB%E4%B8%8E%E8%A7%82%E5%AF%9F">4. 从序列定位具体故障的激活与观察</a></li>
+<li><a href="#5.%20%E5%B0%86%E7%BB%8F%E5%85%B8%E5%BA%8F%E5%88%97%E8%BD%AC%E6%88%90%E6%8E%A7%E5%88%B6%E5%99%A8%E5%8F%AF%E6%89%A7%E8%A1%8C%E6%AD%A5%E9%AA%A4">5. 将经典序列转成控制器可执行步骤</a></li>
 <li><a href="#%E4%B8%8E%E5%85%B6%E4%BB%96%E8%AE%BE%E8%AE%A1%E5%B1%82%E7%9A%84%E8%A1%94%E6%8E%A5">与其他设计层的衔接</a></li>
 </ul>
 <h2 id="1. March 操作符号与遍历规则">1. March 操作符号与遍历规则</h2>
@@ -98,7 +100,7 @@
 <p>例如：</p>
 <pre><code class="language-text">↑(r0, w1, r1)
 </code></pre>
-<p>表示：从最低地址开始，先读取并检查该地址是否为 0，然后在<strong>同一个地址</strong>写入 1，再读取并检查是否为 1；完成上述三项操作之后才前往下一个地址。它<strong>不是</strong>先读取整个存储器、再写入整个存储器、最后读取整个存储器。</p>
+<p>表示：从最低地址开始，先读取并检查该地址是否为 0，然后在<strong>同一个地址</strong>写入 1，再读取并检查是否为 1；完成上述三项操作之后才前往下一个地址。当前地址的三项操作构成一个不可拆分的执行单元，完成后才更新地址。</p>
 <p>如果有 N 个有效地址，那么这个 March 元素执行 <span class="math-inline"><mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.05ex;" xmlns="http://www.w3.org/2000/svg" width="3.14ex" height="1.595ex" role="img" focusable="false" viewBox="0 -683 1388 705"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mn"><path data-c="33" d="M127 463Q100 463 85 480T69 524Q69 579 117 622T233 665Q268 665 277 664Q351 652 390 611T430 522Q430 470 396 421T302 350L299 348Q299 347 308 345T337 336T375 315Q457 262 457 175Q457 96 395 37T238 -22Q158 -22 100 21T42 130Q42 158 60 175T105 193Q133 193 151 175T169 130Q169 119 166 110T159 94T148 82T136 74T126 70T118 67L114 66Q165 21 238 21Q293 21 321 74Q338 107 338 175V195Q338 290 274 322Q259 328 213 329L171 330L168 332Q166 335 166 348Q166 366 174 366Q202 366 232 371Q266 376 294 413T322 525V533Q322 590 287 612Q265 626 240 626Q208 626 181 615T143 592T132 580H135Q138 579 143 578T153 573T165 566T175 555T183 540T186 520Q186 498 172 481T127 463Z"></path></g><g data-mml-node="mi" transform="translate(500,0)"><path data-c="1D441" d="M234 637Q231 637 226 637Q201 637 196 638T191 649Q191 676 202 682Q204 683 299 683Q376 683 387 683T401 677Q612 181 616 168L670 381Q723 592 723 606Q723 633 659 637Q635 637 635 648Q635 650 637 660Q641 676 643 679T653 683Q656 683 684 682T767 680Q817 680 843 681T873 682Q888 682 888 672Q888 650 880 642Q878 637 858 637Q787 633 769 597L620 7Q618 0 599 0Q585 0 582 2Q579 5 453 305L326 604L261 344Q196 88 196 79Q201 46 268 46H278Q284 41 284 38T282 19Q278 6 272 0H259Q228 2 151 2Q123 2 100 2T63 2T46 1Q31 1 31 10Q31 14 34 26T39 40Q41 46 62 46Q130 49 150 85Q154 91 221 362L289 634Q287 635 234 637Z"></path></g></g></g></svg></mjx-container></span> 次存储器操作。</p>
 <h3 id="1.3 操作次数与测试时间">1.3 操作次数与测试时间</h3>
 <p>对一般 March 测试：</p>
@@ -197,13 +199,11 @@
 <h3 id="2.4 适用范围与局限">2.4 适用范围与局限</h3>
 <p>**主要优势：**硬件执行过程规则；只要维护 March 元素编号、读写子步骤及地址，就能生成控制指令；测试长度只有 <span class="math-inline"><mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.05ex;" xmlns="http://www.w3.org/2000/svg" width="4.271ex" height="1.595ex" role="img" focusable="false" viewBox="0 -683 1888 705"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mn"><path data-c="31" d="M213 578L200 573Q186 568 160 563T102 556H83V602H102Q149 604 189 617T245 641T273 663Q275 666 285 666Q294 666 302 660V361L303 61Q310 54 315 52T339 48T401 46H427V0H416Q395 3 257 3Q121 3 100 0H88V46H114Q136 46 152 46T177 47T193 50T201 52T207 57T213 61V578Z"></path><path data-c="30" d="M96 585Q152 666 249 666Q297 666 345 640T423 548Q460 465 460 320Q460 165 417 83Q397 41 362 16T301 -15T250 -22Q224 -22 198 -16T137 16T82 83Q39 165 39 320Q39 494 96 585ZM321 597Q291 629 250 629Q208 629 178 597Q153 571 145 525T137 333Q137 175 145 125T181 46Q209 16 250 16Q290 16 318 46Q347 76 354 130T362 333Q362 478 354 524T321 597Z" transform="translate(500,0)"></path></g><g data-mml-node="mi" transform="translate(1000,0)"><path data-c="1D441" d="M234 637Q231 637 226 637Q201 637 196 638T191 649Q191 676 202 682Q204 683 299 683Q376 683 387 683T401 677Q612 181 616 168L670 381Q723 592 723 606Q723 633 659 637Q635 637 635 648Q635 650 637 660Q641 676 643 679T653 683Q656 683 684 682T767 680Q817 680 843 681T873 682Q888 682 888 672Q888 650 880 642Q878 637 858 637Q787 633 769 597L620 7Q618 0 599 0Q585 0 582 2Q579 5 453 305L326 604L261 344Q196 88 196 79Q201 46 268 46H278Q284 41 284 38T282 19Q278 6 272 0H259Q228 2 151 2Q123 2 100 2T63 2T46 1Q31 1 31 10Q31 14 34 26T39 40Q41 46 62 46Q130 49 150 85Q154 91 221 362L289 634Q287 635 234 637Z"></path></g></g></g></svg></mjx-container></span>；对经典固定值故障、状态转换故障和若干主要耦合故障模型具有良好的覆盖能力；易于作为生产测试和后续改进的对照基准。</p>
 <p>**主要不足：**不能覆盖所有现代 SRAM 静态故障原型，尤其是某些写入干扰和伪装性读出破坏故障；不能保证检测需要连续多次操作才激活的动态故障；没有明确保持时间等待；无法仅凭逻辑地址顺序覆盖全部地址译码器缺陷与物理相邻图案敏感故障；执行时会破坏原来的存储器内容。</p>
-<blockquote>
-<p>**理解重点：**March C− 之所以经典，不是因为它万能，而是因为它使用较小、规则、容易硬件化的测试序列覆盖了一组非常重要的故障模型。</p>
-</blockquote>
+<p>March C− 的执行结构规则，适合用较少控制状态实现。选择它时，应把所需故障集合和附加测试一并列入测试规格。</p>
 <h2 id="3. 经典算法与长度">3. 经典算法与长度</h2>
 <h3 id="3.1 算法长度比较">3.1 算法长度比较</h3>
 <p><a href="../assets/march/05%E7%BB%8F%E5%85%B8%E7%AE%97%E6%B3%95%E9%95%BF%E5%BA%A6.svg" target="_blank" rel="noopener" title="打开原生插图"><img src="../assets/march/05%E7%BB%8F%E5%85%B8%E7%AE%97%E6%B3%95%E9%95%BF%E5%BA%A6.svg" alt="图 08：经典算法的操作长度" /></a></p>
-<p><strong>表中的长度只反映存储器读写操作数量，绝不能把“操作越多”直接理解为“覆盖率必然越高”。</strong> 新算法可能针对特定故障优化，所以 <span class="math-inline"><mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.05ex;" xmlns="http://www.w3.org/2000/svg" width="4.271ex" height="1.595ex" role="img" focusable="false" viewBox="0 -683 1888 705"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mn"><path data-c="31" d="M213 578L200 573Q186 568 160 563T102 556H83V602H102Q149 604 189 617T245 641T273 663Q275 666 285 666Q294 666 302 660V361L303 61Q310 54 315 52T339 48T401 46H427V0H416Q395 3 257 3Q121 3 100 0H88V46H114Q136 46 152 46T177 47T193 50T201 52T207 57T213 61V578Z"></path><path data-c="33" d="M127 463Q100 463 85 480T69 524Q69 579 117 622T233 665Q268 665 277 664Q351 652 390 611T430 522Q430 470 396 421T302 350L299 348Q299 347 308 345T337 336T375 315Q457 262 457 175Q457 96 395 37T238 -22Q158 -22 100 21T42 130Q42 158 60 175T105 193Q133 193 151 175T169 130Q169 119 166 110T159 94T148 82T136 74T126 70T118 67L114 66Q165 21 238 21Q293 21 321 74Q338 107 338 175V195Q338 290 274 322Q259 328 213 329L171 330L168 332Q166 335 166 348Q166 366 174 366Q202 366 232 371Q266 376 294 413T322 525V533Q322 590 287 612Q265 626 240 626Q208 626 181 615T143 592T132 580H135Q138 579 143 578T153 573T165 566T175 555T183 540T186 520Q186 498 172 481T127 463Z" transform="translate(500,0)"></path></g><g data-mml-node="mi" transform="translate(1000,0)"><path data-c="1D441" d="M234 637Q231 637 226 637Q201 637 196 638T191 649Q191 676 202 682Q204 683 299 683Q376 683 387 683T401 677Q612 181 616 168L670 381Q723 592 723 606Q723 633 659 637Q635 637 635 648Q635 650 637 660Q641 676 643 679T653 683Q656 683 684 682T767 680Q817 680 843 681T873 682Q888 682 888 672Q888 650 880 642Q878 637 858 637Q787 633 769 597L620 7Q618 0 599 0Q585 0 582 2Q579 5 453 305L326 604L261 344Q196 88 196 79Q201 46 268 46H278Q284 41 284 38T282 19Q278 6 272 0H259Q228 2 151 2Q123 2 100 2T63 2T46 1Q31 1 31 10Q31 14 34 26T39 40Q41 46 62 46Q130 49 150 85Q154 91 221 362L289 634Q287 635 234 637Z"></path></g></g></g></svg></mjx-container></span> 的算法在一个故障集合上优于 <span class="math-inline"><mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: 0;" xmlns="http://www.w3.org/2000/svg" width="4.271ex" height="1.545ex" role="img" focusable="false" viewBox="0 -683 1888 683"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mn"><path data-c="31" d="M213 578L200 573Q186 568 160 563T102 556H83V602H102Q149 604 189 617T245 641T273 663Q275 666 285 666Q294 666 302 660V361L303 61Q310 54 315 52T339 48T401 46H427V0H416Q395 3 257 3Q121 3 100 0H88V46H114Q136 46 152 46T177 47T193 50T201 52T207 57T213 61V578Z"></path><path data-c="34" d="M462 0Q444 3 333 3Q217 3 199 0H190V46H221Q241 46 248 46T265 48T279 53T286 61Q287 63 287 115V165H28V211L179 442Q332 674 334 675Q336 677 355 677H373L379 671V211H471V165H379V114Q379 73 379 66T385 54Q393 47 442 46H471V0H462ZM293 211V545L74 212L183 211H293Z" transform="translate(500,0)"></path></g><g data-mml-node="mi" transform="translate(1000,0)"><path data-c="1D441" d="M234 637Q231 637 226 637Q201 637 196 638T191 649Q191 676 202 682Q204 683 299 683Q376 683 387 683T401 677Q612 181 616 168L670 381Q723 592 723 606Q723 633 659 637Q635 637 635 648Q635 650 637 660Q641 676 643 679T653 683Q656 683 684 682T767 680Q817 680 843 681T873 682Q888 682 888 672Q888 650 880 642Q878 637 858 637Q787 633 769 597L620 7Q618 0 599 0Q585 0 582 2Q579 5 453 305L326 604L261 344Q196 88 196 79Q201 46 268 46H278Q284 41 284 38T282 19Q278 6 272 0H259Q228 2 151 2Q123 2 100 2T63 2T46 1Q31 1 31 10Q31 14 34 26T39 40Q41 46 62 46Q130 49 150 85Q154 91 221 362L289 634Q287 635 234 637Z"></path></g></g></g></svg></mjx-container></span> 的算法，但并不一定优于 <span class="math-inline"><mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.05ex;" xmlns="http://www.w3.org/2000/svg" width="4.271ex" height="1.595ex" role="img" focusable="false" viewBox="0 -683 1888 705"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mn"><path data-c="31" d="M213 578L200 573Q186 568 160 563T102 556H83V602H102Q149 604 189 617T245 641T273 663Q275 666 285 666Q294 666 302 660V361L303 61Q310 54 315 52T339 48T401 46H427V0H416Q395 3 257 3Q121 3 100 0H88V46H114Q136 46 152 46T177 47T193 50T201 52T207 57T213 61V578Z"></path><path data-c="38" d="M70 417T70 494T124 618T248 666Q319 666 374 624T429 515Q429 485 418 459T392 417T361 389T335 371T324 363L338 354Q352 344 366 334T382 323Q457 264 457 174Q457 95 399 37T249 -22Q159 -22 101 29T43 155Q43 263 172 335L154 348Q133 361 127 368Q70 417 70 494ZM286 386L292 390Q298 394 301 396T311 403T323 413T334 425T345 438T355 454T364 471T369 491T371 513Q371 556 342 586T275 624Q268 625 242 625Q201 625 165 599T128 534Q128 511 141 492T167 463T217 431Q224 426 228 424L286 386ZM250 21Q308 21 350 55T392 137Q392 154 387 169T375 194T353 216T330 234T301 253T274 270Q260 279 244 289T218 306L210 311Q204 311 181 294T133 239T107 157Q107 98 150 60T250 21Z" transform="translate(500,0)"></path></g><g data-mml-node="mi" transform="translate(1000,0)"><path data-c="1D441" d="M234 637Q231 637 226 637Q201 637 196 638T191 649Q191 676 202 682Q204 683 299 683Q376 683 387 683T401 677Q612 181 616 168L670 381Q723 592 723 606Q723 633 659 637Q635 637 635 648Q635 650 637 660Q641 676 643 679T653 683Q656 683 684 682T767 680Q817 680 843 681T873 682Q888 682 888 672Q888 650 880 642Q878 637 858 637Q787 633 769 597L620 7Q618 0 599 0Q585 0 582 2Q579 5 453 305L326 604L261 344Q196 88 196 79Q201 46 268 46H278Q284 41 284 38T282 19Q278 6 272 0H259Q228 2 151 2Q123 2 100 2T63 2T46 1Q31 1 31 10Q31 14 34 26T39 40Q41 46 62 46Q130 49 150 85Q154 91 221 362L289 634Q287 635 234 637Z"></path></g></g></g></svg></mjx-container></span> 算法的全部检测能力。</p>
+<p>表中的长度统计存储器读写操作数量。比较检测能力时，还应列出同一故障集合中的检测结果。例如，某个 <span class="math-inline"><mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.05ex;" xmlns="http://www.w3.org/2000/svg" width="4.271ex" height="1.595ex" role="img" focusable="false" viewBox="0 -683 1888 705"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mn"><path data-c="31" d="M213 578L200 573Q186 568 160 563T102 556H83V602H102Q149 604 189 617T245 641T273 663Q275 666 285 666Q294 666 302 660V361L303 61Q310 54 315 52T339 48T401 46H427V0H416Q395 3 257 3Q121 3 100 0H88V46H114Q136 46 152 46T177 47T193 50T201 52T207 57T213 61V578Z"></path><path data-c="33" d="M127 463Q100 463 85 480T69 524Q69 579 117 622T233 665Q268 665 277 664Q351 652 390 611T430 522Q430 470 396 421T302 350L299 348Q299 347 308 345T337 336T375 315Q457 262 457 175Q457 96 395 37T238 -22Q158 -22 100 21T42 130Q42 158 60 175T105 193Q133 193 151 175T169 130Q169 119 166 110T159 94T148 82T136 74T126 70T118 67L114 66Q165 21 238 21Q293 21 321 74Q338 107 338 175V195Q338 290 274 322Q259 328 213 329L171 330L168 332Q166 335 166 348Q166 366 174 366Q202 366 232 371Q266 376 294 413T322 525V533Q322 590 287 612Q265 626 240 626Q208 626 181 615T143 592T132 580H135Q138 579 143 578T153 573T165 566T175 555T183 540T186 520Q186 498 172 481T127 463Z" transform="translate(500,0)"></path></g><g data-mml-node="mi" transform="translate(1000,0)"><path data-c="1D441" d="M234 637Q231 637 226 637Q201 637 196 638T191 649Q191 676 202 682Q204 683 299 683Q376 683 387 683T401 677Q612 181 616 168L670 381Q723 592 723 606Q723 633 659 637Q635 637 635 648Q635 650 637 660Q641 676 643 679T653 683Q656 683 684 682T767 680Q817 680 843 681T873 682Q888 682 888 672Q888 650 880 642Q878 637 858 637Q787 633 769 597L620 7Q618 0 599 0Q585 0 582 2Q579 5 453 305L326 604L261 344Q196 88 196 79Q201 46 268 46H278Q284 41 284 38T282 19Q278 6 272 0H259Q228 2 151 2Q123 2 100 2T63 2T46 1Q31 1 31 10Q31 14 34 26T39 40Q41 46 62 46Q130 49 150 85Q154 91 221 362L289 634Q287 635 234 637Z"></path></g></g></g></svg></mjx-container></span> 序列通过改变读取位置，可以在指定原型集合上获得比另一个 <span class="math-inline"><mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: 0;" xmlns="http://www.w3.org/2000/svg" width="4.271ex" height="1.545ex" role="img" focusable="false" viewBox="0 -683 1888 683"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mn"><path data-c="31" d="M213 578L200 573Q186 568 160 563T102 556H83V602H102Q149 604 189 617T245 641T273 663Q275 666 285 666Q294 666 302 660V361L303 61Q310 54 315 52T339 48T401 46H427V0H416Q395 3 257 3Q121 3 100 0H88V46H114Q136 46 152 46T177 47T193 50T201 52T207 57T213 61V578Z"></path><path data-c="34" d="M462 0Q444 3 333 3Q217 3 199 0H190V46H221Q241 46 248 46T265 48T279 53T286 61Q287 63 287 115V165H28V211L179 442Q332 674 334 675Q336 677 355 677H373L379 671V211H471V165H379V114Q379 73 379 66T385 54Q393 47 442 46H471V0H462ZM293 211V545L74 212L183 211H293Z" transform="translate(500,0)"></path></g><g data-mml-node="mi" transform="translate(1000,0)"><path data-c="1D441" d="M234 637Q231 637 226 637Q201 637 196 638T191 649Q191 676 202 682Q204 683 299 683Q376 683 387 683T401 677Q612 181 616 168L670 381Q723 592 723 606Q723 633 659 637Q635 637 635 648Q635 650 637 660Q641 676 643 679T653 683Q656 683 684 682T767 680Q817 680 843 681T873 682Q888 682 888 672Q888 650 880 642Q878 637 858 637Q787 633 769 597L620 7Q618 0 599 0Q585 0 582 2Q579 5 453 305L326 604L261 344Q196 88 196 79Q201 46 268 46H278Q284 41 284 38T282 19Q278 6 272 0H259Q228 2 151 2Q123 2 100 2T63 2T46 1Q31 1 31 10Q31 14 34 26T39 40Q41 46 62 46Q130 49 150 85Q154 91 221 362L289 634Q287 635 234 637Z"></path></g></g></g></svg></mjx-container></span> 序列更高的覆盖率；比较 <span class="math-inline"><mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.05ex;" xmlns="http://www.w3.org/2000/svg" width="4.271ex" height="1.595ex" role="img" focusable="false" viewBox="0 -683 1888 705"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mn"><path data-c="31" d="M213 578L200 573Q186 568 160 563T102 556H83V602H102Q149 604 189 617T245 641T273 663Q275 666 285 666Q294 666 302 660V361L303 61Q310 54 315 52T339 48T401 46H427V0H416Q395 3 257 3Q121 3 100 0H88V46H114Q136 46 152 46T177 47T193 50T201 52T207 57T213 61V578Z"></path><path data-c="38" d="M70 417T70 494T124 618T248 666Q319 666 374 624T429 515Q429 485 418 459T392 417T361 389T335 371T324 363L338 354Q352 344 366 334T382 323Q457 264 457 174Q457 95 399 37T249 -22Q159 -22 101 29T43 155Q43 263 172 335L154 348Q133 361 127 368Q70 417 70 494ZM286 386L292 390Q298 394 301 396T311 403T323 413T334 425T345 438T355 454T364 471T369 491T371 513Q371 556 342 586T275 624Q268 625 242 625Q201 625 165 599T128 534Q128 511 141 492T167 463T217 431Q224 426 228 424L286 386ZM250 21Q308 21 350 55T392 137Q392 154 387 169T375 194T353 216T330 234T301 253T274 270Q260 279 244 289T218 306L210 311Q204 311 181 294T133 239T107 157Q107 98 150 60T250 21Z" transform="translate(500,0)"></path></g><g data-mml-node="mi" transform="translate(1000,0)"><path data-c="1D441" d="M234 637Q231 637 226 637Q201 637 196 638T191 649Q191 676 202 682Q204 683 299 683Q376 683 387 683T401 677Q612 181 616 168L670 381Q723 592 723 606Q723 633 659 637Q635 637 635 648Q635 650 637 660Q641 676 643 679T653 683Q656 683 684 682T767 680Q817 680 843 681T873 682Q888 682 888 672Q888 650 880 642Q878 637 858 637Q787 633 769 597L620 7Q618 0 599 0Q585 0 582 2Q579 5 453 305L326 604L261 344Q196 88 196 79Q201 46 268 46H278Q284 41 284 38T282 19Q278 6 272 0H259Q228 2 151 2Q123 2 100 2T63 2T46 1Q31 1 31 10Q31 14 34 26T39 40Q41 46 62 46Q130 49 150 85Q154 91 221 362L289 634Q287 635 234 637Z"></path></g></g></g></svg></mjx-container></span> 序列时也采用同样的故障集合与执行条件。</p>
 <h3 id="3.2 代表性算法">3.2 代表性算法</h3>
 <p>以下序列以文献中常见版本为准。<code>March X/Y</code> 等名称在不同资料中可能存在操作方向或末尾读取的细微差异，真正进行硬件实现时应以<strong>序列本身</strong>为准。<sup class="footnote-ref" id="fnref-2"><a href="#fn-2">2</a></sup><sup class="footnote-ref" id="fnref-3"><a href="#fn-3">3</a></sup><sup class="footnote-ref" id="fnref-4"><a href="#fn-4">4</a></sup></p>
 <h4 id="3.2.1 MATS 4N">3.2.1 MATS 4N</h4>
@@ -213,7 +213,7 @@
 <h4 id="3.2.2 MATS+ 5N">3.2.2 MATS+ 5N</h4>
 <pre><code class="language-text">{ ⇕(w0); ↑(r0,w1); ↓(r1,w0) }
 </code></pre>
-<p>增加了从 1 写回 0 的过程，改善状态转换相关的测试能力。仍然缺少对结束时写入结果的统一检查，也不能完整覆盖复杂耦合或多操作动态故障。适用于硬件资源和测试时间非常受限的初步筛查，而非完整替代 March C−。</p>
+<p>降序元素先读取 1，再把单元写回 0。由于这次 <code>w0</code> 之后没有读取，对永久 <code>1→0</code> 转换失败的单元，最后写入失败可以保持不可见。该序列适合说明短 March 测试的基本结构；需要完整检查上下转换时，应补充对下降转换结果的读取。</p>
 <h4 id="3.2.3 MATS++ 6N">3.2.3 MATS++ 6N</h4>
 <pre><code class="language-text">{ ⇕(w0); ↑(r0,w1); ↓(r1,w0,r0) }
 </code></pre>
@@ -234,7 +234,7 @@
 </code></pre>
 <p>相对 March C−，多增加一个完整读取遍历，因此长度从 <span class="math-inline"><mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.05ex;" xmlns="http://www.w3.org/2000/svg" width="4.271ex" height="1.595ex" role="img" focusable="false" viewBox="0 -683 1888 705"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mn"><path data-c="31" d="M213 578L200 573Q186 568 160 563T102 556H83V602H102Q149 604 189 617T245 641T273 663Q275 666 285 666Q294 666 302 660V361L303 61Q310 54 315 52T339 48T401 46H427V0H416Q395 3 257 3Q121 3 100 0H88V46H114Q136 46 152 46T177 47T193 50T201 52T207 57T213 61V578Z"></path><path data-c="30" d="M96 585Q152 666 249 666Q297 666 345 640T423 548Q460 465 460 320Q460 165 417 83Q397 41 362 16T301 -15T250 -22Q224 -22 198 -16T137 16T82 83Q39 165 39 320Q39 494 96 585ZM321 597Q291 629 250 629Q208 629 178 597Q153 571 145 525T137 333Q137 175 145 125T181 46Q209 16 250 16Q290 16 318 46Q347 76 354 130T362 333Q362 478 354 524T321 597Z" transform="translate(500,0)"></path></g><g data-mml-node="mi" transform="translate(1000,0)"><path data-c="1D441" d="M234 637Q231 637 226 637Q201 637 196 638T191 649Q191 676 202 682Q204 683 299 683Q376 683 387 683T401 677Q612 181 616 168L670 381Q723 592 723 606Q723 633 659 637Q635 637 635 648Q635 650 637 660Q641 676 643 679T653 683Q656 683 684 682T767 680Q817 680 843 681T873 682Q888 682 888 672Q888 650 880 642Q878 637 858 637Q787 633 769 597L620 7Q618 0 599 0Q585 0 582 2Q579 5 453 305L326 604L261 344Q196 88 196 79Q201 46 268 46H278Q284 41 284 38T282 19Q278 6 272 0H259Q228 2 151 2Q123 2 100 2T63 2T46 1Q31 1 31 10Q31 14 34 26T39 40Q41 46 62 46Q130 49 150 85Q154 91 221 362L289 634Q287 635 234 637Z"></path></g></g></g></svg></mjx-container></span> 增加到 <span class="math-inline"><mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: 0;" xmlns="http://www.w3.org/2000/svg" width="4.271ex" height="1.545ex" role="img" focusable="false" viewBox="0 -683 1888 683"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mn"><path data-c="31" d="M213 578L200 573Q186 568 160 563T102 556H83V602H102Q149 604 189 617T245 641T273 663Q275 666 285 666Q294 666 302 660V361L303 61Q310 54 315 52T339 48T401 46H427V0H416Q395 3 257 3Q121 3 100 0H88V46H114Q136 46 152 46T177 47T193 50T201 52T207 57T213 61V578Z"></path><path data-c="31" d="M213 578L200 573Q186 568 160 563T102 556H83V602H102Q149 604 189 617T245 641T273 663Q275 666 285 666Q294 666 302 660V361L303 61Q310 54 315 52T339 48T401 46H427V0H416Q395 3 257 3Q121 3 100 0H88V46H114Q136 46 152 46T177 47T193 50T201 52T207 57T213 61V578Z" transform="translate(500,0)"></path></g><g data-mml-node="mi" transform="translate(1000,0)"><path data-c="1D441" d="M234 637Q231 637 226 637Q201 637 196 638T191 649Q191 676 202 682Q204 683 299 683Q376 683 387 683T401 677Q612 181 616 168L670 381Q723 592 723 606Q723 633 659 637Q635 637 635 648Q635 650 637 660Q641 676 643 679T653 683Q656 683 684 682T767 680Q817 680 843 681T873 682Q888 682 888 672Q888 650 880 642Q878 637 858 637Q787 633 769 597L620 7Q618 0 599 0Q585 0 582 2Q579 5 453 305L326 604L261 344Q196 88 196 79Q201 46 268 46H278Q284 41 284 38T282 19Q278 6 272 0H259Q228 2 151 2Q123 2 100 2T63 2T46 1Q31 1 31 10Q31 14 34 26T39 40Q41 46 62 46Q130 49 150 85Q154 91 221 362L289 634Q287 635 234 637Z"></path></g></g></g></svg></mjx-container></span>。增加的独立读取阶段在某些故障激励与检查之间形成了额外观察机会，但不意味着所有故障集合的覆盖能力都严格优于 March C−。有些工程实现更愿意采用 <span class="math-inline"><mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.05ex;" xmlns="http://www.w3.org/2000/svg" width="4.271ex" height="1.595ex" role="img" focusable="false" viewBox="0 -683 1888 705"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mn"><path data-c="31" d="M213 578L200 573Q186 568 160 563T102 556H83V602H102Q149 604 189 617T245 641T273 663Q275 666 285 666Q294 666 302 660V361L303 61Q310 54 315 52T339 48T401 46H427V0H416Q395 3 257 3Q121 3 100 0H88V46H114Q136 46 152 46T177 47T193 50T201 52T207 57T213 61V578Z"></path><path data-c="30" d="M96 585Q152 666 249 666Q297 666 345 640T423 548Q460 465 460 320Q460 165 417 83Q397 41 362 16T301 -15T250 -22Q224 -22 198 -16T137 16T82 83Q39 165 39 320Q39 494 96 585ZM321 597Q291 629 250 629Q208 629 178 597Q153 571 145 525T137 333Q137 175 145 125T181 46Q209 16 250 16Q290 16 318 46Q347 76 354 130T362 333Q362 478 354 524T321 597Z" transform="translate(500,0)"></path></g><g data-mml-node="mi" transform="translate(1000,0)"><path data-c="1D441" d="M234 637Q231 637 226 637Q201 637 196 638T191 649Q191 676 202 682Q204 683 299 683Q376 683 387 683T401 677Q612 181 616 168L670 381Q723 592 723 606Q723 633 659 637Q635 637 635 648Q635 650 637 660Q641 676 643 679T653 683Q656 683 684 682T767 680Q817 680 843 681T873 682Q888 682 888 672Q888 650 880 642Q878 637 858 637Q787 633 769 597L620 7Q618 0 599 0Q585 0 582 2Q579 5 453 305L326 604L261 344Q196 88 196 79Q201 46 268 46H278Q284 41 284 38T282 19Q278 6 272 0H259Q228 2 151 2Q123 2 100 2T63 2T46 1Q31 1 31 10Q31 14 34 26T39 40Q41 46 62 46Q130 49 150 85Q154 91 221 362L289 634Q287 635 234 637Z"></path></g></g></g></svg></mjx-container></span> 的 March C−。</p>
 <h4 id="3.2.7 March C− 10N">3.2.7 March C− 10N</h4>
-<p>完整推导见“March C− 的构成与推导”一节。它是常用的基准算法，并非唯一适用的算法。</p>
+<p>完整序列、六元素职责及四地址展开见第 2 节；具体故障的检测过程见第 4 节。</p>
 <h4 id="3.2.8 March C+ 14N">3.2.8 March C+ 14N</h4>
 <pre><code class="language-text">{ ⇕(w0);
   ↑(r0,w1,r1);
@@ -243,11 +243,19 @@
   ↓(r1,w0,r0);
   ⇕(r0) }
 </code></pre>
-<p>四个核心遍历元素均为 <code>读—写—读</code>，每次写入后立即检验，因此有利于提高某些读写异常的可观测性。缺点是相对于 March C−，测试长度增加了 40%，对某些更复杂的静态耦合故障和动态故障仍非完整覆盖。<sup class="footnote-ref" id="fnref-4-2"><a href="#fn-4">4</a></sup></p>
-<h4 id="3.2.9 March CL 约 12N">3.2.9 March CL 约 12N</h4>
-<p>March CL 是 March C− 的一个增强分支，通过将部分单次读取改为重复读取，或者在特定阶段增加写入后的检查，尝试改善读出相关故障的发现能力。常见版本约为 <span class="math-inline"><mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: 0;" xmlns="http://www.w3.org/2000/svg" width="4.271ex" height="1.545ex" role="img" focusable="false" viewBox="0 -683 1888 683"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mn"><path data-c="31" d="M213 578L200 573Q186 568 160 563T102 556H83V602H102Q149 604 189 617T245 641T273 663Q275 666 285 666Q294 666 302 660V361L303 61Q310 54 315 52T339 48T401 46H427V0H416Q395 3 257 3Q121 3 100 0H88V46H114Q136 46 152 46T177 47T193 50T201 52T207 57T213 61V578Z"></path><path data-c="32" d="M109 429Q82 429 66 447T50 491Q50 562 103 614T235 666Q326 666 387 610T449 465Q449 422 429 383T381 315T301 241Q265 210 201 149L142 93L218 92Q375 92 385 97Q392 99 409 186V189H449V186Q448 183 436 95T421 3V0H50V19V31Q50 38 56 46T86 81Q115 113 136 137Q145 147 170 174T204 211T233 244T261 278T284 308T305 340T320 369T333 401T340 431T343 464Q343 527 309 573T212 619Q179 619 154 602T119 569T109 550Q109 549 114 549Q132 549 151 535T170 489Q170 464 154 447T109 429Z" transform="translate(500,0)"></path></g><g data-mml-node="mi" transform="translate(1000,0)"><path data-c="1D441" d="M234 637Q231 637 226 637Q201 637 196 638T191 649Q191 676 202 682Q204 683 299 683Q376 683 387 683T401 677Q612 181 616 168L670 381Q723 592 723 606Q723 633 659 637Q635 637 635 648Q635 650 637 660Q641 676 643 679T653 683Q656 683 684 682T767 680Q817 680 843 681T873 682Q888 682 888 672Q888 650 880 642Q878 637 858 637Q787 633 769 597L620 7Q618 0 599 0Q585 0 582 2Q579 5 453 305L326 604L261 344Q196 88 196 79Q201 46 268 46H278Q284 41 284 38T282 19Q278 6 272 0H259Q228 2 151 2Q123 2 100 2T63 2T46 1Q31 1 31 10Q31 14 34 26T39 40Q41 46 62 46Q130 49 150 85Q154 91 221 362L289 634Q287 635 234 637Z"></path></g></g></g></svg></mjx-container></span>，但其测试操作在不同论文中并不一致，有的二级资料还出现读操作没有注明预期值的排版错误。因此，本专题不把未经完整原文核对的版本当作“标准序列”。评价它时，应重点检查新增的重复读取是否出现在可能触发读出破坏的时刻，以及最后能否观察到存储单元的异常。<sup class="footnote-ref" id="fnref-4-3"><a href="#fn-4">4</a></sup><sup class="footnote-ref" id="fnref-5"><a href="#fn-5">5</a></sup></p>
+<p>四个核心遍历元素均为 <code>读取、写入、读取</code>，每次写入后立即检验。与 March C− 比较，这四次新增读取增加了 <code>4N</code> 操作，即 40%，用于观察转换写入后的状态；需要重复同值写入或更多连续读取的故障，还应加入相应操作。<sup class="footnote-ref" id="fnref-4-2"><a href="#fn-4">4</a></sup></p>
+<h4 id="3.2.9 March CL 12N">3.2.9 March CL 12N</h4>
+<p>采用下列明确版本；2025 年 Jidin 等人的算法比较表给出了相同的完整形式。<sup class="footnote-ref" id="fnref-5"><a href="#fn-5">5</a></sup></p>
+<pre><code class="language-text">{ ⇕(w0);
+  ↑(r0,w1);
+  ↑(r1,r1,w0);
+  ↓(r0,w1,r1);
+  ↓(r1,w0);
+  ⇕(r0) }
+</code></pre>
+<p>操作数为 <code>1+2+3+3+2+1=12N</code>。第二个升序元素中的两个 <code>r1</code> 检查一状态读破坏：若第一次读取返回 1 后将内部状态改为 0，第二次 <code>r1</code> 发现错误。降序元素 <code>r0,w1,r1</code> 在转换后立即读取，能够检查上升转换结果。两个新增读取的位置决定了增加的检测条件；例如，该形式没有同样完整的零状态双读取组织，因此应分别检查两种极性的 DRDF。</p>
 <h3 id="3.3 March A 与 March B">3.3 March A 与 March B</h3>
-<p><strong>March A 和 March B 属于早期扩展算法家族。</strong> 与只在每个地址写入一次相反数值的极简算法不同，它们刻意安排连续的交替写入与读取，以检查一些较复杂的状态转换和耦合条件。下列是公开教程中常见、经过基本无故障状态检查的版本；与其他文献进行对照时，需要同时核验具体元素与遍历方向。<sup class="footnote-ref" id="fnref-2-2"><a href="#fn-2">2</a></sup></p>
+<p>March A 和 March B 通过连续的交替写入，在同一单元中形成多次上升、下降转换；升序和降序元素则形成不同的跨地址状态条件。下面采用完整的 15N、17N 定义，March B 的相同形式也见 Microchip 官方技术文档。<sup class="footnote-ref" id="fnref-1-2"><a href="#fn-1">1</a></sup><sup class="footnote-ref" id="fnref-2-2"><a href="#fn-2">2</a></sup></p>
 <p><strong>March A（15N）：</strong></p>
 <pre><code class="language-text">{ ⇕(w0);
   ↑(r0,w1,w0,w1);
@@ -255,7 +263,7 @@
   ↓(r1,w0,w1,w0);
   ↓(r0,w1,w0) }
 </code></pre>
-<p>长度为 <code>1+4+3+4+3=15N</code>。它多次更改同一单元的内容，以扩大单次写入和连续状态变化的测试能力。最后写入 0 后没有再增加单独的完整数组检查，因此具体故障的最终观测条件需要结合序列本身分析。</p>
+<p>长度为 <code>1+4+3+4+3=15N</code>，其中读取 <code>4N</code> 次、写入 <code>11N</code> 次。</p>
 <p><strong>March B（17N）：</strong></p>
 <pre><code class="language-text">{ ⇕(w0);
   ↑(r0,w1,r1,w0,r0,w1);
@@ -263,14 +271,223 @@
   ↓(r1,w0,w1,w0);
   ↓(r0,w1,w0) }
 </code></pre>
-<p>长度为 <code>1+6+3+4+3=17N</code>。它相对 March A 增加部分写入后读取操作，有利于观察某些写入或读取产生的异常，但操作次数增加不等于对任意故障集合都必然优于 March A。</p>
-<p>March A 和 March B 在不同教材、工具配置或论文的命名中可能存在操作方向或末尾元素差异，因此<strong>不能仅依算法名称判断覆盖范围</strong>。</p>
-<p>它们的共同特点是：</p>
-<ul>
-<li>优点：比极简算法提供更多读写排列，可作为经典故障检测条件的研究对照。</li>
-<li>不足：对于需要特殊连续操作的现代动态故障仍然不足；在已有 March C−、MSS、SS、AB 等明确故障原型目标的方案时，其工程优势需要重新评估。</li>
-<li>实施原则：<strong>报告应保存具体算法序列及其检测故障集合，不能仅写“March B”。</strong></li>
-</ul>
+<p>长度为 <code>1+6+3+4+3=17N</code>，其中读取 <code>6N</code> 次、写入 <code>11N</code> 次。两个新增读取都位于第一个升序元素，分别紧随第一次上升转换和第一次下降转换。</p>
+<p>按 <code>M0</code> 至 <code>M4</code> 编号，两套序列具有以下共同结构：</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>元素</th>
+  <th>当前地址的无故障状态变化</th>
+  <th>其他地址提供的状态条件</th>
+  <th>读取承担的任务</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><code>M0</code></td>
+  <td>写为 0</td>
+  <td>全数组逐步建立零背景</td>
+  <td>为后续操作建立初值</td>
+</tr>
+<tr>
+  <td><code>M1 ↑</code></td>
+  <td><code>0→1→0→1</code></td>
+  <td>访问当前地址时，较低地址已为 1，较高地址仍为 0</td>
+  <td>首次读取检查原来的 0；B 还立即检查中间的 1 和 0</td>
+</tr>
+<tr>
+  <td><code>M2 ↑</code></td>
+  <td><code>1→0→1</code></td>
+  <td>当前地址以外的单元保持 1</td>
+  <td>开头 <code>r1</code> 检查前一元素留下的结果</td>
+</tr>
+<tr>
+  <td><code>M3 ↓</code></td>
+  <td><code>1→0→1→0</code></td>
+  <td>访问当前地址时，较高地址已为 0，较低地址仍为 1</td>
+  <td>开头 <code>r1</code> 检查旧值，然后形成相反地址方向的转换条件</td>
+</tr>
+<tr>
+  <td><code>M4 ↓</code></td>
+  <td><code>0→1→0</code></td>
+  <td>当前地址以外的单元保持 0</td>
+  <td>开头 <code>r0</code> 检查前一元素的下降转换结果</td>
+</tr>
+</tbody>
+</table></div>
+<p>例如，单元初始为 0，永久 <code>1→0</code> 转换故障只使下降写入失败。March B 的 <code>M1</code> 先执行 <code>r0,w1,r1</code>，三项均通过；随后 <code>w0</code> 失败，内部仍为 1，紧接的 <code>r0</code> 立即发现错误。March A 的对应位置为 <code>w1,w0,w1</code>，中间值没有读取；在这一独立永久故障模型下，后面的 <code>M3</code> 仍会留下错误的 1，由 <code>M4</code> 开头的 <code>r0</code> 检测。两个算法在该例中均有观察位置，首次检测时刻不同。</p>
+<p>对多个故障共同作用的情况，还应检查某次交替写入是否恢复了另一项故障造成的错误。第 04 章的 March AB 示例进一步展示了组成故障的激活和掩盖过程。</p>
+<h2 id="4. 从序列定位具体故障的激活与观察">4. 从序列定位具体故障的激活与观察</h2>
+<p>以下例子采用独立注入的功能故障。正常期望值由测试程序计算；表中的故障值表示故障模型内部保存的实际值。正式故障分类与 March SS 的逐原型分析见原论文。<sup class="footnote-ref" id="fnref-6"><a href="#fn-6">6</a></sup></p>
+<h3 id="4.1 March C− 检查固定值与上下转换">4.1 March C− 检查固定值与上下转换</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>故障</th>
+  <th>激活前提和操作</th>
+  <th>保留的错误状态</th>
+  <th>观察它的操作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>固定为 1</td>
+  <td><code>M0:w0</code> 尝试建立 0</td>
+  <td>实际仍为 1</td>
+  <td><code>M1:r0</code> 读出 1</td>
+</tr>
+<tr>
+  <td>固定为 0</td>
+  <td><code>M1:w1</code> 尝试建立 1</td>
+  <td>实际仍为 0</td>
+  <td><code>M2:r1</code> 读出 0</td>
+</tr>
+<tr>
+  <td><code>0→1</code> 转换失败</td>
+  <td><code>M0</code> 已建立 0，<code>M1:w1</code> 请求转换</td>
+  <td>实际保持 0</td>
+  <td><code>M2:r1</code> 读出 0</td>
+</tr>
+<tr>
+  <td><code>1→0</code> 转换失败</td>
+  <td><code>M1</code> 已建立 1，<code>M2:w0</code> 请求转换</td>
+  <td>实际保持 1</td>
+  <td><code>M3:r0</code> 读出 1</td>
+</tr>
+<tr>
+  <td>读取 0 错误返回 1</td>
+  <td>对已知为 0 的单元读取</td>
+  <td>内部值可以保持 0</td>
+  <td><code>M1:r0</code> 的实际返回值为 1</td>
+</tr>
+<tr>
+  <td>读取 1 时破坏数据并返回 0</td>
+  <td>对已知为 1 的单元读取</td>
+  <td>内部值成为 0</td>
+  <td><code>M2:r1</code> 的返回值为 0</td>
+</tr>
+</tbody>
+</table></div>
+<p>例如，单元地址为 2、存在永久 <code>0→1</code> 转换失败时，其局部执行为：</p>
+<pre><code class="language-text">M0: w0       正常值 0，故障值 0
+M1: r0       读出 0，通过
+M1: w1       正常值 1，故障值 0
+M2: r1       期望 1，实际 0，发现错误
+</code></pre>
+<p><code>M1:w1</code> 与 <code>M2:r1</code> 之间会访问其他地址；对这一单单元静态模型，其他地址操作不改变故障单元，因此错误一直保留到读取时刻。对多单元或时间相关模型，需要另外确认这段期间的操作和等待。</p>
+<h3 id="4.2 影响单元先被访问时的耦合检测">4.2 影响单元先被访问时的耦合检测</h3>
+<p>取 <code>a=1</code>、<code>v=3</code>，故障原型为：<code>a</code> 从 0 写成 1 时，如果 <code>v=0</code>，<code>v</code> 被错误地置为 1。March C− 的 <code>M1 ↑(r0,w1)</code> 执行过程为：</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>事件</th>
+  <th style="text-align:right"><code>a</code> 的值</th>
+  <th style="text-align:right"><code>v</code> 的无故障期望值</th>
+  <th style="text-align:right"><code>v</code> 的故障值</th>
+  <th>检测意义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>完成 <code>M0</code></td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">0</td>
+  <td>建立零背景</td>
+</tr>
+<tr>
+  <td>到达 <code>a=1</code> 并执行 <code>r0</code></td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">0</td>
+  <td>读取影响单元</td>
+</tr>
+<tr>
+  <td>对 <code>a</code> 执行 <code>w1</code></td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">1</td>
+  <td>激活写干扰耦合</td>
+</tr>
+<tr>
+  <td>继续访问其他地址</td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">1</td>
+  <td>错误保持在 <code>v</code></td>
+</tr>
+<tr>
+  <td>到达 <code>v=3</code>，先执行 <code>r0</code></td>
+  <td style="text-align:right">1</td>
+  <td style="text-align:right">0</td>
+  <td style="text-align:right">读出 1</td>
+  <td>在写 <code>v</code> 之前发现错误</td>
+</tr>
+</tbody>
+</table></div>
+<p>若把地址次序改为 <code>a=3</code>、<code>v=1</code>，降序的 <code>M3</code> 提供相同的先后关系。这解释了方向选择如何安排影响单元操作和受害单元读取。</p>
+<h3 id="4.3 受害单元先被访问时怎样保留错误">4.3 受害单元先被访问时怎样保留错误</h3>
+<p>对于同一 <code>M1</code>，如果 <code>v&lt;a</code>，<code>v</code> 已经执行 <code>r0,w1</code>，随后才访问 <code>a</code>。此时若 <code>a</code> 的操作把应为 1 的 <code>v</code> 改为 0，错误会一直保留到 <code>M2</code>。<code>M2</code> 到达 <code>v</code> 时先执行 <code>r1</code>，因此会在后续 <code>w0</code> 之前检测到错误。</p>
+<p>这给出了两种经常出现的观察位置：同一元素中稍后访问 <code>v</code> 时的首读，以及下一元素访问 <code>v</code> 时的首读。对每个耦合原型，都应明确属于哪一种情况。</p>
+<h3 id="4.4 状态条件引起的转换耦合">4.4 状态条件引起的转换耦合</h3>
+<p>假设 <code>a=1</code> 时，<code>v</code> 的 <code>0→1</code> 转换失败，取 <code>a&lt;v</code>。<code>M1</code> 升序访问 <code>v</code> 时，低地址的 <code>a</code> 已写为 1，因此 <code>v:w1</code> 无法完成转换。到达下一元素 <code>M2</code> 时，<code>v:r1</code> 读出实际的 0，检测错误。</p>
+<p>这里激活操作发生在 <code>v</code>，<code>a</code> 提供使转换失败的状态条件。它与第 4.2 节中操作 <code>a</code> 直接破坏 <code>v</code> 的写干扰耦合具有不同的激活位置，故障模型与仿真器应分别实现。</p>
+<h3 id="4.5 为什么部分读取必须增加一次">4.5 为什么部分读取必须增加一次</h3>
+<p>定义 DRDF0：读取存储的 0 时返回 0，读取完成后内部状态成为 1。对于片段 <code>r0,w1</code>，第一次读取返回正确值，后续 <code>w1</code> 又把正常期望值设成 1，读破坏留下的差异消失。使用 <code>r0,r0,w1</code> 时，第二个 <code>r0</code> 可以在改写之前看到 1。</p>
+<p>定义 WDF0：单元已经为 0 时再次执行 <code>w0</code>，内部状态错误地变为 1。测试需要先建立已知的 0，再执行 <code>w0,r0</code>。上电时未知状态的一次初始化写入不能单独保证“非转换写 0”的前提，因此应在已知背景下安排这类操作。</p>
+<p>这两种需求分别由重复读取和非转换写入提供；第 04 章的 SS、MSS、RAW 等算法给出了它们的系统组织方式。</p>
+<h2 id="5. 将经典序列转成控制器可执行步骤">5. 将经典序列转成控制器可执行步骤</h2>
+<h3 id="5.1 每次操作应保存的字段">5.1 每次操作应保存的字段</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>字段</th>
+  <th>含义</th>
+  <th>March C− 的例子</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><code>element_id</code></td>
+  <td>March 元素编号</td>
+  <td><code>M1</code></td>
+</tr>
+<tr>
+  <td><code>direction</code></td>
+  <td>地址更新方向</td>
+  <td><code>ascending</code></td>
+</tr>
+<tr>
+  <td><code>operation_id</code></td>
+  <td>当前地址内的操作序号</td>
+  <td><code>0</code> 表示 <code>r0</code>，<code>1</code> 表示 <code>w1</code></td>
+</tr>
+<tr>
+  <td><code>address</code></td>
+  <td>本次实际访问地址</td>
+  <td><code>2</code></td>
+</tr>
+<tr>
+  <td><code>write_data</code></td>
+  <td>写操作的数据</td>
+  <td><code>1</code></td>
+</tr>
+<tr>
+  <td><code>expected_data</code></td>
+  <td>读操作用于比较的数据</td>
+  <td><code>0</code></td>
+</tr>
+<tr>
+  <td><code>compare_enable</code></td>
+  <td>返回数据是否参与比较</td>
+  <td>在 <code>r0</code> 返回时有效</td>
+</tr>
+</tbody>
+</table></div>
+<p>同步 SRAM 的读请求与读返回可能分离。期望值、地址和元素编号应随请求保存，返回时使用同一次请求的信息比较。下一次读写请求的生成不能改变尚未完成读取的期望值。</p>
+<h3 id="5.2 完整四地址操作数示例">5.2 完整四地址操作数示例</h3>
+<p>对 <code>N=4</code>，March C− 的六元素分别包含 <code>4、8、8、8、8、4</code> 项操作，总数为 40。测试程序可以同时统计读取 20 次、写入 20 次。若全部操作一周期完成，理想执行时间为 <code>40Tclk</code>；若读请求需要额外等待，则应按实际接口状态机统计周期。</p>
+<p>对于 <code>w=8</code> 的字导向 SRAM，一个 <code>w0</code> 通常表示写入 <code>8'h00</code>，一个 <code>w1</code> 表示写入 <code>8'hFF</code>。读写操作数仍按字地址数 <code>N</code> 计算。字内不同位之间的耦合，需要增加棋盘和分组互补背景，或使用宏支持的写掩码，见<a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">增强 March 与复杂故障测试</a>。</p>
 <h2 id="与其他设计层的衔接">与其他设计层的衔接</h2>
 <p>本专题输出需要继续交给<a href="01_%E5%AD%98%E5%82%A8%E5%99%A8%E6%8E%A5%E5%8F%A3%E4%B8%8E%E6%B5%8B%E8%AF%95%E6%8E%A7%E5%88%B6%E5%99%A8.html">存储器接口与测试控制器</a>、<a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">增强March与复杂故障测试</a>、<a href="05_%E6%B5%8B%E8%AF%95%E7%AE%97%E6%B3%95%E7%94%9F%E6%88%90%E4%B8%8E%E9%80%89%E6%8B%A9.html">测试算法生成与选择</a>。改变某一层的条件以后，应重新检查受到影响的接口和验证要求。</p>
 <h2 id="参考文献">参考文献</h2>
@@ -279,11 +496,12 @@
 <p><a href="00_MBIST%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E4%B8%8E%E9%98%85%E8%AF%BB%E5%AF%BC%E8%88%AA.html">总览</a> · <a href="02_%E6%95%85%E9%9A%9C%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%A3%80%E6%B5%8B%E5%8E%9F%E7%90%86.html">上一篇：故障模型与检测原理</a> · <a href="04_%E5%A2%9E%E5%BC%BAMarch%E4%B8%8E%E5%A4%8D%E6%9D%82%E6%95%85%E9%9A%9C%E6%B5%8B%E8%AF%95.html">下一篇：增强March与复杂故障测试</a></p>
 <section class="footnotes">
 <ol>
-<li id="fn-1"><p><strong>R01</strong> — <strong>Microchip Technology.</strong> <em>March C− Test for SRAM</em>, Microchip Online Documentation. <a href="https://onlinedocs.microchip.com/oxy/GUID-CA566412-3E3C-467B-98AF-9F1D156615B7-en-US-3/GUID-8D7156E0-ECFE-4055-B0DE-AC9C32162163.html">官方技术说明</a>。用于核实经典六阶段算法和工程语境。<a href="#fnref-1" class="footnote">&#8617;</a></p></li>
-<li id="fn-2"><p><strong>R02</strong> — <strong>ASP-DAC 2025 Tutorial T3-1.</strong> 存储器测试、功能故障模型与 March 方法教程。<a href="https://www.aspdac.com/aspdac2025/archive/pdf/T3-1.pdf">官方教程 PDF</a>。用于经典测试表达、故障模型与测试控制器背景。<a href="#fnref-2" class="footnote">&#8617;</a></p></li>
-<li id="fn-3"><p><strong>R03</strong> — <strong>Mrozek, I.; Yarmolik, V.（2021）.</strong> <em>Transparent Memory Testing with a Double Address Sequence.</em> <strong>Entropy</strong>, 23(7), 894. <a href="https://doi.org/10.3390/e23070894">DOI: 10.3390/e23070894</a>。透明测试、<code>8N</code> 和 <code>14N</code> 地址重复序列。<a href="#fnref-3" class="footnote">&#8617;</a></p></li>
-<li id="fn-4"><p><strong>R04</strong> — <strong>Liu 等（2023）.</strong> 《一种基于存储器内建自测试的新型动态 March 算法设计》，《电子与信息学报》。<a href="https://doi.org/10.11999/JEIT221032">DOI: 10.11999/JEIT221032</a>。Dynamic-RAWC、282 个动态故障原型与覆盖率对照。<strong>注意其比较表中 March AB 的操作次数标注问题。</strong><a href="#fnref-4" class="footnote">&#8617;</a></p></li>
-<li id="fn-5"><p><strong>R14</strong> — <strong>Jidin 等（2026）.</strong> <em>A comprehensive review of memory BIST algorithms for SRAM static fault detection.</em> <strong>Indonesian Journal of Electrical Engineering and Computer Science</strong>, 43(2), 400–412. <a href="https://doi.org/10.11591/ijeecs.v43.i2.pp400-412">DOI: 10.11591/ijeecs.v43.i2.pp400-412</a>。2026 年静态故障算法综述、March MSS 和短序列的覆盖权衡。<a href="#fnref-5" class="footnote">&#8617;</a></p></li>
+<li id="fn-1"><p><strong>R01</strong>：<strong>Microchip Technology.</strong> <em>March C− Test for SRAM</em>, Microchip Online Documentation. <a href="https://onlinedocs.microchip.com/oxy/GUID-CA566412-3E3C-467B-98AF-9F1D156615B7-en-US-3/GUID-8D7156E0-ECFE-4055-B0DE-AC9C32162163.html">官方技术说明</a>；<a href="https://onlinedocs.microchip.com/oxy/GUID-D1946615-13DB-429F-8835-9FD61AEECC58-en-US-1/GUID-58171B11-CBE8-45BA-9D76-C57C942F4352.html">March C− 与 March B 完整序列</a>。用于核实经典算法的完整读写和方向定义。<a href="#fnref-1" class="footnote">&#8617;</a></p></li>
+<li id="fn-2"><p><strong>R02</strong>：<strong>ASP-DAC 2025 Tutorial T3-1.</strong> 存储器测试、功能故障模型与 March 方法教程。<a href="https://www.aspdac.com/aspdac2025/archive/pdf/T3-1.pdf">官方教程 PDF</a>。用于经典测试表达、故障模型与测试控制器背景。<a href="#fnref-2" class="footnote">&#8617;</a></p></li>
+<li id="fn-3"><p><strong>R03</strong>：<strong>Mrozek, I.; Yarmolik, V.（2021）.</strong> <em>Transparent Memory Tests Based on the Double Address Sequences.</em> <strong>Entropy</strong>, 23(7), 894. <a href="https://doi.org/10.3390/e23070894">DOI: 10.3390/e23070894</a>。透明测试、<code>8N</code> 和 <code>14N</code> 地址重复序列。<a href="#fnref-3" class="footnote">&#8617;</a></p></li>
+<li id="fn-4"><p><strong>R04</strong>：<strong>蔡志匡等（2023）.</strong> 《一种基于存储器内建自测试的新型动态 March 算法设计》，《电子与信息学报》，45(9): 3420–3429。<a href="https://doi.org/10.11999/JEIT221032">DOI: 10.11999/JEIT221032</a>。Dynamic-RAWC、282 个动态故障原型与覆盖率对照。<a href="#fnref-4" class="footnote">&#8617;</a></p></li>
+<li id="fn-5"><p>JIDIN A Z, HUSSIN R, MISPAN M S, et al. A New 13N-Complexity Memory Built-in Self-Test Algorithm to Balance Static Random Access Memory Static Fault Coverage and Test Time[J]. International Journal of Electrical and Computer Engineering, 2025, 15(1): 163-173. DOI: <a href="https://doi.org/10.11591/ijece.v15i1.pp163-173">10.11591/ijece.v15i1.pp163-173</a>. <a href="https://ijece.iaescore.com/index.php/IJECE/article/download/36168/17952">论文全文</a>.<a href="#fnref-5" class="footnote">&#8617;</a></p></li>
+<li id="fn-6"><p>HAMDIOUI S, VAN DE GOOR A J, RODGERS M. March SS: A Test for All Static Simple RAM Faults[C]. MTDT, 2002: 95-100. DOI: <a href="https://doi.org/10.1109/MTDT.2002.1029769">10.1109/MTDT.2002.1029769</a>. <a href="https://citeseerx.ist.psu.edu/document?doi=077e15535387cef36b362fbb57a1fc45f34abc18&amp;repid=rep1&amp;type=pdf">作者论文全文</a>.<a href="#fnref-6" class="footnote">&#8617;</a></p></li>
 </ol>
 </section>
-<div class="footer">文献检索截止 2026-10-17。此页为 Markdown 的离线阅读副本；编辑后需重新生成。图示、算例与论文证据范围分别说明。</div></main></div></body></html>
+<div class="footer">故障模型、算法与生成方法的检索截止 2026-11-18。此页为 Markdown 的离线阅读副本，公式与插图可离线查看。</div></main></div></body></html>

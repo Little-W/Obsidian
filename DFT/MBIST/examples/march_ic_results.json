@@ -1,0 +1,134 @@
+{
+  "scope": "Independent digital examples; not an electrical or complete decoder-coverage simulation.",
+  "healthy_runs": 16,
+  "stale_wordline_fault_runs": 160,
+  "target_subdecoder_bits": [
+    1,
+    0
+  ],
+  "directed_projected_edges": [
+    [
+      0,
+      1
+    ],
+    [
+      0,
+      2
+    ],
+    [
+      1,
+      0
+    ],
+    [
+      1,
+      3
+    ],
+    [
+      2,
+      0
+    ],
+    [
+      2,
+      3
+    ],
+    [
+      3,
+      1
+    ],
+    [
+      3,
+      2
+    ]
+  ],
+  "address_order": [
+    0,
+    1,
+    3,
+    2,
+    6,
+    4,
+    5,
+    7,
+    15,
+    13,
+    12,
+    14,
+    10,
+    11,
+    9,
+    8
+  ],
+  "example": {
+    "operations": 40,
+    "first_error": {
+      "step": 5,
+      "stage": 1,
+      "address": 0,
+      "expected": 0,
+      "actual": 1,
+      "selected": [
+        0
+      ]
+    },
+    "unknown_reads": [
+      {
+        "step": 38,
+        "stage": 5,
+        "address": 1,
+        "expected": 1,
+        "actual": "X",
+        "selected": [
+          1,
+          0
+        ]
+      }
+    ],
+    "activations": [
+      {
+        "step": 2,
+        "stage": 0,
+        "transition": [
+          0,
+          1
+        ]
+      },
+      {
+        "step": 7,
+        "stage": 1,
+        "transition": [
+          0,
+          1
+        ]
+      },
+      {
+        "step": 15,
+        "stage": 2,
+        "transition": [
+          0,
+          1
+        ]
+      },
+      {
+        "step": 38,
+        "stage": 5,
+        "transition": [
+          0,
+          1
+        ]
+      }
+    ],
+    "final_memory": [
+      0,
+      1,
+      1,
+      0
+    ],
+    "background": {
+      "0": 0,
+      "1": 1,
+      "3": 0,
+      "2": 1
+    }
+  },
+  "passed": true
+}

@@ -1,0 +1,142 @@
+{
+  "scope": "Inject one state-conditioned local fault into each multirun test.\n\nEach primitive specifies a complete local bit pattern, one addressed cell, one\nread/write event, and one victim. The event flips the victim relative to the\nvalue after the normal operation. A triggering victim read returns its old\nvalue before corruption, so a later read must observe the damage. The first\nbackground write initializes the local array from an all-zero starting state.\nThese finite digital models do not include timing, probability, or linked faults.",
+  "passed": true,
+  "fault_scenarios": 17920,
+  "results": [
+    {
+      "algorithm": "MT-R3CCF",
+      "group_classes": 16,
+      "fault_scenarios": 1152,
+      "detected_scenarios": 1152,
+      "passed": true,
+      "misses": [],
+      "representative": {
+        "group": [
+          52,
+          67,
+          68
+        ],
+        "pattern": [
+          0,
+          0,
+          0
+        ],
+        "trigger_cell": 0,
+        "event": "transition",
+        "victim_cell": 0,
+        "activated": true,
+        "first_wrong_read_in_local_trace": 10
+      }
+    },
+    {
+      "algorithm": "MT-3CCF",
+      "group_classes": 16,
+      "fault_scenarios": 3456,
+      "detected_scenarios": 3456,
+      "passed": true,
+      "misses": [],
+      "representative": {
+        "group": [
+          52,
+          67,
+          68
+        ],
+        "pattern": [
+          0,
+          0,
+          0
+        ],
+        "trigger_cell": 0,
+        "event": "transition",
+        "victim_cell": 0,
+        "activated": true,
+        "first_wrong_read_in_local_trace": 7
+      }
+    },
+    {
+      "algorithm": "MT-4CCF",
+      "group_classes": 4,
+      "fault_scenarios": 3072,
+      "detected_scenarios": 3072,
+      "passed": true,
+      "misses": [],
+      "representative": {
+        "group": [
+          68,
+          69,
+          84,
+          85
+        ],
+        "pattern": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "trigger_cell": 0,
+        "event": "transition",
+        "victim_cell": 0,
+        "activated": true,
+        "first_wrong_read_in_local_trace": 8
+      }
+    },
+    {
+      "algorithm": "MT_NPSF_81N",
+      "group_classes": 16,
+      "fault_scenarios": 2560,
+      "detected_scenarios": 2560,
+      "passed": true,
+      "misses": [],
+      "representative": {
+        "group": [
+          52,
+          67,
+          68,
+          69,
+          84
+        ],
+        "pattern": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "trigger_cell": 0,
+        "event": "transition",
+        "victim_cell": 2,
+        "activated": true,
+        "first_wrong_read_in_local_trace": 10
+      }
+    },
+    {
+      "algorithm": "MT_ENPSF",
+      "group_classes": 16,
+      "fault_scenarios": 7680,
+      "detected_scenarios": 7680,
+      "passed": true,
+      "misses": [],
+      "representative": {
+        "group": [
+          52,
+          67,
+          68,
+          69,
+          84
+        ],
+        "pattern": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "trigger_cell": 0,
+        "event": "transition",
+        "victim_cell": 2,
+        "activated": true,
+        "first_wrong_read_in_local_trace": 16
+      }
+    }
+  ]
+}

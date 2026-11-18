@@ -1,0 +1,4577 @@
+{
+  "scope": "Finite digital fault models defined in this source; N=3 enumeration; one primitive per coverage run. Linked masking is demonstrated separately.",
+  "literature_coverage_claim": false,
+  "example_count": 14,
+  "mirrored_example_count": 9,
+  "march_sequence_count": 21,
+  "healthy_run_count": 488,
+  "fault_injection_run_count": 49776,
+  "examples": [
+    {
+      "name": "SAF0",
+      "fault": {
+        "kind": "SAF",
+        "target": 0,
+        "polarity": 0,
+        "aggressor": -1,
+        "forced": 0,
+        "second_aggressor": -1
+      },
+      "initial": [
+        0
+      ],
+      "expected_first_failure_step": 2,
+      "healthy": {
+        "detected": false,
+        "first_failure": null,
+        "final_memory": [
+          1
+        ],
+        "trace": [
+          {
+            "step": 1,
+            "address": 0,
+            "operation": "w1",
+            "before": [
+              0
+            ],
+            "after": [
+              1
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 2,
+            "address": 0,
+            "operation": "r1",
+            "before": [
+              1
+            ],
+            "after": [
+              1
+            ],
+            "returned": 1,
+            "expected": 1,
+            "mismatch": false
+          }
+        ]
+      },
+      "faulty": {
+        "detected": true,
+        "first_failure": {
+          "step": 2,
+          "address": 0,
+          "expected": 1,
+          "actual": 0
+        },
+        "final_memory": [
+          0
+        ],
+        "trace": [
+          {
+            "step": 1,
+            "address": 0,
+            "operation": "w1",
+            "before": [
+              0
+            ],
+            "after": [
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 2,
+            "address": 0,
+            "operation": "r1",
+            "before": [
+              0
+            ],
+            "after": [
+              0
+            ],
+            "returned": 0,
+            "expected": 1,
+            "mismatch": true
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "name": "TF_up",
+      "fault": {
+        "kind": "TF",
+        "target": 0,
+        "polarity": 1,
+        "aggressor": -1,
+        "forced": 0,
+        "second_aggressor": -1
+      },
+      "initial": [
+        1
+      ],
+      "expected_first_failure_step": 3,
+      "healthy": {
+        "detected": false,
+        "first_failure": null,
+        "final_memory": [
+          1
+        ],
+        "trace": [
+          {
+            "step": 1,
+            "address": 0,
+            "operation": "w0",
+            "before": [
+              1
+            ],
+            "after": [
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 2,
+            "address": 0,
+            "operation": "w1",
+            "before": [
+              0
+            ],
+            "after": [
+              1
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 3,
+            "address": 0,
+            "operation": "r1",
+            "before": [
+              1
+            ],
+            "after": [
+              1
+            ],
+            "returned": 1,
+            "expected": 1,
+            "mismatch": false
+          }
+        ]
+      },
+      "faulty": {
+        "detected": true,
+        "first_failure": {
+          "step": 3,
+          "address": 0,
+          "expected": 1,
+          "actual": 0
+        },
+        "final_memory": [
+          0
+        ],
+        "trace": [
+          {
+            "step": 1,
+            "address": 0,
+            "operation": "w0",
+            "before": [
+              1
+            ],
+            "after": [
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 2,
+            "address": 0,
+            "operation": "w1",
+            "before": [
+              0
+            ],
+            "after": [
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 3,
+            "address": 0,
+            "operation": "r1",
+            "before": [
+              0
+            ],
+            "after": [
+              0
+            ],
+            "returned": 0,
+            "expected": 1,
+            "mismatch": true
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "name": "WDF0",
+      "fault": {
+        "kind": "WDF",
+        "target": 0,
+        "polarity": 0,
+        "aggressor": -1,
+        "forced": 0,
+        "second_aggressor": -1
+      },
+      "initial": [
+        0
+      ],
+      "expected_first_failure_step": 4,
+      "healthy": {
+        "detected": false,
+        "first_failure": null,
+        "final_memory": [
+          0
+        ],
+        "trace": [
+          {
+            "step": 1,
+            "address": 0,
+            "operation": "w1",
+            "before": [
+              0
+            ],
+            "after": [
+              1
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 2,
+            "address": 0,
+            "operation": "w0",
+            "before": [
+              1
+            ],
+            "after": [
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 3,
+            "address": 0,
+            "operation": "w0",
+            "before": [
+              0
+            ],
+            "after": [
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 4,
+            "address": 0,
+            "operation": "r0",
+            "before": [
+              0
+            ],
+            "after": [
+              0
+            ],
+            "returned": 0,
+            "expected": 0,
+            "mismatch": false
+          }
+        ]
+      },
+      "faulty": {
+        "detected": true,
+        "first_failure": {
+          "step": 4,
+          "address": 0,
+          "expected": 0,
+          "actual": 1
+        },
+        "final_memory": [
+          1
+        ],
+        "trace": [
+          {
+            "step": 1,
+            "address": 0,
+            "operation": "w1",
+            "before": [
+              0
+            ],
+            "after": [
+              1
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 2,
+            "address": 0,
+            "operation": "w0",
+            "before": [
+              1
+            ],
+            "after": [
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 3,
+            "address": 0,
+            "operation": "w0",
+            "before": [
+              0
+            ],
+            "after": [
+              1
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 4,
+            "address": 0,
+            "operation": "r0",
+            "before": [
+              1
+            ],
+            "after": [
+              1
+            ],
+            "returned": 1,
+            "expected": 0,
+            "mismatch": true
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "name": "RDF0",
+      "fault": {
+        "kind": "RDF",
+        "target": 0,
+        "polarity": 0,
+        "aggressor": -1,
+        "forced": 0,
+        "second_aggressor": -1
+      },
+      "initial": [
+        1
+      ],
+      "expected_first_failure_step": 2,
+      "healthy": {
+        "detected": false,
+        "first_failure": null,
+        "final_memory": [
+          0
+        ],
+        "trace": [
+          {
+            "step": 1,
+            "address": 0,
+            "operation": "w0",
+            "before": [
+              1
+            ],
+            "after": [
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 2,
+            "address": 0,
+            "operation": "r0",
+            "before": [
+              0
+            ],
+            "after": [
+              0
+            ],
+            "returned": 0,
+            "expected": 0,
+            "mismatch": false
+          }
+        ]
+      },
+      "faulty": {
+        "detected": true,
+        "first_failure": {
+          "step": 2,
+          "address": 0,
+          "expected": 0,
+          "actual": 1
+        },
+        "final_memory": [
+          1
+        ],
+        "trace": [
+          {
+            "step": 1,
+            "address": 0,
+            "operation": "w0",
+            "before": [
+              1
+            ],
+            "after": [
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 2,
+            "address": 0,
+            "operation": "r0",
+            "before": [
+              0
+            ],
+            "after": [
+              1
+            ],
+            "returned": 1,
+            "expected": 0,
+            "mismatch": true
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "name": "IRF0",
+      "fault": {
+        "kind": "IRF",
+        "target": 0,
+        "polarity": 0,
+        "aggressor": -1,
+        "forced": 0,
+        "second_aggressor": -1
+      },
+      "initial": [
+        1
+      ],
+      "expected_first_failure_step": 2,
+      "healthy": {
+        "detected": false,
+        "first_failure": null,
+        "final_memory": [
+          0
+        ],
+        "trace": [
+          {
+            "step": 1,
+            "address": 0,
+            "operation": "w0",
+            "before": [
+              1
+            ],
+            "after": [
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 2,
+            "address": 0,
+            "operation": "r0",
+            "before": [
+              0
+            ],
+            "after": [
+              0
+            ],
+            "returned": 0,
+            "expected": 0,
+            "mismatch": false
+          }
+        ]
+      },
+      "faulty": {
+        "detected": true,
+        "first_failure": {
+          "step": 2,
+          "address": 0,
+          "expected": 0,
+          "actual": 1
+        },
+        "final_memory": [
+          0
+        ],
+        "trace": [
+          {
+            "step": 1,
+            "address": 0,
+            "operation": "w0",
+            "before": [
+              1
+            ],
+            "after": [
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 2,
+            "address": 0,
+            "operation": "r0",
+            "before": [
+              0
+            ],
+            "after": [
+              0
+            ],
+            "returned": 1,
+            "expected": 0,
+            "mismatch": true
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "name": "DRDF0",
+      "fault": {
+        "kind": "DRDF",
+        "target": 0,
+        "polarity": 0,
+        "aggressor": -1,
+        "forced": 0,
+        "second_aggressor": -1
+      },
+      "initial": [
+        1
+      ],
+      "expected_first_failure_step": 3,
+      "healthy": {
+        "detected": false,
+        "first_failure": null,
+        "final_memory": [
+          0
+        ],
+        "trace": [
+          {
+            "step": 1,
+            "address": 0,
+            "operation": "w0",
+            "before": [
+              1
+            ],
+            "after": [
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 2,
+            "address": 0,
+            "operation": "r0",
+            "before": [
+              0
+            ],
+            "after": [
+              0
+            ],
+            "returned": 0,
+            "expected": 0,
+            "mismatch": false
+          },
+          {
+            "step": 3,
+            "address": 0,
+            "operation": "r0",
+            "before": [
+              0
+            ],
+            "after": [
+              0
+            ],
+            "returned": 0,
+            "expected": 0,
+            "mismatch": false
+          }
+        ]
+      },
+      "faulty": {
+        "detected": true,
+        "first_failure": {
+          "step": 3,
+          "address": 0,
+          "expected": 0,
+          "actual": 1
+        },
+        "final_memory": [
+          1
+        ],
+        "trace": [
+          {
+            "step": 1,
+            "address": 0,
+            "operation": "w0",
+            "before": [
+              1
+            ],
+            "after": [
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 2,
+            "address": 0,
+            "operation": "r0",
+            "before": [
+              0
+            ],
+            "after": [
+              1
+            ],
+            "returned": 0,
+            "expected": 0,
+            "mismatch": false
+          },
+          {
+            "step": 3,
+            "address": 0,
+            "operation": "r0",
+            "before": [
+              1
+            ],
+            "after": [
+              1
+            ],
+            "returned": 1,
+            "expected": 0,
+            "mismatch": true
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "name": "DRDF0_single_read",
+      "fault": {
+        "kind": "DRDF",
+        "target": 0,
+        "polarity": 0,
+        "aggressor": -1,
+        "forced": 0,
+        "second_aggressor": -1
+      },
+      "initial": [
+        1
+      ],
+      "expected_first_failure_step": null,
+      "healthy": {
+        "detected": false,
+        "first_failure": null,
+        "final_memory": [
+          0
+        ],
+        "trace": [
+          {
+            "step": 1,
+            "address": 0,
+            "operation": "w0",
+            "before": [
+              1
+            ],
+            "after": [
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 2,
+            "address": 0,
+            "operation": "r0",
+            "before": [
+              0
+            ],
+            "after": [
+              0
+            ],
+            "returned": 0,
+            "expected": 0,
+            "mismatch": false
+          }
+        ]
+      },
+      "faulty": {
+        "detected": false,
+        "first_failure": null,
+        "final_memory": [
+          1
+        ],
+        "trace": [
+          {
+            "step": 1,
+            "address": 0,
+            "operation": "w0",
+            "before": [
+              1
+            ],
+            "after": [
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 2,
+            "address": 0,
+            "operation": "r0",
+            "before": [
+              0
+            ],
+            "after": [
+              1
+            ],
+            "returned": 0,
+            "expected": 0,
+            "mismatch": false
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "name": "D2R0",
+      "fault": {
+        "kind": "D2R",
+        "target": 0,
+        "polarity": 0,
+        "aggressor": -1,
+        "forced": 0,
+        "second_aggressor": -1
+      },
+      "initial": [
+        1
+      ],
+      "expected_first_failure_step": 4,
+      "healthy": {
+        "detected": false,
+        "first_failure": null,
+        "final_memory": [
+          0
+        ],
+        "trace": [
+          {
+            "step": 1,
+            "address": 0,
+            "operation": "w0",
+            "before": [
+              1
+            ],
+            "after": [
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 2,
+            "address": 0,
+            "operation": "r0",
+            "before": [
+              0
+            ],
+            "after": [
+              0
+            ],
+            "returned": 0,
+            "expected": 0,
+            "mismatch": false
+          },
+          {
+            "step": 3,
+            "address": 0,
+            "operation": "r0",
+            "before": [
+              0
+            ],
+            "after": [
+              0
+            ],
+            "returned": 0,
+            "expected": 0,
+            "mismatch": false
+          },
+          {
+            "step": 4,
+            "address": 0,
+            "operation": "r0",
+            "before": [
+              0
+            ],
+            "after": [
+              0
+            ],
+            "returned": 0,
+            "expected": 0,
+            "mismatch": false
+          }
+        ]
+      },
+      "faulty": {
+        "detected": true,
+        "first_failure": {
+          "step": 4,
+          "address": 0,
+          "expected": 0,
+          "actual": 1
+        },
+        "final_memory": [
+          1
+        ],
+        "trace": [
+          {
+            "step": 1,
+            "address": 0,
+            "operation": "w0",
+            "before": [
+              1
+            ],
+            "after": [
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 2,
+            "address": 0,
+            "operation": "r0",
+            "before": [
+              0
+            ],
+            "after": [
+              0
+            ],
+            "returned": 0,
+            "expected": 0,
+            "mismatch": false
+          },
+          {
+            "step": 3,
+            "address": 0,
+            "operation": "r0",
+            "before": [
+              0
+            ],
+            "after": [
+              1
+            ],
+            "returned": 0,
+            "expected": 0,
+            "mismatch": false
+          },
+          {
+            "step": 4,
+            "address": 0,
+            "operation": "r0",
+            "before": [
+              1
+            ],
+            "after": [
+              1
+            ],
+            "returned": 1,
+            "expected": 0,
+            "mismatch": true
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "name": "D2R0_two_reads",
+      "fault": {
+        "kind": "D2R",
+        "target": 0,
+        "polarity": 0,
+        "aggressor": -1,
+        "forced": 0,
+        "second_aggressor": -1
+      },
+      "initial": [
+        1
+      ],
+      "expected_first_failure_step": null,
+      "healthy": {
+        "detected": false,
+        "first_failure": null,
+        "final_memory": [
+          0
+        ],
+        "trace": [
+          {
+            "step": 1,
+            "address": 0,
+            "operation": "w0",
+            "before": [
+              1
+            ],
+            "after": [
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 2,
+            "address": 0,
+            "operation": "r0",
+            "before": [
+              0
+            ],
+            "after": [
+              0
+            ],
+            "returned": 0,
+            "expected": 0,
+            "mismatch": false
+          },
+          {
+            "step": 3,
+            "address": 0,
+            "operation": "r0",
+            "before": [
+              0
+            ],
+            "after": [
+              0
+            ],
+            "returned": 0,
+            "expected": 0,
+            "mismatch": false
+          }
+        ]
+      },
+      "faulty": {
+        "detected": false,
+        "first_failure": null,
+        "final_memory": [
+          1
+        ],
+        "trace": [
+          {
+            "step": 1,
+            "address": 0,
+            "operation": "w0",
+            "before": [
+              1
+            ],
+            "after": [
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 2,
+            "address": 0,
+            "operation": "r0",
+            "before": [
+              0
+            ],
+            "after": [
+              0
+            ],
+            "returned": 0,
+            "expected": 0,
+            "mismatch": false
+          },
+          {
+            "step": 3,
+            "address": 0,
+            "operation": "r0",
+            "before": [
+              0
+            ],
+            "after": [
+              1
+            ],
+            "returned": 0,
+            "expected": 0,
+            "mismatch": false
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "name": "D2R0_interrupted",
+      "fault": {
+        "kind": "D2R",
+        "target": 0,
+        "polarity": 0,
+        "aggressor": -1,
+        "forced": 0,
+        "second_aggressor": -1
+      },
+      "initial": [
+        1,
+        1
+      ],
+      "expected_first_failure_step": null,
+      "healthy": {
+        "detected": false,
+        "first_failure": null,
+        "final_memory": [
+          0,
+          0
+        ],
+        "trace": [
+          {
+            "step": 1,
+            "address": 0,
+            "operation": "w0",
+            "before": [
+              1,
+              1
+            ],
+            "after": [
+              0,
+              1
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 2,
+            "address": 0,
+            "operation": "r0",
+            "before": [
+              0,
+              1
+            ],
+            "after": [
+              0,
+              1
+            ],
+            "returned": 0,
+            "expected": 0,
+            "mismatch": false
+          },
+          {
+            "step": 3,
+            "address": 1,
+            "operation": "w0",
+            "before": [
+              0,
+              1
+            ],
+            "after": [
+              0,
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 4,
+            "address": 0,
+            "operation": "r0",
+            "before": [
+              0,
+              0
+            ],
+            "after": [
+              0,
+              0
+            ],
+            "returned": 0,
+            "expected": 0,
+            "mismatch": false
+          },
+          {
+            "step": 5,
+            "address": 0,
+            "operation": "r0",
+            "before": [
+              0,
+              0
+            ],
+            "after": [
+              0,
+              0
+            ],
+            "returned": 0,
+            "expected": 0,
+            "mismatch": false
+          }
+        ]
+      },
+      "faulty": {
+        "detected": false,
+        "first_failure": null,
+        "final_memory": [
+          1,
+          0
+        ],
+        "trace": [
+          {
+            "step": 1,
+            "address": 0,
+            "operation": "w0",
+            "before": [
+              1,
+              1
+            ],
+            "after": [
+              0,
+              1
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 2,
+            "address": 0,
+            "operation": "r0",
+            "before": [
+              0,
+              1
+            ],
+            "after": [
+              0,
+              1
+            ],
+            "returned": 0,
+            "expected": 0,
+            "mismatch": false
+          },
+          {
+            "step": 3,
+            "address": 1,
+            "operation": "w0",
+            "before": [
+              0,
+              1
+            ],
+            "after": [
+              0,
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 4,
+            "address": 0,
+            "operation": "r0",
+            "before": [
+              0,
+              0
+            ],
+            "after": [
+              0,
+              0
+            ],
+            "returned": 0,
+            "expected": 0,
+            "mismatch": false
+          },
+          {
+            "step": 5,
+            "address": 0,
+            "operation": "r0",
+            "before": [
+              0,
+              0
+            ],
+            "after": [
+              1,
+              0
+            ],
+            "returned": 0,
+            "expected": 0,
+            "mismatch": false
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "name": "CFin_up",
+      "fault": {
+        "kind": "CFin",
+        "target": 1,
+        "polarity": 1,
+        "aggressor": 0,
+        "forced": 0,
+        "second_aggressor": -1
+      },
+      "initial": [
+        1,
+        1
+      ],
+      "expected_first_failure_step": 4,
+      "healthy": {
+        "detected": false,
+        "first_failure": null,
+        "final_memory": [
+          1,
+          0
+        ],
+        "trace": [
+          {
+            "step": 1,
+            "address": 0,
+            "operation": "w0",
+            "before": [
+              1,
+              1
+            ],
+            "after": [
+              0,
+              1
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 2,
+            "address": 1,
+            "operation": "w0",
+            "before": [
+              0,
+              1
+            ],
+            "after": [
+              0,
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 3,
+            "address": 0,
+            "operation": "w1",
+            "before": [
+              0,
+              0
+            ],
+            "after": [
+              1,
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 4,
+            "address": 1,
+            "operation": "r0",
+            "before": [
+              1,
+              0
+            ],
+            "after": [
+              1,
+              0
+            ],
+            "returned": 0,
+            "expected": 0,
+            "mismatch": false
+          }
+        ]
+      },
+      "faulty": {
+        "detected": true,
+        "first_failure": {
+          "step": 4,
+          "address": 1,
+          "expected": 0,
+          "actual": 1
+        },
+        "final_memory": [
+          1,
+          1
+        ],
+        "trace": [
+          {
+            "step": 1,
+            "address": 0,
+            "operation": "w0",
+            "before": [
+              1,
+              1
+            ],
+            "after": [
+              0,
+              1
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 2,
+            "address": 1,
+            "operation": "w0",
+            "before": [
+              0,
+              1
+            ],
+            "after": [
+              0,
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 3,
+            "address": 0,
+            "operation": "w1",
+            "before": [
+              0,
+              0
+            ],
+            "after": [
+              1,
+              1
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 4,
+            "address": 1,
+            "operation": "r0",
+            "before": [
+              1,
+              1
+            ],
+            "after": [
+              1,
+              1
+            ],
+            "returned": 1,
+            "expected": 0,
+            "mismatch": true
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "name": "CFin_overwritten",
+      "fault": {
+        "kind": "CFin",
+        "target": 1,
+        "polarity": 1,
+        "aggressor": 0,
+        "forced": 0,
+        "second_aggressor": -1
+      },
+      "initial": [
+        1,
+        1
+      ],
+      "expected_first_failure_step": null,
+      "healthy": {
+        "detected": false,
+        "first_failure": null,
+        "final_memory": [
+          1,
+          0
+        ],
+        "trace": [
+          {
+            "step": 1,
+            "address": 0,
+            "operation": "w0",
+            "before": [
+              1,
+              1
+            ],
+            "after": [
+              0,
+              1
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 2,
+            "address": 1,
+            "operation": "w0",
+            "before": [
+              0,
+              1
+            ],
+            "after": [
+              0,
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 3,
+            "address": 0,
+            "operation": "w1",
+            "before": [
+              0,
+              0
+            ],
+            "after": [
+              1,
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 4,
+            "address": 1,
+            "operation": "w0",
+            "before": [
+              1,
+              0
+            ],
+            "after": [
+              1,
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 5,
+            "address": 1,
+            "operation": "r0",
+            "before": [
+              1,
+              0
+            ],
+            "after": [
+              1,
+              0
+            ],
+            "returned": 0,
+            "expected": 0,
+            "mismatch": false
+          }
+        ]
+      },
+      "faulty": {
+        "detected": false,
+        "first_failure": null,
+        "final_memory": [
+          1,
+          0
+        ],
+        "trace": [
+          {
+            "step": 1,
+            "address": 0,
+            "operation": "w0",
+            "before": [
+              1,
+              1
+            ],
+            "after": [
+              0,
+              1
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 2,
+            "address": 1,
+            "operation": "w0",
+            "before": [
+              0,
+              1
+            ],
+            "after": [
+              0,
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 3,
+            "address": 0,
+            "operation": "w1",
+            "before": [
+              0,
+              0
+            ],
+            "after": [
+              1,
+              1
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 4,
+            "address": 1,
+            "operation": "w0",
+            "before": [
+              1,
+              1
+            ],
+            "after": [
+              1,
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 5,
+            "address": 1,
+            "operation": "r0",
+            "before": [
+              1,
+              0
+            ],
+            "after": [
+              1,
+              0
+            ],
+            "returned": 0,
+            "expected": 0,
+            "mismatch": false
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "name": "LINKED_masked",
+      "fault": {
+        "kind": "LINKED",
+        "target": 2,
+        "polarity": 1,
+        "aggressor": 0,
+        "forced": 0,
+        "second_aggressor": 1
+      },
+      "initial": [
+        1,
+        1,
+        1
+      ],
+      "expected_first_failure_step": null,
+      "healthy": {
+        "detected": false,
+        "first_failure": null,
+        "final_memory": [
+          1,
+          1,
+          0
+        ],
+        "trace": [
+          {
+            "step": 1,
+            "address": 0,
+            "operation": "w0",
+            "before": [
+              1,
+              1,
+              1
+            ],
+            "after": [
+              0,
+              1,
+              1
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 2,
+            "address": 1,
+            "operation": "w0",
+            "before": [
+              0,
+              1,
+              1
+            ],
+            "after": [
+              0,
+              0,
+              1
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 3,
+            "address": 2,
+            "operation": "w0",
+            "before": [
+              0,
+              0,
+              1
+            ],
+            "after": [
+              0,
+              0,
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 4,
+            "address": 0,
+            "operation": "w1",
+            "before": [
+              0,
+              0,
+              0
+            ],
+            "after": [
+              1,
+              0,
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 5,
+            "address": 1,
+            "operation": "w1",
+            "before": [
+              1,
+              0,
+              0
+            ],
+            "after": [
+              1,
+              1,
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 6,
+            "address": 2,
+            "operation": "r0",
+            "before": [
+              1,
+              1,
+              0
+            ],
+            "after": [
+              1,
+              1,
+              0
+            ],
+            "returned": 0,
+            "expected": 0,
+            "mismatch": false
+          }
+        ]
+      },
+      "faulty": {
+        "detected": false,
+        "first_failure": null,
+        "final_memory": [
+          1,
+          1,
+          0
+        ],
+        "trace": [
+          {
+            "step": 1,
+            "address": 0,
+            "operation": "w0",
+            "before": [
+              1,
+              1,
+              1
+            ],
+            "after": [
+              0,
+              1,
+              1
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 2,
+            "address": 1,
+            "operation": "w0",
+            "before": [
+              0,
+              1,
+              1
+            ],
+            "after": [
+              0,
+              0,
+              1
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 3,
+            "address": 2,
+            "operation": "w0",
+            "before": [
+              0,
+              0,
+              1
+            ],
+            "after": [
+              0,
+              0,
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 4,
+            "address": 0,
+            "operation": "w1",
+            "before": [
+              0,
+              0,
+              0
+            ],
+            "after": [
+              1,
+              0,
+              1
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 5,
+            "address": 1,
+            "operation": "w1",
+            "before": [
+              1,
+              0,
+              1
+            ],
+            "after": [
+              1,
+              1,
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 6,
+            "address": 2,
+            "operation": "r0",
+            "before": [
+              1,
+              1,
+              0
+            ],
+            "after": [
+              1,
+              1,
+              0
+            ],
+            "returned": 0,
+            "expected": 0,
+            "mismatch": false
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "name": "LINKED_observed",
+      "fault": {
+        "kind": "LINKED",
+        "target": 2,
+        "polarity": 1,
+        "aggressor": 0,
+        "forced": 0,
+        "second_aggressor": 1
+      },
+      "initial": [
+        1,
+        1,
+        1
+      ],
+      "expected_first_failure_step": 5,
+      "healthy": {
+        "detected": false,
+        "first_failure": null,
+        "final_memory": [
+          1,
+          1,
+          0
+        ],
+        "trace": [
+          {
+            "step": 1,
+            "address": 0,
+            "operation": "w0",
+            "before": [
+              1,
+              1,
+              1
+            ],
+            "after": [
+              0,
+              1,
+              1
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 2,
+            "address": 1,
+            "operation": "w0",
+            "before": [
+              0,
+              1,
+              1
+            ],
+            "after": [
+              0,
+              0,
+              1
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 3,
+            "address": 2,
+            "operation": "w0",
+            "before": [
+              0,
+              0,
+              1
+            ],
+            "after": [
+              0,
+              0,
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 4,
+            "address": 0,
+            "operation": "w1",
+            "before": [
+              0,
+              0,
+              0
+            ],
+            "after": [
+              1,
+              0,
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 5,
+            "address": 2,
+            "operation": "r0",
+            "before": [
+              1,
+              0,
+              0
+            ],
+            "after": [
+              1,
+              0,
+              0
+            ],
+            "returned": 0,
+            "expected": 0,
+            "mismatch": false
+          },
+          {
+            "step": 6,
+            "address": 1,
+            "operation": "w1",
+            "before": [
+              1,
+              0,
+              0
+            ],
+            "after": [
+              1,
+              1,
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 7,
+            "address": 2,
+            "operation": "r0",
+            "before": [
+              1,
+              1,
+              0
+            ],
+            "after": [
+              1,
+              1,
+              0
+            ],
+            "returned": 0,
+            "expected": 0,
+            "mismatch": false
+          }
+        ]
+      },
+      "faulty": {
+        "detected": true,
+        "first_failure": {
+          "step": 5,
+          "address": 2,
+          "expected": 0,
+          "actual": 1
+        },
+        "final_memory": [
+          1,
+          1,
+          0
+        ],
+        "trace": [
+          {
+            "step": 1,
+            "address": 0,
+            "operation": "w0",
+            "before": [
+              1,
+              1,
+              1
+            ],
+            "after": [
+              0,
+              1,
+              1
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 2,
+            "address": 1,
+            "operation": "w0",
+            "before": [
+              0,
+              1,
+              1
+            ],
+            "after": [
+              0,
+              0,
+              1
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 3,
+            "address": 2,
+            "operation": "w0",
+            "before": [
+              0,
+              0,
+              1
+            ],
+            "after": [
+              0,
+              0,
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 4,
+            "address": 0,
+            "operation": "w1",
+            "before": [
+              0,
+              0,
+              0
+            ],
+            "after": [
+              1,
+              0,
+              1
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 5,
+            "address": 2,
+            "operation": "r0",
+            "before": [
+              1,
+              0,
+              1
+            ],
+            "after": [
+              1,
+              0,
+              1
+            ],
+            "returned": 1,
+            "expected": 0,
+            "mismatch": true
+          },
+          {
+            "step": 6,
+            "address": 1,
+            "operation": "w1",
+            "before": [
+              1,
+              0,
+              1
+            ],
+            "after": [
+              1,
+              1,
+              0
+            ],
+            "returned": null,
+            "expected": null,
+            "mismatch": false
+          },
+          {
+            "step": 7,
+            "address": 2,
+            "operation": "r0",
+            "before": [
+              1,
+              1,
+              0
+            ],
+            "after": [
+              1,
+              1,
+              0
+            ],
+            "returned": 0,
+            "expected": 0,
+            "mismatch": false
+          }
+        ]
+      },
+      "passed": true
+    }
+  ],
+  "march_experiments": [
+    {
+      "source": "03_March基础与经典算法.md",
+      "line": 91,
+      "label": "March C−",
+      "sequence": "⇕(w0); ↑(r0,w1); ↑(r1,w0); ↓(r0,w1); ↓(r1,w0); ⇕(r0)",
+      "operations_per_address": 10,
+      "memory_size": 3,
+      "healthy_runs": 32,
+      "faulty_runs": 3264,
+      "digital_model_coverage": {
+        "SAF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "TF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "WDF": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "IRF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "RDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "DRDF": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "D2R": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "CFin": {
+          "detected_in_all_tested_settings": 12,
+          "primitive_count": 12
+        },
+        "CFid": {
+          "detected_in_all_tested_settings": 24,
+          "primitive_count": 24
+        },
+        "CFst": {
+          "detected_in_all_tested_settings": 24,
+          "primitive_count": 24
+        }
+      },
+      "missed_examples": {
+        "WDF": {
+          "primitive": {
+            "kind": "WDF",
+            "target": 0,
+            "polarity": 1,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ]
+        },
+        "DRDF": {
+          "primitive": {
+            "kind": "DRDF",
+            "target": 0,
+            "polarity": 0,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ]
+        },
+        "D2R": {
+          "primitive": {
+            "kind": "D2R",
+            "target": 0,
+            "polarity": 0,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ]
+        }
+      }
+    },
+    {
+      "source": "03_March基础与经典算法.md",
+      "line": 165,
+      "label": "3.2.1 MATS 4N",
+      "sequence": "⇕(w0); ↑(r0,w1); ⇕(r1)",
+      "operations_per_address": 4,
+      "memory_size": 3,
+      "healthy_runs": 32,
+      "faulty_runs": 3264,
+      "digital_model_coverage": {
+        "SAF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "TF": {
+          "detected_in_all_tested_settings": 3,
+          "primitive_count": 6
+        },
+        "WDF": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "IRF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "RDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "DRDF": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "D2R": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "CFin": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 12
+        },
+        "CFid": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 24
+        },
+        "CFst": {
+          "detected_in_all_tested_settings": 18,
+          "primitive_count": 24
+        }
+      },
+      "missed_examples": {
+        "TF": {
+          "primitive": {
+            "kind": "TF",
+            "target": 0,
+            "polarity": 0,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ]
+        },
+        "WDF": {
+          "primitive": {
+            "kind": "WDF",
+            "target": 0,
+            "polarity": 1,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ]
+        },
+        "DRDF": {
+          "primitive": {
+            "kind": "DRDF",
+            "target": 0,
+            "polarity": 0,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ]
+        },
+        "D2R": {
+          "primitive": {
+            "kind": "D2R",
+            "target": 0,
+            "polarity": 0,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ]
+        },
+        "CFin": {
+          "primitive": {
+            "kind": "CFin",
+            "target": 1,
+            "polarity": 0,
+            "aggressor": 0,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ]
+        },
+        "CFid": {
+          "primitive": {
+            "kind": "CFid",
+            "target": 1,
+            "polarity": 0,
+            "aggressor": 0,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ]
+        },
+        "CFst": {
+          "primitive": {
+            "kind": "CFst",
+            "target": 1,
+            "polarity": 0,
+            "aggressor": 0,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ]
+        }
+      }
+    },
+    {
+      "source": "03_March基础与经典算法.md",
+      "line": 173,
+      "label": "3.2.2 MATS+ 5N",
+      "sequence": "⇕(w0); ↑(r0,w1); ↓(r1,w0)",
+      "operations_per_address": 5,
+      "memory_size": 3,
+      "healthy_runs": 16,
+      "faulty_runs": 1632,
+      "digital_model_coverage": {
+        "SAF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "TF": {
+          "detected_in_all_tested_settings": 3,
+          "primitive_count": 6
+        },
+        "WDF": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "IRF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "RDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "DRDF": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "D2R": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "CFin": {
+          "detected_in_all_tested_settings": 9,
+          "primitive_count": 12
+        },
+        "CFid": {
+          "detected_in_all_tested_settings": 9,
+          "primitive_count": 24
+        },
+        "CFst": {
+          "detected_in_all_tested_settings": 18,
+          "primitive_count": 24
+        }
+      },
+      "missed_examples": {
+        "TF": {
+          "primitive": {
+            "kind": "TF",
+            "target": 0,
+            "polarity": 0,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑"
+          ]
+        },
+        "WDF": {
+          "primitive": {
+            "kind": "WDF",
+            "target": 0,
+            "polarity": 1,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑"
+          ]
+        },
+        "DRDF": {
+          "primitive": {
+            "kind": "DRDF",
+            "target": 0,
+            "polarity": 0,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑"
+          ]
+        },
+        "D2R": {
+          "primitive": {
+            "kind": "D2R",
+            "target": 0,
+            "polarity": 0,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑"
+          ]
+        },
+        "CFin": {
+          "primitive": {
+            "kind": "CFin",
+            "target": 1,
+            "polarity": 0,
+            "aggressor": 0,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑"
+          ]
+        },
+        "CFid": {
+          "primitive": {
+            "kind": "CFid",
+            "target": 1,
+            "polarity": 0,
+            "aggressor": 0,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑"
+          ]
+        },
+        "CFst": {
+          "primitive": {
+            "kind": "CFst",
+            "target": 1,
+            "polarity": 0,
+            "aggressor": 0,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑"
+          ]
+        }
+      }
+    },
+    {
+      "source": "03_March基础与经典算法.md",
+      "line": 181,
+      "label": "3.2.3 MATS++ 6N",
+      "sequence": "⇕(w0); ↑(r0,w1); ↓(r1,w0,r0)",
+      "operations_per_address": 6,
+      "memory_size": 3,
+      "healthy_runs": 16,
+      "faulty_runs": 1632,
+      "digital_model_coverage": {
+        "SAF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "TF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "WDF": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "IRF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "RDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "DRDF": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "D2R": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "CFin": {
+          "detected_in_all_tested_settings": 9,
+          "primitive_count": 12
+        },
+        "CFid": {
+          "detected_in_all_tested_settings": 9,
+          "primitive_count": 24
+        },
+        "CFst": {
+          "detected_in_all_tested_settings": 18,
+          "primitive_count": 24
+        }
+      },
+      "missed_examples": {
+        "WDF": {
+          "primitive": {
+            "kind": "WDF",
+            "target": 0,
+            "polarity": 1,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑"
+          ]
+        },
+        "DRDF": {
+          "primitive": {
+            "kind": "DRDF",
+            "target": 0,
+            "polarity": 0,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑"
+          ]
+        },
+        "D2R": {
+          "primitive": {
+            "kind": "D2R",
+            "target": 0,
+            "polarity": 0,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑"
+          ]
+        },
+        "CFin": {
+          "primitive": {
+            "kind": "CFin",
+            "target": 1,
+            "polarity": 0,
+            "aggressor": 0,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑"
+          ]
+        },
+        "CFid": {
+          "primitive": {
+            "kind": "CFid",
+            "target": 1,
+            "polarity": 0,
+            "aggressor": 0,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑"
+          ]
+        },
+        "CFst": {
+          "primitive": {
+            "kind": "CFst",
+            "target": 1,
+            "polarity": 0,
+            "aggressor": 0,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑"
+          ]
+        }
+      }
+    },
+    {
+      "source": "03_March基础与经典算法.md",
+      "line": 189,
+      "label": "3.2.4 March X 6N",
+      "sequence": "⇕(w0); ↑(r0,w1); ↓(r1,w0); ⇕(r0)",
+      "operations_per_address": 6,
+      "memory_size": 3,
+      "healthy_runs": 32,
+      "faulty_runs": 3264,
+      "digital_model_coverage": {
+        "SAF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "TF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "WDF": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "IRF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "RDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "DRDF": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "D2R": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "CFin": {
+          "detected_in_all_tested_settings": 12,
+          "primitive_count": 12
+        },
+        "CFid": {
+          "detected_in_all_tested_settings": 12,
+          "primitive_count": 24
+        },
+        "CFst": {
+          "detected_in_all_tested_settings": 18,
+          "primitive_count": 24
+        }
+      },
+      "missed_examples": {
+        "WDF": {
+          "primitive": {
+            "kind": "WDF",
+            "target": 0,
+            "polarity": 1,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ]
+        },
+        "DRDF": {
+          "primitive": {
+            "kind": "DRDF",
+            "target": 0,
+            "polarity": 0,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ]
+        },
+        "D2R": {
+          "primitive": {
+            "kind": "D2R",
+            "target": 0,
+            "polarity": 0,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ]
+        },
+        "CFid": {
+          "primitive": {
+            "kind": "CFid",
+            "target": 1,
+            "polarity": 0,
+            "aggressor": 0,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ]
+        },
+        "CFst": {
+          "primitive": {
+            "kind": "CFst",
+            "target": 1,
+            "polarity": 0,
+            "aggressor": 0,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ]
+        }
+      }
+    },
+    {
+      "source": "03_March基础与经典算法.md",
+      "line": 197,
+      "label": "3.2.5 March Y 8N",
+      "sequence": "⇕(w0); ↑(r0,w1,r1); ↓(r1,w0,r0); ⇕(r0)",
+      "operations_per_address": 8,
+      "memory_size": 3,
+      "healthy_runs": 32,
+      "faulty_runs": 3264,
+      "digital_model_coverage": {
+        "SAF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "TF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "WDF": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "IRF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "RDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "DRDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "D2R": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "CFin": {
+          "detected_in_all_tested_settings": 12,
+          "primitive_count": 12
+        },
+        "CFid": {
+          "detected_in_all_tested_settings": 12,
+          "primitive_count": 24
+        },
+        "CFst": {
+          "detected_in_all_tested_settings": 18,
+          "primitive_count": 24
+        }
+      },
+      "missed_examples": {
+        "WDF": {
+          "primitive": {
+            "kind": "WDF",
+            "target": 0,
+            "polarity": 1,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ]
+        },
+        "D2R": {
+          "primitive": {
+            "kind": "D2R",
+            "target": 0,
+            "polarity": 0,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ]
+        },
+        "CFid": {
+          "primitive": {
+            "kind": "CFid",
+            "target": 1,
+            "polarity": 0,
+            "aggressor": 0,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ]
+        },
+        "CFst": {
+          "primitive": {
+            "kind": "CFst",
+            "target": 1,
+            "polarity": 0,
+            "aggressor": 0,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ]
+        }
+      }
+    },
+    {
+      "source": "03_March基础与经典算法.md",
+      "line": 207,
+      "label": "3.2.6 March C 11N",
+      "sequence": "⇕(w0); ↑(r0,w1); ↑(r1,w0); ↑(r0); ↓(r0,w1); ↓(r1,w0); ⇕(r0)",
+      "operations_per_address": 11,
+      "memory_size": 3,
+      "healthy_runs": 32,
+      "faulty_runs": 3264,
+      "digital_model_coverage": {
+        "SAF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "TF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "WDF": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "IRF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "RDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "DRDF": {
+          "detected_in_all_tested_settings": 3,
+          "primitive_count": 6
+        },
+        "D2R": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "CFin": {
+          "detected_in_all_tested_settings": 12,
+          "primitive_count": 12
+        },
+        "CFid": {
+          "detected_in_all_tested_settings": 24,
+          "primitive_count": 24
+        },
+        "CFst": {
+          "detected_in_all_tested_settings": 24,
+          "primitive_count": 24
+        }
+      },
+      "missed_examples": {
+        "WDF": {
+          "primitive": {
+            "kind": "WDF",
+            "target": 0,
+            "polarity": 1,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ]
+        },
+        "DRDF": {
+          "primitive": {
+            "kind": "DRDF",
+            "target": 0,
+            "polarity": 1,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ]
+        },
+        "D2R": {
+          "primitive": {
+            "kind": "D2R",
+            "target": 0,
+            "polarity": 0,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ]
+        }
+      }
+    },
+    {
+      "source": "03_March基础与经典算法.md",
+      "line": 221,
+      "label": "3.2.8 March C+ 14N",
+      "sequence": "⇕(w0); ↑(r0,w1,r1); ↑(r1,w0,r0); ↓(r0,w1,r1); ↓(r1,w0,r0); ⇕(r0)",
+      "operations_per_address": 14,
+      "memory_size": 3,
+      "healthy_runs": 32,
+      "faulty_runs": 3264,
+      "digital_model_coverage": {
+        "SAF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "TF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "WDF": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "IRF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "RDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "DRDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "D2R": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "CFin": {
+          "detected_in_all_tested_settings": 12,
+          "primitive_count": 12
+        },
+        "CFid": {
+          "detected_in_all_tested_settings": 24,
+          "primitive_count": 24
+        },
+        "CFst": {
+          "detected_in_all_tested_settings": 24,
+          "primitive_count": 24
+        }
+      },
+      "missed_examples": {
+        "WDF": {
+          "primitive": {
+            "kind": "WDF",
+            "target": 0,
+            "polarity": 1,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ]
+        },
+        "D2R": {
+          "primitive": {
+            "kind": "D2R",
+            "target": 0,
+            "polarity": 0,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ]
+        }
+      }
+    },
+    {
+      "source": "03_March基础与经典算法.md",
+      "line": 236,
+      "label": "3.2.9 March CL 12N",
+      "sequence": "⇕(w0); ↑(r0,w1); ↑(r1,r1,w0); ↓(r0,w1,r1); ↓(r1,w0); ⇕(r0)",
+      "operations_per_address": 12,
+      "memory_size": 3,
+      "healthy_runs": 32,
+      "faulty_runs": 3264,
+      "digital_model_coverage": {
+        "SAF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "TF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "WDF": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "IRF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "RDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "DRDF": {
+          "detected_in_all_tested_settings": 3,
+          "primitive_count": 6
+        },
+        "D2R": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "CFin": {
+          "detected_in_all_tested_settings": 12,
+          "primitive_count": 12
+        },
+        "CFid": {
+          "detected_in_all_tested_settings": 24,
+          "primitive_count": 24
+        },
+        "CFst": {
+          "detected_in_all_tested_settings": 24,
+          "primitive_count": 24
+        }
+      },
+      "missed_examples": {
+        "WDF": {
+          "primitive": {
+            "kind": "WDF",
+            "target": 0,
+            "polarity": 1,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ]
+        },
+        "DRDF": {
+          "primitive": {
+            "kind": "DRDF",
+            "target": 0,
+            "polarity": 0,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ]
+        },
+        "D2R": {
+          "primitive": {
+            "kind": "D2R",
+            "target": 0,
+            "polarity": 0,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ]
+        }
+      }
+    },
+    {
+      "source": "03_March基础与经典算法.md",
+      "line": 253,
+      "label": "March A（15N）：",
+      "sequence": "⇕(w0); ↑(r0,w1,w0,w1); ↑(r1,w0,w1); ↓(r1,w0,w1,w0); ↓(r0,w1,w0)",
+      "operations_per_address": 15,
+      "memory_size": 3,
+      "healthy_runs": 16,
+      "faulty_runs": 1632,
+      "digital_model_coverage": {
+        "SAF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "TF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "WDF": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "IRF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "RDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "DRDF": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "D2R": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "CFin": {
+          "detected_in_all_tested_settings": 12,
+          "primitive_count": 12
+        },
+        "CFid": {
+          "detected_in_all_tested_settings": 24,
+          "primitive_count": 24
+        },
+        "CFst": {
+          "detected_in_all_tested_settings": 24,
+          "primitive_count": 24
+        }
+      },
+      "missed_examples": {
+        "WDF": {
+          "primitive": {
+            "kind": "WDF",
+            "target": 0,
+            "polarity": 1,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑"
+          ]
+        },
+        "DRDF": {
+          "primitive": {
+            "kind": "DRDF",
+            "target": 0,
+            "polarity": 0,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑"
+          ]
+        },
+        "D2R": {
+          "primitive": {
+            "kind": "D2R",
+            "target": 0,
+            "polarity": 0,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑"
+          ]
+        }
+      }
+    },
+    {
+      "source": "03_March基础与经典算法.md",
+      "line": 265,
+      "label": "March B（17N）：",
+      "sequence": "⇕(w0); ↑(r0,w1,r1,w0,r0,w1); ↑(r1,w0,w1); ↓(r1,w0,w1,w0); ↓(r0,w1,w0)",
+      "operations_per_address": 17,
+      "memory_size": 3,
+      "healthy_runs": 16,
+      "faulty_runs": 1632,
+      "digital_model_coverage": {
+        "SAF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "TF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "WDF": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "IRF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "RDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "DRDF": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "D2R": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "CFin": {
+          "detected_in_all_tested_settings": 12,
+          "primitive_count": 12
+        },
+        "CFid": {
+          "detected_in_all_tested_settings": 24,
+          "primitive_count": 24
+        },
+        "CFst": {
+          "detected_in_all_tested_settings": 24,
+          "primitive_count": 24
+        }
+      },
+      "missed_examples": {
+        "WDF": {
+          "primitive": {
+            "kind": "WDF",
+            "target": 0,
+            "polarity": 1,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑"
+          ]
+        },
+        "DRDF": {
+          "primitive": {
+            "kind": "DRDF",
+            "target": 0,
+            "polarity": 0,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑"
+          ]
+        },
+        "D2R": {
+          "primitive": {
+            "kind": "D2R",
+            "target": 0,
+            "polarity": 0,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑"
+          ]
+        }
+      }
+    },
+    {
+      "source": "04_增强March与复杂故障测试.md",
+      "line": 49,
+      "label": "1.2 March LR：14N",
+      "sequence": "⇕(w0); ↓(r0,w1); ↑(r1,w0,r0,w1); ↑(r1,w0); ↑(r0,w1,r1,w0); ↑(r0)",
+      "operations_per_address": 14,
+      "memory_size": 3,
+      "healthy_runs": 16,
+      "faulty_runs": 1632,
+      "digital_model_coverage": {
+        "SAF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "TF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "WDF": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "IRF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "RDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "DRDF": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "D2R": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "CFin": {
+          "detected_in_all_tested_settings": 12,
+          "primitive_count": 12
+        },
+        "CFid": {
+          "detected_in_all_tested_settings": 24,
+          "primitive_count": 24
+        },
+        "CFst": {
+          "detected_in_all_tested_settings": 24,
+          "primitive_count": 24
+        }
+      },
+      "missed_examples": {
+        "WDF": {
+          "primitive": {
+            "kind": "WDF",
+            "target": 0,
+            "polarity": 1,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑"
+          ]
+        },
+        "DRDF": {
+          "primitive": {
+            "kind": "DRDF",
+            "target": 0,
+            "polarity": 0,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑"
+          ]
+        },
+        "D2R": {
+          "primitive": {
+            "kind": "D2R",
+            "target": 0,
+            "polarity": 0,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑"
+          ]
+        }
+      }
+    },
+    {
+      "source": "04_增强March与复杂故障测试.md",
+      "line": 66,
+      "label": "1.3 March SR：14N",
+      "sequence": "↓(w0); ↑(r0,w1,r1,w0); ↑(r0,r0); ↑(w1); ↓(r1,w0,r0,w1); ↓(r1,r1)",
+      "operations_per_address": 14,
+      "memory_size": 3,
+      "healthy_runs": 8,
+      "faulty_runs": 816,
+      "digital_model_coverage": {
+        "SAF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "TF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "WDF": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "IRF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "RDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "DRDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "D2R": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "CFin": {
+          "detected_in_all_tested_settings": 12,
+          "primitive_count": 12
+        },
+        "CFid": {
+          "detected_in_all_tested_settings": 24,
+          "primitive_count": 24
+        },
+        "CFst": {
+          "detected_in_all_tested_settings": 24,
+          "primitive_count": 24
+        }
+      },
+      "missed_examples": {
+        "WDF": {
+          "primitive": {
+            "kind": "WDF",
+            "target": 0,
+            "polarity": 1,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": []
+        },
+        "D2R": {
+          "primitive": {
+            "kind": "D2R",
+            "target": 0,
+            "polarity": 0,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": []
+        }
+      }
+    },
+    {
+      "source": "04_增强March与复杂故障测试.md",
+      "line": 83,
+      "label": "1.4 March SS：22N",
+      "sequence": "⇕(w0); ↑(r0,r0,w0,r0,w1); ↑(r1,r1,w1,r1,w0); ↓(r0,r0,w0,r0,w1); ↓(r1,r1,w1,r1,w0); ⇕(r0)",
+      "operations_per_address": 22,
+      "memory_size": 3,
+      "healthy_runs": 32,
+      "faulty_runs": 3264,
+      "digital_model_coverage": {
+        "SAF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "TF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "WDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "IRF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "RDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "DRDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "D2R": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "CFin": {
+          "detected_in_all_tested_settings": 12,
+          "primitive_count": 12
+        },
+        "CFid": {
+          "detected_in_all_tested_settings": 24,
+          "primitive_count": 24
+        },
+        "CFst": {
+          "detected_in_all_tested_settings": 24,
+          "primitive_count": 24
+        }
+      },
+      "missed_examples": {
+        "D2R": {
+          "primitive": {
+            "kind": "D2R",
+            "target": 0,
+            "polarity": 0,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ]
+        }
+      }
+    },
+    {
+      "source": "04_增强March与复杂故障测试.md",
+      "line": 123,
+      "label": "1.5 March MSS：18N",
+      "sequence": "⇕(w0); ↑(r0,r0,w1,w1); ↑(r1,r1,w0,w0); ↓(r0,r0,w1,w1); ↓(r1,r1,w0,w0); ⇕(r0)",
+      "operations_per_address": 18,
+      "memory_size": 3,
+      "healthy_runs": 32,
+      "faulty_runs": 3264,
+      "digital_model_coverage": {
+        "SAF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "TF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "WDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "IRF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "RDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "DRDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "D2R": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "CFin": {
+          "detected_in_all_tested_settings": 12,
+          "primitive_count": 12
+        },
+        "CFid": {
+          "detected_in_all_tested_settings": 24,
+          "primitive_count": 24
+        },
+        "CFst": {
+          "detected_in_all_tested_settings": 24,
+          "primitive_count": 24
+        }
+      },
+      "missed_examples": {
+        "D2R": {
+          "primitive": {
+            "kind": "D2R",
+            "target": 0,
+            "polarity": 0,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ]
+        }
+      }
+    },
+    {
+      "source": "04_增强March与复杂故障测试.md",
+      "line": 140,
+      "label": "1.6 March AB：22N",
+      "sequence": "⇕(w0); ↓(r0,w1,r1,w1,r1); ↓(r1,w0,r0,w0,r0); ↑(r0,w1,r1,w1,r1); ↑(r1,w0,r0,w0,r0); ⇕(r0)",
+      "operations_per_address": 22,
+      "memory_size": 3,
+      "healthy_runs": 32,
+      "faulty_runs": 3264,
+      "digital_model_coverage": {
+        "SAF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "TF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "WDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "IRF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "RDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "DRDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "D2R": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "CFin": {
+          "detected_in_all_tested_settings": 12,
+          "primitive_count": 12
+        },
+        "CFid": {
+          "detected_in_all_tested_settings": 24,
+          "primitive_count": 24
+        },
+        "CFst": {
+          "detected_in_all_tested_settings": 24,
+          "primitive_count": 24
+        }
+      },
+      "missed_examples": {
+        "D2R": {
+          "primitive": {
+            "kind": "D2R",
+            "target": 0,
+            "polarity": 0,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ]
+        }
+      }
+    },
+    {
+      "source": "04_增强March与复杂故障测试.md",
+      "line": 168,
+      "label": "March AZ1（13N）",
+      "sequence": "⇕(w0); ↓(w1); ↑(w1,r1,r1,w0); ↑(w0,r0); ↑(r0,w1,w1,r1); ↑(r1)",
+      "operations_per_address": 13,
+      "memory_size": 3,
+      "healthy_runs": 16,
+      "faulty_runs": 1632,
+      "digital_model_coverage": {
+        "SAF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "TF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "WDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "IRF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "RDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "DRDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "D2R": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "CFin": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 12
+        },
+        "CFid": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 24
+        },
+        "CFst": {
+          "detected_in_all_tested_settings": 21,
+          "primitive_count": 24
+        }
+      },
+      "missed_examples": {
+        "D2R": {
+          "primitive": {
+            "kind": "D2R",
+            "target": 0,
+            "polarity": 0,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑"
+          ]
+        },
+        "CFin": {
+          "primitive": {
+            "kind": "CFin",
+            "target": 1,
+            "polarity": 0,
+            "aggressor": 0,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑"
+          ]
+        },
+        "CFid": {
+          "primitive": {
+            "kind": "CFid",
+            "target": 1,
+            "polarity": 0,
+            "aggressor": 0,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑"
+          ]
+        },
+        "CFst": {
+          "primitive": {
+            "kind": "CFst",
+            "target": 0,
+            "polarity": 1,
+            "aggressor": 1,
+            "forced": 1,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑"
+          ]
+        }
+      }
+    },
+    {
+      "source": "04_增强March与复杂故障测试.md",
+      "line": 168,
+      "label": "March AZ（13N）",
+      "sequence": "⇕(w0); ↓(w1); ↑(w1,r1,r1,w0,w0); ↑(r0); ↑(r0,w1,w1,r1); ↑(r1)",
+      "operations_per_address": 13,
+      "memory_size": 3,
+      "healthy_runs": 16,
+      "faulty_runs": 1632,
+      "digital_model_coverage": {
+        "SAF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "TF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "WDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "IRF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "RDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "DRDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "D2R": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "CFin": {
+          "detected_in_all_tested_settings": 9,
+          "primitive_count": 12
+        },
+        "CFid": {
+          "detected_in_all_tested_settings": 9,
+          "primitive_count": 24
+        },
+        "CFst": {
+          "detected_in_all_tested_settings": 24,
+          "primitive_count": 24
+        }
+      },
+      "missed_examples": {
+        "D2R": {
+          "primitive": {
+            "kind": "D2R",
+            "target": 0,
+            "polarity": 0,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑"
+          ]
+        },
+        "CFin": {
+          "primitive": {
+            "kind": "CFin",
+            "target": 1,
+            "polarity": 0,
+            "aggressor": 0,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑"
+          ]
+        },
+        "CFid": {
+          "primitive": {
+            "kind": "CFid",
+            "target": 1,
+            "polarity": 0,
+            "aggressor": 0,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑"
+          ]
+        }
+      }
+    },
+    {
+      "source": "04_增强March与复杂故障测试.md",
+      "line": 168,
+      "label": "March AZ2（14N）",
+      "sequence": "↓(w0); ↓(w0,r0); ↑(r0,w1,w1,r1); ↑(r1,w0); ↓(r0,w1,w1,r1); ↓(r1)",
+      "operations_per_address": 14,
+      "memory_size": 3,
+      "healthy_runs": 8,
+      "faulty_runs": 816,
+      "digital_model_coverage": {
+        "SAF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "TF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "WDF": {
+          "detected_in_all_tested_settings": 3,
+          "primitive_count": 6
+        },
+        "IRF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "RDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "DRDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "D2R": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "CFin": {
+          "detected_in_all_tested_settings": 12,
+          "primitive_count": 12
+        },
+        "CFid": {
+          "detected_in_all_tested_settings": 18,
+          "primitive_count": 24
+        },
+        "CFst": {
+          "detected_in_all_tested_settings": 24,
+          "primitive_count": 24
+        }
+      },
+      "missed_examples": {
+        "WDF": {
+          "primitive": {
+            "kind": "WDF",
+            "target": 0,
+            "polarity": 0,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": []
+        },
+        "D2R": {
+          "primitive": {
+            "kind": "D2R",
+            "target": 0,
+            "polarity": 0,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": []
+        },
+        "CFid": {
+          "primitive": {
+            "kind": "CFid",
+            "target": 1,
+            "polarity": 0,
+            "aggressor": 0,
+            "forced": 1,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": []
+        }
+      }
+    },
+    {
+      "source": "04_增强March与复杂故障测试.md",
+      "line": 236,
+      "label": "2.2 March RAW：26N",
+      "sequence": "⇕(w0); ↑(r0,w0,r0,r0,w1,r1); ↑(r1,w1,r1,r1,w0,r0); ↓(r0,w0,r0,r0,w1,r1); ↓(r1,w1,r1,r1,w0,r0); ⇕(r0)",
+      "operations_per_address": 26,
+      "memory_size": 3,
+      "healthy_runs": 32,
+      "faulty_runs": 3264,
+      "digital_model_coverage": {
+        "SAF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "TF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "WDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "IRF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "RDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "DRDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "D2R": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "CFin": {
+          "detected_in_all_tested_settings": 12,
+          "primitive_count": 12
+        },
+        "CFid": {
+          "detected_in_all_tested_settings": 24,
+          "primitive_count": 24
+        },
+        "CFst": {
+          "detected_in_all_tested_settings": 24,
+          "primitive_count": 24
+        }
+      },
+      "missed_examples": {
+        "D2R": {
+          "primitive": {
+            "kind": "D2R",
+            "target": 0,
+            "polarity": 0,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": [
+            "↑",
+            "↑"
+          ]
+        }
+      }
+    },
+    {
+      "source": "04_增强March与复杂故障测试.md",
+      "line": 255,
+      "label": "2.3 13N 分离读取示例",
+      "sequence": "↑(w0); ↑(w0,r0); ↑(r0); ↑(w1,r1); ↑(r1); ↑(w1,r1); ↑(r1); ↑(w0,r0); ↑(r0)",
+      "operations_per_address": 13,
+      "memory_size": 3,
+      "healthy_runs": 8,
+      "faulty_runs": 816,
+      "digital_model_coverage": {
+        "SAF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "TF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "WDF": {
+          "detected_in_all_tested_settings": 3,
+          "primitive_count": 6
+        },
+        "IRF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "RDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "DRDF": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 6
+        },
+        "D2R": {
+          "detected_in_all_tested_settings": 0,
+          "primitive_count": 6
+        },
+        "CFin": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 12
+        },
+        "CFid": {
+          "detected_in_all_tested_settings": 6,
+          "primitive_count": 24
+        },
+        "CFst": {
+          "detected_in_all_tested_settings": 18,
+          "primitive_count": 24
+        }
+      },
+      "missed_examples": {
+        "WDF": {
+          "primitive": {
+            "kind": "WDF",
+            "target": 0,
+            "polarity": 0,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": []
+        },
+        "D2R": {
+          "primitive": {
+            "kind": "D2R",
+            "target": 0,
+            "polarity": 0,
+            "aggressor": -1,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": []
+        },
+        "CFin": {
+          "primitive": {
+            "kind": "CFin",
+            "target": 1,
+            "polarity": 0,
+            "aggressor": 0,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": []
+        },
+        "CFid": {
+          "primitive": {
+            "kind": "CFid",
+            "target": 1,
+            "polarity": 0,
+            "aggressor": 0,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": []
+        },
+        "CFst": {
+          "primitive": {
+            "kind": "CFst",
+            "target": 1,
+            "polarity": 0,
+            "aggressor": 0,
+            "forced": 0,
+            "second_aggressor": -1
+          },
+          "initial": [
+            0,
+            0,
+            0
+          ],
+          "arbitrary_directions": []
+        }
+      }
+    }
+  ],
+  "passed": true
+}

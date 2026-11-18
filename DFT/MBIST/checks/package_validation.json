@@ -1,19 +1,175 @@
 {
   "scope": "Local file links, headings, references, math delimiters, native SVGs; no hardware or physical validation.",
-  "markdown_documents": 16,
-  "local_links": 303,
-  "image_links": 25,
-  "heading_links": 91,
-  "footnote_uses": 130,
-  "code_blocks": 31,
-  "reference_count": 50,
-  "svg_count": 25,
-  "math_expressions": 220,
-  "display_math": 38,
-  "inline_math": 182,
+  "markdown_documents": 17,
+  "local_links": 347,
+  "image_links": 50,
+  "heading_links": 113,
+  "footnote_uses": 144,
+  "code_blocks": 118,
+  "reference_count": 90,
+  "svg_count": 54,
+  "math_expressions": 527,
+  "display_math": 94,
+  "inline_math": 433,
   "errors": [],
   "passed": true,
   "figures": [
+    {
+      "file": "assets/grouping/01_group_levels.svg",
+      "text_objects": 20,
+      "raster_images": 0,
+      "minimum_text_size": 21.0
+    },
+    {
+      "file": "assets/grouping/02_demo_layout.svg",
+      "text_objects": 41,
+      "raster_images": 0,
+      "minimum_text_size": 20.0
+    },
+    {
+      "file": "assets/grouping/03_power_flow.svg",
+      "text_objects": 20,
+      "raster_images": 0,
+      "minimum_text_size": 21.0
+    },
+    {
+      "file": "assets/grouping/04_execution_modes.svg",
+      "text_objects": 26,
+      "raster_images": 0,
+      "minimum_text_size": 20.0
+    },
+    {
+      "file": "assets/grouping/05_constraints.svg",
+      "text_objects": 23,
+      "raster_images": 0,
+      "minimum_text_size": 20.0
+    },
+    {
+      "file": "assets/grouping/06_geometry_metrics.svg",
+      "text_objects": 10,
+      "raster_images": 0,
+      "minimum_text_size": 21.0
+    },
+    {
+      "file": "assets/grouping/07_bin_packing.svg",
+      "text_objects": 28,
+      "raster_images": 0,
+      "minimum_text_size": 21.0
+    },
+    {
+      "file": "assets/grouping/08_geometry_greedy.svg",
+      "text_objects": 19,
+      "raster_images": 0,
+      "minimum_text_size": 21.0
+    },
+    {
+      "file": "assets/grouping/09_hierarchical.svg",
+      "text_objects": 23,
+      "raster_images": 0,
+      "minimum_text_size": 20.0
+    },
+    {
+      "file": "assets/grouping/10_kmeans_repair.svg",
+      "text_objects": 19,
+      "raster_images": 0,
+      "minimum_text_size": 21.0
+    },
+    {
+      "file": "assets/grouping/11_dbscan.svg",
+      "text_objects": 22,
+      "raster_images": 0,
+      "minimum_text_size": 20.0
+    },
+    {
+      "file": "assets/grouping/12_rectangle_split.svg",
+      "text_objects": 19,
+      "raster_images": 0,
+      "minimum_text_size": 21.0
+    },
+    {
+      "file": "assets/grouping/13_dsatur.svg",
+      "text_objects": 15,
+      "raster_images": 0,
+      "minimum_text_size": 21.0
+    },
+    {
+      "file": "assets/grouping/14_hypergraph.svg",
+      "text_objects": 17,
+      "raster_images": 0,
+      "minimum_text_size": 21.0
+    },
+    {
+      "file": "assets/grouping/15_convolution.svg",
+      "text_objects": 10,
+      "raster_images": 0,
+      "minimum_text_size": 21.0
+    },
+    {
+      "file": "assets/grouping/16_local_repair.svg",
+      "text_objects": 25,
+      "raster_images": 0,
+      "minimum_text_size": 21.0
+    },
+    {
+      "file": "assets/grouping/17_annealing.svg",
+      "text_objects": 20,
+      "raster_images": 0,
+      "minimum_text_size": 21.0
+    },
+    {
+      "file": "assets/grouping/18_genetic.svg",
+      "text_objects": 28,
+      "raster_images": 0,
+      "minimum_text_size": 21.0
+    },
+    {
+      "file": "assets/grouping/19_exact_cover.svg",
+      "text_objects": 40,
+      "raster_images": 0,
+      "minimum_text_size": 21.0
+    },
+    {
+      "file": "assets/grouping/20_cp_schedule.svg",
+      "text_objects": 25,
+      "raster_images": 0,
+      "minimum_text_size": 20.0
+    },
+    {
+      "file": "assets/grouping/21_flow.svg",
+      "text_objects": 13,
+      "raster_images": 0,
+      "minimum_text_size": 21.0
+    },
+    {
+      "file": "assets/grouping/22_integration.svg",
+      "text_objects": 21,
+      "raster_images": 0,
+      "minimum_text_size": 21.0
+    },
+    {
+      "file": "assets/grouping/23_results.svg",
+      "text_objects": 31,
+      "raster_images": 0,
+      "minimum_text_size": 21.0
+    },
+    {
+      "file": "assets/grouping/24_schedule_comparison.svg",
+      "text_objects": 25,
+      "raster_images": 0,
+      "minimum_text_size": 20.0
+    },
+    {
+      "file": "assets/grouping/25_thermal.svg",
+      "text_objects": 12,
+      "raster_images": 0,
+      "minimum_text_size": 21.0
+    },
+    {
+      "file": "assets/grouping/26_local_power.svg",
+      "text_objects": 19,
+      "raster_images": 0,
+      "minimum_text_size": 21.0
+    },
     {
       "file": "assets/march/01_mbist结构.svg",
       "text_objects": 30,
@@ -73,6 +229,24 @@
       "text_objects": 32,
       "raster_images": 0,
       "minimum_text_size": 28.0
+    },
+    {
+      "file": "assets/research/01_fault_observation.svg",
+      "text_objects": 27,
+      "raster_images": 0,
+      "minimum_text_size": 30.0
+    },
+    {
+      "file": "assets/research/02_euler_sequence.svg",
+      "text_objects": 24,
+      "raster_images": 0,
+      "minimum_text_size": 30.0
+    },
+    {
+      "file": "assets/research/03_sequence_search.svg",
+      "text_objects": 24,
+      "raster_images": 0,
+      "minimum_text_size": 30.0
     },
     {
       "file": "assets/systems/01_system.svg",

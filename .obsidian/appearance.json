@@ -1,5 +1,6 @@
 {
   "enabledCssSnippets": [
     "hide-resource-folders"
-  ]
+  ],
+  "showRibbon": true
 }

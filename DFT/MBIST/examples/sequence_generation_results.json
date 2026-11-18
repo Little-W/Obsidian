@@ -1,0 +1,7815 @@
+{
+  "schema_version": 1,
+  "model_scope": "Finite teaching examples defined in chapter 05.",
+  "euler": {
+    "scope": "Two isolated cells, one active fault primitive per run.",
+    "states": [
+      "00",
+      "10",
+      "11",
+      "01",
+      "00",
+      "01",
+      "11",
+      "10",
+      "00"
+    ],
+    "required_edges": 8,
+    "visited_edges": 8,
+    "rows": [
+      {
+        "step": 1,
+        "source": "00",
+        "destination": "10",
+        "operations": [
+          "w1@0",
+          "r1@0",
+          "r0@1"
+        ]
+      },
+      {
+        "step": 2,
+        "source": "10",
+        "destination": "11",
+        "operations": [
+          "w1@1",
+          "r1@0",
+          "r1@1"
+        ]
+      },
+      {
+        "step": 3,
+        "source": "11",
+        "destination": "01",
+        "operations": [
+          "w0@0",
+          "r0@0",
+          "r1@1"
+        ]
+      },
+      {
+        "step": 4,
+        "source": "01",
+        "destination": "00",
+        "operations": [
+          "w0@1",
+          "r0@0",
+          "r0@1"
+        ]
+      },
+      {
+        "step": 5,
+        "source": "00",
+        "destination": "01",
+        "operations": [
+          "w1@1",
+          "r0@0",
+          "r1@1"
+        ]
+      },
+      {
+        "step": 6,
+        "source": "01",
+        "destination": "11",
+        "operations": [
+          "w1@0",
+          "r1@0",
+          "r1@1"
+        ]
+      },
+      {
+        "step": 7,
+        "source": "11",
+        "destination": "10",
+        "operations": [
+          "w0@1",
+          "r1@0",
+          "r0@1"
+        ]
+      },
+      {
+        "step": 8,
+        "source": "10",
+        "destination": "00",
+        "operations": [
+          "w0@0",
+          "r0@0",
+          "r0@1"
+        ]
+      }
+    ],
+    "operation_count": 26,
+    "fault_primitive_count": 16,
+    "initial_states_per_primitive": 4,
+    "detected_scenarios": 64,
+    "scenario_count": 64,
+    "detection_records": [
+      {
+        "fault": [
+          "SAF",
+          0,
+          0,
+          null
+        ],
+        "initial": [
+          0,
+          0
+        ],
+        "first_mismatch": {
+          "step": 4,
+          "address": 0,
+          "expected": 1,
+          "observed": 0
+        }
+      },
+      {
+        "fault": [
+          "SAF",
+          0,
+          0,
+          null
+        ],
+        "initial": [
+          0,
+          1
+        ],
+        "first_mismatch": {
+          "step": 4,
+          "address": 0,
+          "expected": 1,
+          "observed": 0
+        }
+      },
+      {
+        "fault": [
+          "SAF",
+          0,
+          0,
+          null
+        ],
+        "initial": [
+          1,
+          0
+        ],
+        "first_mismatch": {
+          "step": 4,
+          "address": 0,
+          "expected": 1,
+          "observed": 0
+        }
+      },
+      {
+        "fault": [
+          "SAF",
+          0,
+          0,
+          null
+        ],
+        "initial": [
+          1,
+          1
+        ],
+        "first_mismatch": {
+          "step": 4,
+          "address": 0,
+          "expected": 1,
+          "observed": 0
+        }
+      },
+      {
+        "fault": [
+          "TF",
+          0,
+          0,
+          null
+        ],
+        "initial": [
+          0,
+          0
+        ],
+        "first_mismatch": {
+          "step": 4,
+          "address": 0,
+          "expected": 1,
+          "observed": 0
+        }
+      },
+      {
+        "fault": [
+          "TF",
+          0,
+          0,
+          null
+        ],
+        "initial": [
+          0,
+          1
+        ],
+        "first_mismatch": {
+          "step": 4,
+          "address": 0,
+          "expected": 1,
+          "observed": 0
+        }
+      },
+      {
+        "fault": [
+          "TF",
+          0,
+          0,
+          null
+        ],
+        "initial": [
+          1,
+          0
+        ],
+        "first_mismatch": {
+          "step": 4,
+          "address": 0,
+          "expected": 1,
+          "observed": 0
+        }
+      },
+      {
+        "fault": [
+          "TF",
+          0,
+          0,
+          null
+        ],
+        "initial": [
+          1,
+          1
+        ],
+        "first_mismatch": {
+          "step": 4,
+          "address": 0,
+          "expected": 1,
+          "observed": 0
+        }
+      },
+      {
+        "fault": [
+          "SAF",
+          0,
+          1,
+          null
+        ],
+        "initial": [
+          0,
+          0
+        ],
+        "first_mismatch": {
+          "step": 10,
+          "address": 0,
+          "expected": 0,
+          "observed": 1
+        }
+      },
+      {
+        "fault": [
+          "SAF",
+          0,
+          1,
+          null
+        ],
+        "initial": [
+          0,
+          1
+        ],
+        "first_mismatch": {
+          "step": 10,
+          "address": 0,
+          "expected": 0,
+          "observed": 1
+        }
+      },
+      {
+        "fault": [
+          "SAF",
+          0,
+          1,
+          null
+        ],
+        "initial": [
+          1,
+          0
+        ],
+        "first_mismatch": {
+          "step": 10,
+          "address": 0,
+          "expected": 0,
+          "observed": 1
+        }
+      },
+      {
+        "fault": [
+          "SAF",
+          0,
+          1,
+          null
+        ],
+        "initial": [
+          1,
+          1
+        ],
+        "first_mismatch": {
+          "step": 10,
+          "address": 0,
+          "expected": 0,
+          "observed": 1
+        }
+      },
+      {
+        "fault": [
+          "TF",
+          0,
+          1,
+          null
+        ],
+        "initial": [
+          0,
+          0
+        ],
+        "first_mismatch": {
+          "step": 10,
+          "address": 0,
+          "expected": 0,
+          "observed": 1
+        }
+      },
+      {
+        "fault": [
+          "TF",
+          0,
+          1,
+          null
+        ],
+        "initial": [
+          0,
+          1
+        ],
+        "first_mismatch": {
+          "step": 10,
+          "address": 0,
+          "expected": 0,
+          "observed": 1
+        }
+      },
+      {
+        "fault": [
+          "TF",
+          0,
+          1,
+          null
+        ],
+        "initial": [
+          1,
+          0
+        ],
+        "first_mismatch": {
+          "step": 10,
+          "address": 0,
+          "expected": 0,
+          "observed": 1
+        }
+      },
+      {
+        "fault": [
+          "TF",
+          0,
+          1,
+          null
+        ],
+        "initial": [
+          1,
+          1
+        ],
+        "first_mismatch": {
+          "step": 10,
+          "address": 0,
+          "expected": 0,
+          "observed": 1
+        }
+      },
+      {
+        "fault": [
+          "SAF",
+          1,
+          0,
+          null
+        ],
+        "initial": [
+          0,
+          0
+        ],
+        "first_mismatch": {
+          "step": 8,
+          "address": 1,
+          "expected": 1,
+          "observed": 0
+        }
+      },
+      {
+        "fault": [
+          "SAF",
+          1,
+          0,
+          null
+        ],
+        "initial": [
+          0,
+          1
+        ],
+        "first_mismatch": {
+          "step": 8,
+          "address": 1,
+          "expected": 1,
+          "observed": 0
+        }
+      },
+      {
+        "fault": [
+          "SAF",
+          1,
+          0,
+          null
+        ],
+        "initial": [
+          1,
+          0
+        ],
+        "first_mismatch": {
+          "step": 8,
+          "address": 1,
+          "expected": 1,
+          "observed": 0
+        }
+      },
+      {
+        "fault": [
+          "SAF",
+          1,
+          0,
+          null
+        ],
+        "initial": [
+          1,
+          1
+        ],
+        "first_mismatch": {
+          "step": 8,
+          "address": 1,
+          "expected": 1,
+          "observed": 0
+        }
+      },
+      {
+        "fault": [
+          "TF",
+          1,
+          0,
+          null
+        ],
+        "initial": [
+          0,
+          0
+        ],
+        "first_mismatch": {
+          "step": 8,
+          "address": 1,
+          "expected": 1,
+          "observed": 0
+        }
+      },
+      {
+        "fault": [
+          "TF",
+          1,
+          0,
+          null
+        ],
+        "initial": [
+          0,
+          1
+        ],
+        "first_mismatch": {
+          "step": 8,
+          "address": 1,
+          "expected": 1,
+          "observed": 0
+        }
+      },
+      {
+        "fault": [
+          "TF",
+          1,
+          0,
+          null
+        ],
+        "initial": [
+          1,
+          0
+        ],
+        "first_mismatch": {
+          "step": 8,
+          "address": 1,
+          "expected": 1,
+          "observed": 0
+        }
+      },
+      {
+        "fault": [
+          "TF",
+          1,
+          0,
+          null
+        ],
+        "initial": [
+          1,
+          1
+        ],
+        "first_mismatch": {
+          "step": 8,
+          "address": 1,
+          "expected": 1,
+          "observed": 0
+        }
+      },
+      {
+        "fault": [
+          "SAF",
+          1,
+          1,
+          null
+        ],
+        "initial": [
+          0,
+          0
+        ],
+        "first_mismatch": {
+          "step": 5,
+          "address": 1,
+          "expected": 0,
+          "observed": 1
+        }
+      },
+      {
+        "fault": [
+          "SAF",
+          1,
+          1,
+          null
+        ],
+        "initial": [
+          0,
+          1
+        ],
+        "first_mismatch": {
+          "step": 5,
+          "address": 1,
+          "expected": 0,
+          "observed": 1
+        }
+      },
+      {
+        "fault": [
+          "SAF",
+          1,
+          1,
+          null
+        ],
+        "initial": [
+          1,
+          0
+        ],
+        "first_mismatch": {
+          "step": 5,
+          "address": 1,
+          "expected": 0,
+          "observed": 1
+        }
+      },
+      {
+        "fault": [
+          "SAF",
+          1,
+          1,
+          null
+        ],
+        "initial": [
+          1,
+          1
+        ],
+        "first_mismatch": {
+          "step": 5,
+          "address": 1,
+          "expected": 0,
+          "observed": 1
+        }
+      },
+      {
+        "fault": [
+          "TF",
+          1,
+          1,
+          null
+        ],
+        "initial": [
+          0,
+          0
+        ],
+        "first_mismatch": {
+          "step": 14,
+          "address": 1,
+          "expected": 0,
+          "observed": 1
+        }
+      },
+      {
+        "fault": [
+          "TF",
+          1,
+          1,
+          null
+        ],
+        "initial": [
+          0,
+          1
+        ],
+        "first_mismatch": {
+          "step": 5,
+          "address": 1,
+          "expected": 0,
+          "observed": 1
+        }
+      },
+      {
+        "fault": [
+          "TF",
+          1,
+          1,
+          null
+        ],
+        "initial": [
+          1,
+          0
+        ],
+        "first_mismatch": {
+          "step": 14,
+          "address": 1,
+          "expected": 0,
+          "observed": 1
+        }
+      },
+      {
+        "fault": [
+          "TF",
+          1,
+          1,
+          null
+        ],
+        "initial": [
+          1,
+          1
+        ],
+        "first_mismatch": {
+          "step": 5,
+          "address": 1,
+          "expected": 0,
+          "observed": 1
+        }
+      },
+      {
+        "fault": [
+          "CF",
+          0,
+          0,
+          0
+        ],
+        "initial": [
+          0,
+          0
+        ],
+        "first_mismatch": {
+          "step": 5,
+          "address": 1,
+          "expected": 0,
+          "observed": 1
+        }
+      },
+      {
+        "fault": [
+          "CF",
+          0,
+          0,
+          0
+        ],
+        "initial": [
+          0,
+          1
+        ],
+        "first_mismatch": {
+          "step": 5,
+          "address": 1,
+          "expected": 0,
+          "observed": 1
+        }
+      },
+      {
+        "fault": [
+          "CF",
+          0,
+          0,
+          0
+        ],
+        "initial": [
+          1,
+          0
+        ],
+        "first_mismatch": {
+          "step": 5,
+          "address": 1,
+          "expected": 0,
+          "observed": 1
+        }
+      },
+      {
+        "fault": [
+          "CF",
+          0,
+          0,
+          0
+        ],
+        "initial": [
+          1,
+          1
+        ],
+        "first_mismatch": {
+          "step": 5,
+          "address": 1,
+          "expected": 0,
+          "observed": 1
+        }
+      },
+      {
+        "fault": [
+          "CF",
+          0,
+          0,
+          1
+        ],
+        "initial": [
+          0,
+          0
+        ],
+        "first_mismatch": {
+          "step": 20,
+          "address": 1,
+          "expected": 1,
+          "observed": 0
+        }
+      },
+      {
+        "fault": [
+          "CF",
+          0,
+          0,
+          1
+        ],
+        "initial": [
+          0,
+          1
+        ],
+        "first_mismatch": {
+          "step": 20,
+          "address": 1,
+          "expected": 1,
+          "observed": 0
+        }
+      },
+      {
+        "fault": [
+          "CF",
+          0,
+          0,
+          1
+        ],
+        "initial": [
+          1,
+          0
+        ],
+        "first_mismatch": {
+          "step": 20,
+          "address": 1,
+          "expected": 1,
+          "observed": 0
+        }
+      },
+      {
+        "fault": [
+          "CF",
+          0,
+          0,
+          1
+        ],
+        "initial": [
+          1,
+          1
+        ],
+        "first_mismatch": {
+          "step": 20,
+          "address": 1,
+          "expected": 1,
+          "observed": 0
+        }
+      },
+      {
+        "fault": [
+          "CF",
+          0,
+          1,
+          0
+        ],
+        "initial": [
+          0,
+          0
+        ],
+        "first_mismatch": {
+          "step": 26,
+          "address": 1,
+          "expected": 0,
+          "observed": 1
+        }
+      },
+      {
+        "fault": [
+          "CF",
+          0,
+          1,
+          0
+        ],
+        "initial": [
+          0,
+          1
+        ],
+        "first_mismatch": {
+          "step": 26,
+          "address": 1,
+          "expected": 0,
+          "observed": 1
+        }
+      },
+      {
+        "fault": [
+          "CF",
+          0,
+          1,
+          0
+        ],
+        "initial": [
+          1,
+          0
+        ],
+        "first_mismatch": {
+          "step": 26,
+          "address": 1,
+          "expected": 0,
+          "observed": 1
+        }
+      },
+      {
+        "fault": [
+          "CF",
+          0,
+          1,
+          0
+        ],
+        "initial": [
+          1,
+          1
+        ],
+        "first_mismatch": {
+          "step": 26,
+          "address": 1,
+          "expected": 0,
+          "observed": 1
+        }
+      },
+      {
+        "fault": [
+          "CF",
+          0,
+          1,
+          1
+        ],
+        "initial": [
+          0,
+          0
+        ],
+        "first_mismatch": {
+          "step": 11,
+          "address": 1,
+          "expected": 1,
+          "observed": 0
+        }
+      },
+      {
+        "fault": [
+          "CF",
+          0,
+          1,
+          1
+        ],
+        "initial": [
+          0,
+          1
+        ],
+        "first_mismatch": {
+          "step": 11,
+          "address": 1,
+          "expected": 1,
+          "observed": 0
+        }
+      },
+      {
+        "fault": [
+          "CF",
+          0,
+          1,
+          1
+        ],
+        "initial": [
+          1,
+          0
+        ],
+        "first_mismatch": {
+          "step": 11,
+          "address": 1,
+          "expected": 1,
+          "observed": 0
+        }
+      },
+      {
+        "fault": [
+          "CF",
+          0,
+          1,
+          1
+        ],
+        "initial": [
+          1,
+          1
+        ],
+        "first_mismatch": {
+          "step": 11,
+          "address": 1,
+          "expected": 1,
+          "observed": 0
+        }
+      },
+      {
+        "fault": [
+          "CF",
+          1,
+          0,
+          0
+        ],
+        "initial": [
+          0,
+          0
+        ],
+        "first_mismatch": {
+          "step": 16,
+          "address": 0,
+          "expected": 0,
+          "observed": 1
+        }
+      },
+      {
+        "fault": [
+          "CF",
+          1,
+          0,
+          0
+        ],
+        "initial": [
+          0,
+          1
+        ],
+        "first_mismatch": {
+          "step": 16,
+          "address": 0,
+          "expected": 0,
+          "observed": 1
+        }
+      },
+      {
+        "fault": [
+          "CF",
+          1,
+          0,
+          0
+        ],
+        "initial": [
+          1,
+          0
+        ],
+        "first_mismatch": {
+          "step": 16,
+          "address": 0,
+          "expected": 0,
+          "observed": 1
+        }
+      },
+      {
+        "fault": [
+          "CF",
+          1,
+          0,
+          0
+        ],
+        "initial": [
+          1,
+          1
+        ],
+        "first_mismatch": {
+          "step": 16,
+          "address": 0,
+          "expected": 0,
+          "observed": 1
+        }
+      },
+      {
+        "fault": [
+          "CF",
+          1,
+          0,
+          1
+        ],
+        "initial": [
+          0,
+          0
+        ],
+        "first_mismatch": {
+          "step": 7,
+          "address": 0,
+          "expected": 1,
+          "observed": 0
+        }
+      },
+      {
+        "fault": [
+          "CF",
+          1,
+          0,
+          1
+        ],
+        "initial": [
+          0,
+          1
+        ],
+        "first_mismatch": {
+          "step": 7,
+          "address": 0,
+          "expected": 1,
+          "observed": 0
+        }
+      },
+      {
+        "fault": [
+          "CF",
+          1,
+          0,
+          1
+        ],
+        "initial": [
+          1,
+          0
+        ],
+        "first_mismatch": {
+          "step": 7,
+          "address": 0,
+          "expected": 1,
+          "observed": 0
+        }
+      },
+      {
+        "fault": [
+          "CF",
+          1,
+          0,
+          1
+        ],
+        "initial": [
+          1,
+          1
+        ],
+        "first_mismatch": {
+          "step": 7,
+          "address": 0,
+          "expected": 1,
+          "observed": 0
+        }
+      },
+      {
+        "fault": [
+          "CF",
+          1,
+          1,
+          0
+        ],
+        "initial": [
+          0,
+          0
+        ],
+        "first_mismatch": {
+          "step": 13,
+          "address": 0,
+          "expected": 0,
+          "observed": 1
+        }
+      },
+      {
+        "fault": [
+          "CF",
+          1,
+          1,
+          0
+        ],
+        "initial": [
+          0,
+          1
+        ],
+        "first_mismatch": {
+          "step": 13,
+          "address": 0,
+          "expected": 0,
+          "observed": 1
+        }
+      },
+      {
+        "fault": [
+          "CF",
+          1,
+          1,
+          0
+        ],
+        "initial": [
+          1,
+          0
+        ],
+        "first_mismatch": {
+          "step": 13,
+          "address": 0,
+          "expected": 0,
+          "observed": 1
+        }
+      },
+      {
+        "fault": [
+          "CF",
+          1,
+          1,
+          0
+        ],
+        "initial": [
+          1,
+          1
+        ],
+        "first_mismatch": {
+          "step": 13,
+          "address": 0,
+          "expected": 0,
+          "observed": 1
+        }
+      },
+      {
+        "fault": [
+          "CF",
+          1,
+          1,
+          1
+        ],
+        "initial": [
+          0,
+          0
+        ],
+        "first_mismatch": {
+          "step": 22,
+          "address": 0,
+          "expected": 1,
+          "observed": 0
+        }
+      },
+      {
+        "fault": [
+          "CF",
+          1,
+          1,
+          1
+        ],
+        "initial": [
+          0,
+          1
+        ],
+        "first_mismatch": {
+          "step": 22,
+          "address": 0,
+          "expected": 1,
+          "observed": 0
+        }
+      },
+      {
+        "fault": [
+          "CF",
+          1,
+          1,
+          1
+        ],
+        "initial": [
+          1,
+          0
+        ],
+        "first_mismatch": {
+          "step": 22,
+          "address": 0,
+          "expected": 1,
+          "observed": 0
+        }
+      },
+      {
+        "fault": [
+          "CF",
+          1,
+          1,
+          1
+        ],
+        "initial": [
+          1,
+          1
+        ],
+        "first_mismatch": {
+          "step": 22,
+          "address": 0,
+          "expected": 1,
+          "observed": 0
+        }
+      }
+    ],
+    "final_read_only_detected_scenarios": 20,
+    "final_read_only_records": [
+      {
+        "fault": [
+          "SAF",
+          0,
+          0,
+          null
+        ],
+        "initial": [
+          0,
+          0
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "SAF",
+          0,
+          0,
+          null
+        ],
+        "initial": [
+          0,
+          1
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "SAF",
+          0,
+          0,
+          null
+        ],
+        "initial": [
+          1,
+          0
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "SAF",
+          0,
+          0,
+          null
+        ],
+        "initial": [
+          1,
+          1
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "TF",
+          0,
+          0,
+          null
+        ],
+        "initial": [
+          0,
+          0
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "TF",
+          0,
+          0,
+          null
+        ],
+        "initial": [
+          0,
+          1
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "TF",
+          0,
+          0,
+          null
+        ],
+        "initial": [
+          1,
+          0
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "TF",
+          0,
+          0,
+          null
+        ],
+        "initial": [
+          1,
+          1
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "SAF",
+          0,
+          1,
+          null
+        ],
+        "initial": [
+          0,
+          0
+        ],
+        "detected": true
+      },
+      {
+        "fault": [
+          "SAF",
+          0,
+          1,
+          null
+        ],
+        "initial": [
+          0,
+          1
+        ],
+        "detected": true
+      },
+      {
+        "fault": [
+          "SAF",
+          0,
+          1,
+          null
+        ],
+        "initial": [
+          1,
+          0
+        ],
+        "detected": true
+      },
+      {
+        "fault": [
+          "SAF",
+          0,
+          1,
+          null
+        ],
+        "initial": [
+          1,
+          1
+        ],
+        "detected": true
+      },
+      {
+        "fault": [
+          "TF",
+          0,
+          1,
+          null
+        ],
+        "initial": [
+          0,
+          0
+        ],
+        "detected": true
+      },
+      {
+        "fault": [
+          "TF",
+          0,
+          1,
+          null
+        ],
+        "initial": [
+          0,
+          1
+        ],
+        "detected": true
+      },
+      {
+        "fault": [
+          "TF",
+          0,
+          1,
+          null
+        ],
+        "initial": [
+          1,
+          0
+        ],
+        "detected": true
+      },
+      {
+        "fault": [
+          "TF",
+          0,
+          1,
+          null
+        ],
+        "initial": [
+          1,
+          1
+        ],
+        "detected": true
+      },
+      {
+        "fault": [
+          "SAF",
+          1,
+          0,
+          null
+        ],
+        "initial": [
+          0,
+          0
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "SAF",
+          1,
+          0,
+          null
+        ],
+        "initial": [
+          0,
+          1
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "SAF",
+          1,
+          0,
+          null
+        ],
+        "initial": [
+          1,
+          0
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "SAF",
+          1,
+          0,
+          null
+        ],
+        "initial": [
+          1,
+          1
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "TF",
+          1,
+          0,
+          null
+        ],
+        "initial": [
+          0,
+          0
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "TF",
+          1,
+          0,
+          null
+        ],
+        "initial": [
+          0,
+          1
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "TF",
+          1,
+          0,
+          null
+        ],
+        "initial": [
+          1,
+          0
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "TF",
+          1,
+          0,
+          null
+        ],
+        "initial": [
+          1,
+          1
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "SAF",
+          1,
+          1,
+          null
+        ],
+        "initial": [
+          0,
+          0
+        ],
+        "detected": true
+      },
+      {
+        "fault": [
+          "SAF",
+          1,
+          1,
+          null
+        ],
+        "initial": [
+          0,
+          1
+        ],
+        "detected": true
+      },
+      {
+        "fault": [
+          "SAF",
+          1,
+          1,
+          null
+        ],
+        "initial": [
+          1,
+          0
+        ],
+        "detected": true
+      },
+      {
+        "fault": [
+          "SAF",
+          1,
+          1,
+          null
+        ],
+        "initial": [
+          1,
+          1
+        ],
+        "detected": true
+      },
+      {
+        "fault": [
+          "TF",
+          1,
+          1,
+          null
+        ],
+        "initial": [
+          0,
+          0
+        ],
+        "detected": true
+      },
+      {
+        "fault": [
+          "TF",
+          1,
+          1,
+          null
+        ],
+        "initial": [
+          0,
+          1
+        ],
+        "detected": true
+      },
+      {
+        "fault": [
+          "TF",
+          1,
+          1,
+          null
+        ],
+        "initial": [
+          1,
+          0
+        ],
+        "detected": true
+      },
+      {
+        "fault": [
+          "TF",
+          1,
+          1,
+          null
+        ],
+        "initial": [
+          1,
+          1
+        ],
+        "detected": true
+      },
+      {
+        "fault": [
+          "CF",
+          0,
+          0,
+          0
+        ],
+        "initial": [
+          0,
+          0
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "CF",
+          0,
+          0,
+          0
+        ],
+        "initial": [
+          0,
+          1
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "CF",
+          0,
+          0,
+          0
+        ],
+        "initial": [
+          1,
+          0
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "CF",
+          0,
+          0,
+          0
+        ],
+        "initial": [
+          1,
+          1
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "CF",
+          0,
+          0,
+          1
+        ],
+        "initial": [
+          0,
+          0
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "CF",
+          0,
+          0,
+          1
+        ],
+        "initial": [
+          0,
+          1
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "CF",
+          0,
+          0,
+          1
+        ],
+        "initial": [
+          1,
+          0
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "CF",
+          0,
+          0,
+          1
+        ],
+        "initial": [
+          1,
+          1
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "CF",
+          0,
+          1,
+          0
+        ],
+        "initial": [
+          0,
+          0
+        ],
+        "detected": true
+      },
+      {
+        "fault": [
+          "CF",
+          0,
+          1,
+          0
+        ],
+        "initial": [
+          0,
+          1
+        ],
+        "detected": true
+      },
+      {
+        "fault": [
+          "CF",
+          0,
+          1,
+          0
+        ],
+        "initial": [
+          1,
+          0
+        ],
+        "detected": true
+      },
+      {
+        "fault": [
+          "CF",
+          0,
+          1,
+          0
+        ],
+        "initial": [
+          1,
+          1
+        ],
+        "detected": true
+      },
+      {
+        "fault": [
+          "CF",
+          0,
+          1,
+          1
+        ],
+        "initial": [
+          0,
+          0
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "CF",
+          0,
+          1,
+          1
+        ],
+        "initial": [
+          0,
+          1
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "CF",
+          0,
+          1,
+          1
+        ],
+        "initial": [
+          1,
+          0
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "CF",
+          0,
+          1,
+          1
+        ],
+        "initial": [
+          1,
+          1
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "CF",
+          1,
+          0,
+          0
+        ],
+        "initial": [
+          0,
+          0
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "CF",
+          1,
+          0,
+          0
+        ],
+        "initial": [
+          0,
+          1
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "CF",
+          1,
+          0,
+          0
+        ],
+        "initial": [
+          1,
+          0
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "CF",
+          1,
+          0,
+          0
+        ],
+        "initial": [
+          1,
+          1
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "CF",
+          1,
+          0,
+          1
+        ],
+        "initial": [
+          0,
+          0
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "CF",
+          1,
+          0,
+          1
+        ],
+        "initial": [
+          0,
+          1
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "CF",
+          1,
+          0,
+          1
+        ],
+        "initial": [
+          1,
+          0
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "CF",
+          1,
+          0,
+          1
+        ],
+        "initial": [
+          1,
+          1
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "CF",
+          1,
+          1,
+          0
+        ],
+        "initial": [
+          0,
+          0
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "CF",
+          1,
+          1,
+          0
+        ],
+        "initial": [
+          0,
+          1
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "CF",
+          1,
+          1,
+          0
+        ],
+        "initial": [
+          1,
+          0
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "CF",
+          1,
+          1,
+          0
+        ],
+        "initial": [
+          1,
+          1
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "CF",
+          1,
+          1,
+          1
+        ],
+        "initial": [
+          0,
+          0
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "CF",
+          1,
+          1,
+          1
+        ],
+        "initial": [
+          0,
+          1
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "CF",
+          1,
+          1,
+          1
+        ],
+        "initial": [
+          1,
+          0
+        ],
+        "detected": false
+      },
+      {
+        "fault": [
+          "CF",
+          1,
+          1,
+          1
+        ],
+        "initial": [
+          1,
+          1
+        ],
+        "detected": false
+      }
+    ]
+  },
+  "de_bruijn": {
+    "alphabet_size": 2,
+    "window_length": 3,
+    "cyclic_sequence": "00010111",
+    "linear_sequence": "0001011100",
+    "windows": [
+      "000",
+      "001",
+      "010",
+      "101",
+      "011",
+      "111",
+      "110",
+      "100"
+    ],
+    "distinct_windows": 8
+  },
+  "set_cover": {
+    "costs": [
+      4,
+      3,
+      3,
+      2
+    ],
+    "sets": [
+      [
+        0,
+        1,
+        2
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        0,
+        3
+      ],
+      [
+        1
+      ]
+    ],
+    "minimum_cost": 7,
+    "minimum_cost_choices_zero_based": [
+      [
+        0,
+        2
+      ],
+      [
+        0,
+        1
+      ]
+    ],
+    "assumption": "Each candidate includes its own complete initialization and observation."
+  },
+  "published_sequences": {
+    "DDQN_AB1_subset_5N": {
+      "coefficient": 5,
+      "fault_free_depths": [
+        2,
+        4,
+        16
+      ],
+      "fault_free_initial_backgrounds": [
+        0,
+        1
+      ],
+      "fault_free_passed": true
+    },
+    "DDQN_AB1_residual_11N": {
+      "coefficient": 11,
+      "fault_free_depths": [
+        2,
+        4,
+        16
+      ],
+      "fault_free_initial_backgrounds": [
+        0,
+        1
+      ],
+      "fault_free_passed": true
+    },
+    "DDQN_LR_residual_16N": {
+      "coefficient": 16,
+      "fault_free_depths": [
+        2,
+        4,
+        16
+      ],
+      "fault_free_initial_backgrounds": [
+        0,
+        1
+      ],
+      "fault_free_passed": true
+    },
+    "11N_CFwd_a0_v1": {
+      "first_mismatch": 10,
+      "trace": [
+        {
+          "step": 1,
+          "element": 0,
+          "address": 0,
+          "operation": "w0",
+          "before": [
+            0,
+            0
+          ],
+          "observed": null,
+          "after": [
+            0,
+            0
+          ]
+        },
+        {
+          "step": 2,
+          "element": 0,
+          "address": 1,
+          "operation": "w0",
+          "before": [
+            0,
+            0
+          ],
+          "observed": null,
+          "after": [
+            0,
+            0
+          ]
+        },
+        {
+          "step": 3,
+          "element": 1,
+          "address": 0,
+          "operation": "w1",
+          "before": [
+            0,
+            0
+          ],
+          "observed": null,
+          "after": [
+            1,
+            0
+          ]
+        },
+        {
+          "step": 4,
+          "element": 1,
+          "address": 0,
+          "operation": "r1",
+          "before": [
+            1,
+            0
+          ],
+          "observed": 1,
+          "after": [
+            1,
+            0
+          ]
+        },
+        {
+          "step": 5,
+          "element": 1,
+          "address": 0,
+          "operation": "r1",
+          "before": [
+            1,
+            0
+          ],
+          "observed": 1,
+          "after": [
+            1,
+            0
+          ]
+        },
+        {
+          "step": 6,
+          "element": 1,
+          "address": 1,
+          "operation": "w1",
+          "before": [
+            1,
+            0
+          ],
+          "observed": null,
+          "after": [
+            1,
+            1
+          ]
+        },
+        {
+          "step": 7,
+          "element": 1,
+          "address": 1,
+          "operation": "r1",
+          "before": [
+            1,
+            1
+          ],
+          "observed": 1,
+          "after": [
+            1,
+            1
+          ]
+        },
+        {
+          "step": 8,
+          "element": 1,
+          "address": 1,
+          "operation": "r1",
+          "before": [
+            1,
+            1
+          ],
+          "observed": 1,
+          "after": [
+            1,
+            1
+          ]
+        },
+        {
+          "step": 9,
+          "element": 2,
+          "address": 1,
+          "operation": "w1",
+          "before": [
+            1,
+            1
+          ],
+          "observed": null,
+          "after": [
+            1,
+            0
+          ]
+        },
+        {
+          "step": 10,
+          "element": 2,
+          "address": 1,
+          "operation": "r1",
+          "before": [
+            1,
+            0
+          ],
+          "observed": 0,
+          "after": [
+            1,
+            0
+          ]
+        },
+        {
+          "step": 11,
+          "element": 2,
+          "address": 1,
+          "operation": "w0",
+          "before": [
+            1,
+            0
+          ],
+          "observed": null,
+          "after": [
+            1,
+            0
+          ]
+        },
+        {
+          "step": 12,
+          "element": 2,
+          "address": 1,
+          "operation": "r0",
+          "before": [
+            1,
+            0
+          ],
+          "observed": 0,
+          "after": [
+            1,
+            0
+          ]
+        },
+        {
+          "step": 13,
+          "element": 2,
+          "address": 1,
+          "operation": "r0",
+          "before": [
+            1,
+            0
+          ],
+          "observed": 0,
+          "after": [
+            1,
+            0
+          ]
+        },
+        {
+          "step": 14,
+          "element": 2,
+          "address": 1,
+          "operation": "w0",
+          "before": [
+            1,
+            0
+          ],
+          "observed": null,
+          "after": [
+            1,
+            0
+          ]
+        },
+        {
+          "step": 15,
+          "element": 2,
+          "address": 1,
+          "operation": "r0",
+          "before": [
+            1,
+            0
+          ],
+          "observed": 0,
+          "after": [
+            1,
+            0
+          ]
+        },
+        {
+          "step": 16,
+          "element": 2,
+          "address": 0,
+          "operation": "w1",
+          "before": [
+            1,
+            0
+          ],
+          "observed": null,
+          "after": [
+            1,
+            0
+          ]
+        },
+        {
+          "step": 17,
+          "element": 2,
+          "address": 0,
+          "operation": "r1",
+          "before": [
+            1,
+            0
+          ],
+          "observed": 1,
+          "after": [
+            1,
+            0
+          ]
+        },
+        {
+          "step": 18,
+          "element": 2,
+          "address": 0,
+          "operation": "w0",
+          "before": [
+            1,
+            0
+          ],
+          "observed": null,
+          "after": [
+            0,
+            0
+          ]
+        },
+        {
+          "step": 19,
+          "element": 2,
+          "address": 0,
+          "operation": "r0",
+          "before": [
+            0,
+            0
+          ],
+          "observed": 0,
+          "after": [
+            0,
+            0
+          ]
+        },
+        {
+          "step": 20,
+          "element": 2,
+          "address": 0,
+          "operation": "r0",
+          "before": [
+            0,
+            0
+          ],
+          "observed": 0,
+          "after": [
+            0,
+            0
+          ]
+        },
+        {
+          "step": 21,
+          "element": 2,
+          "address": 0,
+          "operation": "w0",
+          "before": [
+            0,
+            0
+          ],
+          "observed": null,
+          "after": [
+            0,
+            0
+          ]
+        },
+        {
+          "step": 22,
+          "element": 2,
+          "address": 0,
+          "operation": "r0",
+          "before": [
+            0,
+            0
+          ],
+          "observed": 0,
+          "after": [
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    "11N_CFdrd_a0_v1": {
+      "first_mismatch": 8,
+      "trace": [
+        {
+          "step": 1,
+          "element": 0,
+          "address": 0,
+          "operation": "w0",
+          "before": [
+            0,
+            0
+          ],
+          "observed": null,
+          "after": [
+            0,
+            0
+          ]
+        },
+        {
+          "step": 2,
+          "element": 0,
+          "address": 1,
+          "operation": "w0",
+          "before": [
+            0,
+            0
+          ],
+          "observed": null,
+          "after": [
+            0,
+            0
+          ]
+        },
+        {
+          "step": 3,
+          "element": 1,
+          "address": 0,
+          "operation": "w1",
+          "before": [
+            0,
+            0
+          ],
+          "observed": null,
+          "after": [
+            1,
+            0
+          ]
+        },
+        {
+          "step": 4,
+          "element": 1,
+          "address": 0,
+          "operation": "r1",
+          "before": [
+            1,
+            0
+          ],
+          "observed": 1,
+          "after": [
+            1,
+            0
+          ]
+        },
+        {
+          "step": 5,
+          "element": 1,
+          "address": 0,
+          "operation": "r1",
+          "before": [
+            1,
+            0
+          ],
+          "observed": 1,
+          "after": [
+            1,
+            0
+          ]
+        },
+        {
+          "step": 6,
+          "element": 1,
+          "address": 1,
+          "operation": "w1",
+          "before": [
+            1,
+            0
+          ],
+          "observed": null,
+          "after": [
+            1,
+            1
+          ]
+        },
+        {
+          "step": 7,
+          "element": 1,
+          "address": 1,
+          "operation": "r1",
+          "before": [
+            1,
+            1
+          ],
+          "observed": 1,
+          "after": [
+            1,
+            0
+          ]
+        },
+        {
+          "step": 8,
+          "element": 1,
+          "address": 1,
+          "operation": "r1",
+          "before": [
+            1,
+            0
+          ],
+          "observed": 0,
+          "after": [
+            1,
+            0
+          ]
+        },
+        {
+          "step": 9,
+          "element": 2,
+          "address": 1,
+          "operation": "w1",
+          "before": [
+            1,
+            0
+          ],
+          "observed": null,
+          "after": [
+            1,
+            1
+          ]
+        },
+        {
+          "step": 10,
+          "element": 2,
+          "address": 1,
+          "operation": "r1",
+          "before": [
+            1,
+            1
+          ],
+          "observed": 1,
+          "after": [
+            1,
+            0
+          ]
+        },
+        {
+          "step": 11,
+          "element": 2,
+          "address": 1,
+          "operation": "w0",
+          "before": [
+            1,
+            0
+          ],
+          "observed": null,
+          "after": [
+            1,
+            0
+          ]
+        },
+        {
+          "step": 12,
+          "element": 2,
+          "address": 1,
+          "operation": "r0",
+          "before": [
+            1,
+            0
+          ],
+          "observed": 0,
+          "after": [
+            1,
+            0
+          ]
+        },
+        {
+          "step": 13,
+          "element": 2,
+          "address": 1,
+          "operation": "r0",
+          "before": [
+            1,
+            0
+          ],
+          "observed": 0,
+          "after": [
+            1,
+            0
+          ]
+        },
+        {
+          "step": 14,
+          "element": 2,
+          "address": 1,
+          "operation": "w0",
+          "before": [
+            1,
+            0
+          ],
+          "observed": null,
+          "after": [
+            1,
+            0
+          ]
+        },
+        {
+          "step": 15,
+          "element": 2,
+          "address": 1,
+          "operation": "r0",
+          "before": [
+            1,
+            0
+          ],
+          "observed": 0,
+          "after": [
+            1,
+            0
+          ]
+        },
+        {
+          "step": 16,
+          "element": 2,
+          "address": 0,
+          "operation": "w1",
+          "before": [
+            1,
+            0
+          ],
+          "observed": null,
+          "after": [
+            1,
+            0
+          ]
+        },
+        {
+          "step": 17,
+          "element": 2,
+          "address": 0,
+          "operation": "r1",
+          "before": [
+            1,
+            0
+          ],
+          "observed": 1,
+          "after": [
+            1,
+            0
+          ]
+        },
+        {
+          "step": 18,
+          "element": 2,
+          "address": 0,
+          "operation": "w0",
+          "before": [
+            1,
+            0
+          ],
+          "observed": null,
+          "after": [
+            0,
+            0
+          ]
+        },
+        {
+          "step": 19,
+          "element": 2,
+          "address": 0,
+          "operation": "r0",
+          "before": [
+            0,
+            0
+          ],
+          "observed": 0,
+          "after": [
+            0,
+            0
+          ]
+        },
+        {
+          "step": 20,
+          "element": 2,
+          "address": 0,
+          "operation": "r0",
+          "before": [
+            0,
+            0
+          ],
+          "observed": 0,
+          "after": [
+            0,
+            0
+          ]
+        },
+        {
+          "step": 21,
+          "element": 2,
+          "address": 0,
+          "operation": "w0",
+          "before": [
+            0,
+            0
+          ],
+          "observed": null,
+          "after": [
+            0,
+            0
+          ]
+        },
+        {
+          "step": 22,
+          "element": 2,
+          "address": 0,
+          "operation": "r0",
+          "before": [
+            0,
+            0
+          ],
+          "observed": 0,
+          "after": [
+            0,
+            0
+          ]
+        }
+      ]
+    }
+  },
+  "model_consistency": {
+    "sequences_compared": 364,
+    "maximum_sequence_length": 6,
+    "scenarios_per_sequence": 24,
+    "passed": true
+  },
+  "simulated_annealing": {
+    "seed": 20261118,
+    "iterations": 6000,
+    "temperature_start": 4.0,
+    "temperature_end": 0.05,
+    "missing_scenario_penalty": 100,
+    "maximum_candidate_length": 40,
+    "initial_length": 20,
+    "initial_sequence": [
+      "w0",
+      "r0",
+      "r0",
+      "r0",
+      "w0",
+      "r0",
+      "r0",
+      "r0",
+      "w1",
+      "r1",
+      "r1",
+      "r1",
+      "w1",
+      "r1",
+      "r1",
+      "r1",
+      "w0",
+      "r0",
+      "r0",
+      "r0"
+    ],
+    "actions": [
+      "w0",
+      "w1",
+      "w1",
+      "r",
+      "r",
+      "r",
+      "w0",
+      "w0",
+      "r",
+      "r",
+      "r"
+    ],
+    "sequence": [
+      "w0",
+      "w1",
+      "w1",
+      "r1",
+      "r1",
+      "r1",
+      "w0",
+      "w0",
+      "r0",
+      "r0",
+      "r0"
+    ],
+    "operation_count": 11,
+    "scenario_count": 24,
+    "detected_scenarios": 24,
+    "accepted_proposals": 1433,
+    "accepted_uphill_proposals": 316,
+    "improvements": [
+      {
+        "iteration": 0,
+        "length": 20,
+        "detected_scenarios": 24,
+        "sequence": [
+          "w0",
+          "r0",
+          "r0",
+          "r0",
+          "w0",
+          "r0",
+          "r0",
+          "r0",
+          "w1",
+          "r1",
+          "r1",
+          "r1",
+          "w1",
+          "r1",
+          "r1",
+          "r1",
+          "w0",
+          "r0",
+          "r0",
+          "r0"
+        ]
+      },
+      {
+        "iteration": 2,
+        "length": 19,
+        "detected_scenarios": 24,
+        "sequence": [
+          "w0",
+          "r0",
+          "r0",
+          "w0",
+          "r0",
+          "r0",
+          "r0",
+          "w1",
+          "r1",
+          "r1",
+          "r1",
+          "w1",
+          "r1",
+          "r1",
+          "r1",
+          "w0",
+          "r0",
+          "r0",
+          "r0"
+        ]
+      },
+      {
+        "iteration": 3,
+        "length": 18,
+        "detected_scenarios": 24,
+        "sequence": [
+          "w0",
+          "r0",
+          "r0",
+          "w0",
+          "r0",
+          "r0",
+          "r0",
+          "w1",
+          "r1",
+          "r1",
+          "w1",
+          "r1",
+          "r1",
+          "r1",
+          "w0",
+          "r0",
+          "r0",
+          "r0"
+        ]
+      },
+      {
+        "iteration": 6,
+        "length": 17,
+        "detected_scenarios": 24,
+        "sequence": [
+          "w0",
+          "r0",
+          "r0",
+          "w0",
+          "r0",
+          "r0",
+          "r0",
+          "w1",
+          "r1",
+          "w1",
+          "r1",
+          "r1",
+          "r1",
+          "w0",
+          "r0",
+          "r0",
+          "r0"
+        ]
+      },
+      {
+        "iteration": 10,
+        "length": 16,
+        "detected_scenarios": 24,
+        "sequence": [
+          "w0",
+          "r0",
+          "r0",
+          "w0",
+          "r0",
+          "r0",
+          "r0",
+          "w1",
+          "w1",
+          "r1",
+          "r1",
+          "r1",
+          "w0",
+          "r0",
+          "r0",
+          "r0"
+        ]
+      },
+      {
+        "iteration": 12,
+        "length": 15,
+        "detected_scenarios": 24,
+        "sequence": [
+          "w0",
+          "r0",
+          "r0",
+          "w0",
+          "r0",
+          "r0",
+          "r0",
+          "w1",
+          "w1",
+          "r1",
+          "r1",
+          "r1",
+          "w0",
+          "r0",
+          "r0"
+        ]
+      },
+      {
+        "iteration": 272,
+        "length": 14,
+        "detected_scenarios": 24,
+        "sequence": [
+          "w0",
+          "r0",
+          "r0",
+          "r0",
+          "w1",
+          "w1",
+          "r1",
+          "r1",
+          "r1",
+          "w1",
+          "w0",
+          "w0",
+          "r0",
+          "r0"
+        ]
+      },
+      {
+        "iteration": 321,
+        "length": 13,
+        "detected_scenarios": 24,
+        "sequence": [
+          "w0",
+          "r0",
+          "w1",
+          "w1",
+          "r1",
+          "r1",
+          "r1",
+          "r1",
+          "w0",
+          "w0",
+          "r0",
+          "r0",
+          "r0"
+        ]
+      },
+      {
+        "iteration": 325,
+        "length": 12,
+        "detected_scenarios": 24,
+        "sequence": [
+          "w0",
+          "w1",
+          "w1",
+          "r1",
+          "r1",
+          "r1",
+          "r1",
+          "w0",
+          "w0",
+          "r0",
+          "r0",
+          "r0"
+        ]
+      },
+      {
+        "iteration": 969,
+        "length": 11,
+        "detected_scenarios": 24,
+        "sequence": [
+          "w0",
+          "w1",
+          "w1",
+          "r1",
+          "r1",
+          "r1",
+          "w0",
+          "w0",
+          "r0",
+          "r0",
+          "r0"
+        ]
+      }
+    ],
+    "independent_detection_records": [
+      {
+        "fault": "SAF0",
+        "initial": 0,
+        "detected": true,
+        "first_mismatch_step": 4,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "SAF0",
+        "initial": 1,
+        "detected": true,
+        "first_mismatch_step": 4,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "SAF1",
+        "initial": 0,
+        "detected": true,
+        "first_mismatch_step": 9,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "SAF1",
+        "initial": 1,
+        "detected": true,
+        "first_mismatch_step": 9,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "TF0",
+        "initial": 0,
+        "detected": true,
+        "first_mismatch_step": 4,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "TF0",
+        "initial": 1,
+        "detected": true,
+        "first_mismatch_step": 4,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "TF1",
+        "initial": 0,
+        "detected": true,
+        "first_mismatch_step": 9,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "TF1",
+        "initial": 1,
+        "detected": true,
+        "first_mismatch_step": 9,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "WDF0",
+        "initial": 0,
+        "detected": true,
+        "first_mismatch_step": 9,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "WDF0",
+        "initial": 1,
+        "detected": true,
+        "first_mismatch_step": 9,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "WDF1",
+        "initial": 0,
+        "detected": true,
+        "first_mismatch_step": 4,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "WDF1",
+        "initial": 1,
+        "detected": true,
+        "first_mismatch_step": 4,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "RDF0",
+        "initial": 0,
+        "detected": true,
+        "first_mismatch_step": 9,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "RDF0",
+        "initial": 1,
+        "detected": true,
+        "first_mismatch_step": 9,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "RDF1",
+        "initial": 0,
+        "detected": true,
+        "first_mismatch_step": 4,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "RDF1",
+        "initial": 1,
+        "detected": true,
+        "first_mismatch_step": 4,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "DRDF0",
+        "initial": 0,
+        "detected": true,
+        "first_mismatch_step": 10,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "DRDF0",
+        "initial": 1,
+        "detected": true,
+        "first_mismatch_step": 10,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "DRDF1",
+        "initial": 0,
+        "detected": true,
+        "first_mismatch_step": 5,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "DRDF1",
+        "initial": 1,
+        "detected": true,
+        "first_mismatch_step": 5,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "D2R0",
+        "initial": 0,
+        "detected": true,
+        "first_mismatch_step": 11,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 1
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 1,
+            "consecutive_reads": 2
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "D2R0",
+        "initial": 1,
+        "detected": true,
+        "first_mismatch_step": 11,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 1
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 1,
+            "consecutive_reads": 2
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "D2R1",
+        "initial": 0,
+        "detected": true,
+        "first_mismatch_step": 6,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 1
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 0,
+            "consecutive_reads": 2
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "D2R1",
+        "initial": 1,
+        "detected": true,
+        "first_mismatch_step": 6,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 1
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 0,
+            "consecutive_reads": 2
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          }
+        ]
+      }
+    ]
+  },
+  "breadth_first": {
+    "operation_count": 11,
+    "actions": [
+      "w0",
+      "w1",
+      "w1",
+      "r",
+      "r",
+      "r",
+      "w0",
+      "w0",
+      "r",
+      "r",
+      "r"
+    ],
+    "sequence": [
+      "w0",
+      "w1",
+      "w1",
+      "r1",
+      "r1",
+      "r1",
+      "w0",
+      "w0",
+      "r0",
+      "r0",
+      "r0"
+    ],
+    "visited_product_states": 745,
+    "dequeued_product_states": 716,
+    "depth_counts": {
+      "1": 1,
+      "2": 3,
+      "3": 7,
+      "4": 17,
+      "5": 36,
+      "6": 64,
+      "7": 99,
+      "8": 137,
+      "9": 153,
+      "10": 127,
+      "11": 72
+    },
+    "search_space": "All sequences beginning with w0 over r,w0,w1; read expectations from ideal state.",
+    "independent_detection_records": [
+      {
+        "fault": "SAF0",
+        "initial": 0,
+        "detected": true,
+        "first_mismatch_step": 4,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "SAF0",
+        "initial": 1,
+        "detected": true,
+        "first_mismatch_step": 4,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "SAF1",
+        "initial": 0,
+        "detected": true,
+        "first_mismatch_step": 9,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "SAF1",
+        "initial": 1,
+        "detected": true,
+        "first_mismatch_step": 9,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "TF0",
+        "initial": 0,
+        "detected": true,
+        "first_mismatch_step": 4,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "TF0",
+        "initial": 1,
+        "detected": true,
+        "first_mismatch_step": 4,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "TF1",
+        "initial": 0,
+        "detected": true,
+        "first_mismatch_step": 9,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "TF1",
+        "initial": 1,
+        "detected": true,
+        "first_mismatch_step": 9,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "WDF0",
+        "initial": 0,
+        "detected": true,
+        "first_mismatch_step": 9,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "WDF0",
+        "initial": 1,
+        "detected": true,
+        "first_mismatch_step": 9,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "WDF1",
+        "initial": 0,
+        "detected": true,
+        "first_mismatch_step": 4,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "WDF1",
+        "initial": 1,
+        "detected": true,
+        "first_mismatch_step": 4,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "RDF0",
+        "initial": 0,
+        "detected": true,
+        "first_mismatch_step": 9,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "RDF0",
+        "initial": 1,
+        "detected": true,
+        "first_mismatch_step": 9,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "RDF1",
+        "initial": 0,
+        "detected": true,
+        "first_mismatch_step": 4,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "RDF1",
+        "initial": 1,
+        "detected": true,
+        "first_mismatch_step": 4,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "DRDF0",
+        "initial": 0,
+        "detected": true,
+        "first_mismatch_step": 10,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "DRDF0",
+        "initial": 1,
+        "detected": true,
+        "first_mismatch_step": 10,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "DRDF1",
+        "initial": 0,
+        "detected": true,
+        "first_mismatch_step": 5,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "DRDF1",
+        "initial": 1,
+        "detected": true,
+        "first_mismatch_step": 5,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "D2R0",
+        "initial": 0,
+        "detected": true,
+        "first_mismatch_step": 11,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 1
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 1,
+            "consecutive_reads": 2
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "D2R0",
+        "initial": 1,
+        "detected": true,
+        "first_mismatch_step": 11,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 1
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 1,
+            "consecutive_reads": 2
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "D2R1",
+        "initial": 0,
+        "detected": true,
+        "first_mismatch_step": 6,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 1
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 0,
+            "consecutive_reads": 2
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          }
+        ]
+      },
+      {
+        "fault": "D2R1",
+        "initial": 1,
+        "detected": true,
+        "first_mismatch_step": 6,
+        "trace": [
+          {
+            "step": 1,
+            "operation": "w0",
+            "before": 1,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 2,
+            "operation": "w1",
+            "before": 0,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 3,
+            "operation": "w1",
+            "before": 1,
+            "returned": null,
+            "after": 1,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 4,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 1,
+            "consecutive_reads": 1
+          },
+          {
+            "step": 5,
+            "operation": "r1",
+            "before": 1,
+            "returned": 1,
+            "after": 0,
+            "consecutive_reads": 2
+          },
+          {
+            "step": 6,
+            "operation": "r1",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 7,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 8,
+            "operation": "w0",
+            "before": 0,
+            "returned": null,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 9,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 10,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          },
+          {
+            "step": 11,
+            "operation": "r0",
+            "before": 0,
+            "returned": 0,
+            "after": 0,
+            "consecutive_reads": 0
+          }
+        ]
+      }
+    ]
+  },
+  "passed": true
+}

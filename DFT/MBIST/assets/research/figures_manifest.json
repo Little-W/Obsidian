@@ -1,0 +1,316 @@
+[
+  {
+    "file": "01_fault_observation.svg",
+    "title": "图 26  激励操作与观测读取",
+    "width": 1200,
+    "height": 1456,
+    "editable_text": true,
+    "embedded_raster_images": 0,
+    "font_sizes_px": {
+      "title": 48,
+      "node": 36,
+      "body": 32,
+      "note": 30,
+      "minimum": 28
+    },
+    "nodes": 5,
+    "text_objects": 27,
+    "connections": 0,
+    "connection_map": []
+  },
+  {
+    "file": "02_euler_sequence.svg",
+    "title": "图 27  欧拉回路与逐边读取",
+    "width": 1200,
+    "height": 1530,
+    "editable_text": true,
+    "embedded_raster_images": 0,
+    "font_sizes_px": {
+      "title": 48,
+      "node": 36,
+      "body": 32,
+      "note": 30,
+      "minimum": 28
+    },
+    "nodes": 5,
+    "text_objects": 24,
+    "connections": 8,
+    "connection_map": [
+      {
+        "id": "e1",
+        "source": "q00",
+        "target": "q10",
+        "meaning": "1: w1(a)",
+        "points": [
+          [
+            430,
+            340.0
+          ],
+          [
+            770,
+            340.0
+          ]
+        ],
+        "arrow": true
+      },
+      {
+        "id": "e8",
+        "source": "q10",
+        "target": "q00",
+        "meaning": "8: w0(a)",
+        "points": [
+          [
+            770,
+            380.0
+          ],
+          [
+            430,
+            380.0
+          ]
+        ],
+        "arrow": true
+      },
+      {
+        "id": "e2",
+        "source": "q10",
+        "target": "q11",
+        "meaning": "2: w1(b)",
+        "points": [
+          [
+            835.0,
+            420
+          ],
+          [
+            835.0,
+            760
+          ]
+        ],
+        "arrow": true
+      },
+      {
+        "id": "e7",
+        "source": "q11",
+        "target": "q10",
+        "meaning": "7: w0(b)",
+        "points": [
+          [
+            965.0,
+            760
+          ],
+          [
+            965.0,
+            420
+          ]
+        ],
+        "arrow": true
+      },
+      {
+        "id": "e3",
+        "source": "q11",
+        "target": "q01",
+        "meaning": "3: w0(a)",
+        "points": [
+          [
+            770,
+            800.0
+          ],
+          [
+            430,
+            800.0
+          ]
+        ],
+        "arrow": true
+      },
+      {
+        "id": "e6",
+        "source": "q01",
+        "target": "q11",
+        "meaning": "6: w1(a)",
+        "points": [
+          [
+            430,
+            840.0
+          ],
+          [
+            770,
+            840.0
+          ]
+        ],
+        "arrow": true
+      },
+      {
+        "id": "e4",
+        "source": "q01",
+        "target": "q00",
+        "meaning": "4: w0(b)",
+        "points": [
+          [
+            235.0,
+            760
+          ],
+          [
+            235.0,
+            420
+          ]
+        ],
+        "arrow": true
+      },
+      {
+        "id": "e5",
+        "source": "q00",
+        "target": "q01",
+        "meaning": "5: w1(b)",
+        "points": [
+          [
+            365.0,
+            420
+          ],
+          [
+            365.0,
+            760
+          ]
+        ],
+        "arrow": true
+      }
+    ]
+  },
+  {
+    "file": "03_sequence_search.svg",
+    "title": "图 28  故障仿真驱动的序列搜索",
+    "width": 1200,
+    "height": 1775,
+    "editable_text": true,
+    "embedded_raster_images": 0,
+    "font_sizes_px": {
+      "title": 48,
+      "node": 36,
+      "body": 32,
+      "note": 30,
+      "minimum": 28
+    },
+    "nodes": 6,
+    "text_objects": 24,
+    "connections": 7,
+    "connection_map": [
+      {
+        "id": "spec-candidate",
+        "source": "spec",
+        "target": "candidate",
+        "meaning": "候选语法、初始化和执行限制",
+        "points": [
+          [
+            300.0,
+            400
+          ],
+          [
+            300.0,
+            560
+          ]
+        ],
+        "arrow": true
+      },
+      {
+        "id": "spec-simulate",
+        "source": "spec",
+        "target": "simulate",
+        "meaning": "故障模型和检测条件",
+        "points": [
+          [
+            900.0,
+            400
+          ],
+          [
+            900.0,
+            560
+          ]
+        ],
+        "arrow": true
+      },
+      {
+        "id": "candidate-simulate",
+        "source": "candidate",
+        "target": "simulate",
+        "meaning": "执行候选序列",
+        "points": [
+          [
+            520,
+            670.0
+          ],
+          [
+            680,
+            670.0
+          ]
+        ],
+        "arrow": true
+      },
+      {
+        "id": "simulate-score",
+        "source": "simulate",
+        "target": "score",
+        "meaning": "检出集合、长度与成本",
+        "points": [
+          [
+            900.0,
+            780
+          ],
+          [
+            900.0,
+            1050
+          ]
+        ],
+        "arrow": true
+      },
+      {
+        "id": "score-update",
+        "source": "score",
+        "target": "update",
+        "meaning": "按照搜索规则接受或拒绝",
+        "points": [
+          [
+            680,
+            1160.0
+          ],
+          [
+            520,
+            1160.0
+          ]
+        ],
+        "arrow": true
+      },
+      {
+        "id": "update-candidate",
+        "source": "update",
+        "target": "candidate",
+        "meaning": "形成下一轮候选",
+        "points": [
+          [
+            300.0,
+            1050
+          ],
+          [
+            300.0,
+            780
+          ]
+        ],
+        "arrow": true
+      },
+      {
+        "id": "score-check",
+        "source": "score",
+        "target": "check",
+        "meaning": "选取达到停止条件的最佳候选",
+        "points": [
+          [
+            900.0,
+            1270
+          ],
+          [
+            900.0,
+            1470
+          ]
+        ],
+        "arrow": true
+      }
+    ]
+  }
+]
